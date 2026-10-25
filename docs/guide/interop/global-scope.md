@@ -203,7 +203,8 @@ export function later(task) {
   typeof window.document.createElement !== "undefined"`, as React's
   `canUseDOM` asks
   ([ADR 0624](../../decisions/0624-is-defined-of-a-path-of-bindings.md)).
-  A step that isn't one is refused.
+  A step that isn't one is refused, and so is one past a constructor,
+  [a window's](#a-windows-classes): what it makes isn't read of it.
 - **A std function that's `Math`'s** is asked of as `Math`'s:
   `js::is_defined(u32::leading_zeros)` is `typeof Math.clz32 !==
   "undefined"`, `Math` itself being ECMAScript's, which every host has, as
@@ -249,6 +250,52 @@ export function debugTask(name) {
 
 export function renderIn(task, render) {
   return task ? task.run(render) : render();
+}
+```
+
+### A window's classes
+
+A class's constructor is the global scope's, `error_event::new(..)`, `new
+ErrorEvent(..)`. A window holds each of its own, as TypeScript's `Window &
+typeof globalThis` has them: `window.new_error_event(..)` is `new
+window.ErrorEvent(..)`, a `Window` method for each class a window has, of
+its module's name and its constructor's parameters
+([ADR 0891](../../decisions/0891-a-windows-constructor-is-the-windows.md)).
+They're one class where the window is the global object, as in a page, and
+two where it isn't: a frame's window, or jsdom's in a test that runs in
+Node, whose global scope has no `ErrorEvent` of its own. Whether a window
+has one is `js::is_defined` of its method, asked of `window`, as React's
+`reportGlobalError` asks:
+
+```rust
+use webapi::{ErrorEventInit, Window, window};
+
+pub fn report(message: &str) -> bool {
+    if js::is_defined(Window::new_error_event) {
+        let event = window.new_error_event(
+            "error",
+            Some(ErrorEventInit {
+                cancelable: Some(true),
+                message: Some(message),
+                ..Default::default()
+            }),
+        );
+        return window.dispatch_event(event);
+    }
+    true
+}
+```
+
+```js
+export function report(message) {
+  if (typeof window !== "undefined" && typeof window.ErrorEvent !== "undefined") {
+    const event = new window.ErrorEvent("error", {
+      cancelable: true,
+      message,
+    });
+    return window.dispatchEvent(event);
+  }
+  return true;
 }
 ```
 

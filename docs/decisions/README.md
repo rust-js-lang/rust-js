@@ -72,7 +72,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0021 JS interop: `extern` blocks name what JS has](0021-js-interop.md)
 - [0022 Closures are arrow functions](0022-closures.md)
 - [0023 Strings, references and shared state](0023-strings-references-shared-state.md)
-- [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md)
+- [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md) *(extended by 0891: `new X` of a method)*
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md)
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
 - [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items)*
@@ -299,7 +299,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
 - [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md)
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md)
-- [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md)
+- [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md) *(extended by 0891: a window's constructors)*
 - [0282 One method API for event listeners](0282-event-listener-methods.md)
 - [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to; extended by 0887: `Math` is std's items as values too)*
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)
@@ -478,7 +478,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md)
 - [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports; amended by 0874: a private `use`'s `#[rust_js::name]` is its import's name)*
-- [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property; by 0887: of a std function that's `Math`'s)*
+- [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property; by 0887: of a std function that's `Math`'s; by 0891: of a window's constructor)*
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md) *(amended: a `let` of a name alone is its own statement, and a cast's is the variable)*
 - [0599 A result its branches make before it's coerced is returned where made](0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](0600-the-guide-is-the-site.md)
@@ -504,7 +504,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0620 An `Option` a test says is there is written as it is](0620-an-option-a-test-says-is-there.md)
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
-- [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too)*
+- [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too; extended by 0891: a constructor its last step)*
 - [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported; by 0773: one a `pub use` of its module renames too)*
 - [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
@@ -669,6 +669,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0887 A std function or constant that's `Math`'s is `Math`'s as a value](0887-std-items-that-are-math-are-math.md)
 - [0889 An expression's facts are a set](0889-an-expressions-facts-are-a-set.md)
 - [0890 A binding's method is known as one, whatever its name](0890-a-bindings-method-is-known-as-one.md)
+- [0891 A window's constructor is the window's: `window.new_error_event(..)`](0891-a-windows-constructor-is-the-windows.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too)*

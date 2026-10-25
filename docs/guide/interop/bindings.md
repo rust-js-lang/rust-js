@@ -448,7 +448,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"f"`, with `&self` or `this` | `this.f(..)` | a method |
 | `"get x"` | `this.x`, or `X.x` without `this` | a getter, or a static property |
 | `"set x"` | `this.x = v`, or `a.x = v` of a global | a setter |
-| `"new X"` | `new X(..)` | a constructor |
+| `"new X"` | `new X(..)`, or `new this.X(..)` with `&self` or `this` | a constructor, or one its receiver holds, a window's ([ADR 0891](../../decisions/0891-a-windows-constructor-is-the-windows.md)) |
 | `"this"` | `this` | a cast, unchecked |
 | `"instanceof X"` | `this instanceof X` | a cast's test |
 | `"instanceof"` | `this instanceof constructor`, of a constructor given | `js::instance_of` ([ADR 0878](../../decisions/0878-instanceof-of-a-constructor-value.md)) |

@@ -134,6 +134,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
+            // A constructor its receiver holds, a window's, `new
+            // window.ErrorEvent(..)`: each part of its path a member, as a
+            // method's is (ADR 0891).
+            (JsForm::New(name), Some(this)) if !name.contains('#') => {
+                let class = name.split('.').fold(this, Expr::member);
+                Expr::new_(class.or_at(fun_span), args)
+            }
             // A property's read, which a getter may answer (ADR 0672).
             (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => {
                 Expr::member(this, name).answered_by_a_getter()

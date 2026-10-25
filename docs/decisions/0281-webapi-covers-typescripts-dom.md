@@ -1,6 +1,8 @@
 # 0281. The webapi crate covers TypeScript's DOM, and a test holds it
 
-Status: Accepted. Extends [0024](0024-web-crate.md).
+Status: Accepted. Extends [0024](0024-web-crate.md). Extended by
+[0891](0891-a-windows-constructor-is-the-windows.md): each constructor
+a window's global scope has is a `Window` method too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

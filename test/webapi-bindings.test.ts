@@ -260,6 +260,19 @@ test("the webapi crate binds no element constructor, which a page can't call", (
   expect(lib).toContain('#[cfg_attr(rust_js, rust_js::link_name = "new TextEncoder")]');
 });
 
+// ADR 0891: each constructor a window's global scope has is a window's too,
+// its module's `new` a `Window` method of the module's name, `new_error_event`.
+test("each class a window has is constructed of the window too", () => {
+  const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
+  const window = lib.slice(lib.indexOf("/// The constructors a window holds"));
+  const made = [...lib.matchAll(/^pub mod (\w+) \{$[^]*?^}$/gm)].flatMap(([module, name]) =>
+    [...module.matchAll(/link_name = "(new [\w.]+)"\)\]\n(?:    .*\n)*?    pub fn new\b/g)].map(([, js]) => [name, js]),
+  );
+  expect(made.length).toBeGreaterThan(200);
+  const held = [...window.matchAll(/link_name = "(new [\w.]+)"\)\]\n(?:    .*\n)*?    pub fn new_(\w+)\(&self/g)].map(([, js, name]) => [name, js]);
+  expect(held).toEqual(made);
+});
+
 // ADR 0269: a window's own functions are called bare too, as TypeScript's DOM
 // declares them globals and react.dev's NavigationBar asks `confirm('Clear
 // all your edits?')`. `window.confirm(..)` is still the method's.
@@ -442,4 +455,75 @@ pub fn run_in(task: &ConsoleTask, x: f64) -> f64 {
     delete host.createTask;
     delete (globalThis as any).__DEV__;
   }
+});
+
+// ADR 0891: a window's constructors are the window's, as TypeScript's
+// `Window & typeof globalThis` has them: `window.new_error_event(..)` is
+// `new window.ErrorEvent(..)`, and `js::is_defined(Window::new_error_event)`
+// asks `typeof window.ErrorEvent`. React's `reportGlobalError` dispatches
+// on the window, which in its server-integration tests is a jsdom window
+// that isn't the global object: the global `ErrorEvent` is another, or none.
+test("a window's constructor is the window's, apart from the global one", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("window-constructor");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{ErrorEventInit, Window, window};
+
+pub fn report(message: &str) -> Option<bool> {
+    if js::is_defined(Window::new_error_event) {
+        let event = window.new_error_event(
+            "error",
+            Some(ErrorEventInit {
+                bubbles: Some(true),
+                message: Some(message),
+                ..Default::default()
+            }),
+        );
+        return Some(window.dispatch_event(event));
+    }
+    None
+}
+
+pub fn wasm(bytes: &js::ArrayBuffer) -> &'static webapi::WebAssemblyModule {
+    window.new_web_assembly_module(bytes, None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof window !== "undefined" && typeof window.ErrorEvent !== "undefined") {');
+  expect(js).toContain('const event = new window.ErrorEvent("error", {');
+  expect(js).toContain("return new window.WebAssembly.Module(bytes);");
+  const host = globalThis as any;
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.report("lost")).toBeUndefined();
+  // A window that isn't the global object, of an `ErrorEvent` of its own,
+  // as jsdom's is in React's tests: the global one, Bun's, is another.
+  const dispatched: unknown[] = [];
+  class ErrorEvent {
+    constructor(
+      public type: string,
+      public init: object,
+    ) {}
+  }
+  host.window = { ErrorEvent, dispatchEvent: (event: unknown) => (dispatched.push(event), false) };
+  try {
+    expect(host.ErrorEvent).toBeFunction();
+    expect(host.ErrorEvent).not.toBe(ErrorEvent);
+    expect(lib.report("boom")).toBe(false);
+    expect(dispatched).toEqual([new ErrorEvent("error", { bubbles: true, message: "boom" })]);
+    expect(dispatched[0]).toBeInstanceOf(ErrorEvent);
+    expect(dispatched[0]).not.toBeInstanceOf(host.ErrorEvent);
+    host.window = {};
+    expect(lib.report("lost")).toBeUndefined();
+  } finally {
+    delete host.window;
+  }
+  // A path's constructor is its last step: what it makes isn't read of it.
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{ErrorEvent, Window};
+
+pub fn asked() -> bool {
+    js::is_defined((Window::new_error_event, ErrorEvent::message))
+}
+`);
+  const refused = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+  expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("a step isn't a method of what the one before gives")]);
 });

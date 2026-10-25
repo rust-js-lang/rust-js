@@ -55,7 +55,10 @@ app.append((b, "!"));                     // app.append(b, "!"), a rest paramete
   spread, `el.append(&children)` is `el.append(...children)`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
   `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
-- A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`.
+- A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`. A
+  window's own class is the window's method of the module's name, `window.new_event("ping", None)`,
+  `new window.Event("ping")`: another window's, a frame's or jsdom's, differs from the global one
+  ([ADR 0891](../docs/decisions/0891-a-windows-constructor-is-the-windows.md)).
 - A namespace is a module: `web_assembly::compile(bytes).await` is
   `await WebAssembly.compile(bytes)`. An `object` parameter takes any Rust value
   as `&dyn Any`, such as a struct for an import object.

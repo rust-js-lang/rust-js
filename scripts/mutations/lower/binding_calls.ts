@@ -331,4 +331,12 @@ export const mutations: Mutation[] = [
     replace: "            |_| true,",
     tests: ["test/snapshots.test.ts", "-t", "^counter"],
   },
+  {
+    name: "new-of-a-method-the-global-class",
+    breaks: "`window.new_error_event(..)` constructs the global `ErrorEvent`, `new ErrorEvent(..)`, not the window's, which a jsdom window that isn't the global object holds apart (ADR 0891)",
+    file: "src/lower/binding_calls.rs",
+    find: "                let class = name.split('.').fold(this, Expr::member);\n",
+    replace: "                let class = { drop(this); self.js_ref(&name) };\n",
+    tests: ["test/bindings.test.ts", "-t", "a new binding of a method constructs what its receiver holds"],
+  },
 ];

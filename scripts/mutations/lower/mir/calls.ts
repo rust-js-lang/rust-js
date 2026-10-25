@@ -292,4 +292,20 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(function) = self.math_function(f, f_args).filter(|_| false)\n",
     tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
   },
+  {
+    name: "defined-of-a-windows-constructor-refused",
+    breaks: "`js::is_defined(Window::new_error_event)` is refused, so React's `reportGlobalError` can't ask `typeof window.ErrorEvent` (ADR 0891)",
+    file: "src/lower/mir/calls.rs",
+    find: "        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) | bindings::JsForm::New(name) => Some(name),\n",
+    replace: "        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => Some(name),\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+  },
+  {
+    name: "defined-path-read-past-a-constructor",
+    breaks: "`js::is_defined((Window::new_error_event, ErrorEvent::message))` asks `window.ErrorEvent.message`, a property of the class, not of what it makes (ADR 0891)",
+    file: "src/lower/mir/calls.rs",
+    find: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len()) {\n",
+    replace: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len() && false) {\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+  },
 ];

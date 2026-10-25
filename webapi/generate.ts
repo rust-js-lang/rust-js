@@ -314,6 +314,9 @@ type Interface = {
   isNamespace?: boolean;
   /** The global scope's: functions called bare, `fetch(url)` (ADR 0269). */
   isGlobal?: boolean;
+  /** `[Exposed=(Window,Worker)]`: the global scopes whose global object
+   * has its class, `window.ErrorEvent` (ADR 0891); `*` every one. */
+  exposed?: string[];
 };
 const interfaces = new Map<string, Interface>();
 const namespaces = new Map<string, Interface>();
@@ -328,6 +331,12 @@ for (const d of read) {
       // `[HTMLConstructor]` elements can't be made with `new`.
       i.constructible = !(d.extAttrs ?? []).some((a) => a.name === "HTMLConstructor");
       i.legacyNamespace = (d.extAttrs ?? []).find((a) => a.name === "LegacyNamespace")?.rhs?.value;
+      // `[Exposed=*]` is of the type `*`, of no value.
+      const exposed: any = (d.extAttrs ?? []).find((a) => a.name === "Exposed")?.rhs;
+      i.exposed =
+        exposed?.type === "*" ? ["*"]
+        : typeof exposed?.value === "string" ? [exposed.value]
+        : (exposed?.value ?? []).map((v: { value: string }) => v.value);
     }
     i.members.push(...(d.members ?? []).filter((m) => !leftOut.has(m)).map((member) => ({ member, from: d.name })));
     interfaces.set(d.name, i);
@@ -1454,6 +1463,10 @@ function listing(i: Interface, f: Fn): Fn {
   return { ...f, result: f.result.replace(/\bNodeList\b/, `NodeList<${typeName(item)}>`) };
 }
 
+// Each class's constructor a window holds, its method (ADR 0891).
+const windowConstructors: Fn[] = [];
+// And the window's own members' names, which no constructor's may take.
+const windowMembers = new Set<string>();
 for (const name of INTERFACES) {
   const i = interfaces.get(name)!;
   const type = typeName(name);
@@ -1488,7 +1501,18 @@ for (const name of INTERFACES) {
   // (ADR 0282). Only constructors, statics, constants and casts, which no
   // value of it is given to, stay in its module.
   const methods = fns.filter((f) => f.params[0] === `this: &${type}` && f.jsName !== "this");
-  module(snake(qualified(name)), fns.filter((f) => !methods.includes(f)).map((f) => listing(i, f)), [], [...(constantsOf.get(name)?.values() ?? [])]);
+  if (name === "Window") for (const f of methods) windowMembers.add(f.name);
+  // Its constructor is a window's too, of the class that window holds, as
+  // TypeScript's `Window & typeof globalThis` has it: `new
+  // window.ErrorEvent(..)`, another window's, an iframe's or jsdom's, apart
+  // from the global one (ADR 0891).
+  if (i.exposed?.some((scope) => scope === "Window" || scope === "*")) {
+    for (const f of fns.filter((f) => f.jsName.startsWith("new "))) {
+      const doc = [...f.doc, `\`new window.${jsName(i)}(..)\`: this window's class, which is [\`${snake(qualified(name))}::${f.name}\`]'s only where the window is the global object.`];
+      windowConstructors.push({ ...f, name: f.name.replace(/^new/, `new_${snake(qualified(name))}`), params: ["this: &Window", ...f.params], doc });
+    }
+  }
+  module(snake(qualified(name)),fns.filter((f) => !methods.includes(f)).map((f) => listing(i, f)), [], [...(constantsOf.get(name)?.values() ?? [])]);
   count += methods.length;
   if (methods.length > 0 || TYPED[name]) {
     line();
@@ -1503,6 +1527,25 @@ for (const name of INTERFACES) {
     }
     line("}");
   }
+}
+
+// A window's constructors, each of the class it holds: `new
+// window.ErrorEvent(..)`, of each class whose constructor the global
+// scope's module has, `error_event::new` (ADR 0891).
+{
+  const clash = windowConstructors.find((f) => windowMembers.has(f.name));
+  if (clash) throw new Error(`Window has a member of its own named ${clash.name}, the name of a constructor it holds`);
+  count += windowConstructors.length;
+  line();
+  line("/// The constructors a window holds, each class's of that window, as TypeScript's");
+  line("/// `Window & typeof globalThis` has them: `window.new_error_event(..)` is");
+  line("/// `new window.ErrorEvent(..)` (ADR 0891).");
+  line("impl Window {");
+  for (const f of windowConstructors) {
+    line(generic({ ...f, params: ["&self", ...f.params.slice(1)] }));
+    line();
+  }
+  line("}");
 }
 
 for (const name of NAMESPACES) {

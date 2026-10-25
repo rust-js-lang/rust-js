@@ -429,11 +429,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut path = String::new();
         let mut gives: Option<ty::Ty<'tcx>> = None;
-        for step in steps {
+        for (k, step) in steps.iter().enumerate() {
             let Some((f, args)) = crate::lower::fn_def(*step) else {
                 return Err(refused());
             };
-            if !bindings::is_binding(tcx, f) {
+            // A constructor is what's asked, the last step: what it makes
+            // isn't read of it (ADR 0891).
+            let constructs = matches!(bindings::js_form(tcx, f), bindings::JsForm::New(_));
+            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len()) {
                 return Err(refused());
             }
             let sig = tcx.fn_sig(f).instantiate(tcx, args).skip_normalization().skip_binder();
@@ -442,9 +445,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => bindings::js_path(tcx, f).ok_or_else(refused)?,
                 Some(before) => {
                     let of = sig.inputs().first().map(|this| this.peel_refs());
-                    let name = match bindings::js_form(tcx, f) {
-                        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => name,
-                        _ => return Err(refused()),
+                    let Some(name) = member_read(tcx, f) else {
+                        return Err(refused());
                     };
                     if !bindings::is_method(tcx, f) || of != Some(before.peel_refs()) {
                         return Err(refused());
@@ -459,13 +461,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `performance.now` of `Performance::now`, a method binding of a type
     /// one global holds, the one static of its crate of that type (ADR
-    /// 0597): its path, the global's and the method's JS name.
+    /// 0597): its path, the global's and the method's JS name, or the
+    /// constructor's it makes, `window.ErrorEvent` (ADR 0891).
     fn member_of_global(&self, method: rustc_span::def_id::DefId) -> Option<String> {
         let tcx = self.tcx;
-        let name = match bindings::js_form(tcx, method) {
-            bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => name,
-            _ => return None,
-        };
+        let name = member_read(tcx, method)?;
         let sig = tcx
             .fn_sig(method)
             .instantiate_identity()
@@ -553,6 +553,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         }
+    }
+}
+
+/// What a method binding reads of its receiver, which `js::is_defined`
+/// asks of: its method's or its property's name, or the path of the
+/// constructor it calls `new` of, `ErrorEvent` of `window.ErrorEvent`
+/// (ADR 0891). `None` of another form.
+fn member_read(tcx: rustc_middle::ty::TyCtxt<'_>, method: rustc_span::def_id::DefId) -> Option<String> {
+    match bindings::js_form(tcx, method) {
+        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) | bindings::JsForm::New(name) => Some(name),
+        _ => None,
     }
 }
 

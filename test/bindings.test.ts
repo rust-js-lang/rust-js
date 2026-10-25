@@ -1405,3 +1405,61 @@ pub fn count() -> u32 {
   expect(refused.code).not.toBe(0);
   expect(refused.stderr).toContain("rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`");
 });
+
+// ADR 0891: `new X` of a method is `new this.X(..)`, as `f` of one is
+// `this.f(..)`: a constructor a value holds, a window's. Each part of a
+// path is a member, and a receiver that's a call is the constructor's.
+test("a new binding of a method constructs what its receiver holds", async () => {
+  const dir = fixture("new-of-a-method");
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+use js::JsObject;
+
+pub struct Realm(PhantomData<JsObject>);
+
+pub struct Point(PhantomData<JsObject>);
+
+impl Realm {
+    #[cfg_attr(rust_js, rust_js::link_name = "new Point")]
+    pub fn new_point(&self, x: f64) -> &'static Point {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "new Geometry.Point")]
+    pub fn new_geometry_point(&self, x: f64) -> &'static Point {
+        unreachable!()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.realmOf")]
+pub fn realm_of(name: &str) -> &'static Realm {
+    unreachable!()
+}
+
+pub fn made(realm: &Realm) -> (&'static Point, &'static Point) {
+    (realm.new_point(1.0), realm.new_geometry_point(2.0))
+}
+
+pub fn made_of(name: &str) -> &'static Point {
+    realm_of(name).new_point(3.0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return [new realm.Point(1), new realm.Geometry.Point(2)];");
+  expect(js).toContain("return new (globalThis.realmOf(name).Point)(3);");
+  class Point {
+    constructor(public x: number) {}
+  }
+  const realm = { Point, Geometry: { Point } };
+  const host = globalThis as any;
+  host.realmOf = () => realm;
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    expect(lib.made(realm)).toEqual([new Point(1), new Point(2)]);
+    expect(lib.madeOf("frame")).toEqual(new Point(3));
+    expect(lib.madeOf("frame")).toBeInstanceOf(Point);
+  } finally {
+    delete host.realmOf;
+  }
+});

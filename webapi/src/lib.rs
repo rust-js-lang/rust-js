@@ -88312,6 +88312,2051 @@ impl XSLTProcessor {
 
 }
 
+/// The constructors a window holds, each class's of that window, as TypeScript's
+/// `Window & typeof globalThis` has them: `window.new_error_event(..)` is
+/// `new window.ErrorEvent(..)` (ADR 0891).
+impl Window {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/EventTarget)
+    /// `new window.EventTarget(..)`: this window's class, which is [`event_target::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new EventTarget")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_event_target(&self) -> &'static EventTarget {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
+    /// `new window.Event(..)`: this window's class, which is [`event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_event(&self, r#type: &str, event_init_dict: Option<EventInit>) -> &'static Event {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
+    /// `new window.Text(..)`: this window's class, which is [`text::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Text")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_text(&self, data: Option<&str>) -> &'static Text {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
+    /// `new window.Comment(..)`: this window's class, which is [`comment::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Comment")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_comment(&self, data: Option<&str>) -> &'static Comment {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/Document)
+    /// `new window.Document(..)`: this window's class, which is [`document::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Document")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_document(&self) -> &'static Document {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/DocumentFragment)
+    /// `new window.DocumentFragment(..)`: this window's class, which is [`document_fragment::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentFragment")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_document_fragment(&self) -> &'static DocumentFragment {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/AbortController)
+    /// `new window.AbortController(..)`: this window's class, which is [`abort_controller::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AbortController")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_abort_controller(&self) -> &'static AbortController {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/DataTransfer)
+    /// `new window.DataTransfer(..)`: this window's class, which is [`data_transfer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DataTransfer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_data_transfer(&self) -> &'static DataTransfer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
+    /// `new window.DragEvent(..)`: this window's class, which is [`drag_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_drag_event(&self, r#type: &str, event_init_dict: Option<DragEventInit<'_>>) -> &'static DragEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
+    /// `new window.ToggleEvent(..)`: this window's class, which is [`toggle_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_toggle_event(&self, r#type: &str, event_init_dict: Option<ToggleEventInit<'_>>) -> &'static ToggleEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
+    /// `new window.MessageEvent(..)`: this window's class, which is [`message_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_message_event(&self, r#type: &str, event_init_dict: Option<MessageEventInit<'_>>) -> &'static MessageEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
+    /// `new window.SubmitEvent(..)`: this window's class, which is [`submit_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_submit_event(&self, r#type: &str, event_init_dict: Option<SubmitEventInit<'_>>) -> &'static SubmitEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
+    /// `new window.UIEvent(..)`: this window's class, which is [`ui_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_ui_event(&self, r#type: &str, event_init_dict: Option<UIEventInit<'_>>) -> &'static UIEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
+    /// `new window.FocusEvent(..)`: this window's class, which is [`focus_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_focus_event(&self, r#type: &str, event_init_dict: Option<FocusEventInit<'_>>) -> &'static FocusEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
+    /// `new window.MouseEvent(..)`: this window's class, which is [`mouse_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_mouse_event(&self, r#type: &str, event_init_dict: Option<MouseEventInit<'_>>) -> &'static MouseEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
+    /// `new window.KeyboardEvent(..)`: this window's class, which is [`keyboard_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_keyboard_event(&self, r#type: &str, event_init_dict: Option<KeyboardEventInit<'_>>) -> &'static KeyboardEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
+    /// `new window.InputEvent(..)`: this window's class, which is [`input_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_input_event(&self, r#type: &str, event_init_dict: Option<InputEventInit<'_>>) -> &'static InputEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
+    /// `new window.WheelEvent(..)`: this window's class, which is [`wheel_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_wheel_event(&self, r#type: &str, event_init_dict: Option<WheelEventInit<'_>>) -> &'static WheelEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
+    /// `new window.CompositionEvent(..)`: this window's class, which is [`composition_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_composition_event(&self, r#type: &str, event_init_dict: Option<CompositionEventInit<'_>>) -> &'static CompositionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
+    /// `new window.TouchEvent(..)`: this window's class, which is [`touch_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_touch_event(&self, r#type: &str, event_init_dict: Option<TouchEventInit<'_>>) -> &'static TouchEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
+    /// `new window.AnimationEvent(..)`: this window's class, which is [`animation_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_animation_event(&self, r#type: &str, animation_event_init_dict: Option<AnimationEventInit<'_>>) -> &'static AnimationEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
+    /// `new window.TransitionEvent(..)`: this window's class, which is [`transition_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_transition_event(&self, r#type: &str, transition_event_init_dict: Option<TransitionEventInit<'_>>) -> &'static TransitionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
+    /// `new window.ClipboardEvent(..)`: this window's class, which is [`clipboard_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_clipboard_event(&self, r#type: &str, event_init_dict: Option<ClipboardEventInit<'_>>) -> &'static ClipboardEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
+    /// `new window.PointerEvent(..)`: this window's class, which is [`pointer_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_pointer_event(&self, r#type: &str, event_init_dict: Option<PointerEventInit<'_>>) -> &'static PointerEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
+    /// `new window.DOMRectReadOnly(..)`: this window's class, which is [`dom_rect_read_only::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_rect_read_only(&self, x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRectReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
+    /// `new window.DOMRect(..)`: this window's class, which is [`dom_rect::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_rect(&self, x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
+    /// `new window.MediaQueryListEvent(..)`: this window's class, which is [`media_query_list_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_query_list_event(&self, r#type: &str, event_init_dict: Option<MediaQueryListEventInit<'_>>) -> &'static MediaQueryListEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
+    /// `new window.IntersectionObserver(..)`: this window's class, which is [`intersection_observer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_intersection_observer(&self, callback: Box<dyn FnMut(&[&IntersectionObserverEntry], &IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntry/IntersectionObserverEntry)
+    /// `new window.IntersectionObserverEntry(..)`: this window's class, which is [`intersection_observer_entry::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserverEntry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_intersection_observer_entry(&self, intersection_observer_entry_init: IntersectionObserverEntryInit<'_>) -> &'static IntersectionObserverEntry {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
+    /// `new window.Headers(..)`: this window's class, which is [`headers::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_headers(&self, init: Option<&[&[&str]]>) -> &'static Headers {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
+    /// `new window.Request(..)`: this window's class, which is [`request::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Request")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_request(&self, input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> &'static Request {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
+    /// `new window.Response(..)`: this window's class, which is [`response::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_response(&self, body: Option<&dyn IntoBodyInit>, init: Option<ResponseInit<'_>>) -> &'static Response {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
+    /// `new window.FormData(..)`: this window's class, which is [`form_data::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_form_data(&self, form: Option<&HTMLFormElement>, submitter: Option<&HTMLElement>) -> &'static FormData {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
+    /// `new window.ReadableStream(..)`: this window's class, which is [`readable_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_readable_stream(&self, underlying_source: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/Touch)
+    /// `new window.Touch(..)`: this window's class, which is [`touch::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Touch")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_touch(&self, touch_init_dict: TouchInit<'_>) -> &'static Touch {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/TextEncoder)
+    /// `new window.TextEncoder(..)`: this window's class, which is [`text_encoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_text_encoder(&self) -> &'static TextEncoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
+    /// `new window.TextDecoder(..)`: this window's class, which is [`text_decoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_text_decoder(&self, label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
+    /// `new window.WebAssembly.Module(..)`: this window's class, which is [`web_assembly_module::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_assembly_module(&self, bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> &'static WebAssemblyModule {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
+    /// `new window.WebAssembly.Instance(..)`: this window's class, which is [`web_assembly_instance::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Instance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_assembly_instance(&self, module: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> &'static WebAssemblyInstance {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Memory/Memory)
+    /// `new window.WebAssembly.Memory(..)`: this window's class, which is [`web_assembly_memory::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Memory")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_assembly_memory(&self, descriptor: MemoryDescriptor<'_>) -> &'static WebAssemblyMemory {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
+    /// `new window.Blob(..)`: this window's class, which is [`blob::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_blob(&self, blob_parts: Option<&[BlobPart<'_>]>, options: Option<BlobPropertyBag<'_>>) -> &'static Blob {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
+    /// `new window.File(..)`: this window's class, which is [`file::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new File")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_file(&self, file_bits: &[BlobPart<'_>], file_name: &str, options: Option<FilePropertyBag<'_>>) -> &'static File {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
+    /// `new window.URL(..)`: this window's class, which is [`url::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_url(&self, url: &str, base: Option<&str>) -> &'static URL {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
+    /// `new window.AnalyserNode(..)`: this window's class, which is [`analyser_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnalyserNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_analyser_node(&self, context: &BaseAudioContext, options: Option<AnalyserOptions<'_>>) -> &'static AnalyserNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
+    /// `new window.Animation(..)`: this window's class, which is [`animation::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_animation(&self, effect: Option<&AnimationEffect>, timeline: Option<&AnimationTimeline>) -> &'static Animation {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
+    /// `new window.AnimationPlaybackEvent(..)`: this window's class, which is [`animation_playback_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_animation_playback_event(&self, r#type: &str, event_init_dict: Option<AnimationPlaybackEventInit<'_>>) -> &'static AnimationPlaybackEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/AudioBuffer)
+    /// `new window.AudioBuffer(..)`: this window's class, which is [`audio_buffer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioBuffer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_buffer(&self, options: AudioBufferOptions) -> &'static AudioBuffer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
+    /// `new window.AudioBufferSourceNode(..)`: this window's class, which is [`audio_buffer_source_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioBufferSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_buffer_source_node(&self, context: &BaseAudioContext, options: Option<AudioBufferSourceOptions<'_>>) -> &'static AudioBufferSourceNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
+    /// `new window.AudioContext(..)`: this window's class, which is [`audio_context::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_context(&self, context_options: Option<AudioContextOptions<'_>>) -> &'static AudioContext {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/AudioData)
+    /// `new window.AudioData(..)`: this window's class, which is [`audio_data::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_data(&self, init: AudioDataInit<'_>) -> &'static AudioData {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/AudioDecoder)
+    /// `new window.AudioDecoder(..)`: this window's class, which is [`audio_decoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_decoder(&self, init: AudioDecoderInit<'_>) -> &'static AudioDecoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/AudioEncoder)
+    /// `new window.AudioEncoder(..)`: this window's class, which is [`audio_encoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_encoder(&self, init: AudioEncoderInit<'_>) -> &'static AudioEncoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioProcessingEvent/AudioProcessingEvent)
+    /// `new window.AudioProcessingEvent(..)`: this window's class, which is [`audio_processing_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioProcessingEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_processing_event(&self, r#type: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
+    /// `new window.AudioWorkletNode(..)`: this window's class, which is [`audio_worklet_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AudioWorkletNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_audio_worklet_node(&self, context: &BaseAudioContext, name: &str, options: Option<AudioWorkletNodeOptions<'_>>) -> &'static AudioWorkletNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
+    /// `new window.BiquadFilterNode(..)`: this window's class, which is [`biquad_filter_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new BiquadFilterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_biquad_filter_node(&self, context: &BaseAudioContext, options: Option<BiquadFilterOptions<'_>>) -> &'static BiquadFilterNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BlobEvent/BlobEvent)
+    /// `new window.BlobEvent(..)`: this window's class, which is [`blob_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new BlobEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_blob_event(&self, r#type: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/BroadcastChannel)
+    /// `new window.BroadcastChannel(..)`: this window's class, which is [`broadcast_channel::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new BroadcastChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_broadcast_channel(&self, name: &str) -> &'static BroadcastChannel {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy/ByteLengthQueuingStrategy)
+    /// `new window.ByteLengthQueuingStrategy(..)`: this window's class, which is [`byte_length_queuing_strategy::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ByteLengthQueuingStrategy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_byte_length_queuing_strategy(&self, init: QueuingStrategyInit) -> &'static ByteLengthQueuingStrategy {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeywordValue/CSSKeywordValue)
+    /// `new window.CSSKeywordValue(..)`: this window's class, which is [`css_keyword_value::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSKeywordValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_keyword_value(&self, value: &str) -> &'static CSSKeywordValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathClamp/CSSMathClamp)
+    /// `new window.CSSMathClamp(..)`: this window's class, which is [`css_math_clamp::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathClamp")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_clamp(&self, lower: impl IntoCSSNumberish, value: impl IntoCSSNumberish, upper: impl IntoCSSNumberish) -> &'static CSSMathClamp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathInvert/CSSMathInvert)
+    /// `new window.CSSMathInvert(..)`: this window's class, which is [`css_math_invert::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathInvert")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_invert(&self, arg: impl IntoCSSNumberish) -> &'static CSSMathInvert {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMax/CSSMathMax)
+    /// `new window.CSSMathMax(..)`: this window's class, which is [`css_math_max::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMax")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_max(&self, args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathMax {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathMin/CSSMathMin)
+    /// `new window.CSSMathMin(..)`: this window's class, which is [`css_math_min::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathMin")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_min(&self, args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathMin {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathNegate/CSSMathNegate)
+    /// `new window.CSSMathNegate(..)`: this window's class, which is [`css_math_negate::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathNegate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_negate(&self, arg: impl IntoCSSNumberish) -> &'static CSSMathNegate {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathProduct/CSSMathProduct)
+    /// `new window.CSSMathProduct(..)`: this window's class, which is [`css_math_product::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathProduct")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_product(&self, args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathProduct {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMathSum/CSSMathSum)
+    /// `new window.CSSMathSum(..)`: this window's class, which is [`css_math_sum::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMathSum")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_math_sum(&self, args: impl Rest<dyn IntoCSSNumberish>) -> &'static CSSMathSum {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
+    /// `new window.CSSMatrixComponent(..)`: this window's class, which is [`css_matrix_component::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSMatrixComponent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_matrix_component(&self, matrix: &DOMMatrixReadOnly, options: Option<CSSMatrixComponentOptions>) -> &'static CSSMatrixComponent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPerspective/CSSPerspective)
+    /// `new window.CSSPerspective(..)`: this window's class, which is [`css_perspective::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSPerspective")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_perspective(&self, length: impl IntoCSSPerspectiveValue) -> &'static CSSPerspective {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRotate/CSSRotate)
+    /// `new window.CSSRotate(..)`: this window's class, which is [`css_rotate::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSRotate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_rotate(&self, angle: &CSSNumericValue) -> &'static CSSRotate {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
+    /// `new window.CSSScale(..)`: this window's class, which is [`css_scale::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_scale(&self, x: impl IntoCSSNumberish, y: impl IntoCSSNumberish, z: Option<&dyn IntoCSSNumberish>) -> &'static CSSScale {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkew/CSSSkew)
+    /// `new window.CSSSkew(..)`: this window's class, which is [`css_skew::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkew")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_skew(&self, ax: &CSSNumericValue, ay: &CSSNumericValue) -> &'static CSSSkew {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewX/CSSSkewX)
+    /// `new window.CSSSkewX(..)`: this window's class, which is [`css_skew_x::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkewX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_skew_x(&self, ax: &CSSNumericValue) -> &'static CSSSkewX {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSSkewY/CSSSkewY)
+    /// `new window.CSSSkewY(..)`: this window's class, which is [`css_skew_y::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSSkewY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_skew_y(&self, ay: &CSSNumericValue) -> &'static CSSSkewY {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
+    /// `new window.CSSStyleSheet(..)`: this window's class, which is [`css_style_sheet::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSStyleSheet")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_style_sheet(&self, options: Option<CSSStyleSheetInit<'_>>) -> &'static CSSStyleSheet {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/CSSTransformValue)
+    /// `new window.CSSTransformValue(..)`: this window's class, which is [`css_transform_value::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSTransformValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_transform_value(&self, transforms: &[&CSSTransformComponent]) -> &'static CSSTransformValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
+    /// `new window.CSSTranslate(..)`: this window's class, which is [`css_translate::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSTranslate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_translate(&self, x: &CSSNumericValue, y: &CSSNumericValue, z: Option<&CSSNumericValue>) -> &'static CSSTranslate {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnitValue/CSSUnitValue)
+    /// `new window.CSSUnitValue(..)`: this window's class, which is [`css_unit_value::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnitValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_unit_value(&self, value: f64, unit: &str) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/CSSUnparsedValue)
+    /// `new window.CSSUnparsedValue(..)`: this window's class, which is [`css_unparsed_value::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnparsedValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_unparsed_value(&self, members: &[CSSUnparsedSegment<'_>]) -> &'static CSSUnparsedValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
+    /// `new window.CSSVariableReferenceValue(..)`: this window's class, which is [`css_variable_reference_value::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CSSVariableReferenceValue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_css_variable_reference_value(&self, variable: &str, fallback: Option<&CSSUnparsedValue>) -> &'static CSSVariableReferenceValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
+    /// `new window.ChannelMergerNode(..)`: this window's class, which is [`channel_merger_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelMergerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_channel_merger_node(&self, context: &BaseAudioContext, options: Option<ChannelMergerOptions<'_>>) -> &'static ChannelMergerNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
+    /// `new window.ChannelSplitterNode(..)`: this window's class, which is [`channel_splitter_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ChannelSplitterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_channel_splitter_node(&self, context: &BaseAudioContext, options: Option<ChannelSplitterOptions<'_>>) -> &'static ChannelSplitterNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
+    /// `new window.CloseEvent(..)`: this window's class, which is [`close_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_close_event(&self, r#type: &str, event_init_dict: Option<CloseEventInit<'_>>) -> &'static CloseEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
+    /// `new window.CloseWatcher(..)`: this window's class, which is [`close_watcher::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CloseWatcher")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_close_watcher(&self, options: Option<CloseWatcherOptions<'_>>) -> &'static CloseWatcher {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
+    /// `new window.CommandEvent(..)`: this window's class, which is [`command_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_command_event(&self, r#type: &str, event_init_dict: Option<CommandEventInit<'_>>) -> &'static CommandEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CompressionStream/CompressionStream)
+    /// `new window.CompressionStream(..)`: this window's class, which is [`compression_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CompressionStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_compression_stream(&self, format: &str) -> &'static CompressionStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
+    /// `new window.ConstantSourceNode(..)`: this window's class, which is [`constant_source_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConstantSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_constant_source_node(&self, context: &BaseAudioContext, options: Option<ConstantSourceOptions>) -> &'static ConstantSourceNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
+    /// `new window.ContentVisibilityAutoStateChangeEvent(..)`: this window's class, which is [`content_visibility_auto_state_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_content_visibility_auto_state_change_event(&self, r#type: &str, event_init_dict: Option<ContentVisibilityAutoStateChangeEventInit>) -> &'static ContentVisibilityAutoStateChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
+    /// `new window.ConvolverNode(..)`: this window's class, which is [`convolver_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ConvolverNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_convolver_node(&self, context: &BaseAudioContext, options: Option<ConvolverOptions<'_>>) -> &'static ConvolverNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
+    /// `new window.CookieChangeEvent(..)`: this window's class, which is [`cookie_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_cookie_change_event(&self, r#type: &str, event_init_dict: Option<CookieChangeEventInit<'_>>) -> &'static CookieChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy/CountQueuingStrategy)
+    /// `new window.CountQueuingStrategy(..)`: this window's class, which is [`count_queuing_strategy::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CountQueuingStrategy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_count_queuing_strategy(&self, init: QueuingStrategyInit) -> &'static CountQueuingStrategy {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/CustomElementRegistry)
+    /// `new window.CustomElementRegistry(..)`: this window's class, which is [`custom_element_registry::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CustomElementRegistry")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_custom_element_registry(&self) -> &'static CustomElementRegistry {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
+    /// `new window.CustomEvent(..)`: this window's class, which is [`custom_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_custom_event(&self, r#type: &str, event_init_dict: Option<CustomEventInit<'_>>) -> &'static CustomEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
+    /// `new window.DOMException(..)`: this window's class, which is [`dom_exception::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_exception(&self, message: Option<&str>, name: Option<&str>) -> &'static DOMException {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
+    /// `new window.DOMMatrix(..)`: this window's class, which is [`dom_matrix::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrix")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_matrix(&self, init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrix {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
+    /// `new window.DOMMatrixReadOnly(..)`: this window's class, which is [`dom_matrix_read_only::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrixReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_matrix_read_only(&self, init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrixReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMParser/DOMParser)
+    /// `new window.DOMParser(..)`: this window's class, which is [`dom_parser::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMParser")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_parser(&self) -> &'static DOMParser {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
+    /// `new window.DOMPoint(..)`: this window's class, which is [`dom_point::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_point(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
+    /// `new window.DOMPointReadOnly(..)`: this window's class, which is [`dom_point_read_only::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_point_read_only(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPointReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
+    /// `new window.DOMQuad(..)`: this window's class, which is [`dom_quad::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dom_quad(&self, p1: Option<DOMPointInit>, p2: Option<DOMPointInit>, p3: Option<DOMPointInit>, p4: Option<DOMPointInit>) -> &'static DOMQuad {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DecompressionStream/DecompressionStream)
+    /// `new window.DecompressionStream(..)`: this window's class, which is [`decompression_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DecompressionStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_decompression_stream(&self, format: &str) -> &'static DecompressionStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
+    /// `new window.DelayNode(..)`: this window's class, which is [`delay_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DelayNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_delay_node(&self, context: &BaseAudioContext, options: Option<DelayOptions<'_>>) -> &'static DelayNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
+    /// `new window.DeviceMotionEvent(..)`: this window's class, which is [`device_motion_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_device_motion_event(&self, r#type: &str, event_init_dict: Option<DeviceMotionEventInit>) -> &'static DeviceMotionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
+    /// `new window.DeviceOrientationEvent(..)`: this window's class, which is [`device_orientation_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_device_orientation_event(&self, r#type: &str, event_init_dict: Option<DeviceOrientationEventInit>) -> &'static DeviceOrientationEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEvent/DocumentPictureInPictureEvent)
+    /// `new window.DocumentPictureInPictureEvent(..)`: this window's class, which is [`document_picture_in_picture_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentPictureInPictureEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_document_picture_in_picture_event(&self, r#type: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
+    /// `new window.DocumentTimeline(..)`: this window's class, which is [`document_timeline::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DocumentTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_document_timeline(&self, options: Option<DocumentTimelineOptions>) -> &'static DocumentTimeline {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
+    /// `new window.DynamicsCompressorNode(..)`: this window's class, which is [`dynamics_compressor_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new DynamicsCompressorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_dynamics_compressor_node(&self, context: &BaseAudioContext, options: Option<DynamicsCompressorOptions<'_>>) -> &'static DynamicsCompressorNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/EncodedAudioChunk)
+    /// `new window.EncodedAudioChunk(..)`: this window's class, which is [`encoded_audio_chunk::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new EncodedAudioChunk")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_encoded_audio_chunk(&self, init: EncodedAudioChunkInit<'_>) -> &'static EncodedAudioChunk {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/EncodedVideoChunk)
+    /// `new window.EncodedVideoChunk(..)`: this window's class, which is [`encoded_video_chunk::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new EncodedVideoChunk")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_encoded_video_chunk(&self, init: EncodedVideoChunkInit<'_>) -> &'static EncodedVideoChunk {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
+    /// `new window.ErrorEvent(..)`: this window's class, which is [`error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_error_event(&self, r#type: &str, event_init_dict: Option<ErrorEventInit<'_>>) -> &'static ErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
+    /// `new window.EventSource(..)`: this window's class, which is [`event_source::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_event_source(&self, url: &str, event_source_init_dict: Option<EventSourceInit>) -> &'static EventSource {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
+    /// `new window.FileReader(..)`: this window's class, which is [`file_reader::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FileReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_file_reader(&self) -> &'static FileReader {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFace/FontFace)
+    /// `new window.FontFace(..)`: this window's class, which is [`font_face::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_font_face(&self, family: &str, source: impl IntoStrOrBufferSource, descriptors: Option<FontFaceDescriptors<'_>>) -> &'static FontFace {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
+    /// `new window.FontFaceSetLoadEvent(..)`: this window's class, which is [`font_face_set_load_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_font_face_set_load_event(&self, r#type: &str, event_init_dict: Option<FontFaceSetLoadEventInit<'_>>) -> &'static FontFaceSetLoadEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/FormDataEvent/FormDataEvent)
+    /// `new window.FormDataEvent(..)`: this window's class, which is [`form_data_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new FormDataEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_form_data_event(&self, r#type: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUInternalError/GPUInternalError)
+    /// `new window.GPUInternalError(..)`: this window's class, which is [`gpu_internal_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUInternalError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gpu_internal_error(&self, message: &str) -> &'static GPUInternalError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUOutOfMemoryError/GPUOutOfMemoryError)
+    /// `new window.GPUOutOfMemoryError(..)`: this window's class, which is [`gpu_out_of_memory_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUOutOfMemoryError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gpu_out_of_memory_error(&self, message: &str) -> &'static GPUOutOfMemoryError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
+    /// `new window.GPUPipelineError(..)`: this window's class, which is [`gpu_pipeline_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUPipelineError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gpu_pipeline_error(&self, message: Option<&str>) -> &'static GPUPipelineError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent/GPUUncapturedErrorEvent)
+    /// `new window.GPUUncapturedErrorEvent(..)`: this window's class, which is [`gpu_uncaptured_error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUUncapturedErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gpu_uncaptured_error_event(&self, r#type: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUValidationError/GPUValidationError)
+    /// `new window.GPUValidationError(..)`: this window's class, which is [`gpu_validation_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GPUValidationError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gpu_validation_error(&self, message: &str) -> &'static GPUValidationError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
+    /// `new window.GainNode(..)`: this window's class, which is [`gain_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GainNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gain_node(&self, context: &BaseAudioContext, options: Option<GainOptions<'_>>) -> &'static GainNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
+    /// `new window.GamepadEvent(..)`: this window's class, which is [`gamepad_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_gamepad_event(&self, r#type: &str, event_init_dict: Option<GamepadEventInit<'_>>) -> &'static GamepadEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
+    /// `new window.HashChangeEvent(..)`: this window's class, which is [`hash_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_hash_change_event(&self, r#type: &str, event_init_dict: Option<HashChangeEventInit<'_>>) -> &'static HashChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/Highlight)
+    /// `new window.Highlight(..)`: this window's class, which is [`highlight::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Highlight")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_highlight(&self, initial_ranges: impl Rest<AbstractRange>) -> &'static Highlight {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
+    /// `new window.IDBVersionChangeEvent(..)`: this window's class, which is [`idb_version_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_idb_version_change_event(&self, r#type: &str, event_init_dict: Option<IDBVersionChangeEventInit>) -> &'static IDBVersionChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/IIRFilterNode)
+    /// `new window.IIRFilterNode(..)`: this window's class, which is [`iir_filter_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new IIRFilterNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_iir_filter_node(&self, context: &BaseAudioContext, options: IIRFilterOptions<'_>) -> &'static IIRFilterNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/ImageCapture)
+    /// `new window.ImageCapture(..)`: this window's class, which is [`image_capture::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageCapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_image_capture(&self, video_track: &MediaStreamTrack) -> &'static ImageCapture {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
+    /// `new window.ImageData(..)`: this window's class, which is [`image_data::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_image_data(&self, sw: u32, sh: u32, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/ImageDecoder)
+    /// `new window.ImageDecoder(..)`: this window's class, which is [`image_decoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ImageDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_image_decoder(&self, init: ImageDecoderInit<'_>) -> &'static ImageDecoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
+    /// `new window.KeyframeEffect(..)`: this window's class, which is [`keyframe_effect::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new KeyframeEffect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_keyframe_effect(&self, target: &Element, keyframes: &dyn core::any::Any, options: Option<&dyn IntoNumberOrKeyframeEffectOptions>) -> &'static KeyframeEffect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
+    /// `new window.MIDIConnectionEvent(..)`: this window's class, which is [`midi_connection_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_midi_connection_event(&self, r#type: &str, event_init_dict: Option<MIDIConnectionEventInit<'_>>) -> &'static MIDIConnectionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
+    /// `new window.MIDIMessageEvent(..)`: this window's class, which is [`midi_message_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_midi_message_event(&self, r#type: &str, event_init_dict: Option<MIDIMessageEventInit<'_>>) -> &'static MIDIMessageEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceNode/MediaElementAudioSourceNode)
+    /// `new window.MediaElementAudioSourceNode(..)`: this window's class, which is [`media_element_audio_source_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaElementAudioSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_element_audio_source_node(&self, context: &AudioContext, options: MediaElementAudioSourceOptions<'_>) -> &'static MediaElementAudioSourceNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
+    /// `new window.MediaEncryptedEvent(..)`: this window's class, which is [`media_encrypted_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_encrypted_event(&self, r#type: &str, event_init_dict: Option<MediaEncryptedEventInit<'_>>) -> &'static MediaEncryptedEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent/MediaKeyMessageEvent)
+    /// `new window.MediaKeyMessageEvent(..)`: this window's class, which is [`media_key_message_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaKeyMessageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_key_message_event(&self, r#type: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
+    /// `new window.MediaMetadata(..)`: this window's class, which is [`media_metadata::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaMetadata")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_metadata(&self, init: Option<MediaMetadataInit<'_>>) -> &'static MediaMetadata {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
+    /// `new window.MediaRecorder(..)`: this window's class, which is [`media_recorder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaRecorder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_recorder(&self, stream: &MediaStream, options: Option<MediaRecorderOptions<'_>>) -> &'static MediaRecorder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/MediaSource)
+    /// `new window.MediaSource(..)`: this window's class, which is [`media_source::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaSource")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_source(&self) -> &'static MediaSource {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/MediaStream)
+    /// `new window.MediaStream(..)`: this window's class, which is [`media_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_stream(&self) -> &'static MediaStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
+    /// `new window.MediaStreamAudioDestinationNode(..)`: this window's class, which is [`media_stream_audio_destination_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioDestinationNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_stream_audio_destination_node(&self, context: &AudioContext, options: Option<AudioNodeOptions<'_>>) -> &'static MediaStreamAudioDestinationNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceNode/MediaStreamAudioSourceNode)
+    /// `new window.MediaStreamAudioSourceNode(..)`: this window's class, which is [`media_stream_audio_source_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioSourceNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_stream_audio_source_node(&self, context: &AudioContext, options: MediaStreamAudioSourceOptions<'_>) -> &'static MediaStreamAudioSourceNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEvent/MediaStreamTrackEvent)
+    /// `new window.MediaStreamTrackEvent(..)`: this window's class, which is [`media_stream_track_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamTrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_media_stream_track_event(&self, r#type: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageChannel/MessageChannel)
+    /// `new window.MessageChannel(..)`: this window's class, which is [`message_channel::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MessageChannel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_message_channel(&self) -> &'static MessageChannel {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/MutationObserver)
+    /// `new window.MutationObserver(..)`: this window's class, which is [`mutation_observer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new MutationObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_mutation_observer(&self, callback: Box<dyn FnMut(&[&MutationRecord], &MutationObserver)>) -> &'static MutationObserver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/NavigateEvent)
+    /// `new window.NavigateEvent(..)`: this window's class, which is [`navigate_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new NavigateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_navigate_event(&self, r#type: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/NavigationCurrentEntryChangeEvent)
+    /// `new window.NavigationCurrentEntryChangeEvent(..)`: this window's class, which is [`navigation_current_entry_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new NavigationCurrentEntryChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_navigation_current_entry_change_event(&self, r#type: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
+    /// `new window.Notification(..)`: this window's class, which is [`notification::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Notification")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_notification(&self, title: &str, options: Option<NotificationOptions<'_>>) -> &'static Notification {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEvent/OfflineAudioCompletionEvent)
+    /// `new window.OfflineAudioCompletionEvent(..)`: this window's class, which is [`offline_audio_completion_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new OfflineAudioCompletionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_offline_audio_completion_event(&self, r#type: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/OfflineAudioContext)
+    /// `new window.OfflineAudioContext(..)`: this window's class, which is [`offline_audio_context::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new OfflineAudioContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_offline_audio_context(&self, context_options: OfflineAudioContextOptions<'_>) -> &'static OfflineAudioContext {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/OffscreenCanvas)
+    /// `new window.OffscreenCanvas(..)`: this window's class, which is [`offscreen_canvas::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new OffscreenCanvas")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_offscreen_canvas(&self, width: f64, height: f64) -> &'static OffscreenCanvas {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Origin/Origin)
+    /// `new window.Origin(..)`: this window's class, which is [`origin::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Origin")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_origin(&self) -> &'static Origin {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
+    /// `new window.OscillatorNode(..)`: this window's class, which is [`oscillator_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new OscillatorNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_oscillator_node(&self, context: &BaseAudioContext, options: Option<OscillatorOptions<'_>>) -> &'static OscillatorNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
+    /// `new window.OverconstrainedError(..)`: this window's class, which is [`overconstrained_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new OverconstrainedError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_overconstrained_error(&self, constraint: &str, message: Option<&str>) -> &'static OverconstrainedError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
+    /// `new window.PageRevealEvent(..)`: this window's class, which is [`page_reveal_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_page_reveal_event(&self, r#type: &str, event_init_dict: Option<PageRevealEventInit<'_>>) -> &'static PageRevealEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
+    /// `new window.PageSwapEvent(..)`: this window's class, which is [`page_swap_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_page_swap_event(&self, r#type: &str, event_init_dict: Option<PageSwapEventInit<'_>>) -> &'static PageSwapEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
+    /// `new window.PageTransitionEvent(..)`: this window's class, which is [`page_transition_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_page_transition_event(&self, r#type: &str, event_init_dict: Option<PageTransitionEventInit>) -> &'static PageTransitionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
+    /// `new window.PannerNode(..)`: this window's class, which is [`panner_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_panner_node(&self, context: &BaseAudioContext, options: Option<PannerOptions<'_>>) -> &'static PannerNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
+    /// `new window.Path2D(..)`: this window's class, which is [`path2_d::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Path2D")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_path2_d(&self, path: Option<&dyn IntoPath2DOrStr>) -> &'static Path2D {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
+    /// `new window.PaymentMethodChangeEvent(..)`: this window's class, which is [`payment_method_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_payment_method_change_event(&self, r#type: &str, event_init_dict: Option<PaymentMethodChangeEventInit<'_>>) -> &'static PaymentMethodChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
+    /// `new window.PaymentRequest(..)`: this window's class, which is [`payment_request::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_payment_request(&self, method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: Option<PaymentOptions<'_>>) -> &'static PaymentRequest {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
+    /// `new window.PaymentRequestUpdateEvent(..)`: this window's class, which is [`payment_request_update_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_payment_request_update_event(&self, r#type: &str, event_init_dict: Option<PaymentRequestUpdateEventInit>) -> &'static PaymentRequestUpdateEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
+    /// `new window.PerformanceMark(..)`: this window's class, which is [`performance_mark::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_performance_mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/PerformanceObserver)
+    /// `new window.PerformanceObserver(..)`: this window's class, which is [`performance_observer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_performance_observer(&self, callback: Box<dyn FnMut(&PerformanceObserverEntryList, &PerformanceObserver, PerformanceObserverCallbackOptions)>) -> &'static PerformanceObserver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
+    /// `new window.PeriodicWave(..)`: this window's class, which is [`periodic_wave::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PeriodicWave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_periodic_wave(&self, context: &BaseAudioContext, options: Option<PeriodicWaveOptions<'_>>) -> &'static PeriodicWave {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent/PictureInPictureEvent)
+    /// `new window.PictureInPictureEvent(..)`: this window's class, which is [`picture_in_picture_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PictureInPictureEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_picture_in_picture_event(&self, r#type: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
+    /// `new window.PopStateEvent(..)`: this window's class, which is [`pop_state_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_pop_state_event(&self, r#type: &str, event_init_dict: Option<PopStateEventInit<'_>>) -> &'static PopStateEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
+    /// `new window.ProcessingInstruction(..)`: this window's class, which is [`processing_instruction::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProcessingInstruction")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_processing_instruction(&self, target: &str, data: Option<&str>) -> &'static ProcessingInstruction {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
+    /// `new window.ProgressEvent(..)`: this window's class, which is [`progress_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_progress_event(&self, r#type: &str, event_init_dict: Option<ProgressEventInit>) -> &'static ProgressEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEvent/PromiseRejectionEvent)
+    /// `new window.PromiseRejectionEvent(..)`: this window's class, which is [`promise_rejection_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new PromiseRejectionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_promise_rejection_event(&self, r#type: &str, event_init_dict: PromiseRejectionEventInit<'_>) -> &'static PromiseRejectionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
+    /// `new window.RTCDTMFToneChangeEvent(..)`: this window's class, which is [`rtcdtmf_tone_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtcdtmf_tone_change_event(&self, r#type: &str, event_init_dict: Option<RTCDTMFToneChangeEventInit<'_>>) -> &'static RTCDTMFToneChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEvent/RTCDataChannelEvent)
+    /// `new window.RTCDataChannelEvent(..)`: this window's class, which is [`rtc_data_channel_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCDataChannelEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_data_channel_event(&self, r#type: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
+    /// `new window.RTCEncodedAudioFrame(..)`: this window's class, which is [`rtc_encoded_audio_frame::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedAudioFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_encoded_audio_frame(&self, original_frame: &RTCEncodedAudioFrame, options: Option<RTCEncodedAudioFrameOptions>) -> &'static RTCEncodedAudioFrame {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
+    /// `new window.RTCEncodedVideoFrame(..)`: this window's class, which is [`rtc_encoded_video_frame::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedVideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_encoded_video_frame(&self, original_frame: &RTCEncodedVideoFrame, options: Option<RTCEncodedVideoFrameOptions>) -> &'static RTCEncodedVideoFrame {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
+    /// `new window.RTCError(..)`: this window's class, which is [`rtc_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_error(&self, init: RTCErrorInit<'_>, message: Option<&str>) -> &'static RTCError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCErrorEvent/RTCErrorEvent)
+    /// `new window.RTCErrorEvent(..)`: this window's class, which is [`rtc_error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_error_event(&self, r#type: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
+    /// `new window.RTCIceCandidate(..)`: this window's class, which is [`rtc_ice_candidate::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceCandidate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_ice_candidate(&self, candidate_init_dict: Option<RTCLocalIceCandidateInit<'_>>) -> &'static RTCIceCandidate {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/RTCIceTransport)
+    /// `new window.RTCIceTransport(..)`: this window's class, which is [`rtc_ice_transport::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceTransport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_ice_transport(&self) -> &'static RTCIceTransport {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
+    /// `new window.RTCPeerConnection(..)`: this window's class, which is [`rtc_peer_connection::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_peer_connection(&self, configuration: Option<RTCConfiguration>) -> &'static RTCPeerConnection {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/RTCPeerConnectionIceErrorEvent)
+    /// `new window.RTCPeerConnectionIceErrorEvent(..)`: this window's class, which is [`rtc_peer_connection_ice_error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_peer_connection_ice_error_event(&self, r#type: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
+    /// `new window.RTCPeerConnectionIceEvent(..)`: this window's class, which is [`rtc_peer_connection_ice_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_peer_connection_ice_event(&self, r#type: &str, event_init_dict: Option<RTCPeerConnectionIceEventInit<'_>>) -> &'static RTCPeerConnectionIceEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
+    /// `new window.RTCRtpScriptTransform(..)`: this window's class, which is [`rtc_rtp_script_transform::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_rtp_script_transform(&self, worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters, options: Option<&dyn IntoUnknown>, transfer: Option<&[&dyn core::any::Any]>) -> &'static RTCRtpScriptTransform {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSessionDescription/RTCSessionDescription)
+    /// `new window.RTCSessionDescription(..)`: this window's class, which is [`rtc_session_description::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCSessionDescription")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_session_description(&self, description_init_dict: RTCSessionDescriptionInit) -> &'static RTCSessionDescription {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent/RTCTrackEvent)
+    /// `new window.RTCTrackEvent(..)`: this window's class, which is [`rtc_track_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new RTCTrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_rtc_track_event(&self, r#type: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
+    /// `new window.Range(..)`: this window's class, which is [`range::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Range")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_range(&self) -> &'static Range {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/ReadableStreamBYOBReader)
+    /// `new window.ReadableStreamBYOBReader(..)`: this window's class, which is [`readable_stream_byob_reader::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStreamBYOBReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_readable_stream_byob_reader(&self, stream: &ReadableStream) -> &'static ReadableStreamBYOBReader {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/ReadableStreamDefaultReader)
+    /// `new window.ReadableStreamDefaultReader(..)`: this window's class, which is [`readable_stream_default_reader::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStreamDefaultReader")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_readable_stream_default_reader(&self, stream: &ReadableStream) -> &'static ReadableStreamDefaultReader {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
+    /// `new window.ReportingObserver(..)`: this window's class, which is [`reporting_observer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_reporting_observer(&self, callback: Box<dyn FnMut(&[Report], &ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/ResizeObserver)
+    /// `new window.ResizeObserver(..)`: this window's class, which is [`resize_observer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ResizeObserver")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_resize_observer(&self, callback: Box<dyn FnMut(&[&ResizeObserverEntry], &ResizeObserver)>) -> &'static ResizeObserver {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
+    /// `new window.Sanitizer(..)`: this window's class, which is [`sanitizer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Sanitizer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_sanitizer(&self, configuration: Option<&dyn IntoSanitizerConfigOrStr>) -> &'static Sanitizer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
+    /// `new window.ScrollTimeline(..)`: this window's class, which is [`scroll_timeline::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ScrollTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_scroll_timeline(&self, options: Option<ScrollTimelineOptions<'_>>) -> &'static ScrollTimeline {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
+    /// `new window.SecurityPolicyViolationEvent(..)`: this window's class, which is [`security_policy_violation_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_security_policy_violation_event(&self, r#type: &str, event_init_dict: Option<SecurityPolicyViolationEventInit<'_>>) -> &'static SecurityPolicyViolationEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
+    /// `new window.SharedWorker(..)`: this window's class, which is [`shared_worker::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SharedWorker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_shared_worker(&self, script_url: &str, options: Option<&dyn IntoStrOrSharedWorkerOptions>) -> &'static SharedWorker {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent/SpeechRecognitionErrorEvent)
+    /// `new window.SpeechRecognitionErrorEvent(..)`: this window's class, which is [`speech_recognition_error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_speech_recognition_error_event(&self, r#type: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/SpeechRecognitionEvent)
+    /// `new window.SpeechRecognitionEvent(..)`: this window's class, which is [`speech_recognition_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_speech_recognition_event(&self, r#type: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEvent/SpeechSynthesisErrorEvent)
+    /// `new window.SpeechSynthesisErrorEvent(..)`: this window's class, which is [`speech_synthesis_error_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisErrorEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_speech_synthesis_error_event(&self, r#type: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/SpeechSynthesisEvent)
+    /// `new window.SpeechSynthesisEvent(..)`: this window's class, which is [`speech_synthesis_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_speech_synthesis_event(&self, r#type: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
+    /// `new window.SpeechSynthesisUtterance(..)`: this window's class, which is [`speech_synthesis_utterance::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisUtterance")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_speech_synthesis_utterance(&self, text: Option<&str>) -> &'static SpeechSynthesisUtterance {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StaticRange/StaticRange)
+    /// `new window.StaticRange(..)`: this window's class, which is [`static_range::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new StaticRange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_static_range(&self, init: StaticRangeInit<'_>) -> &'static StaticRange {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
+    /// `new window.StereoPannerNode(..)`: this window's class, which is [`stereo_panner_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new StereoPannerNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_stereo_panner_node(&self, context: &BaseAudioContext, options: Option<StereoPannerOptions<'_>>) -> &'static StereoPannerNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
+    /// `new window.StorageEvent(..)`: this window's class, which is [`storage_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_storage_event(&self, r#type: &str, event_init_dict: Option<StorageEventInit<'_>>) -> &'static StorageEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
+    /// `new window.TaskController(..)`: this window's class, which is [`task_controller::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TaskController")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_task_controller(&self, init: Option<TaskControllerInit<'_>>) -> &'static TaskController {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEvent/TaskPriorityChangeEvent)
+    /// `new window.TaskPriorityChangeEvent(..)`: this window's class, which is [`task_priority_change_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TaskPriorityChangeEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_task_priority_change_event(&self, r#type: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
+    /// `new window.TextDecoderStream(..)`: this window's class, which is [`text_decoder_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_text_decoder_stream(&self, label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoderStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoderStream/TextEncoderStream)
+    /// `new window.TextEncoderStream(..)`: this window's class, which is [`text_encoder_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TextEncoderStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_text_encoder_stream(&self) -> &'static TextEncoderStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
+    /// `new window.TrackEvent(..)`: this window's class, which is [`track_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_track_event(&self, r#type: &str, event_init_dict: Option<TrackEventInit<'_>>) -> &'static TrackEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
+    /// `new window.TransformStream(..)`: this window's class, which is [`transform_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_transform_stream(&self, transformer: Option<&dyn core::any::Any>, writable_strategy: Option<QueuingStrategy>, readable_strategy: Option<QueuingStrategy>) -> &'static TransformStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
+    /// `new window.URLPattern(..)`: this window's class, which is [`url_pattern::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_url_pattern(&self, input: impl IntoURLPatternInput, base_url: &str, options: Option<URLPatternOptions>) -> &'static URLPattern {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
+    /// `new window.URLSearchParams(..)`: this window's class, which is [`url_search_params::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_url_search_params(&self, init: Option<&dyn IntoListOrStr>) -> &'static URLSearchParams {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/VTTCue)
+    /// `new window.VTTCue(..)`: this window's class, which is [`vtt_cue::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VTTCue")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_vtt_cue(&self, start_time: f64, end_time: f64, text: &str) -> &'static VTTCue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/VTTRegion)
+    /// `new window.VTTRegion(..)`: this window's class, which is [`vtt_region::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VTTRegion")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_vtt_region(&self) -> &'static VTTRegion {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
+    /// `new window.VideoColorSpace(..)`: this window's class, which is [`video_color_space::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoColorSpace")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_video_color_space(&self, init: Option<VideoColorSpaceInit>) -> &'static VideoColorSpace {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/VideoDecoder)
+    /// `new window.VideoDecoder(..)`: this window's class, which is [`video_decoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoDecoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_video_decoder(&self, init: VideoDecoderInit<'_>) -> &'static VideoDecoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/VideoEncoder)
+    /// `new window.VideoEncoder(..)`: this window's class, which is [`video_encoder::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoEncoder")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_video_encoder(&self, init: VideoEncoderInit<'_>) -> &'static VideoEncoder {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/VideoFrame)
+    /// `new window.VideoFrame(..)`: this window's class, which is [`video_frame::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new VideoFrame")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_video_frame(&self, image: impl IntoCanvasImageSource, init: Option<VideoFrameInit<'_>>) -> &'static VideoFrame {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTimeline/ViewTimeline)
+    /// `new window.ViewTimeline(..)`: this window's class, which is [`view_timeline::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ViewTimeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_view_timeline(&self, options: Option<ViewTimelineOptions<'_>>) -> &'static ViewTimeline {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
+    /// `new window.WaveShaperNode(..)`: this window's class, which is [`wave_shaper_node::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WaveShaperNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_wave_shaper_node(&self, context: &BaseAudioContext, options: Option<WaveShaperOptions<'_>>) -> &'static WaveShaperNode {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
+    /// `new window.WebGLContextEvent(..)`: this window's class, which is [`web_gl_context_event::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_gl_context_event(&self, r#type: &str, event_init: Option<WebGLContextEventInit<'_>>) -> &'static WebGLContextEvent {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
+    /// `new window.WebSocket(..)`: this window's class, which is [`web_socket::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_socket(&self, url: &str, protocols: Option<&dyn IntoStrOrList>) -> &'static WebSocket {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
+    /// `new window.WebTransport(..)`: this window's class, which is [`web_transport::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_transport(&self, url: &str, options: Option<WebTransportOptions<'_>>) -> &'static WebTransport {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
+    /// `new window.WebTransportError(..)`: this window's class, which is [`web_transport_error::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_web_transport_error(&self, message: Option<&str>, options: Option<WebTransportErrorOptions<'_>>) -> &'static WebTransportError {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
+    /// `new window.Worker(..)`: this window's class, which is [`worker::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Worker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_worker(&self, script_url: &str, options: Option<WorkerOptions<'_>>) -> &'static Worker {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
+    /// `new window.WritableStream(..)`: this window's class, which is [`writable_stream::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_writable_stream(&self, underlying_sink: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static WritableStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/WritableStreamDefaultWriter)
+    /// `new window.WritableStreamDefaultWriter(..)`: this window's class, which is [`writable_stream_default_writer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new WritableStreamDefaultWriter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_writable_stream_default_writer(&self, stream: &WritableStream) -> &'static WritableStreamDefaultWriter {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
+    /// `new window.XMLHttpRequest(..)`: this window's class, which is [`xml_http_request::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new XMLHttpRequest")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_xml_http_request(&self) -> &'static XMLHttpRequest {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLSerializer/XMLSerializer)
+    /// `new window.XMLSerializer(..)`: this window's class, which is [`xml_serializer::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new XMLSerializer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_xml_serializer(&self) -> &'static XMLSerializer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathEvaluator/XPathEvaluator)
+    /// `new window.XPathEvaluator(..)`: this window's class, which is [`x_path_evaluator::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new XPathEvaluator")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_x_path_evaluator(&self) -> &'static XPathEvaluator {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/XSLTProcessor)
+    /// `new window.XSLTProcessor(..)`: this window's class, which is [`xslt_processor::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new XSLTProcessor")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn new_xslt_processor(&self) -> &'static XSLTProcessor {
+        unreachable!()
+    }
+
+}
+
 /// The [`WebAssembly`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly) namespace.
 
 pub mod web_assembly {

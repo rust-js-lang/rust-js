@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md).
 Amended by [0645](0645-is-defined-of-a-static-is-of-the-static.md): a
 static of a path, `js::symbol::to_string_tag`, asks each part too.
+Extended by [0891](0891-a-windows-constructor-is-the-windows.md): a
+constructor a value holds is the last step.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: what's asked of the
 host, part by part, as JS asks it.
