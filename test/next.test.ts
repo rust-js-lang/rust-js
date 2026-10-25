@@ -915,7 +915,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   const postJsx = readFileSync(join(dir, "app/post.jsx"), "utf8");
   expect(postJsx).toContain("await prefetch();\n  await navigation();");
   expect(postJsx).toContain('export const unstable_paramMatching = { slug: "blocking" };');
-  expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event) {');
+  expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event != null) {');
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
   expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');

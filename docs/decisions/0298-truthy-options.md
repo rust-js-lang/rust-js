@@ -123,7 +123,8 @@ Rust's `None` is JS's `null` and `undefined` alone (ADR 0030).
   }` is `state ?? blank`.
 - **JSX reads `error != null` in place**, as it read `!error`: a test of
   a value that reads alike, `{error != null && <div>..</div>}`, no `const
-  condition` before the element.
+  condition` before the element. Its reading of a `!` alone, which only an
+  `Option`'s `!error` was given, is gone with it.
 - **A `let`'s binding a `return` follows is set first**, as it was of
   every `Option` whose test is `!= null` (`tail_returns`): `const loaded$1
   = loaded; if (loaded$1 == null) { return; }` where `if (!loaded) {
@@ -155,3 +156,8 @@ that only gives a value is one expression" (`state ?? blank`). Mutations
 (`std_types/option.ts`), `question-truth-test` (`std_types/result.ts`),
 `filter-map-truth` (`combinators/adapters.ts`), `jsx-null-test-captured`
 (`jsx.ts`) and `present-value-coalesce-kept` (`mir/tidy/branches.ts`).
+What a value's truth still is, `js::truthy(v)`'s `!!v`, is held where the
+`Option`'s had held it: `test/lowering-written-branches.test.ts`, "a
+value's truth or else a bool is a bool part by part", and
+`test/jsx-children.test.ts`, "a prop under a child's truth test is its
+value there".

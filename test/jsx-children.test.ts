@@ -854,3 +854,21 @@ pub fn Chosen(c: bool) -> JSX::Element {
   expect(log).toEqual([1, 2, 4]);
   expect(chosen.key).toBe("2");
 });
+
+// A prop inside a child shown where a value's truth holds, `js::truthy(label)`,
+// is what it is there: `title="x"`, not `title={label ? "x" : undefined}`,
+// as the test it's under says `label` is truthy.
+test("a prop under a child's truth test is its value there", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::js::Unknown;
+use react::{JSX, jsx};
+pub fn Truthy(label: Option<&'static Unknown>) -> JSX::Element {
+    jsx! { <div>{if react::js::truthy(label) { Some(jsx! { <b title={react::js::truthy(label).then_some("x")} /> }) } else { None }}</div> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('return <div>{!!label && <b title="x" />}</div>;');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(lib.Truthy("a")), renderToStaticMarkup(lib.Truthy(""))]).toEqual(['<div><b title="x"></b></div>', "<div></div>"]);
+});

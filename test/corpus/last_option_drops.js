@@ -22,7 +22,7 @@ function main() {
   );
   const value = $someValue(noneLast);
   try {
-    console.log(`${noneLast != null} ${noneLast != null && !value}`);
+    console.log(`${noneLast != null} ${noneLast != null && value == null}`);
 
     const someLast = $lastDropping(
       $iter([undefined, [2]]),

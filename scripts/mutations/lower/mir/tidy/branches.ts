@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),\n",
     replace: "        false => test,\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"],
   },
   {
     name: "mir-tidy-implied-guard-kept",
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),\n",
     "replace": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
   },
   {
     "name": "negated-value-untruthed",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),\n",
     "replace": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
   },
   {
     "name": "negated-or-untruthed",
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),\n",
     "replace": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
   },
   {
     "name": "block-returns-kept",
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n",
     "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "an or chain"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
   },
   {
     "name": "mir-tidy-bool-field-unknown",
@@ -266,14 +266,6 @@ export const mutations: Mutation[] = [
     "find": "                StmtKind::If(or_all(a, b), then, None)\n",
     "replace": "                StmtKind::If(a, then, None)\n",
     "tests": ["test/lowering-matches.test.ts", "-t", "or-pattern's matches is an or"]
-  },
-  {
-    "name": "mir-tidy-same-test-truth",
-    "breaks": "`!!error` isn't the same test as `error`, so a value made where an object's truth holds stays a `const`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "    let (a, b) = (truth(a), truth(b));\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-bool-call-unknown",
@@ -501,5 +493,13 @@ export const mutations: Mutation[] = [
     find: "        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),\n",
     replace: "",
     tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
+  },
+  {
+    "name": "mir-tidy-same-test-truth",
+    "breaks": "`!!label` isn't the same test as `label`, so a prop under a child's truth test is `label ? \"x\" : undefined`, not `\"x\"`",
+    "file": "src/lower/mir/tidy/branches.rs",
+    "find": "    let (a, b) = (truth(a), truth(b));\n",
+    "replace": "",
+    "tests": ["test/jsx-children.test.ts", "-t", "a prop under a child's truth test is its value there"]
   },
 ];

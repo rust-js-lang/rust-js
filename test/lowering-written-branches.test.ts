@@ -296,3 +296,49 @@ pub fn many(counts: &Counts, debug: bool) -> bool {
   const many = lib.many as unknown as (counts: { count?: number }, debug: boolean) => boolean;
   expect([many({ count: 4 }, true), many({ count: 4 }, false), many({ count: 2 }, true), many({}, true)]).toEqual([true, false, false, false]);
 });
+
+// A conditional of a `bool` and a value's negated truth, `!js::truthy(v)`,
+// is a `bool` part by part: `!!v && f()`, never `v && f()`, whose `v` is
+// the object, not `false`; `!!v`, not `v`, as a value; and `!!v || f()`,
+// of a chain each part's.
+test("a value's truth or else a bool is a bool part by part", async () => {
+  const { js, lib } = await compiled("negated-truth-bool", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.supportsIt")]
+#[allow(unused_variables)]
+fn supports(what: &str) -> bool {
+    unreachable!()
+}
+
+pub fn and_then(v: Option<&Unknown>) -> bool {
+    if !js::truthy(v) { false } else { supports("a") }
+}
+
+pub fn value(v: Option<&Unknown>) -> bool {
+    if !js::truthy(v) { false } else { true }
+}
+
+pub fn or_else(v: Option<&Unknown>) -> bool {
+    if !js::truthy(v) { supports("b") } else { true }
+}
+
+pub fn unless(v: Option<&Unknown>, n: u32) -> bool {
+    if !js::truthy(v) && n != 0 { supports("d") } else { true }
+}
+
+pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
+    if n != 0 && js::truthy(v) { 1 } else { 2 }
+}
+`);
+  expect(js).toContain('return !!v && globalThis.supportsIt("a");');
+  expect(js).toContain("return !!v;");
+  expect(js).toContain('return !!v || globalThis.supportsIt("b");');
+  // A chain's negation part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
+  expect(js).toContain('return !!v || n === 0 || globalThis.supportsIt("d");');
+  // A test reads each part by its truth, `v`, not `!!v`.
+  expect(js).toContain("return n !== 0 && v ? 1 : 2;");
+  const globals = globalThis as typeof globalThis & { supportsIt?: (what: string) => boolean };
+  globals.supportsIt = () => true;
+  const object = {};
+  expect([lib.andThen(object as never), lib.value(object as never), lib.orElse(object as never), lib.andThen(0 as never)]).toEqual([true, true, true, false]);
+});

@@ -107,14 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-props.test.ts", "-t", "no dictionary"],
   },
   {
-    name: "negation-spilled",
-    breaks: "a negation of what reads the same is spilled before a later child's statement: `const condition = !done`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),\n",
-    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev.s Preview tests its error in place"],
-  },
-  {
     name: "tag-as-children",
     breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
     file: "src/lower/jsx.rs",
@@ -176,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx-children.test.ts", "-t", "JSX tests an Option of an object against null"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
   },
   {
     name: "children-tuple-not-recursed",
@@ -184,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
-    tests: ["test/jsx-types.test.ts", "-t", "an element's props are an ElementType, rendered as a tag"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
   },
   {
     name: "base-spread-last",
@@ -256,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "        if !matches!(none.kind, js::ExprKind::Undefined) {\n            return value;\n        }",
     replace: "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
-    tests: ["test/react.test.ts", "-t", "React components are hand-written JSX, and React runs them"],
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
   },
   {
     name: "component-child-shown-ternary",

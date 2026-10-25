@@ -52,11 +52,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "test-parts-kept",
-    breaks: "`if (a && !!text)`, not `if (a && text)`",
+    breaks: "`if (a && !!text)`, not `if (a && text)`: a part of an `&&` a test reads is kept as it is, not read as a test",
     file: "src/js/expr_walk.rs",
     find: "                        _ => out.push(e.as_test(changed)),\n",
     replace: "                        _ => out.push(e.clone()),\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR read as written"],
+    tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS"],
   },
   {
     name: "reads-same-index-variable",

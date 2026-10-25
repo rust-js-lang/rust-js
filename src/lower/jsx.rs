@@ -119,8 +119,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
-            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
-            // `error != null`, an `Option`'s test (ADR 0298), as `!error` is.
+            // `error != null`, an `Option`'s test (ADR 0298, amended), reads as
+            // `error` does.
             js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {
                 self.reads_alike(a, out)
             }
