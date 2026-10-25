@@ -401,14 +401,44 @@ fn compound(module: &mut js::Module) {
             };
             let compounds = matches!(op, Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce)
                 || matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor | Op::Shl | Op::Shr | Op::UShr);
-            if compounds && js::same_path(lhs, target) {
+            if !compounds {
+                continue;
+            }
+            // An item's, its index checked on one side, `v[i] = v[$at(v, i)]
+            // | lane`: the checked place's, `v[$at(v, i)] |= lane`, which
+            // checks it, reads it, evaluates `lane` and writes, in that order,
+            // as the assignment did (ADR 0894, amended).
+            let checked = match (checked_item(target, lhs), checked_item(lhs, target)) {
+                (true, _) => Some(std::mem::replace(target, Expr::undefined())),
+                (_, true) => Some(std::mem::replace(&mut **lhs, Expr::undefined())),
+                _ => js::same_path(lhs, target).then(|| std::mem::replace(target, Expr::undefined())),
+            };
+            if let Some(target) = checked {
                 let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::undefined()));
-                let target = std::mem::replace(target, Expr::undefined());
                 stmt.kind = StmtKind::Compound(op, target, rhs);
             }
         }
     };
     js::each_item_block_mut(&mut module.items, &mut each);
+}
+
+/// Whether `checked` is `v[$at(v, i)]` of the item `other` is, `v[i]`, its
+/// index checked: the same array's path, the same key.
+fn checked_item(checked: &Expr, other: &Expr) -> bool {
+    let (ExprKind::Index(items, at), ExprKind::Index(same, key)) = (&checked.kind, &other.kind) else {
+        return false;
+    };
+    let ExprKind::Call(helper, args) = &at.kind else {
+        return false;
+    };
+    let [of, index] = args.as_slice() else {
+        return false;
+    };
+    helper.helper_name().is_some_and(crate::runtime::checks_an_index)
+        && js::same_path(items, same)
+        && js::same_path(of, items)
+        && (js::same_path(index, key)
+            || matches!((&index.kind, &key.kind), (ExprKind::Num(a), ExprKind::Num(b)) if a == b))
 }
 
 /// A function made readable.

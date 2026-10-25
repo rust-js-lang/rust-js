@@ -27,7 +27,7 @@ function main() {
 
   const names = ["x", "y"];
   const owned = $cycle(names).take(5).toArray();
-  owned[$at(owned, 0)] = owned[0] + "!";
+  owned[$at(owned, 0)] += "!";
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
 
   const lists = [[1], [2]];

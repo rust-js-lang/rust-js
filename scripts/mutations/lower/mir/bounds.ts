@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "            if true || checked {\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
+  {
+    name: "const-index-spilled",
+    breaks: "a `const` index, `SYNC_LANE_INDEX`, is held in a variable of its own, its element a getter and a setter (ADR 0894, amended)",
+    file: "src/lower/mir/bounds.rs",
+    find: "            let index_kept = index.is_fixed()\n",
+    replace: "            let index_kept = index.is_constant()\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
+  },
 ];

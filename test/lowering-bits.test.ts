@@ -17,6 +17,47 @@ async function compiled(name: string, rust: string): Promise<{ js: string; lib: 
   return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
 }
 
+// ADR 0894, amended: ReactFiberLane's `root.entanglements[SyncLaneIndex]
+// |= lane`. An item's, its index checked on one side, `v[i] = v[$at(v, i)]
+// | lane`, is the checked place's compound; a `const` index, which nothing
+// assigns, is the place's, not a getter and a setter of it.
+test("an item's bitwise assignment is its compound, its index checked", async () => {
+  const { js, lib } = await compiled("item-compounds", `use std::cell::RefCell;
+
+pub const SYNC_LANE_INDEX: usize = 1;
+
+pub struct Root {
+    pub entanglements: RefCell<Vec<i32>>,
+}
+
+pub fn upgrade(root: &Root, mut lanes: i32) {
+    while lanes != 0 {
+        let lane = lanes & -lanes;
+        root.entanglements.borrow_mut()[SYNC_LANE_INDEX] |= lane;
+        lanes &= !lane;
+    }
+}
+
+pub fn synced(entanglements: &mut [i32], lane: i32) {
+    entanglements[SYNC_LANE_INDEX] |= lane;
+}
+
+pub fn spawned(entanglements: &mut [i32], index: usize, entangled: i32) -> i32 {
+    entanglements[index] |= 64 | (entangled & 8);
+    entanglements[index]
+}
+`);
+  expect(js).toContain("    root.entanglements[$at(root.entanglements, SYNC_LANE_INDEX)] |= lane;\n");
+  expect(js).toContain("  entanglements[$at(entanglements, index)] |= 64 | (entangled & 8);\n");
+  expect(js).toContain("  entanglements[$at(entanglements, SYNC_LANE_INDEX)] |= lane;\n");
+  expect(js).not.toContain("get value()");
+  const v = [0, 0, 0];
+  lib.upgrade({ entanglements: v }, 0b101);
+  expect(v).toEqual([0, 0b101, 0]);
+  expect(lib.spawned(v, 2, 0b1100)).toBe(72);
+  expect(() => lib.spawned(v, 5, 0)).toThrow("index out of bounds: the len is 3 but the index is 5");
+});
+
 // React's ReactFiberLane: `lanes &= ~lane`, `root.pendingLanes |= lane`.
 // A statement `t = t op v` of a bitwise operator or a shift is `t op= v`,
 // as it is of `+`, of a variable, a cell's field and a field alike: the

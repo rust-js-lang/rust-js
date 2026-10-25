@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends preparation's compound (`prepare.rs`'s
 `compound`), which [0631](0631-a-step-of-one-is-plus-plus.md) prints a
-step of one of.
+step of one of. Amended (2026-10-26): an item's, its index checked on one
+side, and one at a `const` index, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: `t = t op v` and `t op= v` of a path `t` evaluate its object
@@ -63,3 +64,40 @@ printer writes each operator's assignment.
   `u32`'s `>>>=`, a cell's field and a field.
 - Mutations `bitwise-assign-spelled-out` (`prepare.ts`),
   `bitwise-and-assign-printed-or` (`to_oxc/statements.ts`).
+
+## Amendment: an item's, its index checked
+
+ReactFiberLane writes `root.entanglements[spawnedLaneIndex] |= DeferredLane
+| ..` and, in a loop, `root.entanglements[SyncLaneIndex] |= lane`. The
+port's `root.entanglements.borrow_mut()[i] |= ..` printed
+`root.entanglements[$at(root.entanglements, i)] = root.entanglements[i] |
+(..)`: the target and the read are one item, but the check that its index
+is in bounds, `$at` (ADR 0056), is on one side only, so `same_path` didn't
+see one path. And at the `const` index it printed a getter and a setter of
+the element, `const value = { get value() { .. }, set value(value) { ..
+} }; value.value |= lane;`, as a `const` read by its name was an index
+that might read another value later.
+
+- **`v[i] = v[$at(v, i)] op x`, or `v[$at(v, i)] = v[i] op x`, of one
+  array's path and one key, is `v[$at(v, i)] op= x`** (`prepare.rs`'s
+  `checked_item`; `runtime::checks_an_index` says which helper checks an
+  index). Both evaluate `v`, check `i`, read the item, evaluate `x`, and
+  write, in that order. A wrap stays: `v[0] = (v[$at(v, 0)] + x) | 0` is
+  `+`'s of an `i32`, no compound.
+- **A `const` read by its name is an index that reads the same wherever
+  it's read** (`Expr::is_fixed`, `Known::Item`: nothing assigns it), as a
+  literal is: a `&mut` to its element is the place (`bounds.rs`'s
+  `index_kept`, `queries.rs`'s `same_place`), and the place is settled, a
+  value written to it made where it's assigned (`settled_place`).
+
+```js
+root.entanglements[$at(root.entanglements, SyncLaneIndex)] |= lane;
+```
+
+Case N: the same reads, checks and writes, in the same order.
+
+Test: `lowering-bits`'s "an item's bitwise assignment is its compound,
+its index checked", run, out of bounds too; the corpus's
+`index_compound_assign` against native Rust. Mutations
+`item-compound-unchecked` (`prepare.ts`), `const-index-spilled`
+(`lower/mir/bounds.ts`), `const-index-unsettled` (`lower/mir/queries.ts`).

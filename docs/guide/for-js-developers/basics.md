@@ -347,7 +347,8 @@ export function fits(str, substr) {
 }
 ```
 - **A bit set is written with JS's operators,** each assignment its
-  compound, `lanes &= ~lane`, of a field or a `Cell`'s too
+  compound, `lanes &= ~lane`, of a field or a `Cell`'s too, and of an
+  item, its index checked, `v[$at(v, i)] |= lane`
   ([ADR 0894](../../decisions/0894-a-bitwise-assignment-is-its-compound.md)).
   An `i32`'s `<<` is JS's, and what a bitwise operator takes needs no
   wrap of its own, `lanes & -lanes`, as JS's takes it modulo 2^32 anyway;

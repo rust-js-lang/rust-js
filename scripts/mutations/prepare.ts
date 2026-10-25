@@ -715,4 +715,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
     snapshots: true,
   },
+  {
+    name: "item-compound-unchecked",
+    breaks: "an item's `v[i] = v[$at(v, i)] | lane` stays spelled out, not `v[$at(v, i)] |= lane` (ADR 0894, amended)",
+    file: "src/prepare.rs",
+    find: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index)\n",
+    replace: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index) && false\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
+  },
 ];

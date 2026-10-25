@@ -450,6 +450,13 @@ pub(crate) fn names_a_place(name: &str) -> bool {
     name == "$index"
 }
 
+/// Whether `name` is a helper whose call is the index it's given of the
+/// array it's given, checked: `$at(v, i)`, `i` where it's in bounds, else
+/// a throw (ADR 0056). `v[$at(v, i)]` names the place `v[i]` does.
+pub(crate) fn checks_an_index(name: &str) -> bool {
+    name == "$at"
+}
+
 /// Whether `name` is a helper whose call does only what its arguments do.
 pub(crate) fn is_pure(name: &str) -> bool {
     PURE.contains(&name)

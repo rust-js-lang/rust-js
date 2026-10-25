@@ -829,7 +829,8 @@ fn given_once(state: &State<'_, '_>, local: Local) -> bool {
     state.locals.writes[local] + usize::from(is_parameter(state, local)) == 1
 }
 
-/// Whether `place` is of variables each given one value, and constants:
+/// Whether `place` is of variables each given one value, and constants, a
+/// `const` read by its name too (`is_fixed`):
 /// `lanes[index]` of a parameter `index` and a `const lanes`, which
 /// nothing evaluated meanwhile can make another place.
 pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
@@ -842,7 +843,7 @@ pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
         js::ExprKind::Member(object, _) => settled_place(state, object),
         js::ExprKind::Index(object, index) => {
             settled_place(state, object)
-                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))
+                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))
         }
         _ => false,
     }
@@ -871,7 +872,8 @@ pub(super) fn is_parameter(state: &State<'_, '_>, local: Local) -> bool {
 }
 
 /// Whether `place` names the same place wherever it's read: variables and
-/// their fields, and elements at an index that's a constant, or a variable
+/// their fields, and elements at an index that's a constant, a `const` read
+/// by its name (`is_fixed`, ADR 0894, amended), or a variable
 /// given one value, a parameter never assigned too.
 pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
     match &place.kind {
@@ -879,7 +881,7 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
         js::ExprKind::Member(object, _) => same_place(state, object),
         js::ExprKind::Index(object, index) => {
             same_place(state, object)
-                && (index.is_constant()
+                && (index.is_fixed()
                     || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
                         if state.locals.names.iter_enumerated().any(|(l, n)| n == name && given_once(state, l))))

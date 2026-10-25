@@ -36,7 +36,7 @@ function main() {
   const words = ["a"];
   const more = ["b", "c"];
   $extend(words, more);
-  words[$at(words, 1)] = words[1] + "!";
+  words[$at(words, 1)] += "!";
   console.log(
     `[${v.join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
   );

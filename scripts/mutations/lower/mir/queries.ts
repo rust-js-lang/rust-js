@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
     snapshots: true,
   },
+  {
+    name: "const-index-unsettled",
+    breaks: "a place at a `const` index isn't settled, so its value is made in a `const value` first, no compound (ADR 0894, amended)",
+    file: "src/lower/mir/queries.rs",
+    find: "                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
+    replace: "                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
+  },
 ];
