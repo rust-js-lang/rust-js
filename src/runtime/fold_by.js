@@ -36,12 +36,40 @@ function $peekableFold(peekable, init, f, iterator) {
 // source's dictionary, which has that impl's own `fold` (#264).
 function $mapFold(map, init, g, iterator) {
   const f = map.f;
-  return $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);
+  const folded = $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);
+  // The crate's own `fold` took its source and dropped it: closing the map
+  // after drops it no more (#297).
+  if (iterator?.fold !== undefined) map.$closed = true;
+  return folded;
+}
+
+// A `FlatMap`'s fold, std's, its `FlattenCompat`'s: its front iterator's,
+// then its source's, each item made an iterator by `intoIter`, its
+// `IntoIterator` dictionary, and folded, then its back iterator's; the
+// crate's own `fold` where its source reaches it (#297).
+function $flatMapFold(flatMap, init, g, intoIter) {
+  const inner = flatMap.inner;
+  const each = intoIter?.IntoIterIterator?.();
+  const folded = (it, acc) => $foldBy(it, acc, g, each);
+  let acc = init;
+  if (inner.frontiter != null) {
+    const front = inner.frontiter;
+    inner.frontiter = undefined;
+    acc = folded(front, acc);
+  }
+  acc = $foldBy(inner.iter, acc, (a, u) => folded(intoIter === undefined ? u : intoIter.intoIter(u), a));
+  if (inner.backiter != null) {
+    const back = inner.backiter;
+    inner.backiter = undefined;
+    acc = folded(back, acc);
+  }
+  return acc;
 }
 
 // An `Inspect`'s fold, std's: its source's, `f` given each item first.
 function $inspectFold(inspect, init, g, iterator) {
   const f = inspect.f;
+  if (iterator?.fold !== undefined) inspect.$closed = true;
   return $foldBy(
     inspect.iter,
     init,

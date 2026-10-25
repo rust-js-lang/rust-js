@@ -72,6 +72,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         match std_path(self.tcx, adt.did()).as_str() {
             "std::iter::Map" => Some("Map"),
             "std::iter::Inspect" => Some("Inspect"),
+            // And a `FlatMap`'s, each item given its `f`, then folded (#297).
+            "std::iter::FlatMap" => Some("FlatMap"),
             _ => None,
         }
     }

@@ -5,6 +5,7 @@ import {
   $dropping,
   $findBack,
   $findDropping,
+  $flatMapFold,
   $foldBack,
   $fuseAdvanceBy,
   $fuseCount,
@@ -1745,6 +1746,7 @@ export function iterator_flatMap(
           dropUItem,
           dropUIntoIter,
         ),
+      fold: (it, init, f) => $flatMapFold(it, init, f, UIntoIterator),
       close(iterator) {
         if (iterator.inner.iter.iter != null) {
           iterator.inner.iter.iter.return();

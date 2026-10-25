@@ -659,11 +659,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("Inspect") => {
                 Some(("$inspectFold", args.type_at(0)))
             }
+            // A flat map's of what each item makes, `U`, by its
+            // `IntoIterator` dictionary (#297).
+            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("FlatMap") => {
+                Some(("$flatMapFold", args.type_at(1)))
+            }
             _ => None,
         };
         if let Some((helper, source)) = fold {
             let mut args = vec![Expr::var("it"), Expr::var("init"), Expr::var("f")];
-            let dictionary = self.iterator_evidence(source, iterator);
+            let dictionary = match helper {
+                "$flatMapFold" => self.evidence_for(ty::TraitRef::new(
+                    self.tcx,
+                    std_item(self.tcx, StdItem::IntoIterator),
+                    [source],
+                )),
+                _ => self.iterator_evidence(source, iterator),
+            };
             let drop = match helper {
                 "$fuseFold" => self.drop_function(source, span)?,
                 _ => None,

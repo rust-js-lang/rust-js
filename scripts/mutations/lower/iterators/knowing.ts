@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flat-map-fold-not-std",
+    breaks: "std's compiled `FlatMap` folds by its `next`, never reaching the crate's own `fold` through a held `fuse()` (#297)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                Some((\"$flatMapFold\", args.type_at(1)))\n",
+    replace: "                None\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "fuse-count-unlisted",
     breaks: "std's compiled `Fuse` has no `count`, so `rev().take(2).fuse().count()` steps each item back to front, not its source's one slice (#293)",
     file: "src/lower/iterators/knowing.rs",

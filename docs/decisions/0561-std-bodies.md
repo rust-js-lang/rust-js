@@ -372,3 +372,19 @@ with it.
 peekable, the crate's own `fold` reached and its value dropped once,
 against native Rust. The mutations `map-fold-unmapped`,
 `map-fold-not-std` and `inspect-fold-not-std` are caught.
+
+## Amendment: a compiled `FlatMap`'s fold is std's too (#297)
+
+std's `FlatMap::fold` is its `FlattenCompat`'s: the front iterator's fold,
+then its source's, each item made an iterator and folded, then the
+back's. The compiled `FlatMap` had no `fold` step, so a held `fuse()` over
+`Count.flat_map(..)` stepped `next`, and the crate's own `fold` never ran
+(fuzz seed 65222). `$flatMapFold` joins the table, given the
+`IntoIterator` dictionary of what each item makes. When the crate's own
+`fold` takes a map's source and drops it, the map is now marked closed,
+so closing it after doesn't drop that source a second time, which the
+new case showed. `own_fold_through_adapters` adds the shape, and
+`flat-map-fold-not-std`, `flat-map-fold-items-unmade` and
+`map-fold-source-dropped-again` are caught.
+Readability: the line's `Vec` adds `$iter` (87.6 to 87.7 in 10,000 lines),
+as each such case does.

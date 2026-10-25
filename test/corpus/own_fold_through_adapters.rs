@@ -110,5 +110,8 @@ fn main() {
             .sum::<u32>()
     );
     println!("{}", Plain("v", 0).map(|x| x + 1).peekable().sum::<u32>());
+    // A held flat map's fold, std's: its source's, through its `map`, the
+    // crate's own, each item's array folded in turn (#297).
+    println!("{}", Own("x", 0).flat_map(|x| [x, x * 10]).fuse().sum::<u32>());
     println!("end");
 }
