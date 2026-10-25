@@ -1077,23 +1077,23 @@
 + Cycle::next	safe
 + Cycle::size_hint	safe
 - Cycle::try_fold	spec
-# StepBy 4 of 9; bodies: 0 safe, 9 spec, 0 opaque, 0 memory, 0 none
-+ StepBy::fold	spec
-+ StepBy::next	spec
-- StepBy::next_back	spec
-+ StepBy::nth	spec
-- StepBy::nth_back	spec
-- StepBy::rfold	spec
-+ StepBy::size_hint	spec
+# StepBy 4 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
++ StepBy::fold	safe
++ StepBy::next	safe
+- StepBy::next_back	memory
++ StepBy::nth	memory
+- StepBy::nth_back	memory
+- StepBy::rfold	memory
++ StepBy::size_hint	memory
 - StepBy::try_fold	spec
-- StepBy::try_rfold	spec
-# Flatten 5 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
+- StepBy::try_rfold	memory
+# Flatten 7 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Flatten::count	safe
 + Flatten::fold	safe
 + Flatten::last	safe
 + Flatten::next	safe
-- Flatten::next_back	safe
-- Flatten::rfold	safe
++ Flatten::next_back	safe
++ Flatten::rfold	safe
 + Flatten::size_hint	safe
 - Flatten::try_fold	safe
 - Flatten::try_rfold	safe
