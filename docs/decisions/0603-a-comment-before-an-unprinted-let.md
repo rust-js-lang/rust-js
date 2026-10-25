@@ -1,6 +1,8 @@
 # 0603. A comment before a `let` with no JS is the next statement's
 
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md)'s comments.
+Extended by 0444's amendment of 2026-10-25: a `let` of a block, `unsafe {
+.. }`, too, and the start after them may be part of the next `let`'s code.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: a comment changes
 nothing a program does.

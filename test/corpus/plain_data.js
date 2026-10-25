@@ -60,6 +60,7 @@ function longest(words) {
 
 function firstLen(words) {
   const q = words;
+  // A pointer to a slice whose items' lifetime alone changes: the pointer.
   const all = q;
   return $byteLen($index(all, 0));
 }

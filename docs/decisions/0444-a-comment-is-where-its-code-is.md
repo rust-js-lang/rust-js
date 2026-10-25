@@ -15,7 +15,10 @@ of only comments keeps them, where it ends; an `else` of only comments is
 one.
 Amended: an `unsafe` block's opening is no code between a comment and
 what it's before, and a `None` field a comment is written on keeps its key
-([0280](0280-undefined-fields-left-out.md), amended).
+([0280](0280-undefined-fields-left-out.md), amended). Amended
+(2026-10-25): a comment before a `let` read in place is the next
+statement's in its block, one in a `catch_unwind` closure is in the `try`,
+and one before a binary's right operand is after its operator.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.
@@ -196,3 +199,71 @@ before the value in the conditional, as React's `prevTransition !== null
 arm read away, `n ?? given`, keeps them before its statement. Held by the
 same test, and the mutations `branch-first-unplaced` and
 `stringed-unplaced` (`to_oxc/expressions.ts`).
+
+## Amended (2026-10-25): past a `let` read in place, in a caught closure, between operands
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's port had three comments drift and one stay where it's written:
+
+1. **Before a `let` read in place.** `// Objects go into a WeakMap` is
+   written before `let arg: &JsObject = unsafe { js::cast(arg) };`, which
+   has no JS, `arg` read where it's named, then `let object_cache = match
+   cache_node.o.get() { .. }`. A `let` with no JS was code between a comment
+   and the next start only where it had no `{` (ADR 0603); and that next
+   start, `let objectCache = cacheNode.o`'s, is where it matches, past `let
+   object_cache = match`. The comment was nobody's, and before the
+   innermost statement it's in, the `for`, outside its block. **What's
+   between a comment and a start may be whole `let`s, each to its `;`
+   outside its brackets, none closing its block's, then what the start's
+   own code begins with**: the comment is the next statement's, in its
+   block, as React's is. `leading_statements` (`to_oxc.rs`) says which are
+   whole; a bracket or `;` in a string only ever makes fewer whole, so the
+   comment falls back as before, never further.
+2. **In the closure `catch_unwind` calls.** `// $FlowFixMe[..]` is written
+   in `catch_unwind(AssertUnwindSafe(|| { // .. \n function::apply(..) }))`,
+   whose call is the `try`'s, `const result = fn.apply(null, args)`. That
+   statement was placed where the `match` is, so the comment, inside it,
+   was before the `try`. **What's made of the caught call, its `const`,
+   its assignment or its statement, is placed where the call is**
+   (`try_catch`, `prepare/catches.rs`), and the comment is in the `try`,
+   as upstream's. A comment before the `match` is still before the `try`.
+3. **Between a binary's operands.** `escapedPrefix + // $FlowFixMe[..]
+   (mappedChild.key != null && .. ? .. : '') + childKey`: the port writes
+   the comment before the `+`, as rustfmt puts an operator first. Its
+   operand was no start, so it was before the statement, `const newChild`,
+   where it read as a copy of the line above; and `a // c\n && b` lost its
+   comment. oxc's codegen prints a leading comment before a binary's right
+   operand only where it's an annotation, `/* @__PURE__ */`
+   (`print_annotation_comments_before_expression`: a moved statement's
+   comments would land in an operand), and a parenthesized expression's
+   only as a property's value, a conditional's alternate or a template's
+   expression. So **a binary's right operand is a start, as a branch is
+   (ADR 0658), its comments written after its operator**, where the map
+   places its first JS (`Cx::branch`), on lines of their own, which oxc's
+   formatter lays out as Prettier does: `escapedPrefix +\n // $FlowFixMe
+   ..\n (mappedChild.key ..`. Each start says its operator, `?`, `:`, `+`
+   or `&&`, which the split is after (`arm_starts`). An operand takes a
+   comment only where nothing but operators and openings, `+ &(`, is
+   between them: `None => given` of a match read as `n ?? given` is code,
+   and its arm's comment stays the statement's. One in a closure read as
+   the operand, `x.is_some_and(|v| { // c\n v > 3 })`, is after its `&&`.
+   A `/* */` of the comment in the line was the other way: it changes what
+   was written.
+4. **Before `children?;`.** `// $FlowFixMe[..]` is before the `if
+   (children == null) { return null; }` its statement is, where the Rust
+   has it; upstream has it inside, before `return children`. Clippy's
+   `question_mark` asks for `children?;` of `if children.is_none() { return
+   None; }`, a comment inside it or not, so the port writes the comment
+   before that, and the JS keeps it there: no change.
+
+Held by `test/lowering-comments.test.ts`, "a comment before a let read in
+place is the next statement's, in its block", "a comment in
+catch_unwind's closure is in the try", "a comment between a binary's
+operands is before its right one" and "a comment before a ? statement is
+before its if"; and the mutations `erased-let-block-code`,
+`erased-lets-before-nothing-else`, `operand-no-start`, `operand-past-code`
+and `operand-after-any-operator` (`to_oxc.ts`), `operand-first-unplaced`
+(`to_oxc/expressions.ts`) and `caught-call-at-match`
+(`prepare/catches.ts`). The corpus's `plain_data` keeps a comment it lost,
+before a `transmute` read in place.

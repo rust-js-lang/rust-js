@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "vec![(**value).clone()]))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
   },
+  {
+    name: "operand-first-unplaced",
+    breaks: "a binary's right operand's first JS, `b` of `a && b`, a name read where it's bound, has no place where the operand is, and its comment is lost (ADR 0444, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                let (l, r) = (self.expr(l), self.branch(r));\n",
+    replace: "                let (l, r) = (self.expr(l), self.expr(r));\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
+  },
 ];

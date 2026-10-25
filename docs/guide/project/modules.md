@@ -584,7 +584,10 @@ ellipsis` of a conditional ([ADR
 one inside an expression after the code right before it, `37 /* "%" */`
 ([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md)),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
-comment lines before a `match` arm is one, the arm's; and a comment before
+comment lines before a `match` arm is one, the arm's; a comment before a
+`let` the JS has no statement of, its value read where it's named, `let arg
+= unsafe { js::cast(arg) };`, is the next statement's in its block; one in
+the closure `catch_unwind` calls is in the `try`; and a comment before
 what the JS reads away, an arm of `prev?.types`, is before the statement
 it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
 amended). A file's
@@ -733,6 +736,29 @@ export function area(width, height) {
     width * height,
     // Never below zero.
     0,
+  );
+}
+```
+
+And one before a binary's right operand, where rustfmt writes its
+operator first, is before the operand in JS, after the operator, where
+JS writes it last
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+pub fn total(price: f64, count: f64, shipping: f64) -> f64 {
+    price * count
+        // Once an order, not an item.
+        + shipping
+}
+```
+
+```js
+export function total(price, count, shipping) {
+  return (
+    price * count +
+    // Once an order, not an item.
+    shipping
   );
 }
 ```

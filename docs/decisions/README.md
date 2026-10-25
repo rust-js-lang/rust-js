@@ -484,7 +484,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0600 The guide is the site on GitHub Pages](0600-the-guide-is-the-site.md)
 - [0601 A module's variable an `if` makes is a `let` each branch assigns](0601-a-module-variable-an-if-makes-is-a-let.md) *(amended by 0657: one value each is a conditional; 0704: `undefined` is no assignment)*
 - [0602 A binding taken as a `fn` is its JS function, read where it's taken](0602-a-binding-taken-as-a-fn-is-its-function.md) *(amended by 0667: a variadic one's, of rest arguments as a value)*
-- [0603 A comment before a `let` with no JS is the next statement's](0603-a-comment-before-an-unprinted-let.md)
+- [0603 A comment before a `let` with no JS is the next statement's](0603-a-comment-before-an-unprinted-let.md) *(extended by 0444, amended: a block's `let` too)*
 - [0604 A binding as a value gives its arguments as its call does](0604-a-bindings-value-gives-what-its-call-gives.md)
 - [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0606 A blank line before an item's attributes is before the item](0606-a-blank-line-before-attributes.md)
@@ -670,7 +670,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0441 A `()` given a function value is no argument](0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is; amended: a run before a match arm is one, and none is lost)*
+- [0444 A comment is in the JS where its code is, and so is a blank line](0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is; amended: a run before a match arm is one, and none is lost; amended: past a `let` read in place, in a `catch_unwind` closure's `try`, and before a binary's right operand)*
 - [0445 Generic code extends and collects into what it's given](0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](0447-the-clock.md)

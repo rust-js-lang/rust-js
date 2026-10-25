@@ -294,3 +294,166 @@ pub fn branched(prev: Option<&Transition>) -> u32 {
   expect([lib.shared({ types: 3 } as never), lib.shared(undefined as never), lib.counted({ types: 3 } as never), lib.branched(undefined as never)]).toEqual([3, undefined, 4, 0]);
   expect([lib.kept(0 as never, 5 as never), lib.kept(undefined as never, 5 as never), lib.told(0 as never), lib.told(undefined as never)]).toEqual([0, 5, "0", ""]);
 });
+
+// React's cache: `// Objects go into a WeakMap` before the port's `let arg:
+// &JsObject = unsafe { js::cast(arg) };`, which has no JS, the value read
+// where it's named: the comment is the next statement's, in the `if`'s
+// block, as upstream's is, not before the `for` it's in, whether that's a
+// `let` of a `match`, whose JS starts at what it matches, or a call (ADR
+// 0444, amended).
+test("a comment before a let read in place is the next statement's, in its block", async () => {
+  const { js, lib } = await compiled("comment-before-read-in-place", `use js::{JsObject, Kind, Unknown};
+use std::cell::Cell;
+
+pub struct Node {
+    pub o: Cell<Option<u32>>,
+}
+
+pub fn count<'a>(node: &Node, args: &[Option<&'a Unknown>], seen: &mut Vec<&'a JsObject>) -> u32 {
+    let mut objects = 0;
+    for &arg in args.iter() {
+        if let Kind::Function(_) | Kind::Object(_) = js::classify(arg) {
+            // Objects are kept.
+            let arg: &JsObject = unsafe { js::cast(arg) };
+            let cache = match node.o.get() {
+                Some(cache) => cache,
+                None => {
+                    let cache = 7;
+                    node.o.set(Some(cache));
+                    cache
+                }
+            };
+            seen.push(arg);
+            objects += cache;
+        }
+    }
+    objects
+}
+
+pub fn kept<'a>(args: &[Option<&'a Unknown>], seen: &mut Vec<&'a JsObject>) {
+    for &arg in args.iter() {
+        if let Kind::Object(_) = js::classify(arg) {
+            // Pushed as it is.
+            let arg: &JsObject = unsafe { js::cast(arg) };
+            seen.push(arg);
+        }
+    }
+}
+`);
+  expect(js).toContain("    ) {\n      // Objects are kept.\n      let cache = node.o;\n");
+  expect(js).toContain("      // Pushed as it is.\n      seen.push(arg);\n");
+  expect(js).not.toContain("// Objects are kept.\n  for");
+  const seen: unknown[] = [];
+  const object = { a: 1 };
+  expect(lib.count({ o: undefined } as never, [object, 1, "x", object] as never, seen as never)).toBe(14);
+  lib.kept([object, 2] as never, seen as never);
+  expect(seen).toEqual([object, object, object]);
+});
+
+// React's cache: `// $FlowFixMe[incompatible-type]` inside the closure it
+// gives `catch_unwind`, before the call that's its value: in the `try`,
+// before what that call is, `const result = fn.apply(null, args)`, as
+// upstream's, not before the `try` (ADR 0444, amended).
+test("a comment in catch_unwind's closure is in the try", async () => {
+  const { js, lib } = await compiled("comment-in-caught-closure", `use std::panic::{self, AssertUnwindSafe};
+
+pub fn run(f: &dyn Fn(u32) -> u32, x: u32) -> u32 {
+    match panic::catch_unwind(AssertUnwindSafe(|| {
+        // Called once.
+        f(x)
+    })) {
+        Ok(result) => {
+            let doubled = result * 2;
+            doubled
+        }
+        Err(_) => 0,
+    }
+}
+`);
+  expect(js).toContain("  try {\n    // Called once.\n    const result = f(x);\n");
+  expect(js).not.toContain("// Called once.\n  try");
+  expect(lib.run(((n: number) => n + 1) as never, 2 as never)).toBe(6);
+  expect(
+    lib.run(
+      (() => {
+        throw new Error("no");
+      }) as never,
+      2 as never,
+    ),
+  ).toBe(0);
+});
+
+// React's mapIntoArray: `escapedPrefix + // $FlowFixMe[incompatible-type]
+// .. (mappedChild.key != null && .. ? .. : '') + childKey`. The port writes
+// the comment before the `+` its operand follows, as rustfmt puts an
+// operator first: the comment is before that operand, after the `+`, as
+// JS puts it last, not lost nor before the statement (ADR 0444, amended).
+test("a comment between a binary's operands is before its right one", async () => {
+  const { js, lib } = await compiled("comment-between-operands", `pub fn keyed(prefix: &str, key: Option<&str>, child: &str) -> String {
+    prefix.to_string()
+        // The key, when there's one.
+        + &(if let Some(key) = key {
+            key.to_string() + "/"
+        } else {
+            String::new()
+        })
+        + child
+}
+
+pub fn both(a: bool, b: bool) -> bool {
+    a
+        // And the other.
+        && b
+}
+
+pub struct Point {
+    pub x: u32,
+}
+
+pub fn sum(a: u32, p: Option<&Point>) -> u32 {
+    match p {
+        Some(p) => {
+            a
+                // And its x.
+                + p.x
+        }
+        None => a,
+    }
+}
+
+pub fn big(x: Option<u32>) -> bool {
+    x.is_some_and(|v| {
+        // Past three.
+        v > 3
+    })
+}
+`);
+  expect(js).toContain("    prefix +\n    // The key, when there's one.\n    (key != null ? key + \"/\" : \"\") +\n    child\n");
+  // The closure's test, the right operand of what it's read as.
+  expect(js).toContain("    x != null &&\n    // Past three.\n    x > 3\n");
+  expect([lib.big(4 as never), lib.big(2 as never), lib.big(undefined as never)]).toEqual([true, false, false]);
+  expect(js).toContain("  return (\n    a &&\n    // And the other.\n    b\n  );\n");
+  // `p` of `p.x`, read where it's bound, placed where the operand is.
+  expect(js).toContain("      (a +\n        // And its x.\n        p.x) >>>\n      0\n");
+  expect([lib.sum(1 as never, { x: 2 } as never), lib.sum(1 as never, undefined as never)]).toEqual([3, 1]);
+  expect(js.match(/The key/g)?.length).toBe(1);
+  expect([lib.keyed("p" as never, "k" as never, "c" as never), lib.keyed("p" as never, undefined as never, "c" as never)]).toEqual(["pk/c", "pc"]);
+  expect([lib.both(true as never, true as never), lib.both(true as never, false as never)]).toEqual([true, false]);
+});
+
+// React's mapChildren: the port writes `// $FlowFixMe[incompatible-type]`
+// before `children?;`, as clippy's `question_mark` asks for its `if
+// children.is_none() { return None; }`, a comment inside it or not: the
+// comment is before that statement's JS, its `if`, where the Rust has it;
+// upstream's, inside its `if`, is before a `return children` the port
+// doesn't write.
+test("a comment before a ? statement is before its if", async () => {
+  const { js, lib } = await compiled("comment-before-question-mark", `pub fn mapped(children: Option<&str>) -> Option<usize> {
+    // Nothing to map.
+    children?;
+    Some(children.map_or(0, str::len))
+}
+`);
+  expect(js).toContain("  // Nothing to map.\n  if (children == null) {\n");
+  expect([lib.mapped(undefined as never), lib.mapped("ab" as never)]).toEqual([undefined, 2]);
+});

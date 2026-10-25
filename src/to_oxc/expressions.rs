@@ -186,7 +186,9 @@ impl<'a> Cx<'a> {
                 Expression::new_unary_expression(sp, op, self.expr(arg), b)
             }
             ExprKind::Binary(op, l, r) => {
-                let (l, r) = (self.expr(l), self.expr(r));
+                // Its right operand's comments are before it (ADR 0444,
+                // amended), placed as a branch's are.
+                let (l, r) = (self.expr(l), self.branch(r));
                 match binary_op(*op) {
                     Ok(op) => Expression::new_binary_expression(sp, l, op, r, b),
                     Err(op) => Expression::new_logical_expression(sp, l, op, r, b),
@@ -587,6 +589,12 @@ fn jsx_text_safe(s: &str) -> bool {
 
 pub(super) fn span(s: js::Span) -> Span {
     Span::new(s.lo, s.hi)
+}
+
+/// How `op` is written in JS, `+` or `&&`: what a comment before its right
+/// operand is after (ADR 0444, amended).
+pub(super) fn operator(op: Op) -> &'static str {
+    binary_op(op).map_or_else(LogicalOperator::as_str, BinaryOperator::as_str)
 }
 
 /// JS splits binary operators in two: `&&`/`||` are "logical", the rest "binary".

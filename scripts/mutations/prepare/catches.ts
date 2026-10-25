@@ -307,4 +307,12 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::If(test, then, otherwise) => {\n            false && !test.may_throw()",
     tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
   },
+  {
+    name: "caught-call-at-match",
+    breaks: "what's of a `catch_unwind` closure's call, `const result = f(x)`, is where the `match` is, so a comment before the call in the closure is before the `try` (ADR 0444, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        false => call.span,\n",
+    replace: "        false => span,\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment in catch_unwind's closure"],
+  },
 ];

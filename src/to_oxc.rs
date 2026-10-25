@@ -159,9 +159,10 @@ pub fn emit(
             .chain(text.match_indices('\n').map(|(i, _)| i as u32 + 1))
             .collect();
         let offset = |line: u32, column: u32| line_starts.get(line as usize).map(|start| start + column);
-        for (lo, hi, texts) in &arms {
+        for (lo, hi, operator, texts) in &arms {
             // The branch's first JS the map places, and back from it, on its
-            // line, to the `?`, `:` or `+` it's after: an arrow's `(` isn't placed.
+            // line, to the operator it's after, `?`, `:`, `+` or `&&`: an
+            // arrow's `(` isn't placed.
             let first = (map.get_tokens())
                 .filter(|t| offset(t.get_src_line(), t.get_src_col()).is_some_and(|at| *lo <= at && at < *hi))
                 .map(|t| (t.get_dst_line(), t.get_dst_col()))
@@ -169,7 +170,7 @@ pub fn emit(
             let Some((line, column)) = first else { continue };
             // On its line, or one before it, an arrow's body's first JS
             // being the first placed.
-            let operator = (0..=line).rev().take(3).find_map(|at| {
+            let found = (0..=line).rev().take(3).find_map(|at| {
                 let written = generated_lines.get(at as usize)?;
                 let before = if at == line {
                     written.get(..column as usize)?
@@ -177,10 +178,10 @@ pub fn emit(
                     written
                 };
                 before
-                    .rfind(['?', ':', '+'])
-                    .map(|operator| (at, written, operator + 1))
+                    .rfind(operator)
+                    .map(|found| (at, written, found + operator.len()))
             });
-            if let Some((line, written, after)) = operator {
+            if let Some((line, written, after)) = found {
                 let start = after + written[after..].len() - written[after..].trim_start().len();
                 splits.entry(line).or_default().push((start as u32, texts.as_slice()));
             }
@@ -397,7 +398,7 @@ fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
 /// written; a doc comment, `///` lines or `/** */`, a JSDoc one, `/** .. */`,
 /// whose text is added after the arena's, where its span points. The text
 /// the program's source is, and the comments.
-type ArmComments = Vec<(u32, u32, Vec<String>)>;
+type ArmComments = Vec<(u32, u32, &'static str, Vec<String>)>;
 
 fn comments_of(
     module: &Module,
@@ -502,6 +503,21 @@ fn comments_of(
                             between.is_some_and(|gap| gap.trim().is_empty())
                         })
                 };
+                // Of an operator and what opens its operand, `+ &(`, and
+                // comments.
+                let only_operators = |lo: u32, hi: u32| {
+                    let mut code = lo;
+                    (file.comments.iter())
+                        .filter(|other| other.lo >= lo && other.hi <= hi)
+                        .chain([&crate::program::Comment { lo: hi, hi, doc: false }])
+                        .all(|other| {
+                            let between = sources.text.get(code as usize..other.lo as usize);
+                            code = other.hi;
+                            between.is_some_and(|gap| {
+                                gap.chars().all(|c| c.is_whitespace() || "+-*/%&|^!=<>(".contains(c))
+                            })
+                        })
+                };
                 let mut next = starts.partition_point(|&s| s < c.hi);
                 while let [at, after, ..] = starts[next.min(starts.len())..]
                     && only_comments(c.hi, at)
@@ -519,6 +535,17 @@ fn comments_of(
                 {
                     next += 1;
                 }
+                // A binary's right operand's only where only its operator is
+                // between, as rustfmt writes it first, `// c\n + &(x)`: not
+                // a match arm's, `None => given` of one read as `n ?? given`
+                // (ADR 0444, amended).
+                while let Some(&at) = starts.get(next)
+                    && arms.get(&at).is_some_and(|arm| arm.operand)
+                    && !spans.iter().any(|&(lo, _)| lo == at)
+                    && !only_operators(c.hi, at)
+                {
+                    next += 1;
+                }
                 let at = *starts.get(next).filter(|&&at| in_file(at))?;
                 // What's between, but other comments, whose text is no code.
                 let mut code = c.hi;
@@ -532,23 +559,22 @@ fn comments_of(
                     .all(|other| {
                         let between = &sources.text[code as usize..other.lo as usize];
                         code = other.hi;
+                        // Past `let`s with no JS of their own, a variable read
+                        // in place, `let timer = Rc::clone(timer);` (ADR
+                        // 0603), a block's too, `let arg = unsafe {
+                        // js::cast(arg) };`, in the same block (ADR 0444,
+                        // amended).
+                        let (lets, rest) = leading_statements(between);
                         // A closure's opening, `with_borrow_mut(|queue| {`,
                         // whose body is in its place (ADR 0581), is a start;
                         // and a macro's on its own line, `thread_local! {`,
                         // whose code is (ADR 0621); and an `unsafe` block's,
                         // which has no JS but its code's (ADR 0444, amended).
-                        let opens = (between.match_indices('{')).all(|(i, _)| {
-                            let head = between[..i].trim_end();
-                            head.ends_with('|') || macro_opening(&between[..=i]) || unsafe_opening(head)
+                        let opens = (rest.match_indices('{')).all(|(i, _)| {
+                            let head = rest[..i].trim_end();
+                            head.ends_with('|') || macro_opening(&rest[..=i]) || unsafe_opening(head)
                         });
-                        // `let`s with no JS of their own, a variable read in
-                        // place, `let timer = Rc::clone(timer);` (ADR 0603).
-                        let unprinted_lets = between.trim_end().ends_with(';')
-                            && !between.contains(['{', '}'])
-                            && (between.split(';').map(str::trim))
-                                .filter(|s| !s.is_empty())
-                                .all(|s| s.starts_with("let "));
-                        (!between.contains([';', '}']) && opens) || unprinted_lets
+                        lets.iter().all(|s| s.starts_with("let ")) && !rest.contains([';', '}']) && opens
                     });
                 only_starts.then_some((*c, at))
             })
@@ -629,14 +655,14 @@ fn comments_of(
         let mut documented = std::collections::HashSet::new();
         for (at, own) in starts_and_end {
             // A branch's, its text as written, each a line of its own.
-            if let Some(&hi) = arms.get(&at)
+            if let Some(&Arm { hi, operator, .. }) = arms.get(&at)
                 && !spans.iter().any(|&(lo, _)| lo == at)
             {
                 if !own.is_empty() {
                     let texts = own
                         .iter()
                         .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
-                    arm_comments.push((at, hi, texts.collect()));
+                    arm_comments.push((at, hi, operator, texts.collect()));
                 }
                 continue;
             }
@@ -738,18 +764,31 @@ fn comments_of(
 
 /// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
 /// that say, by where it starts: what a comment before one is before (ADR
-/// 0658); and each of a `concat!`'s pieces past its first, after its `+`
-/// (ADR 0641).
-fn arm_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+/// 0658); each of a `concat!`'s pieces past its first, after its `+`
+/// (ADR 0641); and a binary's right operand, after its operator, as a
+/// comment before it is, between the two or in the closure it's of,
+/// `is_some_and(|v| { // c\n v > 3 })` (ADR 0444, amended).
+fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
     let mut starts = std::collections::HashMap::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
-            let spans: Vec<js::Span> = match &e.kind {
-                ExprKind::Cond(_, yes, no) => vec![yes.span, no.span],
-                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| piece.span).collect(),
+            let spans: Vec<(js::Span, &'static str, bool)> = match &e.kind {
+                ExprKind::Cond(_, yes, no) => vec![(yes.span, "?", false), (no.span, ":", false)],
+                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| (piece.span, "+", false)).collect(),
+                ExprKind::Binary(op, _, r) => {
+                    vec![(r.span, expressions::operator(*op), true)]
+                }
                 _ => Vec::new(),
             };
-            starts.extend(spans.into_iter().filter(|s| !s.is_none()).map(|s| (s.lo, s.hi)));
+            let arms = (spans.into_iter().filter(|(s, ..)| !s.is_none())).map(|(s, operator, operand)| {
+                let arm = Arm {
+                    hi: s.hi,
+                    operator,
+                    operand,
+                };
+                (s.lo, arm)
+            });
+            starts.extend(arms);
         });
     };
     for item in &module.items {
@@ -761,6 +800,15 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
         }
     }
     starts
+}
+
+/// A start `arm_starts` found: where it ends, the operator it's after in
+/// the JS, and whether it's a binary's operand.
+#[derive(Clone, Copy)]
+struct Arm {
+    hi: u32,
+    operator: &'static str,
+    operand: bool,
 }
 
 /// Where each call's and `new`'s argument starts, and each object literal's
@@ -795,6 +843,30 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
         }
     }
     starts
+}
+
+/// The whole statements `code` starts with, each trimmed, each ending in a
+/// `;` outside its brackets, and what's after them: the next's start, or
+/// from where a bracket closes one it didn't open, its block's `}`. A
+/// bracket or `;` in a string is counted as code's, which only ever leaves
+/// fewer of them `let`s, or what's after them with a `;` or `}`.
+fn leading_statements(code: &str) -> (Vec<&str>, &str) {
+    let (mut statements, mut depth, mut from) = (Vec::new(), 0u32, 0);
+    for (at, c) in code.char_indices() {
+        match c {
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => match depth.checked_sub(1) {
+                Some(inside) => depth = inside,
+                None => break,
+            },
+            ';' if depth == 0 => {
+                statements.push(code[from..at].trim());
+                from = at + 1;
+            }
+            _ => {}
+        }
+    }
+    (statements, &code[from..])
 }
 
 /// Whether `head`, the code before a `{`, ends in `unsafe`, the keyword,
