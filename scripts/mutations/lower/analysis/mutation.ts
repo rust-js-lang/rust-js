@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_rows_apart.rs$"],
   },
+  {
+    name: "option-mut-changes-in-place",
+    breaks: "an `Option` a closure writes through a `&mut` counts as changed in place, so a slice of them's `to_vec()` is `xs.map((item) => item)`, not `xs.slice()`",
+    file: "src/lower/analysis/mutation.rs",
+    find: "if adt.is_enum()) && object_like(tcx, ty)",
+    replace: "if adt.is_enum())",
+    tests: ["test/lowering-collections.test.ts", "-t", "an option written through a &mut is no object changed in place"],
+  },
 ];

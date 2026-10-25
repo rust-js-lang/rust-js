@@ -178,3 +178,24 @@ of a grid, `[[u8; 2]; 3]`, takes the grid's and changes its rows, the
 inner arrays, which weren't recorded, so `[[0; 2]; 3]` was one row three
 times (#159). A call of it records each row's type as changed. Held by
 `test/corpus/flattened_rows_apart.rs`.
+
+## Amendment: an `Option` written through a `&mut` is its place
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a copy of what
+nothing changes in place is the value itself, which nothing tells apart.
+
+An enum something takes `&mut` of was changed in place, an `Option`
+too: React's act captures its `result`, an `Option<&Unknown>`, by `&mut` in
+the closure it catches, so every `Option<&Unknown>` of the crate was
+changed, and ReactJSXElement's `children.to_vec()` a copy of each item,
+`children.map((item) => item)`, where it was `children.slice()`. An
+`Option`'s `Some(x)` is `x` (ADRs 0030, 0033), and a `&mut` of one is a
+handle on its place: nothing of it is an object changed in place, a boxed
+`Some(None)` neither, which a write replaces whole. **An enum is changed
+through a `&mut` of it where it's object-like** (`object_like`, the one
+answer the rules of `*r = v` and `ref mut` ask), and what its `Some` holds
+is changed as itself, `p.x = 2` of `a[0].as_mut()`'s `Point`, still copied.
+
+Held by `test/lowering-collections.test.ts`, "an option written through a
+&mut is no object changed in place", run, and the mutation
+`option-mut-changes-in-place`.

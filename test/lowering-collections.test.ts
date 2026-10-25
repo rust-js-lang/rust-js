@@ -518,3 +518,53 @@ pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
   expect(() => compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toThrow("values of type");
   expect(() => compile("identity-set-self", "std::ptr::eq(self, self)")).toThrow("values of type");
 });
+
+// ADR 0033: a `&mut` of an `Option` is a handle on its place, `Some(x)`
+// being `x`, never an object changed in place. React's act captures its
+// `result` in a closure by `&mut`; that made every `Option<&Unknown>` in
+// the crate one changed in place, and ReactJSXElement's
+// `children.to_vec()` a copy of each item, `children.map((item) =>
+// item)`, where it's `children.slice()`. What a `Some` holds that's
+// changed through it is still copied.
+test("an option written through a &mut is no object changed in place", async () => {
+  const dir = fixture("option-mut-not-object");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone)]
+pub struct Point {
+    pub x: u32,
+}
+
+pub fn copied(xs: &[Option<&'static str>]) -> Vec<Option<&'static str>> {
+    let mut last = None;
+    let mut set = || last = Some("x");
+    set();
+    let mut v = xs.to_vec();
+    v.push(last);
+    v
+}
+
+pub fn nested() -> String {
+    let mut a: Vec<Option<Option<u32>>> = vec![Some(Some(1))];
+    let b = a.clone();
+    if let Some(inner) = a[0].as_mut() {
+        *inner = None;
+    }
+    format!("{a:?} {b:?}")
+}
+
+pub fn changed() -> (u32, u32) {
+    let mut a = vec![Some(Point { x: 1 })];
+    let b = a.clone();
+    if let Some(p) = a[0].as_mut() {
+        p.x = 2;
+    }
+    (a[0].as_ref().map_or(0, |p| p.x), b[0].as_ref().map_or(0, |p| p.x))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const v = xs.slice();");
+  expect(js).toContain("const b = a.slice();");
+  expect(js).not.toContain("(item) => item)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.copied(["a", undefined]), lib.nested(), lib.changed()]).toEqual([["a", undefined, "x"], "[Some(None)] [Some(Some(1))]", [2, 1]]);
+});

@@ -28,8 +28,13 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
         for expr in body.thir.exprs.iter() {
             // An enum something takes `&mut` of may have a variant's field
             // changed through it (and one matched with a `ref mut` binding,
-            // `ref_mut_holders`, below).
-            let enum_ty = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if adt.is_enum());
+            // `ref_mut_holders`, below). Not an `Option`, whose `Some(x)` is
+            // `x` (ADR 0033): a `&mut` of one is a handle on its place, and
+            // what its `Some` holds is changed as itself.
+            let enum_ty = |ty: Ty<'tcx>| {
+                let ty = ty.peel_refs();
+                matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()) && object_like(tcx, ty)
+            };
             match expr.kind {
                 ExprKind::Borrow {
                     borrow_kind: BorrowKind::Mut { .. },
