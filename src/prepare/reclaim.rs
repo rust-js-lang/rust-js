@@ -51,7 +51,7 @@ fn aliased_imports(module: &mut js::Module) {
             for function in item.functions_mut() {
                 if let Some(k) = function.body.iter().position(|s| {
                     matches!(&s.kind, StmtKind::Const(_, value)
-                        if value.known != js::Known::Live && matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                        if !value.facts.has(js::Known::Live) && matches!(&value.kind, ExprKind::Var(v) if *v == local))
                 }) && let StmtKind::Const(name, _) = &function.body[k].kind
                 {
                     alias = Some(name.clone());

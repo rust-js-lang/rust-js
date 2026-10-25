@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "any-truth-a-null-test",
     breaks: "every `!!s` is a test of being set, `!s.is_empty()`'s of text too, so `s ? s.toUpperCase() : undefined` is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
     file: "src/js/stmt_walk.rs",
-    find: "        ExprKind::Unary(UnaryOp::Not, not) if test.known == Known::Presence => match (&not.kind, set) {\n",
+    find: "        ExprKind::Unary(UnaryOp::Not, not) if test.facts.has(Known::Presence) => match (&not.kind, set) {\n",
     replace: "        ExprKind::Unary(UnaryOp::Not, not) => match (&not.kind, set) {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"],
   },

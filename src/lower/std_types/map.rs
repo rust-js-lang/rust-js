@@ -750,7 +750,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0877).
         Ok(match self.is_set(map_ty) {
             true => Expr {
-                known: js::Known::SetItems,
+                facts: js::Facts::of(js::Known::SetItems),
                 ..listed
             },
             false => listed,

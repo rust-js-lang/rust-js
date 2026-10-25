@@ -91,7 +91,7 @@ pub(in crate::lower) fn passed_on(f: &Expr, unread: bool) -> Option<Expr> {
             .zip(&names)
             .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
     passed.then(|| Expr {
-        known: js::Known::Nothing,
+        facts: js::Facts::NONE,
         kind: js::ExprKind::Var(g.clone()),
         span: f.span,
     })
@@ -299,7 +299,7 @@ fn set_of(items: &Expr, f: &Expr) -> Option<Expr> {
         return None;
     };
     match (&args[..], &f.kind) {
-        ([set], js::ExprKind::Arrow(params, _)) if items.known == js::Known::SetItems && params.len() <= 1 => {
+        ([set], js::ExprKind::Arrow(params, _)) if items.facts.has(js::Known::SetItems) && params.len() <= 1 => {
             Some(set.clone())
         }
         _ => None,

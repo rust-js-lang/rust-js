@@ -326,7 +326,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
             let read = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
-            *e = match field.1.known == js::Known::Defined && !written.contains(key) {
+            *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {
                 true => read.defined(),
                 false => read,
             };
@@ -420,7 +420,7 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
                 && let ExprKind::Array(items) = &value.kind
                 && let [item] = items.as_slice()
             {
-                made.get_or_insert(item.known);
+                made.get_or_insert(item.facts);
             }
         }
     });
@@ -457,7 +457,7 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
     js::each_expr_mut(body, &mut |e| {
         if field(e) {
             let read = Expr::var(&read).or_at(e.span);
-            *e = match known == js::Known::Defined {
+            *e = match known.has(js::Known::Defined) {
                 true => read.defined(),
                 false => read,
             };

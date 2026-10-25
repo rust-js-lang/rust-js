@@ -476,7 +476,7 @@ fn imported(stmts: &mut [Stmt]) {
         stmt.kind = StmtKind::Destructure {
             pattern: js::Pattern::Object(vec![(export.clone(), js::Pattern::Name(name.clone()), None)], None),
             value: Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind: ExprKind::Await(import.clone()),
                 span: value.span,
             },
@@ -1093,7 +1093,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
         fields.push(Prop::Field(key.clone(), value.clone()));
     }
     Some(Expr {
-        known: js::Known::Nothing,
+        facts: js::Facts::NONE,
         kind: ExprKind::Object(fields, js::ObjectLayout::default()),
         span: e.span,
     })
@@ -1185,7 +1185,7 @@ fn expr(e: &mut Expr) {
         && matches!(&tested.kind, ExprKind::Var(name) if name == param)
     {
         *e = Expr {
-            known: js::Known::Nothing,
+            facts: js::Facts::NONE,
             kind: ExprKind::Var("Boolean".into()),
             span: e.span,
         };

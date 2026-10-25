@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "bound-rust-data-a-getter",
     breaks: "Rust's data a chain binds and tests, a field, `const c = node.count`, or a tuple's item, `value[0]`, isn't read in the test, `node.count != null && node.count > 1`, as if a getter could read it",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    e.known == js::Known::Getter\n",
+    find: "    e.facts.has(js::Known::Getter)\n",
     replace: "    true\n",
     tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR read as written"],
   },

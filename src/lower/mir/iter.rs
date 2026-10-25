@@ -259,12 +259,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value` spilled, `const iter = value;`, its mark kept on the name
     /// that reads it (`made_in_place`).
     fn spill_marked(&mut self, value: Expr, made: &mut Vec<Stmt>) -> Expr {
-        let known = value.known;
-        let mut held = self.spill("iter", value, made);
-        if known == js::Known::InPlace {
-            held.known = known;
+        let in_place = value.facts.has(js::Known::InPlace);
+        let held = self.spill("iter", value, made);
+        match in_place {
+            true => held.in_place(),
+            false => held,
         }
-        held
     }
 
     /// Whether a value of `ty` the call at `span` takes is std's compiled

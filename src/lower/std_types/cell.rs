@@ -612,7 +612,7 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
             let read = std::mem::replace(&mut **of, Expr::undefined());
             *e = Expr {
                 span: e.span,
-                known: js::Known::Live,
+                facts: js::Facts::of(js::Known::Live),
                 ..read
             };
             changed = true;
@@ -621,7 +621,7 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
             if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key)) =>
         {
             let (mut key, f) = (args.remove(0), args.remove(0));
-            key.known = js::Known::Live;
+            key.facts = js::Facts::of(js::Known::Live);
             *e = Expr {
                 span: e.span,
                 ..apply(f, vec![key])

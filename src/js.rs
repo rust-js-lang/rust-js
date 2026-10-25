@@ -462,17 +462,43 @@ impl StmtKind {
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
-    /// What its owner knows of it that its kind doesn't say, `Known`'s,
-    /// kept where it's rebuilt of new parts.
-    pub known: Known,
+    /// What its owner knows of it that its kind doesn't say, each a
+    /// `Known`, kept where it's rebuilt of new parts.
+    pub facts: Facts,
+}
+
+/// What the lowering knows of an expression, each of `Known`'s: a set, so
+/// one fact never hides another (the review's P2, ADR 0889).
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+pub struct Facts(u16);
+
+impl Facts {
+    /// Nothing known.
+    pub const NONE: Facts = Facts(0);
+
+    /// `known` alone.
+    pub const fn of(known: Known) -> Facts {
+        Facts(1 << known as u16)
+    }
+
+    pub fn has(self, known: Known) -> bool {
+        self.0 & Facts::of(known).0 != 0
+    }
+
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
+    /// These and `known`.
+    pub fn with(self, known: Known) -> Facts {
+        Facts(self.0 | Facts::of(known).0)
+    }
 }
 
 /// What the lowering knows of an expression that its kind doesn't say:
 /// the one place a later pass reads it from, not from where it's written.
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Known {
-    #[default]
-    Nothing,
     /// A call of a method of a `str` or a slice, as Rust's types tell,
     /// `s.startsWith(t)`: never a crate's or a binding's of the same
     /// name, `P.at(p)`, which may do anything.

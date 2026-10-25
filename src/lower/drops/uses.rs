@@ -244,7 +244,7 @@ pub(super) fn param_name(tcx: TyCtxt<'_>, callee: DefId, index: u32) -> String {
 pub(super) fn dyn_dropped(dictionary: Expr, value: Expr, js_span: js::Span) -> Stmt {
     let drop = Expr::member(dictionary, js::DICTIONARY_DROP);
     StmtKind::Expr(Expr {
-        known: js::Known::Nothing,
+        facts: js::Facts::NONE,
         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
         span: js_span,
     })

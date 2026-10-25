@@ -354,7 +354,7 @@ pub(super) fn made_array(e: &Expr) -> bool {
     match &e.kind {
         js::ExprKind::Array(_) => true,
         // A slice's items in a range in bounds, `items.slice(a, b)` (ADR 0806).
-        _ if e.known == js::Known::Sliced => true,
+        _ if e.facts.has(js::Known::Sliced) => true,
         // An `Option`'s items, `o == null ? [] : [o]`.
         js::ExprKind::Cond(..) => fresh(e),
         // A helper's that makes one, `$windows(v, 2)`.
@@ -472,7 +472,7 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
             Ok(args.pop().expect("one"))
         }
         kind => Err(Expr {
-            known: js::Known::Nothing,
+            facts: js::Facts::NONE,
             kind,
             span: e.span,
         }),
@@ -537,7 +537,7 @@ pub(super) fn iterated(e: Expr) -> Expr {
             args.pop().expect("one")
         }
         kind => Expr {
-            known: js::Known::Nothing,
+            facts: js::Facts::NONE,
             kind,
             span: e.span,
         },
@@ -594,7 +594,7 @@ fn enumerating() -> Expr {
 /// recognizers made of it in place, never std's struct, which one held is:
 /// as the call that took it marked it (`Known::InPlace`, ADR 0871).
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
-    e.known == js::Known::InPlace
+    e.facts.has(js::Known::InPlace)
 }
 
 /// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>

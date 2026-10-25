@@ -432,7 +432,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Member(..) => {
                 let mut root = e;
                 while let js::ExprKind::Member(object, _) = &root.kind {
-                    if root.known == js::Known::Getter {
+                    if root.facts.has(js::Known::Getter) {
                         return false;
                     }
                     root = object;
@@ -449,7 +449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A thread-local made where it's first used, `key()`, the same
             // cell wherever it's read (`Known::LocalRead`): read where it's
             // used, after what its call is given, as Rust makes it there.
-            js::ExprKind::Call(..) if e.known == js::Known::LocalRead => true,
+            js::ExprKind::Call(..) if e.facts.has(js::Known::LocalRead) => true,
             // A pointer, one handle for each place, of a place that's the same
             // anywhere (ADR 0407): `$ptr(COUNT, "value")`.
             js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$ptr" | "$ptrTo")) => {

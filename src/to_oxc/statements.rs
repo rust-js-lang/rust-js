@@ -166,7 +166,7 @@ impl<'a> Cx<'a> {
             let value = js::Expr {
                 kind: js::ExprKind::Function(Box::new(function)),
                 span: f.span,
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
             };
             assigned.push(js::StmtKind::Assign(js::Expr::member(of, f.name.clone()), value).at(f.span));
         }

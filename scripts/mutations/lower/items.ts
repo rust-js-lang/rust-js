@@ -192,8 +192,8 @@ export const mutations: Mutation[] = [
     name: "lazy-read-unmarked",
     breaks: "a lazy thread-local's read is a call like any, made before what its call is given, and `set` runs its initializer",
     file: "src/lower/items.rs",
-    find: "            true => Expr {\n                known: js::Known::LocalRead,\n",
-    replace: "            true => Expr {\n                known: js::Known::Nothing,\n",
+    find: "            true => Expr {\n                facts: js::Facts::of(js::Known::LocalRead),\n",
+    replace: "            true => Expr {\n                facts: js::Facts::NONE,\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
 ];

@@ -182,7 +182,7 @@ pub(super) fn unread_bound(stmts: &mut Vec<Stmt>, bound: usize) {
 /// Whether `e` is a binding's read of a property, which a getter may
 /// answer, as the binding's lowering says (`js::Known::Getter`, ADR 0672).
 fn reads_a_getter(e: &Expr) -> bool {
-    e.known == js::Known::Getter
+    e.facts.has(js::Known::Getter)
 }
 
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,

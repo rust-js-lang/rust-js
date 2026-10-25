@@ -369,8 +369,8 @@ export const mutations: Mutation[] = [
     name: "importer-read-fixed",
     breaks: "an importer's read of another module's variable is taken for one of a function, which nothing sets, so `const rendering = isRendering` is read where it's used, after its module set it again (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "                known: js::Known::Live,\n                ..read\n",
-    replace: "                known: js::Known::Item,\n                ..read\n",
+    find: "                facts: js::Facts::of(js::Known::Live),\n                ..read\n",
+    replace: "                facts: js::Facts::of(js::Known::Item),\n                ..read\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
   },
 ];

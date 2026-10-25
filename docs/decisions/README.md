@@ -667,6 +667,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0885 A closure value is given to a JS helper as it is](0885-a-closure-value-is-given-as-it-is.md)
 - [0886 A function's evidence is one ordered list](0886-a-functions-evidence-is-one-ordered-list.md)
 - [0887 A std function or constant that's `Math`'s is `Math`'s as a value](0887-std-items-that-are-math-are-math.md)
+- [0889 An expression's facts are a set](0889-an-expressions-facts-are-a-set.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too)*

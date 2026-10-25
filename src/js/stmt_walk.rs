@@ -69,7 +69,7 @@ pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
         ExprKind::Binary(o, x, null) if *o == op && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) => {
             Some(x)
         }
-        ExprKind::Unary(UnaryOp::Not, not) if test.known == Known::Presence => match (&not.kind, set) {
+        ExprKind::Unary(UnaryOp::Not, not) if test.facts.has(Known::Presence) => match (&not.kind, set) {
             (ExprKind::Unary(UnaryOp::Not, x), true) => Some(x),
             (ExprKind::Unary(UnaryOp::Not, _), false) => None,
             (_, set) => (!set).then_some(&**not),
@@ -320,7 +320,7 @@ impl Stmt {
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => !value.may_throw(),
             // Not of a setter's property, which may throw (`Known::Setter`).
             StmtKind::Assign(target, value) => {
-                target.known != Known::Setter && !target.may_throw() && !value.may_throw()
+                !target.facts.has(Known::Setter) && !target.may_throw() && !value.may_throw()
             }
             StmtKind::Let(_, None) => true,
             _ => false,

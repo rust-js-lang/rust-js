@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         written.sort_by_key(|&(at, _)| at);
         for (at, id) in written {
             let hole = Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind: js::ExprKind::FunctionHole(id.index.as_u32()),
                 span: js::Span::NONE,
             };

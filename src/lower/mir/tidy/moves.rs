@@ -251,7 +251,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
 fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool {
     let mut place = value;
     while let ExprKind::Member(of, _) = &place.kind {
-        if place.known == js::Known::Getter {
+        if place.facts.has(js::Known::Getter) {
             return false;
         }
         place = of;
@@ -354,7 +354,7 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
         // them first: nothing moves past its receiver (ADR 0750).
         ExprKind::Call(f, _)
             if let ExprKind::Member(receiver, _) = &f.kind
-                && f.known == js::Known::Getter =>
+                && f.facts.has(js::Known::Getter) =>
         {
             leads(receiver, name, guard, passes).or(Some(false))
         }

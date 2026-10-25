@@ -236,7 +236,7 @@ impl Expr {
         };
         // The node it was, of new parts: what's known of it is still so.
         Some(Expr {
-            known: self.known,
+            facts: self.facts,
             kind,
             span: self.span,
         })
@@ -308,14 +308,14 @@ impl Expr {
                 let span = self.span;
                 kept.into_iter()
                     .reduce(|a, b| Expr {
-                        known: Known::Nothing,
+                        facts: Facts::NONE,
                         kind: ExprKind::Binary(Op::And, Box::new(a), Box::new(b)),
                         span,
                     })
                     .expect("a part")
             }
             ExprKind::Binary(op @ Op::Or, a, b) => Expr {
-                known: Known::Nothing,
+                facts: Facts::NONE,
                 kind: ExprKind::Binary(*op, Box::new(a.as_test(changed)), Box::new(b.as_test(changed))),
                 span: self.span,
             },
@@ -377,13 +377,13 @@ impl Expr {
     pub fn reads_same(&self) -> bool {
         // A read a getter may answer, which may give another value each time
         // (ADR 0672).
-        if self.known == Known::Getter {
+        if self.facts.has(Known::Getter) {
             return false;
         }
         // A thread-local made where it's first used, the same cell wherever
         // it's read, made where it's first read, as Rust makes it where it's
         // first used (`Known::LocalRead`).
-        if self.known == Known::LocalRead {
+        if self.facts.has(Known::LocalRead) {
             return true;
         }
         match &self.kind {
@@ -525,13 +525,13 @@ impl Expr {
 
     pub fn has_effects(&self) -> bool {
         // A read a getter may answer, which may do anything (ADRs 0672, 0750).
-        if self.known == Known::Getter {
+        if self.facts.has(Known::Getter) {
             return true;
         }
         // A thread-local's made where it's first used, which runs nothing a
         // call's arguments are ordered against: its initializer runs where
         // the call uses it, after them, as Rust's does (`Known::LocalRead`).
-        if self.known == Known::LocalRead {
+        if self.facts.has(Known::LocalRead) {
             return false;
         }
         match &self.kind {

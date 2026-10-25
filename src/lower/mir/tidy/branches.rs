@@ -595,7 +595,7 @@ pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
         kind => Expr::unary(
             UnaryOp::Not,
             Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind,
                 span: e.span,
             },
@@ -742,7 +742,7 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
             Op::Or,
             a,
             Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind,
                 span: b.span,
             },

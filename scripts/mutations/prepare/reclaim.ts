@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "live-import-aliased",
     breaks: "`const rendering = isRendering;` of another module's variable is the import by that name, read where the `const` is read, after its module set it again (ADR 0270, amended)",
     file: "src/prepare/reclaim.rs",
-    find: "                        if value.known != js::Known::Live && matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
+    find: "                        if !value.facts.has(js::Known::Live) && matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
     replace: "                        if matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
   },

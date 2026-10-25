@@ -229,7 +229,7 @@ fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
                     false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
                 };
                 *child = Expr {
-                    known: js::Known::Nothing,
+                    facts: js::Facts::NONE,
                     span: child.span,
                     kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
                 };

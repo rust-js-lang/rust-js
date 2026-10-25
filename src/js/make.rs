@@ -8,7 +8,7 @@ impl Expr {
         Expr {
             kind,
             span: Span::NONE,
-            known: Known::Nothing,
+            facts: Facts::NONE,
         }
     }
 
@@ -20,7 +20,7 @@ impl Expr {
     /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
     pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
         Expr {
-            known: Known::Read,
+            facts: Facts::of(Known::Read),
             ..Expr::call(Expr::member(of, method), args)
         }
     }
@@ -29,12 +29,12 @@ impl Expr {
     /// (`Known::Defined`); one it knows otherwise of, a getter's read say,
     /// as it is.
     pub fn defined(self) -> Expr {
-        match self.known {
-            Known::Nothing => Expr {
-                known: Known::Defined,
+        match self.facts.is_empty() {
+            true => Expr {
+                facts: Facts::of(Known::Defined),
                 ..self
             },
-            _ => self,
+            false => self,
         }
     }
 
@@ -47,7 +47,7 @@ impl Expr {
         let test = if set { Expr::unary(UnaryOp::Not, not) } else { not };
         // Of the option, not a constant's `true` it folded to.
         let marked = Expr {
-            known: Known::Presence,
+            facts: Facts::of(Known::Presence),
             ..test.clone()
         };
         match null_test(&marked, set) {
@@ -60,7 +60,7 @@ impl Expr {
     /// answer (`Known::Setter`).
     pub fn answered_by_a_setter(self) -> Expr {
         Expr {
-            known: Known::Setter,
+            facts: Facts::of(Known::Setter),
             ..self
         }
     }
@@ -69,7 +69,7 @@ impl Expr {
     /// (`Known::Getter`).
     pub fn answered_by_a_getter(self) -> Expr {
         Expr {
-            known: Known::Getter,
+            facts: Facts::of(Known::Getter),
             ..self
         }
     }
@@ -588,7 +588,7 @@ impl Expr {
             kind => Expr::unary(
                 UnaryOp::Not,
                 Expr {
-                    known: self.known,
+                    facts: self.facts,
                     kind,
                     span: self.span,
                 },
@@ -622,7 +622,7 @@ impl Expr {
                 _ => Op::LooseEq,
             };
             return Expr {
-                known: Known::Nothing,
+                facts: Facts::NONE,
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
             };
@@ -892,11 +892,9 @@ impl Expr {
     }
 
     /// It, a `Rev`, an `Enumerate` or a `Map` made in place, so marked
-    /// (`Known::InPlace`), where nothing else is known of it.
+    /// (`Known::InPlace`), beside what else is known of it.
     pub fn in_place(mut self) -> Expr {
-        if self.known == Known::Nothing {
-            self.known = Known::InPlace;
-        }
+        self.facts = self.facts.with(Known::InPlace);
         self
     }
 
@@ -904,7 +902,7 @@ impl Expr {
     /// (`Known::Item`).
     pub fn item(self) -> Expr {
         Expr {
-            known: Known::Item,
+            facts: Facts::of(Known::Item),
             ..self
         }
     }
@@ -913,7 +911,7 @@ impl Expr {
     /// whatever runs between: a constant, or one of the program's
     /// functions (`Known::Item`), which nothing assigns.
     pub fn is_fixed(&self) -> bool {
-        self.is_constant() || self.known == Known::Item
+        self.is_constant() || self.facts.has(Known::Item)
     }
 
     /// Whether this may be `undefined`, as its form tells. A constant but
@@ -927,7 +925,7 @@ impl Expr {
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if matches!(self.known, Known::Defined | Known::Item) => false,
+            _ if self.facts.has(Known::Defined) || self.facts.has(Known::Item) => false,
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(_)
@@ -1024,7 +1022,7 @@ fn null_for_none(made: &Expr) -> Option<Expr> {
         ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
         _ if !made.may_be_undefined() => Some(made.clone()),
         ExprKind::Cond(test, yes, no) => Some(Expr {
-            known: made.known,
+            facts: made.facts,
             kind: ExprKind::Cond(
                 test.clone(),
                 Box::new(null_for_none(yes)?),

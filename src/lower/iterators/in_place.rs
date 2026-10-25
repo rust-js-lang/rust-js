@@ -125,7 +125,7 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
         e.each_mut(&mut |part| {
             if let js::ExprKind::Call(callee, args) = &part.kind {
                 let reads = match &callee.kind {
-                    js::ExprKind::Member(_, name) => part.known == js::Known::Read && READS.contains(&name.as_str()),
+                    js::ExprKind::Member(_, name) => part.facts.has(js::Known::Read) && READS.contains(&name.as_str()),
                     _ => false,
                 };
                 if reads {

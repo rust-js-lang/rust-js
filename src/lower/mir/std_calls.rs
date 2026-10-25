@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Expr::member(this.spill("value", *object, out), &field)
                         }
                         kind => Expr {
-                            known: js::Known::Nothing,
+                            facts: js::Facts::NONE,
                             kind,
                             span: place.span,
                         },

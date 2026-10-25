@@ -24,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let place = self.fn_ref(def_id);
         match self.made_where_used(def_id) {
             true => Expr {
-                known: js::Known::LocalRead,
+                facts: js::Facts::of(js::Known::LocalRead),
                 ..Expr::call(place, Vec::new())
             },
             false => place,
@@ -37,7 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0037, amended, #252).
     pub(in crate::lower) fn lazy_key_getter(read: &Expr) -> Option<&Expr> {
         match &read.kind {
-            ExprKind::Call(getter, args) if read.known == js::Known::LocalRead && args.is_empty() => Some(getter),
+            ExprKind::Call(getter, args) if read.facts.has(js::Known::LocalRead) && args.is_empty() => Some(getter),
             _ => None,
         }
     }
@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A function a block makes and gives: itself, there (ADR 0296).
         if self.krate.named_expressions.contains(&def_id) {
             return Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind: js::ExprKind::FunctionHole(def_id.index.as_u32()),
                 span: js::Span::NONE,
             };
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let export = target.owner.as_ref().unwrap_or(&target.name);
         let reference = if target.module != self.module {
             Expr {
-                known: js::Known::Nothing,
+                facts: js::Facts::NONE,
                 kind: js::ExprKind::Symbol(super::module_symbol(target.module, export)),
                 span: js::Span::NONE,
             }
@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     read.binding,
                 ));
                 Expr {
-                    known: js::Known::Nothing,
+                    facts: js::Facts::NONE,
                     kind: js::ExprKind::Symbol(super::module_symbol(*module, &read.name)),
                     span: js::Span::NONE,
                 }

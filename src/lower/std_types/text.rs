@@ -725,7 +725,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr {
                     kind,
                     span: range.span,
-                    known: js::Known::Nothing,
+                    facts: js::Facts::NONE,
                 },
                 Expr::int(0),
             ],
@@ -809,7 +809,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 std::iter::once(start).chain(end).collect(),
             );
             return Expr {
-                known: js::Known::Sliced,
+                facts: js::Facts::of(js::Known::Sliced),
                 ..sliced
             };
         }

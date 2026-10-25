@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "sliced-not-made",
     breaks: "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",
     file: "src/lower/iterators.rs",
-    find: "        _ if e.known == js::Known::Sliced => true,\n",
+    find: "        _ if e.facts.has(js::Known::Sliced) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
