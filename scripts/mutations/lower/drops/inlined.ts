@@ -115,4 +115,12 @@ export const mutations: Mutation[] = [
     replace: "            *count >= 1\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
   },
+  {
+    name: "drop-of-its-own-type-inlined",
+    breaks: "a `Drop` whose body drops a value of its own type is written at each of its calls, which makes another to write: the compiler never finishes (#229)",
+    file: "src/lower/drops/inlined.rs",
+    find: "    if js::mentions_in(&body, name) > 0 {\n        return;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^drop_of_its_own_type.rs$"],
+  },
 ];

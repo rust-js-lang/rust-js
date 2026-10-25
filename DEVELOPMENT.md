@@ -278,6 +278,7 @@ checked:
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
 | `check:fast`'s bindings job while other worktrees build | Failed once at 35 s and passed alone, 75 of 75 | Find what it races on |
 | A sweep of generated programs against native Rust, by hand | 4–5 min for 1,100–2,100 programs, again after each fix, each a `rustc`, a rust-js compile and a run | A checked-in runner: native outputs kept by source, only rust-js's compile and run again, verdicts said against the last sweep (fixed, regressed) |
+| A mutation that makes the compiler never finish, `drop-of-its-own-type-inlined` | Caught only by its corpus case's timeout: about a minute where its change's `check:fast` runs it, and in the nightly | A compile timeout of its own for a corpus case that says it, a few seconds |
 | `check:fast`'s guide, std package and readability job | The guide's examples take every core for ~20 s, and the other jobs slow (architecture's 6 s to 13 s) | The guide's examples kept by what they compiled, as the corpus's runs are |
 
 ## Working on `main`

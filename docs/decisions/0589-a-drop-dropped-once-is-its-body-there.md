@@ -102,3 +102,12 @@ it's made, and the module's order among those. Held by the mutation
 `drops-inlined-callees-first`, whose JS
 `test/corpus/refused_drops_and_displays.js` isn't.
 
+## Amendment: not a drop that calls itself
+
+A `Drop` whose body drops a value of its own type, `let old =
+mem::replace(self, ..)` dropped at its end, calls itself. Written at each
+of its calls, its body made another call to write, and the compiler never
+finished: rustc's `drop/issue-23611-enum-swap-in-drop.rs` timed out
+(#229). A drop whose own body calls it stays a function, called, as
+Rust's drop glue runs it again. `test/corpus/drop_of_its_own_type.rs`
+holds it, with the mutation `drop-of-its-own-type-inlined`.

@@ -55,6 +55,11 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         unreachable!("found")
     };
     let (params, body) = (drop.params.clone(), drop.body.clone());
+    // One whose body drops a value of its own type calls itself: written
+    // at each call, it would make another call to write, never done (#229).
+    if js::mentions_in(&body, name) > 0 {
+        return;
+    }
     let mentions: usize = (items.iter().enumerate())
         .map(|(i, item)| match i == at {
             true => js::mentions_in(&body, name),
