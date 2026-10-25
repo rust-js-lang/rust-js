@@ -146,7 +146,7 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// std's functions that may give a value of a type they weren't given one
-/// of (ADR 0903): what addresses memory, an intrinsic of memory,
+/// of (ADR 0904): what addresses memory, an intrinsic of memory,
 /// `transmute`'s, and a downcast of a `dyn Any`, which gives what was
 /// made one anywhere. Every other std function gives only what it was
 /// given, or makes of it: an empty `Vec<T>` holds no `T`.

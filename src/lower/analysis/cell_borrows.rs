@@ -50,7 +50,7 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// Each of the crate's types' impls of a trait, by the type: what std's
     /// code bounding one by the trait may run of it.
     impls: Impls,
-    /// What each fn pointer it calls may be (ADR 0903).
+    /// What each fn pointer it calls may be (ADR 0904).
     pointers: super::fn_pointers::FnPointers<'tcx>,
 }
 
@@ -84,7 +84,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 }
             }
         }
-        // What each fn pointer the crate calls may be (ADR 0903).
+        // What each fn pointer the crate calls may be (ADR 0904).
         let pointers = super::fn_pointers::FnPointers::of_crate(recognition);
         let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
@@ -226,7 +226,7 @@ impl<'tcx> CellBorrows<'tcx> {
     }
 
     /// Whether calling a fn pointer of type `ptr` may ask of `held` (ADR
-    /// 0903): what calling any function or closure it may be may.
+    /// 0904): what calling any function or closure it may be may.
     pub(in crate::lower) fn pointer_call_asks(
         &self,
         recognition: &Recognition<'_, 'tcx>,
@@ -245,7 +245,7 @@ impl<'tcx> CellBorrows<'tcx> {
     }
 
     /// Whether calling a fn pointer of type `ptr` may run code rust-js
-    /// can't see (ADR 0903): what it may be may, or it may be anything.
+    /// can't see (ADR 0904): what it may be may, or it may be anything.
     pub(in crate::lower) fn pointer_call_runs_unseen(
         &self,
         recognition: &Recognition<'_, 'tcx>,
@@ -845,7 +845,7 @@ fn direct<'tcx>(
                     let called = called(recognition, id, generic_args, args.first().map(|&a| (thir, a)));
                     runs(&mut found, called);
                 }
-                // A fn pointer's, which runs what it may be (ADR 0903): a
+                // A fn pointer's, which runs what it may be (ADR 0904): a
                 // closure of the crate's, or what a call of a function does.
                 None => match pointers.may_be(tcx, thir[fun].ty) {
                     Some(may_be) => {

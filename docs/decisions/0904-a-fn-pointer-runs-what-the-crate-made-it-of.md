@@ -1,4 +1,4 @@
-# 0903. A fn pointer runs what the crate made it of
+# 0904. A fn pointer runs what the crate made it of
 
 Status: Accepted. Extends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 (what a call may borrow) to a call of a fn pointer, which ran "what

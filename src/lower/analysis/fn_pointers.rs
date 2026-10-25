@@ -1,4 +1,4 @@
-//! What a fn pointer may be (ADR 0903): of each fn pointer type, the
+//! What a fn pointer may be (ADR 0904): of each fn pointer type, the
 //! functions and closures the crate's code makes one of, each coercion of
 //! one in any of its bodies; or anything, where a value of the type may
 //! come from code that isn't the crate's, a library's or JS's, which may

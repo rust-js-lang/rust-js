@@ -1,7 +1,7 @@
 // A function pointer the crate makes only of functions that borrow no
 // cell, React's `clz32` or its fallback, called while a `RefCell`'s borrow
 // is held: no other borrow can meet it, and its cell is the array it
-// holds (ADR 0903).
+// holds (ADR 0904).
 
 use std::cell::RefCell;
 
