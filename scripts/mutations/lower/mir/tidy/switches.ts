@@ -7,6 +7,14 @@ const typeofs = ["test/lowering-switches.test.ts", "-t", "a match of what a valu
 
 export const mutations: Mutation[] = [
   {
+    name: "switch-default-doing-nothing-kept",
+    breaks: "a `_ => {}` is `default: break;`, which does nothing (#268)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            if default.as_deref().is_some_and(does_nothing) {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
+  {
     name: "switch-break-of-loop-unlabeled",
     breaks: "a `break` of the loop in a case stays `break;`, which leaves the `switch`, so the loop goes on",
     file: "src/lower/mir/tidy/switches.rs",

@@ -224,3 +224,11 @@ one path reaches, or drops a test whose branches do the same.
 - Mutations `default-statements-after-switch`,
   `none-guard-kept-before-switch`, `none-guard-around-switch-kept`,
   `default-break-kept`, `guarded-switch-temporary-kept`.
+
+## Amendment: tidy alone leaves out a `default` that does nothing (#268)
+
+The printer also filtered out an empty `default`, which tidy's
+`switches` stage had already removed (`does_nothing`). It was a second
+authority, and its mutation survived. The printer now prints the
+`default` it's given. Tidy's rule is held by
+`switch-default-doing-nothing-kept`, which is caught.

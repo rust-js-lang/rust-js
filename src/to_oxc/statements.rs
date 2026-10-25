@@ -455,8 +455,9 @@ impl<'a> Cx<'a> {
                 default,
             } => {
                 let mut clauses = ArenaVec::new_in(b);
-                // A `default` that does nothing, `_ => {}`'s, left out.
-                let default = default.as_ref().filter(|default| !default.is_empty());
+                // One that does nothing, `_ => {}`'s, tidy's `switches` left
+                // out (#268).
+                let default = default.as_ref();
                 // The last clause, which JS falls out of, needs no `break`
                 // (ADR 0629, amended).
                 let last_case = cases.iter().rposition(|(values, _)| !values.is_empty());

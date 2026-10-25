@@ -147,14 +147,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
-    name: "switch-empty-default-kept",
-    breaks: "a `_ => {}` is `default: break;`, which does nothing",
-    file: "src/to_oxc/statements.rs",
-    find: "                let default = default.as_ref().filter(|default| !default.is_empty());\n",
-    replace: "                let default = default.as_ref();\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
-  },
-  {
     name: "switch-case-falls-through",
     breaks: "a case that goes on has no `break;`, and falls through to the next",
     file: "src/to_oxc/statements.rs",
