@@ -684,7 +684,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0888 `rust-js clippy` lints the app as rust-js reads it](0888-rust-js-clippy.md)
 - [0894 A bitwise operator's assignment is its compound](0894-a-bitwise-assignment-is-its-compound.md) *(amended: an item's, its index checked, and at a `const` index)*
 - [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
-- [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md) *(amended: any integer's test against `0`, not a `match` pattern's)*
+- [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md) *(amended: an integer's `!= 0` is its truth, not its `== 0` nor a remainder's or a `match` pattern's)*
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
 - [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md) *(extended by 0903: `FlatMap`)*

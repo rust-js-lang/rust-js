@@ -203,7 +203,7 @@ pub fn is_simple_object(object: &Unknown) -> bool {
 // ADR 0701: of `if a || v[i] != w[j] { return 1; }`, an index in bounds
 // MIR reads into a temporary between the tests, the read is the test's
 // alone where nothing after it reads it (`unread_bound`, as `and_tests`
-// leaves one): `if (!j || v[i] !== w[j])`, no `const value = v[i];`
+// leaves one): `if (j === 0 || v[i] !== w[j])`, no `const value = v[i];`
 // left after it.
 test("a read a test takes in place is gone where nothing else reads it", async () => {
   const { js, lib } = await compiled(
@@ -218,7 +218,7 @@ test("a read a test takes in place is gone where nothing else reads it", async (
 }
 `,
   );
-  expect(js).toContain("    if (!j || v[i] !== w[j]) {\n      return 1;\n    }\n  }\n  return 0;\n");
+  expect(js).toContain("    if (j === 0 || v[i] !== w[j]) {\n      return 1;\n    }\n  }\n  return 0;\n");
   expect(js).not.toContain("const value");
   const differs = lib.differs as unknown as (v: number[], w: number[], i: number, j: number) => number;
   expect([differs([1, 2], [1, 2], 1, 1), differs([1, 2], [1, 3], 1, 1), differs([1], [1], 0, 0), differs([], [1], 0, 0)]).toEqual([0, 1, 1, 0]);
@@ -419,7 +419,7 @@ pub fn unless_greater(a: i32, b: i32) -> i32 {
     if !(a > b) { a } else { b }
 }
 `);
-  expect(js).toContain("  return !a || a > b ? a : b;\n");
+  expect(js).toContain("  return a === 0 || a > b ? a : b;\n");
   expect(js).toContain("  return a && a < b ? a : b;\n");
   expect(js).toContain("  return a <= b ? a : b;\n");
   const pairs = [[0, 2], [2, 0], [2, 8], [8, 2], [3, 3]];
@@ -474,7 +474,7 @@ pub fn as_written(a: u32, b: u32) -> bool {
 }
 `);
   expect(js).toContain("  if (lanes & 2 && !(DISABLE_LEGACY_MODE && root.tag === 0)) {\n");
-  expect(js).toContain("  return !(a === 1 || !b) ? a : b;\n");
+  expect(js).toContain("  return !(a === 1 || b === 0) ? a : b;\n");
   expect(js).toContain("  while (!(n >= limit || n === 7)) {\n");
   expect(js).toContain("  if (a !== 1 || b) {\n");
   // MIR joins the negation's parts into the chain around it, `.. && !disabled && tag !== 7`.

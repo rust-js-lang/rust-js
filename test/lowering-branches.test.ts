@@ -201,7 +201,7 @@ pub fn counted(n: i32) -> i32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (!n) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
+  expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
   expect(js).toContain("total = n > 0 ? total + n : (total - n) | 0;");
   expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
   const lib = await import(join(dir, "lib.js"));
@@ -1486,7 +1486,7 @@ pub fn chained(n: u32) -> fn(u32) -> u32 {
   expect(js).toContain('const pick = typeof rustJsFast !== "undefined" ? rustJsFast : (n) => (n * 2) >>> 0;');
   expect(js).toContain("  const f = flag ? (n) => (n + 1) >>> 0 : (n) => (n * 3) >>> 0;\n");
   expect(js).toContain('  let f;\n  if (flag) {\n    console.log("one");\n');
-  expect(js).toContain("  if (!n) {\n    return (n) => (n + 1) >>> 0;\n  }\n");
+  expect(js).toContain("  if (n === 0) {\n    return (n) => (n + 1) >>> 0;\n  }\n");
   const globals = globalThis as { rustJsFast?: (n: number) => number };
   const lib = await import(join(dir, "lib.js"));
   expect([lib.picked(4), lib.local(true, 2), lib.local(false, 2), lib.chained(1)(1)]).toEqual([8, 5, 9, 3]);

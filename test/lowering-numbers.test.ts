@@ -596,7 +596,7 @@ pub fn by(a: i32, b: i32) -> i32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain(`    if (!(i % 2)) {
+  expect(js).toContain(`    if (i % 2 === 0) {
       continue;
     }
     out.push((i / 3) | 0);`);

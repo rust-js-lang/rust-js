@@ -1,6 +1,7 @@
-// An integer's test against `0` is its truth, `if (lanes)`, never `NaN`
-// (ADR 0896, amended): of each width, a sum, a remainder and a wrap; a
-// float's stays `x !== 0`, `NaN` being unequal to `0` but falsy.
+// An integer's test `!= 0` is its truth, `if (lanes)`, never `NaN` (ADR
+// 0896, amended): of each width, and of a wrap; its `== 0` stays `=== 0`,
+// a remainder's test stays as written, and a float's stays `x !== 0`,
+// `NaN` being unequal to `0` but falsy.
 
 fn pick(lanes: i32) -> &'static str {
     if lanes != 0 { "some" } else { "none" }
@@ -45,6 +46,12 @@ fn arithmetic(n: i32, m: i32) -> u32 {
     }
     if n - m == 0 {
         seen |= 4;
+    }
+    if m != 0 && n % m != 0 {
+        seen |= 8;
+    }
+    if n.wrapping_sub(m) != 0 {
+        seen |= 16;
     }
     seen
 }

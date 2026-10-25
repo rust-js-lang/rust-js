@@ -1085,7 +1085,7 @@ pub fn named(n: usize) -> String {
   // Each variant its module's `const`, read by its name (ADR 0722, amended).
   expect(js).toContain("export const Empty = 0;\nexport const Complex = 1;\nexport const Primitive = 2;\nexport const Entries = 3;\n");
   expect(js).toContain("export const Low = -1;\nexport const High = 10;\n");
-  expect(js).toContain("return !n ? Empty : Entries;");
+  expect(js).toContain("return n === 0 ? Empty : Entries;");
   expect(js).toContain("return kind === Empty;");
   expect(js).toContain("export function code(kind) {\n  return kind;\n}");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");

@@ -777,7 +777,7 @@ export function found(flag) {
 }
 
 export function ratio(a, b) {
-  if (!b) {
+  if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };
   }
   return { TAG: "Ok", _0: $div(a, b) >>> 0 };

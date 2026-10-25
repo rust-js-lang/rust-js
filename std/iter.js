@@ -132,7 +132,7 @@ export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
     if ($someValue(peeked) == null) {
       v = undefined;
     } else {
-      if (!n) {
+      if (n === 0) {
         return $someValue(peeked);
       }
       v = $nthDropping(
@@ -1895,7 +1895,7 @@ export function flattenCompatIUIterator_sizeHint(
       if (flattenCompat.iter.iter != null) {
         const iter = $someValue(flattenCompat.iter.iter);
         const [_108, _109] = $sizeHint(iter, IIterator);
-        if (!_108) {
+        if (_108 === 0) {
           if (_109 != null) {
             if ((fhi == null ? 0 : 1) === 1) {
               if ((bhi == null ? 0 : 1) === 1) {

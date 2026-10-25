@@ -358,7 +358,8 @@ export function fits(str, substr) {
   is `lanes & -lanes`
   ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)); and a
   test of bits against `0` is their truth, `if (lane & SYNC_LANE)`, and
-  so is any integer's, `while (lanes)`, never `NaN`; a float's stays
+  so is any integer's `!= 0`, `while (lanes)`, never `NaN`; its `== 0`
+  stays `i === 0`, as does a remainder's `n % 2 === 0` and a float's
   `x !== 0`
   ([ADR 0896](../../decisions/0896-a-test-of-bits-against-zero-is-their-truth.md), amended):
 
@@ -964,7 +965,7 @@ export function sign(n) {
   if (n < 0) {
     return "negative";
   }
-  return !n ? "zero" : "positive";
+  return n === 0 ? "zero" : "positive";
 }
 
 export function fee(member, amount) {

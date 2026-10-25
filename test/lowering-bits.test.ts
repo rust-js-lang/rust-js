@@ -198,8 +198,9 @@ pub fn lowest_of_sum(a: i32, b: i32) -> i32 {
 // operator's value against 0, `(lanes & 8) !== 0`, is its truth, `lanes &
 // 8`, and `=== 0` its `!`: the value is a number, never NaN. Only where
 // its truth alone is read: a value stays a comparison. And an integer's
-// test, a variable's `n !== 0`, `n % 2 === 0` (ADR 0896, amended): never
-// NaN either; not a float's, NaN `!== 0` but falsy.
+// `!== 0`, a variable's `n !== 0` (ADR 0896, amended): never NaN either;
+// its `=== 0` stays, as does a remainder's `n % 2 === 0`; not a float's,
+// NaN `!== 0` but falsy.
 test("a test of bits against 0 is their truth", async () => {
   const { js, lib } = await compiled("bits-tested", `pub fn label(lane: i32) -> u32 {
     if lane & 8 != 0 {
@@ -242,6 +243,20 @@ pub fn shifted(mut lanes: i32) -> u32 {
     count
 }
 
+pub fn skip(n: u32, log: &mut Vec<u32>) {
+    match n {
+        0 => {}
+        _ => log.push(n),
+    }
+}
+
+pub fn none(n: u32) -> u32 {
+    if n == 0 {
+        return 2;
+    }
+    1
+}
+
 pub fn nonzero(x: f64) -> bool {
     if x != 0.0 {
         return true;
@@ -259,7 +274,10 @@ pub fn mixed(n: i32, v: &[f64]) -> u32 {
   expect(js).toContain("  return on && flags & 0x80 ? 1 : 2;\n");
   expect(js).toContain("  return (a & b) !== 0;\n");
   expect(js).toContain("  if (n) {\n");
-  expect(js).toContain("  if (!(n % 2)) {\n");
+  expect(js).toContain("  if (n % 2 === 0) {\n");
+  expect(js).toContain("  if (n === 0) {\n    return 2;\n");
+  // A `match`'s pattern's, which compares its constant.
+  expect(js).toContain("  if (n !== 0) {\n    log.push(n);\n");
   expect(js).toContain("  if (x !== 0) {\n");
   expect(js).toContain("  while (!(lanes & 1) && count < 32) {\n");
   expect([8, 4, 2].map((n) => lib.label(n))).toEqual([1, 3, 2]);
