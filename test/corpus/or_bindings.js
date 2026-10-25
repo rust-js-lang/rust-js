@@ -101,7 +101,7 @@ function main() {
   // Nested, with a guard that reads what's bound.
   for (const o of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
     bb66: {
-      if (o) {
+      if (o != null) {
         let r$2;
         bb84: {
           let r;

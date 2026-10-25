@@ -212,14 +212,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut next = || rest.next().expect("rustc checked the arguments");
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
-        // Whether the item is `Some`: by its truth where it's never falsy,
-        // `.filter(Boolean)` once prepared (ADR 0298).
+        // The kept item's type, and whether it's `Some`, `item != null`
+        // (ADR 0298, amended).
         let kept = generic_args.types().nth(1);
         let present = || {
-            let test = match kept {
-                Some(kept) => self.present(Expr::var("item"), kept),
-                None => Expr::bin(Op::LooseNe, Expr::var("item"), Expr::null()),
-            };
+            let test = crate::lower::std_types::option::present(Expr::var("item"));
             Expr::arrow(
                 vec!["item".into()],
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],

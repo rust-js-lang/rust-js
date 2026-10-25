@@ -100,7 +100,7 @@ function first(k) {
     try {
       const l = make(k, true);
       l$0$live = true;
-      if (l) {
+      if (l != null) {
         l$0$live = false;
         try {
           console.log(`got ${l[0]} with ${held[0]}`);
@@ -111,7 +111,7 @@ function first(k) {
       } else {
         result = 0;
       }
-      if (l) {
+      if (l != null) {
         if (l$0$live) {
           loudDrop_drop(l);
         }

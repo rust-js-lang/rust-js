@@ -28,7 +28,7 @@ function debugByteDebug_fmt(debugByte) {
   const iter = $escapeByte(debugByte[0]).entries();
   while (true) {
     const value = $next(iter);
-    if (!value) {
+    if (value == null) {
       break;
     }
     const i = value[0];

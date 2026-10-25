@@ -103,7 +103,7 @@ function fromMaps() {
     );
     while (true) {
       const value = $next(iter);
-      if (!value) {
+      if (value == null) {
         break;
       }
       const k = value[0];

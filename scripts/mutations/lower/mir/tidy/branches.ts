@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),\n",
     "replace": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
+    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
   },
   {
     "name": "negated-value-untruthed",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),\n",
     "replace": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
+    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
   },
   {
     "name": "negated-or-untruthed",
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),\n",
     "replace": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a truthy option's is_some given as a value"]
+    "tests": ["test/lowering-options.test.ts", "-t", "an option's is_some given as a value"]
   },
   {
     "name": "block-returns-kept",
@@ -493,5 +493,13 @@ export const mutations: Mutation[] = [
     find: "            return Expr::bin(Op::Or, no, yes);\n",
     replace: "            return Expr::cond(test.clone(), yes, no);\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a value or what it falls back to is"],
+  },
+  {
+    name: "present-value-coalesce-kept",
+    breaks: "an `Option`'s value or a default, `match o { Some(s) => s, None => d }`, is `s != null ? s : d`, not `s ?? d`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),\n",
+    replace: "",
+    tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
   },
 ];

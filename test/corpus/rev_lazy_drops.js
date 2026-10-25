@@ -36,7 +36,7 @@ function main() {
   );
   try {
     const l = $next(scaled);
-    if (l) {
+    if (l != null) {
       try {
         console.log(`scaled ${l[0]}`);
       } finally {

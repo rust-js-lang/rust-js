@@ -74,10 +74,10 @@ function main() {
     dDrop_drop(d);
     return result;
   };
-  const read = d ? map(d) : undefined;
+  const read = d != null ? map(d) : undefined;
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
-  const kept = value ? [value] : undefined;
+  const kept = value != null ? [value] : undefined;
   try {
     console.log(`kept ${kept?.[0][0] ?? 0}`);
   } catch (error) {
@@ -95,9 +95,9 @@ function main() {
     }
     throw error;
   }
-  const none = tmp ? [tmp] : undefined;
+  const none = tmp != null ? [tmp] : undefined;
   try {
-    console.log(`none ${!none}`);
+    console.log(`none ${none == null}`);
   } catch (error) {
     if (none != null) {
       dDrop_drop(none[0]);
@@ -152,7 +152,7 @@ function main() {
       }
       const value = keepIf(make(4), false, dDrop_drop);
       try {
-        console.log(`${!value}`);
+        console.log(`${value == null}`);
       } finally {
         if (value != null) {
           dDrop_drop(value);

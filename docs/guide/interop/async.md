@@ -319,7 +319,7 @@ pub async fn count_chunks(url: &str) -> u32 {
 export async function countChunks(url) {
   const response = await window.fetch(url);
   const body = response.body;
-  if (!body) {
+  if (body == null) {
     return 0;
   }
   const reader = new ReadableStreamDefaultReader(body);

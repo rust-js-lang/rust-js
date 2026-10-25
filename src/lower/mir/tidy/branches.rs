@@ -824,12 +824,17 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
         _ => test.negated_test(),
     };
     // `!x ? y : x`, and `x ? x : y`, of an `x` that does nothing: `x || y`,
-    // which reads it once (ADR 0744).
+    // which reads it once (ADR 0744); `x != null ? x : y`, and `x == null ?
+    // y : x`, an `Option`'s value or another's, `x ?? y` (ADR 0298, amended).
+    let coalesced =
+        |set, x: &Expr| !test.has_effects() && js::null_test(&test, set).is_some_and(|t| js::same_path(t, x));
     match &test.kind {
         ExprKind::Unary(UnaryOp::Not, x) if !x.has_effects() && js::same_path(x, &no) => {
             return Expr::bin(Op::Or, no, yes);
         }
         _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),
+        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),
+        _ if coalesced(false, &no) => return Expr::bin(Op::Coalesce, no, yes),
         _ => {}
     }
     match (&yes.kind, &no.kind) {

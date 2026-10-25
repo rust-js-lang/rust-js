@@ -133,7 +133,7 @@ function main() {
     const iter = all.entries();
     while (true) {
       const value = $next(iter);
-      if (!value) {
+      if (value == null) {
         break;
       }
       const i = value[0];

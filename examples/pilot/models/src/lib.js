@@ -165,7 +165,7 @@ export function validate(contact) {
 /** Text, an `@`, and a domain with a dot that neither starts nor ends it. */
 export function isEmail(text) {
   const splitOnce = $splitOnce(text, "@");
-  if (splitOnce) {
+  if (splitOnce != null) {
     const user = splitOnce[0];
     const domain = splitOnce[1];
     return (

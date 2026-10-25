@@ -79,7 +79,7 @@ function gridFind(grid, want) {
     }
   }
   let text;
-  if (at) {
+  if (at != null) {
     const [r, c] = at;
     text = `${want} at ${r},${c}`;
   } else {

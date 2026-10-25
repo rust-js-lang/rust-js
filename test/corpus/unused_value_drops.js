@@ -91,7 +91,7 @@ function main() {
       }
       const c2 = value$1;
       try {
-        console.log(`c2 ${!c2}`);
+        console.log(`c2 ${c2 == null}`);
         const option = 6;
         const f = [7];
         const value = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: f };
@@ -244,7 +244,7 @@ function main() {
                   console.log(`n ${pick(undefined, 7)}`);
                   const m = maybe(false, [26], loudDrop_drop);
                   try {
-                    console.log(`m ${!m}`);
+                    console.log(`m ${m == null}`);
                     const k = maybe(true, [27], loudDrop_drop);
                     const map = (l) => {
                       const result = l[0];

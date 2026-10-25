@@ -3,7 +3,10 @@
 Status: Accepted. Amends [0030](0030-option.md): how an `Option` is tested.
 Amended: an `Option<bool>`'s `is_some_and` of its truth is `!!o`, and a
 test reads `x ?? false` as `x`, and what `!` turns or a `while` tests as
-an `if`'s test.
+an `if`'s test. **Amended again, and its first decision reversed: an
+`Option` of an object, an array or a function is tested `o != null` and
+`o == null`, as every other `Option` is, never by its truth** (below,
+"An `Option` is `None` where it's nullish, whatever it holds").
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -90,3 +93,65 @@ the mutations `is-some-and-truth-twice` (`scripts/mutations/lower/combinators.ts
 `tested-coalesce-kept` (`js/expr_walk.ts`), `falsy-constant-false-truthy`
 (`js/make.ts`), `not-operand-untested` and `while-test-untested`
 (`prepare.ts`).
+
+## Amendment: an `Option` is `None` where it's nullish, whatever it holds
+
+The user decided it, porting React's `ReactHooks`: `useEffect(create,
+deps)` warns where `create == null`, and the port's `if __DEV__ &&
+create.is_none()` printed `if (__DEV__ && !create)`. A JS caller's
+`useEffect(false)` then warned where upstream doesn't. "Never falsy" is
+what Rust's type says, not what a JS caller gives: an exported function
+taking `Option<&Function>`, `Option<&Item>` or an `Option` of an untagged
+enum of objects is given whatever JS passes, `false`, `0` or `""` too, and
+Rust's `None` is JS's `null` and `undefined` alone (ADR 0030).
+
+- **Every `Option`'s presence is `o != null`, and its absence `o ==
+  null`**, of an object, an array, a function, a `dyn Fn`, a `NonZero`, a
+  serde_json `Value` or an untagged enum of them too: `is_some()`,
+  `is_none()`, `if let Some(..)`, a pattern's `None`, `?`, `map`'s test,
+  what `filter_map` keeps, `(item) => item != null`, and a codec's and a
+  `Hash`'s test. One owner says it, `std_types/option.rs`'s `present` and
+  `absent`, which ask nothing of the payload's type; `never_falsy`, which
+  did, is gone, and so is JSX's reading of `!!error` as `error`.
+- **An `Option<bool>` keeps its truth** where a test asks for `Some(true)`,
+  `o == Some(true)` and `is_some_and(|&w| w)`, `!!o` and, in a test, `o`
+  (the amendment above): that's the value's truth, which `false` and
+  `undefined` share, not its presence. Its `is_some()` is `o != null`.
+- **`x != null ? x : y` is `x ?? y`**, and `x == null ? y : x` too, of an
+  `x` that does nothing (`tidy/branches.rs::conditional`), as `x ? x : y`
+  was `x || y` (ADR 0744): `match find(..) { Some(s) => s, None => blank
+  }` is `state ?? blank`.
+- **JSX reads `error != null` in place**, as it read `!error`: a test of
+  a value that reads alike, `{error != null && <div>..</div>}`, no `const
+  condition` before the element.
+- **A `let`'s binding a `return` follows is set first**, as it was of
+  every `Option` whose test is `!= null` (`tail_returns`): `const loaded$1
+  = loaded; if (loaded$1 == null) { return; }` where `if (!loaded) {
+  return; } const loaded$1 = loaded;` was.
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a falsy value a JS
+caller gives in place of an object is Rust's `Some`, and `!o` would take
+it for `None`. The output is longer than react.dev's and React's,
+`descriptor.get != null` for `descriptor.get`, `error != null && ..` for
+`error && ..`: correctness first, and it's what React itself writes where
+it means "missing", `create == null`.
+
+### What it costs
+
+The react.dev port and React's ports read `x != null` where upstream
+wrote `x` or `!x`, which their committed JS changes to. `!!o ? .. :
+undefined`'s `o?.m(x)` is `o != null ? ..`'s, as before.
+
+### What holds it
+
+`test/lowering-options.test.ts`, "an Option of an object or a function is
+None where it's nullish", run in Node with `false`, `0`, `null` and
+`undefined` given; "? of an Option tests it against null"; "a truth test
+as a callback is Boolean"; `test/jsx-children.test.ts`, "JSX tests an
+Option of an object against null"; `test/jsx-react-dev.test.ts`, "react.dev's
+Preview tests its error in place"; `test/lowering-branches.test.ts`, "a match
+that only gives a value is one expression" (`state ?? blank`). Mutations
+`option-present-truthy`, `option-absent-falsy` and `filter-truth-map-chained`
+(`std_types/option.ts`), `question-truth-test` (`std_types/result.ts`),
+`filter-map-truth` (`combinators/adapters.ts`), `jsx-null-test-captured`
+(`jsx.ts`) and `present-value-coalesce-kept` (`mir/tidy/branches.ts`).

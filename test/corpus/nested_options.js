@@ -97,7 +97,7 @@ function main() {
   );
   const grid = [1, 2];
   const kept = grid == null || grid.$someNone !== undefined ? grid : grid.slice();
-  if (grid != null && $someValue(grid)) {
+  if (grid != null && $someValue(grid) != null) {
     const cells = $someValue(grid);
     cells[0] = 9;
   }

@@ -100,7 +100,7 @@ function render(state, view) {
     const iter = $iter(s.value.todos);
     while (true) {
       const todo = $next(iter);
-      if (!todo) {
+      if (todo == null) {
         break;
       }
       if (!todo.done) {

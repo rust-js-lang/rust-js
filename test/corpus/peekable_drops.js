@@ -140,7 +140,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`next_if ${!none}`);
+    console.log(`next_if ${none == null}`);
   } catch (error) {
     if (none != null) {
       loudDrop_drop(none);
@@ -225,7 +225,7 @@ function main() {
     }
     let tmp$1;
     try {
-      tmp$1 = nextBack ? tmp(nextBack) : undefined;
+      tmp$1 = nextBack != null ? tmp(nextBack) : undefined;
     } catch (error) {
       for (const item of back.iter) {
         loudDrop_drop(item);
@@ -277,7 +277,7 @@ function main() {
     }
     let tmp$3;
     try {
-      tmp$3 = loud ? tmp$2(loud) : undefined;
+      tmp$3 = loud != null ? tmp$2(loud) : undefined;
     } catch (error) {
       for (const item of back.iter) {
         loudDrop_drop(item);
@@ -329,7 +329,7 @@ function main() {
     }
     let tmp$6;
     try {
-      tmp$6 = tmp$4 ? tmp$5(tmp$4) : undefined;
+      tmp$6 = tmp$4 != null ? tmp$5(tmp$4) : undefined;
     } catch (error) {
       for (const item of back.iter) {
         loudDrop_drop(item);

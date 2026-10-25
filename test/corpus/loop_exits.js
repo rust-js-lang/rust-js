@@ -16,7 +16,7 @@ function textIn(root, path) {
       break;
     }
     const value = dir.get(part);
-    if (!value) {
+    if (value == null) {
       return;
     }
     const value$1 = $peek(parts) != null;

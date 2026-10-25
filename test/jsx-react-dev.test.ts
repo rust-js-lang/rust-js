@@ -270,7 +270,7 @@ pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("{error && (");
+  expect(jsx).toContain("{error != null && (");
   expect(jsx).not.toContain("const condition");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => lib.Preview(true, { message: "boom" })))).toBe('<div><div class="z-50 sticky top-8 "><pre>boom</pre></div><p></p></div>');

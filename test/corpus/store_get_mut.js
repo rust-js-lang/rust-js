@@ -22,7 +22,7 @@ export function vecStoreMutKV(dropK, dropV) {
 
 function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {
   const value = vec[i];
-  return value
+  return value != null
     ? [
         value[0],
         {
@@ -50,7 +50,7 @@ export const LiteMap = {
       },
       i,
     );
-    if (!value) {
+    if (value == null) {
       return;
     }
     return value[1];

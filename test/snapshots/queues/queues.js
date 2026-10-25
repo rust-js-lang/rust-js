@@ -90,7 +90,7 @@ export function dijkstra(edges, n, src) {
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
   while (true) {
     const pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
-    if (!pop) {
+    if (pop == null) {
       break;
     }
     const d = pop[0][0];

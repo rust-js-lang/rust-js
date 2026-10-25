@@ -54,7 +54,7 @@ function storeDisplay_fmt(store) {
   const iter = $iter(items);
   while (true) {
     const value = $next(iter);
-    if (!value) {
+    if (value == null) {
       break;
     }
     const name = value[0];

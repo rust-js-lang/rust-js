@@ -1347,6 +1347,12 @@ export function isAdult(p) {
   an `Option` returns `None` from the function early, as `?.` stops a
   chain.
 - `if let Some(age) = p.age` is "if it's there, call it `age`".
+- An `Option` is `None` where it's `null` or `undefined`, and only there,
+  whatever it holds: `is_some()`, `if let Some(..)` and `?` test `x !=
+  null` and `x == null`, of an object or a function too, never its truth,
+  `!x`. A JS caller's `false` or `0` where a function is asked is there,
+  as React's `useEffect` tests `create == null`
+  ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
 - A let chain after a test of its own, `if debug && let Some(value) =
   info.value.get()`, which clippy asks for over two `if`s, reads the place
   once, as a person writes it: `if (debug) { const value = info.value; if

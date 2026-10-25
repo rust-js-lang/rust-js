@@ -33,7 +33,7 @@ function peeked(map, names) {
     return;
   }
   const value$1 = map.get(name);
-  if (!value$1) {
+  if (value$1 == null) {
     return;
   }
   const value = $peek(names) != null;

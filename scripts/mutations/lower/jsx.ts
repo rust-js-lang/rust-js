@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx-children.test.ts", "-t", "tests an Option of an object by its truth"],
+    tests: ["test/jsx-children.test.ts", "-t", "JSX tests an Option of an object against null"],
   },
   {
     name: "children-tuple-not-recursed",
@@ -259,14 +259,6 @@ export const mutations: Mutation[] = [
     tests: ["test/react.test.ts", "-t", "React components are hand-written JSX, and React runs them"],
   },
   {
-    name: "jsx-truthy-shown-tested",
-    breaks: "JSX shows an Option of an object by `!!error && ..`, where the original writes `error && ..`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && self.maps_js_object(child) =>",
-    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
-    tests: ["test/jsx-children.test.ts", "-t", "JSX tests an Option of an object"],
-  },
-  {
     name: "component-child-shown-ternary",
     breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
     file: "src/lower/jsx.rs",
@@ -345,5 +337,13 @@ export const mutations: Mutation[] = [
     find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::undefined());\n",
     replace: "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
+  },
+  {
+    name: "jsx-null-test-captured",
+    breaks: "an element shown where an `Option` is there, `error != null && ..`, has its test in a `const condition` before the JSX",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {\n                self.reads_alike(a, out)\n            }\n",
+    replace: "",
+    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's Preview tests its error in place"],
   },
 ];

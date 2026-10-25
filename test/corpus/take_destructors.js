@@ -54,7 +54,7 @@ function main() {
       iter.return();
       throw error;
     }
-    if (!tmp) {
+    if (tmp == null) {
       iter.return();
       break;
     }
@@ -84,7 +84,7 @@ function main() {
       iter.return();
       throw error;
     }
-    if (tmp$1) {
+    if (tmp$1 != null) {
       const n = tmp$1;
       if (n[0] === 7) {
         try {
@@ -212,7 +212,7 @@ function main() {
         }
         throw error;
       }
-      if (tmp$1) {
+      if (tmp$1 != null) {
         const n = tmp$1;
         try {
           console.log(`after skip ${n[0]}`);
@@ -835,7 +835,7 @@ function main() {
         }
         throw error;
       }
-      if (!tmp$8) {
+      if (tmp$8 == null) {
         break;
       }
       const n = tmp$8;

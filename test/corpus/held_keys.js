@@ -70,7 +70,7 @@ function main() {
   console.log(`${value$5 == null ? "None" : `Some((${$debugStr(value$5[0]._0)}, ${value$5[1]}))`}`);
   const tags = new $CowSet([{ TAG: "Owned", _0: "new" }]);
   const get = $storedKey(tags, "new");
-  console.log(`${!!get && get.TAG === "Owned"}`);
+  console.log(`${get != null && get.TAG === "Owned"}`);
 
   const sizes = new $PathMap();
   sizes.set("a/b", 1);

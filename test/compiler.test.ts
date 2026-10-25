@@ -740,7 +740,7 @@ test("options are the value or undefined", async () => {
   // `Some(0)` needs no `!= null`; `Some(n)` does.
   expect(js).toContain("  if (o != null) {\n    if (o === 0) {\n      return 100;\n    }\n    if (o < 0) {");
   // `if let Some(h) = ..` keeps the value in a `const h`.
-  expect(js).toContain("  const h = half(n);\n  return h != null ? h : 0;\n");
+  expect(js).toContain("  const h = half(n);\n  return h ?? 0;\n");
   expect(js).toContain("h != null, h == null, h ?? -1");
   // `unwrap_or`'s argument runs even when it isn't needed, as in Rust.
   expect(js).toContain("  const option = half(n);\n  const fallback = bump();\n  const v = option ?? fallback;");
@@ -750,7 +750,7 @@ test("options are the value or undefined", async () => {
   // `map` puts the closure's body in place, on the option read once.
   expect(js).toContain("h != null ? double(h) : undefined");
   expect(js).toContain("h != null ? h > 2 : undefined");
-  expect(js).toContain("option ? Math.imul(option[0], option[1]) : undefined");
+  expect(js).toContain("option != null ? Math.imul(option[0], option[1]) : undefined");
   // Let chains (ADR 0048): one test when the parts need nothing else,
   expect(js).toContain("  const h = half(n);\n  return h != null && h > 2 ? h : -1;\n");
   // an `if` inside for a `let` of a call, only made once the rest held, and
@@ -835,7 +835,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // Each WebIDL type a function gives, as it is: a constant is its value.
   expect(js).toContain("const names = el.getAttributeNames();\n  const languages = navigator.languages;\n  const into = new TextEncoder().encodeInto(\"hi\", bytes);\n  return [names, languages.length, blob.size, param.value, 1, into.written];");
   // An event handler property is set to a closure, or to `null`.
-  expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = !!button.onclick;\n  button.onclick = null;\n  return set;");
+  expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = button.onclick != null;\n  button.onclick = null;\n  return set;");
   expect(js).toContain("return new WebSocket(url);");
   expect(js).toContain('const style = el.style;\n  style.backgroundColor = "red";\n  return style.webkitLineClamp;');
   expect(js).toContain("nodes.forEach((node, i, list) => {");
@@ -851,7 +851,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A static attribute and a static method beside an instance's of its name.
   expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
   // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
-  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return !!button.onerror;');
+  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror != null;');
   // `[Symbol.iterator]`, `Iterator.from(list)`.
   expect(js).toContain("const count = Iterator.from(list).reduce((n) => n + 1, 0);\n  const names = Array.from(headers).map(([name]) => name);");
   // A list's items collected, `Array.from` of it.
@@ -859,7 +859,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // An `ObservableArray`, an array.
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
-  expect(js).toContain('return !!registry.get("x-card");');
+  expect(js).toContain('return registry.get("x-card") != null;');
   const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined } = await import(join(target, "web_forms.js"));
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.

@@ -28,7 +28,7 @@ const plainOutput = output(undefined);
 
 function output(language) {
   const extensions = [basicSetup];
-  if (language) {
+  if (language != null) {
     extensions.push(language);
   }
   extensions.push(theme.of(themeFor(false)));

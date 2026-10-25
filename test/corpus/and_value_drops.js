@@ -66,7 +66,7 @@ function main() {
     }
   }
   try {
-    console.log(`b ${!b}`);
+    console.log(`b ${b == null}`);
     let c = { TAG: "Ok", _0: [4] };
     const f$1 = { TAG: "Ok", _0: [5] };
     let kept;
@@ -183,7 +183,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`f ${!f}`);
+      console.log(`f ${f == null}`);
     } catch (error) {
       if (f != null) {
         loudDrop_drop(f);

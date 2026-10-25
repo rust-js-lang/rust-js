@@ -45,7 +45,7 @@ function third(it) {
     noisyDrop_drop(n);
     return result;
   };
-  return n ? map(n) : undefined;
+  return n != null ? map(n) : undefined;
 }
 
 function finalOne(it) {
@@ -55,7 +55,7 @@ function finalOne(it) {
     noisyDrop_drop(n);
     return result;
   };
-  return n ? map(n) : undefined;
+  return n != null ? map(n) : undefined;
 }
 
 function main() {

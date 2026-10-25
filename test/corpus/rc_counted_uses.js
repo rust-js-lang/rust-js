@@ -348,7 +348,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp) {
+    if (tmp == null) {
       break;
     }
     const list = tmp;

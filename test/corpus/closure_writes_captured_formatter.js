@@ -18,7 +18,7 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
   let f = "";
   const old = formatWith.inner;
   formatWith.inner = undefined;
-  if (!old) {
+  if (old == null) {
     throw new Error("FormatWith: was already formatted once");
   }
   const [iter, format] = old;

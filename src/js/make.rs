@@ -649,7 +649,7 @@ impl Expr {
         // `null` or `undefined`. A chain after it, `&& ..`, is made from the
         // left, this first.
         if op == Op::And
-            && let Some(tested) = presence_of(&lhs)
+            && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Call(callee, args) = &rhs.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
             && matches!(&array.kind, ExprKind::Var(name) if name == "Array")
@@ -687,7 +687,7 @@ impl Expr {
         // `a != null ? a.b : undefined` is `a?.b`, as a person writes it. One
         // property only: `a?.b.c` would end the chain at `.c` too. Not of
         // `!!a`, which an empty string fails, `!s.is_empty()`'s: an
-        // `Option` never falsy's is lowered as one of `a != null` (ADR 0298).
+        // `Option`'s presence is `a != null` (ADR 0298).
         if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Member(object, property) = &then.kind

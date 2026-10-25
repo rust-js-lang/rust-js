@@ -12,7 +12,7 @@ function main() {
   const deep = 7;
   const held = [undefined, undefined, [1]];
   try {
-    console.log(`${deep == null ? "None" : `Some(${deep})`} ${!!held[2]}`);
+    console.log(`${deep == null ? "None" : `Some(${deep})`} ${held[2] != null}`);
   } catch (error) {
     const dropS0$13 = (s0) => {
       if (s0[0][0] != null) {

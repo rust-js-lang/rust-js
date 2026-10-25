@@ -21,7 +21,7 @@ function main() {
       }
       return value;
     })
-    .filter(Boolean);
+    .filter((item) => item != null);
   try {
     const next = $next(it);
     const value = (l) => {
@@ -29,7 +29,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$1 = next ? value(next) : undefined;
+    const value$1 = next != null ? value(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     it.return();

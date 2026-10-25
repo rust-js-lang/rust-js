@@ -50,7 +50,7 @@ function equalNamesIterator_next(equalNames) {
   const iter = equalNames.inner;
   while (true) {
     const value = namesIterator_next(iter);
-    if (!value) {
+    if (value == null) {
       break;
     }
     const n = value[0];
@@ -78,7 +78,7 @@ function main() {
   const iter = all;
   while (true) {
     const value = namesIterator_next(iter);
-    if (!value || value[0] === "B") {
+    if (value == null || value[0] === "B") {
       break;
     }
   }

@@ -8,7 +8,7 @@ export function entry() {
 
 function sum(at) {
   let total = 0;
-  while (at) {
+  while (at != null) {
     let node = at;
     node = node.value;
     total = (total + node.value) | 0;
@@ -26,7 +26,7 @@ function main() {
   console.log(`${sum(first)}`);
   const raw = first;
   console.log(`${raw.value.value}`);
-  console.log(`${!null} ${$ptrEq(first, raw, 8)}`);
+  console.log(`true ${$ptrEq(first, raw, 8)}`);
   let n = 5;
   const handle = {
     get value() {

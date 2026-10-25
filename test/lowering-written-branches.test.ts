@@ -193,7 +193,7 @@ pub fn is_simple_object(object: &Unknown) -> bool {
 }
 `);
   expect(js).toContain(
-    '      if ((name === "key" || name === "ref") && descriptor.get) {\n        // React adds key and ref getters to props objects to issue warnings.\n        continue;\n      }\n      return false;\n    }\n  }\n  return true;\n',
+    '      if ((name === "key" || name === "ref") && descriptor.get != null) {\n        // React adds key and ref getters to props objects to issue warnings.\n        continue;\n      }\n      return false;\n    }\n  }\n  return true;\n',
   );
   const props = Object.defineProperty({ a: 1 }, "key", { get: () => 1, enumerable: false });
   const hidden = Object.defineProperty({}, "b", { value: 1, enumerable: false });

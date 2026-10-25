@@ -70,16 +70,16 @@ function sizes(TSize, TAlign) {
 // An `if let` that always matches is one Rust warns of, but takes.
 function main() {
   const maybe = 3;
-  console.log(`${twice(maybe != null ? maybe : 0)}`);
+  console.log(`${twice(maybe ?? 0)}`);
   const missing = maybe == null;
   if (maybe !== 3) {
     throw new Error("assertion failed: if let Some(3) = maybe { true } else { false }");
   }
   const items = [maybe != null ? (maybe + 1) | 0 : 0, 7];
   const i = find(items, 7);
-  const pair = [i != null ? i : 99, 2];
+  const pair = [i ?? 99, 2];
   const pairs = [[1, 2], undefined];
-  const sums = pairs.map((p) => (10 + (p ? (p[0] + p[1]) | 0 : 0)) | 0);
+  const sums = pairs.map((p) => (10 + (p != null ? (p[0] + p[1]) | 0 : 0)) | 0);
   const words = ["a", "bb"];
   const first$1 = words[0];
   const first = (1 + Array.from(first$1).length) >>> 0;

@@ -865,7 +865,7 @@ pub fn of_any() -> Option<String> {
 }`);
   expect(js).toContain(`  } catch (x) {
     const control = x;
-    if (control && n > 1) {
+    if (control != null && n > 1) {
       const error = control;
       return error.message;
     }
@@ -1346,7 +1346,7 @@ pub fn counted(limit: u32) -> u32 {
 `);
   expect(js).toContain(`  } catch (sample) {
     // This is inlined manually because closure doesn't do it for us.
-    if (control) {
+    if (control != null) {
       const sampleStack = sample.stack;
       if (sampleStack != null) {
         return [sampleStack, control.stack];

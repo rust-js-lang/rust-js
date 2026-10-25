@@ -780,6 +780,12 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **An `Option` of an object or a function is tested `o != null`**, as
+  every `Option` is, not by its truth (ADR 0298, amended): React's
+  `useEffect` is `if (__DEV__ && create == null)`, where `create.is_none()`
+  was `!create`, which took a JS caller's `false` for `None`. `match o {
+  Some(s) => s, None => d }` is `o ?? d`, where it was `o || d`. An
+  `Option<bool>`'s `Some(true)` is still its truth, `if (flag)`.
 - **`js::encode_uri_component` takes a number or a `bool` too**, as
   TypeScript's `encodeURIComponent(uriComponent: string | number |
   boolean)` does (ADR 0229): `encode_uri_component(418.0)` is
@@ -978,6 +984,10 @@ released any more: `rust-js build` is the one way to build an app.
   nothing when nothing changed; a build that fails stops them, and the old
   binary isn't run. `RUST_JS_COMPILER` and `@rust-js/native` are run as
   they are.
+- **A static of a module's binding imports it**: `static NOTIFY: fn() ->
+  f64 = toast;` of a `sonner#toast` binding is `export const NOTIFY =
+  toast;` and `import { toast } from "sonner";`, where rust-js panicked
+  (ADR 0096).
 - **`js::get`, `js::has`, `js::set` and `js::delete` take any value**
   (ADR 0776), `impl IntoUnknown`, an `Option<&Unknown>` too, as
   TypeScript's `any` is read: `js::has(module_object, "default")` is

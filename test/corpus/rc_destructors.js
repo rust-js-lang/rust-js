@@ -197,7 +197,7 @@ function main() {
     }
     try {
       $unborrow(value);
-      console.log(`popped ${!!last}`);
+      console.log(`popped ${last != null}`);
     } finally {
       if (last != null) {
         noisyDrop_drop(last);

@@ -99,7 +99,7 @@ function main() {
   ]);
   while (true) {
     const value = $next(iter);
-    if (!value) {
+    if (value == null) {
       // Through a `&mut`: what's bound names the item, and writes it.
       break;
     }

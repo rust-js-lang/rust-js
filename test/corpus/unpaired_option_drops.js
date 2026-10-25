@@ -21,7 +21,7 @@ function main() {
   }
   const a = value;
   try {
-    console.log(`a ${!a}`);
+    console.log(`a ${a == null}`);
     const option = [3];
     const value = option != null ? option : undefined;
     const b = value;
@@ -41,7 +41,7 @@ function main() {
         }
         const d = value$1;
         try {
-          console.log(`d ${!d}`);
+          console.log(`d ${d == null}`);
           const other = [6];
           const value = undefined;
           if (other != null) {
@@ -49,7 +49,7 @@ function main() {
           }
           const e = value;
           try {
-            console.log(`e ${!e}`);
+            console.log(`e ${e == null}`);
             const option = [7];
             const value = option != null && 8 != null ? [option, 8] : undefined;
             if (option != null && 8 == null) {
@@ -57,7 +57,7 @@ function main() {
             }
             const f = value;
             try {
-              const value = f ? [f[0][0], f[1]] : undefined;
+              const value = f != null ? [f[0][0], f[1]] : undefined;
               console.log(`f ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
               const value$1 = 1 != null ? (2 == null ? 1 : undefined) : 2;
               console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);

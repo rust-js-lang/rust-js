@@ -18,15 +18,15 @@ const personGreet = {
   id: personGreet_id,
   greet: (self) => {
     const noisy = [1];
-    if (noisy) {
+    if (noisy != null) {
       try {
         console.log("hello");
-      } finally {
+      } catch (error) {
         if (noisy != null) {
           noisyDrop_drop(noisy);
         }
+        throw error;
       }
-    } else if (noisy != null) {
       noisyDrop_drop(noisy);
     }
   },

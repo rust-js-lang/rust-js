@@ -125,7 +125,7 @@ function main() {
     console.log(`drop ${n[0]}`);
     return result;
   };
-  const value$2 = value ? map$3(value) : undefined;
+  const value$2 = value != null ? map$3(value) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const result$5 = ok(11);
   let holds$4;
@@ -167,7 +167,7 @@ function main() {
     console.log(`drop ${n[0]}`);
     return result;
   };
-  const value$3 = value$1 ? map$4(value$1) : undefined;
+  const value$3 = value$1 != null ? map$4(value$1) : undefined;
   const result$8 = ok(14);
   let error;
   if (result$8.TAG === "Err") {
@@ -181,7 +181,7 @@ function main() {
     console.log(`drop ${n[0]}`);
     return result;
   };
-  const value$4 = error ? map$5(error) : undefined;
+  const value$4 = error != null ? map$5(error) : undefined;
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );

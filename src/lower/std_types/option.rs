@@ -1,7 +1,7 @@
 //! An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062).
 
 use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
@@ -9,7 +9,6 @@ use crate::js::result;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -127,8 +126,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = if boxed { self.some(value) } else { value };
                 Expr::cond(ok, value, otherwise)
             }
-            Std::IsSome => self.present(arg(), generic_args.type_at(0)),
-            Std::IsNone => self.absent(arg(), generic_args.type_at(0)),
+            Std::IsSome => present(arg()),
+            Std::IsNone => absent(arg()),
             Std::Unwrap => {
                 // `expect` has a message too.
                 let list = (0..tys.len()).map(|_| arg()).collect();
@@ -214,8 +213,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // A `filter`'s test is what it keeps, never its presence alone:
                 // `!!s` fails an empty string.
-                let (option, present, presence) = match fused {
-                    Some((kept, value)) => (value, kept, false),
+                let (option, present) = match fused {
+                    Some((kept, value)) => (value, kept),
                     None => {
                         // A property of what's in it, `o.map(|e| e.id)`, is `o?.id`,
                         // which reads `o` once, as a `const` of it would.
@@ -235,8 +234,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             _ => self.spill(&base, option, out),
                         };
-                        let present = self.present(option.clone(), generic_args.type_at(0));
-                        (option, present, true)
+                        let present = present(option.clone());
+                        (option, present)
                     }
                 };
                 // Of a generic `T`, the closure gets what's inside (ADR 0051).
@@ -280,22 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     value.defined()
                 };
-                // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
-                // (ADR 0298); else its test as it is.
-                let tested = (js::presence_of(&present).filter(|_| presence))
-                    .map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));
-                match Expr::cond(tested.unwrap_or_else(|| present.clone()), value, Expr::undefined()) {
-                    Expr {
-                        kind: js::ExprKind::Cond(_, value, none),
-                        span,
-                        ..
-                    } => Expr {
-                        known: js::Known::Nothing,
-                        kind: js::ExprKind::Cond(Box::new(present), value, none),
-                        span,
-                    },
-                    chain => chain,
-                }
+                Expr::cond(present, value, Expr::undefined())
             }
             // Of a number or text, a handle on the `Option`'s own place: `Some(x)`
             // of one is `x` (ADR 0030), so writing it writes the `Option`.
@@ -632,61 +616,18 @@ pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
     }
 }
 
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether an `Option<ty>`'s value is never falsy in JS, an object, an
-    /// array or a function, so its truth is whether it's there (ADR 0298).
-    /// Not a binding's `unknown` or `any`, which may be `0` or `""`.
-    pub(in crate::lower) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
-        self.never_falsy_within(ty, &mut Vec::new())
-    }
+/// Whether an `Option` is `Some`: `o != null`, whatever its payload, as
+/// Rust's `None` is JS's `undefined` and only it, or `null` a JS caller
+/// gives, never a `false`, `0` or `""` it may give in place of an object
+/// (ADR 0298, amended). The one test of it, what `is_some()`, `if let
+/// Some(..)`, `?` and a `filter_map`'s kept item ask.
+pub(in crate::lower) fn present(option: Expr) -> Expr {
+    Expr::bin(Op::LooseNe, option, Expr::null())
+}
 
-    /// `never_falsy`, of untagged enums `within` one another: one that holds
-    /// itself, through a reference, may be.
-    fn never_falsy_within(&self, ty: Ty<'tcx>, within: &mut Vec<DefId>) -> bool {
-        let ty = ty.peel_refs();
-        let any = matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(self.tcx, adt.did()));
-        // An untagged enum is its payload (ADR 0214): never falsy where each
-        // variant's is, an array's or a JS object's; not where one may be
-        // text, `""`.
-        if let Some((adt, args)) = self.untagged(ty) {
-            if within.contains(&adt.did()) {
-                return false;
-            }
-            within.push(adt.did());
-            let each = adt.variants().iter().all(|variant| {
-                matches!(&variant.fields.raw[..], [field] if self.never_falsy_within(self.field_ty(field, args), within))
-            });
-            within.pop();
-            return each;
-        }
-        // A `NonZero` is its number (ADR 0177), never `0` or `0n`; a
-        // serde_json `Value` an object or `"Null"` (ADR 0083).
-        crate::lower::recognition::is_non_zero_ty(ty)
-            || self.recognition().is_json_value(ty)
-            || self.option_of(ty).is_none()
-                && !any
-                && (self.is_object(ty)
-                    || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
-                    // A `dyn Fn`, the JS function it is (ADR 0653).
-                    || matches!(ty.kind(), ty::Dynamic(..)) && self.is_callable(ty))
-    }
-
-    /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value
-    /// never falsy, which a test reads as `o` (ADR 0298).
-    pub(in crate::lower) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.never_falsy(ty) {
-            true => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, option)),
-            false => Expr::bin(Op::LooseNe, option, Expr::null()),
-        }
-    }
-
-    /// Whether it's `None`: `o == null`, or `!o`.
-    pub(in crate::lower) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.never_falsy(ty) {
-            true => Expr::unary(UnaryOp::Not, option),
-            false => Expr::bin(Op::LooseEq, option, Expr::null()),
-        }
-    }
+/// Whether it's `None`: `o == null`.
+pub(in crate::lower) fn absent(option: Expr) -> Expr {
+    Expr::bin(Op::LooseEq, option, Expr::null())
 }
 
 /// An `Option`'s methods that write its place (ADR 0326).

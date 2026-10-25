@@ -20,7 +20,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$1 = next ? value(next) : undefined;
+    const value$1 = next != null ? value(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     r.return();
@@ -70,7 +70,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       };
-      const value$2 = value ? value$1(value) : undefined;
+      const value$2 = value != null ? value$1(value) : undefined;
       console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
     } finally {
       back.return();

@@ -59,10 +59,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
-            let inner = self.option_of(ty).expect("an `Option`");
             return match self.tcx.is_lang_item(def.def_id, LangItem::OptionSome) {
-                true => self.present(subject, inner),
-                false => self.absent(subject, inner),
+                true => super::std_types::option::present(subject),
+                false => super::std_types::option::absent(subject),
             };
         }
         // A write's result's `Ok`, `undefined`, and its `Err`, the error it

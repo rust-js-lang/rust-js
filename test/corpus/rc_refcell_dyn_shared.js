@@ -183,7 +183,7 @@ function main() {
   }
   let map;
   try {
-    map = upgrade ? tmp$2(upgrade) : undefined;
+    map = upgrade != null ? tmp$2(upgrade) : undefined;
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -243,7 +243,7 @@ function main() {
           const iter = sinks.entries();
           while (true) {
             const value = $next(iter);
-            if (!value) {
+            if (value == null) {
               break;
             }
             const i = value[0];

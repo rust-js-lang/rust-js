@@ -529,7 +529,7 @@ pub fn lazy(n: Option<f64>) -> Lazy {
   expect(js).toContain("  context.Provider = context;\n  context.Consumer = {\n    $$typeof: REACT_CONSUMER_TYPE,\n    _context: context,\n  };\n");
   expect(js).toContain("  context.Consumer = consumerOf(context);\n");
   expect(js).toContain("  context.Consumer = consumer ?? null;\n");
-  expect(js).toContain('_debugTask: createTask ? createTask("lazy()") : null');
+  expect(js).toContain('_debugTask: createTask != null ? createTask("lazy()") : null');
   expect(js).toContain("label: n != null ? n + 1 : null");
   expect(js).not.toContain("undefined) ?? null");
   const lib = await import(join(dir, "lib.js"));

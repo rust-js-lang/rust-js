@@ -141,7 +141,7 @@ function main() {
             loudDrop_drop(l);
             return result;
           };
-          const value$1 = loud ? value(loud) : undefined;
+          const value$1 = loud != null ? value(loud) : undefined;
           console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
@@ -166,7 +166,7 @@ function main() {
           loudDrop_drop(l);
           return result;
         };
-        const value$2 = value ? value$1(value) : undefined;
+        const value$2 = value != null ? value$1(value) : undefined;
         console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
       } finally {
         $rcDrop(c.rcbuffer, (value) => {

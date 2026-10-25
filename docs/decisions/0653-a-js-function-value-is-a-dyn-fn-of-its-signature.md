@@ -61,6 +61,7 @@ is `Option<&Unknown>`, a value of any shape, and an `any` result
   memory".
 - **A `dyn Fn` is never falsy**, as a closure isn't (ADR 0298): whether
   a handler is set is `!!button.onclick`, as it was of the `JsObject`.
+  (ADR 0298 amended: `button.onclick != null`, as of any `Option`.)
 - **An event handler's setter keeps its closure**, `Option<Box<dyn
   FnMut(&E)>>`: a callback Rust gives JS to own (ADR 0260), not a value it
   reads.

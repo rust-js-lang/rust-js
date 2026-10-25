@@ -17,7 +17,7 @@ function main() {
   const b = [1, 2, 3, 4, 5];
   const m = $iter($rchunksMut(b, 2, true));
   const last = $next(m);
-  if (last) {
+  if (last != null) {
     last[$at(last, 0)] = 0;
   }
   console.log(`[${m.items.remainder.join(", ")}]`);

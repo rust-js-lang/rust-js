@@ -178,7 +178,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   };
-  const value$3 = l ? map(l) : undefined;
+  const value$3 = l != null ? map(l) : undefined;
   console.log(`held ${value$3 == null ? "None" : `Some(${value$3})`}`);
   const numbers = [{ start: 1, end: 4 }];
   holderPeeled({ next: $rangeNext }).dropFirst(numbers);

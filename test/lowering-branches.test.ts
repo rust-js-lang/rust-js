@@ -260,9 +260,9 @@ pub fn owned(some: bool) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('const label = item && item.path != null ? item.path : "none";');
+  expect(js).toContain('const label = item != null && item.path != null ? item.path : "none";');
   expect(js).toContain('const v = r.TAG === "Ok" ? r._0 : (r._0 + 1) >>> 0;');
-  expect(js).toContain('const label = item && item.path != null ? item.title : "untitled";');
+  expect(js).toContain('const label = item != null && item.path != null ? item.title : "untitled";');
   expect(js).not.toContain("let tmp");
   const lib = await import(join(dir, "lib.js"));
   const item = { title: "T", path: "/p" };
@@ -542,12 +542,12 @@ pub fn inner(n: u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const current = state || blank;\n");
-  expect(js).toContain('  const text = find ? find[1] : "";\n');
+  expect(js).toContain("  const current = state ?? blank;\n");
+  expect(js).toContain('  const text = find != null ? find[1] : "";\n');
   expect(js).toMatch(/  const i = \$find\(path, "x"\);\n  const n = i != null \? \(i \+ 1\) >>> 0 : 0;\n/);
   expect(js).toContain('  return $rsplitOnce(path, "/")?.[1] ?? path;\n');
   // Of a variable, as `map_or` of it.
-  expect(js).toContain("  const n = state ? state.n : 0;\n");
+  expect(js).toContain("  const n = state != null ? state.n : 0;\n");
   const lib = await import(join(dir, "lib.js"));
   const states = [{ n: 1 }, { n: 2 }];
   expect([lib.picked(states, { n: 9 }), lib.picked([], { n: 9 })]).toEqual([2, 18]);
@@ -710,7 +710,7 @@ pub fn colors(message: &str) -> &'static str {
   // An arm a macro begins is in its place too.
   expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
   // A `bool` of what's not one, `!!o`.
-  expect(js).toContain("  return !!o || r;\n");
+  expect(js).toContain("  return o != null || r;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
 });
@@ -970,8 +970,8 @@ test("a guarded binding of an Option's string is its truth", async () => {
 
 // Text's truth, `!!code` of `!code.is_empty()`, isn't a presence test: an
 // empty string is there. `code ? code.toUpperCase() : undefined` is not
-// `code?.toUpperCase()`, which gives `""` where Rust gives `None`; an
-// `Option` never falsy's `!!o` is one still (ADR 0298).
+// `code?.toUpperCase()`, which gives `""` where Rust gives `None`: only
+// `o != null` is one (ADR 0298, amended).
 test("a test of text's truth is no optional chain", async () => {
   const dir = fixture("text-truth-chain");
   writeFileSync(join(dir, "lib.rs"), `pub fn held(code: Option<&str>) -> Option<String> {
@@ -1223,8 +1223,8 @@ pub fn message(kind: Kind) -> String {
 });
 
 // An `||` chain whose part is an `Option`'s `is_some()`, of an object:
-// `!!error || ..`, a `bool` part by part, not `!(!error && ..)`; and one
-// only tested, `error || ..`, as react.dev's Preview hides its content.
+// `error != null || ..`, a `bool` part by part, not `!(error == null &&
+// ..)`, as react.dev's Preview hides its content (ADR 0298, amended).
 test("an or chain of a value's truth from MIR is a bool part by part", async () => {
   const dir = fixture("or-chain-truth");
   writeFileSync(join(dir, "lib.rs"), `pub struct Err {
@@ -1240,8 +1240,8 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("return !!error || height == null || height === 0 || !ready;");
-  expect(js).toContain("const hide = error || height == null || height === 0 || !ready;");
+  expect(js).toContain("return error != null || height == null || height === 0 || !ready;");
+  expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.hidden({ title: "t" }, 3, true), lib.hidden(undefined, 3, true), lib.kept({ title: "t" }, 3, true), lib.kept(undefined, 3, true)]).toEqual([true, false, "a", "b"]);
 });

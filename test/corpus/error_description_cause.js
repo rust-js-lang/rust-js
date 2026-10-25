@@ -80,7 +80,7 @@ function oldError_cause(old) {
 
 function report(e, EError) {
   const c = EError.cause(e);
-  const cause = c ? c.impl.Display().fmt(c.value) : "none";
+  const cause = c != null ? c.impl.Display().fmt(c.value) : "none";
   const arg = EError.description(e);
   return `${EError.Display().fmt(e)}: ${arg} / ${cause}`;
 }

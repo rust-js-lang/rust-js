@@ -30,7 +30,7 @@ function main() {
   console.log(`${all.length === $vars().length}`);
   const each = $iter($vars());
   const first = $next(each);
-  console.log(`${!!first && (each.reduce((n) => n + 1, 0) + 1) >>> 0 === all.length}`);
+  console.log(`${first != null && (each.reduce((n) => n + 1, 0) + 1) >>> 0 === all.length}`);
   const value = $varOs("RUST_JS_NO_SUCH_VARIABLE");
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`} ${$varOs("PATH") != null}`);
   const os = Iterator.from($varsOs()).toArray();

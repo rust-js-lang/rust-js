@@ -21,7 +21,7 @@ export function entry() {
 
 function subscriptionDrop_drop(subscription) {
   const bus = $upgrade(subscription.bus);
-  if (bus) {
+  if (bus != null) {
     try {
       const borrowMut = $borrowMut(bus.value, true);
       try {

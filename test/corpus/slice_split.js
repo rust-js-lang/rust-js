@@ -15,7 +15,7 @@ function halves(bytes) {
 // Each item in turn, as chrono's queue of format items is read.
 function total(items) {
   const splitFirst = items.length === 0 ? undefined : [items[0], items.slice(1)];
-  if (splitFirst) {
+  if (splitFirst != null) {
     const first = splitFirst[0];
     const rest = splitFirst[1];
     return (first + total(rest)) >>> 0;
@@ -66,7 +66,7 @@ function main() {
   );
   const value$5 = total(v);
   const option = words.length === 0 ? undefined : [words[words.length - 1], words.slice(0, -1)];
-  const value$6 = option ? [$byteLen(option[0]), option[1].length] : undefined;
+  const value$6 = option != null ? [$byteLen(option[0]), option[1].length] : undefined;
   console.log(`${value$5} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`);
   const one = [9];
   const value$7 = one.length === 0 ? undefined : [one[0], one.slice(1)];
@@ -74,7 +74,7 @@ function main() {
     `${value$7 == null ? "None" : `Some((${value$7[0]}, [${value$7[1].join(", ")}]))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, [${value[1].join(", ")}]))`))(one.length === 0 ? undefined : [one[one.length - 1], one.slice(0, -1)])}`,
   );
   const tail = $sliceGet(words, 1);
-  if (tail) {
+  if (tail != null) {
     console.log(`${tail.length}`);
   } else {
     console.log("none");

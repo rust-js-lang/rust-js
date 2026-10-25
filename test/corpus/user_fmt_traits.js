@@ -63,7 +63,7 @@ function flagsDisplay_fmt(flags, options) {
   ]);
   while (true) {
     const value = $next(iter);
-    if (!value) {
+    if (value == null) {
       break;
     }
     const bit = value[0];

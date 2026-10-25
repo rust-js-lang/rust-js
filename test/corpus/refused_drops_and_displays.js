@@ -164,7 +164,7 @@ function matched() {
     }
     throw error;
   }
-  if (tmp) {
+  if (tmp != null) {
     try {
       console.log("some");
     } catch (error) {
@@ -192,7 +192,7 @@ function matched() {
     }
     throw error;
   }
-  if (take) {
+  if (take != null) {
     try {
       console.log("took");
     } catch (error) {
@@ -236,7 +236,7 @@ function matched() {
     }
     throw error;
   }
-  if (tmp$1) {
+  if (tmp$1 != null) {
     try {
       console.log("some");
     } catch (error) {

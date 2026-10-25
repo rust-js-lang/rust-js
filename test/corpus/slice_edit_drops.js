@@ -176,7 +176,7 @@ function lend() {
     throw error;
   }
   const first = d[0];
-  if (first) {
+  if (first != null) {
     first[0] = 20;
   }
   let lastMut;
@@ -188,7 +188,7 @@ function lend() {
     }
     throw error;
   }
-  if (lastMut) {
+  if (lastMut != null) {
     const last = lastMut;
     let old;
     try {
@@ -245,7 +245,7 @@ function lend() {
   try {
     $exchange(a[0], b[0]);
     const splitFirstMut = $splitEndMut(d, false);
-    if (splitFirstMut) {
+    if (splitFirstMut != null) {
       const head = splitFirstMut[0];
       const rest = splitFirstMut[1];
       head[0] = (head[0] + (rest.length & 255)) & 255;
@@ -253,7 +253,7 @@ function lend() {
     const iter = $iter($chunksMut(d, 2));
     while (true) {
       const chunk = $next(iter);
-      if (!chunk) {
+      if (chunk == null) {
         break;
       }
       chunk.reverse();

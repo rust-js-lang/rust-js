@@ -113,7 +113,7 @@ function main() {
   const iter = $iter(Array.from(walls));
   while (true) {
     const value = $next(iter);
-    if (!value) {
+    if (value == null) {
       const value = copy.get({ x: 1, y: 2 });
       console.log(
         `{${Array.from(copy)
