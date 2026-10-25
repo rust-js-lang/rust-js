@@ -1283,3 +1283,60 @@ pub fn finish(root: &Root, remaining_lanes: i32) {
   lib.finish(root as never, 3 as never);
   expect(root).toEqual({ expiredLanes: 3, entangledLanes: 2 });
 });
+
+// React's scheduler's workLoop: `// This currentTask hasn't expired, and
+// we've reached the deadline.` before a `break` of its `while let`, which
+// the loop's own test joins, `if (x == null || ..)`, and one before a
+// `loop`'s, each in its `if` before its `break`, where upstream has them
+// (#298); a `while`'s test is the loop's own, the `break` the program
+// wrote in its `if` (ADR 0684, ADR 0702, amended).
+test("a comment before a loop's break is before the break", async () => {
+  const { js, lib } = await compiled("comment-before-a-break", `pub fn simple(xs: &[u32], stop: bool) -> u32 {
+    let mut i = 0;
+    while let Some(x) = xs.get(i) {
+        if stop && *x > 3 {
+            // Reached the deadline.
+            break;
+        }
+        i += 1;
+    }
+    i as u32
+}
+
+pub fn looped(n: u32, c: bool) -> u32 {
+    let mut i = 0;
+    loop {
+        if c && i > 2 {
+            // Stop here.
+            break;
+        }
+        i += 1;
+        if i > n {
+            // Past the end.
+            break;
+        }
+    }
+    i
+}
+
+pub fn whiled(n: u32, c: bool) -> u32 {
+    let mut i = 0;
+    while i < n {
+        if c && i == 3 {
+            // Found it.
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+`);
+  expect(js).toContain("    if (x == null || (stop && x > 3)) {\n      // Reached the deadline.\n      break;\n    }\n");
+  expect(js).toContain("    if (c && i > 2) {\n      // Stop here.\n      break;\n    }\n");
+  expect(js).toContain("    if (i > n) {\n      // Past the end.\n      break;\n    }\n");
+  expect(js).toContain("  while (i < n) {\n    if (c && i === 3) {\n      // Found it.\n      break;\n    }\n    i++;\n  }\n");
+  const xs = [1, 2, 5, 1];
+  expect([lib.simple(xs as never, true as never), lib.simple(xs as never, false as never)]).toEqual([2, 4]);
+  expect([lib.looped(5 as never, true as never), lib.looped(1 as never, false as never)]).toEqual([3, 2]);
+  expect([lib.whiled(5 as never, true as never), lib.whiled(5 as never, false as never), lib.whiled(2 as never, true as never)]).toEqual([3, 5, 2]);
+});

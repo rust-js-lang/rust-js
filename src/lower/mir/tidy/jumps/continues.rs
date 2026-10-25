@@ -81,22 +81,60 @@ pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Sp
         .any(|(test, _)| written(std::slice::from_ref(test), span))
 }
 
-/// The `continue` an `if` of `continues` ends its `then` with, where the
-/// program wrote it: its comment is before it (ADR 0684).
-pub(in crate::lower::mir::tidy) fn written_continues(stmts: &mut [Stmt], continues: &[(js::Span, js::Span)]) {
+/// The `continue` an `if` of `continues` ends its `then` with, and the
+/// `break` one of `breaks` does, where the program wrote it: its comment is
+/// before it (ADR 0684, amended). Of an `if` that tests the loop's own test
+/// or another first, `if (x == null || (stop && x > 3)) { break; }` of a
+/// `while let`, the one whose test is its last `||`'s.
+pub(in crate::lower::mir::tidy) fn written_jumps(
+    stmts: &mut [Stmt],
+    continues: &[(js::Span, js::Span)],
+    breaks: &[(js::Span, js::Span)],
+) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
-        if let StmtKind::If(_, then, _) = &mut stmt.kind
+        let StmtKind::If(test, then, _) = &mut stmt.kind else {
+            continue;
+        };
+        let written = match then.last().map(|last| &last.kind) {
+            Some(StmtKind::Continue(_)) if then.last().is_some_and(|last| last.span.is_none()) => continues,
+            Some(StmtKind::Break(None)) => breaks,
+            _ => continue,
+        };
+        let found = jump_tested(written, span).or_else(|| match &test.kind {
+            ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, written_at(last)),
+            _ => None,
+        });
+        if let Some((_, at)) = found.map(|k| &written[k])
             && let Some(last) = then.last_mut()
-            && matches!(last.kind, StmtKind::Continue(_))
-            && last.span.is_none()
-            && let Some((_, at)) = continues
-                .iter()
-                .find(|(test, _)| written(std::slice::from_ref(test), span))
         {
             last.span = *at;
         }
     }
+}
+
+/// Which of `written`, `if`s the program wrote of a jump (`Written::continues`,
+/// `Written::breaks`), a test at `at` is of: at its test, or at the `if`
+/// it's written in, which ends where its test does.
+pub(in crate::lower::mir::tidy) fn jump_tested(written: &[(js::Span, js::Span)], at: js::Span) -> Option<usize> {
+    (written.iter()).position(|(test, _)| {
+        super::written(std::slice::from_ref(test), at) || (!at.is_none() && at.lo <= test.lo && at.hi == test.hi)
+    })
+}
+
+/// Where `test` is written: of one of no place, a test `&&` or `||` joins
+/// where the program didn't, a `!` or a read tidy made of a method's call,
+/// `!words[i]` of `!words[i].is_empty()`, the first place of what it's
+/// made of.
+pub(in crate::lower::mir::tidy) fn written_at(test: &Expr) -> js::Span {
+    let mut at = js::Span::NONE;
+    let mut stmts = vec![StmtKind::Expr(test.clone()).at(js::Span::NONE)];
+    js::each_expr_mut(&mut stmts, &mut |e| {
+        if at.is_none() {
+            at = e.span;
+        }
+    });
+    at
 }
 
 /// Each loop's `continue` where its body ends anyway, in the branches that

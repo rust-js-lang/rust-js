@@ -31,7 +31,6 @@ function guarded(level, strict) {
       break;
     default:
       level = 0;
-      break;
   }
   return (level + 1) >>> 0;
 }

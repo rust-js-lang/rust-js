@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "mir-let-else-continue-unwritten",
     breaks: "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
     file: "src/lower/mir/hints.rs",
-    find: "            .chain(self.let_else_continues())\n",
+    find: "            .chain(self.let_else_jumps(jump))\n",
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "a let-else's written continue"],
   },
@@ -327,5 +327,13 @@ export const mutations: Mutation[] = [
     find: "                                    .filter(|(_, value)| !before.contains(value))\n",
     replace: "",
     tests: fallthrough,
+  },
+  {
+    name: "mir-loop-breaks-of-blocks",
+    breaks: "the `if`s of a `break` the program wrote are of its labeled blocks' `break`s, not its loops', so a comment before a loop's `break` is before the loop (#298)",
+    file: "src/lower/mir/hints.rs",
+    find: "            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id)),\n",
+    replace: "            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if labeled.contains(&label.local_id)),\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
   },
 ];

@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0636](0636-a-guarded-arm-is-a-case.md), whose
 guarded arm was a case only where its failed guard went on to nothing,
 and [0629](0629-a-match-of-constants-is-a-switch.md), whose cases each
-ended where they went on.
+ended where they went on. Amended below: the last clause has no `break`
+tidy ended it with.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe. Of each value, the `switch` runs the guards Rust runs, in
@@ -161,3 +162,25 @@ switch (tag) {
 - Mutations in `scripts/mutations/lower/mir/hints.ts`,
   `scripts/mutations/lower/mir/tidy/switches.ts`,
   `scripts/mutations/to_oxc/statements.ts` and `scripts/mutations/to_oxc.ts`.
+
+## Amendment: the last clause has no `break` tidy ended it with
+
+React's scheduler's `unstable_runWithPriority` ends its `switch` with
+`default: priorityLevel = NormalPriority; }`. Of a guarded case that falls
+through, tidy ends each case of the `switch` with its `break;`, the one
+MIR's block that ends them had, and the `default`'s too: `default: level
+= 0; break; }`, a `break;` JS falls out of anyway, which upstream never
+writes.
+
+**The last clause, a `default` or the last case where there's none, has
+no `break;` at its end**, whether the printer would add it or tidy left
+it: `to_oxc`'s `case_body`, which already added none there (ADR 0629,
+amended), drops one it's given. A `break;` in its `if`, not last, stays.
+
+Case: N. A `break;` at the end of a `switch`'s last clause goes where the
+clause's end does.
+
+- `test/lowering-switch-ends.test.ts`, "a default after a guarded case
+  needs no break", run; `test/corpus/shadow_set_in_cases.rs` beside native
+  Rust, its JS without the `break;`.
+- Mutation `last-clause-tidy-break-kept`.

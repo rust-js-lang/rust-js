@@ -306,8 +306,15 @@ impl<'a> Cx<'a> {
     /// a block of their own, `case 1: { const s = ..; }`, where they
     /// declare, which the cases' one scope would share (ADR 0629).
     /// A case's statements, a `break` last where it goes on to another,
-    /// not where it's the last, `falls_out`.
-    fn case_body(&self, body: &[js::Stmt], falls_out: bool) -> ArenaVec<'a, Statement<'a>> {
+    /// not where it falls through to the next, `falls`, nor in the last
+    /// clause, `last`, which JS falls out of: there, not tidy's either,
+    /// `default: level = 0;` (ADR 0905, amended).
+    fn case_body(&self, body: &[js::Stmt], falls: bool, last: bool) -> ArenaVec<'a, Statement<'a>> {
+        let falls_out = falls || last;
+        let body = match body.split_last() {
+            Some((end, before)) if last && matches!(end.kind, StmtKind::Break(None)) => before,
+            _ => body,
+        };
         let mut stmts = self.stmts(body);
         if !falls_out && !body.last().is_some_and(js::ends) {
             stmts.push(Statement::new_break_statement(SPAN, None, &self.b));
@@ -474,16 +481,16 @@ impl<'a> Cx<'a> {
                     }
                     // One that falls through to the next case goes on to it,
                     // no `break` (ADR 0905).
-                    let falls_out = case.falls || (default.is_none() && Some(k) == last_case);
+                    let ends = default.is_none() && Some(k) == last_case;
                     clauses.push(SwitchCase::new(
                         at,
                         Some(self.expr(last)),
-                        self.case_body(&case.body, falls_out),
+                        self.case_body(&case.body, case.falls, ends),
                         b,
                     ));
                 }
                 if let Some(default) = default {
-                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default, true), b));
+                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default, false, true), b));
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }

@@ -451,3 +451,82 @@ pub fn find_first_list(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
   c.tag = 19;
   expect(lib.findFirstList(row)).toBe(c);
 });
+
+// ADR 0702, amended: a `while`'s test is the loop's own. An `if` the
+// program wrote first in its body of a `break` alone stays its `if`, not
+// joined to the test, `while (i < n && !c && !d)`, whether it tests an
+// `&&`, an `||`, a `!`, or is one of two `if`s one after the other, each
+// where it's written (#298).
+test("a while's test is its own, an if of a break the program wrote its if", async () => {
+  const dir = fixture("written-while-breaks");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub fn both(n: u32, c: bool, d: bool) -> u32 {
+    let mut i = 0;
+    while i < n {
+        if c && d {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+
+pub fn either(n: u32, c: bool, d: bool) -> u32 {
+    let mut i = 0;
+    while i < n {
+        if c || d {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+
+pub fn twice(n: u32, c: bool, d: bool) -> u32 {
+    let mut i = 0;
+    while i < n {
+        if c {
+            break;
+        }
+        if d {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+
+pub fn blanks(words: &[&str]) -> usize {
+    let mut i = 0;
+    while i < words.len() {
+        if !words[i].is_empty() {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  while (i < n) {\n    if (c && d) {\n      break;\n    }\n    i++;\n  }\n");
+  expect(js).toContain("  while (i < n) {\n    if (c || d) {\n      break;\n    }\n    i++;\n  }\n");
+  expect(js).toContain("  while (i < n) {\n    if (c) {\n      break;\n    }\n    if (d) {\n      break;\n    }\n    i++;\n  }\n");
+  expect(js).toContain("  while (i < words.length) {\n    if (words[i]) {\n      break;\n    }\n    i++;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  const flags = [
+    [false, false],
+    [true, false],
+    [false, true],
+    [true, true],
+  ];
+  expect(flags.map(([c, d]) => [lib.both(4, c, d), lib.either(4, c, d), lib.twice(4, c, d)])).toEqual([
+    [4, 4, 4],
+    [4, 0, 0],
+    [4, 0, 0],
+    [0, 0, 0],
+  ]);
+  expect([lib.blanks(["", "", "a"]), lib.blanks(["", ""]), lib.blanks([])]).toEqual([2, 2, 0]);
+});

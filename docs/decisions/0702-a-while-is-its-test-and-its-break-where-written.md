@@ -4,7 +4,8 @@ Status: Accepted. Extends tidy's `while_tests` and
 [0683](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)'s `if`
 as written, which left a loop's test in its body.
 Amended: a `while` that ends an `if`'s branch with code after the `if`
-is its test too.
+is its test too; and an `if` of a `break` the program wrote first in a
+`while`'s body is that `if`, not the loop's test (#298).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -273,3 +274,60 @@ leaves. The seed, its reductions and four other shapes compile without
 the guard, and `broken-after-a-throw` survived main's check. So the
 guard and its mutation are gone. `while_test_ends_in_throw` stays, and
 still holds the contract against the crash.
+
+## Amendment: an `if` of a `break` the program wrote is not the loop's test (#298)
+
+```rust
+while i < n {
+    if c && i == 3 {
+        // Found it.
+        break;
+    }
+    i += 1;
+}
+```
+
+was `// Found it.` above `while (i < n && (!c || i !== 3)) { i++; }`: MIR
+tests the loop's test and then the program's, each going to the loop's
+end, and tidy joins tests that go to one place, so `while_tests` took both
+as the loop's. The `break` the program wrote, and its `if`, were gone, and
+the comment before it had no place left in the loop.
+
+**A `while`'s test is the loop's own: of the tests joined in it, those
+that are an `if` of a `break` the program wrote (`Written::breaks`, ADR
+0684, amended) are that `if` again, first in the loop's body, each where
+it's written** (`loops::broken_apart`):
+
+```js
+while (i < n) {
+  if (c && i === 3) {
+    // Found it.
+    break;
+  }
+  i++;
+}
+```
+
+- Of the loop's test `t && u`, `u` the program's, or `while (true) { if
+  (!t || !u) { break; } .. }`'s `||`, the `while` tests `t` and its body's
+  first statement is `if (!u) { break; }`, the same tests in the same
+  order, each leaving where it did. A `break` in the body runs what's
+  after the loop as the test's failing does, so an exit after it is the
+  same.
+- The tests of one `if` are one `if`, `if (c || d)`, and two `if`s two,
+  `if (c) { break; } if (d) { break; }`: each test is of the `if` its
+  place is in.
+- A test of the loop's own, `i < n`, and one MIR made, stay the `while`'s.
+
+Case: N. The same tests run in the same order, each leaving the loop
+where it did; how the JS reads, and where a comment is.
+
+No corpus case or snapshot changed; the JS of each `while` whose first
+`if` the program wrote of a `break` is that `if` now.
+
+- `test/lowering-written-loops.test.ts`, "a while's test is its own, an
+  if of a break the program wrote its if": an `&&`, an `||`, two `if`s
+  and a `!`, run; and `test/lowering-comments.test.ts`, "a comment before
+  a loop's break is before the break", its `while`.
+- Mutations `while-written-breaks-joined` and
+  `while-written-breaks-ungrouped`.

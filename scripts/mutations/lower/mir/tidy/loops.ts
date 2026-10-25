@@ -291,4 +291,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
   },
+  {
+    name: "while-written-breaks-joined",
+    breaks: "an `if` of a `break` the program wrote first in a `while`'s body joins the loop's test, `while (i < n && (!c || i !== 3))`, its comment before the loop (#298)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if own == 0 || own == all.len() {\n",
+    replace: "    if own == 0 || own <= all.len() {\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "an if of a break the program wrote its if"],
+  },
+  {
+    name: "while-written-breaks-ungrouped",
+    breaks: "the tests of one `if` the program wrote of a `break`, `c || d`, are an `if` each, `if (c) { break; } if (d) { break; }`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        while let Some(next) = tested.next_if(|e| written(e) == of) {\n",
+    replace: "        while let Some(next) = tested.next_if(|e| written(e) == of && false) {\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "an if of a break the program wrote its if"],
+  },
 ];

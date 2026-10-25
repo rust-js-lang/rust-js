@@ -1,7 +1,8 @@
 //! What tidy is told of a body (`tidy::Hints`) that its THIR says: where
 //! the program writes each `if`'s condition, each `&&` and `||`, each `if`
-//! of a `continue`, each loop and whether as a `while`, and each `match`
-//! that may read a table. A question module: it emits nothing.
+//! of a `continue` or a loop's `break`, each loop and whether as a `while`,
+//! and each `match` that may read a table. A question module: it emits
+//! nothing.
 
 use super::*;
 use crate::lower::body_queries::{self, PatternValue};
@@ -28,6 +29,9 @@ pub(super) struct Written {
     /// condition is, and where the `continue` is, which its comment is
     /// before (ADR 0684).
     pub continues: Vec<(js::Span, js::Span)>,
+    /// Each `if` of a loop's `break`, as of a `continue`: where its
+    /// condition is, and where the `break` is (ADR 0684, amended).
+    pub breaks: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each block the program labeled, `'desc: { .. }` (`labeled_blocks`).
@@ -226,46 +230,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             })
             .collect();
-        // Where each `if` the program wrote of a `continue` tests: one alone,
-        // or one that ends what it does.
-        let continues: Vec<(js::Span, js::Span)> = (self.frame.thir.exprs.iter())
+        let continues = self.jump_ifs(&|kind| matches!(kind, thir::ExprKind::Continue { .. }));
+        // Of a loop's `break`, not a block's the program labeled, whose
+        // `break`s are where they're written already (ADR 0790).
+        let labeled: std::collections::HashSet<rustc_hir::ItemLocalId> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
-                thir::ExprKind::If { cond, then, .. } => {
-                    let mut then = then;
-                    while let thir::ExprKind::Scope { value: inner, .. }
-                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[then].kind
-                    {
-                        then = inner;
-                    }
-                    let thir::ExprKind::Block { block } = self.frame.thir[then].kind else {
-                        return None;
-                    };
-                    let block = &self.frame.thir[block];
-                    let only = match (block.stmts.last(), block.expr) {
-                        (_, Some(e)) => Some(e),
-                        (Some(s), None) => match self.frame.thir[*s].kind {
-                            thir::StmtKind::Expr { expr, .. } => Some(expr),
-                            _ => None,
-                        },
-                        _ => None,
-                    }?;
-                    let mut only = only;
-                    while let thir::ExprKind::Scope { value: inner, .. }
-                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[only].kind
-                    {
-                        only = inner;
-                    }
-                    matches!(self.frame.thir[only].kind, thir::ExprKind::Continue { .. }).then(|| {
-                        (
-                            self.js_span(self.frame.thir[cond].span),
-                            self.js_span(self.frame.thir[only].span),
-                        )
-                    })
-                }
+                thir::ExprKind::Scope { hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
+                    rustc_hir::ExprKind::Block(block, Some(_)) => Some(block.hir_id.local_id),
+                    _ => None,
+                },
                 _ => None,
             })
-            .chain(self.let_else_continues())
             .collect();
+        let breaks = self.jump_ifs(
+            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id)),
+        );
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
         let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
@@ -326,6 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             logicals,
             negations,
             continues,
+            breaks,
             loops,
             blocks: self.labeled_blocks(),
             switches,
@@ -712,9 +692,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Where each `let … else { continue; }` the program wrote is, which MIR
-    /// tests as an `if` of the `continue` in its place.
-    fn let_else_continues(&self) -> Vec<(js::Span, js::Span)> {
+    /// Where each `if` the program wrote of a `jump`, a `continue` or a
+    /// loop's `break`, tests, one alone or one that ends what it does, and
+    /// each `let … else` of one, which MIR tests as an `if` of it in its
+    /// place: and where its jump is, which its comment is before (ADR 0684,
+    /// amended).
+    fn jump_ifs(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool) -> Vec<(js::Span, js::Span)> {
+        (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If { cond, then, .. } => {
+                    let mut then = then;
+                    while let thir::ExprKind::Scope { value: inner, .. }
+                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[then].kind
+                    {
+                        then = inner;
+                    }
+                    let thir::ExprKind::Block { block } = self.frame.thir[then].kind else {
+                        return None;
+                    };
+                    let block = &self.frame.thir[block];
+                    let only = match (block.stmts.last(), block.expr) {
+                        (_, Some(e)) => Some(e),
+                        (Some(s), None) => match self.frame.thir[*s].kind {
+                            thir::StmtKind::Expr { expr, .. } => Some(expr),
+                            _ => None,
+                        },
+                        _ => None,
+                    }?;
+                    let mut only = only;
+                    while let thir::ExprKind::Scope { value: inner, .. }
+                    | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[only].kind
+                    {
+                        only = inner;
+                    }
+                    jump(&self.frame.thir[only].kind).then(|| {
+                        (
+                            self.js_span(self.frame.thir[cond].span),
+                            self.js_span(self.frame.thir[only].span),
+                        )
+                    })
+                }
+                _ => None,
+            })
+            .chain(self.let_else_jumps(jump))
+            .collect()
+    }
+
+    /// Where each `let … else` the program wrote of a `jump` is (`jump_ifs`).
+    fn let_else_jumps(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool) -> Vec<(js::Span, js::Span)> {
         (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
@@ -736,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         only = inner;
                     }
-                    matches!(self.frame.thir[only].kind, thir::ExprKind::Continue { .. })
+                    jump(&self.frame.thir[only].kind)
                         .then(|| (self.js_span(span), self.js_span(self.frame.thir[only].span)))
                 }
                 _ => None,

@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     "name": "late-while-tests-off",
     "breaks": "a `while` whose test MIR held first, `const _7 = m.length;`, stays `while (true)` and a `return`",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"while tests\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))\n            }),\n",
+    "find": "            pass(\"while tests\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))\n            }),\n",
     "replace": "",
     "tests": ["test/corpus.test.ts", "-t", "^signed_counter.rs$"],
     "snapshots": true
@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
     name: "settled-while-tests-off",
     breaks: "a `while` that ends an `if`'s branch with code after the `if`, whose `break` left MIR's block, stays `while (true) { if (rest <= 0) { break; } .. }`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"tests of loops ending blocks\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))\n            }),\n",
+    find: "            pass(\"tests of loops ending blocks\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))\n            }),\n",
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "a while that ends an if's branch keeps its test"],
   },

@@ -1398,7 +1398,8 @@ constant of the guarded one's, and one of its own, the guarded arm's case
 is its guard's `if`, and falls through to the next arm's case, as React
 writes `getComponentNameFromFiber`. Each guard runs where Rust runs it, in
 order, once its constant matched; an arm that does nothing where its
-guard holds is a `break`
+guard holds is a `break`, but in the last case, a `default`'s too, which
+JS falls out of
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)):
 
 ```rust
@@ -1701,6 +1702,66 @@ export function lastNamed(names) {
   a `continue` that ends an arm of a chain of `if`s too, `else if (..) {
   ..; continue; }`, with no label where the arms meet ([ADR
   0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)).
+- A `while`'s test is the loop's own: an `if` of a `break` first in its
+  body is the `if` the program wrote, not joined to the test, and a
+  comment before a `break` or a `continue` is before it, inside its `if`,
+  of a `while let`'s too, whose test the loop's joins ([ADR
+  0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md),
+  [ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)):
+
+```rust
+pub fn sentence(words: &[&str], limit: usize) -> usize {
+    let mut i = 0;
+    while i < words.len() {
+        if words[i].is_empty() || i == limit {
+            // A blank or the limit ends it.
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+
+pub fn until_tag(words: &[&str]) -> usize {
+    let mut i = 0;
+    while let Some(word) = words.get(i) {
+        if word.starts_with('#') {
+            // A tag ends it.
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+```
+
+```js
+export function sentence(words, limit) {
+  let i = 0;
+  while (i < words.length) {
+    if (!words[i] || i === limit) {
+      // A blank or the limit ends it.
+      break;
+    }
+    i++;
+  }
+  return i;
+}
+
+export function untilTag(words) {
+  let i = 0;
+  while (true) {
+    const word = words[i];
+    if (word == null || word.startsWith("#")) {
+      // A tag ends it.
+      break;
+    }
+    i = (i + 1) >>> 0;
+  }
+  return i;
+}
+```
+
 - A `while` inside a `loop`, its `return`s where they're written and the
   rest of the turn after it, is the two loops, `while (node.sibling ==
   null) { .. }` in `while (true) { .. }`, with no label round either ([ADR

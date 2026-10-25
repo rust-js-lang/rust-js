@@ -127,8 +127,6 @@ function workLoop(initialTime) {
   let currentTime = initialTime;
   advanceTimers(currentTime);
   currentTask = peek(taskQueue);
-  // This currentTask hasn't expired, and we've reached the deadline.
-  // This currentTask hasn't expired we yield to the browser task.
   while (true) {
     const currentTask$1 = currentTask;
     if (
@@ -137,6 +135,7 @@ function workLoop(initialTime) {
         currentTask$1.expirationTime > currentTime &&
         shouldYieldToHost())
     ) {
+      // This currentTask hasn't expired, and we've reached the deadline.
       break;
     }
     const callback = currentTask$1.callback;
@@ -165,6 +164,7 @@ function workLoop(initialTime) {
       enableAlwaysYieldScheduler &&
       (currentTask == null || currentTask.expirationTime > currentTime)
     ) {
+      // This currentTask hasn't expired we yield to the browser task.
       break;
     }
   }

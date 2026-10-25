@@ -172,3 +172,25 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
   for (const value of ["a!b", "ab", null]) lib.scanned(value, scanned);
   expect(scanned).toEqual(["a", "bang", "a", "b", "plain", "null"]);
 });
+
+// React's scheduler's unstable_runWithPriority: `default: priorityLevel =
+// NormalPriority; }`. Of a guarded case that falls through (ADR 0905), tidy
+// ends each case with a `break;`, the `default`'s too, which, last, JS
+// falls out of anyway: none there, as upstream writes it.
+test("a default after a guarded case needs no break", async () => {
+  const dir = fixture("switch-ends-guarded");
+  writeFileSync(join(dir, "lib.rs"), `pub fn guarded(level: u32, strict: bool) -> u32 {
+    let level = match level {
+        1 if strict => level + 100,
+        1 | 2 | 3 => level,
+        _ => 0,
+    };
+    level + 1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    case 3:\n      break;\n    default:\n      level = 0;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.guarded(1, true), lib.guarded(1, false), lib.guarded(3, true), lib.guarded(9, true)]).toEqual([102, 2, 4, 1]);
+});

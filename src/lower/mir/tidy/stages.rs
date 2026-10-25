@@ -377,7 +377,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A loop's test those read in place now, `while (true) { if
             // (!(m.length > n)) { .. } }`'s of `const _7 = m.length;`.
             pass("while tests", |b, h| {
-                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))
             }),
             // What those leave at the end, a `return;` the program didn't write.
             pass("tail returns", |b, h| tail_returns(b, h.returns)),
@@ -526,7 +526,7 @@ pub(super) const STAGES: &[Stage] = &[
             // (!(t)) { break; } .. }` of one that ends an `if`'s branch with
             // code after the `if`, whose `break` left the block: its test.
             pass("tests of loops ending blocks", |b, h| {
-                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))
             }),
             // A test the program wrote `!(a && b)`, MIR's `!a || !b`: as
             // written (ADR 0879, amended).
@@ -566,10 +566,10 @@ pub(super) const STAGES: &[Stage] = &[
                 logicals::bit_tests(b, h.numbers, &h.written.patterns)
             }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
-            // A `continue` the program wrote, where it wrote it, which its
-            // comment is before (ADR 0684).
-            pass("written continues", |b, h| {
-                js::statement_lists(b, &mut |s| written_continues(s, &h.written.continues))
+            // A `continue` or a loop's `break` the program wrote, where it
+            // wrote it, which its comment is before (ADR 0684, amended).
+            pass("written jumps", |b, h| {
+                js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
             }),
         ],
         ensures: &[
