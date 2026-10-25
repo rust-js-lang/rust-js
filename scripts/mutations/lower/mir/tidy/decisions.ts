@@ -175,4 +175,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
     snapshots: true,
   },
+  {
+    name: "decision-chain-at-first-arm",
+    breaks: "the `if (a || b)` a tree makes is where its first arm's code is, past its `{`, so the comment before it is lost, describeNativeComponentFrame's",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            0 => made_where(block, tree),\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "an if a decision tree makes is where its first if is"],
+  },
 ];

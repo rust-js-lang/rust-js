@@ -617,6 +617,64 @@ pub fn checked(value: Option<&'static Unknown>) -> u32 {
   expect([lib.checked(memo as never), lib.checked(undefined as never), lib.checked((() => 0) as never)]).toEqual([5, 2, 0]);
 });
 
+// React's describeNativeComponentFrame: `// We couldn't find our
+// intentionally injected common root frame ..` before `if s == .. || c ==
+// .. { .. while .. { .. } }`, and `// In V8, the first line ..` before `if
+// s != 1 || c != 1 { loop { .. } }`. MIR's structure makes a labeled block
+// of each, its `while`'s `break` leaving it, which `decisions` makes the
+// chain of its arms: the `if` was where its first arm's first statement
+// is, past the `{` the comment is before, so the comment was nobody's,
+// before the function's `try` (ADR 0444, amended).
+test("an if a decision tree makes is where its first if is", async () => {
+  const { decodeMappings } = await import("./sourcemap");
+  const rust = `pub fn found(sample: Option<&str>, control: Option<&str>) -> usize {
+    let mut n = 0;
+    if let Some(sample) = sample
+        && let Some(control) = control
+    {
+        let mut s = sample.len();
+        let c = control.len();
+        // Neither was found, so count
+        // down from the bottom.
+        if s == 3 || c == 4 {
+            s -= 1;
+            while s > 1 {
+                // Each step down.
+                s -= 1;
+            }
+        }
+        while s >= 1 {
+            // Not on the first line.
+            if s != 1 || c != 1 {
+                loop {
+                    s -= 1;
+                    if s < 1 {
+                        break;
+                    }
+                }
+            }
+            n += 1;
+            s = 0;
+        }
+        n += s;
+    }
+    n
+}
+`;
+  const { js, lib, map } = await compiled("decision-if-placed", rust);
+  expect(js).toContain("    // Neither was found, so count\n    // down from the bottom.\n    if (s === 3 || c === 4) {\n");
+  expect(js).toContain("      // Not on the first line.\n      if (s !== 1 || c !== 1) {\n");
+  // Each `if` maps to its first test.
+  const lines = js.split("\n");
+  const rs = rust.split("\n");
+  const mapped = ["if (s === 3", "if (s !== 1"].map((start) => {
+    const at = lines.findIndex((line) => line.trimStart().startsWith(start));
+    return decodeMappings(map.mappings).find((s) => s.jsLine === at && s.jsCol === lines[at].indexOf("if"))?.srcLine;
+  });
+  expect(mapped).toEqual([rs.findIndex((l) => l.includes("if s == 3")), rs.findIndex((l) => l.includes("if s != 1"))]);
+  expect([lib.found("abc" as never, "ab" as never), lib.found("a" as never, "abcd" as never), lib.found("ab" as never, "a" as never), lib.found(undefined as never, "a" as never)]).toEqual([1, 0, 1, 0]);
+});
+
 // React's startTransition: `*current.types.get_mut() = match prev { // If
 // we're a nested transition .. \n Some(prev) => prev.types.borrow().clone(),
 // None => None }`, which drops what the place held, so MIR writes it where

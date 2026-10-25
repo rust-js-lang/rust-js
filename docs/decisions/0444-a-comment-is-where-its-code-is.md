@@ -24,7 +24,8 @@ statement's in its block, one in a `catch_unwind` closure is in the `try`,
 and one before a binary's right operand is after its operator. Amended
 (2026-10-25, again): an assignment that drops what its place held is
 where its Rust is, and an or-pattern's alternative and a let-chain's `&&
-let` are operands too.
+let` are operands too. Amended (2026-10-25, a third time): an `if` a
+match's tree makes of MIR's labeled block is where its first `if` is.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.
@@ -322,3 +323,38 @@ and the mutations `dropping-assignment-at-place` (`mir/assign.ts`),
 (`representation.ts`), `if-let-alternatives-unwritten` and
 `deref-alternatives-unwritten` (`mir/temporaries.ts`) and
 `let-chain-let-code` (`to_oxc.ts`).
+
+## Amended (2026-10-25): an `if` a tree of tests makes is where its first `if` is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's describeNativeComponentFrame writes `// We couldn't find our
+intentionally injected common root frame ..` before `if (s ===
+sampleLines.length || c === controlLines.length) { .. while (..) { .. }
+}`, and `// In V8, the first line ..` before `if (s !== 1 || c !== 1) {
+do { .. } while (..); }`; its port, the same comments before `if s ==
+sample_lines.len() || c == control_lines.len() {` and `if s != 1 || c !=
+1 { loop { .. } }`. MIR's structure makes each a labeled block of no
+Rust of its own, `l: { if (!a) { if (!b) { break l; } } s; while (..) {
+.. break l; } }`, whose loop leaves it, so `decisions` makes the `if` of
+its tree (ADR 0364), not tidy's chains of `&&` and `||`. That `if` was
+placed where its first arm's first statement is, past the `{` the
+comment is before: the comment was nobody's, and before the innermost
+statement it's in (the amendment above), the function's `try` in the
+one and the outer `while` in the other.
+
+**The chain's first `if` is where the block is; of a block MIR made,
+where its tree's first `if` is** (`made_where`, `tidy/logicals.rs`, the
+one answer an `if` of a labeled block's chain is placed by, ADR 0865's
+amendment), so the comment is before it, as upstream has it, and its
+source map entry is its first test. An `else if` of a later arm stays
+where its arm's code is: a comment before an arm is its value's (above),
+never between `else` and `if`. ReactJSXElement's `// Resolve default
+props` and the comment before the corpus's `or_bindings`' `if let` were lost
+the same way, and are kept, the latter after the `const` of what its
+`if let` tests, which is placed at the scrutinee, past the pattern's
+braces.
+
+Held by `test/lowering-comments.test.ts`, "an if a decision tree makes
+is where its first if is", run, its `if`s mapped to their tests; and the
+mutation `decision-chain-at-first-arm` (`mir/tidy/decisions.ts`).

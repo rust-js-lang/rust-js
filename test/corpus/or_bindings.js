@@ -133,6 +133,8 @@ function main() {
     console.log("none");
   }
   const shape = $index(shapes, 4);
+
+  // In an `if let`, and a `let` that can't fail.
   if (shape.TAG === "Rect" || shape.TAG === "Line") {
     const w = shape.w;
     console.log(`width ${$displayF64(w)}`);

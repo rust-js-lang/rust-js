@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
-use super::{ends, first_written, names_break};
+use super::{ends, first_written, made_where, names_break};
 
 /// More leaves than a match a person writes has: a tree of tests that
 /// aren't one.
@@ -33,7 +33,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>) {
         if !crate::lower::mir::is_block_label(label) {
             continue;
         }
-        let Some((chain, takes_rest)) = chain(label, body, &stmts[i + 1..]) else {
+        let Some((chain, takes_rest)) = chain((label, stmts[i].span), body, &stmts[i + 1..]) else {
             continue;
         };
         if takes_rest {
@@ -56,9 +56,10 @@ struct Leaf<'s> {
     leaves_loop: bool,
 }
 
-/// The arms of the tree in `body`, `after` it in its list: the statements
-/// in its place, and whether they take the place of `after` too.
-fn chain(label: &str, body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)> {
+/// The arms of the tree in `body`, the block `label` where it is, `after`
+/// it in its list: the statements in its place, and whether they take the
+/// place of `after` too.
+fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)> {
     // A block a `return` of what it makes follows, `?`'s: its arms each
     // return, as `returned_in_branches` writes them.
     if let Some(StmtKind::Return(Some(value))) = after.first().map(|s| &s.kind)
@@ -149,7 +150,7 @@ fn chain(label: &str, body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)
         body => Some(body),
     };
     let mut tests_made = 0;
-    for &i in order.iter().rev() {
+    for (k, &i) in order.iter().enumerate().rev() {
         // Its patterns in the order they're written, `'0'..='9' | '.'`; one
         // whose test is where the whole `|` is, after those it holds.
         let mut paths = arms[i].tests.clone();
@@ -163,7 +164,15 @@ fn chain(label: &str, body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)
         let test = any(paths.into_iter().map(all).collect());
         tests_made += atoms(&test);
         let then = std::mem::take(&mut bodies[i]);
-        let span = then.first().map(|s| s.span).unwrap_or_default();
+        // The chain's first `if` where the block is, of one MIR made where
+        // its tree's first `if` is (`made_where`), so what's written before
+        // the tree, `// c \n if a || b {`, is before it, not past its `{`;
+        // an `else if` where its arm's code is, a comment before the arm
+        // that code's (ADR 0444, amended).
+        let span = match k {
+            0 => made_where(block, tree),
+            _ => then.first().map(|s| s.span).unwrap_or_default(),
+        };
         chain = Some(vec![StmtKind::If(test, then, chain).at(span)]);
     }
     // Tests no longer than the tree's, or the tree reads better.

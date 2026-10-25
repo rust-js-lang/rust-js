@@ -413,11 +413,12 @@ pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Ve
     }
 }
 
-/// Where the `if` a labeled block's chain is made is: where the program
-/// wrote the block, `'desc: {`, its `span`; of one MIR's structure made, of
-/// no Rust of its own, where its first `if` is, the chain's first code, not
-/// at the next statement's start, as a statement of none is (ADR 0865,
-/// amended).
+/// Where the `if` a labeled block's chain is made is, of `&&`'s and `||`'s
+/// or of a match's tree (`decisions`): where the program wrote the block,
+/// `'desc: {`, its `span`; of one MIR's structure made, of no Rust of its
+/// own, where its first `if` is, the chain's first code, not at the next
+/// statement's start, as a statement of none is, nor at its first arm's
+/// code (ADRs 0865 and 0444, amended).
 pub(super) fn made_where(span: js::Span, body: &[Stmt]) -> js::Span {
     match body.first() {
         Some(first) if span.is_none() => first.span,
