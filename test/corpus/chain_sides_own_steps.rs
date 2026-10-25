@@ -48,5 +48,8 @@ fn main() {
     // `Vec`, which drops what it passes as one slice (#283).
     let counted = louds(45, 2).into_iter().rev().take(2).chain(louds(47, 2)).count();
     println!("{counted}");
+    // A chain's `nth` past a `fuse()`'s items, which it drops (#285).
+    let fused = louds(50, 3).into_iter().fuse().chain(louds(53, 1)).nth(2);
+    println!("{:?}", fused.map(|l| l.0));
     println!("end");
 }

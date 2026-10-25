@@ -46,11 +46,11 @@ function $lazyChain(a, b) {
   };
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
   // `n` of `b`'s own `nth`, where it has one (#214).
-  chained.nth = (n) => {
+  chained.nth = (n, drop) => {
     if (first !== undefined) {
       // What it passes over dropped, by its own `advance_by` or each by
-      // its item's drop (#269).
-      const left = advanced(first, n);
+      // its item's drop (#269), the one given where it has none (#285).
+      const left = advanced(first, n, first.dropItem ?? drop);
       if (left === 0) {
         const step = first.next();
         if (!step.done) return step;

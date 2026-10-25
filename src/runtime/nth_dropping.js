@@ -5,7 +5,9 @@
 // (#182).
 function $nthDropping(it, n, drop, boxed) {
   if (it.ownNth) {
-    const step = it.nth(n);
+    // Given the items' drop, which a chain's side with none of its own,
+    // a compiled struct's, advances by (#285).
+    const step = it.nth(n, drop);
     return step.done ? undefined : boxed ? $some(step.value) : step.value;
   }
   for (const item of it) {

@@ -6,7 +6,7 @@
 // std's `&mut I` gives it, where `it` is std's adapter of one.
 function $lent(it) {
   const lent = new $Steps(() => it.next());
-  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and

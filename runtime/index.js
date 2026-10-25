@@ -1764,7 +1764,9 @@ export function $held(it) {
 // (#182).
 export function $nthDropping(it, n, drop, boxed) {
   if (it.ownNth) {
-    const step = it.nth(n);
+    // Given the items' drop, which a chain's side with none of its own,
+    // a compiled struct's, advances by (#285).
+    const step = it.nth(n, drop);
     return step.done ? undefined : boxed ? $some(step.value) : step.value;
   }
   for (const item of it) {
@@ -11157,11 +11159,11 @@ export function $lazyChain(a, b) {
   };
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
   // `n` of `b`'s own `nth`, where it has one (#214).
-  chained.nth = (n) => {
+  chained.nth = (n, drop) => {
     if (first !== undefined) {
       // What it passes over dropped, by its own `advance_by` or each by
-      // its item's drop (#269).
-      const left = advanced(first, n);
+      // its item's drop (#269), the one given where it has none (#285).
+      const left = advanced(first, n, first.dropItem ?? drop);
       if (left === 0) {
         const step = first.next();
         if (!step.done) return step;
@@ -11916,7 +11918,7 @@ export function $formatFloat(value, options, show) {
 // std's `&mut I` gives it, where `it` is std's adapter of one.
 export function $lent(it) {
   const lent = new $Steps(() => it.next());
-  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);
+  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and

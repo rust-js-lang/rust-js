@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "chain-nth-given-drop-unused",
+    breaks: "a chain's `nth` past a compiled `fuse()`'s items, which has no item drop of its own, never drops them (#285)",
+    file: "src/runtime/lazy_chain.js",
+    find: "      const left = advanced(first, n, first.dropItem ?? drop);\n",
+    replace: "      const left = advanced(first, n, first.dropItem);\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "chain-count-stepped",
     breaks: "a chain's `count` steps each item, so a reversed `Vec`'s `take(2)` on its first side drops back to front, not as `Take::count`'s one slice (#283)",
     file: "src/runtime/lazy_chain.js",
@@ -46,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "chain-nth-by-next",
     breaks: "a chain's `nth` steps it by `next`, not std's: its first side advanced, then its second's own `nth` (#214)",
     file: "src/runtime/lazy_chain.js",
-    find: "  chained.nth = (n) => {\n",
-    replace: "  chained.nthUnused = (n) => {\n",
+    find: "  chained.nth = (n, drop) => {\n",
+    replace: "  chained.nthUnused = (n, drop) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
   {

@@ -278,3 +278,19 @@ its source's, not JS's `map`. It passes on its source's `ownNth`, so a
 `enumerate-of-a-slice-nth-mapped` are caught.
 Readability: the line's renamed temporaries add to that share (714.6 to
 715.5 in 10,000 lines), as each such case does.
+
+## Amendment: an `nth` is given the items' drop, which a chain's side may lack (#285)
+
+Since `$closing` passes on a compiled struct's `ownNth` (#261), a chain
+of a `fuse()` and a `Vec` took its own `nth`. That `nth` advances the
+first side by that side's `dropItem`, which a closed compiled struct
+doesn't have. So `fuse().chain(..).nth(2)` never dropped the two items
+it passed, a value whose destructor never ran. `$nthDropping` now gives
+an `ownNth` iterator the items' drop, `$lent` passes it on, and a chain
+advances a side with no item drop of its own by it. Stepping from the
+front drops what it passes front to back, as std's `advance_by` does.
+`chain_sides_own_steps` adds the case, against native Rust. The mutations
+`nth-dropping-drop-ungiven`, `lent-nth-drop-unpassed` and
+`chain-nth-given-drop-unused` are caught.
+Readability: the line's `Vec`s add `$iter` (81.9 to 82.1 in 10,000
+lines) and renamed temporaries (713.5 to 714.1), as each such case does.

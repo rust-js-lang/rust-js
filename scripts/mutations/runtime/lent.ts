@@ -3,10 +3,18 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-nth-drop-unpassed",
+    breaks: "a lent iterator's `nth` doesn't pass on the items' drop, so a chain's `nth` past a compiled `fuse()`'s items never drops them (#285)",
+    file: "src/runtime/lent.js",
+    find: "  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);\n",
+    replace: "  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "lent-nth-steps",
     breaks: "`nth` of a `&mut` of the crate's iterator steps it by `next`, not by its own `nth`, which std's `&mut I` gives it",
     file: "src/runtime/lent.js",
-    find: "  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);\n",
+    find: "  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
