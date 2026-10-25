@@ -959,9 +959,13 @@ export function shared() {
   in the crate lasts a moment, as `borrow_mut().push(..)`, `replace` and
   `take` do ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
   [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)).
+  A `#[repr(transparent)]` struct's field isn't a property: the struct is
+  the cell.
 - **A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
   object**, `list` above, its whole writes, `replace`, `take`, `*cell.get_mut()
   = v`, made in place; of a number, a string or an `Option` it's `{ value }`.
+  Of a `#[repr(transparent)]` struct it's its field's: a `Vec`'s newtype's
+  is the array.
   Generic code's `RefCell<T>` of any `T`, and one made a `RefCell<dyn T>`,
   is `{ value }` too, for every `T`
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).

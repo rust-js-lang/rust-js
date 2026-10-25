@@ -171,4 +171,29 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/corpus.test.ts", "-t", "^refcell_bound_field_held.rs$"]
   },
+  {
+    name: "transparent-refcell-field-plain",
+    breaks: "a transparent struct's `RefCell` of an array, React's taint `RequestCleanupQueue`, is a field's plain cell, `{ value }`, where JS makes the array: `queue.value.push(v)` (ADRs 0584, 0863)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                    match for_a_moment.contains(&id) && !transparent {\n",
+    replace: "                    match for_a_moment.contains(&id) {\n",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values they hold"],
+  },
+  {
+    name: "transparent-refcell-holds-nothing",
+    breaks: "a `RefCell` of a transparent struct of an array, `RefCell<Lines>`, is `{ value }`, not the array (ADRs 0584, 0863)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());\n",
+    replace: "        return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "transparent-refcell-of-a-number-object",
+    breaks: "a `RefCell` of a transparent struct of a number, `RefCell<Meters>`, is taken for the object it holds, written in place (ADRs 0584, 0863)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());\n",
+    replace: "        return true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
+  },
 ];

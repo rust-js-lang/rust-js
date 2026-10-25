@@ -312,10 +312,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             for (id, expr) in thir.exprs.iter_enumerated() {
-                if let ExprKind::Field { .. } = expr.kind
+                if let ExprKind::Field { lhs, .. } = expr.kind
                     && self.is_std_type(expr.ty, StdItem::RefCell)
                 {
-                    match for_a_moment.contains(&id) {
+                    // A `#[repr(transparent)]` struct's is the struct itself
+                    // (ADR 0584), no property to hold its value: a cell.
+                    let transparent = matches!(thir[lhs].ty.kind(),
+                        ty::Adt(adt, _) if crate::lower::recognition::transparent_field(tcx, *adt).is_some());
+                    match for_a_moment.contains(&id) && !transparent {
                         true => _ = plain.insert(expr.ty),
                         false => _ = cells.entry(expr.ty).or_insert(expr.span),
                     };
@@ -688,8 +692,8 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
 /// is one or none: a `Vec`'s or a `VecDeque`'s array, a map's `Map`, a
 /// set's `Set`, a struct's object or a tuple struct's array, of fields.
 /// Not a reference, which a write points at another; nor a class's
-/// instance, a JS object's binding or one of markers alone, or one that's
-/// its field (ADR 0584). One that's `Copy` is copied where it's changed in
+/// instance, a JS object's binding or one of markers alone. A
+/// `#[repr(transparent)]` struct is its field's answer (ADR 0584). One that's `Copy` is copied where it's changed in
 /// place, as any is (ADR 0623).
 pub(in crate::lower) fn holds_itself(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
     let ty::Adt(adt, _) = held.kind() else { return false };
@@ -709,7 +713,12 @@ pub(in crate::lower) fn holds_itself(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
         matches!(ty.kind(), ty::Adt(of, _) if of.is_phantom_data())
     });
-    !markers
-        && !crate::lower::classes::is_class(tcx, adt.did())
-        && crate::lower::recognition::transparent_field(tcx, *adt).is_none()
+    if let Some(at) = crate::lower::recognition::transparent_field(tcx, *adt) {
+        // A `#[repr(transparent)]` struct is its field (ADR 0584): an
+        // object where that is, a `Vec`'s newtype its array; of its own
+        // type parameters, so that a generic one is one or none too.
+        let field = &fields[rustc_abi::FieldIdx::from_usize(at)];
+        return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());
+    }
+    !markers && !crate::lower::classes::is_class(tcx, adt.did())
 }

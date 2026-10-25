@@ -721,4 +721,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_through_rc.rs$"],
   },
+  {
+    name: "transparent-default-unsupported",
+    breaks: "a derived `Default` of a transparent struct, a `RefCell`'s `take` of one, is refused, \"`Default` of `Lines`\" (ADR 0584)",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(adt, args) if let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
+    replace: "            ty::Adt(adt, args) if false && let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
+  },
 ];

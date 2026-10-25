@@ -240,7 +240,12 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   expect(dep).toContain("    return a === b;\n");
   expect(dep).toContain("    const count = transition.seen.size;\n    transition.seen.clear();\n");
   expect(dep).not.toContain("$borrow");
+  // A transparent struct of a `RefCell` of an array, the array, on both
+  // sides, as JS makes it (ADRs 0584, 0863).
+  expect(dep).toContain("  queue.push(value);\n  return queue.length;\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  const queue = [\"q\"];\n");
+  expect(app).toContain("  queue.push(\"s\");\n");
   expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");
   expect(app).not.toContain("$borrow");
   // A consumer that only makes the library's struct makes its plain field

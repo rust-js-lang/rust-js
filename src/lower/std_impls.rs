@@ -759,6 +759,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
             }
             ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::undefined(),
+            // A `#[repr(transparent)]` struct's is its field's (ADR 0584).
+            ty::Adt(adt, args) if let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {
+                let field = &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(at)];
+                self.default_value(field.ty(self.tcx, args).skip_normalization(), span)?
+            }
             _ => match self.shape(ty) {
                 // A flattened field's defaults are the struct's own (ADR 0204).
                 Shape::Object(fields) => {

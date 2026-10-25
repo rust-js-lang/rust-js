@@ -31,4 +31,10 @@ pub fn main() {
     };
     dep::add_type(&made, "made");
     println!("{:?} {}", dep::types(&made), dep::finish(&made));
+    let queue = dep::Queue {
+        values: std::cell::RefCell::new(vec!["q".to_string()]),
+    };
+    let length = dep::enqueue(&queue, "r");
+    queue.values.borrow_mut().push("s".to_string());
+    println!("{length} {:?}", queue.values.borrow());
 }

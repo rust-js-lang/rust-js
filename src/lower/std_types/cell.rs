@@ -99,6 +99,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = arg();
                 let mut value = written(&cell, arg());
                 let item = generic_args.type_at(0);
+                let drops = self.drops(item) != crate::lower::drops::Drops::Nothing;
+                // A thread-local `RefCell`'s is its `replace` (issue #249):
+                // borrowed mutably to do it where its borrows are counted,
+                // and of one that's the object it holds, the object
+                // written in place, as `*cell.borrow_mut() = v` (ADR 0863).
+                let key = tys[0].peel_refs();
+                let ref_cell = match key.kind() {
+                    ty::Adt(_, key_args)
+                        if self.is_std_type(key, StdItem::LocalKey)
+                            && self.is_std_type(key_args.type_at(0), StdItem::RefCell) =>
+                    {
+                        Some(key_args.type_at(0))
+                    }
+                    _ => None,
+                };
+                let itself = ref_cell.is_some_and(|ref_cell| self.is_value_cell(ref_cell));
                 // Of a thread-local made where it's first used, `key()`
                 // (`Known::LocalRead`): one not made yet is made of the cell
                 // of what's given, its initializer never run and nothing
@@ -114,8 +130,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             value = self.spill(&base, value, out);
                         }
-                        // The `{ value }` this writes the `value` of.
-                        let made = Expr::object(vec![Prop::Field(js::HELD.into(), value.clone())]);
+                        // The cell this writes the value of: `{ value }`,
+                        // or the object a `RefCell` of one is (ADR 0863).
+                        let made = match itself {
+                            true => value.clone(),
+                            false => Expr::object(vec![Prop::Field(js::HELD.into(), value.clone())]),
+                        };
                         Some(Expr::call(Expr::member(getter, "initWith"), vec![made]))
                     }
                     _ => None,
@@ -124,13 +144,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(_) => &mut set,
                     None => &mut *out,
                 };
-                if self.drops(item) != crate::lower::drops::Drops::Nothing {
-                    let cell = self.spill("cell", cell, out_set);
-                    let old = self.spill("old", Expr::held(cell.clone()), out_set);
-                    out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
-                    self.drop_value(old, item, span, out_set)?;
-                } else {
-                    out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                let checked =
+                    ref_cell.is_some_and(|ref_cell| !self.plain_ref_cell(ref_cell) && !self.quiet_ref_cell(ref_cell));
+                let target = match checked {
+                    true => Expr::call(Expr::helper("$borrowMut"), vec![cell.clone()]),
+                    false => cell.clone(),
+                };
+                let replaced = match itself {
+                    true if !drops => {
+                        let assigned = Expr::call(Expr::helper("$assign"), vec![target, value.clone()]);
+                        out_set.push(StmtKind::Expr(assigned).at(js_span));
+                        None
+                    }
+                    true => Some(Expr::call(Expr::helper("$take"), vec![target, value.clone()])),
+                    false if checked => Some(Expr::call(Expr::helper("$cellReplace"), vec![target, value.clone()])),
+                    false => None,
+                };
+                match replaced {
+                    Some(replaced) if drops => {
+                        let old = self.spill("old", replaced, out_set);
+                        self.drop_value(old, item, span, out_set)?;
+                    }
+                    Some(replaced) => out_set.push(StmtKind::Expr(replaced).at(js_span)),
+                    None if itself => {}
+                    None if drops => {
+                        let cell = self.spill("cell", cell, out_set);
+                        let old = self.spill("old", Expr::held(cell.clone()), out_set);
+                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                        self.drop_value(old, item, span, out_set)?;
+                    }
+                    None => out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span)),
                 }
                 if let Some(unmade) = unmade {
                     out.push(StmtKind::If(unmade.negated_test(), set, None).at(js_span));

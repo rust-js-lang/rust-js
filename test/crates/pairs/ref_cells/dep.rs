@@ -68,3 +68,15 @@ pub fn finish(transition: &Transition) -> usize {
         None => 0,
     }
 }
+
+/// React's taint `RequestCleanupQueue`: a `#[repr(transparent)]` struct of
+/// a `RefCell` of an array is the array (ADRs 0584, 0863), as JS makes it.
+#[repr(transparent)]
+pub struct Queue {
+    pub values: RefCell<Vec<String>>,
+}
+
+pub fn enqueue(queue: &Queue, value: &str) -> usize {
+    queue.values.borrow_mut().push(value.to_string());
+    queue.values.borrow().len()
+}

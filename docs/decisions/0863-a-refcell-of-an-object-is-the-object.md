@@ -12,7 +12,9 @@ library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 field). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 (a binding that says it runs nothing borrows nothing) and
 [0868](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
-(what std's impls and derives run is what their bounds say).
+(what std's impls and derives run is what their bounds say); amended
+(a `#[repr(transparent)]` struct's `RefCell`, and a thread-local
+`RefCell`'s `set`, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, decided by the user
 (2026-10-25). A `RefCell` of an object being the object changes no run:
@@ -244,3 +246,87 @@ one are one JS value.
 - Mutations in `scripts/mutations/lower/drops/ref_cells.ts`,
   `analysis/cell_borrows.ts`, `drops/facts.ts`, `std_types/cell.ts`,
   `std_impls.ts`, `library.ts`, `runtime/borrow.ts` and others.
+
+## Amendment: a `#[repr(transparent)]` struct's `RefCell` is the struct, and of one the cell is its field's
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C. Within a crate
+every reader agreed on the box, and no run changed; at the JS boundary,
+an array JS made and handed in, the results did: it has no `value`. React's taint registry keeps each request's cleanup
+queue, an array Flight's JS makes and pushes to:
+
+```rust
+#[repr(transparent)]
+pub struct RequestCleanupQueue {
+    pub values: RefCell<Vec<Unknown>>,
+}
+
+queue.values.borrow_mut().push(entry);
+```
+
+The struct is its field (ADR 0584), so its field's `RefCell` is the
+struct; but `queue.values`, only borrowed for a moment, was a field's
+plain cell (ADR 0362), whose type was then no object cell anywhere: every
+`RefCell<Vec<Unknown>>` was `{ value }`, and the push `queue.value.push(entry)`,
+where JS's array has no `value`. A `RefCell` of a transparent struct of an
+array, `RefCell<Lines>`, was `{ value }` too, as `holds_itself` said no to
+every transparent struct, and a derived `Default` of one was refused.
+
+**A `#[repr(transparent)]` struct's `RefCell` field is a cell of its
+own**, not a field's plain cell: there's no property to hold its value,
+the struct is the cell. So a `RefCell` of an array there is the array,
+`queue.push(entry)`, as JS makes it, in a library and its consumer alike.
+
+**A `RefCell` of a `#[repr(transparent)]` struct is its field's answer**
+(`holds_itself`): `RefCell<Lines>`, of `struct Lines(Vec<String>)`, is
+the array, `RefCell<Meters>`, of `struct Meters(f64)`, `{ value }`. Of
+the field's type as declared, the struct's own type parameters in it,
+so a generic transparent struct is one or none, as any is.
+
+**A derived `Default` of a transparent struct is its field's**, as a
+`take` of one asks.
+
+### What holds it
+
+- Corpus: `refcell_transparent`, a named and a tuple struct's, through
+  an `Rc`, a set of `&'static`s, a slice, a `take` and a `replace`, and
+  a `RefCell` of a `Vec`'s and a number's newtype, against native Rust.
+- `test/crates.test.ts`, "a library's RefCells are the values they hold,
+  and its consumer agrees or is refused": `dep::Queue`, the array in the
+  library and in its consumer.
+- Mutations `transparent-refcell-field-plain`,
+  `transparent-refcell-holds-nothing`,
+  `transparent-refcell-of-a-number-object` (`drops/ref_cells.rs`) and
+  `transparent-default-unsupported` (`std_impls.rs`).
+
+## Amendment: a thread-local `RefCell`'s `set` is its `replace`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results
+changed (issue #249). `LocalKey<RefCell<T>>::set(v)` was a `Cell`'s
+`set` of its `{ value }`, whichever the cell was: of one that's the array
+it holds, `ports.value = [1, 0]`, a property of the array, and the next
+read saw the old one, `index out of bounds`. Nor was it borrowed, so a
+`set` while a borrow of the thread-local was held didn't panic, where
+std's does.
+
+**A thread-local `RefCell`'s `set` is its `replace`, what it held
+dropped**, as std's is: borrowed mutably to do it where its borrows are
+counted, `$borrowMut(ports)`; of one that's the object it holds, the
+object written in place, `$assign(ports, [1, 0])`, as `*cell.borrow_mut()
+= v` is, or, of what has a destructor, `$take` and the old dropped once
+the new is in its place; of a `{ value }`, its value, `$cellReplace`
+where it's counted. A `Cell`'s is as before.
+
+A lazy thread-local (ADR 0037, amended by #252) set before its first
+use is made of what's given, the object itself where its `RefCell` is
+one, `late.initWith([8, 9])`, not a `{ value }` of it.
+
+### What holds it
+
+- Corpus: `thread_local_refcell_set`, an array's, a number's, one of
+  what has a destructor and a lazy one set before its first use, against
+  native Rust; and
+  `thread_local_refcell_set_borrowed`, a `set` while a borrow is held,
+  which must panic `already borrowed`.
+- Mutations `local-refcell-set-of-a-box`, `local-refcell-set-unchecked`,
+  `local-refcell-set-old-undropped` and `lazy-set-made-a-box`
+  (`std_types/cell.rs`).

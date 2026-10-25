@@ -350,6 +350,11 @@ borrow throws as Rust's panics
 ([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 [0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
 So is one handed out by `with(|cell| ..)`, or read by another module.
+Its `set(v)` is its `replace`, what it held dropped: of a `RefCell` that's
+the array it holds, the array written in place, `$assign(taskQueue, [1,
+0])`, checked first where a borrow of it may be held
+([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md),
+amended).
 
 **A thread-local's `with(|x| ..)` is its closure's body where it's
 called**, `x` the thread-local itself: as a statement, in a function, a closure or
