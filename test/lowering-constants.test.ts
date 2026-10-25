@@ -48,6 +48,10 @@ const fn doubled(n: u32) -> u32 {
 pub struct EventPriority(pub Lane);
 #[cfg_attr(rust_js, rust_js::name = "NoEventPriority")]
 pub const NO_EVENT_PRIORITY: EventPriority = EventPriority(SYNC_LANE);
+#[repr(transparent)]
+pub struct Lanes(pub Lane);
+#[cfg_attr(rust_js, rust_js::name = "SyncLanes")]
+pub const SYNC_LANES: Lanes = Lanes(SYNC_LANE);
 
 thread_local! {
     static NEXT_TRANSITION_UPDATE_LANE: Cell<Lane> = const { Cell::new(TRANSITION_LANE_1) };
@@ -77,6 +81,8 @@ pub fn named(lane: Lane) -> i32 {
   // One that runs the crate's code is rustc's value, as before.
   expect(js).toContain("export const DOUBLED = 8192;\n");
   expect(js).toContain("export const NoEventPriority = [SyncLane];\n");
+  // A transparent struct is its field (ADR 0584): the constant it's made of.
+  expect(js).toContain("export const SyncLanes = SyncLane;\n");
   expect(js).toContain("let nextTransitionUpdateLane = TransitionLane1;\n");
   // After what it reads: `DefaultLane`, written after, made first.
   expect(js.indexOf("export const DefaultLane =")).toBeLessThan(js.indexOf("export const SyncUpdateLanes ="));
@@ -84,7 +90,7 @@ pub fn named(lane: Lane) -> i32 {
   // Where rustc needs the value, as before.
   expect(js).toContain("[0, 0].length");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.SyncUpdateLanes, lib.SomeTransitionLane, lib.HALF, lib.NoEventPriority]).toEqual([42, 256, 2048, [2]]);
+  expect([lib.SyncUpdateLanes, lib.SomeTransitionLane, lib.HALF, lib.NoEventPriority, lib.SyncLanes]).toEqual([42, 256, 2048, [2], 2]);
   expect([lib.next(), lib.next(), lib.named(42), lib.named(256), lib.named(7)]).toEqual([256, 512, 1, 2, 4]);
 });
 

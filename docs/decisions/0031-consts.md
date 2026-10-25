@@ -8,6 +8,8 @@ imported by its name. Extended by
 [0722](0722-a-repr-enums-variant-is-its-number.md): a numbered enum's
 variant is its module's `const` too, and what a module's load makes reads
 another module's `const` as its value, as an import cycle may load it first.
+Amended (2026-10-26): a `#[repr(transparent)]` struct's constructor of a
+constant is its field, by its name.
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -175,6 +177,8 @@ thread-local's `TransitionLane1`, each read by its name.
   of a type no one JS value can be every use's is refused, as before.
 - **Where rustc needs the value, a pattern or an array's length**, it's
   rustc's still: `case SyncUpdateLanes:`, `[0, 0].length`.
+- **A `#[repr(transparent)]` struct's constructor of a constant is its
+  field** (ADR 0584): `Lanes(SYNC_LANE)`, `SyncLane`, read by its name.
 
 Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
 same either way, rustc having worked it out, and a library's flag is
