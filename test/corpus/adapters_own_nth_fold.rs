@@ -1,7 +1,8 @@
 // The crate's own `nth` and `fold`, as std asks them through its adapters
 // (#214): a `skip_while`'s fold is its source's after its first item; an
 // adapter's `nth` is `advance_by` then `next`, and `advance_by` its
-// `try_fold`; a `fuse` over a `skip` passes `nth` on.
+// `try_fold`; a `fuse` over a `skip` passes `nth` on; a `take_while`'s
+// fold is its `try_fold`, a `step_by`'s inside first by `next`.
 struct Count {
     at: i32,
     end: i32,
@@ -45,4 +46,5 @@ fn main() {
     println!("{:?}", counted().step_by(2).map(|x| x * 2).nth(1));
     println!("{:?}", counted().skip(2).fuse().nth(1));
     println!("{:?}", counted().step_by(2).take(4).count());
+    println!("{:?}", counted().step_by(2).take_while(|&x| x < 7).count());
 }

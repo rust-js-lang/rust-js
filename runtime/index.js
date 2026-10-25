@@ -10673,6 +10673,9 @@ export function $lazyTakeWhile(items, keep) {
     if (ended) source.return?.();
     return folded;
   };
+  // Its `fold`, std's: its `try_fold`, never stopped, so its source is
+  // folded as std folds it (#214).
+  taking.fold = (init, f) => taking.tryFold(init, f, () => false);
   return taking;
 }
 

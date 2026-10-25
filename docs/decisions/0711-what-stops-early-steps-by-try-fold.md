@@ -151,5 +151,7 @@ Four of std's answers were missing:
   a `fuse()`'s source, is a dictionary of `next` and, where its chain
   reaches the crate's own, `$foldOf`, `$nth` and `$last`, so the
   `Fuse`'s `nth` reaches the `Skip`'s.
-`adapters_own_nth_fold` holds them, with four mutations. 40 programs
-still differ, which #214 lists.
+A `take_while`'s `fold` is its `try_fold` too. `adapters_own_nth_fold`
+holds them, with five mutations. 34 programs still differ, which #214
+lists: mostly a `try_fold` through std's compiled `Fuse` or `Peekable`,
+whose JS iterator steps what it's given by `next`.

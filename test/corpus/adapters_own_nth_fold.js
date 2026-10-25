@@ -6,6 +6,7 @@ import {
   $foldOf,
   $iterator,
   $lazySkipWhile,
+  $lazyTakeWhile,
   $lent,
   $next,
   $nth,
@@ -109,6 +110,9 @@ function main() {
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(
     `${$count($stepBy($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), 2).take(4))}`,
+  );
+  console.log(
+    `${$lazyTakeWhile($stepBy($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), 2), (x) => x < 7).reduce((n) => n + 1, 0)}`,
   );
 }
 //# sourceMappingURL=case.js.map
