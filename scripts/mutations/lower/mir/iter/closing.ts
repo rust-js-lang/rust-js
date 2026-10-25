@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "last-of-destructors-uncounted",
     breaks: "`last()` of items with a destructor collects them, and drops none it passes",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            Some(drop) => Ok(Expr::call_helper(\"$lastDropping\", vec![it, drop])),\n",
-    replace: "            Some(_) => Ok(self.last_of(Expr::call(Expr::member(it, \"toArray\"), Vec::new()), item, made)),\n",
+    find: "            Some(drop) => {\n                let mut given = vec![it, drop];\n",
+    replace: "            Some(_) if true => Ok(self.last_of(Expr::call(Expr::member(it, \"toArray\"), Vec::new()), item, made)),\n            Some(drop) => {\n                let mut given = vec![it, drop];\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
@@ -169,5 +169,13 @@ export const mutations: Mutation[] = [
     find: "        // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.\n        let other = self.as_js_iterator(other, other_ty, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+  },
+  {
+    name: "last-dropping-unboxed",
+    breaks: "`last()` of `Option`s with a destructor whose last is `None` is `None`, not `Some(None)`: `$lastDropping`'s item unboxed (#204)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                if item.is_some_and(|item| self.boxed_payload(item)) {\n                    given.push(Expr::bool(true));\n",
+    replace: "                if false {\n                    given.push(Expr::bool(true));\n",
+    tests: ["test/corpus.test.ts", "-t", "^last_option_drops.rs$"],
   },
 ];

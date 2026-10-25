@@ -245,7 +245,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .transpose()?
             .flatten()
         {
-            Some(drop) => Ok(Expr::call_helper("$lastDropping", vec![it, drop])),
+            // `Some` of an item that could look like `None` boxed (ADR 0051,
+            // #204).
+            Some(drop) => {
+                let mut given = vec![it, drop];
+                if item.is_some_and(|item| self.boxed_payload(item)) {
+                    given.push(Expr::bool(true));
+                }
+                Ok(Expr::call_helper("$lastDropping", given))
+            }
             None => {
                 let items = Expr::call(Expr::member(it, "toArray"), Vec::new());
                 Ok(self.last_of(items, item, made))

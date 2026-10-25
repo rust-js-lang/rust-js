@@ -56,7 +56,7 @@ function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
 
 function finalOne(items, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
-  const result = $lastDropping(iter, dropIItem);
+  const result = $lastDropping(iter, dropIItem, true);
   dropIIntoIter?.(iter);
   return result;
 }

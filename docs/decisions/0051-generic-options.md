@@ -177,3 +177,14 @@ unboxed; and a `BTreeSet`'s `first`, `last`, `pop_first` and `pop_last`,
 already: `xor`, `map_or` and `map_or_else`, and `mem::take` and
 `mem::replace`, a place's old value. Held by
 `test/corpus/boxed_option_results.rs`.
+
+## Amendment: `last()` of items with a destructor
+
+`last()` of items with a destructor is `$lastDropping`, which drops each
+before the last as the next comes (ADR 0098), and gave the last item
+itself: of `Option`s whose last is `None`, `None`, where Rust's is
+`Some(None)` (#204). It's given `true` where an item could look like
+`None`, a type parameter's too, and boxes what it gives as `$some` does
+(`last_option_drops`, `last-dropping-unboxed`). That case's iterators,
+stepped to drop each item they pass, grow the readability measure's
+`$iter` and `Iterator.from` shares, as any of items with a destructor do.
