@@ -114,9 +114,13 @@ pilot. No delivery dates are assigned yet.
   and main updates, and require successful checks before merging. Include
   formatting, Clippy, Rust tests, differential tests, snapshots, browser tests,
   and the production example build. Today [Check](.github/workflows/check.yml)
-  runs manually only; automatic and scheduled runs are deferred to avoid
-  GitHub Actions costs during development.
-  Branch-protection enforcement still needs repository configuration.
+  runs on every push to `main`, to its end, and [Nightly](.github/workflows/nightly.yml)
+  every night at 19:00 UTC runs what a push's check leaves out: every
+  mutation, rustc's whole suite and 600 generated programs
+  ([DEVELOPMENT.md](DEVELOPMENT.md#checkyml-of-each-push-to-main-and-bun-run-cicheck)).
+  Changes are pushed to `main` directly (AGENTS.md), so a red check is
+  fixed after the push, not before it: a merge gate, and the
+  branch protection it needs, remain.
 - [ ] **M2.2 — Require fresh native/browser parity.** Build or fetch WASM for
   the exact candidate sources and run parity plus playground behavior tests
   as a release gate. Missing artifacts must fail that gate. Today
