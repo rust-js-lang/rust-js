@@ -81,7 +81,7 @@ export function peekableIterator_last(peekable, IIterator, dropI, dropIItem) {
   } else {
     peekOpt = undefined;
   }
-  const option = $lastDropping($given(peekable.iter, IIterator, true), dropIItem);
+  const option = $lastDropping($given(peekable.iter, IIterator, true), dropIItem, true);
   const optb = peekOpt;
   if (option != null) {
     x = option;
@@ -292,7 +292,7 @@ export function fuseIterator_nth(fuse, n, IIterator, IFused, dropI, dropIItem) {
 export function fuseIterator_last(fuse, IIterator, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
-    return $lastDropping($given(iter, IIterator, true), dropIItem);
+    return $lastDropping($given(iter, IIterator, true), dropIItem, true);
   }
 }
 
