@@ -116,4 +116,12 @@ export const mutations: Mutation[] = [
     replace: "            } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
   },
+  {
+    name: "never-taken-true-kept",
+    breaks: "an or-pattern of a constant first field leaves `if (true)`, and tidy's `settled` stage panics: the compiler crashes (#247)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            } else if matches!(test.kind, ExprKind::Bool(true)) && fits(then) {\n",
+    replace: "            } else if false && fits(then) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_constant_alternative.rs$"],
+  },
 ];

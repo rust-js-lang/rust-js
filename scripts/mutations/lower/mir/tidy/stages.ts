@@ -569,4 +569,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
     snapshots: true,
   },
+  {
+    name: "in-place-empty-if-kept",
+    breaks: "an `if` that tidy's `in place` stage empties, run again after `scopes` took a `try` away, stays, and its contract panics: the compiler crashes (#247)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"never taken\", |b, _| bottom_up(b, &mut never_taken)),\n        ],\n        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],",
+    replace: "        ],\n        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],",
+    tests: ["test/corpus.test.ts", "-t", "^drop_scope_empty_if.rs$"],
+  },
 ];

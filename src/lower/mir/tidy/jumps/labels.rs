@@ -2,7 +2,8 @@
 //! and those never taken.
 
 use super::*;
-use std::collections::HashMap;
+use crate::lower::mir::tidy::bindings::declared;
+use std::collections::{HashMap, HashSet};
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
 /// way out made a `break`.
@@ -374,16 +375,32 @@ pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, nam
 }
 
 /// What an `if` always runs, in its place: of `if (false) { .. } else {
-/// rest }`, `rest`; of an `if` that runs nothing either way, a drop flag's
-/// whose branch dropped nothing, `if (_2$live) {}`, its test where it does
-/// anything, else nothing.
+/// rest }`, `rest`, and of `if (true) { rest } else { .. }`, an
+/// or-pattern's first alternative taken (#247), where what `rest` declares
+/// isn't declared beside it; of an `if` that runs nothing either way, a
+/// drop flag's whose branch dropped nothing, `if (_2$live) {}`, its test
+/// where it does anything, else nothing.
 pub(in crate::lower::mir::tidy) fn never_taken(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let span = stmts[i].span;
+        // Whether what a branch declares is declared nowhere beside the
+        // `if`, so it can take the `if`'s place.
+        let constant = matches!(&stmts[i].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Bool(_)));
+        let beside: HashSet<&str> = match constant {
+            true => (stmts.iter().enumerate())
+                .filter(|(k, _)| *k != i)
+                .flat_map(|(_, s)| declared(std::slice::from_ref(s)))
+                .collect(),
+            false => HashSet::new(),
+        };
+        let beside: HashSet<String> = beside.into_iter().map(str::to_string).collect();
+        let fits = |rest: &[Stmt]| declared(rest).all(|n| !beside.contains(n));
         if let StmtKind::If(test, then, els) = &mut stmts[i].kind {
-            let rest = if matches!(test.kind, ExprKind::Bool(false)) {
+            let rest = if matches!(test.kind, ExprKind::Bool(false)) && fits(els.as_deref().unwrap_or_default()) {
                 Some(els.take().unwrap_or_default())
+            } else if matches!(test.kind, ExprKind::Bool(true)) && fits(then) {
+                Some(std::mem::take(then))
             } else if then.is_empty() && els.as_ref().is_none_or(|els| els.is_empty()) {
                 let test = std::mem::replace(test, Expr::bool(false));
                 Some(if test.has_effects() {

@@ -268,3 +268,25 @@ and of the lowering, JSX, compiler, bindings and snapshot tests' too.
   a `while` of the test turned; it's the one body of the corpus that does.
 - **What it costs**: nothing measured: a body of 3,000 statements compiles
   in 2.15 s with the checks and 2.14 s without.
+
+## Amendment: a stage clears the `if`s it leaves constant or empty (#247)
+
+Two stages broke what they promise, and the compiler panicked. In
+`settled`, an or-pattern of a constant first field, `match (true, a, b) {
+(true, x, y) | (false, y, x) => .. }`, left MIR's `if (true)`:
+`never_taken` folded `if (false)` to its `else` but never `if (true)` to
+its branch. It does now, as it does `if (false)`, where nothing the
+branch declares at its top is declared beside the `if`. A clash keeps
+the `if`, and `no constant test` says so. In `again/in place`, the run
+again after `scopes` took a drop scope's `try` away, an `if let` whose
+binding is only read was emptied, and nothing in that stage takes away
+an empty `if`. Its last pass is now `never taken`, so the stage ensures
+what it promises however it's reached (fuzz seed 43967).
+
+Held by `test/corpus/or_pattern_constant_alternative.rs`,
+`test/corpus/drop_scope_empty_if.rs` and rustc's
+`drop/or-pattern-drop-order.rs`, with the mutations
+`never-taken-true-kept` and `in-place-empty-if-kept`. The readability
+baseline's renamed `x$1` share grows by 0.1 in 10,000 lines. The new
+or-pattern case binds `x` and `y` twice, and the second pair's drop
+flags are `x$1$live` and `y$1$live`.
