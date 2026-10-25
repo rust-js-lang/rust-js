@@ -24,9 +24,7 @@ export function ContactPage({ id }) {
         setLoaded({ TAG: "Contact", _0: value._0 });
       }
     })();
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [id]);
   if (loaded === "Loading") {
     return <p className="status">Loading…</p>;

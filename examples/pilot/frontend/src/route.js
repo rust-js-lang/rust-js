@@ -41,16 +41,8 @@ export function useRoute() {
     const options = {
       signal: controller.signal,
     };
-    window.addEventListener(
-      "hashchange",
-      () => {
-        setCurrent(hash());
-      },
-      options,
-    );
-    return () => {
-      controller.abort();
-    };
+    window.addEventListener("hashchange", () => setCurrent(hash()), options);
+    return () => controller.abort();
   }, []);
   return parse(current);
 }

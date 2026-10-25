@@ -19,9 +19,7 @@ export function ContactList() {
         setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
       }
     })();
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [query, attempt]);
   let results;
   if (loaded === "Loading") {

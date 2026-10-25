@@ -73,15 +73,9 @@ export function NewContactForm() {
   return (
     <form onSubmit={submit} noValidate>
       <h1>New contact</h1>
-      {field("Name", "name", name, (v) => {
-        setName(v);
-      })}
-      {field("Email", "email", email, (v) => {
-        setEmail(v);
-      })}
-      {field("Age", "age", age, (v) => {
-        setAge(v);
-      })}
+      {field("Name", "name", name, (v) => setName(v))}
+      {field("Email", "email", email, (v) => setEmail(v))}
+      {field("Age", "age", age, (v) => setAge(v))}
       <button type="submit" disabled={sending}>
         {sending ? "Adding…" : "Add contact"}
       </button>

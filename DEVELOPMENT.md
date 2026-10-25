@@ -132,8 +132,10 @@ To set the Mac up once: rustup, with the toolchain and components
 [rust-toolchain.toml](rust-toolchain.toml) pins, and the `wasm32-wasip1`
 and `wasm32-unknown-unknown` targets; the Bun `package.json`'s
 `packageManager` names, the one place its version is; Node 24; then
-`bun install` and `bunx --bun playwright install chromium`; and the apps
-above under Developer Tools.
+`bun install` and `bunx --bun playwright install chromium
+chromium-headless-shell`, again whenever `bun install` updates Playwright,
+or the pilot's and the browser tests fail to launch (`Executable doesn't
+exist`); and the apps above under Developer Tools.
 
 ## What a step of the loop costs
 
