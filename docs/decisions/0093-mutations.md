@@ -206,3 +206,16 @@ Each mutation's build and tests are timed, `mutation-timings-<shard>`,
 for the shards to be balanced by next. The counts a check may split
 across are one list, `MUTATION_SHARDS` in `scripts/ci.ts`, which
 `test/ci.test.ts` holds the workflows' choices and matrix to.
+
+## Amendment: a check's mutations are since the last check whose mutations passed
+
+A push's check runs the mutations of what changed since a baseline. That
+baseline was `main`'s last finished, non-cancelled check, a failed one
+too. So when a check's mutations failed, or never ran because the build
+broke, the next check skipped those changes, and main turned green with
+the survivors still there. The baseline is now the last check that
+passed (`checkedSince`), or one that failed elsewhere while each of its
+`mutations /` jobs passed (`mutationJobsPassed`). Main is often red for
+unrelated reasons, so only requiring a fully green run would let the
+baseline lag far behind. `test/ci.test.ts` holds both. Found by a review
+on 2026-10-25.

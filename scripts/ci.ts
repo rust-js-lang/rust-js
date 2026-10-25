@@ -37,13 +37,34 @@ export function latestRuns(runs: Run[]): Run[] {
   return newest.filter((run, i) => newest.findIndex((other) => other.headBranch === run.headBranch) === i);
 }
 
-/** The commit `branch`'s last finished check was of, which a check of it
- * runs the mutations of what changed since: a cancelled run, or a running
- * one, checked nothing. */
-export function checkedSince(runs: Run[], branch: string): string | undefined {
+/** The commit of `branch`'s last check whose mutations passed, which a
+ * check of it runs the mutations of what changed since: a green run, or one
+ * that failed elsewhere and whose every mutation job passed,
+ * `mutationsPassed`. A cancelled run, a running one, or one whose mutations
+ * failed or never ran checked none of them, so its changes stay in the
+ * next run's. */
+export function checkedSince(runs: Run[], branch: string, mutationsPassed: (run: Run) => boolean = () => false): string | undefined {
   return [...runs]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .find((run) => run.headBranch === branch && run.status === "completed" && run.conclusion !== "cancelled")?.headSha;
+    .find(
+      (run) =>
+        run.headBranch === branch &&
+        run.status === "completed" &&
+        (run.conclusion === "success" || (run.conclusion === "failure" && mutationsPassed(run))),
+    )?.headSha;
+}
+
+/** Whether each of `run`'s mutation jobs ran and passed, as GitHub lists
+ * them: `mutations / mutations (k/n)`. A run that ran none passed none. */
+export function mutationJobsPassed(jobs: { name: string; conclusion: string }[]): boolean {
+  const mutations = jobs.filter((job) => job.name.startsWith("mutations /"));
+  return mutations.length > 0 && mutations.every((job) => job.conclusion === "success");
+}
+
+/** `mutationJobsPassed` of a run, asked of GitHub. */
+function runMutationsPassed(run: Run): boolean {
+  const jobs: { name: string; conclusion: string }[] = JSON.parse(gh(["run", "view", String(run.databaseId), "--json=jobs"])).jobs;
+  return mutationJobsPassed(jobs);
 }
 
 function gh(args: string[]): string {
@@ -117,7 +138,7 @@ async function check(branch: string, shards: string | undefined, since?: string)
   const local = git(["rev-parse", branch]);
   const pushed = git(["rev-parse", `origin/${branch}`]);
   if (!pushed || pushed !== local) throw new Error(`${branch} isn't as it's pushed: push it first, git push -u origin ${branch}`);
-  const base = since ?? (branch === "main" ? (checkedSince(runs(), branch) ?? `${local}~1`) : "origin/main");
+  const base = since ?? (branch === "main" ? (checkedSince(runs(), branch, runMutationsPassed) ?? `${local}~1`) : "origin/main");
   // As many machines as the mutations it runs need, which are this
   // checkout's, as it's pushed.
   const count = (await changedSince(base)).length;
@@ -130,12 +151,12 @@ async function check(branch: string, shards: string | undefined, since?: string)
 }
 
 /** Of a push, in CI: what its mutations are of, what changed since `main`'s
- * last finished check, or the commit before, and how many machines they
+ * last check whose mutations passed, or the commit before, and how many machines they
  * take, as GitHub's step outputs. */
 async function plan() {
   let since = "HEAD~1";
   try {
-    since = checkedSince(runs(), "main") ?? since;
+    since = checkedSince(runs(), "main", runMutationsPassed) ?? since;
   } catch {}
   let count = 0;
   try {

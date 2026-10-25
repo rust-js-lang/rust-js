@@ -54,8 +54,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Which mutations, those of what changed since `main`'s last finished
-  # check, a cancelled one's changes too, and on how many machines.
+  # Which mutations, those of what changed since `main`'s last check whose
+  # mutations passed, a cancelled or failed one's changes too, and on how
+  # many machines.
   plan:
     runs-on: ubuntu-latest
     timeout-minutes: 10

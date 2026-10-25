@@ -4,7 +4,7 @@
 import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
 import { shard } from "../scripts/shard";
 import { root } from "./support";
@@ -146,12 +146,21 @@ test("each branch's latest run, newest first", () => {
 });
 
 // A check of `main`, which changes are pushed to, runs the mutations of
-// what changed since the commit its last finished check was of: one that
-// was cancelled, or is running, checked nothing.
-test("main's mutations are of what changed since its last finished check", () => {
+// what changed since the commit of its last check whose mutations passed:
+// one that was cancelled, is running, or whose mutations failed or never
+// ran checked none of them, so its changes stay in the next run's.
+test("main's mutations are of what changed since its last check whose mutations passed", () => {
   const runs = [run("main", 1, "completed", "success"), run("main", 2, "completed", "failure"), run("main", 3, "completed", "cancelled"), run("main", 4, "in_progress", ""), run("b", 5, "completed", "success")];
-  expect(checkedSince(runs, "main")).toBe("sha2");
+  // A failed run is no baseline unless its every mutation job passed.
+  expect(checkedSince(runs, "main")).toBe("sha1");
+  expect(checkedSince(runs, "main", (r) => r.databaseId === 2)).toBe("sha2");
+  expect(checkedSince(runs, "main", (r) => r.databaseId === 3)).toBe("sha1");
   expect(checkedSince(runs, "c")).toBeUndefined();
+  const job = (name: string, conclusion: string) => ({ name, conclusion });
+  expect(mutationJobsPassed([job("lint", "failure"), job("mutations / mutations (1/2)", "success"), job("mutations / mutations (2/2)", "success")])).toBe(true);
+  expect(mutationJobsPassed([job("mutations / mutations (1/2)", "success"), job("mutations / mutations (2/2)", "failure")])).toBe(false);
+  expect(mutationJobsPassed([job("mutations / mutations (1/2)", "skipped")])).toBe(false);
+  expect(mutationJobsPassed([job("lint", "success")])).toBe(false);
 });
 
 // The shards balance by the newest run's timings that are still kept, of
@@ -195,6 +204,10 @@ test("a check is never cancelled by another run", () => {
   expect(check["cancel-in-progress"]).toBe(false);
   // Started by hand, rustc-tests.yml's group is its own, never the check's `ci-<ref>`.
   expect(concurrency("rustc-tests.yml").group).toContain("format('rustc-{0}', github.ref)");
+  // Called by a check, its group, which cancels, is of the caller's branch:
+  // one branch's check never cancels another's rustc tests or mutations.
+  const called = concurrency("rustc-tests.yml").group ?? "";
+  expect(called.slice(called.indexOf("||"))).toContain("github.ref");
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml") && f !== "check.yml")) {
     const group = concurrency(file).group ?? "";
     expect(group, file).not.toContain("== 'Check' && format('ci-{0}', github.ref)");

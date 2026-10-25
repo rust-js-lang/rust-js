@@ -38,3 +38,17 @@ each question.
 - `publication.test.ts`'s WASI host cases are given the compiler's answer,
   as each native case has it; `host-boundaries.test.ts` holds that a link to
   what's written is kept.
+
+## Amendment: a host never writes through a link to what the build reads
+
+The WASI host's `publishArtifacts` (`tooling/publish.js`) checked each
+artifact's hash but not where it wrote. An output `main.js` that was a
+link to `main.rs` had its JavaScript written over the Rust source, and so
+did a manifest path linked to an input. The native compiler already
+refuses this as an output collision. The host now refuses it too,
+before any file changes (`refuseOverlaps`). It refuses a write whose
+resolved path is the build's input or one of its sources, and two writes
+that resolve to one file. It mirrors the native rule across the host
+boundary, which `test/publication.test.ts`'s "publication refuses a
+write that resolves to one of the build's inputs" holds. Found by a
+review on 2026-10-25.

@@ -56,7 +56,27 @@ export function publishArtifacts(manifestPath, manifest, files) {
   // What's stale is told the publisher, and isn't what the build wrote.
   const { stale: _, ...published } = manifest;
   writes.set(manifestPath, Buffer.from(JSON.stringify(published, null, 2) + "\n"));
+  refuseOverlaps(writes.keys(), [manifest.input, ...manifest.sources]);
   commit(writes, staleArtifacts(manifest, writes), manifestPath);
+}
+
+/**
+ * Throws, before any file changes, where a write resolves to a file the
+ * build reads, an output or the manifest that's a link to its Rust, or two
+ * writes resolve to one file: a write through such a link would replace
+ * the source with what was built from it.
+ * @param {Iterable<string>} writes
+ * @param {Iterable<string>} reads
+ */
+export function refuseOverlaps(writes, reads) {
+  const read = new Set([...reads].map(real));
+  const written = new Map();
+  for (const path of writes) {
+    const to = real(path);
+    if (read.has(to)) throw new Error(`Refusing to write ${path}: it resolves to ${to}, which this build reads`);
+    if (written.has(to)) throw new Error(`Refusing to write ${path}: it resolves to ${to}, as ${written.get(to)} does`);
+    written.set(to, path);
+  }
 }
 
 /**

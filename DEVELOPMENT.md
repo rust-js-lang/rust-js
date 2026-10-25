@@ -298,7 +298,7 @@ checked:
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.
 - **The check comes with the push**: its mutations are those of what
-  changed since `main`'s last finished check, or the commit before (its
+  changed since `main`'s last check whose mutations passed, or the commit before (its
   `plan` job). A red run is fixed at once, with another commit.
 - **One run at a time of each branch.** A push's check waits for the one
   running; of several waiting, the newest runs. A check started by hand,
@@ -359,7 +359,7 @@ branch, by `bun run ci:check`, with `test_shards`, 1, 2 or 4, and
 `since`, the commit the mutations are of what changed since. A run waits
 for the branch's one in progress, a push's and one started by hand alike,
 and never cancels it: of several waiting, the newest runs, its mutations
-of everything since `main`'s last finished check. A push to `main` checks
+of everything since `main`'s last check whose mutations passed. A push to `main` checks
 it already; start one by hand only of another branch, or with other
 settings. `rustc-tests.yml`'s runs are a group of their own, so one never
 cancels a check.
@@ -367,7 +367,7 @@ Its jobs run at once:
 
 | Job | What | Time, about |
 |---|---|---|
-| `plan` | of a push, the commit its mutations are since, `main`'s last finished check, and their machines | 1 min |
+| `plan` | of a push, the commit its mutations are since, `main`'s last check whose mutations passed, and their machines | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
 | `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`; a bless patch on failure | 9 min, 5 in 2 shards |
 | `examples` | the Vite example's build | 10 min |

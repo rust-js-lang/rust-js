@@ -198,3 +198,25 @@ test("native: removing modules and disabling declarations cleans up generated de
   const result = JSON.parse(readFileSync(manifest, "utf8"));
   expect(result.artifacts.some((artifact: { file: string }) => artifact.file.endsWith(".d.ts"))).toBe(false);
 });
+
+// Publication never writes through a link to what the build reads: an
+// output, or the manifest, that resolves to the Rust it was built from is
+// refused before any file changes, the source left as it was.
+test("publication refuses a write that resolves to one of the build's inputs", () => {
+  const dir = fixture("publish-into-input");
+  const input = join(dir, "main.rs");
+  writeFileSync(input, "fn main() {}\n");
+  const output = join(dir, "main.js");
+  symlinkSync(input, output);
+  const js = Buffer.from("export function main() {}\n");
+  const manifest = { version: 1, input, output, sources: [input], modules: [], artifacts: [{ file: output, hash: fingerprint(js) }] };
+  expect(() => publishArtifacts(join(dir, "main.manifest.json"), manifest, new Map([[output, js]]))).toThrow(/reads/);
+  expect(readFileSync(input, "utf8")).toBe("fn main() {}\n");
+  const elsewhere = join(dir, "out.js");
+  const linked = join(dir, "linked.manifest.json");
+  symlinkSync(input, linked);
+  const fine = { ...manifest, output: elsewhere, artifacts: [{ file: elsewhere, hash: fingerprint(js) }] };
+  expect(() => publishArtifacts(linked, fine, new Map([[elsewhere, js]]))).toThrow(/reads/);
+  expect(readFileSync(input, "utf8")).toBe("fn main() {}\n");
+  expect(existsSync(elsewhere)).toBe(false);
+});
