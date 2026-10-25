@@ -67,11 +67,9 @@ impl Expr {
 
     /// This, a binding's read of a property, which a getter may answer
     /// (`Known::Getter`).
-    pub fn answered_by_a_getter(self) -> Expr {
-        Expr {
-            facts: Facts::of(Known::Getter),
-            ..self
-        }
+    pub fn answered_by_a_getter(mut self) -> Expr {
+        self.facts = self.facts.with(Known::Getter);
+        self
     }
 
     pub fn num(n: impl Into<f64>) -> Expr {
@@ -895,6 +893,13 @@ impl Expr {
     /// (`Known::InPlace`), beside what else is known of it.
     pub fn in_place(mut self) -> Expr {
         self.facts = self.facts.with(Known::InPlace);
+        self
+    }
+
+    /// This, a binding's method, which may do anything (`Known::Binding`),
+    /// beside what else is known of it.
+    pub fn binding(mut self) -> Expr {
+        self.facts = self.facts.with(Known::Binding);
         self
     }
 

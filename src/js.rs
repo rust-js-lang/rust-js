@@ -555,6 +555,10 @@ pub enum Known {
     /// read, as ES's live binding, never another name's that read it
     /// before.
     Live,
+    /// A binding's method, `obj.send` of `obj.send(a)`: JS the program
+    /// declared, which may do anything, whatever its name, `join` too (the
+    /// review's P2, ADR 0890), never one of JS's own that only read.
+    Binding,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
@@ -858,6 +862,20 @@ mod tests {
             aliases: Vec::new(),
             code: Span::NONE,
         }
+    }
+
+    // A binding's method is never JS's own that only reads, whatever its
+    // name, and stays a getter's read beside it (ADR 0890).
+    #[test]
+    fn a_bindings_method_runs_what_it_may() {
+        let own = Expr::call(Expr::member(Expr::var("parts"), "join"), vec![Expr::str(", ")]);
+        assert!(own.only_reads() && !own.runs_program_code());
+        let bound = Expr::call(Expr::member(Expr::var("store"), "join").binding(), Vec::new());
+        assert!(!bound.only_reads() && bound.runs_program_code());
+        let both = Expr::member(Expr::var("store"), "join")
+            .binding()
+            .answered_by_a_getter();
+        assert!(both.facts.has(Known::Binding) && both.facts.has(Known::Getter));
     }
 
     // What only an earlier phase resolves is found however deep it is.

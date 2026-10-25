@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its method, looked up when it's called: of a JS value of any
             // shape, one a getter may answer (ADR 0750).
             (JsForm::Call(name), Some(this)) if !name.contains('#') => {
-                let method = Expr::member(this, name);
+                let method = Expr::member(this, name).binding();
                 let method = match method_may_be_a_getters(self.tcx, def_id) {
                     true => method.answered_by_a_getter(),
                     false => method,
