@@ -1,4 +1,4 @@
-# 0871. A function handed to JS carries no drop, and `catch_unwind` never unwinds
+# 0873. A function handed to JS carries no drop, and `catch_unwind` never unwinds
 
 Status: Accepted. Amends [0521](0521-a-dyn-fn-carries-its-drop.md): a
 closure made a `dyn Fn` only to hand it to a binding carries no drop; and
@@ -171,6 +171,11 @@ queueMicrotask(callback); }); }`.
   nothing runs, which a person doesn't write.
 
 ## Consequences
+
+- The readability baseline is blessed: the renamed share grew from 721 to
+  721.2 in 10,000 lines because the no-op `catch (error) { throw error; }`
+  blocks and the `try`s around a `catch_unwind` that can't unwind are gone,
+  which shortens the corpus by more lines than it removes renames.
 
 - The guide's difference twelve says it of functions too: a closure handed
   to a binding drops nothing of what it holds after, even where JS gives

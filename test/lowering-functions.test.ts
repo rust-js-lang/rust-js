@@ -1412,7 +1412,7 @@ pub fn last() -> u32 {
   expect([lib.sizes(), lib.nones(), lib.last()]).toEqual([[1, 8, 8], [3, undefined], 7]);
 });
 
-// ADR 0871: a closure boxed as it's handed to a binding is JS's, and carries
+// ADR 0873: a closure boxed as it's handed to a binding is JS's, and carries
 // no drop. The guide's twelfth difference: where JS gives it back, through
 // another binding, and Rust drops it, what it holds isn't dropped, where
 // native Rust, its binding giving back the box it was handed, would.

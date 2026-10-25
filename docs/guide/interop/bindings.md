@@ -708,7 +708,7 @@ export async function open(other) {
   what it holds after, and carries no drop. One Rust still holds drops as
   Rust drops it: as a panic unwinds before it's handed over, or where it
   never is; and one a binding gives back, as `widen` does, is Rust's
-  again ([ADR 0871](../../decisions/0871-a-function-handed-to-js-carries-no-drop.md)).
+  again ([ADR 0873](../../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`: `button.onclick()` is an
   `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to

@@ -758,7 +758,7 @@ export function described(value) {
   `AssertUnwindSafe(|| ..)` is the closure it holds.
 - **It never unwinds itself**: what's held around it isn't dropped in a
   `catch` of its call, so an `if let Err(_) = catch_unwind(f)` beside a
-  value a drop flag tracks is a `try` too ([ADR 0871](../../decisions/0871-a-function-handed-to-js-carries-no-drop.md)).
+  value a drop flag tracks is a `try` too ([ADR 0873](../../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
 - **A future's panic is its promise's**: `catch_unwind` of a closure that
   makes one is `Ok` of it, and the panic is thrown where it's awaited.
 - **Refused**: `std::panic::set_hook` and `take_hook`, as rust-js has no

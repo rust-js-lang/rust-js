@@ -453,7 +453,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // function carrying its drop, `$dropping(f, drop)`, which the `dyn`'s
         // drop runs, `$dispose(f)` (ADR 0521). One that carries it already,
         // itself; and a closure made one only to hand it to JS, which Rust
-        // never drops (ADR 0871), none.
+        // never drops (ADR 0873), none.
         if let ty::Dynamic(predicates, ..) = self.pointee(target).kind()
             && crate::lower::recognition::is_fn_dyn(self.tcx, predicates)
         {

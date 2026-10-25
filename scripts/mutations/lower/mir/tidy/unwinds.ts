@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unthrown-catch-kept",
-    breaks: "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0871)",
+    breaks: "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0873)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "    if !stmts.iter().any(unthrown) {\n",
     replace: "    if true {\n",
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-catch-dropped",
-    breaks: "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0871)",
+    breaks: "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0873)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            if body.iter().all(Stmt::cannot_throw) && handler",
     replace: "            if handler",

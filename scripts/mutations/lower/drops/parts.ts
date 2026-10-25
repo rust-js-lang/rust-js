@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-once-disposes-itself",
-    breaks: "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0871)",
+    breaks: "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0873)",
     file: "src/lower/drops/parts.rs",
     find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
     replace: "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",

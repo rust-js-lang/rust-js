@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "any-call-cannot-throw",
-    breaks: "any helper's call is taken to catch what it runs throws, so a `try` that drops what's held as it unwinds is lost (ADR 0871)",
+    breaks: "any helper's call is taken to catch what it runs throws, so a `try` that drops what's held as it unwinds is lost (ADR 0873)",
     file: "src/js/stmt_walk.rs",
     find: "                if callee.helper_name() == Some(\"$catchUnwind\") && !args.iter().any(Expr::may_throw))\n",
     replace: "                if callee.helper_name().is_some() && !args.iter().any(Expr::may_throw))\n",

@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "handed-fn-dyn-still-drops",
-    breaks: "a closure handed to JS still counts as a `dyn Fn` that drops, so a crate whose only such closures JS keeps disposes every `dyn Fn` it drops (ADR 0871)",
+    breaks: "a closure handed to JS still counts as a `dyn Fn` that drops, so a crate whose only such closures JS keeps disposes every `dyn Fn` it drops (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
     find: "        .any(|(from, handed)| !handed && (drops(from) || from.has_non_region_param() && closure_drops()))\n",
     replace: "        .any(|(from, _)| drops(from) || from.has_non_region_param() && closure_drops())\n",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "handed-to-what-gives-back",
-    breaks: "a closure given to a binding that gives a function back, `widen`'s `this`, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0871)",
+    breaks: "a closure given to a binding that gives a function back, `widen`'s `this`, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
     find: "        if !bindings::is_binding(tcx, id) || gives_back_a_function(tcx, id) {\n",
     replace: "        if !bindings::is_binding(tcx, id) {\n",
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "handed-before-what-unwinds",
-    breaks: "a closure boxed for a binding before an argument that panics is taken as JS's, and not dropped as that unwinds (ADR 0871)",
+    breaks: "a closure boxed for a binding before an argument that panics is taken as JS's, and not dropped as that unwinds (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
     find: "                && args[i + 1..].iter().all(|&after| cannot_unwind(thir, after))\n",
     replace: "",
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "handed-to-js-unseen",
-    breaks: "a closure handed to JS carries its drop, `$dropping(f, drop)`, which nothing runs (ADR 0871)",
+    breaks: "a closure handed to JS carries its drop, `$dropping(f, drop)`, which nothing runs (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
     find: "        self.handed_fn_dyns.contains(&closure)\n",
     replace: "        false\n",
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-back-unseen",
-    breaks: "a closure given to a binding that writes a function through a `&mut` it's given, `Reflect.set`'s slot, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0871)",
+    breaks: "a closure given to a binding that writes a function through a `&mut` it's given, `Reflect.set`'s slot, is taken as JS's, and dropped as nothing once it's Rust's again (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
     find: "    holds(sig.output())\n        || (sig.inputs().iter()).any(|input| {\n",
     replace: "    holds(sig.output())\n        || false && (sig.inputs().iter()).any(|input| {\n",

@@ -556,7 +556,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // What's left of a call that can't throw, a `catch_unwind`'s,
             // held apart for the drops a scope's `finally` didn't take: as it
-            // runs (ADR 0871).
+            // runs (ADR 0873).
             pass("unthrown catches", |b, h| {
                 let mut unthrown = false;
                 js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));

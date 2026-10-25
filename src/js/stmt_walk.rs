@@ -329,7 +329,7 @@ impl Stmt {
 
     /// Whether running this can't throw, though it may run the program's
     /// code: what only makes values, and what catches whatever its code
-    /// throws, `const result = $catchUnwind(() => ..)` (ADR 0871). What a
+    /// throws, `const result = $catchUnwind(() => ..)` (ADR 0873). What a
     /// scope's `finally` runs past, as it runs past what makes values.
     pub fn cannot_throw(&self) -> bool {
         let caught = |value: &Expr| {

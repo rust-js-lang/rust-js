@@ -1,6 +1,6 @@
 // A function handed to JS is JS's: a binding keeps the `Box<dyn Fn>` it's
 // given, and JS has no drop, so nothing drops it after, and the closure
-// carries no drop for it (ADR 0871). Where Rust still holds it, its drop
+// carries no drop for it (ADR 0873). Where Rust still holds it, its drop
 // runs: unwinding before the handoff, a later argument's panic among it,
 // or a path that never hands it over. One a binding gives back, `kept`'s
 // or `put`'s, is Rust's again, and drops. React's `enqueueTask`, whose

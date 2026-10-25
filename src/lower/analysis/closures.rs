@@ -25,7 +25,7 @@ pub struct ClosureFacts {
     /// The closures made a `dyn Fn`, each carrying its drop.
     made_fn_dyns: HashSet<DefId>,
     /// The closures made a `dyn Fn` only to hand it to JS, which Rust never
-    /// drops, so none carries its drop (ADR 0871).
+    /// drops, so none carries its drop (ADR 0873).
     handed_fn_dyns: HashSet<DefId>,
     /// The closures cloned, `Clone::clone`'s or a `T: Clone`'s.
     cloned: HashSet<DefId>,
@@ -92,7 +92,7 @@ impl ClosureFacts {
     }
 
     /// Whether the closure `closure` is made a `dyn Fn` only to hand it to
-    /// JS, which Rust then never drops (ADR 0871): it carries no drop, nor
+    /// JS, which Rust then never drops (ADR 0873): it carries no drop, nor
     /// is given one where it's made a `dyn Fn`.
     pub(in crate::lower) fn handed_to_js(&self, closure: DefId) -> bool {
         self.handed_fn_dyns.contains(&closure)
@@ -201,7 +201,7 @@ fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Ite
         .map(move |(at, from)| (from, matches!(from.kind(), ty::Closure(..)) && handed.contains(&at)))
 }
 
-/// The coercions to a `dyn Fn` in `thir` handed straight to JS (ADR 0871):
+/// The coercions to a `dyn Fn` in `thir` handed straight to JS (ADR 0873):
 /// of a closure boxed where it's made, a binding's argument, or the `Some`
 /// of one, that nothing evaluated after it, before the call, can unwind
 /// past, of a binding that gives back no function, which might be the one

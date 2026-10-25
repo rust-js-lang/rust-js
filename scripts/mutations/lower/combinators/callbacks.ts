@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-for-js-refused",
-    breaks: "`Box::new` of a closure handed to JS, which carries no drop, is refused as a function kept by what it's given to (ADR 0871)",
+    breaks: "`Box::new` of a closure handed to JS, which carries no drop, is refused as a function kept by what it's given to (ADR 0873)",
     file: "src/lower/combinators/callbacks.rs",
     find: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id),\n",
     replace: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",

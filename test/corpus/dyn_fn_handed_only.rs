@@ -1,6 +1,6 @@
 // Where every function holding a value with a destructor that the crate
 // makes a `dyn Fn` is handed to JS, which keeps it, no `dyn Fn` Rust drops
-// has anything to drop (ADRs 0521, 0871): `ignored` drops its `Box<dyn Fn>`
+// has anything to drop (ADRs 0521, 0873): `ignored` drops its `Box<dyn Fn>`
 // as nothing, `$dispose` of none.
 
 struct Noisy(&'static str);

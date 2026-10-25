@@ -62,7 +62,7 @@ draft](0523-libraries-share-one-counted-rc.md)'s trial found.
   drop, the coercion's `$dropping`, the `dyn Fn`'s `$dispose`, and refuse
   what `Box::new` keeps.
 
-## Amendment: a function handed to JS (ADR 0871)
+## Amendment: a function handed to JS (ADR 0873)
 
 A closure boxed where it's made and made a `dyn Fn` straight into a
 binding's argument, which gives no function back, nothing after it

@@ -60,7 +60,7 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
 /// throw, `try { result = $catchUnwind(f); } catch (error) { drop(x); throw
 /// error; }`, its body: `catch_unwind` catches whatever unwinds through it,
 /// so its call never unwinds to the drops of what's held around it (ADR
-/// 0871). Whether it found any.
+/// 0873). Whether it found any.
 pub(super) fn unthrown_catches(stmts: &mut Vec<Stmt>) -> bool {
     let unthrown = |stmt: &Stmt| {
         matches!(&stmt.kind, StmtKind::TryCatch(body, Some(error), handler)
