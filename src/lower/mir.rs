@@ -1026,9 +1026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 callbacks: &callbacks,
                 closure: (mir_body.args_iter().next())
                     .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
-                patterns: &(self.let_pattern_bindings(mir_body).into_iter())
-                    .map(|(l, _)| state.locals.names[l].clone())
-                    .collect(),
+                lets: &self.let_names(mir_body, &state),
                 returns: &state.jumps.returns,
                 captured: &captured,
                 clones: &self.clone_names(mir_body, &state),

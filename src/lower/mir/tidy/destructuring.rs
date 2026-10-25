@@ -8,7 +8,7 @@ use super::*;
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
 /// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
 /// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
-pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
+pub(super) fn destructured(stmts: &mut Vec<Stmt>, (patterns, lets): (&HashSet<String>, &HashSet<String>)) {
     let mut i = 0;
     while i < stmts.len() {
         // What the parts are read of, and where they start: a temporary this
@@ -32,10 +32,12 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
         let first = first + moved;
         let made = first > i;
         let mut parts = parts(&stmts[first..], &name);
-        // Of a variable the program names, the names it gives: a temporary,
-        // read once where it's used, `channel.port1.onmessage = ..`, ends
-        // them (ADR 0598).
-        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {
+        // Of a variable the program names, the names its patterns give: a
+        // `let` of a name alone, `let init = lazy.init;`, a statement the
+        // program wrote as one, ends them, as MIR's temporary of one did,
+        // `let port = channel.port2(); channel.port1()..` (ADR 0598,
+        // amended).
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {
             parts.truncate(k);
         }
         let count = parts.len();

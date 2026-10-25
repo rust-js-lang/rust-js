@@ -2,13 +2,14 @@
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
+
   {
-    name: "temporary-part-of-a-name",
-    breaks: "`const port = channel.port2; channel.port1.onmessage = ..` is `const { port2: port, port1: _12 } = channel;`",
+    name: "named-let-part-of-a-pattern",
+    breaks: "`let payload = &lazy.payload; let init = lazy.init;` is `const { _payload: payload, _init: init } = lazy;`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
-    replace: "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| is_temporary(bound)) {\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a temporary is no part"],
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
+    replace: "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
+    tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
   {
     name: "mir-tidy-destructured-kept",

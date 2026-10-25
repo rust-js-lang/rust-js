@@ -41,3 +41,37 @@ f();`, are as before.
 - `test/lowering.test.ts`, "a temporary is no part of a named variable's
   pattern".
 - Mutation: a temporary's part kept in the pattern.
+
+## Amendment: a `let` of a name alone is its own statement, and a cast's is the variable
+
+React's `mapIntoArray` (ReactChildren.js) reads a lazy component's parts
+of `children` as it is, `const payload = (children as any)._payload;
+const init = (children as any)._init;`. Its Rust,
+
+```rust
+let lazy: &LazyComponent = unsafe { js::cast(children) };
+let payload = &lazy.payload;
+let init = lazy.init;
+```
+
+was `const lazy = children; const { _payload: payload, _init: init } =
+lazy;`: two parts read in a row were one pattern, though the program
+wrote two `let`s, and the cast a name JS has no use for.
+
+**A pattern takes the parts its program's pattern names**: a `let` of a
+name alone, `let x = p.x;`, ends the run, a statement the program wrote as
+one, `const x = p.x;` (`LetNames::named`, of THIR's `let`s). MIR's
+temporary of a part, as `channel.port1()`'s, followed only a `let`'s
+name, so that rule is this one now. A `let`, a parameter's or an arm's
+pattern is one destructuring, as before. **A `let` of a variable cast**,
+`js::cast`'s or any binding that's its argument (`JsForm::This`,
+`LetNames::casts`), **is that variable** where nothing reads it after and
+nothing after sets either: `children._payload`, as TypeScript reads it;
+else it keeps the name the program gave. Case N: the same reads, in the
+same order.
+
+- `test/lowering-parts.test.ts`, "a let of a part is its own statement,
+  and a cast's variable is the variable", run.
+- Mutations `named-let-part-of-a-pattern` (`tidy/destructuring.rs`),
+  `cast-variable-read-after` (`tidy/bindings.rs`), `cast-let-named`
+  (`mir/patterns.rs`).

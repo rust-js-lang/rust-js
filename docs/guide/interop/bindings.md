@@ -728,7 +728,12 @@ export async function open(other) {
   ([above](#a-binding-as-a-value)). A slice declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
-  `html_input_element::unchecked_from(target)`.
+  `html_input_element::unchecked_from(target)`. A `let` of a variable
+  cast, `let lazy: &LazyComponent = unsafe { js::cast(children) };`, is
+  that variable where nothing reads it after, `children._payload`, as
+  TypeScript's `(children as any)._payload` reads; else its own name,
+  `const lazy = children;`
+  ([ADR 0598](../../decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md), amended).
 
 ### Optional parameters
 

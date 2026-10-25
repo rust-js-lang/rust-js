@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
+  {
+    name: "cast-let-named",
+    breaks: "`let lazy: &LazyComponent = unsafe { js::cast(children) };` is `const lazy = children;`, read `lazy._payload`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    casts.push(pattern.span);\n",
+    replace: "",
+    tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
+  },
 ];

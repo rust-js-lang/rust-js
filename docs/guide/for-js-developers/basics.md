@@ -757,6 +757,9 @@ export function firstTwo(items) {
 - A tuple, `(i32, i32)`, is a JS array, `[a, b]`.
 - `let ... else` handles the pattern not matching: here, fewer than two
   items.
+- A pattern is one destructuring; a `let` of one field, `let x = p.x;`,
+  is a statement of its own, `const x = p.x;`, however many follow it
+  ([ADR 0598](../../decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md), amended).
 
 ## `if` as an expression
 

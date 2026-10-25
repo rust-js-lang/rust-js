@@ -40,6 +40,17 @@ pub(super) struct Named {
     pub(super) text: HashSet<String>,
 }
 
+/// What a body's `let`s bind, each by its name.
+pub(super) struct LetNames {
+    /// What a struct or tuple pattern binds, `let Point { x, y } = p;`.
+    pub(super) patterns: HashSet<String>,
+    /// What a name alone binds, `let x = p.x;`.
+    pub(super) named: HashSet<String>,
+    /// Of those, a variable given another type, `let lazy: &LazyComponent
+    /// = unsafe { js::cast(children) };`.
+    pub(super) casts: HashSet<String>,
+}
+
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
@@ -53,8 +64,8 @@ pub(super) struct Hints<'h> {
     pub(super) written: &'h super::hints::Written,
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
     pub(super) callbacks: &'h HashSet<String>,
-    /// What a `let`'s struct pattern binds, by name.
-    pub(super) patterns: &'h HashSet<String>,
+    /// What the body's `let`s bind, by name.
+    pub(super) lets: &'h LetNames,
     /// Whether the body is a closure's, tidied again in its function's.
     pub(super) closure: bool,
     pub(super) returns: &'h [js::Span],

@@ -151,7 +151,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, h.captured))
             }),
             pass("destructured", |b, h| {
-                js::statement_lists(b, &mut |s| destructured(s, h.patterns))
+                js::statement_lists(b, &mut |s| destructured(s, (&h.lets.patterns, &h.lets.named)))
             }),
             pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
             // What an array made for its parts left, `const _5 = 6;`, too.
@@ -184,12 +184,17 @@ pub(super) const STAGES: &[Stage] = &[
             // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
             // pattern's one part of what the program names, `const front =
             // d[0];`, which the first pass left as it is (ADR 0705).
-            pass("destructured declared", |b, _| {
-                js::statement_lists(b, &mut |s| destructured(s, &HashSet::new()))
+            pass("destructured declared", |b, h| {
+                js::statement_lists(b, &mut |s| destructured(s, (&HashSet::new(), &h.lets.named)))
             }),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
             pass("copied bindings", |b, _| {
                 js::statement_lists(b, &mut |s| copied_bindings(s))
+            }),
+            // A variable given another type, `const lazy = children;`: the
+            // variable, where it's read no more (ADR 0598, amended).
+            pass("cast bindings", |b, h| {
+                js::statement_lists(b, &mut |s| cast_bindings(s, &h.lets.casts))
             }),
             // A tuple read item by item, `children[0]`: its items.
             pass("tuple reads", |b, h| {

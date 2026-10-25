@@ -460,4 +460,12 @@ export const mutations: Mutation[] = [
     replace: "    if !kin(x, y) || captured.contains(x) || captured.contains(y) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
+  {
+    name: "cast-variable-read-after",
+    breaks: "a cast's name goes where the variable is read after it too, two names of one value made one",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            if js::mentions_in(rest, &a) == 0 && !rebinds(rest, &a)",
+    replace: "            if !rebinds(rest, &a)",
+    tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
+  },
 ];

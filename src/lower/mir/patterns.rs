@@ -506,6 +506,73 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// What the body's `let`s bind, by the names `state` gives them: a
+    /// struct or tuple pattern's bindings (`let_pattern_bindings`); a name
+    /// alone, `let init = lazy.init;`, a statement of its own, which no
+    /// pattern of a part read beside it is (ADR 0598, amended); and of
+    /// those, a variable given another type, `let lazy: &LazyComponent =
+    /// unsafe { js::cast(children) };`, a binding that's its argument
+    /// (`JsForm::This`), as TypeScript's `as` gives one, which JS has as it
+    /// is.
+    pub(super) fn let_names(&self, body: &mir::Body<'tcx>, state: &State<'_, 'tcx>) -> super::tidy::LetNames {
+        let thir = self.frame.thir;
+        // Through an `unsafe { .. }` of the value alone, and what `strip` is through.
+        let through = |mut e: thir::ExprId| loop {
+            let inner = match &thir[e].kind {
+                thir::ExprKind::Block { block } if thir[*block].stmts.is_empty() => thir[*block].expr,
+                _ => Some(crate::lower::body_queries::strip(thir, e)),
+            };
+            match inner {
+                Some(inner) if inner != e => e = inner,
+                _ => return e,
+            }
+        };
+        let cast_of_variable = |e: thir::ExprId| {
+            let thir::ExprKind::Call { fun, ref args, .. } = thir[through(e)].kind else {
+                return false;
+            };
+            let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
+                return false;
+            };
+            bindings::is_binding(self.tcx, def_id)
+                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
+                && matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. }))
+        };
+        let mut named = Vec::new();
+        let mut casts = Vec::new();
+        for stmt in thir.stmts.iter() {
+            if let thir::StmtKind::Let {
+                pattern, initializer, ..
+            } = &stmt.kind
+                && let thir::PatKind::Binding { subpattern: None, .. } = pattern.kind
+            {
+                named.push(pattern.span);
+                if initializer.is_some_and(cast_of_variable) {
+                    casts.push(pattern.span);
+                }
+            }
+        }
+        let names = |spans: &[Span]| {
+            (body.var_debug_info.iter())
+                .filter_map(|info| match info.value {
+                    mir::VarDebugInfoContents::Place(place)
+                        if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
+                    {
+                        Some(state.locals.names[place.local].clone())
+                    }
+                    _ => None,
+                })
+                .collect()
+        };
+        super::tidy::LetNames {
+            patterns: (self.let_pattern_bindings(body).into_iter())
+                .map(|(l, _)| state.locals.names[l].clone())
+                .collect(),
+            named: names(&named),
+            casts: names(&casts),
+        }
+    }
+
     /// The temporaries a `let`'s struct or tuple pattern takes apart: what
     /// its bindings, of its fields, are read from.
     pub(super) fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
