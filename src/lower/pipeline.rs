@@ -147,10 +147,15 @@ pub fn lower_crate<'tcx>(
                     }),
                 "statics",
             ),
+            // One written as `Math`'s constant is its, `Math.LN2` (ADR 0887).
             _ => (
-                super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
-                    .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
-                    .map(|v| super::aggregates::const_object(tcx, def_id, v)),
+                (initializers.iter().find(|body| body.def_id == def_id.to_def_id()))
+                    .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))
+                    .or_else(|| {
+                        super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
+                            .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
+                            .map(|v| super::aggregates::const_object(tcx, def_id, v))
+                    }),
                 "constants",
             ),
         };

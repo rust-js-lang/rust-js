@@ -277,7 +277,7 @@ const Calculator = {
     functions.set("sqrt", [1, (a) => Math.sqrt($index(a, 0))]);
     functions.set("abs", [1, (a) => Math.abs($index(a, 0))]);
     const vars = new Map();
-    vars.set("pi", 3.141592653589793);
+    vars.set("pi", Math.PI);
     return { vars, functions };
   },
 

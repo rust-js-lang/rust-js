@@ -114,6 +114,57 @@ export function half(x) {
 - **`f64` is a number; `f32` is a number rounded to 32 bits** after each
   operation.
 
+A number's methods are JS's `Math` where they answer as Rust's do:
+`x.sqrt()` is `Math.sqrt(x)`. Such a function taken as a `fn`, and a
+constant of `std::f64::consts` that `Math` has, is `Math`'s itself
+([ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md)):
+
+```rust
+use std::f64::consts::PI;
+
+pub const LOG: fn(f64) -> f64 = f64::ln;
+
+pub fn area(radius: f64) -> f64 {
+    PI * radius * radius
+}
+
+pub fn rounding() -> fn(f64) -> f64 {
+    f64::round
+}
+```
+
+```js
+import { $round } from "@rust-js/runtime";
+
+export const LOG = Math.log;
+
+export function area(radius) {
+  return Math.PI * radius * radius;
+}
+
+export function rounding() {
+  return (n) => $round(n);
+}
+```
+
+- **Only where `Math`'s answers Rust's for every value of the type**:
+  `u32::leading_zeros` and `i32::leading_zeros` are `Math.clz32`, an
+  `f64`'s `floor`, `abs`, `sqrt`, `sin`, `atan2` and the rest of its
+  `Math` calls are those functions, and so are an `f32`'s `floor`, `ceil`,
+  `trunc` and `abs`, which are exact; `i32::unsigned_abs` is `Math.abs`
+  and `i32::signum` `Math.sign`. `f64::round` takes a half away from zero,
+  where `Math.round` takes it up, and an `f32`'s `sqrt` is rounded to an
+  `f32`: each is the arrow of its call. `js::math` has `Math`'s own
+  answers ([the js crate](../libraries/README.md#js-the-javascript-language)).
+- **The constants are `E`, `LN_2`, `LN_10`, `LOG2_E`, `LOG10_E`, `PI`,
+  `SQRT_2` and `FRAC_1_SQRT_2`**, `Math.E` to `Math.SQRT1_2`, the same
+  numbers. A `const` written as one is it, `const LN2: f64 = LN_2` being
+  `const LN2 = Math.LN2`; one written as a number, or computed, `PI / 2.0`,
+  is the number.
+- **A function item handed to an iterator is still its arrow**,
+  `.map(f64::sqrt)` being `.map((n) => Math.sqrt(n))`, as a binding's is
+  ([Bindings](bindings.md#a-binding-as-a-value)).
+
 ## Text
 
 A `String`, a `&str` and a `Box<str>` are a JS string. A `char` is a string
@@ -453,7 +504,7 @@ export function shapes() {
 
 export function area(shape) {
   if (shape.TAG === "Circle") {
-    return 3.141592653589793 * shape.radius * shape.radius;
+    return Math.PI * shape.radius * shape.radius;
   }
   if (shape.TAG === "Square") {
     return shape._0 * shape._0;

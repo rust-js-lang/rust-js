@@ -63,9 +63,9 @@ export const mutations: Mutation[] = [
     name: "f32-fn-value-unrounded",
     breaks: "`.map(f32::sqrt)` is a double's square root, no `f32`, where its call is rounded to one",
     file: "src/lower/items.rs",
-    find: "                    Some(num @ Num::F32) if !matches!(function, \"floor\" | \"ceil\" | \"trunc\" | \"abs\") => num.wrap(value),",
-    replace: "                    Some(num @ Num::F32) if false && !matches!(function, \"floor\" | \"ceil\" | \"trunc\" | \"abs\") => num.wrap(value),",
-    tests: ["test/corpus.test.ts","-t","function_values"],
+    find: "                    Some(num) if math::function(op, num).is_none() => num.wrap(value),",
+    replace: "                    Some(num) if false && math::function(op, num).is_none() => num.wrap(value),",
+    tests: ["test/corpus.test.ts", "-t", "function_values|math_values"],
   },
   {
     name: "size-of-value-unknown",

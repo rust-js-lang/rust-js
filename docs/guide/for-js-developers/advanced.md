@@ -300,7 +300,7 @@ export const circleShape = {
   describe: (self) => `a shape of area ${$toFixed(circleShape_area(self), 1)}`,
 };
 function circleShape_area(circle) {
-  return 3.141592653589793 * circle.radius * circle.radius;
+  return Math.PI * circle.radius * circle.radius;
 }
 
 export const squareShape = { area: squareShape_area, describe: squareShape_describe };

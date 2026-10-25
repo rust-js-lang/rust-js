@@ -356,6 +356,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_defined_parts(None, span);
         };
         let given = arg.node.ty(&body.local_decls, tcx);
+        // A std function that's `Math`'s, its function's, `typeof
+        // Math.clz32 !== "undefined"`: `Math` itself is ECMAScript's, which
+        // every host has (ADR 0887).
+        if let Some((f, f_args)) = crate::lower::fn_def(given)
+            && let Some(function) = self.math_function(f, f_args)
+        {
+            let typeof_ = Expr::unary(js::UnaryOp::Typeof, function);
+            return Ok(Some(Expr::bin(Op::Ne, typeof_, Expr::str("undefined"))));
+        }
         let global = match *given.kind() {
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => self.member_of_global(f),
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),

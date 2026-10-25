@@ -529,4 +529,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
     snapshots: true,
   },
+  {
+    name: "math-written-constant-literal",
+    breaks: "`const LN2: f64 = std::f64::consts::LN_2` is its number, `0.6931471805599453`, not `Math.LN2`",
+    file: "src/lower/pipeline.rs",
+    find: "                    .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))\n",
+    replace: "                    .and_then(|_| None)\n",
+    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+  },
 ];

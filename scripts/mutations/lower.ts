@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "    let _ = given;\n    default_parameter_name(tcx, function, name)\n",
     tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
   },
+  {
+    name: "math-constant-literal",
+    breaks: "`std::f64::consts::PI` is its number, `3.141592653589793`, not `Math.PI`",
+    file: "src/lower.rs",
+    find: "        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id) {\n",
+    replace: "        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id).filter(|_| false) {\n",
+    tests: ["test/lowering-math.test.ts", "-t", "a std function that isn't Math's for every value is the arrow of its call"],
+  },
 ];

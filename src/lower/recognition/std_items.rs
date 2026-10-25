@@ -460,6 +460,15 @@ pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
     }
 }
 
+/// The name `id` has in `std::f64::consts`, `LN_2`, if it's one of its
+/// constants, `core`'s by any path (ADR 0887).
+pub(crate) fn f64_const(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
+    if !is_std_crate(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Const { .. }) {
+        return None;
+    }
+    std_path(tcx, id).strip_prefix("std::f64::consts::").map(str::to_owned)
+}
+
 /// Whether `id` is `mem::transmute`, which reads one type's bytes as
 /// another's (ADR 0408).
 pub(crate) fn is_transmute(tcx: TyCtxt<'_>, id: DefId) -> bool {

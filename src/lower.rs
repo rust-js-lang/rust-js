@@ -650,6 +650,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => (def_id, args),
         };
+        // One of `Math`'s, `std::f64::consts::LN_2`, is its, `Math.LN2`
+        // (ADR 0887).
+        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id) {
+            return Ok(constant);
+        }
         // One holding a `Cell`, which changes through a shared reference, is
         // its value, written in place: `{ value: 5 }` each time it's used.
         // One made where another module loads, read where this one does, is

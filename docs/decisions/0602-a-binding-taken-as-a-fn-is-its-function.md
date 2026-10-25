@@ -4,6 +4,8 @@ Status: Accepted. Amends [0039](0039-generic-bindings.md)'s binding as a
 value. Amended by [0667](0667-console-is-a-value-and-rest-arguments-are-one.md):
 a variadic binding taken as a `fn` of rest arguments as a value,
 `&dyn js::Rest<T>`, is its function too, which its call spreads them to.
+Extended by [0887](0887-std-items-that-are-math-are-math.md): a std function that's `Math`'s, taken as a `fn`, is
+`Math`'s function, `Math.clz32`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results would change:
 Rust's, a `fn` fixed once it's taken.

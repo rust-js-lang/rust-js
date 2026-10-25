@@ -157,7 +157,7 @@ export const circleShape = {
   describe: (self) => `a shape of area ${$displayF64(circleShape_area(self))}`,
 };
 function circleShape_area(circle) {
-  return 3.141592653589793 * circle.radius * circle.radius;
+  return Math.PI * circle.radius * circle.radius;
 }
 
 export const rectShape = { area: rectShape_area, describe: rectShape_describe };

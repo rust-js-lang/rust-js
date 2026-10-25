@@ -448,6 +448,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             return Ok(Value::Expr(self.binding_fn_pointer(def_id, args, named, span)?));
                         }
+                        // A std function that's `Math`'s, its function,
+                        // `Math.clz32` of `u32::leading_zeros` (ADR 0887).
+                        if let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
+                            && let Some(function) = self.math_function(def_id, args)
+                        {
+                            return Ok(Value::Expr(function));
+                        }
                         return self.mir_operand(state, operand, out);
                     }
                 }

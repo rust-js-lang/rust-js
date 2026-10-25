@@ -56,7 +56,7 @@ function main() {
       `${$displayF64($signum(x))} ${$displayF64(x - Math.trunc(x))} ${$signNegative(x)} ${!$signNegative(x)} ${$displayF64(x * (Math.PI / 180))}`,
     );
   }
-  console.log(`${Number.isNaN($signum(NaN))} ${$displayF64(3.141592653589793 * (180 / Math.PI))}`);
+  console.log(`${Number.isNaN($signum(NaN))} ${$displayF64(Math.PI * (180 / Math.PI))}`);
   console.log(
     `${$displayF32(Math.fround(45 * 0.01745329238474369))} ${$displayF32(Math.fround(1 * 57.295780181884766))} ${$displayF32(-0.5 - Math.trunc(-0.5))}`,
   );

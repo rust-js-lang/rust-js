@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "                let exact = num.literal(0);\n",
     tests: ["test/corpus.test.ts", "-t", "^int_overflow_sign_methods.rs$"],
   },
+  {
+    name: "math-call-unasked",
+    breaks: "an `f64`'s `sqrt` call isn't `Math`'s by the table, and `i32::unsigned_abs` reaches a call no arm lowers",
+    file: "src/lower/std_types/number.rs",
+    find: "        if let Some(name) = math::function(op, num) {\n",
+    replace: "        if let Some(name) = math::function(op, num).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "math_values"],
+  },
 ];

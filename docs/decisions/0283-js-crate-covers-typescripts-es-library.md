@@ -12,6 +12,8 @@ is JS's `Map` of weak keys. Amended by [0666](0666-the-js-crate-binds-objects-re
 TypeScript types it, and what `js::Kind` holds is a `WeakKey`. Amended by
 [0782](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md):
 `promise::new`'s executor may borrow, and `then_with` is `then(f, g)`.
+Extended by [0887](0887-std-items-that-are-math-are-math.md): `Math`, left out as Rust's own, is
+std's items as values too, `f64::ln` as a `fn` `Math.log`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

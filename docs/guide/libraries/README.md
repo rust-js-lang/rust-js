@@ -141,7 +141,11 @@ What it has:
   `round`, `sign`, `max`, `min` and `random` are `Math`'s
   ([ADR 0247](../../decisions/0247-js-string-methods.md),
   [ADR 0365](../../decisions/0365-js-math-where-rust-differs.md)). A
-  `str`'s and an `f64`'s own methods keep Rust's.
+  `str`'s and an `f64`'s own methods keep Rust's. The rest of `Math` is
+  std's own: `x.sqrt()` is `Math.sqrt(x)`, `f64::sqrt` taken as a `fn` is
+  `Math.sqrt`, and `std::f64::consts::PI` is `Math.PI`
+  ([Numbers](../interop/types.md#numbers),
+  [ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md)).
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and

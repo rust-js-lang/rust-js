@@ -5,6 +5,8 @@ Amended: an unsigned number's `next_power_of_two()` and
 `checked_next_power_of_two()` are `$nextPowerOfTwo(n, bits)`: past its
 width, `0`, as release Rust wraps, and `None`
 (`test/corpus/next_power_of_two.rs`).
+Extended by [0887](0887-std-items-that-are-math-are-math.md): a method whose call is `Math`'s function of its
+arguments, for every value of its type, is that function taken as a `fn`.
 
 Case: C, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 

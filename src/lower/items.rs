@@ -6,7 +6,7 @@ use super::bindings::{Holder, JsForm, is_binding, is_method, js_form};
 use super::fn_def;
 use super::recognition::Std;
 use super::representation::Num;
-use super::std_types::number::NumOp;
+use super::std_types::number::{NumOp, math};
 use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case};
 use crate::js;
@@ -381,11 +381,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::ToString => self.display_string(x, input, span)?,
             Std::Text(TextOp::Is(regex)) => Expr::call(Expr::member(Expr::regex(regex), "test"), vec![x]),
             // An `f32`'s rounded to one, as its call is, but for those that are
-            // exact already (ADR 0122).
-            Std::Number(NumOp::Math(function)) => {
+            // `Math`'s, exact already (ADRs 0122, 0887).
+            Std::Number(op @ NumOp::Math(function)) => {
                 let value = Expr::call(Expr::member(Expr::var("Math"), function), vec![x]);
                 match Num::of(input) {
-                    Some(num @ Num::F32) if !matches!(function, "floor" | "ceil" | "trunc" | "abs") => num.wrap(value),
+                    Some(num) if math::function(op, num).is_none() => num.wrap(value),
                     _ => value,
                 }
             }

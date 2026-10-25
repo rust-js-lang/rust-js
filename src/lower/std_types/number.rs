@@ -5,6 +5,7 @@
 //! a helper gives Rust's.
 
 mod generic;
+pub(in crate::lower) mod math;
 mod operators;
 
 use self::generic::*;
@@ -505,6 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Ok(value) => return Ok(value),
             Err(values) => values,
         };
+        // `Math`'s function, its arguments as they are (ADR 0887).
+        if let Some(name) = math::function(op, num) {
+            return Ok(Expr::call(Expr::member(Expr::var("Math"), name), values));
+        }
         if num.big() {
             return self.big_number_call(op, values, ty, num, span, out);
         }
@@ -543,17 +548,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | NumOp::BytesEqIgnoreAsciiCase => {
                 unreachable!("lowered by either_width_call")
             }
-            NumOp::Math(name @ ("floor" | "ceil" | "trunc" | "abs")) => {
-                let list = values.collect();
-                math(name, list)
-            }
+            // An `f32`'s, rounded to one: `Math`'s are `math::function`'s.
             NumOp::Math(name) => {
                 let list = values.collect();
                 rounded(math(name, list))
             }
             NumOp::Abs => num.wrap(math("abs", vec![arg()])),
-            // An `i32::MIN`'s is 2^31, which a `u32` holds.
-            NumOp::UnsignedAbs => math("abs", vec![arg()]),
+            NumOp::UnsignedAbs => unreachable!("`math::function`'s"),
             NumOp::CheckedPow => helper("$checkedPow", vec![arg(), arg(), Expr::int(lo), Expr::int(hi)]),
             // Exact below 2^53, and `$pow` multiplies as `Math.imul` does, so
             // what's past it wraps as Rust's does.
@@ -737,7 +738,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$saturatingPow", list)
             }
             NumOp::Signum if num.float() => helper("$signum", vec![arg()]),
-            NumOp::Signum => math("sign", vec![arg()]),
+            NumOp::Signum => unreachable!("`math::function`'s"),
             NumOp::Clamp if num.float() => {
                 let debug = if num == Num::F32 { "$debugF32" } else { "$debugF64" };
                 let list = vec![arg(), arg(), arg(), Expr::var(debug)];
@@ -808,12 +809,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ones = helper("$countOnes", vec![bits(arg())]);
                 Expr::bin(Op::Sub, Expr::int(num.bits().into()), ones)
             }
+            // A narrower integer's, of its bits as a `u32`'s, less the bits
+            // it hasn't: a 32-bit one's is `math::function`'s.
             NumOp::LeadingZeros => {
-                let zeros = math("clz32", vec![bits(arg())]);
-                match num.bits() {
-                    32 => zeros,
-                    n => Expr::bin(Op::Sub, zeros, Expr::int((32 - n).into())),
-                }
+                let clz32 = math::function(op, Num::U32).expect("a `u32`'s is `Math`'s");
+                let zeros = math(clz32, vec![bits(arg())]);
+                Expr::bin(Op::Sub, zeros, Expr::int((32 - num.bits()).into()))
             }
             NumOp::TrailingZeros => {
                 let x = bits(arg());

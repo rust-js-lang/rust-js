@@ -1344,7 +1344,7 @@ export function next(light) {
 
 export function area(shape) {
   if (shape.TAG === "Circle") {
-    return 3.141592653589793 * shape.radius * shape.radius;
+    return Math.PI * shape.radius * shape.radius;
   }
   return shape.width * shape.height;
 }

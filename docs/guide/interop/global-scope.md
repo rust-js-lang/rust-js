@@ -204,8 +204,15 @@ export function later(task) {
   `canUseDOM` asks
   ([ADR 0624](../../decisions/0624-is-defined-of-a-path-of-bindings.md)).
   A step that isn't one is refused.
+- **A std function that's `Math`'s** is asked of as `Math`'s:
+  `js::is_defined(u32::leading_zeros)` is `typeof Math.clz32 !==
+  "undefined"`, `Math` itself being ECMAScript's, which every host has, as
+  React's `clz32` polyfill asks
+  ([ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md),
+  [Numbers](types.md#numbers)).
 - **It's a global's**: a closure, a variable, the crate's own function or
-  static, or an import is refused.
+  static, a std function that isn't `Math`'s, `f64::round`, or an import
+  is refused.
 - **Rust is told nothing**: the binding is still there to call, and throws
   a `ReferenceError` where the host hasn't it, as JS does. Ask where the
   program may run without it.

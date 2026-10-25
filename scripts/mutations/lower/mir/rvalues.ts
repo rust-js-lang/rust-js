@@ -508,4 +508,12 @@ export const mutations: Mutation[] = [
     replace: "                let ty = self.tcx.type_of(*def_id).instantiate_identity().skip_normalization();\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
+  {
+    name: "math-pointer-arrow",
+    breaks: "`u32::leading_zeros` taken as a `fn` is the arrow of its call, `(n) => Math.clz32(n)`, not `Math.clz32`, which the program's polyfill captures",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            && let Some(function) = self.math_function(def_id, args)\n                        {\n                            return Ok(Value::Expr(function));\n",
+    replace: "                            && let Some(function) = self.math_function(def_id, args).filter(|_| false)\n                        {\n                            return Ok(Value::Expr(function));\n",
+    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+  },
 ];

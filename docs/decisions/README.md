@@ -52,7 +52,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](0061-generic-iterators.md) *(amended by 0715: what an `IntoIterator` bound is given is its items)*
 - [0062 Combinators and adapters: the closure's body in place](0062-combinators.md)
 - [0063 `char`'s questions are Unicode regular expressions; `parse` is a `Result` of Rust's message](0063-text.md)
-- [0064 Numbers' methods are `Math`'s, where JS agrees; operators call their impl](0064-numbers.md)
+- [0064 Numbers' methods are `Math`'s, where JS agrees; operators call their impl](0064-numbers.md) *(extended by 0887: their functions as values)*
 - [0086 An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it](0086-64-bit-integers.md)
 - [0087 `println!` is `console.log`; `print!` writes as it is where JS can](0087-printing.md)
 - [0090 rustc checks programs for `wasm32-unknown-unknown`, whose `usize` is rust-js's](0090-wasm32-front-end.md)
@@ -301,7 +301,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md)
 - [0282 One method API for event listeners](0282-event-listener-methods.md)
-- [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to)*
+- [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to; extended by 0887: `Math` is std's items as values too)*
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md)
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
@@ -383,7 +383,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
 - [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds; amended by 0879: an `if`'s value of a branch of `false` is a conditional)*
-- [0365 JS's Math where Rust's methods differ: `js::math`](0365-js-math-where-rust-differs.md)
+- [0365 JS's Math where Rust's methods differ: `js::math`](0365-js-math-where-rust-differs.md) *(extended by 0887: the rest of `Math` is std's, as values too)*
 - [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](0366-nodelist-of-its-items.md)
 - [0367 A state's setter is the function it is](0367-state-setter-is-a-function.md)
 - [0368 `util.promisify` of a callback function](0368-promisify.md)
@@ -478,12 +478,12 @@ reordered, and git merges this file by keeping both sides' lines
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md)
 - [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports; amended by 0874: a private `use`'s `#[rust_js::name]` is its import's name)*
-- [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property)*
+- [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property; by 0887: of a std function that's `Math`'s)*
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md) *(amended: a `let` of a name alone is its own statement, and a cast's is the variable)*
 - [0599 A result its branches make before it's coerced is returned where made](0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](0600-the-guide-is-the-site.md)
 - [0601 A module's variable an `if` makes is a `let` each branch assigns](0601-a-module-variable-an-if-makes-is-a-let.md) *(amended by 0657: one value each is a conditional; 0704: `undefined` is no assignment; 0870: a closure of `const`s and its value is the module's)*
-- [0602 A binding taken as a `fn` is its JS function, read where it's taken](0602-a-binding-taken-as-a-fn-is-its-function.md) *(amended by 0667: a variadic one's, of rest arguments as a value)*
+- [0602 A binding taken as a `fn` is its JS function, read where it's taken](0602-a-binding-taken-as-a-fn-is-its-function.md) *(amended by 0667: a variadic one's, of rest arguments as a value; extended by 0887: a std function that's `Math`'s)*
 - [0603 A comment before a `let` with no JS is the next statement's](0603-a-comment-before-an-unprinted-let.md) *(extended by 0444, amended: a block's `let` too)*
 - [0604 A binding as a value gives its arguments as its call does](0604-a-bindings-value-gives-what-its-call-gives.md)
 - [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
@@ -666,6 +666,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0885 A closure value is given to a JS helper as it is](0885-a-closure-value-is-given-as-it-is.md)
 - [0886 A function's evidence is one ordered list](0886-a-functions-evidence-is-one-ordered-list.md)
+- [0887 A std function or constant that's `Math`'s is `Math`'s as a value](0887-std-items-that-are-math-are-math.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too)*

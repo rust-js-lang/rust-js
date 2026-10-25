@@ -284,4 +284,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty) && false)\n",
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
   },
+  {
+    name: "math-defined-refused",
+    breaks: "`js::is_defined(u32::leading_zeros)` is refused as no global's binding, where it's `typeof Math.clz32 !== \"undefined\"`",
+    file: "src/lower/mir/calls.rs",
+    find: "            && let Some(function) = self.math_function(f, f_args)\n",
+    replace: "            && let Some(function) = self.math_function(f, f_args).filter(|_| false)\n",
+    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+  },
 ];

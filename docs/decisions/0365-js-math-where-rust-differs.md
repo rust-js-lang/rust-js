@@ -1,6 +1,9 @@
 # 0365. JS's Math where Rust's methods differ: `js::math`
 
 Status: Accepted. Extends [0283](0283-js-crate-covers-typescripts-es-library.md).
+Extended by [0887](0887-std-items-that-are-math-are-math.md): the rest of `Math`, std's own, is `Math`'s as a
+value too, `f64::sqrt` as a `fn` `Math.sqrt` and `consts::PI` `Math.PI`,
+where it answers as Rust's for every value.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
