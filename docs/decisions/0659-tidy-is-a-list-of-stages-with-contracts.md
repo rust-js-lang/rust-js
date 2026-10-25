@@ -301,3 +301,15 @@ with `never taken`. A stage that can't, of the others that promise "no
 empty if", gets it when a program shows it can: each such pass is held
 by a corpus case and a mutation, `test/corpus/loop_branch_emptied.rs`
 with `names-empty-if-kept` and `written-empty-if-kept`.
+
+## Amendment: `decided tests` takes away what its decision leaves unreachable (#270)
+
+A match arm's guard that an `if` around it already decides, `if strict {
+match .. { (a, b) if strict => .. , _ => 127 } }`, is replaced by its
+branch, a `return`, and the `return 127;` after it was left behind. That
+code is never reached, so the output was correct, but `values`'s
+"nothing after a jump" contract panicked (fuzz seed 49419).
+`decided_tests_of`, which runs in `values` and again in `chains`, now
+ends with `unreachable_after`. Held by
+`test/corpus/guard_decided_by_outer_if.rs` and the mutation
+`decided-tests-unreachable-kept`.

@@ -672,6 +672,9 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
 fn decided_tests_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let changing = changing(body);
     js::statement_lists(body, &mut |s| decided_tests(s, &changing, &hints.written.ifs));
+    // What a branch taken in place of its `if` leaves after its jump,
+    // never reached (#270).
+    js::statement_lists(body, &mut unreachable_after);
 }
 
 /// What's read once, in place, of what the body sets as it is now.

@@ -620,4 +620,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(closures_of_their_value|branches_as_written).rs$"],
     snapshots: true,
   },
+  {
+    name: "decided-tests-unreachable-kept",
+    breaks: "an arm's guard an outer `if` decided leaves what follows its value, never reached, and the stage's contract panics: the compiler crashes (#270)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "    // never reached (#270).\n    js::statement_lists(body, &mut unreachable_after);\n",
+    replace: "    // never reached (#270).\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_decided_by_outer_if.rs$"],
+  },
 ];
