@@ -2,7 +2,7 @@
 //! destructor, which the last of them drops (ADR 0320): only those are
 //! `{ value, strong, weak }`; every other is the value it points at (ADR 0023).
 //! Each decided by what it points at, a type and every type that may be it
-//! (ADR 0847).
+//! (ADR 0848).
 
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee};
@@ -33,7 +33,7 @@ impl<'tcx> Counted<'tcx> {
 
     /// Is an `Rc` of `pointee` counted? Where it's one counted, or may be:
     /// one generic code holds as `Rc<Slot<T>>` is any `Rc<Slot<_>>`, so
-    /// the two are one representation (ADR 0847).
+    /// the two are one representation (ADR 0848).
     pub fn counts(&self, tcx: TyCtxt<'tcx>, pointee: Ty<'tcx>) -> bool {
         let pointee = tcx.erase_and_anonymize_regions(pointee);
         self.all || self.types.contains(&pointee) || self.types.iter().any(|&t| may_be(tcx, t, pointee))
@@ -41,7 +41,7 @@ impl<'tcx> Counted<'tcx> {
 }
 
 /// What makes a type, its constructor, compared with another's to say
-/// whether the two may be one type (ADR 0847), and named by a library's
+/// whether the two may be one type (ADR 0848), and named by a library's
 /// contract.
 #[derive(PartialEq, Eq)]
 pub(in crate::lower) enum Head {
@@ -87,7 +87,7 @@ pub(in crate::lower) fn head<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(H
 /// May `a` and `b` be one type, a type parameter of either any type? Where
 /// either has none to compare, or both one constructor, each of what it's
 /// made of may be the other's. More than rustc's unification says may,
-/// never less: one counted, the other is too (ADR 0847).
+/// never less: one counted, the other is too (ADR 0848).
 pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
     match (head(tcx, a), head(tcx, b)) {
         (Some((a, of_a)), Some((b, of_b))) => {
@@ -109,10 +109,10 @@ pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>
 /// parameter may be one, not `T: Copy`, where a body owns it: what it's
 /// made of may be one whose last clone drops it (ADRs 0494, 0844).
 /// And each that a library counts and hands the crate, `handed` (ADRs 0523,
-/// 0847).
+/// 0848).
 /// Each counted, every `Rc` the crate has of what may be the same type is:
 /// generic code's `Rc<Slot<T>>` is any `Slot`'s, and an `Rc<T>`'s every
-/// one (ADR 0847).
+/// one (ADR 0848).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
@@ -202,7 +202,7 @@ pub(super) fn counted_rcs<'tcx>(
             .filter(|&&pointee| !counted.types.contains(&pointee))
             .filter(|&&pointee| {
                 // What may be one counted is: generic code's of its
-                // parameter's, and each it's of (ADR 0847).
+                // parameter's, and each it's of (ADR 0848).
                 counted.types.iter().any(|&t| may_be(tcx, t, pointee))
                     || !pointee.has_non_region_param() && runs(&counted, pointee)
             })

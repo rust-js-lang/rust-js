@@ -855,7 +855,7 @@ export function share(doc) {
   `#[repr(transparent)]` one's, which is its field: it's `a === b`
   ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
 - **Each type's `Rc`s are counted apart**
-  ([ADR 0847](../../decisions/0847-each-types-rcs-are-counted-apart.md)):
+  ([ADR 0848](../../decisions/0848-each-types-rcs-are-counted-apart.md)):
   an `Rc` is counted where the crate reads the count of its type's, or of
   a type that may be the same, or its last owner runs a destructor.
   Generic code's `Rc<Slot<T>>` stands for every `Rc<Slot<_>>`, and an

@@ -1,6 +1,6 @@
 //! A crate given a library's counted `Rc<Slot<_>>`s, which it counts as the
 //! library does, its own `Loud` dropped by the last of them, and its
-//! uncounted context, the value itself in both (ADR 0847).
+//! uncounted context, the value itself in both (ADR 0848).
 use std::rc::Rc;
 
 struct Loud(&'static str);

@@ -2,7 +2,7 @@
 
 Status: Accepted; amended by [0844](0844-a-library-that-reads-no-count-counts-no-rc.md):
 a library counts every `Rc` or none, none where it reads no count, and
-says which; and by [0847](0847-each-types-rcs-are-counted-apart.md):
+says which; and by [0848](0848-each-types-rcs-are-counted-apart.md):
 each type's `Rc`s are counted apart, its contract lists the types it
 counts, and a crate it hands one counts it as it does. Amends [0320](0320-counted-rcs.md) and
 [0494](0494-a-generic-rc-is-counted-where-it-may-drop.md), whose

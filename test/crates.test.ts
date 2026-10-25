@@ -196,7 +196,7 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   expect(contract(holder).counted_rcs).toEqual([{}]);
 }, 300_000);
 
-// ADR 0847: a library counts the `Rc`s of each type apart, and its contract
+// ADR 0848: a library counts the `Rc`s of each type apart, and its contract
 // says which. React's context, read by `use_context<T>` of any `T`, is the
 // value itself beside a generic `Rc<Slot<T>>` it counts, as is its
 // consumer's; the consumer counts the library's `Slot`s, and is refused

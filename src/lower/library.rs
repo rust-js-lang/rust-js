@@ -50,7 +50,7 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) keeps_capacity: bool,
     /// Whether its writers take their `Formatter`'s options (ADR 0137).
     pub(super) writers_take_options: bool,
-    /// What the `Rc`s it counts point at (ADR 0847).
+    /// What the `Rc`s it counts point at (ADR 0848).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
 }
 
@@ -164,7 +164,7 @@ pub(super) fn exports<'tcx>(
     }
 }
 
-/// What a library's contract calls `head`, a type's constructor (ADR 0847).
+/// What a library's contract calls `head`, a type's constructor (ADR 0848).
 fn head_key(tcx: TyCtxt<'_>, head: &super::analysis::Head) -> String {
     match head {
         super::analysis::Head::Def(kind, id) => format!("{kind}{}", key(tcx, *id)),
@@ -173,7 +173,7 @@ fn head_key(tcx: TyCtxt<'_>, head: &super::analysis::Head) -> String {
 }
 
 /// What a library's contract calls `ty`, a type an `Rc` it counts points
-/// at, `_` where it may be any (ADR 0847).
+/// at, `_` where it may be any (ADR 0848).
 fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape {
     match super::analysis::head(tcx, ty) {
         Some((head, args)) => RcShape {
@@ -188,7 +188,7 @@ fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape 
 }
 
 /// May `ty` be the type `shape` names, a library's, a type parameter of
-/// either any type (ADR 0847)? As `rc_counts::may_be` says of two types.
+/// either any type (ADR 0848)? As `rc_counts::may_be` says of two types.
 fn may_be_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
     match (&shape.of, super::analysis::head(tcx, ty)) {
         (Some(of), Some((head, args))) => {
@@ -220,10 +220,10 @@ pub(super) struct Reached<'tcx> {
     /// their signatures and fields, not of a type parameter a consumer
     /// gives, which their code reads by a dictionary, as the crate has it:
     /// counted where the library counts it, which the crate then does,
-    /// whose count they share (ADRs 0523, 0847).
+    /// whose count they share (ADRs 0523, 0848).
     pub(super) counted_rcs: Vec<rustc_middle::ty::Ty<'tcx>>,
     /// And where it doesn't, each shared with the crate as the value
-    /// itself, of the library named (ADRs 0844, 0847).
+    /// itself, of the library named (ADRs 0844, 0848).
     pub(super) uncounted_rcs: Vec<(rustc_middle::ty::Ty<'tcx>, String)>,
 }
 
@@ -346,7 +346,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Of `of`, a library's item, whose own types are `tys`, given `args`:
     /// what each `Rc` or `Weak` they hold points at, as the crate has it,
-    /// counted where the library counts it (ADRs 0844, 0847).
+    /// counted where the library counts it (ADRs 0844, 0848).
     fn holds_rcs(
         &self,
         of: DefId,
@@ -373,7 +373,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
     }
 
-    /// Does `krate`, a library, count an `Rc` of `pointee` (ADR 0847)?
+    /// Does `krate`, a library, count an `Rc` of `pointee` (ADR 0848)?
     fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
         (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
             .is_some_and(|library| (library.counted_rcs.iter()).any(|shape| may_be_shape(self.tcx, shape, pointee)))

@@ -4,7 +4,7 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "library-counts-every-rc",
-    breaks: "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0847)",
+    breaks: "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0848)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "    counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());\n",
     replace: "    counted.all = !counted.types.is_empty();\n",
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "borrowed-place-owned",
-    breaks: "a generic function reading a struct through a reference, `shelf.items.len()`, is taken to own its `Rc<Item<T>>`s, which it may drop, so it counts them (ADR 0847)",
+    breaks: "a generic function reading a struct through a reference, `shelf.items.len()`, is taken to own its `Rc<Item<T>>`s, which it may drop, so it counts them (ADR 0848)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "        ExprKind::Deref { .. } => true,\n",
     replace: "        ExprKind::Deref { .. } => false,\n",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-item-owned",
-    breaks: "a function's type, `Vec::<Rc<Item<T>>>::len`'s, is taken to own its arguments' types' values, so a generic function reading a shelf counts its `Rc<Item<T>>`s (ADR 0847)",
+    breaks: "a function's type, `Vec::<Rc<Item<T>>>::len`'s, is taken to own its arguments' types' values, so a generic function reading a shelf counts its `Rc<Item<T>>`s (ADR 0848)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            if matches!(part.kind(), ty::Ref(..) | ty::FnDef(..))\n",
     replace: "            if matches!(part.kind(), ty::Ref(..))\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "weak-owns-pointee",
-    breaks: "a `Weak` is taken to own what it points at, so a generic function holding React's context's consumer, whose `_context` is one, counts it (ADR 0847)",
+    breaks: "a `Weak` is taken to own what it points at, so a generic function holding React's context's consumer, whose `_context` is one, counts it (ADR 0848)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                Some(t) if matches!(t.kind(), ty::Ref(..)) || weak_pointee(tcx, t).is_some() => {\n",
     replace: "                Some(t) if matches!(t.kind(), ty::Ref(..)) => {\n",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "may-be-ignores-arguments",
-    breaks: "two types of one constructor are taken to be one whatever they're of, so counting an `Rc<Cell<f64>>` counts every `Rc<Cell<_>>` (ADR 0847)",
+    breaks: "two types of one constructor are taken to be one whatever they're of, so counting an `Rc<Cell<f64>>` counts every `Rc<Cell<_>>` (ADR 0848)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            a == b && of_a.len() == of_b.len() && of_a.iter().zip(&of_b).all(|(&a, &b)| may_be(tcx, a, b))\n",
     replace: "            a == b\n",

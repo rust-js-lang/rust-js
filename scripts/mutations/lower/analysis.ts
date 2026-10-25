@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "consumer-rcs-uncounted",
-    breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0847)",
+    breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0848)",
     file: "src/lower/analysis.rs",
     find: "            (params_may_drop, &reached.counted_rcs),\n",
     replace: "            (params_may_drop, &[]),\n",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-rcs-uncounted",
-    breaks: "a library's type parameters are taken to have no destructor, so it counts no generic `Rc` of what its consumers' may drop, and drops nothing of an associated type its consumers' may give one (ADRs 0844, 0847)",
+    breaks: "a library's type parameters are taken to have no destructor, so it counts no generic `Rc` of what its consumers' may drop, and drops nothing of an associated type its consumers' may give one (ADRs 0844, 0848)",
     file: "src/lower/analysis.rs",
     find: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, library));\n    let reached = foreign.reached(all_bodies);\n",
     replace: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, false));\n    let reached = foreign.reached(all_bodies);\n",

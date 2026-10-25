@@ -700,7 +700,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     // Each `Rc` whose counts are read, or whose pointee's drop runs a
     // destructor (ADR 0320); and each a library that counts it hands the
-    // crate, which share their counts (ADRs 0523, 0626, 0847). A library's
+    // crate, which share their counts (ADRs 0523, 0626, 0848). A library's
     // type parameters are its consumers' types, any of which may have a
     // destructor.
     let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, library));
@@ -756,10 +756,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // A library that counts no `Rc` of a type hands the crate one, which the
     // two share as it is, the value itself: the crate can't count it either
-    // (ADRs 0844, 0847).
+    // (ADRs 0844, 0848).
     if let Some((pointee, name)) = (reached.uncounted_rcs.iter()).find(|&&(pointee, _)| counted.counts(tcx, pointee)) {
         tcx.dcx().err(format!(
-            "rust-js: this crate counts an `Rc<{pointee}>`, whose counts it reads, whose last owner runs a destructor, or that may be one that does, but `{name}`, a rust-js library that counts none of them, hands it one, which both share as the value itself (ADR 0847)"
+            "rust-js: this crate counts an `Rc<{pointee}>`, whose counts it reads, whose last owner runs a destructor, or that may be one that does, but `{name}`, a rust-js library that counts none of them, hands it one, which both share as the value itself (ADR 0848)"
         ));
         return None;
     }

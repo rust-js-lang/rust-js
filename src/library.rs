@@ -130,13 +130,13 @@ pub struct Library {
     pub held: Vec<Held>,
     /// What the `Rc`s it counts point at, each `{ value, strong, weak }`
     /// (ADR 0320), and every one that may be one of them; each other the
-    /// value itself (ADRs 0844, 0847): a crate it hands one counts as it
+    /// value itself (ADRs 0844, 0848): a crate it hands one counts as it
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
 }
 
-/// A type an `Rc` points at, as a library's contract names it (ADR 0847):
+/// A type an `Rc` points at, as a library's contract names it (ADR 0848):
 /// what makes it, an item by its key or a primitive's name, and the types
 /// it's made of; `_`, no `of`, where it may be any type, a type
 /// parameter's value.
@@ -188,7 +188,7 @@ pub struct Exports {
     pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
-    /// What the `Rc`s it counts point at (ADR 0847).
+    /// What the `Rc`s it counts point at (ADR 0848).
     pub counted_rcs: Vec<RcShape>,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
