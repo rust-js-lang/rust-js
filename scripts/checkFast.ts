@@ -83,10 +83,11 @@ const jobs: [string, string[], Record<string, string>][] = [
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),
   ...(tidy ? [["tidy's stages", ["bun", "test", "test/tidy-stages.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
   // What pins the JS written, the names it gives and what it refuses; and
-  // the guide's examples compiled, std's package and the readability ratchet,
-  // each of which a lowering change has turned `main` red with (#212, #222).
+  // the guide's examples compiled, std's package, the runtime package's
+  // helpers and the readability ratchet, each of which a lowering or a
+  // runtime change has turned `main` red with (#212, #222, #253).
   ...(shared
-    ? [["guide, std package, readability", ["bun", "test", "test/docs.test.ts", "test/std-package.test.ts", "test/readability.test.ts"], {}] as [string, string[], Record<string, string>]]
+    ? [["guide, packages, readability", ["bun", "test", "test/docs.test.ts", "test/std-package.test.ts", "test/runtime-package.test.ts", "test/readability.test.ts"], {}] as [string, string[], Record<string, string>]]
     : []),
   ...(shared
     ? ["snapshots", "diagnostics"].map(
