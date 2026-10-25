@@ -793,4 +793,16 @@ export const mutations: Mutation[] = [
     replace: "                                    if false && this.slice_item(ty.peel_refs()).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+  {
+    name: "in-place-flatten-unmarked",
+    breaks: "a flatten made in place and stepped from its back is taken for std's struct, given its compiled `next_back`, which the recognizers' `flatMap` isn't",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        true => made.in_place(),\n",
+    replace: "                        true => made,\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^flatten_of_iterators_from_back.rs$"
+    ]
+  },
 ];

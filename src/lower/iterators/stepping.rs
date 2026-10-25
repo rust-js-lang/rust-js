@@ -310,6 +310,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let ty = self.reveal(ty);
+        // An associated type's, `I::Item`'s, its dictionary's `into_iter`
+        // (#278).
+        if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {
+            return Ok(items);
+        }
         // A `&mut` range is stepped where it is, as it's taken from.
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
             && self.range_kind(*inner).is_some()
@@ -339,6 +344,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.in_order_of(value, ty, span);
         }
         Ok(value)
+    }
+
+    /// The JS iterator of `value`'s items, of `ty`, an associated type whose
+    /// `IntoIterator` this function holds as it is, `I::Item`'s (ADR 0552,
+    /// #278): its dictionary's `into_iter`, stepped by the `Iterator` that
+    /// carries, `$given(IItemIntoIterator.intoIter(item), ..)`.
+    pub(in crate::lower) fn items_by_dictionary(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        if !matches!(ty.kind(), ty::Alias(..)) || !self.holds_into_iter(ty) {
+            return Ok(None);
+        }
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        let Some(dictionary) = self.evidence_for(ty::TraitRef::new(self.tcx, into_iterator, [ty])) else {
+            return Ok(None);
+        };
+        let into_iter = crate::lower::bindings::trait_method_name(self.tcx, into_iterator, "into_iter");
+        let made = Expr::call(Expr::member(dictionary, into_iter), vec![value]);
+        let into_iter_ty = crate::lower::recognition::trait_method(self.tcx, into_iterator, "IntoIter");
+        let output = ty::Ty::new_projection(self.tcx, ty::IsRigid::No, into_iter_ty, [ty]);
+        self.as_js_iterator(made, output, span).map(Some)
     }
 
     /// The crate's iterator `ty`'s own `fold`, `nth` and `last`, where its

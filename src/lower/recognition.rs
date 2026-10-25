@@ -8,13 +8,15 @@ mod json;
 mod methods;
 pub(super) mod registry;
 mod serde;
+mod specialization;
 mod std_items;
 mod traits;
 mod types;
 mod wrappers;
 
 pub(super) use self::{
-    calls::*, fmt::*, iterators::*, json::*, serde::*, std_items::*, traits::*, types::*, wrappers::*,
+    calls::*, fmt::*, iterators::*, json::*, serde::*, specialization::*, std_items::*, traits::*, types::*,
+    wrappers::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

@@ -824,16 +824,26 @@ fn in_place_adapters<'tcx>(
             let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {
                 continue;
             };
-            if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::makes_held_compiled(tcx, id)) {
-                given.push((fn_span, at, callee, index));
+            if let ty::FnDef(maker, _) = *thir[fun].ty.kind()
+                && super::recognition::makes_held_compiled(tcx, maker)
+            {
+                given.push((fn_span, at, callee, index, maker));
             }
         }
     }
-    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span| {
+    // `size_hint()`, which a JS iterator, once made, can't answer as Rust
+    // does: of what the recognizers size where it's made, `rev()`'s, or of
+    // std's struct, which knows it, a variable's or a `flatten()`'s (ADR
+    // 0899).
+    let size_hint = super::recognition::trait_method(tcx, iterator_traits[0], "size_hint");
+    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span, maker: DefId| {
         // Another of them, itself made in place, `enumerate().rev()`'s: in
         // place too.
         if super::recognition::makes_held_compiled(tcx, callee) {
             return in_place.contains(&at);
+        }
+        if callee == size_hint && !super::recognition::sized_in_place(tcx, maker) {
+            return false;
         }
         let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
         // A trait's method called on it but an iterator trait's, which the
@@ -918,7 +928,8 @@ fn in_place_adapters<'tcx>(
         let by_iterator = tcx
             .trait_of_assoc(callee)
             .is_some_and(|tr| iterator_traits.contains(&tr))
-            && !super::recognition::is_compiled_std(tcx, callee);
+            && !super::recognition::is_compiled_std(tcx, callee)
+            && callee != size_hint;
         let by_ref = by_iterator && super::recognition::is_by_ref(tcx, callee);
         for &arg in args.iter() {
             let arg = match thir[strip(thir, arg)].kind {
@@ -967,8 +978,8 @@ fn in_place_adapters<'tcx>(
     // steps, those of another made of it in place too, to the fixed point.
     loop {
         let before = found.len();
-        for &(made, at, callee, index) in &given {
-            if steps_as_js(callee, index, &found, at) {
+        for &(made, at, callee, index, maker) in &given {
+            if steps_as_js(callee, index, &found, at, maker) {
                 found.insert(made);
                 steps.insert(at);
             }

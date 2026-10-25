@@ -228,4 +228,26 @@ export const mutations: Mutation[] = [
     replace: "    stepped_form(e).cloned()\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
   },
+  {
+    name: "alias-into-iter-not-held",
+    breaks: "generic code given `I::Item: IntoIterator` iterates each item as a JS iterator, which an `Option`'s `T | undefined` isn't (#278)",
+    file: "src/lower/iterators.rs",
+    find: "    if matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
+    replace: "    if false && matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^into_iter_of_items.rs$"
+    ]
+  },
+  {
+    name: "held-into-iter-param-not-given",
+    breaks: "`U` of `I::Item: IntoIterator<IntoIter = U>` is a JS iterator, so `Flatten`'s `next` gives `FlattenCompat` a generic `{ next }` of what's held as it is",
+    file: "src/lower/iterators.rs",
+    find: "    if is_held_into_iter(tcx, id, param) {\n",
+    replace: "    if false && is_held_into_iter(tcx, id, param) {\n",
+    tests: [
+      "test/std-package.test.ts"
+    ]
+  },
 ];

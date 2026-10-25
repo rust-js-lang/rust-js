@@ -8,6 +8,7 @@ import {
   $iter,
   $mutEntries,
   $mutItems,
+  $next,
   $sortedEntries,
 } from "@rust-js/runtime";
 
@@ -64,25 +65,40 @@ function refMutBagIntoIterator_intoIter(bag) {
 function main() {
   const v = [1, 2, 3];
   const c = { value: v };
-  doubleAll(c, { intoIter: (cell) => $iter($mutItems(cell.value)) });
+  doubleAll(c, {
+    intoIter: (cell) => $iter($mutItems(cell.value)),
+    IntoIterIterator: () => ({ next: $next }),
+  });
   $assign(v, c.value);
   const a = [4, 5];
   const c$1 = { value: a };
-  doubleAll(c$1, { intoIter: (cell) => $iter($mutItems(cell.value)) });
+  doubleAll(c$1, {
+    intoIter: (cell) => $iter($mutItems(cell.value)),
+    IntoIterIterator: () => ({ next: $next }),
+  });
   $assign(a, c$1.value);
-  const value = total(v, { intoIter: (x) => $iter(x) });
-  const arg = total(a, { intoIter: (x) => $iter(x) });
+  const value = total(v, { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) });
+  const arg = total(a, { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) });
   console.log(`[${v.join(", ")}] [${a.join(", ")}] ${value} ${arg}`);
 
   let some = 7;
   const c$2 = { value: some };
-  doubleAll(c$2, { intoIter: (cell) => $iter(cell.value == null ? [] : [cell]) });
+  doubleAll(c$2, {
+    intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
+    IntoIterIterator: () => ({ next: $next }),
+  });
   some = c$2.value;
   let none;
   const c$3 = { value: none };
-  doubleAll(c$3, { intoIter: (cell) => $iter(cell.value == null ? [] : [cell]) });
+  doubleAll(c$3, {
+    intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
+    IntoIterIterator: () => ({ next: $next }),
+  });
   none = c$3.value;
-  const arg$1 = total(some, { intoIter: (x) => $iter(x == null ? [] : [x]) });
+  const arg$1 = total(some, {
+    intoIter: (x) => $iter(x == null ? [] : [x]),
+    IntoIterIterator: () => ({ next: $next }),
+  });
   console.log(
     `${some == null ? "None" : `Some(${some})`} ${none == null ? "None" : `Some(${none})`} ${arg$1}`,
   );
@@ -100,6 +116,7 @@ function main() {
   const m$1 = { value: m };
   bumpValues(m$1, {
     intoIter: (cell) => $iter($mutEntries(cell.value, $sortedEntries(cell.value, $cmp))),
+    IntoIterIterator: () => ({ next: $next }),
   });
   $assign(m, m$1.value);
   console.log(

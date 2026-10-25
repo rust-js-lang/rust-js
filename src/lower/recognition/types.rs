@@ -669,11 +669,18 @@ pub(crate) enum TypeFact {
     /// Whether it's a `FusedIterator`, whose `Fuse` keeps it as it ends
     /// (ADRs 0473, 0543).
     Fused,
+    /// How many items it has as an `IntoIterator` of a constant size, `N`
+    /// of an array's, else none: std's `ConstSizeIntoIterator::size()`,
+    /// which a flatten's `size_hint` asks of its items (ADR 0899).
+    ConstSize,
+    /// Whether it's std's `OneShot`, an iterator of one item at most, whose
+    /// `flatten()` std specializes, its `size_hint` bounded (ADR 0899).
+    OneShot,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 11] = [
+    pub(crate) const ALL: [TypeFact; 13] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -685,6 +692,8 @@ impl TypeFact {
         TypeFact::TreeSet,
         TypeFact::Sort,
         TypeFact::Fused,
+        TypeFact::ConstSize,
+        TypeFact::OneShot,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -706,6 +715,8 @@ impl TypeFact {
             TypeFact::TreeSet => "TreeSet",
             TypeFact::Sort => "Sort",
             TypeFact::Fused => "Fused",
+            TypeFact::ConstSize => "ConstSize",
+            TypeFact::OneShot => "OneShot",
         }
     }
 
@@ -751,6 +762,15 @@ pub(super) fn layout_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<(TypeFact, 
         _ if diagnostic("mem_align_of") => (TypeFact::Align, false),
         // It has no diagnostic name.
         _ if std_path(tcx, def_id) == "std::mem::align_of_val" => (TypeFact::Align, true),
+        // Of a type alone too, std's `ConstSizeIntoIterator::size()`, private
+        // to `flatten`'s module, which std specializes on arrays (ADR 0899).
+        _ if tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|tr| tcx.item_name(tr).as_str() == "ConstSizeIntoIterator")
+            && super::is_std_crate(tcx, def_id) =>
+        {
+            (TypeFact::ConstSize, false)
+        }
         _ => return None,
     })
 }
@@ -762,6 +782,7 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
     if let Some((fact, _)) = layout_query(tcx, def_id) {
         return match fact {
             TypeFact::Align => &[TypeFact::Align],
+            TypeFact::ConstSize => &[TypeFact::ConstSize],
             _ => &[TypeFact::Size],
         };
     }

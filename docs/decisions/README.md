@@ -163,7 +163,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0142 A channel on one thread is a queue its ends share](0142-channels.md)
 - [0143 A `Formatter`'s options are an object its writers are given](0143-formatter-options.md)
 - [0144 A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`](0144-locks.md)
-- [0145 A generic function is given the size and name of a type parameter it asks for](0145-type-facts.md)
+- [0145 A generic function is given the size and name of a type parameter it asks for](0145-type-facts.md) *(extended by 0899: an array's constant size and `OneShot`, carried by std traits' dictionaries)*
 - [0146 A generic associated type of lifetimes is an associated type](0146-generic-associated-types.md)
 - [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](0147-replacing-through-mut.md) *(amended: std's enums with a fieldless variant are by their place too)*
 - [0148 `write!` into a `String` adds to it, and a `fmt::Result` is always `Ok`](0148-write-to-string.md)
@@ -654,7 +654,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md) *(extended by 0898: `#[rust_js::runs_only_given]`, `console.error` and `Math`'s)*
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
-- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md)
+- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0899: `Flatten` held is std's)*
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
@@ -683,6 +683,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md)
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
+- [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -803,7 +804,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0540 A copied default's types are put in its impl's terms once](0540-a-copied-defaults-types-in-its-impls-terms-once.md)
 - [0541 A copied default's `Self: Sized` is its impl's](0541-a-defaults-sized-is-its-impls.md)
 - [0542 An adapter a struct holds keeps its source and its state](0542-a-held-adapter-keeps-its-source-and-state.md)
-- [0543 A `Peekable` a struct holds keeps what it peeked at](0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561)*
+- [0543 A `Peekable` a struct holds keeps what it peeked at](0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561; extended by 0899: a specialization a fact picks, `OneShot`'s too)*
 - [0544 A `Cycle` a struct holds keeps both it cycles](0544-a-held-cycle-keeps-both-it-cycles.md)
 - [0545 A map the crate steps from its back is made knowing it](0545-a-map-stepped-from-its-back-is-made-knowing-it.md) *(amended: what a function gives behind an `impl DoubleEndedIterator`)*
 - [0546 A declaration names a function as its JS does](0546-a-declaration-names-a-function-as-its-js-does.md)
@@ -812,7 +813,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0549 A held `Fuse` is stepped from its back as its use site knows it](0549-a-held-fuse-steps-what-a-use-site-gives.md) *(superseded by 0566)*
 - [0550 A known type's `as_mut()` is the value its `&mut` is](0550-a-known-as-mut-is-the-value.md) *(amended: a `Box`'s `as_mut()` and `as_ref()` too)*
 - [0551 A parameter given as it is, given on where a JS iterator goes, is made one](0551-self-given-on-where-a-js-iterator-goes.md)
-- [0552 An `IntoIterator` whose iterator is held as it is is given as it is](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)
+- [0552 An `IntoIterator` whose iterator is held as it is is given as it is](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md) *(extended by 0899: an associated type's, and one dictionary form)*
 - [0553 `mem::replace` of a field holding an iterator given as it is](0553-replace-of-a-field-holding-a-given-iterator.md)
 - [0554 A filter a type holds, asked to be double-ended, is made knowing its back](0554-a-filter-a-type-holds-asked-double-ended.md)
 - [0555 A library's derived order is field by field](0555-a-librarys-derived-order-is-field-by-field.md)

@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     name: "fused-impl-not-picked",
     breaks: "a std-private trait's call whose impl `I` being a `FusedIterator` picks takes the impl rustc selects for `I: Iterator` alone, so a `FusedIterator`'s `Fuse` drops it as it ends",
     file: "src/lower/traits/calls.rs",
-    find: "            let called = Expr::cond(fact, fused, selected_call);\n",
+    find: "            let called = Expr::cond(fact, special, selected_call);\n",
     replace: "            let called = Expr::cond(fact, selected_call.clone(), selected_call);\n",
     tests: ["test/std-package.test.ts"],
   },

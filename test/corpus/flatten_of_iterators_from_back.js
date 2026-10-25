@@ -4,7 +4,9 @@ import {
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateExactSizeIterator_len,
+  flattenDoubleEndedIterator_nextBack,
   iterator_enumerate,
+  iterator_flatten,
   iterator_rev,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
@@ -96,10 +98,33 @@ function main() {
 
   const groups = [[1, 2], [], [3, 4, 5]];
   const inner = groups.map((g) => $iter(g));
-  const both = $flattenEnds($iter(inner), (item) => $iter(item));
-  const nextBack = $nextBack(both);
+  const both = iterator_flatten(
+    $iter(inner),
+    { next: $next },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    true,
+    undefined,
+    false,
+  );
+  const nextBack = flattenDoubleEndedIterator_nextBack(
+    both,
+    { next_back: $nextBack },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    { next: $next },
+    { next_back: $nextBack },
+    true,
+    false,
+  );
   const next = $next(both);
-  const value$2 = $nextBack(both);
+  const value$2 = flattenDoubleEndedIterator_nextBack(
+    both,
+    { next_back: $nextBack },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    { next: $next },
+    { next_back: $nextBack },
+    true,
+    false,
+  );
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );

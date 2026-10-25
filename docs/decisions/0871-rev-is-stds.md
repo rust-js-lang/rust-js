@@ -300,8 +300,11 @@ reverse or enumerate. The readability baseline is blessed with it, of
 `return;` 9.7 to 9.8, its `Countdown`'s `next`. Inspect's coverage 3 of
 8 to 6 of 8.
 
-`Flatten` and `FlatMap` are not compiled so, yet. Tried (and taken back)
-to find what it takes, past the catalog's entries:
+`Flatten` and `FlatMap` are not compiled so, yet *(amended by
+[0899](0899-a-flatten-held-is-stds.md): `Flatten` held is std's; the
+first point below was wrong, `OneShot`'s specialization changes its
+`size_hint`, and is a fact)*. Tried (and taken back) to find what it
+takes, past the catalog's entries:
 
 - `FlattenCompat`'s methods are `default fn`s that a `OneShot` inner
   iterator's impl specializes, so rustc leaves them unresolved in a generic

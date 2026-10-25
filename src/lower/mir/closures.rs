@@ -21,7 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((def_id, upvars)) = crate::lower::recognition::held_types(ty) else {
             return Err(self.unsupported(span, "this closure, from its MIR"));
         };
-        let closure = self.mir_closure_fn(state, def_id, upvars, captured, span, out)?;
+        let closure = self.mir_closure_fn(state, ty, upvars, captured, span, out)?;
         if !self.krate.closure_facts.clones_apart(def_id) {
             return self.closure_carrying_drop(closure, ty, span);
         }
@@ -76,17 +76,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_closure_fn(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
+        ty: Ty<'tcx>,
         upvars: &'tcx ty::List<Ty<'tcx>>,
         captured: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let Some((def_id, _)) = crate::lower::recognition::held_types(ty) else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
         let Some(body) = self.krate.closures.get(&def_id).copied() else {
             return Err(self.unsupported(span, "this closure, from its MIR"));
         };
         let Some(mir) = &body.mir else {
             return Err(self.unsupported(span, "this closure, without its MIR"));
+        };
+        // One rustc's MIR inlined, made in another function than its own,
+        // std's `flatten::<U, Acc>`'s in `FlattenCompat::rfold`: its body
+        // read in its maker's terms, as its captures are (ADR 0899).
+        let inlined;
+        let mir = match self.inlined_closure_args(def_id, ty) {
+            Some(args) => {
+                inlined = mir.instantiated(self.tcx, args);
+                &inlined
+            }
+            None => mir,
         };
         let mut captures = Vec::new();
         for (i, value) in captured.into_iter().enumerate() {
@@ -232,6 +246,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         Ok(Expr::arrow(params, stmts))
+    }
+
+    /// Of a closure of type `ty`, `def_id`'s, made where its own function
+    /// isn't, as rustc's MIR inlines that one into its caller: what its own
+    /// function's generics are where it's made, its type's parent args.
+    /// `None` of one made in its own function.
+    fn inlined_closure_args(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<ty::GenericArgsRef<'tcx>> {
+        let own = self.tcx.typeck_root_def_id(def_id);
+        if own == self.tcx.typeck_root_def_id(self.frame.owner) {
+            return None;
+        }
+        let parent = match *ty.kind() {
+            ty::Closure(_, args) => args.as_closure().parent_args(),
+            ty::Coroutine(_, args) => args.as_coroutine().parent_args(),
+            ty::CoroutineClosure(_, args) => args.as_coroutine_closure().parent_args(),
+            _ => return None,
+        };
+        (parent.len() == self.tcx.generics_of(own).count()).then(|| self.tcx.mk_args(parent))
     }
 
     /// A hole for each function of `written`, before the first statement of

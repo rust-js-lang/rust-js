@@ -448,14 +448,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std-private trait's method whose impl the caller's type picks,
         // `FuseImpl::next`'s: the impls' methods, compiled (ADR 0561).
         if resolved.is_none()
-            && let Some(spec) = super::recognition::fused_specialization(
+            && let Some(spec) = super::recognition::fact_specialization(
                 self.tcx,
                 self.impl_typing_env().unwrap_or(self.typing_env),
                 def_id,
                 self.in_impl_terms(generic_args),
             )
         {
-            return Ok(self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.fused));
+            return Ok(self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.special));
         }
         // Or it's a std trait's provided method compiled into `@rust-js/std`,
         // `peekable`'s, a function over `Self`: called on a type parameter,
@@ -491,5 +491,13 @@ pub(super) fn resolve_instance_in<'tcx>(
     let Ok(args) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args)) else {
         return Ok(None);
     };
-    ty::Instance::try_resolve(tcx, typing_env, def_id, args)
+    match ty::Instance::try_resolve(tcx, typing_env, def_id, args)? {
+        // One a more specific impl may specialize, only to do less work: the
+        // impl rustc selects, whose result is the same (ADR 0899).
+        None => match super::recognition::optimized_default(tcx, typing_env, def_id, args) {
+            Some((method, args)) => ty::Instance::try_resolve(tcx, typing_env, method, args),
+            None => Ok(None),
+        },
+        resolved => Ok(resolved),
+    }
 }

@@ -454,14 +454,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
   {
-    name: "fused-specialization-unseen",
-    breaks: "a std-private trait's method whose impl rustc leaves to the caller's type, `FuseImpl::next` of a `Fuse<I>`, isn't seen to be picked by `I` being a `FusedIterator`, and is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "    let specializing = tcx.all_impls(trait_id).find(|&other| {\n        other != impl_id\n",
-    replace: "    let specializing = tcx.all_impls(trait_id).find(|&other| {\n        false\n            && other != impl_id\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "compiled-iterator-stepped-by-library",
     breaks: "`Iterator`'s methods of a compiled std iterator, a `Peekable`'s `next`, resolve to the library's compiled impl and are called there, not stepped as the JS iterator its struct is",
     file: "src/lower/recognition/iterators.rs",

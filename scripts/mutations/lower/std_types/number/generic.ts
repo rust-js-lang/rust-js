@@ -132,4 +132,16 @@ export const mutations: Mutation[] = [
     replace: "                    false => Expr::call(Expr::member(slice.clone(), \"slice\"), vec![]),",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
+  {
+    name: "one-shot-never",
+    breaks: "no type is a `OneShot`, so a held flatten of `Option`s steps by the general impl, its hint `(0, None)`",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "            return Ok(Expr::bool(self.recognition().is_one_shot(of)));\n",
+    replace: "            return Ok(Expr::bool(false));\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_flatten.rs$"
+    ]
+  },
 ];

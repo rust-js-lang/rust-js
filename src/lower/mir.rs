@@ -85,6 +85,21 @@ pub struct Mir<'tcx> {
 }
 
 impl<'tcx> Mir<'tcx> {
+    /// It, of a function's generics, in another's terms, `args` of them: a
+    /// closure's whose function rustc's MIR inlined (ADR 0899).
+    pub(super) fn instantiated(&self, tcx: ty::TyCtxt<'tcx>, args: ty::GenericArgsRef<'tcx>) -> Self {
+        let of = |body: &mir::Body<'tcx>| {
+            ty::EarlyBinder::bind(tcx, body.clone())
+                .instantiate(tcx, args)
+                .skip_normalization()
+        };
+        Mir {
+            body: of(&self.body),
+            promoted: self.promoted.iter().map(of).collect(),
+            awaits: self.awaits.clone(),
+        }
+    }
+
     /// `body`, its `.await`s each one call, and what can't throw never
     /// unwinding.
     pub(super) fn new(

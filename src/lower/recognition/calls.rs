@@ -131,6 +131,31 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if std_path(tcx, def_id) == "std::hint::assert_unchecked" {
             return Some(Some(Std::Nothing));
         }
+        // A hint to the optimizer rustc's MIR inlines into std's bodies,
+        // `unlikely(b)`'s `cold_path()`, read as off (ADR 0364): nothing, or
+        // the condition it's given (ADR 0899).
+        if tcx.intrinsic(def_id).is_some() {
+            match tcx.item_name(def_id).as_str() {
+                "cold_path" | "assume" => return Some(Some(Std::Nothing)),
+                "likely" | "unlikely" => return Some(Some(Std::Same)),
+                _ => {}
+            }
+        }
+        // An arithmetic intrinsic a number's method is, which rustc's MIR
+        // inlines into std's bodies: the method's operation, of its type,
+        // `saturating_add(lo, n)` of `FlattenCompat`'s `size_hint` (ADR
+        // 0899).
+        if tcx.intrinsic(def_id).is_some()
+            && let name = tcx.item_name(def_id)
+            && matches!(
+                name.as_str(),
+                "saturating_add" | "saturating_sub" | "wrapping_add" | "wrapping_sub" | "wrapping_mul"
+            )
+            && let Some(num) = args.types().next().and_then(Num::of)
+            && let Some(op) = super::methods::number(name.as_str(), num)
+        {
+            return Some(Some(Std::Number(op)));
+        }
         // Plain data's bytes as another type's, and all zero (ADR 0408).
         match std_path(tcx, def_id).as_str() {
             "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {

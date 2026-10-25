@@ -211,6 +211,11 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Inspect", Some("ExactSizeIterator"), "len"),
     ("Inspect", Some("Clone"), "clone"),
     ("Inspect", Some("Debug"), "fmt"),
+    ("Flatten", Some("Iterator"), "next"),
+    ("Flatten", Some("Iterator"), "size_hint"),
+    ("Flatten", Some("Iterator"), "fold"),
+    ("Flatten", Some("DoubleEndedIterator"), "next_back"),
+    ("Flatten", Some("DoubleEndedIterator"), "rfold"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -222,17 +227,21 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "enumerate"),
     ("Iterator", "map"),
     ("Iterator", "inspect"),
+    ("Iterator", "flatten"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
 /// type and the `Iterator` method that makes one: one a std iterator's
 /// method steps where it's made is what the recognizers make of it,
-/// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871).
-const HELD_COMPILED: &[(&str, &str)] = &[
-    ("Rev", "rev"),
-    ("Enumerate", "enumerate"),
-    ("Map", "map"),
-    ("Inspect", "inspect"),
+/// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871); and whether
+/// that's sized as Rust's is, `size_hint()` of it what its source's says,
+/// not a flatten's, whose items' sizes no JS iterator knows (ADR 0899).
+const HELD_COMPILED: &[(&str, &str, bool)] = &[
+    ("Rev", "rev", true),
+    ("Enumerate", "enumerate", true),
+    ("Map", "map", true),
+    ("Inspect", "inspect", true),
+    ("Flatten", "flatten", false),
 ];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
@@ -240,7 +249,15 @@ const HELD_COMPILED: &[(&str, &str)] = &[
 pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
     HELD_COMPILED
         .iter()
-        .any(|&(_, method)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
+        .any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
+}
+
+/// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place is
+/// sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
+pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    HELD_COMPILED
+        .iter()
+        .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
 /// Whether `id` is `mem::drop`, which closes an iterator it's given, of
@@ -284,7 +301,7 @@ pub(crate) fn is_held_compiled_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_compiled_std_type(tcx, id)
         && HELD_COMPILED
             .iter()
-            .any(|&(name, _)| std_path(tcx, id) == format!("std::iter::{name}"))
+            .any(|&(name, ..)| std_path(tcx, id) == format!("std::iter::{name}"))
 }
 
 thread_local! {
@@ -394,16 +411,35 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
             let Some((callee, args)) = func.const_fn_def() else {
                 continue;
             };
-            if let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
-                && let ty::InstanceKind::Item(called) = instance.def
-                && matches!(tcx.def_kind(called), DefKind::Fn | DefKind::AssocFn)
-                && !tcx.visibility(called).is_public()
-                && tcx.trait_of_assoc(called).is_none()
-                && tcx.trait_impl_of_assoc(called).is_none()
-                && tcx.is_mir_available(called)
-                && !found.contains(&called)
-            {
-                found.push(called);
+            // And each method of a trait's impl for a type std keeps
+            // private, `FlattenCompat`'s `next` (ADR 0899).
+            let of_private_type = |called: DefId| {
+                tcx.trait_impl_of_assoc(called).is_some_and(|imp| {
+                    matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if !tcx.visibility(adt.did()).is_public())
+                })
+            };
+            // Of one whose impl a fact picks, `FlattenCompat`'s `size_hint`
+            // of a `OneShot`'s or not, both impls' (ADR 0899).
+            let called: Vec<DefId> = match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args) {
+                Ok(Some(instance)) => match instance.def {
+                    ty::InstanceKind::Item(called) => vec![called],
+                    _ => Vec::new(),
+                },
+                _ => super::fact_specialization(tcx, typing_env, callee, args)
+                    .map(|spec| vec![spec.selected.0, spec.special])
+                    .unwrap_or_default(),
+            };
+            for called in called {
+                if matches!(tcx.def_kind(called), DefKind::Fn | DefKind::AssocFn)
+                    && ((!tcx.visibility(called).is_public()
+                        && tcx.trait_of_assoc(called).is_none()
+                        && tcx.trait_impl_of_assoc(called).is_none())
+                        || of_private_type(called))
+                    && tcx.is_mir_available(called)
+                    && !found.contains(&called)
+                {
+                    found.push(called);
+                }
             }
         }
     }

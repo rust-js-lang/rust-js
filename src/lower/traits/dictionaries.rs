@@ -374,10 +374,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = (self.ref_into_iter(given, ty, span, &mut body)?).ok_or_else(|| self.no_evidence(span, tr))?;
             body.push(StmtKind::Return(Some(items)).at(js::Span::NONE));
             let f = Expr::arrow(vec![name.into()], body);
-            return Ok(Expr::object(vec![Prop::Field(
-                bindings::fn_name(self.tcx, into_iter),
-                f,
-            )]));
+            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
+            props.extend(self.made_steps(tr, span)?);
+            return Ok(Expr::object(props));
         }
         // std's `IntoIterator` of a type known here, given where what it
         // makes is held as it is (ADR 0552): `into_iter` of it as concrete
@@ -395,20 +394,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["items".into()],
                 vec![StmtKind::Return(Some(Expr::var("items"))).at(js::Span::NONE)],
             );
-            let mut steps = Vec::new();
-            for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
-                if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {
-                    let of = self.tcx.erase_and_anonymize_regions(bound.self_ty());
-                    let of = (self.tcx)
-                        .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
-                        .unwrap_or(of);
-                    let dictionary = self.iterator_dictionary(of, span)?;
-                    steps.push(Prop::Field(
-                        name,
-                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
-                    ));
-                }
-            }
+            let steps = self.made_steps(tr, span)?;
             if self.recognition().iterates_as_itself(ty) {
                 let mut props = vec![Prop::Field(
                     bindings::trait_method_name(self.tcx, tr.def_id, "into_iter"),
@@ -748,6 +734,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args[0] = (*referent).into();
             ty::TraitRef::new(self.tcx, tr.def_id, args)
         })
+    }
+
+    /// An `IntoIterator` dictionary's `Iterator` of what it makes,
+    /// `IntoIterIterator`, which steps that as it is, as the trait declares
+    /// its `IntoIter` (ADRs 0552, 0566): every one has it, a reference's too,
+    /// as generic code that holds what it makes steps it (#278).
+    fn made_steps(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Vec<Prop>> {
+        let mut steps = Vec::new();
+        for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
+            if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {
+                let of = self.tcx.erase_and_anonymize_regions(bound.self_ty());
+                let of = (self.tcx)
+                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
+                    .unwrap_or(of);
+                let dictionary = self.iterator_dictionary(of, span)?;
+                steps.push(Prop::Field(
+                    name,
+                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),
+                ));
+            }
+        }
+        Ok(steps)
     }
 
     /// A dictionary's facts of its associated types, what generic code asks

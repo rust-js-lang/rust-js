@@ -15,6 +15,7 @@ import {
   $mapFold,
   $nthBack,
   $nthDropping,
+  $overflowing,
   $peekableFold,
   $peekableHint,
   $peekableTryFold,
@@ -26,6 +27,76 @@ import {
   $stdIterator,
   $traitImpl,
 } from "@rust-js/runtime";
+
+export const FlattenCompat = {
+  iterFold(
+    flattenCompat,
+    acc,
+    fold,
+    IIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    dropAcc,
+    dropFold,
+    dropIItem,
+    dropIItemItem,
+  ) {
+    if (flattenCompat.frontiter != null) {
+      const iter = $someValue(flattenCompat.frontiter);
+      acc = fold(acc, iter);
+    }
+    const option = flattenCompat.iter.iter;
+    const fold$1 = (acc, iter) => fold(acc, IItemIntoIterator.intoIter(iter));
+    if (option != null) {
+      const iter = $someValue(option);
+      const result = $given(iter, IIterator, true).reduce(fold$1, acc);
+      if (IIterator.fold === undefined) {
+        dropI?.(iter);
+      }
+      acc = result;
+    }
+    if (flattenCompat.backiter != null) {
+      const iter = $someValue(flattenCompat.backiter);
+      acc = fold(acc, iter);
+    }
+    const result = acc;
+    dropFold?.(fold);
+    return result;
+  },
+  iterRfold(
+    flattenCompat,
+    acc,
+    fold,
+    IIterator,
+    IDoubleEndedIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    dropAcc,
+    dropFold,
+    dropIItem,
+    dropIItemItem,
+  ) {
+    if (flattenCompat.backiter != null) {
+      const iter = $someValue(flattenCompat.backiter);
+      acc = fold(acc, iter);
+    }
+    const option = flattenCompat.iter.iter;
+    const fold$1 = (acc, iter) => fold(acc, IItemIntoIterator.intoIter(iter));
+    if (option != null) {
+      const iter = $someValue(option);
+      acc = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), acc, fold$1);
+    }
+    if (flattenCompat.frontiter != null) {
+      const iter = $someValue(flattenCompat.frontiter);
+      acc = fold(acc, iter);
+    }
+    const result = acc;
+    dropFold?.(fold);
+    return result;
+  },
+};
 
 const $peekableClone = new WeakMap();
 const $peekableDebug = new WeakMap();
@@ -881,6 +952,212 @@ export function inspectDebug_fmt(inspect, options, IDebug, dropI, dropF) {
     : `Inspect { iter: ${IDebug.fmt(inspect.iter, options)} }`;
 }
 
+export function flattenIterator_next(
+  flatten,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  IFused,
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_next(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_next(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
+export function flattenIterator_sizeHint(
+  flatten,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  UOneShot,
+  IItemConstSize,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_sizeHint(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        IItemConstSize,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_sizeHint(
+        flatten.inner,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        IItemConstSize,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
+export function flattenIterator_fold(
+  flatten,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  UOneShot,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_fold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IItemIntoIterator,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_fold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropIItem,
+        dropUItem,
+      );
+}
+
+export function flattenDoubleEndedIterator_nextBack(
+  flatten,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  UIterator,
+  UDoubleEndedIterator,
+  IFused,
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUDoubleEndedIterator2_nextBack(
+        flatten.inner,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        UIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_nextBack(
+        flatten.inner,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        UDoubleEndedIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
+export function flattenDoubleEndedIterator_rfold(
+  flatten,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  UIterator,
+  UDoubleEndedIterator,
+  UOneShot,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUDoubleEndedIterator2_rfold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_rfold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        UIterator,
+        UDoubleEndedIterator,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropIItem,
+        dropUItem,
+      );
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -978,7 +1255,590 @@ export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSel
   );
 }
 
+export function iterator_flatten(
+  self,
+  SelfIterator,
+  SelfItemIntoIterator,
+  SelfFused,
+  SelfItemConstSize,
+  SelfItemIntoIterOneShot,
+  dropSelf,
+  dropSelfItem,
+  dropSelfItemItem,
+  dropSelfItemIntoIter,
+) {
+  return $stdIterator(
+    { inner: { iter: iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfItem) } },
+    {
+      next: (iterator) =>
+        flattenIterator_next(
+          iterator,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          SelfFused,
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          dropSelfItem,
+          dropSelfItemItem,
+        ),
+      hint: (iterator) =>
+        flattenIterator_sizeHint(
+          iterator,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          SelfItemIntoIterOneShot,
+          SelfItemConstSize,
+          dropSelf,
+          dropSelfItemIntoIter,
+          dropSelfItem,
+          dropSelfItemItem,
+        ),
+      close(iterator) {
+        if (iterator.inner.iter.iter != null) {
+          dropSelf?.($someValue(iterator.inner.iter.iter));
+        }
+        if (iterator.inner.frontiter != null) {
+          dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
+        }
+        if (iterator.inner.backiter != null) {
+          dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+        }
+      },
+    },
+  );
+}
+
 export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
+  let x;
+  let option;
+  if (opt.value != null) {
+    const x$1 = $someMut(opt);
+    option = x$1;
+    const v = option;
+    x = f({ TAG: "Continue", _0: v }._0);
+    if (x == null) {
+      if (opt.value != null) {
+        dropT?.($someValue(opt.value));
+      }
+      opt.value = undefined;
+    }
+    return x;
+  }
+  option = undefined;
+  x = undefined;
+  dropFnOnce?.(f);
+  return x;
+}
+
+export function flattenCompatIUIterator_next(
+  flattenCompat,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  while (true) {
+    const opt = { value: flattenCompat.frontiter };
+    const andThenOrClear = andThenOrClear$1(
+      opt,
+      (x0) => UIterator.next(x0.value),
+      dropU,
+      dropUItem,
+    );
+    flattenCompat.frontiter = opt.value;
+    if (andThenOrClear != null) {
+      return andThenOrClear;
+    }
+    const fuse = flattenCompat.iter;
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem)
+      : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
+    if (value == null) {
+      const opt = { value: flattenCompat.backiter };
+      const elt = andThenOrClear$1(opt, (x0) => UIterator.next(x0.value), dropU, dropUItem);
+      flattenCompat.backiter = opt.value;
+      return elt;
+    }
+    const inner = $someValue(value);
+    const value$1 = $some(IItemIntoIterator.intoIter(inner));
+    if (flattenCompat.frontiter != null) {
+      dropU?.($someValue(flattenCompat.frontiter));
+    }
+    flattenCompat.frontiter = value$1;
+  }
+}
+
+export function flattenCompatIUIterator2_next(
+  flattenCompat,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  while (true) {
+    const fuse = flattenCompat.iter;
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem)
+      : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
+    if (value == null) {
+      return;
+    }
+    const inner = $someValue(value);
+    const value$1 = IItemIntoIterator.intoIter(inner);
+    const item = UIterator.next(value$1);
+    if (item != null) {
+      dropU?.(value$1);
+      return item;
+    }
+    dropU?.(value$1);
+  }
+}
+
+export function flattenCompatIUIterator_sizeHint(
+  flattenCompat,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  IItemConstSize,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  let tmp;
+  let option;
+  let default$;
+  if (flattenCompat.frontiter != null) {
+    const x = $someValue(flattenCompat.frontiter);
+    option = $some(x);
+    default$ = [0, 0];
+    const t = $someValue(option);
+    tmp = $sizeHint(t, UIterator);
+  } else {
+    option = undefined;
+    default$ = [0, 0];
+    tmp = [default$[0], default$[1]];
+  }
+  const flo = tmp[0];
+  const fhi = tmp[1];
+  let option$1;
+  let default$$1;
+  if (flattenCompat.backiter != null) {
+    const x = $someValue(flattenCompat.backiter);
+    option$1 = $some(x);
+    default$$1 = [default$[0], default$[1]];
+    const t = $someValue(option$1);
+    default$ = $sizeHint(t, UIterator);
+  } else {
+    option$1 = undefined;
+    default$$1 = [default$[0], default$[1]];
+  }
+  const [blo, bhi] = default$;
+  const lo = Math.min(flo + blo, 4294967295);
+  if (IItemConstSize == null) {
+    bb16: {
+      if (flattenCompat.iter.iter != null) {
+        const iter = $someValue(flattenCompat.iter.iter);
+        const [_108, _109] = $sizeHint(iter, IIterator);
+        if (_108 === 0) {
+          if (_109 != null) {
+            if ((fhi == null ? 0 : 1) === 1) {
+              if ((bhi == null ? 0 : 1) === 1) {
+                if (_109 === 0) {
+                  break bb16;
+                }
+              }
+            }
+          }
+        }
+      } else if ((fhi == null ? 0 : 1) === 1) {
+        if ((bhi == null ? 0 : 1) === 1) {
+          break bb16;
+        }
+      }
+      return [lo, undefined];
+    }
+    const a = fhi;
+    const b = bhi;
+    const b$1 = $overflowing((a + b) >>> 0, a + b, 0, 4294967295)[1];
+    return [lo, !b$1 ? (a + b) >>> 0 : undefined];
+  }
+  let sizeHint;
+  if (flattenCompat.iter.iter != null) {
+    const iter = $someValue(flattenCompat.iter.iter);
+    sizeHint = $sizeHint(iter, IIterator);
+  } else {
+    sizeHint = [0, 0];
+  }
+  let lower = sizeHint[0];
+  const upper = sizeHint[1];
+  const [_60, b$1] = $overflowing(
+    Math.imul(lower, IItemConstSize) >>> 0,
+    lower * IItemConstSize,
+    0,
+    4294967295,
+  );
+  let tmp$1 = _60;
+  if (b$1) {
+    tmp$1 = 4294967295;
+  }
+  lower = Math.min(tmp$1 + lo, 4294967295);
+  let upper$1;
+  if (fhi != null) {
+    const _0 = { TAG: "Continue", _0: fhi }._0;
+    if (bhi != null) {
+      const value = { TAG: "Continue", _0: bhi }._0;
+      const b = $overflowing((_0 + value) >>> 0, _0 + value, 0, 4294967295)[1];
+      let option;
+      if (!b) {
+        option = (_0 + value) >>> 0;
+        const v = option;
+        const value$1 = { TAG: "Continue", _0: v }._0;
+        if (upper != null) {
+          const b = { TAG: "Continue", _0: upper }._0;
+          const [_84, b$1] = $overflowing(
+            Math.imul(IItemConstSize, b) >>> 0,
+            IItemConstSize * b,
+            0,
+            4294967295,
+          );
+          let option;
+          if (!b$1) {
+            option = _84;
+            const v = option;
+            const value = { TAG: "Continue", _0: v }._0;
+            const b = $overflowing((value$1 + value) >>> 0, value$1 + value, 0, 4294967295)[1];
+            let option$1;
+            if (!b) {
+              option$1 = (value$1 + value) >>> 0;
+              const v = option$1;
+              upper$1 = { TAG: "Continue", _0: v }._0;
+            } else {
+              option$1 = undefined;
+              upper$1 = undefined;
+            }
+          } else {
+            option = undefined;
+            upper$1 = undefined;
+          }
+        } else {
+          upper$1 = undefined;
+        }
+      } else {
+        option = undefined;
+        upper$1 = undefined;
+      }
+    } else {
+      upper$1 = undefined;
+    }
+  } else {
+    upper$1 = undefined;
+  }
+  return [lower, upper$1];
+}
+
+export function flattenCompatIUIterator2_sizeHint(
+  flattenCompat,
+  IIterator,
+  IItemIntoIterator,
+  IItemConstSize,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  let sizeHint;
+  if (flattenCompat.iter.iter != null) {
+    const iter = $someValue(flattenCompat.iter.iter);
+    sizeHint = $sizeHint(iter, IIterator);
+  } else {
+    sizeHint = [0, 0];
+  }
+  const lower = sizeHint[0];
+  const upper = sizeHint[1];
+  if (IItemConstSize === 0) {
+    return [0, 0];
+  }
+  if (IItemConstSize === 1) {
+    return [lower, upper];
+  }
+  return [0, upper];
+}
+
+export function flattenCompatIUIterator_fold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  return FlattenCompat.iterFold(
+    flattenCompat,
+    init,
+    $dropping(
+      (acc, iter) => {
+        const result = $given(iter, UIterator, true).reduce((a, b) => fold(a, b), acc);
+        if (UIterator.fold === undefined) {
+          dropU?.(iter);
+        }
+        return result;
+      },
+      () => {
+        dropFold?.(fold);
+      },
+    ),
+    IIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    dropAcc,
+    $dispose,
+    dropIItem,
+    dropUItem,
+  );
+}
+
+export function flattenCompatIUIterator2_fold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  const option = flattenCompat.iter.iter;
+  const fold$1 = $dropping(
+    (acc, inner) => {
+      const value = IItemIntoIterator.intoIter(inner);
+      const next = IItemIntoIterator.IntoIterIterator().next(value);
+      let result;
+      if (next != null) {
+        const item = $someValue(next);
+        result = fold(acc, item);
+      } else {
+        result = acc;
+      }
+      IItemIntoIterator.$dropIntoIter?.(value);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  let result;
+  if (option != null) {
+    const iter = $someValue(option);
+    const value = $given(iter, IIterator, true).reduce(fold$1, init);
+    if (IIterator.fold === undefined) {
+      dropI?.(iter);
+    }
+    $dispose(fold$1);
+    init = value;
+    result = init;
+  } else {
+    result = init;
+    $dispose(fold$1);
+  }
+  if (flattenCompat.frontiter != null) {
+    dropU?.($someValue(flattenCompat.frontiter));
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
+  }
+  return result;
+}
+
+export function flattenCompatIUDoubleEndedIterator_nextBack(
+  flattenCompat,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  UDoubleEndedIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  while (true) {
+    const opt = { value: flattenCompat.backiter };
+    const andThenOrClear = andThenOrClear$1(
+      opt,
+      (x0) => UDoubleEndedIterator.next_back(x0.value),
+      dropU,
+      dropUItem,
+    );
+    flattenCompat.backiter = opt.value;
+    if (andThenOrClear != null) {
+      return andThenOrClear;
+    }
+    const fuse = flattenCompat.iter;
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem)
+      : fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem);
+    if (value == null) {
+      const opt = { value: flattenCompat.frontiter };
+      const elt = andThenOrClear$1(
+        opt,
+        (x0) => UDoubleEndedIterator.next_back(x0.value),
+        dropU,
+        dropUItem,
+      );
+      flattenCompat.frontiter = opt.value;
+      return elt;
+    }
+    const inner = $someValue(value);
+    const value$1 = $some(IItemIntoIterator.intoIter(inner));
+    if (flattenCompat.backiter != null) {
+      dropU?.($someValue(flattenCompat.backiter));
+    }
+    flattenCompat.backiter = value$1;
+  }
+}
+
+export function flattenCompatIUDoubleEndedIterator2_nextBack(
+  flattenCompat,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  UIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  while (true) {
+    const fuse = flattenCompat.iter;
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem)
+      : fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem);
+    if (value == null) {
+      return;
+    }
+    const inner = $someValue(value);
+    const value$1 = IItemIntoIterator.intoIter(inner);
+    const item = UIterator.next(value$1);
+    if (item != null) {
+      dropU?.(value$1);
+      return item;
+    }
+    dropU?.(value$1);
+  }
+}
+
+export function flattenCompatIUDoubleEndedIterator_rfold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  UIterator,
+  UDoubleEndedIterator,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  return FlattenCompat.iterRfold(
+    flattenCompat,
+    init,
+    $dropping(
+      (acc, iter) => $foldBack($given(iter, UIterator, true, UDoubleEndedIterator), acc, fold),
+      () => {
+        dropFold?.(fold);
+      },
+    ),
+    IIterator,
+    IDoubleEndedIterator,
+    IItemIntoIterator,
+    dropI,
+    dropU,
+    dropAcc,
+    $dispose,
+    dropIItem,
+    dropUItem,
+  );
+}
+
+export function flattenCompatIUDoubleEndedIterator2_rfold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  IItemIntoIterator,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+) {
+  const option = flattenCompat.iter.iter;
+  const fold$1 = $dropping(
+    (acc, inner) => {
+      const value = IItemIntoIterator.intoIter(inner);
+      const next = IItemIntoIterator.IntoIterIterator().next(value);
+      let result;
+      if (next != null) {
+        const item = $someValue(next);
+        result = fold(acc, item);
+      } else {
+        result = acc;
+      }
+      IItemIntoIterator.$dropIntoIter?.(value);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  let result;
+  if (option != null) {
+    const iter = $someValue(option);
+    const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, fold$1);
+    $dispose(fold$1);
+    init = value;
+    result = init;
+  } else {
+    result = init;
+    $dispose(fold$1);
+  }
+  if (flattenCompat.frontiter != null) {
+    dropU?.($someValue(flattenCompat.frontiter));
+  }
+  if (flattenCompat.backiter != null) {
+    dropU?.($someValue(flattenCompat.backiter));
+  }
+  return result;
+}
+
+export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   let x;
   let option;
   if (opt.value != null) {

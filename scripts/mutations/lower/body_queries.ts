@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
     name: "rev-never-in-place",
     breaks: "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
     file: "src/lower/body_queries.rs",
-    find: "            if steps_as_js(callee, index, &found, at) {\n",
-    replace: "            if false && steps_as_js(callee, index, &found, at) {\n",
+    find: "            if steps_as_js(callee, index, &found, at, maker) {\n",
+    replace: "            if false && steps_as_js(callee, index, &found, at, maker) {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
@@ -302,5 +302,17 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),\n",
     replace: "",
     tests: ["test/lowering-constants.test.ts", "-t", "a const written of other consts is as it's written"],
+  },
+  {
+    name: "size-hint-in-place",
+    breaks: "a variable's flatten that `size_hint()` asks of is the recognizers' JS iterator, sized `(0, None)`",
+    file: "src/lower/body_queries.rs",
+    find: "            && callee != size_hint;\n",
+    replace: ";\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_flatten.rs$"
+    ]
   },
 ];

@@ -248,6 +248,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_ok()
     }
 
+    /// Whether `ty` is std's `OneShot`, `UOneShot` (ADR 0899).
+    pub(crate) fn is_one_shot(&self, ty: Ty<'tcx>) -> bool {
+        let Some(one_shot) = one_shot_trait(self.tcx) else {
+            return false;
+        };
+        let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, one_shot, [ty]));
+        self.tcx
+            .codegen_select_candidate(self.typing_env.as_query_input(tr))
+            .is_ok()
+    }
+
     /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
     /// `Map<I, F>`, which drops with it, after its source, closed as it is
     /// (ADR 0485): `map`'s, `filter`'s, `skip_while`'s and `inspect`'s.
@@ -1000,63 +1011,6 @@ pub(crate) fn into_iter_by_dictionary(tcx: TyCtxt<'_>, trait_id: DefId, self_ty:
 
 pub(in crate::lower) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
     tcx.crate_name(trait_id.krate) == rustc_span::sym::core && tcx.item_name(trait_id) == Symbol::intern("Extend")
-}
-
-/// A call of a std-private trait's method whose impl rustc leaves to the
-/// caller's type, `FuseImpl::next(self)` of a `Fuse<I>`: the method of the
-/// impl it selects for the type, and of the impl that specializes that one
-/// on the type parameter being a `FusedIterator`, which the caller's fact
-/// of it, `IFused`, picks between (ADRs 0473, 0543). Another
-/// specialization, on a trait that isn't a fact, `TrustedLen`'s, is std's
-/// optimization of the one selected, which changes nothing a program sees.
-pub(crate) struct FusedSpecialization<'tcx> {
-    /// The method of the impl selected, and the impls' arguments.
-    pub(crate) selected: (DefId, ty::GenericArgsRef<'tcx>),
-    /// The method of the impl that specializes it where `of` is fused.
-    pub(crate) fused: DefId,
-    /// The type whose being a `FusedIterator` picks `fused`'s impl.
-    pub(crate) of: Ty<'tcx>,
-}
-
-/// `callee`, a trait's method, called with `args` in `typing_env`, where
-/// rustc resolves it to no one impl: a `FusedSpecialization`, or none.
-pub(crate) fn fused_specialization<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    callee: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> Option<FusedSpecialization<'tcx>> {
-    let trait_id = tcx.trait_of_assoc(callee)?;
-    if !std_private(tcx, trait_id) {
-        return None;
-    }
-    let tr = ty::TraitRef::from_assoc(tcx, trait_id, args);
-    let tr = tcx.erase_and_anonymize_regions(tr);
-    let Ok(ImplSource::UserDefined(selected)) = tcx.codegen_select_candidate(typing_env.as_query_input(tr)) else {
-        return None;
-    };
-    let fused_iterator = tcx.require_lang_item(LangItem::FusedIterator, rustc_span::DUMMY_SP);
-    let (impl_id, impl_args) = (selected.impl_def_id, selected.args);
-    let specializing = tcx.all_impls(trait_id).find(|&other| {
-        other != impl_id
-            && tcx.specializes((other, impl_id))
-            && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()
-            && tcx
-                .impl_trait_ref(other)
-                .instantiate(tcx, impl_args)
-                .skip_normalization()
-                == tr
-    })?;
-    let of = (tcx.clauses_of(specializing).instantiate(tcx, impl_args).into_iter())
-        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-        .find(|bound| bound.def_id() == fused_iterator)
-        .map(|bound| bound.self_ty().skip_binder())?;
-    let method = |imp: DefId| tcx.impl_item_implementor_ids(imp).get(&callee).copied();
-    Some(FusedSpecialization {
-        selected: (method(impl_id)?, impl_args),
-        fused: method(specializing)?,
-        of,
-    })
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {

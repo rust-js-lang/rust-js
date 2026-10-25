@@ -346,4 +346,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
+  {
+    name: "flatten-items-not-converted",
+    breaks: "`flatten()` in generic code of `I::Item: IntoIterator` steps each item as a JS iterator, which an `Option`'s isn't",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {\n            return Ok(Some(items));\n        }\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^into_iter_of_items.rs$"
+    ]
+  },
 ];

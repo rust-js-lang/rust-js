@@ -216,6 +216,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Map | TypeFact::Set | TypeFact::TreeMap | TypeFact::TreeSet => "a map's class",
             TypeFact::Sort => "an unstable sort",
             TypeFact::Fused => "whether it's a `FusedIterator`",
+            TypeFact::ConstSize => "its constant size",
+            TypeFact::OneShot => "whether it's a `OneShot`",
         };
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
@@ -274,6 +276,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Whether its `Fuse` keeps it as it ends (ADR 0543).
         if fact == TypeFact::Fused {
             return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
+        }
+        // Of a type only a caller knows, its caller's, which none gave.
+        if matches!(fact, TypeFact::ConstSize | TypeFact::OneShot)
+            && (of.has_param() || matches!(of.kind(), ty::Alias(..)))
+        {
+            return Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
+        }
+        // Whether it's a `OneShot`, whose `flatten()` std specializes (ADR
+        // 0899).
+        if fact == TypeFact::OneShot {
+            return Ok(Expr::bool(self.recognition().is_one_shot(of)));
+        }
+        // `N` of an array of `N` items, or a reference to one, else none
+        // (ADR 0899).
+        if fact == TypeFact::ConstSize {
+            let array = match of.peel_refs().kind() {
+                ty::Array(_, len) => len.try_to_target_usize(self.tcx),
+                _ => None,
+            };
+            return Ok(array.map_or_else(Expr::undefined, |n| Expr::int(n.into())));
         }
         // What std's unstable sort of it picks by its layout (ADR 0471).
         if fact == TypeFact::Sort {

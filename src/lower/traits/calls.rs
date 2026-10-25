@@ -375,34 +375,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
-        // A std-private trait's method whose impl rustc leaves to the
-        // caller's type, `FuseImpl::next(self)` of a `Fuse<I>`: the impl its
-        // type parameter's being a `FusedIterator` picks, by the caller's
-        // fact of it, `IFused`, and where rustc knows the type whole, that
-        // one alone (ADRs 0473, 0543, 0561).
+        // A std trait's method whose impl rustc leaves to the caller's
+        // type, `FuseImpl::next(self)` of a `Fuse<I>`: the impl its type
+        // parameter's being a `FusedIterator` picks, by the caller's fact of
+        // it, `IFused`, or a `OneShot`, `UOneShot`, and where rustc knows the
+        // type whole, that one alone (ADRs 0473, 0543, 0561, 0899).
         if self.resolve_self_instance(id, generic_args)?.is_none()
-            && let Some(spec) = crate::lower::recognition::fused_specialization(
+            && let Some(spec) = crate::lower::recognition::fact_specialization(
                 self.tcx,
                 self.impl_typing_env().unwrap_or(self.typing_env),
                 id,
                 generic_args,
             )
         {
-            let fact = self.type_fact_value(spec.of, TypeFact::Fused, span)?;
+            let fact = self.type_fact_value(spec.of, spec.fact, span)?;
             let (selected, impl_args) = spec.selected;
             // The method's own arguments after its impl's, as the call gives
             // them after its trait's.
             let own = &generic_args[self.tcx.generics_of(id).parent_count..];
             let args = self.tcx.mk_args_from_iter(impl_args.iter().chain(own.iter().copied()));
             let mut called = Vec::new();
-            for method in [spec.fused, selected] {
+            for method in [spec.special, selected] {
                 let mut values = values.clone();
                 values.extend(self.evidence_args(method, args, span)?);
                 called.push(Expr::call(self.fn_ref(method), values));
             }
             let selected_call = called.pop().expect("the selected impl's");
-            let fused = called.pop().expect("the fused impl's");
-            let called = Expr::cond(fact, fused, selected_call);
+            let special = called.pop().expect("the specializing impl's");
+            let called = Expr::cond(fact, special, selected_call);
             return Ok(Some(self.fmt_result_value(selected, args, called)));
         }
         // `a == b` of a type equal only to itself is `===`, as of references

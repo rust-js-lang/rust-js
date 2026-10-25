@@ -159,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "private-callee-not-compiled",
     breaks: "a function std keeps private that a compiled body calls, `Fuse`'s `and_then_or_clear`, isn't compiled with it, and the call is refused",
     file: "src/lower/recognition/std_items.rs",
-    find: "                && !tcx.visibility(called).is_public()\n",
-    replace: "                && !tcx.visibility(called).is_public()\n                && false\n",
+    find: "                    && ((!tcx.visibility(called).is_public()\n",
+    replace: "                    && ((!tcx.visibility(called).is_public()\n                        && false\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -186,5 +186,17 @@ export const mutations: Mutation[] = [
     find: "            if trait_id == partial_eq && implementors.contains_key(&trait_method(tcx, partial_eq, \"ne\")) {\n",
     replace: "            if false && implementors.contains_key(&trait_method(tcx, partial_eq, \"ne\")) {\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+  },
+  {
+    name: "flatten-sized-in-place",
+    breaks: "`size_hint()` of a flatten made in place is the recognizers', `(0, None)` of arrays' items",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Flatten\", \"flatten\", false),\n",
+    replace: "    (\"Flatten\", \"flatten\", true),\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_flatten.rs$"
+    ]
   },
 ];

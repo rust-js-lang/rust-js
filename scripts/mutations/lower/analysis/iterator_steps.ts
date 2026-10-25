@@ -213,8 +213,8 @@ export const mutations: Mutation[] = [
     name: "fused-specialization-not-stepped",
     breaks: "a std body's call of a std-private trait's method whose impl the caller's type picks, `FuseImpl::next`, steps nothing, so the impls' methods aren't given `I`'s dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args) {\n",
-    replace: "            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
+    find: "            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args) {\n",
+    replace: "            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
     tests: ["test/std-package.test.ts"],
   },
   {

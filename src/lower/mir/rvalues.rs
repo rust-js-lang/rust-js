@@ -320,6 +320,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // that calls it is, `#[rustc_inherit_overflow_checks]`: as
                     // the release profile's, which rust-js's is (ADR 0011), it
                     // wraps, and the check is never made.
+                    // Not one whose overflow is read as a value, an inlined
+                    // `checked_add`'s, `None` where it overflows: the
+                    // operation's overflowing form, `$overflowing` (ADR 0899).
+                    BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow
+                        if !state.body.source.def_id().is_local() && overflow_read(state.body, state.location()) =>
+                    {
+                        let wrapping = op.overflowing_to_wrapping().expect("an overflowing operation");
+                        let op = NumOp::Overflowing(wrapping);
+                        return Ok(Value::Expr(self.number_call(op, vec![l, r], ty, span, out)?));
+                    }
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow
                         if matches!(
                             tcx.def_kind(state.body.source.def_id()),
@@ -337,6 +347,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.unsupported(span, "arithmetic checked for overflow, from its MIR"));
                     }
                     BinOp::Cmp => return Err(self.unsupported(span, "`cmp`, from its MIR")),
+                    // `unchecked_add`'s, which rustc's MIR inlines into std's
+                    // bodies, only where it can't overflow, `checked_add`'s
+                    // sum past its check: the operation's (ADR 0899).
+                    BinOp::AddUnchecked | BinOp::SubUnchecked | BinOp::MulUnchecked => {
+                        let op = match op {
+                            BinOp::AddUnchecked => BinOp::Add,
+                            BinOp::SubUnchecked => BinOp::Sub,
+                            _ => BinOp::Mul,
+                        };
+                        self.binary(op, l, r, known, ty, span)?
+                    }
                     _ => self.binary(*op, l, r, known, ty, span)?,
                 }
             }
@@ -1058,4 +1079,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         }
     }
+}
+
+/// Whether what the statement at `at` assigns, an `AddWithOverflow`'s pair,
+/// has its overflow read as a value, an inlined `checked_add`'s, not only
+/// asserted, as an overflow check of `#[rustc_inherit_overflow_checks]`
+/// arithmetic is, which the release profile never makes (ADR 0899). Its
+/// value alone, `.0`, read is no read of it.
+fn overflow_read(body: &mir::Body<'_>, at: mir::Location) -> bool {
+    use rustc_middle::mir::visit::{PlaceContext, Visitor};
+    let Some(statement) = body.basic_blocks[at.block].statements.get(at.statement_index) else {
+        return true;
+    };
+    let mir::StatementKind::Assign(assign) = &statement.kind else {
+        return true;
+    };
+    struct Reads<'b, 'tcx> {
+        body: &'b mir::Body<'tcx>,
+        pair: mir::Place<'tcx>,
+        made: mir::Location,
+        read: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Reads<'_, 'tcx> {
+        fn visit_place(&mut self, place: &mir::Place<'tcx>, _: PlaceContext, location: mir::Location) {
+            if location == self.made
+                || place.local != self.pair.local
+                || !place.projection.starts_with(self.pair.projection)
+            {
+                return;
+            }
+            let block = &self.body.basic_blocks[location.block];
+            let asserted = location.statement_index == block.statements.len()
+                && matches!(&block.terminator().kind,
+                    mir::TerminatorKind::Assert { cond: mir::Operand::Copy(p) | mir::Operand::Move(p), .. } if p == place);
+            let field = place.projection.get(self.pair.projection.len());
+            let value_alone = matches!(field, Some(mir::ProjectionElem::Field(field, _)) if field.as_u32() == 0);
+            if !asserted && !value_alone {
+                self.read = true;
+            }
+        }
+    }
+    let mut reads = Reads {
+        body,
+        pair: assign.0,
+        made: at,
+        read: false,
+    };
+    reads.visit_body(body);
+    reads.read
 }

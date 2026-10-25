@@ -116,6 +116,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value.
     fn inner_iterable(&mut self, value: Expr, inner: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let inner = self.reveal(inner);
+        // An associated type's, `I::Item`'s, its dictionary's (#278).
+        if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {
+            return Ok(Some(items));
+        }
         if self.range_kind(inner).is_some()
             || self.is_user_iterator(inner)
             || crate::lower::recognition::is_text_escape(self.tcx, inner)

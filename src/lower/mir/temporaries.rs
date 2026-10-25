@@ -530,6 +530,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.value_expr(value, state.body.local_decls[local].source_info.span)
     }
 
+    /// `discriminant`'s number, a `Value::Discriminant`'s: each variant's
+    /// discriminant where `switch_test` says it's that one, the last's
+    /// else, `o != null ? 1 : 0` of an `Option`.
+    fn discriminant_number(&mut self, discriminant: &Value<'tcx>, span: Span) -> R<Expr> {
+        let Value::Discriminant(_, enum_ty, _) = discriminant else {
+            unreachable!("a discriminant");
+        };
+        let enum_ty = *enum_ty;
+        let ty::Adt(adt, _) = enum_ty.kind() else {
+            return Err(self.unsupported(span, "a discriminant of what isn't an enum, read as a value"));
+        };
+        // Each variant's discriminant, as its bits and as its number, a
+        // signed one's sign-extended, `-1` of an `enum E { A = -1 }`.
+        let mut values = Vec::new();
+        for (_, d) in adt.discriminants(self.tcx) {
+            let number = match d.ty.is_signed() {
+                true => {
+                    let layout = (self.tcx.layout_of(self.typing_env.as_query_input(d.ty)))
+                        .map_err(|_| self.unsupported(span, "a discriminant of an unsized type"))?;
+                    layout.size.sign_extend(d.val)
+                }
+                false => d.val as i128,
+            };
+            values.push((d.val, number));
+        }
+        let Some((&(_, last), rest)) = values.split_last() else {
+            return Err(self.unsupported(span, "a discriminant of an enum of no variant, read as a value"));
+        };
+        let mut made = Expr::int(last);
+        for &(bits, number) in rest.iter().rev() {
+            let test = self.switch_test(discriminant, enum_ty, bits, span)?;
+            made = Expr::cond(test, Expr::int(number), made);
+        }
+        Ok(made)
+    }
+
     /// A value as JS: a `format_args!` argument, the string it shows.
     pub(super) fn value_expr(&mut self, value: Value<'tcx>, span: Span) -> R<Expr> {
         Ok(match value {
@@ -543,7 +579,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?,
             ),
-            Value::Discriminant(..) => return Err(self.unsupported(span, "an enum's discriminant read as a value")),
+            // An enum's discriminant held as a value, as rustc's MIR does
+            // where jump threading reads it in two blocks: its number, of
+            // the variant `switch_test` finds it is (ADR 0899).
+            Value::Discriminant(..) => self.discriminant_number(&value, span)?,
             Value::Place(e) => e,
             Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
             Value::Tested(..) | Value::Cut(..) => {

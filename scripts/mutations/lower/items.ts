@@ -143,8 +143,8 @@ export const mutations: Mutation[] = [
     name: "fused-specialization-not-crates",
     breaks: "a std-private trait's call whose impl the caller's type picks doesn't resolve to the crate's impls, and is refused",
     file: "src/lower/items.rs",
-    find: "            return Ok(self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.fused));\n",
-    replace: "            return Ok(false && self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.fused));\n",
+    find: "            return Ok(self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.special));\n",
+    replace: "            return Ok(false && self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.special));\n",
     tests: ["test/std-package.test.ts"],
   },
   {

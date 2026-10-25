@@ -4,6 +4,7 @@ import {
   $assign,
   $dropEach,
   $extend,
+  $given,
   $intoIter,
   $iter,
   $next,
@@ -21,7 +22,14 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter) {
+function firsts(
+  iterable,
+  IItemIntoIterator,
+  dropI,
+  dropIIntoIter,
+  dropIItemItem,
+  dropIItemIntoIter,
+) {
   const out = [];
   let iter;
   try {
@@ -58,7 +66,7 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
     }
     const inner = $someValue(tmp);
     try {
-      it = $intoIter(inner);
+      it = IItemIntoIterator.intoIter(inner);
     } catch (error) {
       dropIIntoIter?.(iter);
       for (const item of out) {
@@ -67,7 +75,7 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
       throw error;
     }
     try {
-      next = $nextSome(it);
+      next = IItemIntoIterator.IntoIterIterator().next(it);
     } catch (error) {
       dropIItemIntoIter?.(it);
       dropIIntoIter?.(iter);
@@ -115,14 +123,26 @@ function firsts(iterable, dropI, dropIIntoIter, dropIItemItem, dropIItemIntoIter
   return out;
 }
 
-function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemIntoIter) {
+function concat(
+  iter,
+  IItemExtendIItemItem,
+  IItemIntoIterator,
+  dropIItem,
+  dropIIntoIter,
+  dropIItemIntoIter,
+) {
   const iter$1 = $intoIter(iter);
   const result = $reduce(
     iter$1,
     (a, b) => {
       const self = { value: a };
       try {
-        IItemExtendIItemItem.extend(self, b, dropIItem, dropIItemIntoIter);
+        IItemExtendIItemItem.extend(
+          self,
+          $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
+          dropIItem,
+          dropIItemIntoIter,
+        );
         $assign(a, self.value);
       } catch (error) {
         dropIItem?.(a);
@@ -138,15 +158,23 @@ function concat(iter, IItemExtendIItemItem, dropIItem, dropIIntoIter, dropIItemI
 
 const $groupsFirstOfNext = new WeakMap();
 
-function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
+function groupsFirstOfNext(
+  IIterator,
+  IItemIntoIterator,
+  dropI,
+  dropIItem,
+  dropIItemItem,
+  dropIItemIntoIter,
+) {
   return $traitImpl(
     $groupsFirstOfNext,
-    [IIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
+    [IIterator, IItemIntoIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
     () => ({
       firstOfNext: (arg0) =>
         groupsFirstOfNext_firstOfNext(
           arg0.value,
           IIterator,
+          IItemIntoIterator,
           dropI,
           dropIItem,
           dropIItemItem,
@@ -161,6 +189,7 @@ function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItem
 function groupsFirstOfNext_firstOfNext(
   groups,
   IIterator,
+  IItemIntoIterator,
   dropI,
   dropIItem,
   dropIItemItem,
@@ -172,9 +201,9 @@ function groupsFirstOfNext_firstOfNext(
   if (next != null) {
     next$0$live = false;
     const inner = $someValue(next);
-    const value$1 = $intoIter(inner);
+    const value$1 = IItemIntoIterator.intoIter(inner);
     try {
-      const value$2 = $nextSome(value$1);
+      const value$2 = IItemIntoIterator.IntoIterIterator().next(value$1);
       const value$3 = (_2) => {
         dropIItemItem?.(_2);
         return 1;
@@ -199,6 +228,7 @@ function main() {
   const groups = [[[1], [2]], [], [[3]]];
   const got = firsts(
     groups,
+    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     (vec) => {
       for (const item of vec) {
         for (const item$1 of item) {
@@ -230,6 +260,7 @@ function main() {
         $extend(collection.value, items);
       },
     },
+    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     $dropEach(loudDrop_drop),
     (intoIter) => {
       for (const item of intoIter) {
@@ -266,6 +297,7 @@ function main() {
     value: groups$1,
     impl: groupsFirstOfNext(
       { next: $next },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
       (intoIter) => {
         for (const item of intoIter) {
           for (const item$1 of item) {

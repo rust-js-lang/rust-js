@@ -276,7 +276,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !(crate::lower::recognition::is_held_compiled(self.tcx, ty)
                 && self.frame.facts.in_place_adapter_steps.contains(&span))
     }
-
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then

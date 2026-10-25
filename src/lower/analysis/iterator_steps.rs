@@ -40,6 +40,34 @@ pub(super) fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec
     made
 }
 
+/// Each closure a body read from its MIR alone makes whose own function
+/// isn't the body's, as rustc's MIR inlines that function, std's
+/// `flatten::<U, Acc>` into `FlattenCompat::rfold`: that function, and its
+/// generics as the body gives them, the closure's parent args (ADR 0899).
+pub(super) fn body_inlined_closures<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let Some(mir) = body.mir.as_ref() else {
+        return Vec::new();
+    };
+    let root = tcx.typeck_root_def_id(body.def_id);
+    let mut made = Vec::new();
+    for data in mir.body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
+                && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1
+                && let rustc_middle::mir::AggregateKind::Closure(closure, args) = **kind
+                && tcx.typeck_root_def_id(closure) != root
+            {
+                let own = tcx.typeck_root_def_id(closure);
+                made.push((own, tcx.mk_args(args.as_closure().parent_args())));
+            }
+        }
+    }
+    made
+}
+
 /// Each function a body names, called or taken as a value, with its
 /// arguments: of its THIR, each function value; of a body read from its
 /// MIR alone, a std one's (ADR 0561), each constant of a
@@ -138,6 +166,11 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 }
             }
         };
+        // A closure it makes of a function rustc's MIR inlined: that
+        // function's parameters, as if it were called (ADR 0899).
+        for (own, args) in body_inlined_closures(tcx, body) {
+            pass_on(&mut passed, own, args);
+        }
         // A parameter a body read from its MIR holds in a struct, `Peekable {
         // iter: self, .. }` of std's `peekable` (ADR 0561):
         // stepped as the struct's impl steps it, its `next`'s and its
@@ -147,7 +180,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         for held in body_aggregates(tcx, body) {
             for method in [next, size_hint] {
                 if let Ok(Some(instance)) =
-                    ty::Instance::try_resolve(tcx, typing_env, method, tcx.mk_args(&[held.into()]))
+                    crate::lower::items::resolve_instance_in(tcx, typing_env, method, tcx.mk_args(&[held.into()]))
                 {
                     if fns.contains_key(&instance.def_id()) {
                         pass_on(&mut passed, instance.def_id(), instance.args);
@@ -161,9 +194,9 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             // A std-private trait's method whose impl the caller's type picks,
             // `FuseImpl::next`'s of a `Fuse<I>` (ADR 0561): stepped as either
             // impl's method steps it.
-            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args) {
+            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args) {
                 let (selected, impl_args) = spec.selected;
-                for method in [selected, spec.fused] {
+                for method in [selected, spec.special] {
                     if fns.contains_key(&method) {
                         pass_on(&mut passed, method, impl_args);
                     } else if foreign.item(method).is_some() {
@@ -222,7 +255,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         // 0561): its compiled impl's, by what its manifest
                         // says it steps; a rewrite's, `len()`'s, nothing.
                         if crate::lower::recognition::is_compiled_std_iterator(tcx, self_ty) {
-                            if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, callee, args)
+                            if let Ok(Some(instance)) =
+                                crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
                                 && foreign.item(instance.def_id()).is_some()
                             {
                                 steps_through(&mut stepped, instance.def_id(), instance.args);
@@ -272,7 +306,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 // compiled impl of an extension takes, `next_back`'s of `I:
                 // DoubleEndedIterator`, its manifest says.
                 if let Ok(Some(instance)) =
-                    ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
+                    crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
                     && fns.contains_key(&instance.def_id())
                 {
                     pass_on(&mut passed, instance.def_id(), instance.args);
@@ -281,7 +315,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
             // A function of the crate's, or an impl's item, a dictionary's
             // made of the impl's evidence.
-            let resolved = match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
+            let resolved = match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args) {
                 Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance,
                 // A library's, by what its manifest says it steps.
                 Ok(Some(instance)) if foreign.item(instance.def_id()).is_some() => {
@@ -305,7 +339,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             // goes: a JS iterator, stepped by its impl's `next` (ADR 0061).
             for given in resolved.args.types().filter(|t| !matches!(t.kind(), ty::Param(_))) {
                 if let Ok(Some(instance)) =
-                    ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[given.into()]))
+                    crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[given.into()]))
                     && fns.contains_key(&instance.def_id())
                 {
                     pass_on(&mut passed, instance.def_id(), instance.args);
@@ -336,7 +370,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     if let ty::Param(param) = ty.kind() {
                         passed.push(((imp, param.index), default));
                     } else if let Ok(Some(instance)) =
-                        ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
+                        crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
                         && fns.contains_key(&instance.def_id())
                     {
                         for (at, held) in instance.args.iter().enumerate() {
@@ -372,7 +406,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     .filter_map(|clause| clause.as_trait_clause())
                     .any(|p| p.def_id() == iterator);
                 let value = tcx.type_of(item.def_id).instantiate_identity().skip_normalization();
-                let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
+                let Ok(Some(instance)) =
+                    crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[value.into()]))
                 else {
                     continue;
                 };

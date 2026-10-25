@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
     name: "std-into-iterator-steps-missing",
     breaks: "std's `IntoIterator` dictionary of a type known here carries no `Iterator` of what it makes, so generic code holding that as it is can't step it",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {\n",
+    find: "            if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {\n",
     replace: "                if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
@@ -385,5 +385,17 @@ export const mutations: Mutation[] = [
     find: "            if js::same_path(&copy, &value) {\n",
     replace: "            if false {\n",
     tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
+  {
+    name: "ref-into-iter-steps-missing",
+    breaks: "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n            props.extend(self.made_steps(tr, span)?);\n            return Ok(Expr::object(props));\n",
+    replace: "            let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n            return Ok(Expr::object(props));\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^std_flatten.rs$"
+    ]
   },
 ];

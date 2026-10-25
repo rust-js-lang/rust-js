@@ -191,8 +191,16 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
 
 /// `into_iter_held_as_it_is`'s, of one function or item `id` alone.
 fn held_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
+    // An associated type's, `I::Item: IntoIterator`'s, whose values no call
+    // makes a JS iterator, an iterator's items, an `Option`'s `T |
+    // undefined` among them, given as they are (#278); not what an
+    // `into_iter()` makes, `I::IntoIter`, the JS iterator it gives.
     let into_iterator = std_item(tcx, StdItem::IntoIterator);
     let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
+    if matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)
+    {
+        return true;
+    }
     let is_its_iter = |ty: Ty<'tcx>| {
         matches!(*ty.kind(), ty::Alias(_, ty::AliasTy {
             kind: ty::Projection { def_id }, args, ..
@@ -223,6 +231,24 @@ fn held_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
         .iter()
         .any(holds);
     read || held
+}
+
+/// Whether a bound of `id` names `param` the `IntoIter` of an
+/// `IntoIterator` it holds as it is, `U` of `I::Item: IntoIterator<IntoIter
+/// = U>`: the same value, given as it is (ADR 0552, #278).
+fn is_held_into_iter(tcx: ty::TyCtxt<'_>, id: DefId, param: ty::ParamTy) -> bool {
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
+    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_projection_clause())
+        .map(|p| p.skip_binder())
+        .any(|p| {
+            p.def_id() == into_iter
+                && p.term
+                    .as_type()
+                    .is_some_and(|t| matches!(t.kind(), ty::Param(q) if q.index == param.index))
+                && into_iter_held_as_it_is(tcx, id, p.self_ty())
+        })
 }
 
 /// Whether `ty` is what a type parameter of `id` makes as an `IntoIterator`,
@@ -258,6 +284,11 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
     // `bounds` reads its clauses, which make its evidence.
     // An `IntoIterator` whose `IntoIter` it holds as it is (ADR 0552).
     if into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, param.index, param.name)) {
+        return true;
+    }
+    // What another's `IntoIterator` makes as it's held, `U` of `I::Item:
+    // IntoIterator<IntoIter = U>`, `Flatten`'s (#278).
+    if is_held_into_iter(tcx, id, param) {
         return true;
     }
     let iterator = std_item(tcx, StdItem::Iterator);

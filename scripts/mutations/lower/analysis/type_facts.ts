@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "library-facts-unpassed",
     breaks: "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                        self.asked.insert((caller, slot, fact));\n",
+    find: "                        self.asked.insert((caller, at, fact));\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "size of its consumer's type"],
   },
@@ -143,8 +143,8 @@ export const mutations: Mutation[] = [
     name: "facts-not-passed-through-calls",
     breaks: "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                if let Some(at) = slot_of(tcx, foreign, caller, of) {\n",
-    replace: "                if let Some(at) = slot_of(tcx, foreign, caller, of).filter(|_| false) {\n",
+    find: "                    changed |= asked.insert((caller, at, fact));\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     name: "fused-specialization-fact-not-asked",
     breaks: "a std body calling a std-private trait's method whose impl its parameter's being a `FusedIterator` picks, `FuseImpl::next`'s, doesn't ask `IFused` of it, so no caller gives it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                if let Some(spec) = fused_specialization(tcx, typing_env, callee, args)\n",
-    replace: "                if let Some(spec) = fused_specialization(tcx, typing_env, callee, args).filter(|_| false)\n",
+    find: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args)\n",
+    replace: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -207,8 +207,8 @@ export const mutations: Mutation[] = [
     name: "library-fact-of-alias-not-asked",
     breaks: "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                        && let Some(slot) = slot_of(tcx, foreign, caller, ty)\n",
-    replace: "                        && let Some(slot) = slot_of(tcx, foreign, caller, ty).filter(|_| matches!(ty.kind(), ty::Param(_)))\n",
+    find: "    slot_of(tcx, foreign, caller, of)\n}\n",
+    replace: "    slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^std_fuse.rs$"],
   },
   {
@@ -219,5 +219,15 @@ export const mutations: Mutation[] = [
     replace: "            if true\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
     snapshots: true,
+  },
+  {
+    name: "specialized-facts-unfollowed",
+    breaks: "what both impls a fact picks between ask, `FlattenCompat`'s `size_hint`'s `ConstSize`, isn't asked of a `Flatten`'s, and std's compile refuses it",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args)\n                && fns.contains_key(&spec.selected.0)\n",
+    replace: "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n                && fns.contains_key(&spec.selected.0)\n",
+    tests: [
+      "test/std-package.test.ts"
+    ]
   },
 ];
