@@ -466,6 +466,12 @@ pub fn named(flag: Option<&str>, v: &mut Vec<u32>) {
         _ => v.push(3),
     }
 }
+pub fn either(flag: Option<&str>, v: &mut Vec<u32>) {
+    match flag {
+        Some("d") | Some("i") => v.push(1),
+        _ => v.push(2),
+    }
+}
 pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     if flag.is_some() {
         if flag == Some("s") {
@@ -504,6 +510,18 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
       break;
     default:
       v.push(3);
+  }
+}`);
+  // An or-pattern's cases, `x === "d" || x === "i"`, each say `x != null`,
+  // so the `None` arm is the `default`, not a test of its own.
+  expect(js).toContain(`export function either(flag, v) {
+  switch (flag) {
+    case "d":
+    case "i":
+      v.push(1);
+      break;
+    default:
+      v.push(2);
   }
 }`);
   expect(js).toContain(`export function nested(flag, v) {
