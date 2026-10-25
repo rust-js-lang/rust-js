@@ -324,3 +324,11 @@ now asks its source through `$advanceByOf`. `chain_sides_own_steps` adds
 the case, and `skipping-advance-by-stepped` is caught.
 Readability: the line's `Vec`s add `$iter` (85.1 to 85.3 in 10,000 lines)
 and renamed temporaries (729.4 to 730.5), as each such case does.
+
+Note (#285): since a side's item drop falls back to the other side's
+(#286), the drop an `nth` is given matters only where neither side has
+one, a chain of two `fuse()`s. `chain_sides_own_steps` adds that case,
+which holds `nth-dropping-drop-ungiven`, `lent-nth-drop-unpassed` and
+`chain-nth-given-drop-unused` again. They had survived main's check of
+6d8613336. Readability: `$iter` 85.3 to 85.4 and renamed temporaries
+730.5 to 731.8 in 10,000 lines, as each such case does.
