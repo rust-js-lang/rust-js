@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
     replace: "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
   },
   {
     name: "mir-tidy-implied-by-or-unread",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
   },
   {
     name: "mir-tidy-guarded-chain-else",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => false,\n",
     replace: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
   },
   {
     name: "mir-tidy-filtered-guard-kept",

@@ -1300,3 +1300,28 @@ pub fn code(thenable: &'static Thenable) -> u32 {
   const unknown = { status: undefined } as { status?: string };
   expect([lib.code({ status: "fulfilled" }), lib.code({ status: "rejected" }), lib.code(unknown), unknown.status]).toEqual([1, 2, 3, "seen"]);
 });
+
+// An or-pattern's cases of an `Option`'s strings, `x === "d" || x ===
+// "i"`, each say `x != null`, so the `None` arm beside them is the
+// `switch`'s `default`, not an early return (#255).
+test("an or-pattern of an Option's strings leaves its None arm the default", () => {
+  const dir = fixture("switch-or-pattern-default");
+  writeFileSync(join(dir, "lib.rs"), `pub fn either(flag: Option<&str>, v: &mut Vec<u32>) {
+    match flag {
+        Some("d") | Some("i") => v.push(1),
+        _ => v.push(2),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`export function either(flag, v) {
+  switch (flag) {
+    case "d":
+    case "i":
+      v.push(1);
+      break;
+    default:
+      v.push(2);
+  }
+}`);
+});
