@@ -12,6 +12,9 @@ pub(super) struct Written {
     pub tables: Vec<(js::Span, Vec<String>)>,
     /// Each `if`'s condition, and a `match` and the guard of an arm of it.
     pub conditions: Vec<(js::Span, js::Span)>,
+    /// Each `if`'s condition alone, an `if let`'s too: a test the program
+    /// wrote, which no earlier test decides away (ADR 0564, amended).
+    pub ifs: Vec<js::Span>,
     /// Each `if` written with an `else`: its condition, its `then` and its
     /// `else`, which MIR's structure may make a guard of (`written_elses`).
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
@@ -263,9 +266,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let switches = self.written_switches();
+        // Each `if`'s condition alone, as written, not a desugaring's.
+        let ifs = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() => {
+                    Some(self.js_span(self.frame.thir[cond].span))
+                }
+                _ => None,
+            })
+            .collect();
         Written {
             tables,
             conditions,
+            ifs,
             elses,
             logicals,
             continues,

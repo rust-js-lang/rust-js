@@ -788,7 +788,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](0561-std-bodies.md)
 - [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md)
 - [0563 What's found once of a crate is keyed by the crate's own files](0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
-- [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides)*
+- [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides; amended: an `if` the program wrote stays)*
 - [0565 How the generated JS reads is a gate, as what it computes is](0565-readability-is-a-gate.md) *(amended: a share that shrank asks a bless by one in 10,000 lines or more)*
 - [0566 `Fuse` is std's; a specialization is picked by its caller's fact](0566-fuse-is-stds.md)
 - [0567 A corpus case's runs are kept by what they ran](0567-a-corpus-cases-runs-are-kept-by-what-they-ran.md)

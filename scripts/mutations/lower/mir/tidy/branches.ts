@@ -349,6 +349,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^sales_report.rs$"],
   },
   {
+    name: "written-if-decided-away",
+    breaks: "an `if` the program wrote that an earlier test decides is folded to its branch, React's `// $FlowFixMe[constant-condition]` lost with its `if (enableGestureTransition)`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    let wrote = |t: &Expr| !t.span.is_none() && written.iter().any(|c| c.lo < t.span.hi && t.span.lo < c.hi);\n",
+    replace: "    let wrote = |_: &Expr| written.is_empty() && false;\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "earlier test decides"],
+  },
+  {
     name: "decided-tests-kept",
     breaks: "a test an earlier one decided stays, `if (option != null) { return option; } .. if (option != null) { drop }` (ADR 0564)",
     file: "src/lower/mir/tidy/branches.rs",

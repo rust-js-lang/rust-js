@@ -592,9 +592,9 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     });
 }
 
-fn decided_tests_of(body: &mut Vec<Stmt>, _: &Hints) {
+fn decided_tests_of(body: &mut Vec<Stmt>, hints: &Hints) {
     let changing = changing(body);
-    js::statement_lists(body, &mut |s| decided_tests(s, &changing));
+    js::statement_lists(body, &mut |s| decided_tests(s, &changing, &hints.written.ifs));
 }
 
 /// What's read once, in place, of what the body sets as it is now.

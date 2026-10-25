@@ -342,3 +342,35 @@ pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
   const object = {};
   expect([lib.andThen(object as never), lib.value(object as never), lib.orElse(object as never), lib.andThen(0 as never)]).toEqual([true, true, true, false]);
 });
+
+// React's startGestureTransition: `if (!enableGestureTransition) { throw
+// .. }`, then `// $FlowFixMe[constant-condition]` and `if
+// (enableGestureTransition) { currentTransition.gesture = provider; }`.
+// The second test, which the first decides, is the program's: kept, and
+// its comment with it, not folded to its branch (ADR 0564, amended). One
+// MIR made, a std drop's, still goes.
+test("an if the program wrote stays where an earlier test decides it", async () => {
+  (globalThis as Record<string, unknown>).__EXPERIMENTAL__ = true;
+  const { js, lib } = await compiled("written-if-decided", `unsafe extern "Rust" {
+    safe static __EXPERIMENTAL__: bool;
+}
+
+thread_local! {
+    pub static ENABLED: bool = __EXPERIMENTAL__;
+}
+
+pub fn gesture(provider: Option<u32>) -> u32 {
+    if !ENABLED.with(|&enabled| enabled) {
+        panic!("off");
+    }
+    let mut gesture = 0;
+    // $FlowFixMe[constant-condition]
+    if ENABLED.with(|&enabled| enabled) {
+        gesture = provider.unwrap_or(1);
+    }
+    gesture
+}
+`);
+  expect(js).toContain("  let gesture = 0;\n  // $FlowFixMe[constant-condition]\n  if (ENABLED) {\n    gesture = provider ?? 1;\n  }\n");
+  expect([lib.gesture(5 as never), lib.gesture(undefined as never)]).toEqual([5, 1]);
+});

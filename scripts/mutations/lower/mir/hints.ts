@@ -287,4 +287,12 @@ export const mutations: Mutation[] = [
     replace: "                            true || !held.contains(\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
+  {
+    name: "written-ifs-unseen",
+    breaks: "no `if` is one the program wrote, so one an earlier test decides is folded away with its comment",
+    file: "src/lower/mir/hints.rs",
+    find: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
+    replace: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() && false => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "earlier test decides"],
+  },
 ];

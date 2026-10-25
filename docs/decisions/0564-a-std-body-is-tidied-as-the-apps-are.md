@@ -2,6 +2,7 @@
 
 Status: Accepted. Extends [0364](0364-mir-lowering.md) and
 [0561](0561-std-bodies.md). Extended by [0743](0743-a-part-of-a-chain-a-test-decides-is-left-out.md): a part of a chain a test decides.
+Amended below: an `if` the program wrote stays.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): each rewrite changes
 nothing a program can observe; the JS reads as a person writes it.
@@ -134,3 +135,28 @@ declared, and again once temporaries are read in place, before `and_tests`;
 - Mutations `decided-tests-kept`, `decided-test-past-a-call`,
   `paired-temporaries-unpaired`, `shared-tails-kept`,
   `shared-leaving-tail-hoisted` and `unread-flag-kept-after-decided-tests`.
+
+## Amended (2026-10-25): an `if` the program wrote stays
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same code run;
+the test the program wrote is kept, which is true where it's tested.
+
+React's `startGestureTransition` throws where `enableGestureTransition`
+is off, then writes, under `// $FlowFixMe[constant-condition]`, `if
+(enableGestureTransition) { currentTransition.gesture = provider; }`. Its
+port's second test was decided by the first and folded to its branch,
+`currentTransition.gesture = provider;`, and the comment written on the
+`if` went with it.
+
+**A test that an earlier one decides goes only where MIR made it, never
+an `if` the program wrote** (`Written::ifs`, each `if`'s condition as the
+program writes it, an `if let`'s too): that `if` is what the program
+says, upstream's too. A std body's tests, a drop's of what an early
+return gave away, a `match`'s arms tested one after another, and a part
+of a chain (ADR 0743) still go. `option_bool_tested`'s `else if flag ==
+Some(true)`, which its first test decides, is kept with them.
+
+Held by `test/lowering-written-branches.test.ts`, "an if the program
+wrote stays where an earlier test decides it", run; the mutations
+`written-if-decided-away` (`mir/tidy/branches.ts`) and
+`written-ifs-unseen` (`mir/hints.ts`).

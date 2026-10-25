@@ -639,7 +639,7 @@ mod tests {
             StmtKind::If(present("option"), vec![call("drop")], None).at(js::Span::NONE),
             returns("x"),
         ];
-        decided_tests(&mut after, &HashSet::new());
+        decided_tests(&mut after, &HashSet::new(), &[]);
         assert!(matches!(
             after.as_slice(),
             [
@@ -694,7 +694,7 @@ mod tests {
             .at(js::Span::NONE),
         ];
         let changing: HashSet<String> = ["r".to_string()].into();
-        js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing));
+        js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing, &[]));
         let [
             Stmt {
                 kind: StmtKind::If(_, then, None),

@@ -1181,8 +1181,11 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
 /// drop }`, and a drop's test inside its own (ADR 0564). `t` of what nothing
 /// assigns, `changing`'s; one that reads through a field or a helper,
 /// `x.value`, `$someValue(x)`, only up to the next call or assignment
-/// through a field, which may change it.
-pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+/// through a field, which may change it. Not an `if` the program wrote,
+/// of a condition in `written`, which says what the program says, React's
+/// `// $FlowFixMe[constant-condition]` above it, though an earlier test
+/// decides it (ADR 0564, amended).
+pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, written: &[js::Span]) {
     let mut i = 0;
     while i < stmts.len() {
         let StmtKind::If(test, then, otherwise) = &stmts[i].kind else {
@@ -1199,13 +1202,13 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
         let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind else {
             unreachable!("matched")
         };
-        decided_in(then, 0, &test, true, true);
+        decided_in(then, 0, (&test, written), true, true);
         if let Some(otherwise) = otherwise {
-            decided_in(otherwise, 0, &test, false, true);
+            decided_in(otherwise, 0, (&test, written), false, true);
         }
         match (then_leaves, else_leaves) {
-            (true, false) => decided_in(stmts, i + 1, &test, false, false),
-            (false, true) => decided_in(stmts, i + 1, &test, true, false),
+            (true, false) => decided_in(stmts, i + 1, (&test, written), false, false),
+            (false, true) => decided_in(stmts, i + 1, (&test, written), true, false),
             _ => {}
         }
         i += 1;
@@ -1226,12 +1229,17 @@ fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
 /// each part of a chain it decides left out (ADR 0743). Not past the `if`,
 /// where a `match`'s arms are tested one after another, each test whole,
 /// which a `switch` of them reads (ADR 0668).
-fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool, parts: bool) {
+fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js::Span]), holds: bool, parts: bool) {
+    // Whether `t` is a condition the program wrote.
+    let wrote = |t: &Expr| !t.span.is_none() && written.iter().any(|c| c.lo < t.span.hi && t.span.lo < c.hi);
     let mut j = from;
     while j < stmts.len() {
         match &mut stmts[j].kind {
             StmtKind::If(t, ..) if disturbs(t, test) => return,
-            StmtKind::If(t, ..) if let Some(taken) = decided(t, test) => {
+            StmtKind::If(t, ..)
+                if !wrote(t)
+                    && let Some(taken) = decided(t, test) =>
+            {
                 let StmtKind::If(_, then, otherwise) = stmts.remove(j).kind else {
                     unreachable!("matched")
                 };
@@ -1251,10 +1259,10 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool, part
                 *t = folded;
             }
             StmtKind::If(_, then, otherwise) => {
-                decided_in(then, 0, test, holds, parts);
+                decided_in(then, 0, (test, written), holds, parts);
                 let mut disturbed = disturbs_any(then, test);
                 if let Some(otherwise) = otherwise {
-                    decided_in(otherwise, 0, test, holds, parts);
+                    decided_in(otherwise, 0, (test, written), holds, parts);
                     disturbed |= disturbs_any(otherwise, test);
                 }
                 if disturbed {
@@ -1263,7 +1271,7 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, test: &Expr, holds: bool, part
                 j += 1;
             }
             StmtKind::Labeled(_, body) => {
-                decided_in(body, 0, test, holds, parts);
+                decided_in(body, 0, (test, written), holds, parts);
                 if disturbs_any(body, test) {
                     return;
                 }

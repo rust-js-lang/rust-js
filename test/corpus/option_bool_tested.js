@@ -12,6 +12,9 @@ function label(flag) {
   if (flag) {
     return "on";
   }
+  if (flag) {
+    return "never";
+  }
   return !flag ? "off" : "never";
 }
 

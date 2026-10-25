@@ -486,7 +486,9 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   each `break` where it's written, a case's `break;` where the block ends
   a `match`'s arm that's a case
   ([0790](../decisions/0790-a-break-the-program-wrote-is-where-it-is-written.md)),
-  `let`-`else`, `if let` chains, match guards, `let` guards.
+  `let`-`else`, `if let` chains, match guards, `let` guards; an `if` the
+  program wrote stays, its comment with it, where an earlier test decides
+  it ([0564](../decisions/0564-a-std-body-is-tidied-as-the-apps-are.md)).
 
 Differences:
 

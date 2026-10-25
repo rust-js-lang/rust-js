@@ -44,6 +44,8 @@ function main() {
     show(s);
   }
   // The tie between 1 and the next `f32`, 1 + 2^-24, and a hair either side.
+  // The next tie up, whose even `f32` is the one above.
+  // A tie among the subnormals, and with zero.
   for (const s of [
     "1.000000059604644775390625",
     "1.000000059604644775390625000001",
