@@ -14,7 +14,7 @@ export function entry() {
   main();
 }
 
-const ports = [];
+let ports = [];
 const count = { value: 0 };
 const noisy = $local(() => [["first"]]);
 const late = $local(() => firstPorts());
@@ -29,10 +29,10 @@ function firstPort() {
 }
 
 function main() {
-  $assign(ports, [1, 0]);
+  ports = [1, 0];
   console.log(`${firstPort()}`);
   ports.push(7);
-  $assign(ports, [3]);
+  ports = [3];
   console.log(`[${ports.slice().join(", ")}]`);
   count.value = 4;
   $withBorrowMut(

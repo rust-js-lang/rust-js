@@ -430,4 +430,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
+  {
+    name: "module-array-set-in-place",
+    breaks: "a thread-local of an array its module sets whole is written in place, `$assign(callbacks, [])`, where React's `callbacks = []` gives the variable the new one (ADR 0270, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                        && callee.helper_name() == Some(\"$assign\")\n",
+    replace: "                        && callee.helper_name() == Some(\"$assign \")\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+  },
+  {
+    name: "module-array-set-const",
+    breaks: "a thread-local of an array its module gives a new one stays `const`, and JS throws assigning it (ADR 0270, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                c.mutable = true;\n                if c.export {\n                    exported.push((name.clone(), true));\n",
+    replace: "                if c.export {\n                    exported.push((name.clone(), true));\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+  },
+  {
+    name: "module-array-set-unexported",
+    breaks: "a thread-local of an array its module gives a new one is declared `export const`, which its importers' TypeScript says can't change (ADR 0270, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    exported.push((name.clone(), true));\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+  },
 ];

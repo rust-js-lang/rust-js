@@ -288,7 +288,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0267 js::on_load! is what a module runs when it's loaded](0267-on-load.md)
 - [0268 An element's type, key and props may be JS values of any shape](0268-unknown-elements.md)
 - [0269 What every global scope has is called bare](0269-global-scope.md)
-- [0270 A thread-local only read and set is its module's variable](0270-module-variables.md) *(amended: an exported one is its `export let`, which only its module sets)*
+- [0270 A thread-local only read and set is its module's variable](0270-module-variables.md) *(amended: an exported one is its `export let`, which only its module sets; one of an array or an object its module sets whole is given the new one)*
 - [0271 A JS value's truthiness, and a value vouched to be a type](0271-truthy-and-cast.md)
 - [0272 Node's modules are a crate of their own, typed as @types/node](0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](0273-path-modules.md)

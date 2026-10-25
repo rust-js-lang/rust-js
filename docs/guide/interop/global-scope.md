@@ -514,7 +514,8 @@ export function last() {
   cell handed out, is refused, as JS lets no importer set it, so its
   module writes a `pub fn` that sets it, as React's ReactCurrentFiber
   exports `setIsRendering`. A `RefCell` of an array or an object is that
-  object, which any module changes in place
+  object, which any module changes in place; its own module's `set` of it
+  gives the variable the new one, `callbacks = []`, `export let callbacks`
   ([ADR 0270](../../decisions/0270-module-variables.md), amended).
 - **`#[rust_js::nullable]` on one of a `Cell` or a `RefCell` of an
   `Option` makes its `None` `null`**, where it's made and where it's set,

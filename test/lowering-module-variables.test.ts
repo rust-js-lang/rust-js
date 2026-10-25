@@ -64,6 +64,56 @@ pub fn told() -> (bool, u32, u32, String) {
   expect(users.told()).toEqual([true, 1, 4, "on"]);
 });
 
+// React's `let callbacks = []`, set `callbacks = []` again: a thread-local
+// `RefCell` of an array its module sets whole is its `export let`, given
+// the new one there; another module's `set` writes the one it reads in
+// place, which the live binding shares (ADR 0270, amended).
+test("a thread-local of an array its module sets is its export let", async () => {
+  const dir = fixture("exported-array-let");
+  writeFileSync(join(dir, "lib.rs"), "pub mod callbacks;\npub mod users;\n");
+  writeFileSync(join(dir, "callbacks.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    pub static CALLBACKS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn add(value: u32) {
+    CALLBACKS.with_borrow_mut(|callbacks| callbacks.push(value));
+}
+
+pub fn reset() {
+    CALLBACKS.set(Vec::new());
+}
+
+pub fn count() -> usize {
+    CALLBACKS.with_borrow(|callbacks| callbacks.len())
+}
+`);
+  writeFileSync(join(dir, "users.rs"), `use crate::callbacks::CALLBACKS;
+
+pub fn only(value: u32) {
+    CALLBACKS.set(vec![value]);
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const callbacksJs = readFileSync(join(dir, "callbacks.js"), "utf8");
+  expect(callbacksJs).toContain("export let callbacks = [];\n");
+  expect(callbacksJs).toContain("  callbacks = [];\n");
+  expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  $assign(callbacks, [value]);\n");
+  expect(readFileSync(join(dir, "callbacks.d.ts"), "utf8")).toContain("export let callbacks: number[];\n");
+  writeFileSync(join(dir, "reader.js"), 'import { callbacks } from "./callbacks.js";\nexport const read = () => callbacks;\n');
+  const reader = await import(join(dir, "reader.js"));
+  const module = await import(join(dir, "callbacks.js"));
+  const users = await import(join(dir, "users.js"));
+  module.add(1);
+  const before = reader.read();
+  module.reset();
+  module.add(2);
+  expect([before, reader.read(), module.count()]).toEqual([[1], [2], 1]);
+  users.only(5);
+  expect([reader.read(), module.count()]).toEqual([[5], 1]);
+});
+
 // JS can't set another module's `let`: a write of an exported cell from
 // another module, `set`, `replace`, `take`, a `with_borrow_mut`, or its cell
 // handed out, `with`, is refused, saying to write a function of its module

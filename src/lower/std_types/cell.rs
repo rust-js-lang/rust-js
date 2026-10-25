@@ -532,35 +532,7 @@ pub(in crate::lower) fn plain_statics(
             }
             _ => {}
         });
-        // A function's own of that name, or one it or what the module runs
-        // when it's loaded binds, may be read so.
-        let mut bound = false;
-        let binds = |body: &mut Vec<Stmt>, bound: &mut bool| {
-            js::each_block_mut(body, &mut |stmts| {
-                for stmt in stmts.iter() {
-                    *bound |= match &stmt.kind {
-                        StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
-                        StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
-                        _ => false,
-                    };
-                }
-            });
-            js::each_expr_mut(body, &mut |e| {
-                if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
-                    *bound |= params.iter().any(|p| p.names().contains(&name.as_str()));
-                }
-            });
-        };
-        for item in items.iter_mut() {
-            if let js::Item::Statements(stmts) = item {
-                binds(stmts, &mut bound);
-            }
-            for function in item.functions_mut() {
-                bound |= function.params.iter().any(|p| p.names().contains(&name.as_str()));
-                binds(&mut function.body, &mut bound);
-            }
-        }
-        if bound || reads != values {
+        if binds_name(items, &name) || reads != values {
             continue;
         }
         // What sets it, `X.value = ..`, its value replaced: in a function, a
@@ -620,7 +592,101 @@ pub(in crate::lower) fn plain_statics(
             }
         }
     }
+    // A `RefCell` of an object that's its module's variable is the object
+    // (ADR 0863), written whole in place, `$assign(callbacks, [])`, its
+    // `set`'s: here, its module's, the variable given the new one,
+    // `callbacks = []`, `export let`, as nothing else holds the old one, its
+    // borrows ending where they're made (ADR 0270, amended). Another
+    // module writes the one it reads in place, as before.
+    let objects: Vec<String> = (items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c)
+                if quiet.contains(c.name.as_str())
+                    && !matches!(&c.value.kind, js::ExprKind::Object(props, ..)
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
+            {
+                Some(c.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    for name in objects {
+        if binds_name(items, &name) {
+            continue;
+        }
+        let mut sets = 0;
+        let mut assigned = |body: &mut Vec<Stmt>| {
+            js::each_block_mut(body, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Expr(e) = &mut stmt.kind
+                        && let js::ExprKind::Call(callee, args) = &mut e.kind
+                        && callee.helper_name() == Some("$assign")
+                        && let [target, _] = args.as_slice()
+                        && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
+                    {
+                        let value = args.pop().expect("what it's given");
+                        let target = args.pop().expect("the variable");
+                        stmt.kind = StmtKind::Assign(target, value);
+                        sets += 1;
+                    }
+                }
+            });
+        };
+        for item in items.iter_mut() {
+            if let js::Item::Statements(stmts) = item {
+                assigned(stmts);
+            }
+            for function in item.functions_mut() {
+                assigned(&mut function.body);
+            }
+        }
+        if sets == 0 {
+            continue;
+        }
+        for item in items.iter_mut() {
+            if let js::Item::Const(c) = item
+                && c.name == name
+            {
+                c.mutable = true;
+                if c.export {
+                    exported.push((name.clone(), true));
+                }
+            }
+        }
+    }
     exported
+}
+
+/// Whether a function of `items`, or what the module runs when it's
+/// loaded, binds `name` of its own, which a read of `name` may be.
+fn binds_name(items: &mut [js::Item], name: &str) -> bool {
+    let mut bound = false;
+    let binds = |body: &mut Vec<Stmt>, bound: &mut bool| {
+        js::each_block_mut(body, &mut |stmts| {
+            for stmt in stmts.iter() {
+                *bound |= match &stmt.kind {
+                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
+                    StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name),
+                    _ => false,
+                };
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
+                *bound |= params.iter().any(|p| p.names().contains(&name));
+            }
+        });
+    };
+    for item in items.iter_mut() {
+        if let js::Item::Statements(stmts) = item {
+            binds(stmts, &mut bound);
+        }
+        for function in item.functions_mut() {
+            bound |= function.params.iter().any(|p| p.names().contains(&name));
+            binds(&mut function.body, &mut bound);
+        }
+    }
+    bound
 }
 
 /// A nullable thread-local's cell as it's made, `{ value: undefined }` of

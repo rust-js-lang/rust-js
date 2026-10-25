@@ -1,7 +1,8 @@
 # 0270. A thread-local only read and set is its module's variable
 
 Status: Accepted. Amends [0037](0037-thread-locals.md). Amended below: an
-exported one is its `export let`, which only its module sets.
+exported one is its `export let`, which only its module sets; one of an
+array or an object its module sets whole is given the new one there.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -156,3 +157,25 @@ against native Rust, a read kept before its module sets it again. The
 mutations `outside-*`, `exported-cell-boxed`, `importer-*`,
 `live-import-aliased`, `*-variable-read-as-cell`,
 `contract-variable-unsaid` and `variable-declared-*`.
+
+## Amendment: one of an array or an object its module sets whole is given the new one
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A. React keeps
+`let callbacks = []` and empties it, `callbacks = []`. A thread-local
+`RefCell<Vec<_>>` that's its module's variable is the array (ADR 0863);
+its `set` wrote it in place, `$assign($borrowMut(callbacks), [])`, its
+borrow checked where its type's were elsewhere.
+
+**In its own module, a whole write of one is the variable given the new
+one**, `callbacks = []`, `export let callbacks`: its borrows end where
+they're made (it's quiet, `quiet_locals`), so nothing else holds the old
+one, and no run tells the two apart. Its `set` there borrows nothing
+(MIR's `QuietCells`, ADR 0863, amended). Another module, which can't set
+its import, writes the one it reads in place, `$assign(callbacks, [v])`,
+which the live binding shares, as before.
+
+`test/lowering-module-variables.test.ts`, "a thread-local of an array its
+module sets is its export let", read from a JS module; corpus
+`thread_local_refcell_set`'s `ports = [1, 0]`. Mutations
+`module-array-set-in-place`, `module-array-set-const` and
+`module-array-set-unexported` (`std_types/cell.rs`).
