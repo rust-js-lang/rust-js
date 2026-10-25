@@ -23,8 +23,41 @@ function read(s) {
   return 0;
 }
 
+// A `match`'s test and a `let else`'s, which no `if` the program wrote
+// tests, aren't decided past the call either (#279).
+function matched(s) {
+  if (s.v == null) {
+    return 0;
+  }
+  if (bump(s) > 3) {
+    return 9;
+  }
+  if (s.v != null) {
+    const x = s.v;
+    return (x * 10) >>> 0;
+  }
+  return 2;
+}
+
+function letElse(s) {
+  if (s.v == null) {
+    return 0;
+  }
+  if (bump(s) > 3) {
+    return 9;
+  }
+  if (s.v == null) {
+    return 2;
+  }
+  const x = s.v;
+  return x;
+}
+
 function main() {
   const s = { v: 7, bumps: 0 };
+  console.log(`${matched(s)}`);
+  s.v = 7;
+  console.log(`${letElse(s)}`);
   console.log(`${read(s)}`);
   console.log(`${read(s)}`);
   s.v = 1;

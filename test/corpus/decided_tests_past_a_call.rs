@@ -26,8 +26,35 @@ fn read(s: &mut Slot) -> u32 {
     0
 }
 
+// A `match`'s test and a `let else`'s, which no `if` the program wrote
+// tests, aren't decided past the call either (#279).
+fn matched(s: &mut Slot) -> u32 {
+    if s.v.is_none() {
+        return 0;
+    }
+    if bump(s) > 3 {
+        return 9;
+    }
+    match s.v {
+        Some(x) => x * 10,
+        None => 2,
+    }
+}
+
+fn let_else(s: &mut Slot) -> u32 {
+    let Some(_) = s.v else { return 0 };
+    if bump(s) > 3 {
+        return 9;
+    }
+    let Some(x) = s.v else { return 2 };
+    x
+}
+
 fn main() {
     let mut s = Slot { v: Some(7), bumps: 0 };
+    println!("{}", matched(&mut s));
+    s.v = Some(7);
+    println!("{}", let_else(&mut s));
     println!("{}", read(&mut s));
     println!("{}", read(&mut s));
     s.v = Some(1);

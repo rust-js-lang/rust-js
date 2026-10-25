@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "l = match std(StdItem::RefCell)",
     replace: "l = match false",
-    tests: ["test/corpus.test.ts", "-t", "refcell_clone_while_mut"],
+    tests: ["test/corpus.test.ts", "-t", "refcell_clone_number_while_mut"],
   },
   {
     name: "eq-of-box-as-constant",

@@ -10,6 +10,16 @@ fn scaled<I: Iterator<Item = i32> + Clone>(it: I, k: i32) -> impl Iterator<Item 
     it.map(move |x| x * k)
 }
 
+// A `filter` and a `chain` a function gives as an `impl Iterator + Clone`,
+// cloned apart as what it hides (ADR 0525, #279).
+fn evens_of<I: Iterator<Item = i32> + Clone>(it: I) -> impl Iterator<Item = i32> + Clone {
+    it.filter(|x| x % 2 == 0)
+}
+
+fn joined<I: Iterator<Item = i32> + Clone>(a: I, b: I) -> impl Iterator<Item = i32> + Clone {
+    a.chain(b)
+}
+
 #[derive(Clone)]
 struct Holder<I> {
     it: I,
@@ -51,7 +61,19 @@ fn main() {
     rest.next();
     println!("{:?} {:?}", rest.collect::<Vec<_>>(), tripled.collect::<Vec<_>>());
 
-    let holder = Holder { it: (0..3).map(|x| x + 100) };
+    let even = evens_of(1..7);
+    let mut later = even.clone();
+    later.next();
+    println!("{:?} {:?}", later.collect::<Vec<_>>(), even.collect::<Vec<_>>());
+
+    let both_ranges = joined(1..3, 5..7);
+    let mut after = both_ranges.clone();
+    after.next();
+    println!("{:?} {:?}", after.collect::<Vec<_>>(), both_ranges.collect::<Vec<_>>());
+
+    let holder = Holder {
+        it: (0..3).map(|x| x + 100),
+    };
     let mut again = holder.clone();
     again.it.next();
     println!("{:?} {:?}", again.it.collect::<Vec<_>>(), holder.it.collect::<Vec<_>>());
