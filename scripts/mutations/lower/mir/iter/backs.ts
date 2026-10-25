@@ -139,8 +139,8 @@ export const mutations: Mutation[] = [
     name: "given-map-source-raw",
     breaks: "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                // (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {\n",
-    replace: "                // (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
+    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {\n",
+    replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -260,8 +260,8 @@ export const mutations: Mutation[] = [
     name: "back-stepped-source-raw",
     breaks: "a range a map the crate steps from its back maps is given as it is, not knowing its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {\n                        self.as_double_ended(receiver.clone(), iter_ty, span)?\n                    }\n                    None if self.is_user_iterator(iter_ty) => {\n                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?\n                    }\n                    None => receiver.clone(),\n                };\n                // An owning source",
-    replace: "                    None if self.is_user_iterator(iter_ty) => {\n                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?\n                    }\n                    None => receiver.clone(),\n                };\n                // An owning source",
+    find: "                    None if back && !self.has_a_back(iter_ty) => {\n",
+    replace: "                    None if back && !self.has_a_back(iter_ty) && self.range_kind(iter_ty).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -328,5 +328,21 @@ export const mutations: Mutation[] = [
     replace: "    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
     snapshots: true,
+  },
+  {
+    name: "back-kept-map-source-unknowing",
+    breaks: "a map stepped from its back of a `skip` or a `step_by` made here steps a JS iterator with no back, and throws (#218)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if back && !self.has_a_back(iter_ty) => {\n",
+    replace: "                    None if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "back-kept-filter-source-unknowing",
+    breaks: "a filter stepped from its back of a `take` made here steps a JS iterator with no back, and throws (#218)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
   },
 ];

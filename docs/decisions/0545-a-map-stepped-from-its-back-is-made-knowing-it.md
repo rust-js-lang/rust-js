@@ -106,3 +106,34 @@ ADR 0262's case: C, an error where Rust is fine. Held by
 `given-impl-not-back-stepped`, `given-chain-not-back-stepped`,
 `knows-back-of-impl-hidden`, `mapped-array-length-unknown` and
 `given-chain-unmade`.
+
+## Amendment: what a map or a filter stepped from its back steps
+
+A map or a filter stepped from its back whose source is another adapter
+was accepted and threw `it.back is not a function` (#218):
+`[1, 2, 3].iter().map(f).map(g).next_back()` was `$mapEnds` of JS's own
+`.map`, which has no back; `(0..9).skip(2).map(f)`'s was `$lazyRange(2, 9)`.
+`back_stepped` marked the adapter stepped alone, and `back_kept` took its
+source as it was. Now:
+
+- **What it steps is marked too**: each map or filter that a marked one's
+  source chain holds, through what steps from its back where its source
+  does (`back_stepped_source`), is made knowing its back where it's made,
+  held in a variable or not. A `filter_map` held so has no such form; it
+  stays unmarked and is refused, not stepped as a JS iterator with no
+  back.
+- **A source made here is made knowing its back where it's stepped**:
+  `back_kept`'s map and filter of a source without a back, a `skip`, a
+  `take`, a `step_by`, an `enumerate`, a `chain` or a `fuse` made in
+  place, give it to `as_double_ended`, which makes it knowing its back or
+  refuses it.
+
+ADR 0262's case: C, an error where Rust is fine, of what isn't made yet;
+nothing is approximated. Of 1,100 generated programs pairing adapters
+under a back-stepping consumer, none throws: 32 more agree and 44 are
+refused, an adapter of the crate's own iterator that steps from its back
+(#184). Held by `test/corpus/back_stepped_adapter_sources.rs` and
+`held_filter_map_back_refused.rs`, and five mutations. The readability
+baseline's `$iter` share grows by one in 10,000 lines: the corpus case's
+thirteen arrays stepped from their back are each `$iter(v)`, the source
+`$mapEnds` and `$filterEnds` step from either end.

@@ -8,8 +8,8 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, chained_sources, filtered_source, flattened_source, is_double_ended, is_iter_adapter_def,
-    mapped_source,
+    Recognition, back_stepped_source, chained_sources, filtered_source, flattened_source, is_double_ended,
+    is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -84,7 +84,7 @@ pub(super) fn back_stepped<'tcx>(
             }
         }
     }
-    stepped
+    with_stepped_sources(tcx, stepped)
 }
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not
@@ -109,6 +109,24 @@ fn back_stepped_adapter<'tcx>(
         .peel_refs();
     let native = !given && recognition.array_source(source).is_some() && !dropping_items(recognition, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
+}
+
+/// `stepped`, the types stepped from their back, and each map or filter
+/// they step from its back in turn, their sources', through what steps
+/// from its back where its source does: made knowing its back where it's
+/// made, held in a variable or not, as what steps it asks (#218).
+fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> HashSet<Ty<'tcx>> {
+    let mut all = stepped.clone();
+    for ty in stepped {
+        let mut source = back_stepped_source(tcx, ty);
+        while let Some(held) = source.map(|held| held.peel_refs()) {
+            if mapped_source(tcx, held).is_some() || filtered_source(tcx, held).is_some() {
+                all.insert(tcx.erase_and_anonymize_regions(held));
+            }
+            source = back_stepped_source(tcx, held);
+        }
+    }
+    all
 }
 
 /// Whether `adapter`, a map or a filter, is of an array's items whose drop

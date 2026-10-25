@@ -57,18 +57,23 @@ fn count() -> Count {
 }
 
 fn main() {
-    println!("{:?}", count().rev().nth(1));
-    println!("{:?}", count().rev().skip(1).next());
+    let second = count().rev().nth(1);
+    let skipped = count().rev().skip(1).next();
+    println!("{second:?} {skipped:?}");
     println!("{}", count().rev().sum::<i32>());
-    println!("{:?}", count().rev().last());
+    let last = count().rev().last();
+    println!("{last:?}");
     println!("{}", count().rev().count());
     println!("{}", count().rev().skip(1).sum::<i32>());
     println!("{:?}", count().rev().collect::<Vec<_>>());
     let mut it = count();
-    println!("{:?}", (&mut it).rev().nth(1));
+    let second = (&mut it).rev().nth(1);
+    println!("{second:?}");
     println!("{}", (&mut it).rev().sum::<i32>());
-    println!("{:?}", (&mut it).rev().last());
+    let last = (&mut it).rev().last();
+    println!("{last:?}");
     let mut it = count();
-    println!("{:?}", it.by_ref().rev().nth(2));
-    println!("{:?}", it.last());
+    let third = it.by_ref().rev().nth(2);
+    let last = it.last();
+    println!("{third:?} {last:?}");
 }

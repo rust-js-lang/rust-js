@@ -46,11 +46,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rev-of-dropping-map-unasked",
-    breaks: "`rev()` of a map of a `Vec`'s items with a destructor, held in a variable, is refused, as the map isn't made knowing its back",
+    breaks: "`rev()` of a map of a `Vec`'s items with a destructor, held in a variable, isn't made knowing its back where it's made, `$mapEnds`, but reversed after, `$rev($closing(..)).map(f)` (#205)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "                        if held != asked || given || dropping_items(recognition, held, &drops) {\n",
     replace: "                        if held != asked {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "flatten-back-stepped-unseen",
@@ -75,5 +76,29 @@ export const mutations: Mutation[] = [
     find: " || given && chained_sources(tcx, adapter).is_some() {",
     replace: " {",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+  },
+  {
+    name: "stepped-sources-unmarked",
+    breaks: "a map held in a variable that a back-stepped map steps isn't made knowing its back, and is refused (#218)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    with_stepped_sources(tcx, stepped)\n",
+    replace: "    stepped\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "stepped-sources-one-deep",
+    breaks: "a map two adapters inside a back-stepped one isn't made knowing its back (#218)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            source = back_stepped_source(tcx, held);\n",
+    replace: "            source = None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "stepped-sources-any-adapter",
+    breaks: "a held `filter_map` a back-stepped map steps is marked, and steps a JS iterator with no back, which throws, where it's refused (#218)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            if mapped_source(tcx, held).is_some() || filtered_source(tcx, held).is_some() {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(back_stepped_adapter_sources|held_filter_map_back_refused).rs$"],
   },
 ];

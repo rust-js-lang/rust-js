@@ -182,16 +182,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // it (ADR 0488).
             Some(IterMethod::Map) if self.knows_its_back(output) || self.knows_its_length(output) => {
                 let (back, len) = (self.knows_its_back(output), self.knows_its_length(output));
-                // One the crate steps from its back, of a range made knowing
-                // it; a source given as it is is given it where it's asked
-                // (ADR 0545).
+                // A source given as it is is given its back where it's asked;
+                // one the crate steps from its back without one, a range or
+                // another adapter, made knowing it, or refused (ADR 0545).
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
-                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
-                        self.as_double_ended(receiver.clone(), iter_ty, span)?
-                    }
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
+                    }
+                    None if back && !self.has_a_back(iter_ty) => {
+                        self.as_double_ended(receiver.clone(), iter_ty, span)?
                     }
                     None => receiver.clone(),
                 };
@@ -255,12 +255,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, true, false) {
                     Some(it) => it,
-                    None if self.stepped_from_its_back(output) && self.range_kind(iter_ty).is_some() => {
-                        self.as_double_ended(receiver.clone(), iter_ty, span)?
-                    }
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), iter_ty, (true, false), span)?
                     }
+                    None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,
                     None => receiver.clone(),
                 };
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));

@@ -50,7 +50,7 @@ function count() {
 }
 
 function main() {
-  const value = $nth(
+  let second = $nth(
     $lent(
       $iterator(
         count(),
@@ -65,8 +65,7 @@ function main() {
     ),
     1,
   );
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $next(
+  const skipped = $next(
     $iterator(
       count(),
       countDoubleEndedIterator_nextBack,
@@ -78,11 +77,13 @@ function main() {
       countDoubleEndedIterator_nthBack,
     ).drop(1),
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(
+    `${second == null ? "None" : `Some(${second})`} ${skipped == null ? "None" : `Some(${skipped})`}`,
+  );
   console.log(
     `${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const value$2 = $folded(
+  let last = $folded(
     $iterator(
       count(),
       countDoubleEndedIterator_nextBack,
@@ -96,7 +97,7 @@ function main() {
   )
     .toArray()
     .at(-1);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).reduce((n) => n + 1, 0)}`,
   );
@@ -118,7 +119,7 @@ function main() {
     `[${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).toArray().join(", ")}]`,
   );
   let it = count();
-  const value$3 = $nth(
+  second = $nth(
     $lent(
       $iterator(
         it,
@@ -133,11 +134,11 @@ function main() {
     ),
     1,
   );
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(`${second == null ? "None" : `Some(${second})`}`);
   console.log(
     `${$iterator(it, countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, undefined, countDoubleEndedIterator_nthBack).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const value$4 = $iterator(
+  last = $iterator(
     it,
     countDoubleEndedIterator_nextBack,
     false,
@@ -149,9 +150,9 @@ function main() {
   )
     .toArray()
     .at(-1);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(`${last == null ? "None" : `Some(${last})`}`);
   it = count();
-  const value$5 = $nth(
+  const third = $nth(
     $lent(
       $iterator(
         it,
@@ -166,8 +167,7 @@ function main() {
     ),
     2,
   );
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
-  const value$6 = $iterator(
+  last = $iterator(
     it,
     countIterator_next,
     false,
@@ -179,6 +179,8 @@ function main() {
   )
     .toArray()
     .at(-1);
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
+  console.log(
+    `${third == null ? "None" : `Some(${third})`} ${last == null ? "None" : `Some(${last})`}`,
+  );
 }
 //# sourceMappingURL=case.js.map
