@@ -9,6 +9,7 @@ mod closures;
 mod debug;
 mod drops;
 mod fmt_failures;
+mod fn_pointers;
 mod held_adapters;
 mod iterator_steps;
 mod lazy_locals;

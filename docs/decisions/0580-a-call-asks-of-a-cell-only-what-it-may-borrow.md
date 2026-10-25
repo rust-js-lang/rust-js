@@ -9,6 +9,9 @@ a call runs runs the crate's impls its bounds name. Extended by
 only what it's given, so `vec![..]` runs nothing. Extended by
 [0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs
 only what it's given, given only numbers and text, borrows nothing.
+Extended by [0899](0899-a-fn-pointer-runs-what-the-crate-made-it-of.md):
+a fn pointer's call runs what the crate made one of its type of, not
+anything, where no value of its type comes from outside.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet. A JS getter that

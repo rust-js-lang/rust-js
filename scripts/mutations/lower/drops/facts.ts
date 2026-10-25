@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-calls",
     breaks: "a call of the crate's beside a guard is taken as asking nothing",
     file: "src/lower/drops/facts.rs",
-    find: "                    self.borrows\n                        .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, &|ty| {\n                            self.drops(ty)\n                        })\n",
-    replace: "                    false\n",
+    find: "                        self.borrows\n                            .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, drops)\n",
+    replace: "                        false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {
@@ -188,5 +188,13 @@ export const mutations: Mutation[] = [
     find: "        let writes_over = matches!(expr.kind, ExprKind::Assign { lhs, .. } if self.drops(self.thir[lhs].ty));\n",
     replace: "        let writes_over = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_guard_writes_over.rs$"],
+  },
+  {
+    name: "pointer-call-beside-guard-asks-nothing",
+    breaks: "a fn pointer's call while a guard is held asks nothing of its cell, so `report`'s borrow isn't counted while `f`, which may be `touch`, borrows it mutably, and nothing panics",
+    file: "src/lower/drops/facts.rs",
+    find: "                    None => self\n                        .borrows\n                        .pointer_call_asks(&self.cx.recognition, self.thir[fun].ty, self.cell, drops),\n",
+    replace: "                    None => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_pointer_borrows_held.rs$"],
   },
 ];

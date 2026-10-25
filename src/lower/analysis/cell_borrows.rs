@@ -50,6 +50,8 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// Each of the crate's types' impls of a trait, by the type: what std's
     /// code bounding one by the trait may run of it.
     impls: Impls,
+    /// What each fn pointer it calls may be (ADR 0899).
+    pointers: super::fn_pointers::FnPointers<'tcx>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -82,6 +84,8 @@ impl<'tcx> CellBorrows<'tcx> {
                 }
             }
         }
+        // What each fn pointer the crate calls may be (ADR 0899).
+        let pointers = super::fn_pointers::FnPointers::of_crate(recognition);
         let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -89,7 +93,7 @@ impl<'tcx> CellBorrows<'tcx> {
                     typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
                     ..*recognition
                 };
-                (body.def_id, direct(&recognition, &impls, &body.thir, drops))
+                (body.def_id, direct(&recognition, &impls, &pointers, &body.thir, drops))
             })
             .collect();
         let mut of: HashMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
@@ -121,7 +125,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 break;
             }
         }
-        CellBorrows { of, impls }
+        CellBorrows { of, impls, pointers }
     }
 
     /// Whether running `body`, a closure's, may ask of `held`, a borrow.
@@ -219,6 +223,42 @@ impl<'tcx> CellBorrows<'tcx> {
             }
             Called::Any => true,
         }
+    }
+
+    /// Whether calling a fn pointer of type `ptr` may ask of `held` (ADR
+    /// 0899): what calling any function or closure it may be may.
+    pub(in crate::lower) fn pointer_call_asks(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        ptr: Ty<'tcx>,
+        held: Borrow<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
+            return true;
+        };
+        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
+            true => self.runs_asks(tcx, f, Some(args), held, drops),
+            false => self.call_asks(recognition, (f, args), None, held, drops),
+        })
+    }
+
+    /// Whether calling a fn pointer of type `ptr` may run code rust-js
+    /// can't see (ADR 0899): what it may be may, or it may be anything.
+    pub(in crate::lower) fn pointer_call_runs_unseen(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        ptr: Ty<'tcx>,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
+            return true;
+        };
+        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
+            true => !matches!(self.of.get(&f), Some(Some(_))),
+            false => self.call_runs_unseen(recognition, (f, args)),
+        })
     }
 
     /// Whether running `body` of the crate's, of `args`, may ask of `held`.
@@ -780,29 +820,45 @@ fn std_impl_bounds<'tcx>(
 fn direct<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     impls: &Impls,
+    pointers: &super::fn_pointers::FnPointers<'tcx>,
     thir: &Thir<'tcx>,
     drops: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Direct<'tcx> {
     let tcx = recognition.tcx;
     let mut found = Direct::default();
+    let runs = |found: &mut Direct<'tcx>, called: Called<'tcx>| match called {
+        Called::Nothing => {}
+        Called::Cell(cell) => _ = found.own.cells.insert(cell),
+        Called::Body(body, args) => found.runs.push((body, Some(args))),
+        Called::Std(id, args) => {
+            let given = std_given(recognition, impls, id, args);
+            found.any |= given.any;
+            found.own.cells.extend(given.cells);
+            found.runs.extend(given.bodies);
+        }
+        Called::Any => found.any = true,
+    };
     for e in thir.exprs.iter() {
         match e.kind {
             ExprKind::Call { fun, ref args, .. } => match fn_def(thir[fun].ty) {
                 Some((id, generic_args)) => {
-                    match called(recognition, id, generic_args, args.first().map(|&a| (thir, a))) {
-                        Called::Nothing => {}
-                        Called::Cell(cell) => _ = found.own.cells.insert(cell),
-                        Called::Body(body, args) => found.runs.push((body, Some(args))),
-                        Called::Std(id, args) => {
-                            let given = std_given(recognition, impls, id, args);
-                            found.any |= given.any;
-                            found.own.cells.extend(given.cells);
-                            found.runs.extend(given.bodies);
-                        }
-                        Called::Any => found.any = true,
-                    }
+                    let called = called(recognition, id, generic_args, args.first().map(|&a| (thir, a)));
+                    runs(&mut found, called);
                 }
-                None => found.any = true,
+                // A fn pointer's, which runs what it may be (ADR 0899): a
+                // closure of the crate's, or what a call of a function does.
+                None => match pointers.may_be(tcx, thir[fun].ty) {
+                    Some(may_be) => {
+                        for &(f, args) in may_be {
+                            let called = match tcx.is_closure_like(f) {
+                                true => Called::Body(f, args),
+                                false => called(recognition, f, args, None),
+                            };
+                            runs(&mut found, called);
+                        }
+                    }
+                    None => found.any = true,
+                },
             },
             // Of the body's own parameters, as it is.
             ExprKind::Closure(ref closure) => {

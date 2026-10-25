@@ -93,3 +93,75 @@ pub fn touch(root: &Root) {
     console.error = error;
   }
 });
+
+// ADR 0899: React's ReactFiberLane picks a lane's index through `clz32`, a
+// thread-local fn pointer of `Math.clz32` or its fallback, while it holds
+// `root.entanglements`. What a fn pointer may be is each function the
+// crate makes one of, where no value of its type comes from outside.
+test("a borrow held while a fn pointer runs what the crate made it of isn't counted", async () => {
+  const dir = fixture("fn-pointer-borrows");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    pub static CLZ32: fn(u32) -> u32 = if js::is_defined(u32::leading_zeros) {
+        u32::leading_zeros
+    } else {
+        clz32_fallback
+    };
+}
+
+fn clz32_fallback(x: u32) -> u32 {
+    if x == 0 {
+        return 32;
+    }
+    31 - x.ilog2()
+}
+
+pub struct Root {
+    pub entanglements: RefCell<Vec<i32>>,
+    pub given: RefCell<Vec<u32>>,
+}
+
+pub fn root() -> Root {
+    Root {
+        entanglements: RefCell::new(vec![1, 2, 4, 8]),
+        given: RefCell::new(vec![0]),
+    }
+}
+
+fn pick_arbitrary_lane_index(lanes: i32) -> usize {
+    31 - CLZ32.with(|clz32| clz32(lanes as u32)) as usize
+}
+
+pub fn entangled_lanes(root: &Root, mut lanes: i32) -> i32 {
+    let entanglements = root.entanglements.borrow();
+    let mut entangled = lanes;
+    while lanes > 0 {
+        let index = pick_arbitrary_lane_index(lanes);
+        entangled |= entanglements[index];
+        lanes &= !(1 << index);
+    }
+    entangled
+}
+
+pub fn apply(root: &Root, f: fn(i32) -> i32) -> i32 {
+    let given = root.given.borrow();
+    f(given[0] as i32)
+}
+
+pub fn touch(root: &Root) {
+    root.given.borrow_mut().push(1);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const entanglements = root.entanglements;\n");
+  expect(js).not.toContain("$borrow(root.entanglements");
+  // What JS calls `apply` with may be any function: counted.
+  expect(js).toContain("$borrow(root.given, true)");
+  const lib = await import(join(dir, "lib.js"));
+  const r = lib.root();
+  expect(lib.entangledLanes(r, 0b101)).toBe(0b101);
+  expect(lib.apply(r, (n: number) => n + 1)).toBe(1);
+  expect(() => lib.apply(r, () => (lib.touch(r), 0))).toThrow("already borrowed");
+});

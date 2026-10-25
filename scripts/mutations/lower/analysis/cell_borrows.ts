@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "crate-call-borrows-anything",
     breaks: "a function of the crate's may borrow anything, as before, so `timerQueue` and `taskQueue` stay `{ value }` cells",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "                    Called::Body(body, args) => found.runs.push((body, Some(args))),\n",
-    replace: "                    Called::Body(..) => found.any = true,\n",
+    find: "        Called::Body(body, args) => found.runs.push((body, Some(args))),\n",
+    replace: "        Called::Body(..) => found.any = true,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
   },
   {
@@ -281,5 +281,13 @@ export const mutations: Mutation[] = [
     find: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => false,\n",
     replace: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => true,\n",
     tests: ["test/lowering-cell-borrows.test.ts"],
+  },
+  {
+    name: "fn-pointer-call-runs-anything",
+    breaks: "a fn pointer's call may run anything, as before, so `clz32`'s, while `root.entanglements` is held, counts it",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                None => match pointers.may_be(tcx, thir[fun].ty) {\n",
+    replace: "                None => match None::<&[(DefId, ty::GenericArgsRef<'tcx>)]> {\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
   },
 ];

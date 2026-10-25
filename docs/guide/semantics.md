@@ -269,7 +269,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
   object, changed in place, and one no borrow of which is ever held while
   code that may borrow it runs isn't checked at all
-  ([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md)):
+  ([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+  A call of a fn pointer runs what the crate made one of that type of,
+  `Math.clz32` or a fallback, unless a value of its type may come from
+  JS or a library, an exported function's parameter say, which may be
+  anything
+  ([0899](../decisions/0899-a-fn-pointer-runs-what-the-crate-made-it-of.md)):
 
 ```rust
 # use std::cell::RefCell;

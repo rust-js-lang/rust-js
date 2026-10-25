@@ -145,6 +145,17 @@ pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
     path.starts_with("std::ptr::") || matches!(path.as_str(), "std::mem::transmute_copy" | "std::mem::uninitialized")
 }
 
+/// std's functions that may give a value of a type they weren't given one
+/// of (ADR 0899): what addresses memory, an intrinsic of memory,
+/// `transmute`'s, and a downcast of a `dyn Any`, which gives what was
+/// made one anywhere. Every other std function gives only what it was
+/// given, or makes of it: an empty `Vec<T>` holds no `T`.
+pub(crate) fn gives_what_it_isnt_given(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    addresses_memory(tcx, id)
+        || memory_intrinsic(tcx, id)
+        || (is_std_crate(tcx, id) && tcx.item_name(id).as_str().starts_with("downcast"))
+}
+
 /// std's bodies rust-js compiles from the MIR the toolchain ships, into
 /// `@rust-js/std` (ADR 0561): each by its type, as
 /// `core::iter` exports it, the trait of the impl, or none for the type's
