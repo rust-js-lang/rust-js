@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0753](0753-a-branch-of-only-comments-keeps-them.md),
 whose block of only comments kept them where it ends, to a block whose
 comments come after its last code, and to a function's `None` given at its
-end, which is no `return;`.
+end, which is no `return;`. Amended below: a `try`'s, a `catch`'s and a
+`finally`'s block too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments, which
 nothing runs.
@@ -77,3 +78,39 @@ export function found(n) {
   (`scripts/mutations/lower/mir/assign.ts`), `comments-end-only-comments`,
   `commented-never` (`lower/sources.ts`) and
   `function-body-comments-outside` (`to_oxc/statements.ts`).
+
+## Amendment: a `try`'s and a `catch`'s block too
+
+React's BadMapPolyfill ends the `try` it writes with `/* eslint-enable
+no-new */`, which its port writes as the last line of the closure it
+gives `catch_unwind`. The closure's body is the `try`'s (ADR 0660), its
+comments at its end with it, but the printer gave a `try`'s, a `catch`'s
+and a `finally`'s block no span, as it gave other blocks theirs
+(`commented_end`), so the comment went to the next statement there was:
+
+```js
+  new Set([frozenObject]);
+} catch (_e) {
+  /* eslint-enable no-new */
+  // TODO: Consider warning about bad polyfills
+  hasBadMapPolyfill.value = true;
+}
+```
+
+and a comment after a `catch`'s last code went after the whole `try`.
+**A `try`'s, a `catch`'s and a `finally`'s block reach the comments they
+end with, as any block does** (`clause_block`, of `commented_end`'s
+answer), and starts there too, as oxc prints what's at a `catch`'s
+block's start before its `{`:
+
+```js
+  new Set([frozenObject]);
+  /* eslint-enable no-new */
+} catch (_e) {
+```
+
+Test: `lowering-comments`'s "a comment at the end of catch_unwind's
+closure or its Err's block is at its block's end", in what a module runs
+when it's loaded and in a function, each run. Mutations
+`clause-block-comments-outside` and `clause-block-starts-at-comments`
+(`to_oxc/statements.ts`).

@@ -331,6 +331,16 @@ impl<'a> Cx<'a> {
         Statement::new_block_statement(commented_end(stmts), self.stmts(stmts), &self.b)
     }
 
+    /// A `try`'s, a `catch`'s or a `finally`'s block of `stmts`, to where
+    /// the comments it ends with end, as any block's (ADRs 0753, 0862): a
+    /// `catch_unwind` closure's last comment is the `try`'s, before its
+    /// `}`, not the `catch`'s first. It starts there too, as oxc prints
+    /// what's where a `catch`'s block starts before its `{`.
+    fn clause_block(&self, stmts: &[js::Stmt]) -> ArenaBox<'a, BlockStatement<'a>> {
+        let end = commented_end(stmts).end;
+        BlockStatement::boxed(Span::new(end, end), self.stmts(stmts), &self.b)
+    }
+
     /// `catch (error) { handler }`, or `catch { handler }` of no binding.
     fn catch_clause(&self, error: Option<&str>, handler: &[js::Stmt]) -> ArenaBox<'a, CatchClause<'a>> {
         let b = &self.b;
@@ -338,7 +348,7 @@ impl<'a> Cx<'a> {
             let name = BindingPattern::new_binding_identifier(SPAN, self.name(error), b);
             CatchParameter::new(SPAN, name, None, b)
         });
-        CatchClause::boxed(SPAN, param, BlockStatement::boxed(SPAN, self.stmts(handler), b), b)
+        CatchClause::boxed(SPAN, param, self.clause_block(handler), b)
     }
 
     fn stmt(&self, s: &js::Stmt) -> Statement<'a> {
@@ -476,23 +486,11 @@ impl<'a> Cx<'a> {
                     ] => (inner, Some(self.catch_clause(error.as_deref(), handler))),
                     _ => (body, None),
                 };
-                Statement::new_try_statement(
-                    sp,
-                    BlockStatement::boxed(SPAN, self.stmts(body), b),
-                    clause,
-                    Some(BlockStatement::boxed(SPAN, self.stmts(finally), b)),
-                    b,
-                )
+                Statement::new_try_statement(sp, self.clause_block(body), clause, Some(self.clause_block(finally)), b)
             }
             StmtKind::TryCatch(body, error, handler) => {
                 let clause = self.catch_clause(error.as_deref(), handler);
-                Statement::new_try_statement(
-                    sp,
-                    BlockStatement::boxed(SPAN, self.stmts(body), b),
-                    Some(clause),
-                    None,
-                    b,
-                )
+                Statement::new_try_statement(sp, self.clause_block(body), Some(clause), None, b)
             }
             StmtKind::While { label, cond, body } => {
                 let w = Statement::new_while_statement(sp, self.expr(cond), self.block(body), b);

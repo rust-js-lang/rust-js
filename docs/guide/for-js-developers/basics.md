@@ -986,6 +986,39 @@ export function found(n, out) {
 }
 ```
 
+A `catch_unwind` closure's body is a `try`'s block, and an `Err` arm's a
+`catch`'s, each with the comments it ends with at its end:
+
+```rust
+use std::panic::catch_unwind;
+
+pub fn checked(f: fn(u32) -> u32) -> u32 {
+    if let Err(_e) = catch_unwind(|| {
+        f(1);
+        f(2);
+        // Called twice.
+    }) {
+        println!("threw");
+        // Nothing else to do.
+    }
+    f(3)
+}
+```
+
+```js
+export function checked(f) {
+  try {
+    f(1);
+    f(2);
+    // Called twice.
+  } catch (_e) {
+    console.log("threw");
+    // Nothing else to do.
+  }
+  return f(3);
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a

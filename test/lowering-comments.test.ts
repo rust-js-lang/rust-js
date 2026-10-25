@@ -448,6 +448,63 @@ pub fn run(f: &dyn Fn(u32) -> u32, x: u32) -> u32 {
   ).toBe(0);
 });
 
+// React's BadMapPolyfill: `/* eslint-enable no-new */`, the last line of
+// the closure it gives `catch_unwind`, after its last call, is at the end
+// of the `try`, as upstream's, not the first of the `catch`; and a comment
+// after a `catch`'s last code is at its end, not before its `{` nor after
+// the statement (ADR 0862, amended).
+test("a comment at the end of catch_unwind's closure or its Err's block is at its block's end", async () => {
+  const { js, lib } = await compiled("comment-ends-try", `use std::cell::Cell;
+use std::panic::catch_unwind;
+
+use js::Kind;
+
+thread_local! {
+    static BAD: Cell<bool> = const { Cell::new(false) };
+    static SEEN: Cell<u32> = const { Cell::new(0) };
+}
+
+js::on_load! {
+    if let Err(_e) = catch_unwind(|| {
+        let frozen = js::object::freeze(js::dict::new::<Kind>());
+        /* eslint-disable no-new */
+        js::set::new(Some(&[frozen]));
+        js::set::new(Some(&[frozen]));
+        /* eslint-enable no-new */
+    }) {
+        BAD.set(true);
+        // Nothing else to do.
+    }
+}
+
+pub fn bad() -> bool {
+    BAD.get()
+}
+
+pub fn tried(f: fn(u32) -> u32) -> u32 {
+    SEEN.set(0);
+    if let Err(_e) = catch_unwind(|| {
+        SEEN.set(f(1));
+        SEEN.set(f(SEEN.get()));
+        // Both ran.
+    }) {
+        SEEN.set(SEEN.get() + 100);
+        // It threw.
+    }
+    SEEN.get()
+}
+`);
+  expect(js).toContain("  new Set([frozen]);\n  /* eslint-enable no-new */\n} catch (_e) {\n  BAD = true;\n  // Nothing else to do.\n}\n");
+  expect(js).toContain("    seen = f(seen);\n    // Both ran.\n  } catch (_e) {\n    seen = (seen + 100) >>> 0;\n    // It threw.\n  }\n  return seen;");
+  expect(lib.bad()).toBe(false);
+  expect(lib.tried(((n: number) => n + 1) as never)).toBe(3);
+  expect(
+    lib.tried((() => {
+      throw new Error("no");
+    }) as never),
+  ).toBe(100);
+});
+
 // React's mapIntoArray: `escapedPrefix + // $FlowFixMe[incompatible-type]
 // .. (mappedChild.key != null && .. ? .. : '') + childKey`. The port writes
 // the comment before the `+` its operand follows, as rustfmt puts an

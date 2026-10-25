@@ -203,6 +203,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
   },
   {
+    name: "clause-block-comments-outside",
+    breaks: "a `catch_unwind` closure's last comment, `/* eslint-enable no-new */`, is the `catch`'s first, and a `catch`'s last after the `try` (ADR 0862, amended)",
+    file: "src/to_oxc/statements.rs",
+    find: "        let end = commented_end(stmts).end;\n",
+    replace: "        let end = SPAN.end;\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment at the end of catch_unwind's closure"],
+  },
+  {
+    name: "clause-block-starts-at-comments",
+    breaks: "a `catch`'s block starts where its comments are, which oxc prints before its `{`, `catch (_e)\\n// It threw.\\n{` (ADR 0862, amended)",
+    file: "src/to_oxc/statements.rs",
+    find: "        BlockStatement::boxed(Span::new(end, end), self.stmts(stmts), &self.b)\n",
+    replace: "        BlockStatement::boxed(Span::new(end.saturating_sub(1), end), self.stmts(stmts), &self.b)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment at the end of catch_unwind's closure"],
+  },
+  {
     name: "try-catch-finally-nested",
     breaks: "a guard's `finally` whose `try` holds a `catch_unwind`'s `try` and `catch` alone is `try { try { .. } catch { .. } } finally { .. }`, where JS writes one `try`, `catch` and `finally`",
     file: "src/to_oxc/statements.rs",
