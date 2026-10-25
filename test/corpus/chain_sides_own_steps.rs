@@ -70,5 +70,10 @@ fn main() {
     // reversed `Vec`'s, one slice, front to back (#287).
     let skipped = louds(63, 3).into_iter().rev().skip(2).chain(louds(66, 2)).nth(2);
     println!("{:?}", skipped.map(|l| l.0));
+    // A peekable's and a fuse's `count`, their source's own: a `take`'s of a
+    // reversed `Vec`, which drops one slice (#293).
+    let peeked = louds(73, 2).into_iter().rev().take(2).peekable().count();
+    let fused = louds(75, 2).into_iter().rev().take(2).fuse().count();
+    println!("{peeked} {fused}");
     println!("end");
 }

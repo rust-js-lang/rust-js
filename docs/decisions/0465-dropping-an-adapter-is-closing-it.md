@@ -346,3 +346,14 @@ so they get it with the case that does. `step_by_compiled_source_nth`
 adds the seed's shape, and `step-by-nth-drop-ungiven` is caught.
 Readability: the line's renamed temporaries add to that share (735 to
 736.1 in 10,000 lines), as each such case does.
+
+## Amendment: a compiled `Peekable`'s and `Fuse`'s `count` is std's (#293)
+
+std's `Peekable::count` is what it peeked at, then its source's
+`count`. `Fuse::count` is its source's. Through `take(2)` of a reversed
+`Vec`, that's `Take::count`, which advances the source and drops one
+slice front to back. The compiled structs had no `count`, so `$count`
+stepped them back to front (fuzz seed 62344). `std_iterator_steps` now
+gives them `$peekableCount` and `$fuseCount`, and `$stdIterator` exposes
+them. `chain_sides_own_steps` counts both, and `peekable-count-unlisted`
+and `fuse-count-unlisted` are caught.

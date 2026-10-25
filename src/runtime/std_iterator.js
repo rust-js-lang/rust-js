@@ -35,6 +35,10 @@ function $stdIterator(struct, steps) {
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
+  // Its `count`, std's, its source's own (#293).
+  if (steps.count !== undefined) {
+    it.count = (drop) => steps.count(it, drop);
+  }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
   if (steps.advanceBy !== undefined) {

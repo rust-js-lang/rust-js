@@ -7,6 +7,7 @@ import {
   $findDropping,
   $foldBack,
   $fuseAdvanceBy,
+  $fuseCount,
   $fuseFold,
   $fuseTryFold,
   $given,
@@ -19,6 +20,7 @@ import {
   $nthBack,
   $nthDropping,
   $overflowing,
+  $peekableCount,
   $peekableFold,
   $peekableHint,
   $peekableTryFold,
@@ -1493,6 +1495,7 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
       last: (iterator) => peekableIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $peekableFold(it, init, f, SelfIterator),
       tryFold: (it, init, f, broke) => $peekableTryFold(it, init, f, broke, SelfIterator),
+      count: (it, drop) => $peekableCount(it, drop, SelfIterator),
     },
   );
 }
@@ -1510,6 +1513,7 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
       fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
       tryFold: (it, init, f, broke) =>
         $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf, SelfFused),
+      count: (it, drop) => $fuseCount(it, drop, SelfIterator),
       advanceBy: (it, m, drop) => $fuseAdvanceBy(it, m, drop, SelfIterator, dropSelf, SelfFused),
     },
   );
@@ -1706,6 +1710,7 @@ export function iterator_flatMap(
               $fuseTryFold(it, init, f, broke, undefined, (map) => {
                 map.return();
               }),
+            count: (it, drop) => $fuseCount(it, drop),
             advanceBy: (it, m, drop) =>
               $fuseAdvanceBy(it, m, drop, undefined, (map) => {
                 map.return();

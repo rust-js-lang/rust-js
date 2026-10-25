@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fuse-count-unlisted",
+    breaks: "std's compiled `Fuse` has no `count`, so `rev().take(2).fuse().count()` steps each item back to front, not its source's one slice (#293)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some((\"$fuseCount\", args.type_at(0))),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "peekable-count-unlisted",
+    breaks: "std's compiled `Peekable` has no `count`, so `rev().take(2).peekable().count()` steps each item back to front, not its source's one slice (#293)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            ty::Adt(_, args) if self.is_peekable(ty) => Some((\"$peekableCount\", args.type_at(0))),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "fuse-advance-by-unlisted",
     breaks: "std's compiled `Fuse` has no `advance_by`, so it steps each item, not its source's (#286)",
     file: "src/lower/iterators/knowing.rs",

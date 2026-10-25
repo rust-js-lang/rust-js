@@ -92,6 +92,35 @@ function $revAdvanceBy(rev, m, drop, iterator, back) {
   return m;
 }
 
+// `count()` of `it`, by its dictionary, `iterator`: its own, a `Take`'s
+// advancing its source, else each item given to `drop` (#293).
+function $countOf(it, drop, iterator) {
+  return $count(iterator === undefined ? it : $given(it, iterator, true), drop);
+}
+
+// A `Peekable`'s `count`, std's: what it peeked at, unless that was its
+// end, then its source's own (#293).
+function $peekableCount(peekable, drop, iterator) {
+  const peeked = peekable.peeked;
+  peekable.peeked = undefined;
+  let counted = 0;
+  if (peeked !== undefined) {
+    const item = $someValue(peeked);
+    if (item == null) return 0;
+    drop?.($someValue(item));
+    counted = 1;
+  }
+  return counted + $countOf(peekable.iter, drop, iterator);
+}
+
+// A `Fuse`'s `count`, std's: its source's own, while it has one (#293).
+function $fuseCount(fuse, drop, iterator) {
+  if (fuse.iter == null) return 0;
+  const iter = $someValue(fuse.iter);
+  fuse.iter = undefined;
+  return $countOf(iter, drop, iterator);
+}
+
 // A `Fuse`'s fold, std's: its source's, while it has one, which it lets go
 // of, dropped by `drop`, as its `next` does at its end.
 function $fuseFold(fuse, init, f, iterator, drop) {

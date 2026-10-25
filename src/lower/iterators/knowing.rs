@@ -702,6 +702,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
             }
         }
+        // Its `count`, std's: a peekable's what it peeked at then its
+        // source's own, a fuse's its source's, a `Take`'s advancing a
+        // reversed `Vec` by one slice (#293).
+        let counted = match ty.peel_refs().kind() {
+            ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableCount", args.type_at(0))),
+            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseCount", args.type_at(0))),
+            _ => None,
+        };
+        if let Some((helper, source)) = counted {
+            let mut args = vec![Expr::var("it"), Expr::var("drop")];
+            args.extend(self.iterator_evidence(source, iterator));
+            let count = Expr::arrow(
+                vec!["it".into(), "drop".into()],
+                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
+            );
+            props.push(crate::js::Prop::Field("count".into(), count));
+        }
         // Its `advance_by`, std's: a fuse's its source's while it has one, a
         // `FusedIterator`'s kept; a `Rev`'s its source's `advance_back_by`,
         // a `Vec`'s, which drops what it passes as one slice (#286).
