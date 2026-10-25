@@ -26,4 +26,30 @@ fn main() {
         }
     }
     println!("{best:?}");
+    scaled_or_last();
+}
+
+fn same<T>(x: T) -> T {
+    x
+}
+
+// Of `chains`' stage, an `if let` it empties, in each branch of an `if`.
+fn scaled_or_last() {
+    if same(1.0f32) <= same(0.0f32) || same(3.0f64).is_infinite() {
+        let factor = if same(false) { same(0u16) } else { same(65534u16) };
+        if let Some(scaled) = None::<u16>.map(|e| e.wrapping_mul(factor)) {
+            let _ = scaled;
+        }
+    } else {
+        for _ in 0..same(4u32) {}
+        if let Some(last) = [same(-2i64), same(5)]
+            .last()
+            .copied()
+            .map(|e| e.wrapping_mul(same(7i64)))
+        {
+            let _ = last;
+        }
+    }
+    for _ in 0..same(3u32) {}
+    println!("scaled or last");
 }

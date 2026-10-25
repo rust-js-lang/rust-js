@@ -14,6 +14,18 @@ function probe(n) {
 function main() {
   const _seen = [...$lazyRange(0, 3).map(probe), 9];
   const _plain = [...$iter([1, 2]), 3];
+  const end = probe(1);
+  for (let round = 0; round < end; round++) {
+    const inspect = (seen) => {
+      console.log(`see ${seen}`);
+    };
+    const value = [probe(round), probe(round + 1)].values().map((item) => {
+      inspect(item);
+      return item;
+    });
+    const value$1 = [probe(9)];
+    const _again = [...value, ...value$1];
+  }
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

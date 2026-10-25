@@ -590,3 +590,14 @@ arguments write one, so `let _v: Vec<i32> = a.into_iter().chain(b)
 (fuzz seed 44880). An array with a spread is now kept whole. Held by
 `test/corpus/unread_collected_chain.rs`, whose `map(probe)` side still
 prints as it's stepped, and the mutation `unread-spreads-apart`.
+
+## Amendment: a spread reads more than variables (#273)
+
+`Expr::reads_only_vars` took `[...it]` to read only `it`. So `prepare`'s
+`unread` took away an unread `const` of a collected chain in a loop,
+`let _v: Vec<_> = a.into_iter().inspect(..).chain(b).collect();`, and its
+`inspect` never ran (fuzz seed 49584). Spreading steps what it spreads,
+an iterator's `next`, which may run anything, so only an array written
+out reads only its items. Held by `unread_collected_chain.rs`'s loop and
+the mutation `spread-reads-only-vars`. `has_effects` reads a spread the
+same way, by what it spreads, and no case shows that matters yet.

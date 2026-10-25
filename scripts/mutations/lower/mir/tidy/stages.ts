@@ -628,4 +628,12 @@ export const mutations: Mutation[] = [
     replace: "    // never reached (#270).\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_decided_by_outer_if.rs$"],
   },
+  {
+    name: "chains-empty-if-kept",
+    breaks: "an `if let` emptied by tidy's `chains` stage stays, and the stage's contract panics: the compiler crashes (#247)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            // (#247).\n            pass(\"never taken\", |b, _| bottom_up(b, &mut never_taken)),\n        ],\n        ensures: &[\n            contracts::NOTHING_AFTER_A_JUMP,\n            contracts::LABELS_NAMED,\n            contracts::NO_EMPTY_IF,\n        ],\n        again: &[],\n    },\n    Stage {\n        name: \"written\",",
+    replace: "            // (#247).\n        ],\n        ensures: &[\n            contracts::NOTHING_AFTER_A_JUMP,\n            contracts::LABELS_NAMED,\n            contracts::NO_EMPTY_IF,\n        ],\n        again: &[],\n    },\n    Stage {\n        name: \"written\",",
+    tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied.rs$"],
+  },
 ];

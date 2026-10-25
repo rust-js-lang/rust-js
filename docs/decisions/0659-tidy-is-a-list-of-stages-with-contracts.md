@@ -313,3 +313,7 @@ code is never reached, so the output was correct, but `values`'s
 ends with `unreachable_after`. Held by
 `test/corpus/guard_decided_by_outer_if.rs` and the mutation
 `decided-tests-unreachable-kept`.
+
+`chains`, which runs the same passes again on what's read in place, ends
+with `never taken` too (fuzz seed 49772), held by
+`loop_branch_emptied.rs`'s `scaled_or_last` and `chains-empty-if-kept`.

@@ -405,6 +405,10 @@ pub(super) const STAGES: &[Stage] = &[
                 let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
                 js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
             }),
+            // An `if` those emptied, an `if let` whose binding is only read,
+            // gone, its test kept where it does anything, as it ensures
+            // (#247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,

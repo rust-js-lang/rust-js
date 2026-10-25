@@ -26,5 +26,26 @@ function main() {
   const end = probe(1);
   for (let i = 0; i < end; i++) {}
   console.log(`${best == null ? "None" : `Some(${best})`}`);
+  scaledOrLast();
+}
+
+function same(x) {
+  return x;
+}
+
+// Of `chains`' stage, an `if let` it empties, in each branch of an `if`.
+function scaledOrLast() {
+  if (same(1) <= same(0) || Math.abs(same(3)) === Infinity) {
+    const factor = same(false) ? same(0) : same(65534);
+    const e = undefined;
+  } else {
+    const end = same(4);
+    for (let i = 0; i < end; i++) {}
+    const e = [same(-2n), same(5n)].at(-1);
+    const last = e != null ? BigInt.asIntN(64, e * same(7n)) : undefined;
+  }
+  const end = same(3);
+  for (let i = 0; i < end; i++) {}
+  console.log("scaled or last");
 }
 //# sourceMappingURL=case.js.map

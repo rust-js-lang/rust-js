@@ -200,4 +200,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
   },
+  {
+    name: "spread-reads-only-vars",
+    breaks: "a spread of a variable reads only variables, so an unread `[...it]`, a collect of a chain in a loop, is taken away and its `inspect` never runs (#273)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(_)) && a.reads_only_vars(),\n",
+    replace: "            ExprKind::Spread(a) => a.reads_only_vars(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
+  },
 ];

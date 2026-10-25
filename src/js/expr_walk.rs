@@ -414,7 +414,11 @@ impl Expr {
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_) => true,
-            ExprKind::Unary(_, a) | ExprKind::Spread(a) => a.reads_only_vars(),
+            ExprKind::Unary(_, a) => a.reads_only_vars(),
+            // Spreading steps what it spreads, an iterator's `next`, which
+            // may run anything: only an array written out reads only its
+            // items (#273).
+            ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(_)) && a.reads_only_vars(),
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
