@@ -240,6 +240,12 @@ pub(super) const STAGES: &[Stage] = &[
                 let changing = changing(b);
                 js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))
             }),
+            // A chain `rev()` was given in a temporary, read in place now,
+            // `$rev(c.filter(p))`: reversed inward, as `rev_items` makes one
+            // it sees, of its source stepped from its back (#205).
+            pass("reversed inward", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::mir::iter::reversed_in_place)
+            }),
             // A chain read in place now, `$lent($iter(xs)).some(f)` of `const
             // _7 = $iter(xs);`: the array's; and a range made there, its
             // numbers made as they're stepped.

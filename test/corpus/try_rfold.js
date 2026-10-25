@@ -41,7 +41,7 @@ function main() {
   console.log(
     `${stopped == null ? "None" : `Some(${stopped})`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
-  const all = $tryFoldSome($rev($iter([1, 2, 3])), 1, (acc, x) =>
+  const all = $tryFoldSome($iter([1, 2, 3].toReversed()), 1, (acc, x) =>
     $checked(acc * ((x + 1) >>> 0), 0, 4294967295),
   );
   console.log(`${all == null ? "None" : `Some(${all})`}`);

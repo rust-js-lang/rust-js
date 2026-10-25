@@ -11,8 +11,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn closed_rev(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let item = self.iterator_item(iter_ty).expect("an iterator's item");
         let item_drop = self.std_drop_function(item, span)?;
-        if item_drop.is_none() || self.array_source(iter_ty).is_none() {
+        if item_drop.is_none() {
             return Ok(None);
+        }
+        // Another, closed already, that knows its back, a `Rev`'s or a
+        // `filter`'s: stepped from there as it is, never its items taken
+        // out; tidy's `reversed_in_place` turns it inward (#205).
+        if self.array_source(iter_ty).is_none() {
+            return Ok(self
+                .has_a_back(iter_ty)
+                .then(|| Expr::call_helper("$rev", vec![receiver])));
         }
         let it = match self.array_source(iter_ty) {
             Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => receiver,
@@ -365,10 +373,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// on the same items, in the same order (ADR 0164). An index, an
 /// `enumerate`'s `(x, i) => [i, x]`, would count from the other end, so
 /// it's made of the array's items first, where nothing's called before.
+/// `$rev(chain)` of a chain read in place after it was made, a
+/// temporary's: `reversed_inward`'s of it, where it says (#205).
+pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
+    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.
+    if let js::ExprKind::Call(callee, args) = &e.kind
+        && callee.helper_name() == Some("$rev")
+        && let [inner] = args.as_slice()
+        && let js::ExprKind::Call(inner_callee, inner_args) = &inner.kind
+        && inner_callee.helper_name() == Some("$rev")
+        && let [it] = inner_args.as_slice()
+    {
+        *e = Expr {
+            span: e.span,
+            ..it.clone()
+        };
+        return;
+    }
+    if let js::ExprKind::Call(callee, args) = &e.kind
+        && callee.helper_name() == Some("$rev")
+        && let [chain] = args.as_slice()
+        && !matches!(chain.kind, js::ExprKind::Var(_))
+        && let Some(reversed) = reversed_inward(chain)
+        && !matches!(&reversed.kind, js::ExprKind::Call(c, _) if c.helper_name() == Some("$rev"))
+    {
+        *e = Expr {
+            span: e.span,
+            ..reversed
+        };
+    }
+}
+
 fn reversed_inward(e: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
+    // An array's items closed to drop what's left, `$closing($iter(v),
+    // drop)`: stepped from its back, `$rev(..)`, which drops what's left
+    // front to back, as `closed_rev` makes it (ADR 0516, #205).
+    if callee.helper_name() == Some("$closing") && args.first().is_some_and(crate::lower::iterators::is_stepped_items) {
+        return Some(Expr::call_helper("$rev", vec![e.clone()]));
+    }
     // `$iter(v)` of an array just made iterable: `$iter(v.toReversed())`.
     if crate::lower::iterators::is_stepped_items(e) {
         let items = crate::lower::iterators::iterated(e.clone());

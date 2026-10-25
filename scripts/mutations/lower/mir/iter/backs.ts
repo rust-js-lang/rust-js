@@ -163,8 +163,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-destructors-reversed-copy",
     breaks: "`rev()` of an array's items with a destructor is a reversed copy, which drops what's left back to front",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        if item_drop.is_none() || self.array_source(iter_ty).is_none() {\n",
-    replace: "        if item_drop.is_none() || self.array_source(iter_ty).is_none() || true {\n",
+    find: "        if item_drop.is_none() {\n            return Ok(None);\n        }\n",
+    replace: "        if item_drop.is_none() || true {\n            return Ok(None);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
   {
@@ -311,5 +311,22 @@ export const mutations: Mutation[] = [
     find: "                Ok(items) if self.knows_its_back(iter_ty) => {\n",
     replace: "                Ok(items) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_rev_own_back.rs$"],
+  },
+  {
+    name: "rev-of-held-rev-taken-out",
+    breaks: "`rev().rev()` of an array's items with a destructor takes them out, `$rest(..).toReversed()`, nothing closing what's left (#205)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            return Ok(self\n                .has_a_back(iter_ty)\n",
+    replace: "            return Ok((false && self.has_a_back(iter_ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
+  },
+  {
+    name: "rev-of-rev-kept",
+    breaks: "`rev().rev()` of an array's items with a destructor, held, stays `$rev($rev(it))`, not `it` (#205)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.\n    if let js::ExprKind::Call(callee, args) = &e.kind\n",
+    replace: "    // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself.\n    if false && let js::ExprKind::Call(callee, args) = &e.kind\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
+    snapshots: true,
   },
 ];

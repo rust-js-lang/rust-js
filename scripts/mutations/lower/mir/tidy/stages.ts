@@ -543,4 +543,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "a block MIR made followed by a return"],
   },
+  {
+    name: "rev-of-closed-chain-unturned",
+    breaks: "`filter(..).rev()` of an array's items with a destructor, its chain a temporary's, is `$rev` of JS's own `filter`, which has no back, and throws (#205)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::each_expr_mut(b, &mut crate::lower::mir::iter::reversed_in_place)\n",
+    replace: "                let _ = b;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
+  },
 ];

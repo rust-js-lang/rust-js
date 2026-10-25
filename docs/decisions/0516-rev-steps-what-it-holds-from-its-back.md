@@ -42,3 +42,18 @@ front to back. `closed_adapter` makes it, beside `peekable()`'s `$peekable`
   one's.
 - Mutations copy the array reversed, drop none of what a `Rev` holds, step
   from the front, and refuse a held `Rev`.
+
+## Amendment: behind a `filter`, and of a `Rev`
+
+`rev()` of an array's items with a destructor was `$rev` of them alone:
+behind a `filter` it was `$rev` of JS's own `filter`, which has no back,
+and of a `Rev` it took the items out, `$rest(..).toReversed()`, nothing
+closing what was left; each threw (#205). One that knows its back, held
+or not, is `$rev(it)`, and tidy's `reversed_in_place`, once a
+temporary's chain is in place, turns it inward as `rev_items` does one
+it sees: `$rev(c.filter(p))` is `$rev(c).filter(p)`, a `filter` called
+from the back on the same items, and `$rev($rev(it))` is `it`
+(`rev_of_closed_items`, and four mutations). `try_rfold`'s
+`$rev($iter(xs))` reads `$iter(xs.toReversed())` so too. The readability
+measure's `$iter` share grows by the new case's iterators, each closed to
+drop what it doesn't give, as any of items with a destructor is.
