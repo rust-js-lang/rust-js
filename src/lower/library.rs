@@ -3,7 +3,7 @@
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
-use crate::library::{Dependencies, Held, HeldImport, Imported, Item, Library, VERSION};
+use crate::library::{Dependencies, Held, HeldImport, Imported, Item, Library, RcShape, VERSION};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -35,7 +35,7 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// from its types: the drops it takes (ADR 0098), whether it may fail
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of
 /// its type parameters (ADR 0145).
-pub(super) struct Contracts<'a> {
+pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
@@ -50,17 +50,17 @@ pub(super) struct Contracts<'a> {
     pub(super) keeps_capacity: bool,
     /// Whether its writers take their `Formatter`'s options (ADR 0137).
     pub(super) writers_take_options: bool,
-    /// Whether it counts its `Rc`s (ADR 0844).
-    pub(super) counts_rcs: bool,
+    /// What the `Rc`s it counts point at (ADR 0847).
+    pub(super) counted: &'a super::analysis::Counted<'tcx>,
 }
 
 /// The items another crate can reach, and the impls it calls through them;
 /// and the bindings its modules hold, which a consumer naming one through
 /// its module reads through it (ADR 0633).
-pub(super) fn exports(
-    tcx: TyCtxt<'_>,
+pub(super) fn exports<'tcx>(
+    tcx: TyCtxt<'tcx>,
     functions: &HashMap<DefId, FnInfo>,
-    contracts: &Contracts<'_>,
+    contracts: &Contracts<'_, 'tcx>,
     (trait_impls, held): (&[DefId], &HashMap<LocalModId, Vec<HeldBinding>>),
     dependencies: &Dependencies,
 ) -> Library {
@@ -73,7 +73,7 @@ pub(super) fn exports(
         stepped,
         keeps_capacity,
         writers_take_options,
-        counts_rcs,
+        counted,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -149,7 +149,58 @@ pub(super) fn exports(
         keeps_capacity: *keeps_capacity,
         writers_take_options: *writers_take_options,
         held,
-        counts_rcs: *counts_rcs,
+        counted_rcs: {
+            let mut shapes: Vec<RcShape> = match counted.all {
+                true => vec![RcShape {
+                    of: None,
+                    args: Vec::new(),
+                }],
+                false => counted.types.iter().map(|&ty| rc_shape(tcx, ty)).collect(),
+            };
+            shapes.sort();
+            shapes.dedup();
+            shapes
+        },
+    }
+}
+
+/// What a library's contract calls `head`, a type's constructor (ADR 0847).
+fn head_key(tcx: TyCtxt<'_>, head: &super::analysis::Head) -> String {
+    match head {
+        super::analysis::Head::Def(kind, id) => format!("{kind}{}", key(tcx, *id)),
+        super::analysis::Head::Named(name) => name.clone(),
+    }
+}
+
+/// What a library's contract calls `ty`, a type an `Rc` it counts points
+/// at, `_` where it may be any (ADR 0847).
+fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape {
+    match super::analysis::head(tcx, ty) {
+        Some((head, args)) => RcShape {
+            of: Some(head_key(tcx, &head)),
+            args: args.into_iter().map(|arg| rc_shape(tcx, arg)).collect(),
+        },
+        None => RcShape {
+            of: None,
+            args: Vec::new(),
+        },
+    }
+}
+
+/// May `ty` be the type `shape` names, a library's, a type parameter of
+/// either any type (ADR 0847)? As `rc_counts::may_be` says of two types.
+fn may_be_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+    match (&shape.of, super::analysis::head(tcx, ty)) {
+        (Some(of), Some((head, args))) => {
+            *of == head_key(tcx, &head)
+                && shape.args.len() == args.len()
+                && shape
+                    .args
+                    .iter()
+                    .zip(args)
+                    .all(|(shape, arg)| may_be_shape(tcx, shape, arg))
+        }
+        _ => true,
     }
 }
 
@@ -158,21 +209,22 @@ pub(super) fn exports(
 /// What the libraries can hand this crate, through the items of theirs
 /// its bodies use: their parameters, results and fields (ADR 0626).
 #[derive(Default)]
-pub(super) struct Reached {
+pub(super) struct Reached<'tcx> {
     /// A function a library made, its `impl Fn`, the one way its closure
     /// reaches the crate, which may hold a value with a destructor where the
     /// crate makes it a `dyn Fn`.
     pub(super) functions: bool,
     /// A `dyn Fn` in what it exports, which may already hold one.
     pub(super) fn_dyns: bool,
-    /// An `Rc` in what a library that counts its `Rc`s exports, whose
-    /// count they share (ADR 0523).
-    pub(super) rcs: bool,
-    /// The libraries that count no `Rc` whose own items hold one, an `Rc`
-    /// or a `Weak` of their signatures or fields, not of a type parameter
-    /// a consumer gives, which their code reads by a dictionary: each
-    /// shares it with the crate as the value itself (ADR 0844).
-    pub(super) uncounted_rcs: BTreeSet<String>,
+    /// What each `Rc` or `Weak` a library's items hold points at, of
+    /// their signatures and fields, not of a type parameter a consumer
+    /// gives, which their code reads by a dictionary, as the crate has it:
+    /// counted where the library counts it, which the crate then does,
+    /// whose count they share (ADRs 0523, 0847).
+    pub(super) counted_rcs: Vec<rustc_middle::ty::Ty<'tcx>>,
+    /// And where it doesn't, each shared with the crate as the value
+    /// itself, of the library named (ADRs 0844, 0847).
+    pub(super) uncounted_rcs: Vec<(rustc_middle::ty::Ty<'tcx>, String)>,
 }
 
 pub(super) struct Foreign<'a, 'tcx> {
@@ -292,25 +344,39 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .any(|library| library.keeps_capacity)
     }
 
-    /// Of `of`, a library's item, whose own types are `tys`: whether they
-    /// hold an `Rc` or a `Weak`, which, of a library that counts none, it
-    /// shares as the value itself (ADR 0844).
-    fn holds_rcs(&self, of: DefId, tys: Vec<rustc_middle::ty::Ty<'tcx>>, reached: &mut Reached) {
+    /// Of `of`, a library's item, whose own types are `tys`, given `args`:
+    /// what each `Rc` or `Weak` they hold points at, as the crate has it,
+    /// counted where the library counts it (ADRs 0844, 0847).
+    fn holds_rcs(
+        &self,
+        of: DefId,
+        (tys, args): (Vec<rustc_middle::ty::Ty<'tcx>>, rustc_middle::ty::GenericArgsRef<'tcx>),
+        reached: &mut Reached<'tcx>,
+    ) {
         let tcx = self.tcx;
-        if self.counts_rcs(of.krate) {
-            return;
-        }
-        let holds = (tys.iter().flat_map(|t| t.walk()).filter_map(|part| part.as_type())).any(|part| {
-            super::recognition::rc_pointee(tcx, part).is_some() || super::recognition::weak_pointee(tcx, part).is_some()
-        });
-        if holds {
-            reached.uncounted_rcs.insert(tcx.crate_name(of.krate).to_string());
+        for part in tys.iter().flat_map(|t| t.walk()).filter_map(|part| part.as_type()) {
+            let Some(pointee) =
+                (super::recognition::rc_pointee(tcx, part)).or_else(|| super::recognition::weak_pointee(tcx, part))
+            else {
+                continue;
+            };
+            let pointee = rustc_middle::ty::EarlyBinder::bind(tcx, pointee).instantiate(tcx, args);
+            let unnormalized = tcx.erase_and_anonymize_regions(pointee.skip_normalization());
+            let env = rustc_middle::ty::TypingEnv::fully_monomorphized();
+            let pointee = tcx.try_normalize_erasing_regions(env, pointee).unwrap_or(unnormalized);
+            match self.counts_rc(of.krate, pointee) {
+                true => reached.counted_rcs.push(pointee),
+                false => reached
+                    .uncounted_rcs
+                    .push((pointee, tcx.crate_name(of.krate).to_string())),
+            }
         }
     }
 
-    /// Does `krate`, a library, count its `Rc`s (ADR 0844)?
-    fn counts_rcs(&self, krate: rustc_span::def_id::CrateNum) -> bool {
-        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str())).is_none_or(|library| library.counts_rcs)
+    /// Does `krate`, a library, count an `Rc` of `pointee` (ADR 0847)?
+    fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
+        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
+            .is_some_and(|library| (library.counted_rcs.iter()).any(|shape| may_be_shape(self.tcx, shape, pointee)))
     }
 
     /// Do the writers of `krate`, a library's, take their `Formatter`'s
@@ -345,7 +411,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// bodies' values have, what a library's part of it reaches, a
     /// library's function's signature, a library's type's fields. Not what
     /// the crate's own types hold, which it sees.
-    pub(super) fn reached(&self, all_bodies: &[&super::Body<'tcx>]) -> Reached {
+    pub(super) fn reached(&self, all_bodies: &[&super::Body<'tcx>]) -> Reached<'tcx> {
         let mut reached = Reached::default();
         if !self.any() {
             return reached;
@@ -368,7 +434,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         ty: rustc_middle::ty::Ty<'tcx>,
         exported: Option<rustc_span::def_id::CrateNum>,
         seen: &mut HashSet<(rustc_middle::ty::Ty<'tcx>, Option<rustc_span::def_id::CrateNum>)>,
-        reached: &mut Reached,
+        reached: &mut Reached<'tcx>,
     ) {
         use rustc_middle::ty;
         if !seen.insert((ty, exported)) {
@@ -376,7 +442,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
         let tcx = self.tcx;
         let library = |id: DefId| self.is_library(id.krate);
-        let mut parts = |of: DefId, tys: Vec<ty::Ty<'tcx>>, reached: &mut Reached| {
+        let mut parts = |of: DefId, tys: Vec<ty::Ty<'tcx>>, reached: &mut Reached<'tcx>| {
             for t in tys {
                 for part in t.walk().filter_map(|part| part.as_type()) {
                     self.reach(part, Some(of.krate), seen, reached);
@@ -398,23 +464,17 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 if let Some((id, args)) = super::fn_def(ty)
                     && library(id) =>
             {
-                let declared = tcx.fn_sig(id).instantiate_identity().skip_normalization().skip_binder();
-                self.holds_rcs(id, declared.inputs_and_output.to_vec(), reached);
+                let declared = tcx
+                    .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization());
+                self.holds_rcs(id, (declared.inputs_and_output.to_vec(), args), reached);
                 let sig = tcx.fn_sig(id).instantiate(tcx, args).skip_normalization().skip_binder();
                 parts(id, sig.inputs_and_output.to_vec(), reached);
-            }
-            ty::Adt(..)
-                if let Some(krate) = exported
-                    && (super::recognition::rc_pointee(tcx, ty).is_some()
-                        || super::recognition::weak_pointee(tcx, ty).is_some()) =>
-            {
-                reached.rcs |= self.counts_rcs(krate);
             }
             ty::Adt(adt, args) if library(adt.did()) => {
                 let declared = adt
                     .all_fields()
                     .map(|field| tcx.type_of(field.did).instantiate_identity().skip_normalization());
-                self.holds_rcs(adt.did(), declared.collect(), reached);
+                self.holds_rcs(adt.did(), (declared.collect(), args), reached);
                 let fields = adt.all_fields().map(|field| field.ty(tcx, args).skip_normalization());
                 parts(adt.did(), fields.collect(), reached);
             }

@@ -1052,7 +1052,7 @@ pub fn lower_crate<'tcx>(
                     stepped: &stepped,
                     keeps_capacity,
                     writers_take_options,
-                    counts_rcs: counted.any(),
+                    counted: &counted,
                 },
                 (&trait_impls, &held.modules),
                 dependencies,

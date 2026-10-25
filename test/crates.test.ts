@@ -189,15 +189,48 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   expect(dep).toContain("export function sharedCell(value, TCopy) {\n  return { value: TCopy.copy(value) };\n}");
   expect(dep).not.toContain("strong");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("strong");
-  expect(JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library.counts_rcs).toBe(false);
-  const counting = join(out, "counting.rs");
-  writeFileSync(counting, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n");
-  expect(() => run([compiler, counting, "-o", join(out, "counting", "lib.js"), "--dependency", join(out, "dep", "lib.manifest.json"),
-    "--", "--crate-name", "counting", "--extern", `dep=${join(out, "dep", "libdep.rmeta")}`, "-L", `dependency=${join(out, "dep")}`]))
-    .toThrow("but `dep`, a rust-js library that counts none, hands it `Rc`s");
+  expect(contract(out).counted_rcs).toBeUndefined();
+  expect(() => counting(out, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n"))
+    .toThrow("this crate counts an `Rc<dep::Context>`, whose counts it reads, whose last owner runs a destructor, or that may be one that does, but `dep`, a rust-js library that counts none of them, hands it one");
   const holder = chain(pairs, "rc_generic_holder", ["dep", "app"]);
-  expect(JSON.parse(readFileSync(join(holder, "dep", "lib.manifest.json"), "utf8")).library.counts_rcs).toBe(true);
+  expect(contract(holder).counted_rcs).toEqual([{}]);
 }, 300_000);
+
+// ADR 0847: a library counts the `Rc`s of each type apart, and its contract
+// says which. React's context, read by `use_context<T>` of any `T`, is the
+// value itself beside a generic `Rc<Slot<T>>` it counts, as is its
+// consumer's; the consumer counts the library's `Slot`s, and is refused
+// counting its context, or a `String` a library that counts others hands it.
+test("a library counts each type's Rcs apart, and its consumer as it does", () => {
+  const out = chain(pairs, "rc_per_type", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n  const context = {\n    value: TCopy.copy(defaultValue),\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
+  expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
+  expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  const context = createContext(1, { copy: (value) => value });\n  console.log(`${useContext(context)} ${useContext(context)}`);\n  const again = context;\n");
+  expect(app).toContain("  again.value = 2;\n");
+  expect(app).toContain("console.log(`${a.value.value[0]} ${a.strong}`);");
+  expect(contract(out).counted_rcs).toEqual([{ of: expect.any(String), args: [{}] }]);
+  expect(() => counting(out, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n"))
+    .toThrow("this crate counts an `Rc<dep::Context<i32>>`");
+  const shared = chain(triples, "rc_shared", ["dep", "mid", "app"]);
+  expect(() => counting(shared, "pub fn main() {\n    println!(\"{}\", std::rc::Rc::strong_count(&dep::tag(\"t\")));\n}\n"))
+    .toThrow("this crate counts an `Rc<std::string::String>`");
+}, 300_000);
+
+/** The library contract of `out`'s `dep`. */
+function contract(out: string) {
+  return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;
+}
+
+/** `source`, a crate using `out`'s `dep`, compiled. */
+function counting(out: string, source: string) {
+  const file = join(out, "counting.rs");
+  writeFileSync(file, source);
+  run([compiler, file, "-o", join(out, "counting", "lib.js"), "--dependency", join(out, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "counting", "--extern", `dep=${join(out, "dep", "libdep.rmeta")}`, "-L", `dependency=${join(out, "dep")}`]);
+}
 
 // A library edited to read an `Rc`'s count, its API the same: rebuilt with
 // its consumers, they share its counted `Rc`s as before, and print what

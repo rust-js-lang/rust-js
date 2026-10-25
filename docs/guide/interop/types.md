@@ -827,18 +827,28 @@ export function share(doc) {
 - **`Rc::ptr_eq` of a struct with fields counts nothing**, but a
   `#[repr(transparent)]` one's, which is its field: it's `a === b`
   ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
-- **A rust-js library counts every `Rc`, or none**, so one handle crosses
-  crates ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)):
-  every one where it, or a counting library that hands it an `Rc`, reads
-  a count, has an `Rc` of a value with a destructor, or holds a generic
-  one of what may have one, as its consumers' types may; else none, each
-  the value itself, as React's `createContext` is, and its contract says
-  so ([ADR 0844](../../decisions/0844-a-library-that-reads-no-count-counts-no-rc.md)).
-  A crate a counting library hands an `Rc` counts every one; one an
-  uncounting library hands an `Rc` of its own items counts none, and is
-  refused where it would count one. A library hands what the items of
-  its the crate uses reach, an `Rc` in a function's parameters or result
-  or a type's fields, not one of a `bool` static's
+- **Each type's `Rc`s are counted apart**
+  ([ADR 0847](../../decisions/0847-each-types-rcs-are-counted-apart.md)):
+  an `Rc` is counted where the crate reads the count of its type's, or of
+  a type that may be the same, or its last owner runs a destructor.
+  Generic code's `Rc<Slot<T>>` stands for every `Rc<Slot<_>>`, and an
+  `Rc<T>` for every `Rc`. A generic `Rc` of a type parameter's value that
+  may have a destructor is counted where a body owns one, not behind a
+  reference or a `Weak`: React's `use_context<T>(context:
+  &ReactContext<T>)` only reads its context and counts nothing, so
+  `createContext` stays the value itself beside a `share<T>` whose
+  `Rc<Slot<T>>`s are counted.
+- **A rust-js library's contract lists the types whose `Rc`s it counts**,
+  so one handle crosses crates
+  ([ADR 0523](../../decisions/0523-libraries-share-one-counted-rc.md)):
+  a crate a library hands an `Rc` counts it where the library does. It's
+  refused where it would count one the library hands as the value itself
+  ([ADR 0844](../../decisions/0844-a-library-that-reads-no-count-counts-no-rc.md)),
+  `Rc::strong_count` of a library's `Rc<String>` that the library counts
+  none of: read the count in the library, which then counts it. A library
+  hands what the items of its the crate uses reach, an `Rc` in a
+  function's parameters or result or a type's fields, not one of a type
+  parameter the crate gives it, nor of a `bool` static's
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
 - **An `Rc` is `js::Defined` as what it points at is**, as a `Box` is, so
   a `WeakMap` or a `Map` holds one, `WeakMap<JsObject, Rc<CacheNode>>`,

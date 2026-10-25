@@ -20,6 +20,10 @@ export function parseManifest(text) {
   const strings = value => Array.isArray(value) && value.every(item => typeof item === "string");
   const path = value => typeof value === "string" && (/^\//.test(value) || /^[A-Za-z]:[\\/]/.test(value));
   const paths = value => strings(value) && value.every(path);
+  // ADR 0847: a type an `Rc` points at, its constructor's key and what
+  // it's made of, or any type where it has no `of`.
+  const rcShape = value => object(value) && (value.of === undefined || typeof value.of === "string")
+    && (value.args === undefined || Array.isArray(value.args) && value.args.every(rcShape));
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
   // Where a file names another's, by the compiler's parse of it (ADR 0101):
@@ -40,8 +44,8 @@ export function parseManifest(text) {
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
-        // ADR 0844: whether it counts its `Rc`s; one written before counted every one.
-        || !(library.counts_rcs === undefined || typeof library.counts_rcs === "boolean")
+        // ADR 0847: what the `Rc`s it counts point at; none where it's absent.
+        || !(library.counted_rcs === undefined || Array.isArray(library.counted_rcs) && library.counted_rcs.every(rcShape))
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")

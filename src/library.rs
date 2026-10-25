@@ -128,19 +128,24 @@ pub struct Library {
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub held: Vec<Held>,
-    /// Whether it counts its `Rc`s, every one `{ value, strong, weak }`
-    /// (ADR 0523), or none, each the value itself, where nothing it or a
-    /// library it shares them with does asks a count (ADR 0844): a crate it
-    /// hands one counts as it does. A library a compiler wrote before
-    /// counted every one.
-    #[serde(default = "counts_every_rc")]
-    pub counts_rcs: bool,
+    /// What the `Rc`s it counts point at, each `{ value, strong, weak }`
+    /// (ADR 0320), and every one that may be one of them; each other the
+    /// value itself (ADRs 0844, 0847): a crate it hands one counts as it
+    /// does. None where it counts none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub counted_rcs: Vec<RcShape>,
 }
 
-/// A library contract's `counts_rcs` where it says none: ADR 0523's, which
-/// counted every `Rc`, never read as one that counts none.
-fn counts_every_rc() -> bool {
-    true
+/// A type an `Rc` points at, as a library's contract names it (ADR 0847):
+/// what makes it, an item by its key or a primitive's name, and the types
+/// it's made of; `_`, no `of`, where it may be any type, a type
+/// parameter's value.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct RcShape {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub of: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub args: Vec<RcShape>,
 }
 
 /// An item as a consumer imports it: from a JS file, relative to its own
@@ -183,8 +188,8 @@ pub struct Exports {
     pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
-    /// Whether it counts its `Rc`s (ADR 0844).
-    pub counts_rcs: bool,
+    /// What the `Rc`s it counts point at (ADR 0847).
+    pub counted_rcs: Vec<RcShape>,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -239,7 +244,7 @@ impl Dependencies {
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
                 writers_take_options: library.writers_take_options,
-                counts_rcs: library.counts_rcs,
+                counted_rcs: library.counted_rcs,
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };
@@ -322,7 +327,7 @@ impl Dependencies {
             builtin: true,
             keeps_capacity: library.keeps_capacity,
             writers_take_options: library.writers_take_options,
-            counts_rcs: library.counts_rcs,
+            counted_rcs: library.counted_rcs,
             impls: library.impls.into_iter().collect(),
             ..Exports::default()
         };

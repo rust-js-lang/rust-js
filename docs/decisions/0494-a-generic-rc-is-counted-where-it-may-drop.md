@@ -3,7 +3,10 @@
 Status: Accepted. Extends [0320](0320-counted-rcs.md). Amended by
 [0844](0844-a-library-that-reads-no-count-counts-no-rc.md): of a parameter
 that may have a destructor, not a `T: Copy`, where a body holds it, through
-the fields of what it holds.
+the fields of what it holds. Amended by
+[0847](0847-each-types-rcs-are-counted-apart.md): it counts the `Rc`s
+of what it may be, not every one, and only where a body owns it, not
+behind a reference or a `Weak`.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's, by the last clone of an `Rc`.

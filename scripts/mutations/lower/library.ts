@@ -4,10 +4,10 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "uncounted-library-rcs-unseen",
-    breaks: "a crate counting an `Rc` a library that counts none hands it isn't refused, and the two read it apart (ADR 0844)",
+    breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0847)",
     file: "src/lower/library.rs",
-    find: "            reached.uncounted_rcs.insert(tcx.crate_name(of.krate).to_string());\n",
-    replace: "",
+    find: "                false => reached\n                    .uncounted_rcs\n                    .push((pointee, tcx.crate_name(of.krate).to_string())),\n",
+    replace: "                false => {}\n",
     tests: ["test/crates.test.ts", "-t", "reads no count"],
   },
   {
@@ -111,16 +111,24 @@ export const mutations: Mutation[] = [
     breaks: "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
     file: "src/lower/library.rs",
     find: "        let mut reached = Reached::default();\n        if !self.any() {\n            return reached;\n        }\n",
-    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns: true, rcs: true, uncounted_rcs: BTreeSet::new() };\n        }\n",
+    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns: true, ..Reached::default() };\n        }\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
   },
   {
     name: "library-rc-unreached",
     breaks: "an `Rc` a library hands a crate isn't counted, though the library counts it",
     file: "src/lower/library.rs",
-    find: "                reached.rcs |= self.counts_rcs(krate);\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
+    find: "                true => reached.counted_rcs.push(pointee),\n",
+    replace: "                true => {}\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type|three crates: rc_generic"],
+  },
+  {
+    name: "library-shape-any",
+    breaks: "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0847)",
+    file: "src/lower/library.rs",
+    find: "            *of == head_key(tcx, &head)\n",
+    replace: "            true\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
   },
   {
     name: "library-rest-unlisted",

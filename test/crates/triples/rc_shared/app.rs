@@ -1,6 +1,7 @@
 // Three crates share one `Rc`: cloned in one, counted in another, its last
 // owner dropped in each, and its `Weak` upgraded before and after (ADR
-// 0523).
+// 0523); and one `dep` counts none of, an `Rc<String>`, the value itself
+// in each (ADR 0847).
 use std::rc::Rc;
 
 pub fn main() {
@@ -30,5 +31,5 @@ pub fn main() {
 
     let tag = dep::tag("t");
     let again = Rc::clone(&tag);
-    println!("{tag} {}", Rc::strong_count(&again));
+    println!("{tag} {again}");
 }

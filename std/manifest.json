@@ -706,8 +706,7 @@
       }
     ],
     "keeps_capacity": false,
-    "writers_take_options": true,
-    "counts_rcs": false
+    "writers_take_options": true
   },
   "input": "lib.rs",
   "output": "index.js",

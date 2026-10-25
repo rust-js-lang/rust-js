@@ -1,6 +1,9 @@
 # 0844. A library that reads no count counts no `Rc`
 
-Status: Accepted. Amends [0523](0523-libraries-share-one-counted-rc.md),
+Status: Accepted; amended by [0847](0847-each-types-rcs-are-counted-apart.md):
+each type's `Rc`s are counted apart, not a library's every one or none,
+its contract's `counted_rcs` listing the types; and what a body holds
+is what it owns, not what's behind a reference or a `Weak`. Amends [0523](0523-libraries-share-one-counted-rc.md),
 whose every library counted every `Rc`; and
 [0494](0494-a-generic-rc-is-counted-where-it-may-drop.md), whose generic
 `Rc` of any type parameter's value counted every one, and whose crate
