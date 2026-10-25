@@ -203,12 +203,18 @@ export function unstable_runWithPriority(priorityLevel, eventHandler) {
 
 export function unstable_next(eventHandler) {
   const current = currentPriorityLevel;
-  const priorityLevel =
-    current === ImmediatePriority || current === UserBlockingPriority || current === NormalPriority
-      ? // Shift down to normal priority
-        NormalPriority
-      : // Anything lower than normal priority should remain at the current level.
-        current;
+  let priorityLevel;
+  switch (current) {
+    case ImmediatePriority:
+    case UserBlockingPriority:
+    case NormalPriority:
+      // Shift down to normal priority
+      priorityLevel = NormalPriority;
+      break;
+    default:
+      // Anything lower than normal priority should remain at the current level.
+      priorityLevel = current;
+  }
 
   const restore = currentPriorityLevel;
   currentPriorityLevel = priorityLevel;

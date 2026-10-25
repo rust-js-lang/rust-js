@@ -1260,7 +1260,8 @@ one and a last `_` one, each arm a constant or a `|` of them
 (a literal, a `const`, an enum's variant of no field, the registry's
 symbol, or a `Some` of them, [ADR
 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)), and at most
-a last `_`, is a `switch`: `|`'s constants are stacked `case`s, `_` is the
+a last `_`, or a last name, `current => current`, which is the value, is a
+`switch`: `|`'s constants are stacked `case`s, `_` or the name is the
 `default`, left out where it does nothing, and each case ends in `break;`
 where it'd go on, the case's own where it's left for what follows the
 `switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
@@ -1269,8 +1270,9 @@ a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
 constants and more, a case that falls through to the next's, `// Fallthrough`
-([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding, a guard a
-later arm goes on from, or of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding of a
+pattern's part or before the last arm, a guard a later arm goes on from, or
+of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,

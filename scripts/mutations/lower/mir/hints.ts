@@ -4,6 +4,14 @@ import type { Mutation } from "../../../mutations";
 const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
 export const mutations: Mutation[] = [
   {
+    name: "switch-last-name-an-if-chain",
+    breaks: "a `match` of constants whose last arm is a name, `current => current`, is an `if` chain or its `?:`, not upstream's `switch` with that arm its `default` (ADR 0629, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "                            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                                if i == last && guard.is_none() =>\n",
+    replace: "                            thir::PatKind::Wild\n                                if i == last && guard.is_none() =>\n",
+    tests: ["test/port-scheduler.test.ts"],
+  },
+  {
     name: "clone-names-unfound",
     breaks: "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0846)",
     file: "src/lower/mir/hints.rs",
@@ -228,8 +236,8 @@ export const mutations: Mutation[] = [
     name: "typeof-switch-of-bindings-unseen",
     breaks: "an arm that names its variant's value, `Kind::String(text)`, the value itself, is no case, so a `match` of what a value is stays an `if` chain",
     file: "src/lower/mir/hints.rs",
-    find: "                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n",
-    replace: "                        thir::PatKind::Wild\n",
+    find: "                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                    )\n",
+    replace: "                        thir::PatKind::Wild\n                    )\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
   },
   {

@@ -441,7 +441,9 @@ Rendering nothing is `None`. Each of these is a child:
 | `{if online { "Online" } else { "Offline" }}` | `{online ? "Online" : "Offline"}` |
 | `{if ok { Some(jsx! { <p /> }) } else { None }}` | `{ok && <p />}` |
 
-A `match` that picks an element is an `if` chain:
+A `match` that picks an element is a `switch` where its arms are
+constants and a last `_` or name, its `default`, as any `match` of
+constants is:
 
 ```rust
 use react::{JSX, jsx};
@@ -463,12 +465,15 @@ pub fn Score(ScoreProps { points }: ScoreProps) -> JSX::Element {
 ```jsx
 export function Score({ points }) {
   let label;
-  if (points === 0) {
-    label = <i>no points</i>;
-  } else if (points === 1) {
-    label = <span>1 point</span>;
-  } else {
-    label = <b>{points} points</b>;
+  switch (points) {
+    case 0:
+      label = <i>no points</i>;
+      break;
+    case 1:
+      label = <span>1 point</span>;
+      break;
+    default:
+      label = <b>{points} points</b>;
   }
   return <p>{label}</p>;
 }

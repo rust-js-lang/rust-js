@@ -377,7 +377,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Each `match` the program wrote, not a macro, `matches!`, of three
     /// arms or more, whose every arm tests constants, with no binding, but
-    /// for a last `_`, and whose value isn't read in place, which JS has no
+    /// for a last `_` or name alone, `current => ..`, its `default` (ADR
+    /// 0629, amended), and whose value isn't read in place, which JS has no
     /// `switch` expression for (ADR 0629): its arms. An arm with a guard is
     /// one where a failed guard goes on to nothing (`fails_to_nothing`).
     /// The one answer to which `match` is a `switch`.
@@ -446,7 +447,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|(i, arm)| {
                         let guard = guards[i];
                         let constants = match &arm.pattern.kind {
-                            thir::PatKind::Wild if i == last && guard.is_none() => Some(Vec::new()),
+                            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
+                                if i == last && guard.is_none() =>
+                            {
+                                Some(Vec::new())
+                            }
                             _ => (self.constants_of(&arm.pattern, present)).filter(|_| {
                                 guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])
                             }),

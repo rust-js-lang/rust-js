@@ -14,6 +14,8 @@ tests its guard, where a failed guard goes on to nothing; by
 arm's test is found wherever MIR tests it, its cases written as the arms
 are. By [0905](0905-a-guarded-arm-falls-to-the-next.md): a guarded
 case falls through to the next where the next arm names its constants.
+Amended below: a last arm of a name, `current => current`, is the
+`default`, as a last `_` is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: a `switch` compares what it's given with each `case` by
@@ -233,3 +235,76 @@ The printer also filtered out an empty `default`, which tidy's
 authority, and its mutation survived. The printer now prints the
 `default` it's given. Tidy's rule is held by
 `switch-default-doing-nothing-kept`, which is caught.
+
+## Amendment: a last arm of a name is the `default`
+
+React's scheduler, ported, picks the priority `unstable_next` runs at:
+
+```rust
+let priority_level = match CURRENT_PRIORITY_LEVEL.get() {
+    // Shift down to normal priority
+    IMMEDIATE_PRIORITY | USER_BLOCKING_PRIORITY | NORMAL_PRIORITY => NORMAL_PRIORITY,
+    // Anything lower than normal priority should remain at the current level.
+    current => current,
+};
+```
+
+Upstream's `Scheduler.js` is a `switch`, each comment in its case:
+
+```js
+switch (currentPriorityLevel) {
+  case ImmediatePriority:
+  case UserBlockingPriority:
+  case NormalPriority:
+    // Shift down to normal priority
+    priorityLevel = NormalPriority;
+    break;
+  default:
+    // Anything lower than normal priority should remain at the current level.
+    priorityLevel = currentPriorityLevel;
+    break;
+}
+```
+
+A binding arm was "any other `match`", an `if` chain: the port's JS was an
+`if`/`else`, then, since ADR 0658, `const priorityLevel = current ===
+ImmediatePriority || .. ? // Shift down to normal priority NormalPriority :
+// Anything lower .. current;`, its comments inside the `?:`.
+
+**A last arm whose pattern is a name alone, with no guard, `current =>
+..`, is the `default`, as a last `_` is**, the name the value matched:
+what `_` matches, it matches, and binds. One of a `@` pattern, `n @ 1..=3`,
+or a binding before the last arm, still makes the `match` an `if` chain.
+So `unstable_next` is upstream's `switch`:
+
+```js
+const current = currentPriorityLevel;
+let priorityLevel;
+switch (current) {
+  case ImmediatePriority:
+  case UserBlockingPriority:
+  case NormalPriority:
+    // Shift down to normal priority
+    priorityLevel = NormalPriority;
+    break;
+  default:
+    // Anything lower than normal priority should remain at the current level.
+    priorityLevel = current;
+}
+```
+
+Case N, as before: the `default` runs where no case's `===` holds, as the
+last arm did. Decided while the user was away, as one rule a Rust
+developer can guess: `_` and a name are the two ways Rust writes a
+`match`'s last, catch-all arm, and a `switch` of constants is one form
+whichever the program writes; the scope the user decided, three cases or
+more and not a value read in place, is unchanged. A `match` of two
+constants and a name, `0 => .., 1 => .., n => ..`, is three cases, a
+`switch`, as one with a last `_` was.
+
+- `user_from_str.rs`'s `match s.trim().to_lowercase().as_str() { "admin"
+  => .., "member" => .., other => .. }` and the guide's `Score` (`0`, `1`,
+  `n`) are `switch`es; no other corpus case or snapshot changed.
+- `test/port-scheduler.test.ts`'s snapshot holds `unstable_next`.
+- Mutation `switch-last-name-an-if-chain` (`hints.ts`).
+

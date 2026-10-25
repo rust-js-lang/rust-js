@@ -17,13 +17,14 @@ export const roleFromStr = { fromStr: roleFromStr_fromStr };
 
 function roleFromStr_fromStr(s) {
   const other = $trim(s).toLowerCase();
-  if (other === "admin") {
-    return { TAG: "Ok", _0: "Admin" };
+  switch (other) {
+    case "admin":
+      return { TAG: "Ok", _0: "Admin" };
+    case "member":
+      return { TAG: "Ok", _0: "Member" };
+    default:
+      return { TAG: "Err", _0: `no role ${$debugStr(other)}` };
   }
-  if (other === "member") {
-    return { TAG: "Ok", _0: "Member" };
-  }
-  return { TAG: "Err", _0: `no role ${$debugStr(other)}` };
 }
 
 function pointDebug_fmt(point) {
