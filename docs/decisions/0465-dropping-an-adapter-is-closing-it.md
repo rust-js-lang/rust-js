@@ -380,3 +380,15 @@ The mutations `step-by-past-a-skip-filtered`, `skipping-nth-only-own` and
 Readability: the lines add `$iter` (87.6 to 87.7 in 10,000 lines),
 `Iterator.from` (15.3 to 15.4) and renamed temporaries (732.9 to
 735.1), as each such case does.
+
+## Amendment: `last` folds an adapter with its own `fold` (#299)
+
+std's default `last` is a `fold`. For `rev().skip(2).take_while(..)`,
+that reaches `Skip::try_fold`: `nth(1)` (one slice) and then the next.
+`$lastDropping` stepped `next` instead, `Skip::next`'s `nth(2)`, a slice
+of two, which drops in another order (fuzz seed 68239). It now folds an
+iterator with a `fold` of its own, keeping the last item and dropping
+each before it. `step_by_compiled_source_nth` adds the shape, and
+`last-steps-not-folds` is caught.
+Readability: the line adds `$iter` (87.7 to 87.8 in 10,000 lines) and
+renamed temporaries (734.3 to 735), as each such case does.

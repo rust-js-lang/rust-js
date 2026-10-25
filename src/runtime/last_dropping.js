@@ -30,11 +30,19 @@ function $lastDropping(it, drop, boxed) {
   }
   let last;
   let seen = false;
-  for (const item of it) {
+  const keep = (item) => {
     if (seen) drop?.(last);
     last = item;
     seen = true;
+  };
+  // Std's default `last`, its `fold`: an adapter's own, a `take_while`'s of
+  // a `skip`'s `try_fold`, which asks `nth(n - 1)` where its `next` asks
+  // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end.
+  if (Object.hasOwn(it, "fold")) {
+    it.fold(undefined, (_, item) => keep(item));
+    return seen ? some(last) : undefined;
   }
+  for (const item of it) keep(item);
   it.return?.();
   return seen ? some(last) : undefined;
 }

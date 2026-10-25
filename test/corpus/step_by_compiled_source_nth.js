@@ -7,6 +7,7 @@ import {
   $enumerate,
   $held,
   $iter,
+  $lastDropping,
   $lazyTakeWhile,
   $lent,
   $next,
@@ -407,5 +408,33 @@ function main() {
     })
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${short}`);
+  // A `take_while`'s `last`, std's `fold`: its `skip`'s `try_fold`, which
+  // asks `nth(n - 1)`, then the next (#299).
+  const value$15 = $rev($closing($iter(louds(95, 3)), $dropEach(loudDrop_drop)));
+  let tmp$13;
+  try {
+    tmp$13 = id(2);
+  } catch (error) {
+    value$15.return();
+    throw error;
+  }
+  const keep$2 = (loud) => loud[0] < 98;
+  const last = $lastDropping(
+    $lazyTakeWhile($skipping(value$15, tmp$13, loudDrop_drop), (item) => {
+      if (keep$2(item)) {
+        return true;
+      }
+      loudDrop_drop(item);
+      return false;
+    }),
+    loudDrop_drop,
+  );
+  const map$4 = (loud) => {
+    const result = loud[0];
+    loudDrop_drop(loud);
+    return result;
+  };
+  const value$16 = last ? map$4(last) : undefined;
+  console.log(`${value$16 == null ? "None" : `Some(${value$16})`}`);
 }
 //# sourceMappingURL=case.js.map

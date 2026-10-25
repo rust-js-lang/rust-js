@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "last-steps-not-folds",
+    breaks: "`last` steps an adapter with a `fold` of its own by `next`, not by its `fold` as std's default does, so a `take_while` of a reversed `Vec`'s `skip` drops in the wrong order (#299)",
+    file: "src/runtime/last_dropping.js",
+    find: "  if (Object.hasOwn(it, \"fold\")) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "last-dropping-drops-none",
     breaks: "`last()` of items with a destructor drops none it passes",
     file: "src/runtime/last_dropping.js",

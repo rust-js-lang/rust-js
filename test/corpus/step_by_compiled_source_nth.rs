@@ -72,4 +72,13 @@ fn main() {
         .map(|loud| loud.0)
         .sum();
     println!("{short}");
+    // A `take_while`'s `last`, std's `fold`: its `skip`'s `try_fold`, which
+    // asks `nth(n - 1)`, then the next (#299).
+    let last = louds(95, 3)
+        .into_iter()
+        .rev()
+        .skip(id(2))
+        .take_while(|loud| loud.0 < 98)
+        .last();
+    println!("{:?}", last.map(|loud| loud.0));
 }
