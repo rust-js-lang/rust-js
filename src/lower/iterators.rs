@@ -597,7 +597,7 @@ pub(in crate::lower) fn reversed(items: Expr) -> Expr {
 
 /// What `e`, a `reversed` one, reverses: `items` of `items.toReversed()`.
 /// The one reader of its form: a `for` that reads them from the end
-/// instead, by index (ADR 0900).
+/// instead, by index (ADR 0904).
 pub(in crate::lower) fn reversed_source(e: &Expr) -> Option<&Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;

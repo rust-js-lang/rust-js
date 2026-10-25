@@ -281,7 +281,7 @@ pub fn ends(stmt: &Stmt) -> bool {
         StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
         // A `switch` with a `default`, each of whose cases leaves (ADR
-        // 0660), or falls to the next case (ADR 0899).
+        // 0660), or falls to the next case (ADR 0905).
         StmtKind::Switch {
             cases,
             default: Some(default),

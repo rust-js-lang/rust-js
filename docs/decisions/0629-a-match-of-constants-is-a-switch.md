@@ -12,7 +12,7 @@ tests its guard, where a failed guard goes on to nothing; by
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): a
 `match` of an untagged enum's kinds is a `switch (typeof value)`, and an
 arm's test is found wherever MIR tests it, its cases written as the arms
-are. By [0899](0899-a-guarded-arm-falls-to-the-next.md): a guarded
+are. By [0905](0905-a-guarded-arm-falls-to-the-next.md): a guarded
 case falls through to the next where the next arm names its constants.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program

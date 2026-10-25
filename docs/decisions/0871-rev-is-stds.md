@@ -7,7 +7,7 @@ recognizers' form of a `Rev` stepped where it's made,
 [0545](0545-a-map-stepped-from-its-back-is-made-knowing-it.md), whose
 analysis makes the source of a held `rev()` knowing its back, and
 [0526](0526-a-filter-steps-from-its-back.md), whose `$filterEnds` takes
-items with a destructor too. Amended by [0900](0900-a-loop-from-the-end-counts-down.md): a `for`
+items with a destructor too. Amended by [0904](0904-a-loop-from-the-end-counts-down.md): a `for`
 over a slice's items reversed, or a range's, counts down, no
 `toReversed()` copy.
 

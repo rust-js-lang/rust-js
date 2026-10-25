@@ -1,4 +1,4 @@
-# 0899. A guarded arm whose constants the next arm names falls through to its case
+# 0905. A guarded arm whose constants the next arm names falls through to its case
 
 Status: Accepted. Amends [0636](0636-a-guarded-arm-is-a-case.md), whose
 guarded arm was a case only where its failed guard went on to nothing,

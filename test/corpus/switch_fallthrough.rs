@@ -1,6 +1,6 @@
 // A `match` of constants that repeats a constant under guards, each arm's
 // constants among the next one's: React's `getComponentNameFromFiber`, a
-// `switch` whose guarded cases fall through to the next (ADR 0899). Each
+// `switch` whose guarded cases fall through to the next (ADR 0905). Each
 // guard runs where Rust runs it, after its constant matched, and only
 // until one holds.
 use std::cell::RefCell;

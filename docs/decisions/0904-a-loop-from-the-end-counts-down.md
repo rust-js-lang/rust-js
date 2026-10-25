@@ -1,4 +1,4 @@
-# 0900. A `for` over a slice or a range from its end counts down
+# 0904. A `for` over a slice or a range from its end counts down
 
 Status: Accepted. Amends [0871](0871-rev-is-stds.md), whose `rev()`
 stepped where it's made a `for` loop read as `for (const x of

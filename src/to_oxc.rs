@@ -826,7 +826,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         }
     }
-    // Before each case a case falls through to, `// Fallthrough` (ADR 0899).
+    // Before each case a case falls through to, `// Fallthrough` (ADR 0905).
     for at in fallthrough_starts(module) {
         let lo = text.len() as u32;
         text.push_str(FALLTHROUGH);
@@ -1186,7 +1186,7 @@ fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
 }
 
 /// What a case that falls through to the next says, before it, as React
-/// writes it, and ESLint's `no-fallthrough` asks (ADR 0899).
+/// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).
 const FALLTHROUGH: &str = "// Fallthrough";
 
 /// Where each case a case falls through to starts, of `module`'s

@@ -509,7 +509,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md)
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
-- [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0899: a guarded case falls through to the next)*
+- [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next)*
 - [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value)*
 - [0631 A step of one is `++`](0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
@@ -517,7 +517,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0633 A binding named through a module is read through it](0633-a-binding-named-through-a-module-is-read-through-it.md) *(amended by 0773: a binding the default names is exported as the default alone)*
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](0634-a-registered-symbol-is-a-const.md) *(amended by 0771: an `==` of a `Some` is the `matches!` form)*
 - [0635 A `filter` by truth, then a fallback, is `||`](0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
-- [0636 A guarded arm of a `match` of constants is a case](0636-a-guarded-arm-is-a-case.md) *(amended by 0899: one whose constants the next arm names falls through to its case)*
+- [0636 A guarded arm of a `match` of constants is a case](0636-a-guarded-arm-is-a-case.md) *(amended by 0905: one whose constants the next arm names falls through to its case)*
 - [0637 A `match` of a throwing call's `Result` is `try` and `catch`](0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`; amended: an `Ok` arm that leaves, what follows reading the `Err` its `catch`)*
 - [0638 A nullable function's call is `null` already](0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](0639-concat-text-of-any-value-may-throw.md)
@@ -654,8 +654,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md) *(extended by 0898: `#[rust_js::runs_only_given]`, `console.error` and `Math`'s)*
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
-- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0899: `Flatten` held is std's)*
-- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0900: a `for` over a slice or a range from its end counts down)*
+- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0899: `Flatten` held is std's; by 0904: a `for` over a slice or a range from its end counts down)*
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
@@ -689,8 +688,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md) *(extended by 0902: what never unwinds is read from MIR)*
 - [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
-- [0899 A guarded arm whose constants the next arm names falls through to its case](0899-a-guarded-arm-falls-to-the-next.md)
-- [0900 A `for` over a slice or a range from its end counts down](0900-a-loop-from-the-end-counts-down.md)
+- [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
+- [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

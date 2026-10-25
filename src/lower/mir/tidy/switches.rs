@@ -279,7 +279,7 @@ fn switch_at(
         cases[only].1.extend(after[..n].iter().cloned());
         taken += n;
     }
-    // Of a `match` whose guarded arms fall to the next (ADR 0899), what
+    // Of a `match` whose guarded arms fall to the next (ADR 0905), what
     // follows that's written in the arm they fall to last, up to the first
     // of what's written past it, where nothing there reads what it
     // declares: each case's that goes on to it, which each case that falls
@@ -317,7 +317,7 @@ fn switch_at(
     }
     // Each guarded arm's case that falls to the next, its own statements
     // the guard's `if`; what follows, which went on to each, the last's
-    // alone (ADR 0899).
+    // alone (ADR 0905).
     let mut falls = vec![false; cases.len()];
     if falling {
         if cases.len() != tested {
@@ -374,7 +374,7 @@ fn switch_at(
 
 /// `cases`, in the order their arms are written, each arm's one: of an
 /// arm whose constants MIR tested apart, a guarded or-pattern's, each
-/// with the guard (ADR 0899), its values stacked in the order tested,
+/// with the guard (ADR 0905), its values stacked in the order tested,
 /// where the statements of each are alike, as they are of one arm.
 fn stacked(cases: Vec<Case>) -> Option<Vec<Case>> {
     let mut stacked: Vec<Case> = Vec::new();
@@ -397,7 +397,7 @@ fn stacked(cases: Vec<Case>) -> Option<Vec<Case>> {
 /// Of `cases`, each in the order its arm is written, each of an arm that
 /// falls to the next (`SwitchArm::falls`), whose statements are the
 /// guard's `if` and then the next case's: the guard's `if` alone, its case
-/// falling through to the next (ADR 0899). Whether each falls, or `None`
+/// falling through to the next (ADR 0905). Whether each falls, or `None`
 /// where one's statements aren't so. Where its guard fails, a case only
 /// tested, then goes on to the next's statements, as Rust goes on to the
 /// next arm; and where it holds, it leaves, as its arm's statements did,
@@ -602,7 +602,7 @@ fn arrays_before(cases: &mut Vec<Case>) -> Option<Vec<(Expr, Vec<Stmt>, js::Span
 /// the branch of the arms after it, `if (c !== ".") { .. }`, as a `match`
 /// whose arm does nothing, or leaves, MIR tests. An arm's constants may be
 /// tested apart, each in turn, as MIR tests a guarded or-pattern's
-/// alternatives, the guard in each (ADR 0899): a case of each; `left` has
+/// alternatives, the guard in each (ADR 0905): a case of each; `left` has
 /// how many of each arm's are tested. `discriminant`, what each test
 /// compares, as the first tells.
 fn chain(
@@ -1107,7 +1107,7 @@ fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
 /// its last statement: `rest` that case's, then its `break outer`, and the
 /// block `inner`, which nothing names then, gone. MIR placed the
 /// statements of the arm a guarded case falls to past the `match`, the
-/// `break inner` of each arm that reached them (ADR 0899); one case is
+/// `break inner` of each arm that reached them (ADR 0905); one case is
 /// all that reaches them where the others fall to it.
 pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {

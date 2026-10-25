@@ -77,7 +77,7 @@ pub(super) struct Switch {
 /// the one before falls to, those the one before doesn't name. `falls`,
 /// whether it's a guarded arm whose failed guard goes on to the next arm,
 /// which names each constant it does: its case falls through to the next's
-/// (ADR 0899).
+/// (ADR 0905).
 pub(super) struct SwitchArm {
     pub span: js::Span,
     pub pattern: js::Span,
@@ -415,7 +415,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })
                     .collect();
                 // Whether each guarded arm's failed guard goes on to the next
-                // arm, which names each constant it does and more (ADR 0899):
+                // arm, which names each constant it does and more (ADR 0905):
                 // its case falls through to the next's, which is a case as
                 // any arm is, guarded or not.
                 let falls: Vec<bool> = (0..arms.len())
@@ -511,7 +511,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether an arm of `pattern` whose guard fails may fall to the case of
-    /// the next arm, of `next` (ADR 0899): `next` names each value `pattern`
+    /// the next arm, of `next` (ADR 0905): `next` names each value `pattern`
     /// does, which Rust tries it of next, and one of its own, its case's,
     /// each value told (`constant_values`).
     fn falls_to(&self, pattern: &thir::Pat<'tcx>, next: &thir::Pat<'tcx>, present: bool) -> bool {

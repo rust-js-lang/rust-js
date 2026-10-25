@@ -1,7 +1,7 @@
 // A `for` over a slice's items, or a range, from its end, `rev()`: a JS
 // `for` that counts down, `for (let i = v.length - 1; i >= 0; i--)`, as
 // React's `getComponentNameFromFiber` reads its debug info, no copy of the
-// array made (ADR 0900).
+// array made (ADR 0904).
 
 fn last_long(names: &[String]) -> Option<&String> {
     for name in names.iter().rev() {

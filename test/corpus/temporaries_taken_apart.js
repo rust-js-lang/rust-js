@@ -94,14 +94,8 @@ function main() {
           loudDrop_drop(two._0);
         }
         loudDrop_drop(two._1);
-      } else {
-        if (two.TAG === "Both") {
-          loudDrop_drop(two._0);
-          loudDrop_drop(two._1);
-        }
-        if (two.TAG === "One") {
-          loudDrop_drop(two._0);
-        }
+      } else if (two.TAG === "One") {
+        loudDrop_drop(two._0);
       }
     } catch (error) {
       loudDrop_drop(right);

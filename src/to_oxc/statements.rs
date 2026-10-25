@@ -466,14 +466,14 @@ impl<'a> Cx<'a> {
                         continue;
                     };
                     // Where a case falls through to it, where its comment
-                    // says so is (ADR 0899).
+                    // says so is (ADR 0905).
                     let mut at = super::fallen_to(cases, k).map_or(SPAN, |lo| Span::new(lo, lo));
                     for value in stacked {
                         clauses.push(SwitchCase::new(at, Some(self.expr(value)), ArenaVec::new_in(b), b));
                         at = SPAN;
                     }
                     // One that falls through to the next case goes on to it,
-                    // no `break` (ADR 0899).
+                    // no `break` (ADR 0905).
                     let falls_out = case.falls || (default.is_none() && Some(k) == last_case);
                     clauses.push(SwitchCase::new(
                         at,

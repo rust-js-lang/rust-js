@@ -1216,7 +1216,7 @@ a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
 constants and more, a case that falls through to the next's, `// Fallthrough`
-([ADR 0899](../../decisions/0899-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding, a guard a
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding, a guard a
 later arm goes on from, or of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
@@ -1344,7 +1344,7 @@ is its guard's `if`, and falls through to the next arm's case, as React
 writes `getComponentNameFromFiber`. Each guard runs where Rust runs it, in
 order, once its constant matched; an arm that does nothing where its
 guard holds is a `break`
-([ADR 0899](../../decisions/0899-a-guarded-arm-falls-to-the-next.md)):
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)):
 
 ```rust
 pub const VIEW_TRANSITION: u8 = 1;
@@ -1606,7 +1606,7 @@ export function findPair(grid, target) {
 - A loop from the end, `for (let i = v.length - 1; i >= 0; i--)`, is `for
   x in v.iter().rev()`, each item `v[i]`, no copy of the array made; and
   `for i in (0..n).rev()` is `for (let i = n - 1; i >= 0; i--)`
-  ([ADR 0900](../../decisions/0900-a-loop-from-the-end-counts-down.md)):
+  ([ADR 0904](../../decisions/0904-a-loop-from-the-end-counts-down.md)):
 
 ```rust
 pub fn last_named(names: &[String]) -> Option<&String> {

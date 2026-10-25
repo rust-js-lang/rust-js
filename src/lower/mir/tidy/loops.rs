@@ -309,7 +309,7 @@ pub(super) fn for_of(
 }
 
 /// A `for…of` of `iterable`, binding `pattern`, `mutable`, as a `for` that
-/// counts down (ADR 0900): its counter's name, start and test, and its
+/// counts down (ADR 0904): its counter's name, start and test, and its
 /// body. Of an array's items reversed, `v.toReversed()`, which Rust's
 /// `v.iter().rev()` lends it, so nothing changes it meanwhile: its indices
 /// from the end, `for (let i = v.length - 1; i >= 0; i--) { const x = v[i];

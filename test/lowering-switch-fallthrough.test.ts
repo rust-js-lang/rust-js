@@ -1,6 +1,6 @@
 // A `match` of constants that repeats a constant under guards, each
 // guarded arm's constants among the next arm's, is a `switch` whose guarded
-// cases fall through to the next (ADR 0899): React's
+// cases fall through to the next (ADR 0905): React's
 // `getComponentNameFromFiber`. Each test is a program of its own, compiled
 // and run, against what upstream's JS does.
 

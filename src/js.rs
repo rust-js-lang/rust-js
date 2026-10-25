@@ -367,7 +367,7 @@ pub struct Stmt {
 /// A case of a `switch` (`StmtKind::Switch`): its values, stacked, `case
 /// 1: case 2:`, and its statements; and whether where they go on, they go
 /// on to the next case's, as a guarded arm's case does where its guard
-/// fails and the next arm names its constants (ADR 0899), not past the
+/// fails and the next arm names its constants (ADR 0905), not past the
 /// `switch`. Where one falls, each way its statements go on to the next
 /// has only tested: its case is `if (guard) { .. }` that leaves.
 #[derive(Clone, PartialEq)]
@@ -414,7 +414,7 @@ pub enum StmtKind {
     },
     /// `for (let name = start; test; name++) { .. }`: a `for` over a range;
     /// or, `down`, `name--`, over a range or an array's indices from its
-    /// end (ADR 0900).
+    /// end (ADR 0904).
     For {
         label: Option<String>,
         name: String,
@@ -430,7 +430,7 @@ pub enum StmtKind {
     /// stacked, and its statements, which end it as an `if`'s branch's do:
     /// the printer writes `break;` where they'd go on, and a block where
     /// they declare, and leaves out a `default` of none; but of a case
-    /// that falls through to the next, `// Fallthrough` (ADR 0899). A
+    /// that falls through to the next, `// Fallthrough` (ADR 0905). A
     /// `break` of a loop around it names the loop.
     Switch {
         discriminant: Expr,

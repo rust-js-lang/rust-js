@@ -2,7 +2,7 @@
 
 Status: Accepted. Amends [0629](0629-a-match-of-constants-is-a-switch.md),
 whose `switch` had no arm with a guard. Amended by
-[0899](0899-a-guarded-arm-falls-to-the-next.md): a guarded arm whose
+[0905](0905-a-guarded-arm-falls-to-the-next.md): a guarded arm whose
 next arm names each of its constants falls through to that arm's case;
 and an or-pattern of a guard, which MIR tests by each alternative, is one
 case.

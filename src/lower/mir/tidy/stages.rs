@@ -536,10 +536,10 @@ pub(super) const STAGES: &[Stage] = &[
                 switches::switches(b, &h.written.switches, &h.written.loops)
             }),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`; a guard's too,
-            // that a case of a `switch` tests negated (ADR 0899).
+            // that a case of a `switch` tests negated (ADR 0905).
             pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
             // A block one case alone reaches, after its `switch`: that
-            // case's (ADR 0899).
+            // case's (ADR 0905).
             pass("blocks one case reaches", |b, _| {
                 js::statement_lists(b, &mut |s| switches::blocks_one_case_reaches(s))
             }),
