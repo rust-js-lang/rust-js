@@ -5,6 +5,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "map-declared-any",
+    breaks: "a `HashMap<String, u32>` is declared `any`, not the `Map<string, number>` its JS is (ADR 0876)",
+    file: "src/lower/declarations.rs",
+    find: "                    .any(|&map| is_std_def(tcx, did, map))\n",
+    replace: "                    .any(|_| false)\n",
+    tests: ["test/declarations-collections.test.ts"],
+  },
+  {
+    name: "set-declared-any",
+    breaks: "a `HashSet<u32>` is declared `any`, not the `Set<number>` its JS is (ADR 0876)",
+    file: "src/lower/declarations.rs",
+    find: "                    .any(|&set| is_std_def(tcx, did, set))\n",
+    replace: "                    .any(|_| false)\n",
+    tests: ["test/declarations-collections.test.ts"],
+  },
+  {
     name: "uncounted-rc-declared-any",
     breaks: "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
     file: "src/lower/declarations.rs",

@@ -825,6 +825,7 @@ export function parseURL(url: string): number | null | undefined;
 | `Option<T>` | `T \| null \| undefined`; a trailing parameter `x?:`, a field `x?: T \| undefined` |
 | a `#[rust_js::rest]` slice `&[T]` | a rest parameter, `...args: T[]` |
 | `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
+| `HashMap<K, V>`, `BTreeMap<K, V>`; `HashSet<T>`, `BTreeSet<T>` | `Map<K, V>`; `Set<T>` ([ADR 0876](../../decisions/0876-a-maps-declaration-is-map.md)) |
 | a struct with named fields | an `interface` of its fields |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |

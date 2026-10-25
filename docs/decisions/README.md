@@ -663,6 +663,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0873 A set's `for_each` is the set's own `forEach`](0873-a-sets-for-each-is-its-own.md)
 - [0874 `instanceof` of a constructor held as a value is `js::instance_of`](0874-instanceof-of-a-constructor-value.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)
+- [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

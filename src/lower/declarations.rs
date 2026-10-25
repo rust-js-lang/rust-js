@@ -1276,6 +1276,21 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if is_std_def(tcx, did, StdItem::Vec) {
                     return json!({ "kind": "array", "element": self.ts(args.type_at(0)), "readonly": false });
                 }
+                // A `HashMap` or a `BTreeMap` is a `Map`, a `HashSet` or a
+                // `BTreeSet` a `Set`, each class the runtime keeps one in
+                // extending it (ADRs 0059, 0121, 0876).
+                if [StdItem::HashMap, StdItem::BTreeMap]
+                    .iter()
+                    .any(|&map| is_std_def(tcx, did, map))
+                {
+                    return reference("Map", vec![self.ts(args.type_at(0)), self.ts(args.type_at(1))]);
+                }
+                if [StdItem::HashSet, StdItem::BTreeSet]
+                    .iter()
+                    .any(|&set| is_std_def(tcx, did, set))
+                {
+                    return reference("Set", vec![self.ts(args.type_at(0))]);
+                }
                 if ty.is_box() {
                     return self.ts(args.type_at(0));
                 }
