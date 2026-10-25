@@ -4,6 +4,7 @@
 //! that may read a table. A question module: it emits nothing.
 
 use super::*;
+use crate::lower::body_queries::{self, PatternValue};
 
 /// Where the program writes what tidy reads a body's JS by.
 pub(super) struct Written {
@@ -72,12 +73,17 @@ pub(super) struct Switch {
 
 /// An arm of a `match` of constants (`Written::switches`): where it, its
 /// pattern and its guard are written, and each constant its pattern names,
-/// `1 | 2`'s two, none of a last `_`, the `switch`'s `default`.
+/// `1 | 2`'s two, none of a last `_`, the `switch`'s `default`; of an arm
+/// the one before falls to, those the one before doesn't name. `falls`,
+/// whether it's a guarded arm whose failed guard goes on to the next arm,
+/// which names each constant it does: its case falls through to the next's
+/// (ADR 0899).
 pub(super) struct SwitchArm {
     pub span: js::Span,
     pub pattern: js::Span,
     pub guard: Option<js::Span>,
     pub constants: Vec<Constant>,
+    pub falls: bool,
 }
 
 impl SwitchArm {
@@ -110,6 +116,10 @@ pub(super) enum Constant {
     Value(js::Span),
     Kind(crate::lower::untagged::TypeofCase),
 }
+
+/// A constant a pattern names (`Constant`), and the value it is, where
+/// that's told (`body_queries::pattern_value`).
+type Valued<'tcx> = (Constant, Option<PatternValue<'tcx>>);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where the program writes what tidy reads the body's JS by, of the
@@ -393,25 +403,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let last = arms.len().checked_sub(1)?;
                 let arms: Vec<&thir::Arm<'tcx>> = arms.iter().map(|&arm| &self.frame.thir[arm]).collect();
-                let arms: Vec<SwitchArm> = (arms.iter().enumerate())
-                    .map(|(i, arm)| {
-                        // A guard that holds where the arm's pattern matches
-                        // tests nothing: the arm is as one without it.
-                        let guard = (arm.guard).filter(|&guard| {
+                // A guard that holds where the arm's pattern matches tests
+                // nothing: the arm is as one without it.
+                let guards: Vec<Option<thir::ExprId>> = (arms.iter())
+                    .map(|arm| {
+                        (arm.guard).filter(|&guard| {
                             !held.contains(
                                 &self.frame.thir[crate::lower::body_queries::strip(self.frame.thir, guard)].span,
                             )
-                        });
+                        })
+                    })
+                    .collect();
+                // Whether each guarded arm's failed guard goes on to the next
+                // arm, which names each constant it does and more (ADR 0899):
+                // its case falls through to the next's, which is a case as
+                // any arm is, guarded or not.
+                let falls: Vec<bool> = (0..arms.len())
+                    .map(|i| {
+                        guards[i].is_some()
+                            && i < last
+                            && self.falls_to(&arms[i].pattern, &arms[i + 1].pattern, present)
+                    })
+                    .collect();
+                let arms: Vec<SwitchArm> = (arms.iter().enumerate())
+                    .map(|(i, arm)| {
+                        let guard = guards[i];
                         let constants = match &arm.pattern.kind {
                             thir::PatKind::Wild if i == last && guard.is_none() => Some(Vec::new()),
-                            _ => (self.constants_of(&arm.pattern, present))
-                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),
+                            _ => (self.constants_of(&arm.pattern, present)).filter(|_| {
+                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])
+                            }),
                         }?;
+                        // Of an arm the one before falls to, the constants it
+                        // names alone: the others are that arm's case's.
+                        let constants = match i.checked_sub(1).is_some_and(|before| falls[before]) {
+                            true => {
+                                let before = self.constant_values(&arms[i - 1].pattern, present)?;
+                                let values = self.constant_values(&arm.pattern, present)?;
+                                (constants.into_iter().zip(values))
+                                    .filter(|(_, value)| !before.contains(value))
+                                    .map(|(constant, _)| constant)
+                                    .collect()
+                            }
+                            false => constants,
+                        };
                         Some(SwitchArm {
                             span: self.js_span(arm.span),
                             pattern: self.js_span(arm.pattern.span),
                             guard: guard.map(|guard| self.js_span(self.frame.thir[guard].span)),
                             constants,
+                            falls: falls[i],
                         })
                     })
                     .collect::<Option<_>>()?;
@@ -467,6 +508,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && arm.guard.is_none()
                     && self.does_nothing(arm.body))
         })
+    }
+
+    /// Whether an arm of `pattern` whose guard fails may fall to the case of
+    /// the next arm, of `next` (ADR 0899): `next` names each value `pattern`
+    /// does, which Rust tries it of next, and one of its own, its case's,
+    /// each value told (`constant_values`).
+    fn falls_to(&self, pattern: &thir::Pat<'tcx>, next: &thir::Pat<'tcx>, present: bool) -> bool {
+        let (Some(values), Some(next)) = (
+            self.constant_values(pattern, present),
+            self.constant_values(next, present),
+        ) else {
+            return false;
+        };
+        values.iter().all(|v| next.contains(v)) && next.iter().any(|v| !values.contains(v))
+    }
+
+    /// The value of each constant `pattern` names, of a value `present`
+    /// (`constants_of`), in its order, where each is told
+    /// (`body_queries::pattern_value`): a number's, a `char`'s, the
+    /// registry's symbol's.
+    fn constant_values(&self, pattern: &thir::Pat<'tcx>, present: bool) -> Option<Vec<PatternValue<'tcx>>> {
+        (self.valued_constants(pattern, present)?.into_iter())
+            .map(|(_, value)| value)
+            .collect()
     }
 
     /// Whether a value `a` matches may be one `b` matches, of the patterns
@@ -557,19 +622,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a value `present`, `classify(Some(value))`'s, as `untagged_case`
     /// has it (ADR 0676).
     fn constants_of(&self, pattern: &thir::Pat<'tcx>, present: bool) -> Option<Vec<Constant>> {
+        let valued = self.valued_constants(pattern, present)?;
+        Some(valued.into_iter().map(|(constant, _)| constant).collect())
+    }
+
+    /// `constants_of`'s, each with the value its pattern is, where it's told
+    /// (`body_queries::pattern_value`).
+    fn valued_constants(&self, pattern: &thir::Pat<'tcx>, present: bool) -> Option<Vec<Valued<'tcx>>> {
+        let value = |constant| (constant, body_queries::pattern_value(self.tcx, pattern));
         match &pattern.kind {
-            thir::PatKind::Deref { subpattern, .. } => self.constants_of(subpattern, present),
+            thir::PatKind::Deref { subpattern, .. } => self.valued_constants(subpattern, present),
             // Of a number, a `char` or a string, which `===` compares by its
             // value; not a `bool`, which has two, its `if`'s.
             thir::PatKind::Constant { .. } => {
                 let ty = pattern.ty.peel_refs();
                 let scalar = ty.is_integral() || ty.is_floating_point() || ty.is_char() || ty.is_str();
-                scalar.then(|| vec![Constant::Value(self.js_span(pattern.span))])
+                scalar.then(|| vec![value(Constant::Value(self.js_span(pattern.span)))])
             }
             // The registry's symbol, `REACT_MEMO_TYPE`, which `===` compares
             // as it does its key (ADR 0634).
             thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {
-                Some(vec![Constant::Value(self.js_span(pattern.span))])
+                Some(vec![value(Constant::Value(self.js_span(pattern.span)))])
             }
             // A `Some` of constants, where it's the value itself (ADR
             // 0030), whose test of each says it's there.
@@ -579,7 +652,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let [some] = &subpatterns[..]
                 && !self.boxed_payload(some.pattern.ty) =>
             {
-                self.constants_of(&some.pattern, false)
+                self.valued_constants(&some.pattern, false)
             }
             // A variant of an untagged enum, by what `typeof` says of it, its
             // value bound or not, which is the value itself (ADR 0668), or
@@ -591,7 +664,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let subject = js::Expr::var(SUBJECT);
                 let cases = (self.recognition()).untagged_cases(adt, args, &variants, &subject, present)?;
-                Some(cases.into_iter().map(Constant::Kind).collect())
+                Some(cases.into_iter().map(|case| (Constant::Kind(case), None)).collect())
             }
             thir::PatKind::Variant {
                 adt_def,
@@ -602,14 +675,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let subject = js::Expr::var(SUBJECT);
                 let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index, false);
                 match test.kind {
-                    js::ExprKind::Binary(js::Op::Eq, s, value) if *s == subject => {
-                        Some(vec![Constant::Variant(*value)])
+                    js::ExprKind::Binary(js::Op::Eq, s, variant) if *s == subject => {
+                        Some(vec![(Constant::Variant(*variant), None)])
                     }
                     _ => None,
                 }
             }
             thir::PatKind::Or { pats } => {
-                let each: Option<Vec<Vec<Constant>>> = pats.iter().map(|p| self.constants_of(p, present)).collect();
+                let each: Option<Vec<Vec<Valued<'tcx>>>> =
+                    pats.iter().map(|p| self.valued_constants(p, present)).collect();
                 Some(each?.concat())
             }
             _ => None,

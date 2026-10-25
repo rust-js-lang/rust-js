@@ -279,7 +279,7 @@ impl Walk {
                 default,
             } => {
                 self.expr(discriminant);
-                for (values, body) in cases {
+                for js::Case { values, body, .. } in cases {
                     values.iter().for_each(|value| self.expr(value));
                     self.block(body);
                 }

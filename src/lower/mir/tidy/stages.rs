@@ -523,8 +523,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written negations", |b, h| {
                 logicals::written_negations(b, &h.written.negations, &h.written.logicals)
             }),
-            // `!(b >= 48)` of what's never `NaN`: `b < 48`.
-            pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
             // `(lanes & X) !== 0` of a test: `lanes & X` (ADR 0896).
             pass("bit tests", |b, _| logicals::bit_tests(b)),
             // An `if` of `false`, a check that can't fail once what it reads
@@ -536,6 +534,14 @@ pub(super) const STAGES: &[Stage] = &[
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {
                 switches::switches(b, &h.written.switches, &h.written.loops)
+            }),
+            // `!(b >= 48)` of what's never `NaN`: `b < 48`; a guard's too,
+            // that a case of a `switch` tests negated (ADR 0899).
+            pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
+            // A block one case alone reaches, after its `switch`: that
+            // case's (ADR 0899).
+            pass("blocks one case reaches", |b, _| {
+                js::statement_lists(b, &mut |s| switches::blocks_one_case_reaches(s))
             }),
             // A block's `break` in a `switch` it ends with: the case's own.
             pass("breaks past switches", |b, _| {

@@ -634,7 +634,7 @@ fn block(body: &mut Vec<Stmt>) {
                 default,
             } => {
                 expr(discriminant);
-                for (values, body) in cases.iter_mut() {
+                for js::Case { values, body, .. } in cases.iter_mut() {
                     values.iter_mut().for_each(expr);
                     block(body);
                 }

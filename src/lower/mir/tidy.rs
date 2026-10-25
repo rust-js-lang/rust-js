@@ -593,6 +593,7 @@ mod tests {
                 pattern: at,
                 guard: None,
                 constants: Vec::new(),
+                falls: false,
             }],
         }];
         let then = [assign("x", Expr::num(1))];

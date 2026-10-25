@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "last-case-broken",
     breaks: "a `switch`'s last case, which JS falls out of, ends in a dead `break;`",
     file: "src/to_oxc/statements.rs",
-    find: "                    let falls_out = default.is_none() && Some(k) == last_case;\n",
-    replace: "                    let falls_out = default.is_none() && Some(k) == last_case && false;\n",
+    find: "                    let falls_out = case.falls || (default.is_none() && Some(k) == last_case);\n",
+    replace: "                    let falls_out = case.falls || (default.is_none() && Some(k) == last_case && false);\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
   },
   {
@@ -241,5 +241,13 @@ export const mutations: Mutation[] = [
     find: "                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) => self.stmt(only),\n",
     replace: "                    ] => self.stmt(only),\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+  },
+  {
+    name: "fallen-case-broken",
+    breaks: "a case that falls through to the next ends in `break;`, so a failed guard leaves the `switch`, not runs the next case",
+    file: "src/to_oxc/statements.rs",
+    find: "                    let falls_out = case.falls || (default.is_none() && Some(k) == last_case);\n",
+    replace: "                    let falls_out = default.is_none() && Some(k) == last_case;\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
   },
 ];

@@ -574,4 +574,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(&hi) = else_ifs.get(&at).filter(|_| false)\n",
     tests: ["test/lowering-loops.test.ts", "-t", "else-if at a loop's end"],
   },
+  {
+    name: "fallthrough-unsaid",
+    breaks: "a case that falls through to the next has no `// Fallthrough` before the next, which ESLint's `no-fallthrough` asks",
+    file: "src/to_oxc.rs",
+    find: "    (before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
+    replace: "    (false && before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
+  },
 ];

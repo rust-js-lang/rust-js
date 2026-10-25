@@ -197,7 +197,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 default,
             } => {
                 expr(discriminant, visitor);
-                for (values, body) in cases.iter_mut() {
+                for crate::js::Case { values, body, .. } in cases.iter_mut() {
                     values.iter_mut().for_each(|value| expr(value, visitor));
                     block(body, visitor);
                 }

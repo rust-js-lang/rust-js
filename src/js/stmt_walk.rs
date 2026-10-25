@@ -257,7 +257,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 default,
             } => {
                 discriminant.visit_vars(read);
-                for (values, body) in cases {
+                for Case { values, body, .. } in cases {
                     values.iter().for_each(|value| value.visit_vars(read));
                     visit_stmts(body, read);
                 }
@@ -280,12 +280,18 @@ pub fn ends(stmt: &Stmt) -> bool {
     match &stmt.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
-        // A `switch` with a `default`, each of whose cases leaves (ADR 0660).
+        // A `switch` with a `default`, each of whose cases leaves (ADR
+        // 0660), or falls to the next case (ADR 0899).
         StmtKind::Switch {
             cases,
-            default: default @ Some(_),
+            default: Some(default),
             ..
-        } => case_lists(cases, default).all(|body| body.last().is_some_and(ends)),
+        } => {
+            cases
+                .iter()
+                .all(|case| case.falls || case.body.last().is_some_and(ends))
+                && default.last().is_some_and(ends)
+        }
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
         }
@@ -719,18 +725,15 @@ pub fn each_item_slotted_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Ve
 }
 
 /// A `switch`'s lists of statements: each case's, then its default's.
-pub fn case_lists<'s>(
-    cases: &'s [(Vec<Expr>, Vec<Stmt>)],
-    default: &'s Option<Vec<Stmt>>,
-) -> impl Iterator<Item = &'s Vec<Stmt>> {
-    cases.iter().map(|(_, body)| body).chain(default)
+pub fn case_lists<'s>(cases: &'s [Case], default: &'s Option<Vec<Stmt>>) -> impl Iterator<Item = &'s Vec<Stmt>> {
+    cases.iter().map(|case| &case.body).chain(default)
 }
 
 /// A `switch`'s lists of statements, to change: each case's, then its
 /// default's.
 pub fn case_lists_mut<'s>(
-    cases: &'s mut [(Vec<Expr>, Vec<Stmt>)],
+    cases: &'s mut [Case],
     default: &'s mut Option<Vec<Stmt>>,
 ) -> impl Iterator<Item = &'s mut Vec<Stmt>> {
-    cases.iter_mut().map(|(_, body)| body).chain(default.as_mut())
+    cases.iter_mut().map(|case| &mut case.body).chain(default.as_mut())
 }

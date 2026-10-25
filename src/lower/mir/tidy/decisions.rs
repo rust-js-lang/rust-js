@@ -1086,7 +1086,7 @@ impl Given<'_> {
                     cases,
                     default,
                 } => {
-                    if !quiet(discriminant) || !cases.iter().flat_map(|(values, _)| values).all(&quiet) {
+                    if !quiet(discriminant) || !cases.iter().flat_map(|case| &case.values).all(&quiet) {
                         return None;
                     }
                     let inside = inside.labeled(None, false, true);

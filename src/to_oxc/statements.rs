@@ -460,19 +460,25 @@ impl<'a> Cx<'a> {
                 let default = default.as_ref();
                 // The last clause, which JS falls out of, needs no `break`
                 // (ADR 0629, amended).
-                let last_case = cases.iter().rposition(|(values, _)| !values.is_empty());
-                for (k, (values, body)) in cases.iter().enumerate() {
-                    let Some((last, stacked)) = values.split_last() else {
+                let last_case = cases.iter().rposition(|case| !case.values.is_empty());
+                for (k, case) in cases.iter().enumerate() {
+                    let Some((last, stacked)) = case.values.split_last() else {
                         continue;
                     };
+                    // Where a case falls through to it, where its comment
+                    // says so is (ADR 0899).
+                    let mut at = super::fallen_to(cases, k).map_or(SPAN, |lo| Span::new(lo, lo));
                     for value in stacked {
-                        clauses.push(SwitchCase::new(SPAN, Some(self.expr(value)), ArenaVec::new_in(b), b));
+                        clauses.push(SwitchCase::new(at, Some(self.expr(value)), ArenaVec::new_in(b), b));
+                        at = SPAN;
                     }
-                    let falls_out = default.is_none() && Some(k) == last_case;
+                    // One that falls through to the next case goes on to it,
+                    // no `break` (ADR 0899).
+                    let falls_out = case.falls || (default.is_none() && Some(k) == last_case);
                     clauses.push(SwitchCase::new(
-                        SPAN,
+                        at,
                         Some(self.expr(last)),
-                        self.case_body(body, falls_out),
+                        self.case_body(&case.body, falls_out),
                         b,
                     ));
                 }

@@ -463,7 +463,7 @@ fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool 
             one(discriminant)
                 && cases
                     .iter_mut()
-                    .all(|(values, body)| values.iter_mut().all(one) && substituted(body, with))
+                    .all(|Case { values, body, .. }| values.iter_mut().all(one) && substituted(body, with))
                 && default.as_deref_mut().is_none_or(|default| substituted(default, with))
         }
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => substituted(a, with) && substituted(b, with),

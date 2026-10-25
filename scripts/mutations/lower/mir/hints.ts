@@ -1,6 +1,7 @@
 // Mutations of src/lower/mir/hints.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
 export const mutations: Mutation[] = [
   {
     name: "clone-names-unfound",
@@ -163,16 +164,16 @@ export const mutations: Mutation[] = [
     name: "switch-of-a-guard",
     breaks: "a guarded arm is a case where a later arm does something, `1 if n > 0 => 1, .., _ => 3`, which a failed guard leaves for after the `switch`, not the arms after it",
     file: "src/lower/mir/hints.rs",
-    find: "                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
-    replace: "                                ,\n",
+    find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
+    replace: "                                true\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
   {
     name: "switch-guard-refused",
     breaks: "a guarded arm after which only `_ => {}` comes isn't a case, so React's `match` of seven constants is an `if` chain",
     file: "src/lower/mir/hints.rs",
-    find: "                                .filter(|_| guard.is_none() || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])),\n",
-    replace: "                                .filter(|_| guard.is_none()),\n",
+    find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
+    replace: "                                guard.is_none() || falls[i]\n",
     tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
   },
   {
@@ -302,5 +303,21 @@ export const mutations: Mutation[] = [
     find: "        .filter(|(_, place)| !place)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
+  },
+  {
+    name: "switch-falls-nowhere",
+    breaks: "no guarded arm falls to the next arm's case, so React's `getComponentNameFromFiber` is an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "        values.iter().all(|v| next.contains(v)) && next.iter().any(|v| !values.contains(v))\n",
+    replace: "        false && values.iter().all(|v| next.contains(v))\n",
+    tests: fallthrough,
+  },
+  {
+    name: "switch-fallen-to-names-all",
+    breaks: "the arm a guarded arm falls to keeps the constants the one before names, which MIR tests only there, so the `match` stays an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "                                    .filter(|(_, value)| !before.contains(value))\n",
+    replace: "",
+    tests: fallthrough,
   },
 ];

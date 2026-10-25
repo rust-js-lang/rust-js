@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-not-de-morgan",
     breaks: "`!(a && b)` of `bool`s stays, not `!a || !b`",
     file: "src/js/make.rs",
-    find: "                Expr::bin(flipped, a.negated_test(), b.negated_test())\n",
+    find: "                Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)\n",
     replace: "                Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
     tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },

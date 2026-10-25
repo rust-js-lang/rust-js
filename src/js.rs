@@ -364,6 +364,19 @@ pub struct Stmt {
     pub span: Span,
 }
 
+/// A case of a `switch` (`StmtKind::Switch`): its values, stacked, `case
+/// 1: case 2:`, and its statements; and whether where they go on, they go
+/// on to the next case's, as a guarded arm's case does where its guard
+/// fails and the next arm names its constants (ADR 0899), not past the
+/// `switch`. Where one falls, each way its statements go on to the next
+/// has only tested: its case is `if (guard) { .. }` that leaves.
+#[derive(Clone, PartialEq)]
+pub struct Case {
+    pub values: Vec<Expr>,
+    pub body: Vec<Stmt>,
+    pub falls: bool,
+}
+
 #[derive(Clone, PartialEq)]
 pub enum StmtKind {
     Const(String, Expr),
@@ -413,11 +426,12 @@ pub enum StmtKind {
     /// of constants the program wrote (ADR 0629). Each case is its values,
     /// stacked, and its statements, which end it as an `if`'s branch's do:
     /// the printer writes `break;` where they'd go on, and a block where
-    /// they declare, and leaves out a `default` of none. A `break` of a
-    /// loop around it names the loop.
+    /// they declare, and leaves out a `default` of none; but of a case
+    /// that falls through to the next, `// Fallthrough` (ADR 0899). A
+    /// `break` of a loop around it names the loop.
     Switch {
         discriminant: Expr,
-        cases: Vec<(Vec<Expr>, Vec<Stmt>)>,
+        cases: Vec<Case>,
         default: Option<Vec<Stmt>>,
     },
     /// `try { .. } finally { .. }`: a scope, and the drops that end it,

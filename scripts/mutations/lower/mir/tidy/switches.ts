@@ -5,6 +5,7 @@ const switches = ["test/lowering-matches.test.ts", "-t", "a match of constants i
 const guarded = ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"];
 const typeofs = ["test/lowering-switches.test.ts", "-t", "a match of what a value is"];
 
+const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
 export const mutations: Mutation[] = [
   {
     name: "switch-default-doing-nothing-kept",
@@ -34,8 +35,8 @@ export const mutations: Mutation[] = [
     name: "switch-negated-arm-unread",
     breaks: "an arm MIR tests negated, `if (c !== \".\")`, keeps the whole `match` an `if` chain",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "        if let [last] = left[..]\n",
-    replace: "        if false && let [last] = left[..]\n",
+    find: "        if let Some(values) = values_of(test, &arm.constants[from..], true, &mut negated) {\n",
+    replace: "        if false && let Some(values) = values_of(test, &arm.constants[from..], true, &mut negated) {\n",
     tests: switches,
   },
   {
@@ -241,5 +242,37 @@ export const mutations: Mutation[] = [
     find: "            if discriminant_in_place(stmts, i) {\n",
     replace: "            if false && discriminant_in_place(stmts, i) {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
+  },
+  {
+    name: "switch-alternatives-apart",
+    breaks: "a guarded or-pattern's alternatives, which MIR tests apart, aren't one case, so the `match` stays an `if` chain",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    let mut cases = stacked(cases)?;\n",
+    replace: "",
+    tests: fallthrough,
+  },
+  {
+    name: "switch-fallen-guard-goes-on",
+    breaks: "a guard that holds where its arm does nothing goes on to the next case, `if (disableLegacyMode) {}`, not past the `switch`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            stmts.push(StmtKind::Break(None).at(js::Span::NONE));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_fallthrough.rs$"],
+  },
+  {
+    name: "switch-copied-returns-kept",
+    breaks: "a `return null` MIR copied into a case of what follows the `match` stays, not the case's `break`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            returns_broken(body, value.as_ref(), written.span);\n",
+    replace: "",
+    tests: fallthrough,
+  },
+  {
+    name: "switch-block-one-case-reaches-kept",
+    breaks: "the statements of the arm a case falls to stay after the `switch`, in labeled blocks, `break bb9`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        let [only] = reaching[..] else {\n",
+    replace: "        let [.., only, _] = reaching[..] else {\n",
+    tests: fallthrough,
   },
 ];

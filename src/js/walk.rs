@@ -103,7 +103,7 @@ macro_rules! walks {
                         default,
                     } => {
                         discriminant.$expr(f);
-                        for (values, body) in cases.$iter() {
+                        for Case { values, body, .. } in cases.$iter() {
                             values.$iter().for_each(|value| value.$expr(f));
                             $exprs(body, f);
                         }

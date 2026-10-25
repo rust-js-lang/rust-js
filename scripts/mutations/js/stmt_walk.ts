@@ -180,8 +180,8 @@ export const mutations: Mutation[] = [
     name: "switch-goes-on",
     breaks: "a `switch` each of whose cases leaves is taken to go on, so a closure's body ending in one stays a closure in its `try`",
     file: "src/js/stmt_walk.rs",
-    find: "        } => case_lists(cases, default).all(|body| body.last().is_some_and(ends)),\n",
-    replace: "        } => false,\n",
+    find: "                .all(|case| case.falls || case.body.last().is_some_and(ends))\n                && default.last().is_some_and(ends)\n",
+    replace: "                .all(|_| false)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
   },
   {

@@ -233,11 +233,14 @@ fn switch_at(
     let at_test = tested_at(first)?;
     let written = (switches.iter()).find(|s| (s.arms.iter()).any(|arm| within(at_test, arm.pattern)))?;
     let arms: Vec<&SwitchArm> = written.arms.iter().collect();
+    let left: Vec<(&SwitchArm, usize)> = arms.iter().map(|&arm| (arm, 0)).collect();
     let mut discriminant = None;
-    let (mut cases, mut taken) = chain(&stmts[at..], &arms, false, &mut discriminant)?;
+    let (mut cases, mut taken) = chain(&stmts[at..], &left, false, &mut discriminant)?;
     let discriminant = discriminant?;
-    // Its cases as its arms are written, whatever order MIR tests them in.
+    // Its cases as its arms are written, whatever order MIR tests them in;
+    // an arm's alternatives MIR tested apart, a guard's each, one case.
     cases.sort_by_key(|case| case.3.lo);
+    let mut cases = stacked(cases)?;
     // What follows it to its list's end, where one case alone goes on to
     // it and it's that arm's, written there or MIR's: that case's, `'.' =>
     // break` of a loop's `break` after it.
@@ -245,6 +248,7 @@ fn switch_at(
     let going: Vec<usize> = (0..cases.len())
         .filter(|&c| !cases[c].1.last().is_some_and(js::ends))
         .collect();
+    let falling = arms.iter().any(|arm| arm.falls);
     // Each arm a case: one that does nothing, left out, goes on too. Of
     // the `default`, a `_`'s, what follows that's written in it or MIR's,
     // up to the first of what's written past it, which stays after the
@@ -252,7 +256,9 @@ fn switch_at(
     // after the chain of the arms before a last `_ => { .. }`, which only
     // that case goes on to (ADR 0629, amended). One that does nothing, `_
     // => {}`, is left out where it's then nothing (`breaks_past_switches`).
+    let mut absorbed = 0;
     if let [only] = going[..]
+        && !falling
         && cases.len() == arms.len()
         && !after.is_empty()
     {
@@ -273,9 +279,31 @@ fn switch_at(
         cases[only].1.extend(after[..n].iter().cloned());
         taken += n;
     }
+    // Of a `match` whose guarded arms fall to the next (ADR 0899), what
+    // follows that's written in the arm they fall to last, up to the first
+    // of what's written past it, where nothing there reads what it
+    // declares: each case's that goes on to it, which each case that falls
+    // then has of the next's, and only the last of them its own.
+    if falling
+        && cases.len() == arms.len()
+        && let Some(arm) = (after.first())
+            .and_then(written_at)
+            .and_then(|at| arms.iter().find(|arm| within(at, arm.span)))
+    {
+        let own = |s: &Stmt| written_at(s).is_none_or(|at| within(at, arm.span));
+        let n = (after.iter()).take_while(|s| own(s)).count();
+        if declared(&after[..n]).all(|name| js::mentions_in(&after[n..], name) == 0) {
+            for &c in &going {
+                cases[c].1.extend(after[..n].iter().cloned());
+            }
+            absorbed = n;
+            taken += n;
+        }
+    }
     // Each arm of `null`, which `typeof` says is an object, an `if` of its
     // test in `case "object"`; and each of an array, an `if` of its test
     // before the `switch`, and so what the others' leave out.
+    let tested = cases.len();
     nulls_inside(&mut cases)?;
     let before = arrays_before(&mut cases)?;
     // A `break` of no label in a case, of the loop around it, which in a
@@ -287,12 +315,41 @@ fn switch_at(
         }
         around.named = true;
     }
+    // Each guarded arm's case that falls to the next, its own statements
+    // the guard's `if`; what follows, which went on to each, the last's
+    // alone (ADR 0899).
+    let mut falls = vec![false; cases.len()];
+    if falling {
+        if cases.len() != tested {
+            return None;
+        }
+        falls = fallen(&mut cases, &arms)?;
+        let holding = going.iter().filter(|&&c| !falls[c]).count();
+        if absorbed > 0 && holding > 1 {
+            return None;
+        }
+    }
+    // A `return` MIR copied into a case of what follows the `match`, the
+    // `return` after the `switch`: the case's `break`, as written.
+    if let Some(Stmt {
+        kind: StmtKind::Return(value),
+        ..
+    }) = stmts.get(at + taken)
+    {
+        for (_, body, ..) in cases.iter_mut() {
+            returns_broken(body, value.as_ref(), written.span);
+        }
+    }
     let mut switched = Vec::new();
     let mut default = None;
-    for (values, body, last, _) in cases {
+    for ((values, body, last, _), falls) in cases.into_iter().zip(falls) {
         match last {
             true => default = Some(body),
-            false => switched.push((values.values, body)),
+            false => switched.push(js::Case {
+                values: values.values,
+                body,
+                falls,
+            }),
         }
     }
     // Where the `match` is written, not its first arm's pattern, which the
@@ -313,6 +370,131 @@ fn switch_at(
         }
     });
     Some((written, taken))
+}
+
+/// `cases`, in the order their arms are written, each arm's one: of an
+/// arm whose constants MIR tested apart, a guarded or-pattern's, each
+/// with the guard (ADR 0899), its values stacked in the order tested,
+/// where the statements of each are alike, as they are of one arm.
+fn stacked(cases: Vec<Case>) -> Option<Vec<Case>> {
+    let mut stacked: Vec<Case> = Vec::new();
+    for case in cases {
+        match stacked.last_mut() {
+            Some(last) if last.3 == case.3 => {
+                let (values, body, ..) = case;
+                let plain = |v: &Values| v.tested.is_empty() && v.excluding.is_empty() && v.inside.is_empty();
+                if !plain(&last.0) || !plain(&values) || !js::stmts_alike(&last.1, &body) {
+                    return None;
+                }
+                last.0.values.extend(values.values);
+            }
+            _ => stacked.push(case),
+        }
+    }
+    Some(stacked)
+}
+
+/// Of `cases`, each in the order its arm is written, each of an arm that
+/// falls to the next (`SwitchArm::falls`), whose statements are the
+/// guard's `if` and then the next case's: the guard's `if` alone, its case
+/// falling through to the next (ADR 0899). Whether each falls, or `None`
+/// where one's statements aren't so. Where its guard fails, a case only
+/// tested, then goes on to the next's statements, as Rust goes on to the
+/// next arm; and where it holds, it leaves, as its arm's statements did,
+/// a `break;` of the `switch` where they go on past the `match`.
+fn fallen(cases: &mut [Case], arms: &[&SwitchArm]) -> Option<Vec<bool>> {
+    let mut falls = vec![false; cases.len()];
+    let mut own = Vec::new();
+    for (c, case) in cases.iter().enumerate() {
+        let k = arms.iter().position(|arm| arm.span == case.3)?;
+        if !arms[k].falls {
+            continue;
+        }
+        // The next case is the next arm's, which Rust tries next.
+        let next = cases
+            .get(c + 1)
+            .filter(|next| arms.get(k + 1).is_some_and(|arm| arm.span == next.3))?;
+        own.push((c, guard_alone(&case.1, &next.1)?));
+        falls[c] = true;
+    }
+    for (c, stmt) in own {
+        cases[c].1 = vec![stmt];
+    }
+    Some(falls)
+}
+
+/// Of a case's statements, `body`, those of the guard's `if` followed by
+/// those of the next case, `next`: the guard's `if`, which leaves where the
+/// guard holds, and else goes on, having only tested. MIR's are one of
+/// `if (guard) { .. } next`, its `if` leaving; `if (guard) { .. } else {
+/// next }`; `if (!guard) { next } ..`, what follows leaving, as MIR tests a
+/// guard whose arm does nothing; or `if (!guard) { next } else { .. }`.
+fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
+    let (first, rest) = body.split_first()?;
+    let StmtKind::If(test, then, otherwise) = &first.kind else {
+        return None;
+    };
+    // Each way it goes on to the next only tests.
+    let mut assigns = false;
+    test.clone()
+        .each_mut(&mut |e| assigns |= matches!(e.kind, ExprKind::Assigned(..)));
+    if assigns {
+        return None;
+    }
+    // What leaves where the guard holds: of statements that go on past the
+    // `match`, a `break;` of the `switch` after them.
+    let leaving = |stmts: &[Stmt]| {
+        let mut stmts = stmts.to_vec();
+        if !stmts.last().is_some_and(js::ends) {
+            stmts.push(StmtKind::Break(None).at(js::Span::NONE));
+        }
+        stmts
+    };
+    let alike = js::stmts_alike;
+    let held = match otherwise {
+        None if alike(rest, next) && then.last().is_some_and(js::ends) => (test.clone(), then.clone()),
+        None if alike(then, next) && rest.last().is_none_or(js::ends) => (test.clone().negated_test(), leaving(rest)),
+        Some(otherwise) if rest.is_empty() && alike(otherwise, next) => (test.clone(), leaving(then)),
+        Some(otherwise) if rest.is_empty() && alike(then, next) => (test.clone().negated_test(), leaving(otherwise)),
+        _ => return None,
+    };
+    let (test, then) = held;
+    Some(StmtKind::If(test, then, None).at(first.span))
+}
+
+/// Each `return value;` of a case's `stmts`, outside a loop, a `switch` or
+/// a `try` of their own, that's written past the `match` at `written`,
+/// MIR's copy of the `return` the `switch` is followed by: the case's
+/// `break;`, which goes on to that `return`. One that ends the case,
+/// which ends there anyway, gone.
+fn returns_broken(stmts: &mut Vec<Stmt>, value: Option<&Expr>, written: js::Span) {
+    fn each(stmts: &mut [Stmt], value: Option<&Expr>, written: js::Span) {
+        for stmt in stmts.iter_mut() {
+            match &mut stmt.kind {
+                StmtKind::Return(returned)
+                    if match (&*returned, value) {
+                        (None, None) => true,
+                        (Some(returned), Some(value)) => alike(returned, value) && !within(returned.span.lo, written),
+                        _ => false,
+                    } && !within(stmt.span.lo, written) =>
+                {
+                    stmt.kind = StmtKind::Break(None);
+                }
+                StmtKind::If(_, a, b) => {
+                    each(a, value, written);
+                    if let Some(b) = b {
+                        each(b, value, written);
+                    }
+                }
+                StmtKind::Labeled(_, body) => each(body, value, written),
+                _ => {}
+            }
+        }
+    }
+    each(stmts, value, written);
+    if matches!(stmts.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
+        stmts.pop();
+    }
 }
 
 /// Of the cases of a `switch (typeof value)` (ADR 0668), each arm of
@@ -412,23 +594,26 @@ fn arrays_before(cases: &mut Vec<Case>) -> Option<Vec<(Expr, Vec<Stmt>, js::Span
     left_out.then_some(before)
 }
 
-/// The cases `stmts` test of `arms`, in order, and how many statements they
-/// are: an `if` of each arm's test, its `else` the rest's, or, where its
-/// branch leaves, the next; what's left the last arm's, all of `stmts`
-/// where they're all the `match`'s, `whole`, as an `else` is, else what's
-/// written in it. And of an arm before the last, an `if` of its test
-/// negated, the last arm's branch, `if (c !== ".") { .. }`, as a `match`
-/// whose arm does nothing, or leaves, MIR tests. `discriminant`, what each
-/// test compares, as the first tells.
+/// The cases `stmts` test of the arms `left`, in order, and how many
+/// statements they are: an `if` of each arm's test, its `else` the rest's,
+/// or, where its branch leaves, the next; what's left the last arm's, all
+/// of `stmts` where they're all the `match`'s, `whole`, as an `else` is,
+/// else what's written in it. And of an arm, an `if` of its test negated,
+/// the branch of the arms after it, `if (c !== ".") { .. }`, as a `match`
+/// whose arm does nothing, or leaves, MIR tests. An arm's constants may be
+/// tested apart, each in turn, as MIR tests a guarded or-pattern's
+/// alternatives, the guard in each (ADR 0899): a case of each; `left` has
+/// how many of each arm's are tested. `discriminant`, what each test
+/// compares, as the first tells.
 fn chain(
     stmts: &[Stmt],
-    arms: &[&SwitchArm],
+    left: &[(&SwitchArm, usize)],
     whole: bool,
     discriminant: &mut Option<Expr>,
 ) -> Option<(Vec<Case>, usize)> {
     let mut cases = Vec::new();
     let mut i = 0;
-    let mut left = arms.to_vec();
+    let mut left = left.to_vec();
     while !left.is_empty() {
         // The arm whose pattern its test is written at, of those left,
         // wherever MIR tests it, an untagged enum's in its variants' order:
@@ -440,15 +625,17 @@ fn chain(
                     ..
                 },
             ) => (left.iter())
-                .position(|arm| !arm.constants.is_empty() && tested_at(stmt).is_some_and(|at| within(at, arm.pattern)))
-                .map(|k| (left.remove(k), test, then, otherwise)),
+                .position(|(arm, _)| {
+                    !arm.constants.is_empty() && tested_at(stmt).is_some_and(|at| within(at, arm.pattern))
+                })
+                .map(|k| (k, test, then, otherwise)),
             _ => None,
         };
-        let Some((arm, test, then, otherwise)) = tested else {
+        let Some((k, test, then, otherwise)) = tested else {
             // The rest, untested: the last arm's, the one left. A chain
             // begun past an arm's test leaves that arm and the last, a `_`
             // or one Rust proved, which no test is of: no `switch`.
-            let [arm] = left[..] else {
+            let [(arm, 0)] = left[..] else {
                 return None;
             };
             let taken = rest(&stmts[i..], arm, whole);
@@ -456,12 +643,15 @@ fn chain(
             cases.push((values, stmts[i..i + taken].to_vec(), arm.constants.is_empty(), arm.span));
             return Some((cases, i + taken));
         };
-        // Its test negated, the last arm's branch: its own the `else`, or
-        // what's after where that leaves.
+        let (arm, from) = left[k];
+        // Its test negated, the branch of the arms after it: its own the
+        // `else`, or what's after where that leaves.
         let mut negated = discriminant.clone();
-        if let [last] = left[..]
-            && let Some(values) = values_of(test, &arm.constants, true, &mut negated)
-        {
+        if let Some(values) = values_of(test, &arm.constants[from..], true, &mut negated) {
+            left.remove(k);
+            if left.is_empty() || left.iter().any(|&(_, from)| from > 0) {
+                return None;
+            }
             *discriminant = negated;
             let (own, taken) = match otherwise {
                 Some(otherwise) => (otherwise.clone(), 0),
@@ -472,29 +662,61 @@ fn chain(
                 None => (Vec::new(), 0),
             };
             cases.push((values, own, false, arm.span));
-            cases.push((
-                untested(last, discriminant)?,
-                then.clone(),
-                last.constants.is_empty(),
-                last.span,
-            ));
+            match left[..] {
+                // The last arm's, untested.
+                [(last, _)] => cases.push((
+                    untested(last, discriminant)?,
+                    then.clone(),
+                    last.constants.is_empty(),
+                    last.span,
+                )),
+                // The arms after it, all of the branch.
+                _ => {
+                    let (rest, taken) = chain(then, &left, true, discriminant)?;
+                    if taken != then.len() {
+                        return None;
+                    }
+                    cases.extend(rest);
+                }
+            }
             let taken = i + 1 + taken;
             return (!whole || taken == stmts.len()).then_some((cases, taken));
         }
         let (tested, body) = guarded(test, then, arm.guard)?;
+        // The constants it tests: the next of its arm's.
+        let mut each = Vec::new();
+        alternatives(&tested, Op::Or, &mut each);
+        let to = from + each.len();
+        let constants = arm.constants.get(from..to)?;
         cases.push((
-            values_of(&tested, &arm.constants, false, discriminant)?,
+            values_of(&tested, constants, false, discriminant)?,
             body,
             false,
             arm.span,
         ));
+        match to == arm.constants.len() {
+            true => {
+                left.remove(k);
+            }
+            false => left[k].1 = to,
+        }
         i += 1;
         match otherwise {
-            // The rest, the `else`'s, all of it.
+            // The rest, the `else`'s, all of it; or but a jump after them,
+            // which each of its cases that goes on goes on to, where one is
+            // each value's, the last arm's there: each such case's.
             Some(otherwise) => {
-                let (rest, taken) = chain(otherwise, &left, true, discriminant)?;
+                let (mut rest, taken) = chain(otherwise, &left, true, discriminant)?;
                 if taken != otherwise.len() {
-                    return None;
+                    let ([jump], Some(&(last, _))) = (&otherwise[taken..], left.last()) else {
+                        return None;
+                    };
+                    if !a_jump(jump) || !rest.iter().any(|case| case.3 == last.span) {
+                        return None;
+                    }
+                    for case in rest.iter_mut().filter(|case| !case.1.last().is_some_and(js::ends)) {
+                        case.1.push(jump.clone());
+                    }
                 }
                 cases.extend(rest);
                 return Some((cases, i));
@@ -508,6 +730,18 @@ fn chain(
     // Each arm tested: what's after them isn't the `match`'s, but in an
     // `else`, which nothing reaches.
     (!whole || i == stmts.len()).then_some((cases, i))
+}
+
+/// Whether `stmt` only jumps: a `break`, a `continue`, or a `return` of
+/// nothing, a name or a literal, which reads the same where it's copied.
+fn a_jump(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(None) => true,
+        StmtKind::Return(Some(e)) => {
+            matches!(e.kind, ExprKind::Var(_) | ExprKind::Null | ExprKind::Undefined) || literal(e)
+        }
+        _ => false,
+    }
 }
 
 /// An arm's `if`, its test and its statements, as its case has them: of a
@@ -868,6 +1102,87 @@ fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
     }
 }
 
+/// Of a block `outer: { ..; inner: { ..; switch (..) { .. } break outer; }
+/// rest }`, whose `rest` only `break inner` reaches, from one case alone,
+/// its last statement: `rest` that case's, then its `break outer`, and the
+/// block `inner`, which nothing names then, gone. MIR placed the
+/// statements of the arm a guarded case falls to past the `match`, the
+/// `break inner` of each arm that reached them (ADR 0899); one case is
+/// all that reaches them where the others fall to it.
+pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let StmtKind::Labeled(outer, list) = &mut stmt.kind else {
+            continue;
+        };
+        let outer = outer.clone();
+        let Some(i) = (list.iter()).rposition(|s| matches!(s.kind, StmtKind::Labeled(..))) else {
+            continue;
+        };
+        // What a `break` of no label in it leaves, the loop's, it would
+        // leave the `switch` in a case.
+        if i + 1 == list.len() || js::breaks(&list[i + 1..], None) {
+            continue;
+        }
+        let rest = list[i + 1..].to_vec();
+        let StmtKind::Labeled(inner, body) = &mut list[i].kind else {
+            unreachable!("matched")
+        };
+        let inner = inner.clone();
+        // `.. switch (..) { .. } break outer;`, or a `switch` that leaves
+        // itself, the `switch` alone naming `inner`, by one case's last
+        // statement.
+        let broken = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if *l == outer);
+        let end = body.len() - usize::from(broken);
+        let Some((switch, before)) = body[..end].split_last_mut() else {
+            continue;
+        };
+        if !(broken || js::ends(switch)) || js::names_jump(before, &inner) {
+            continue;
+        }
+        let StmtKind::Switch { cases, default, .. } = &mut switch.kind else {
+            continue;
+        };
+        let reaching: Vec<usize> = (js::case_lists(cases, default).enumerate())
+            .filter(|(_, case)| js::names_jump(case, &inner))
+            .map(|(k, _)| k)
+            .collect();
+        let [only] = reaching[..] else {
+            continue;
+        };
+        let Some(case) = js::case_lists_mut(cases, default).nth(only) else {
+            continue;
+        };
+        let (
+            Some(Stmt {
+                kind: StmtKind::Break(Some(to)),
+                ..
+            }),
+            Some(rest_of_case),
+        ) = (case.last(), case.split_last().map(|(_, r)| r))
+        else {
+            continue;
+        };
+        if *to != inner || js::names_jump(rest_of_case, &inner) {
+            continue;
+        }
+        case.pop();
+        let ends = rest.last().is_some_and(js::ends);
+        case.extend(rest);
+        if !ends {
+            case.push(StmtKind::Break(Some(outer.clone())).at(js::Span::NONE));
+        }
+        // The block, then its `break outer`, which its end does.
+        list.truncate(i + 1);
+        let StmtKind::Labeled(_, body) = list.pop().expect("the block").kind else {
+            unreachable!("matched")
+        };
+        list.extend(body);
+        if broken {
+            list.pop();
+        }
+    }
+}
+
 /// A block's `break` in a `switch` its statements end with, `l: { if (c) {
 /// .. } else { switch (k) { case 1: .. break l; } } }`, which goes where
 /// the `switch`'s own `break` does, nothing between: that `break`, as a
@@ -913,9 +1228,17 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
             let switch = switch.clone();
             stmts[i] = switch;
         }
-        if let StmtKind::Switch { default, .. } = &mut stmts[i].kind {
+        if let StmtKind::Switch { cases, default, .. } = &mut stmts[i].kind {
             if default.as_deref().is_some_and(does_nothing) {
                 *default = None;
+            }
+            // The last case's `break`, which its end does (ADR 0629,
+            // amended).
+            if default.is_none()
+                && let Some(last) = cases.iter_mut().rfind(|case| !case.values.is_empty())
+                && matches!(last.body.last().map(|s| &s.kind), Some(StmtKind::Break(None)))
+            {
+                last.body.pop();
             }
             if discriminant_in_place(stmts, i) {
                 i -= 1;
@@ -958,7 +1281,7 @@ fn switch_of(stmt: &Stmt, x: &Expr) -> bool {
     matches!(&x.kind, ExprKind::Var(_))
         && js::same_path(discriminant, x)
         && default.as_deref().is_none_or(does_nothing)
-        && (cases.iter()).all(|(values, _)| values.iter().all(literal))
+        && (cases.iter()).all(|case| case.values.iter().all(literal))
 }
 
 /// A block a case ends with, through the branches of an `if` it ends with,

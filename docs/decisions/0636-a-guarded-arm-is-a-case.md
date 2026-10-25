@@ -1,7 +1,11 @@
 # 0636. A guarded arm of a `match` of constants is a case
 
 Status: Accepted. Amends [0629](0629-a-match-of-constants-is-a-switch.md),
-whose `switch` had no arm with a guard.
+whose `switch` had no arm with a guard. Amended by
+[0899](0899-a-guarded-arm-falls-to-the-next.md): a guarded arm whose
+next arm names each of its constants falls through to that arm's case;
+and an or-pattern of a guard, which MIR tests by each alternative, is one
+case.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the case runs the guard where the arm did, after its

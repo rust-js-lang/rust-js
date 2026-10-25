@@ -826,6 +826,17 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         }
     }
+    // Before each case a case falls through to, `// Fallthrough` (ADR 0899).
+    for at in fallthrough_starts(module) {
+        let lo = text.len() as u32;
+        text.push_str(FALLTHROUGH);
+        let mut made = oxc_ast::Comment::new(lo, text.len() as u32, CommentKind::Line);
+        made.attached_to = at;
+        made.position = CommentPosition::Leading;
+        made.set_preceded_by_newline(true);
+        made.set_followed_by_newline(true);
+        found.push(made);
+    }
     Commented {
         text,
         comments: found,
@@ -1142,24 +1153,14 @@ fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
             starts.insert(f.span.lo);
         }
     };
-    let mut bodies: Vec<Vec<js::Stmt>> = Vec::new();
     for item in module.items.iter() {
         match item {
-            js::Item::Function(f) => {
-                note(f);
-                bodies.push(f.body.clone());
-            }
-            js::Item::Namespace(n) => {
-                for method in &n.methods {
-                    note(method);
-                    bodies.push(method.body.clone());
-                }
-            }
-            js::Item::Statements(stmts) => bodies.push(stmts.clone()),
-            js::Item::Const(c) => bodies.push(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Function(f) => note(f),
+            js::Item::Namespace(n) => n.methods.iter().for_each(&mut note),
+            js::Item::Statements(_) | js::Item::Const(_) => {}
         }
     }
-    for mut body in bodies {
+    for mut body in bodies(module) {
         js::each_block_mut(&mut body, &mut |stmts| {
             for stmt in stmts.iter() {
                 if let StmtKind::Function(f) = &stmt.kind {
@@ -1169,6 +1170,48 @@ fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
         });
     }
     starts
+}
+
+/// Each body of `module`'s statements: its functions', its methods', its
+/// statements', and of a constant, its value's, as a statement.
+fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
+    (module.items.iter())
+        .flat_map(|item| match item {
+            js::Item::Function(f) => vec![f.body.clone()],
+            js::Item::Namespace(n) => n.methods.iter().map(|method| method.body.clone()).collect(),
+            js::Item::Statements(stmts) => vec![stmts.clone()],
+            js::Item::Const(c) => vec![vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]],
+        })
+        .collect()
+}
+
+/// What a case that falls through to the next says, before it, as React
+/// writes it, and ESLint's `no-fallthrough` asks (ADR 0899).
+const FALLTHROUGH: &str = "// Fallthrough";
+
+/// Where each case a case falls through to starts, of `module`'s
+/// `switch`es: its first value's, which the case is printed at
+/// (`fallen_to`), its comment `FALLTHROUGH` before it.
+fn fallthrough_starts(module: &Module) -> Vec<u32> {
+    let mut starts = Vec::new();
+    for mut body in bodies(module) {
+        js::each_block_mut(&mut body, &mut |stmts| {
+            for stmt in stmts.iter() {
+                if let StmtKind::Switch { cases, .. } = &stmt.kind {
+                    starts.extend((0..cases.len()).filter_map(|k| fallen_to(cases, k)));
+                }
+            }
+        });
+    }
+    starts
+}
+
+/// Where the case `cases[k]` is printed, where the one before falls
+/// through to it: its first value's start, `FALLTHROUGH` before it.
+pub(crate) fn fallen_to(cases: &[js::Case], k: usize) -> Option<u32> {
+    let before = cases.get(k.checked_sub(1)?)?;
+    let first = cases.get(k)?.values.first()?;
+    (before.falls && !first.span.is_none()).then_some(first.span.lo)
 }
 
 /// The span of each statement and item of `module`, closures' and nested

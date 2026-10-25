@@ -1212,7 +1212,9 @@ where it'd go on, the case's own where it's left for what follows the
 in a block `{ .. }` where it declares a name. An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
-`_ => {}`, as below. Any other `match`, of a range, a binding, a guard a
+`_ => {}`, as below; or where it's the next arm, which names each of its
+constants and more, a case that falls through to the next's, `// Fallthrough`
+([ADR 0899](../../decisions/0899-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding, a guard a
 later arm goes on from, or of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
@@ -1330,6 +1332,53 @@ export function name(kind, tracing) {
       if (tracing) {
         return "TracingMarker";
       }
+  }
+}
+```
+
+Where a guard fails, Rust tries the next arm: where that arm names each
+constant of the guarded one's, and one of its own, the guarded arm's case
+is its guard's `if`, and falls through to the next arm's case, as React
+writes `getComponentNameFromFiber`. Each guard runs where Rust runs it, in
+order, once its constant matched; an arm that does nothing where its
+guard holds is a `break`
+([ADR 0899](../../decisions/0899-a-guarded-arm-falls-to-the-next.md)):
+
+```rust
+pub const VIEW_TRANSITION: u8 = 1;
+pub const INCOMPLETE_CLASS: u8 = 2;
+pub const CLASS: u8 = 3;
+
+pub fn name(tag: u8, ty: &str, view_transitions: bool, legacy_off: bool) -> Option<String> {
+    match tag {
+        VIEW_TRANSITION if view_transitions => return Some("ViewTransition".to_string()),
+        VIEW_TRANSITION | INCOMPLETE_CLASS if legacy_off => {}
+        VIEW_TRANSITION | INCOMPLETE_CLASS | CLASS => return Some(ty.to_string()),
+        _ => {}
+    }
+    None
+}
+```
+
+```js
+export const VIEW_TRANSITION = 1;
+export const INCOMPLETE_CLASS = 2;
+export const CLASS = 3;
+
+export function name(tag, ty, viewTransitions, legacyOff) {
+  switch (tag) {
+    case VIEW_TRANSITION:
+      if (viewTransitions) {
+        return "ViewTransition";
+      }
+    // Fallthrough
+    case INCOMPLETE_CLASS:
+      if (legacyOff) {
+        break;
+      }
+    // Fallthrough
+    case CLASS:
+      return ty;
   }
 }
 ```
