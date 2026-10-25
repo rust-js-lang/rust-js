@@ -147,4 +147,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_of_its_own_type.rs$"],
   },
+  {
+    name: "guard-named-twice-taken-apart",
+    breaks: "a closure's `counted` parameter, named as another closure's one-field guard, is read as the guard's field: `counted[0]` is `counted`, and `map(|c| c.0).sum()` adds arrays (#239)",
+    file: "src/lower/drops/inlined.rs",
+    find: "    declared == 1\n        && (whole",
+    replace: "    declared >= 1\n        && (whole",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_name_shared.rs$"],
+  },
+  {
+    name: "guard-named-twice-kept-whole",
+    breaks: "a one-field guard whose name another closure's variable has stays `const counted = [x]` in the closure it's its own in (#239)",
+    file: "src/lower/drops/inlined.rs",
+    find: "                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind\n                        && alone(",
+    replace: "                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind\n                        && false && alone(",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_name_shared.rs$"],
+    snapshots: true,
+  },
 ];

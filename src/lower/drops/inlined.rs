@@ -106,9 +106,24 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
                     break;
                 }
             }
+            // Where its name is the guard's alone: a closure's parameter of
+            // that name, or a `const` another closure makes, is another
+            // value, whose `d[0]` is no guard's field (#239); so, of one
+            // named twice, in each closure where it's its own.
             for guard in given {
-                fields_of(&mut made, &function.params, &guard);
-                one_field_of(&mut made, &guard);
+                if alone(&function.params, &made, &guard, true) {
+                    fields_of(&mut made, &function.params, &guard);
+                    one_field_of(&mut made, &guard);
+                    continue;
+                }
+                js::each_expr_mut(&mut made, &mut |e| {
+                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind
+                        && alone(params, body, &guard, false)
+                    {
+                        fields_of(body, params, &guard);
+                        one_field_of(body, &guard);
+                    }
+                });
             }
             bodies.push(made);
         });
@@ -128,6 +143,22 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         });
     }
     items.remove(at);
+}
+
+/// Whether `name` is one variable's in a function of `params` and `body`:
+/// declared there once, and, of a closure in the function a drop's written
+/// in, not `whole`, by a parameter or its own statements' `const`, so no
+/// read of it in the closure is of a variable outside.
+fn alone(params: &[Pattern], body: &[Stmt], name: &str, whole: bool) -> bool {
+    let given = params.iter().any(|p| p.names().contains(&name));
+    let mut declared = usize::from(given);
+    js::each_declared(body, &mut |n| declared += usize::from(n == name));
+    declared == 1
+        && (whole
+            || given
+            || body
+                .iter()
+                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)))
 }
 
 /// How often `item` names `name`.

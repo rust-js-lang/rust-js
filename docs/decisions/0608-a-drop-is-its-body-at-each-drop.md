@@ -104,3 +104,27 @@ it's dropped" (`Twice`'s `doubled$1`, `Shown`'s `bumped` reclaimed) and
 "a guard dropped around catch_unwind is its try's catch and finally"; the
 mutations `applied-clash-refused` and `applied-clash-kept`
 (`js/applied.ts`).
+
+## Amended (2026-10-25): a guard is taken apart where its name is its alone
+
+A one-field guard, `const d = [x]`, was looked for anywhere in the
+function its drop was written in, closures included, and each `d[0]` there
+was made `d`. Lowering names apart only along a scope chain, so two
+sibling closures can each have a `d`: one a `D` it's given, `map(|d| d.0)`,
+and another a guard it makes. The first closure's `d[0]` then became `d`,
+and `vec![D(7), D(8)].into_iter().map(|d| d.0).sum()` was `78`, not `15`
+(#239). The same was so of `fields_of`'s object guard.
+
+A guard is taken apart (`alone`, `drops/inlined.rs`) in the whole function
+where its name is declared there once. Where it's declared more than
+once, it is taken apart in each closure that declares it once, as a
+parameter or as a `const` among its own statements. A `const` in an inner
+block isn't enough, since a read of the name elsewhere in that closure
+could be of a variable outside it. Lowering's naming makes that case
+unreachable today, so no test or mutation holds that condition: it is
+the sound reading, kept in case naming changes.
+
+Held by `test/corpus/drop_guard_name_shared.rs`, whose second closure's
+guard is still taken apart, and by the mutations
+`guard-named-twice-taken-apart` and `guard-named-twice-kept-whole`
+(`drops/inlined.ts`).
