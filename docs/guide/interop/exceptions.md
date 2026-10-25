@@ -744,6 +744,12 @@ export function described(value) {
   reads what that declares, is the `catch`, and the rest of the block
   follows the `try`: `controlStack`'s `return`, and `stacks`' `control =
   x;` before `render()` ([ADR 0830](../../decisions/0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)).
+- **`match catch_unwind(f) { Ok(()) => return, Err(e) => .. }` is a
+  `try` that returns**, the `Err` arm its `catch`, and what follows the
+  `match` after the `try` ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-2026-10-25-an-ok-arm-that-leaves-what-follows-reading-the-err)).
+  A `return` inside the closure, in a loop, is the function's own where
+  the `try` ends the function, as nothing runs after it but its
+  `finally` ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md#amended-2026-10-25-a-return-in-the-closure-of-a-try-that-ends-the-function)).
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
   message or what JS threw, unless the crate makes a `dyn Any` of a value

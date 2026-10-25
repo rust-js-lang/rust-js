@@ -10,10 +10,6 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function unitDrop_drop(unit) {
-  console.log("drop unit");
-}
-
 function consume(n) {
   try {
     console.log(`consume ${n[0]}`);
@@ -199,9 +195,8 @@ function main() {
     }
     throw error;
   }
-  const unit = undefined;
   try {
-    unitDrop_drop({ value: unit });
+    console.log("drop unit");
   } catch (error) {
     noisyDrop_drop(slot);
     if (maybe$live) {

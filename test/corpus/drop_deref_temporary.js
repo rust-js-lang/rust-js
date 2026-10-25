@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function temporaryDrop_drop(temporary) {
-  console.log("drop");
-}
-
 const Temporary = {
   ready(temporary) {
     return true;
@@ -22,14 +18,14 @@ function main() {
   try {
     ready = Temporary.ready(temporary);
   } catch (error) {
-    temporaryDrop_drop({ value: temporary });
+    console.log("drop");
     throw error;
   }
   if (ready) {
-    temporaryDrop_drop({ value: temporary });
+    console.log("drop");
     console.log("ready");
   } else {
-    temporaryDrop_drop({ value: temporary });
+    console.log("drop");
   }
 }
 //# sourceMappingURL=case.js.map

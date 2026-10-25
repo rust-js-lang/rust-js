@@ -106,6 +106,9 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
                     break;
                 }
             }
+            // A drop of nothing to do leaves its `finally` empty: the `try`
+            // is its block, where what that declares is no other name here.
+            js::each_block_mut(&mut made, &mut |stmts| unwrapped_tries(stmts));
             // Where its name is the guard's alone: a closure's parameter of
             // that name, or a `const` another closure makes, is another
             // value, whose `d[0]` is no guard's field (#239); so, of one
@@ -159,6 +162,47 @@ fn alone(params: &[Pattern], body: &[Stmt], name: &str, whole: bool) -> bool {
             || body
                 .iter()
                 .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)))
+}
+
+/// Each `try { .. } finally {}` of `stmts`, a drop's of nothing to do
+/// (ADR 0608, amended): its block in its place, where what the block
+/// declares at its top `stmts` names nowhere else.
+fn unwrapped_tries(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Try(block, finally) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let mut declared = Vec::new();
+        for s in block {
+            match &s.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => declared.push(name.clone()),
+                StmtKind::Destructure { pattern, .. } => {
+                    declared.extend(pattern.names().into_iter().map(str::to_string))
+                }
+                StmtKind::Function(function) => declared.push(function.name.clone()),
+                _ => {}
+            }
+        }
+        let others: Vec<Stmt> = (stmts.iter().enumerate())
+            .filter(|&(k, _)| k != i)
+            .map(|(_, s)| s.clone())
+            .collect();
+        let mut named = HashSet::new();
+        js::each_declared(&others, &mut |name| _ = named.insert(name.to_string()));
+        let free = declared
+            .iter()
+            .all(|name| !named.contains(name) && js::mentions_in(&others, name) == 0);
+        if !finally.is_empty() || !free {
+            i += 1;
+            continue;
+        }
+        let block = block.clone();
+        let n = block.len();
+        stmts.splice(i..=i, block);
+        i += n;
+    }
 }
 
 /// How often `item` names `name`.

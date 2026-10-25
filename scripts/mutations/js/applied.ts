@@ -125,4 +125,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
     snapshots: true,
   },
+  {
+    name: "unused-parameter-argument-kept",
+    breaks: "a unit struct's `Drop`, given its guard's box, stays a function each drop calls, `finishFlushingDrop_drop({ value: _finish })` (ADR 0608, amended)",
+    file: "src/js/applied.rs",
+    find: "        _ if !arg.has_effects() && mentions_in(&body, param) == 0 => (None, false),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^drop_unit_guard.rs$"],
+    snapshots: true,
+  },
 ];

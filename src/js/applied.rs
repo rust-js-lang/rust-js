@@ -208,6 +208,10 @@ fn in_place(
         {
             (None, true)
         }
+        // What a body that never reads its parameter is given, of no
+        // effects: nothing, `finishDrop({ value: _finish })` of a unit
+        // struct's `Drop`, which reads no `self` (ADR 0608, amended).
+        _ if !arg.has_effects() && mentions_in(&body, param) == 0 => (None, false),
         _ => return None,
     };
     if held {

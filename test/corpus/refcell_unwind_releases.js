@@ -8,19 +8,7 @@ export function entry() {
 
 const log = [];
 
-function asksDrop_drop(asks) {
-  const tryBorrowMut = $tryBorrow(log, true);
-  try {
-    console.log(`free as it unwinds: ${tryBorrowMut.TAG === "Ok"}`);
-  } finally {
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
-  }
-}
-
 function main() {
-  const _asks = undefined;
   try {
     $withBorrowMut(
       log,
@@ -33,7 +21,14 @@ function main() {
       true,
     );
   } finally {
-    asksDrop_drop({ value: _asks });
+    const tryBorrowMut = $tryBorrow(log, true);
+    try {
+      console.log(`free as it unwinds: ${tryBorrowMut.TAG === "Ok"}`);
+    } finally {
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
+      }
+    }
   }
 }
 //# sourceMappingURL=case.js.map

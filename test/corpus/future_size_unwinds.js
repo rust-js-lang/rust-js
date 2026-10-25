@@ -16,10 +16,7 @@ async function singleWithNoop() {
   await fut();
   noop();
   const x = new Array(64).fill(0);
-  try {
-    noop();
-  } finally {
-  }
+  noop();
 }
 
 function main() {

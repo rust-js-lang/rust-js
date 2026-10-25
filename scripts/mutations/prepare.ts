@@ -641,4 +641,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
     snapshots: true,
   },
+  {
+    name: "tail-try-skipped",
+    breaks: "a `return` in `catch_unwind`'s closure, where the `try` ends the function, stays a closure called in the `try` (ADR 0660, amended)",
+    file: "src/prepare.rs",
+    find: "    catches::tail_tries(body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
+    snapshots: true,
+  },
 ];

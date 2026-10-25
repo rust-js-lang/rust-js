@@ -22,10 +22,6 @@ function wrapEmpty_empty(wrap, dropT) {
   $truncate(wrap[0], 0, dropT);
 }
 
-function loudDrop_drop(loud) {
-  console.log("dropped");
-}
-
 function emptied(e, EEmpty) {
   EEmpty.empty(e);
 }
@@ -34,7 +30,7 @@ function main() {
   const w = [[undefined]];
   try {
     wrapEmpty_empty(w, (loud) => {
-      loudDrop_drop({ value: loud });
+      console.log("dropped");
     });
     const again = [[undefined, undefined]];
     const e = { value: again };
@@ -42,19 +38,19 @@ function main() {
       emptied(
         e,
         wrapEmpty((loud) => {
-          loudDrop_drop({ value: loud });
+          console.log("dropped");
         }),
       );
       $assign(again, e.value);
       console.log("end");
     } finally {
       for (const item of again[0]) {
-        loudDrop_drop({ value: item });
+        console.log("dropped");
       }
     }
   } finally {
     for (const item of w[0]) {
-      loudDrop_drop({ value: item });
+      console.log("dropped");
     }
   }
 }

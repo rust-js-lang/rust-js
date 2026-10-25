@@ -325,3 +325,25 @@ named by the binding, its `finished`, whose closure reads `finish`, by
 the result) and `catch_unwind_nested_ok`, against native Rust; and the
 mutations `ok-binding-alias-kept` and `ok-binding-clash-unchecked`
 (`prepare/catches.ts`).
+
+## Amended (2026-10-25): a `return` in the closure of a `try` that ends the function
+
+A `return` in `catch_unwind`'s closure leaves the closure, so its body
+was a closure called in the `try`, `try { (() => { .. return; .. })(); }`,
+where it returned anywhere but at its end. **Where the `try` ends the
+function, its last statement or the last of an `if`'s branch, a `try`'s
+block or a `catch` that does, and each `return` of the closure gives no
+value, its body is the `try`'s, each `return;` the function's**
+(`prepare::catches::tail_tries`): after the closure returns, nothing
+runs but the `try`'s `finally`, a guard's drop, as after the function's
+`return`. React's `flushActQueue` writes it so, `try { for (..) { ..
+return; } queue.length = 0; } catch (error) { .. } finally { isFlushing =
+false; }`. Case A: the same runs, in the same order.
+
+`docs/readability.txt`'s share of `return;` grows by that case's, 9.4
+to 9.5 in 10,000 lines: a `return;` in a loop, the function's, as React
+writes it, where it was a closure's.
+
+Held by `test/corpus/catch_unwind_ok_returns.rs`'s `until_seven`;
+mutations `tail-try-anywhere` and `tail-try-valued-return`
+(`prepare/catches.ts`).

@@ -245,6 +245,12 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         (true, None) if leaves(rest) => (then, rest, rest.len()),
         (false, None) if leaves(then) => (rest, then, rest.len()),
         (false, None) => (&[], then, 0),
+        // An `Ok` arm that leaves, `Ok(()) => return`, where what follows
+        // reads the `Err`: what does, and what reads what that declares,
+        // the `Err` arm's, the `catch`'s, as of a `let Err(x)` (ADR 0830),
+        // and what's after it after the `try`, which runs where the call
+        // threw as it ran after the `match` (ADR 0637, amended).
+        (true, None) if let Some(n) = caught_run(result, rest) => (then, &rest[..n], n),
         (true, None) => (then, &[], 0),
     };
     let after = &rest[taken..];
@@ -394,6 +400,39 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     out.push(caught(vec![tried]));
     out.extend(ok.iter().cloned());
     Some((out, taken))
+}
+
+/// A `try` that ends a function, its last statement, or the last of an
+/// `if`'s branch, a `try`'s block or a `catch` that does: what it holds, a
+/// closure of nothing called where it's made, `catch_unwind(|| ..)`'s,
+/// whose `return`s give no value, a `return;` in a loop, is its body, each
+/// `return;` the function's, as nothing runs after the `try` but its
+/// `finally` either way (ADR 0660, amended).
+pub(super) fn tail_tries(body: &mut [Stmt]) {
+    let Some(last) = body.last_mut() else { return };
+    match &mut last.kind {
+        StmtKind::If(_, then, otherwise) => {
+            tail_tries(then);
+            if let Some(otherwise) = otherwise {
+                tail_tries(otherwise);
+            }
+        }
+        StmtKind::Try(block, _) => tail_tries(block),
+        StmtKind::TryCatch(tried, _, handler) => {
+            tail_tries(handler);
+            if let [only] = tried.as_slice()
+                && let StmtKind::Expr(call) = &only.kind
+                && let ExprKind::Call(callee, args) = &call.kind
+                && args.is_empty()
+                && let ExprKind::Arrow(params, inner) = &callee.kind
+                && params.is_empty()
+                && js::returns(inner) == (true, false)
+            {
+                *tried = inner.clone();
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Whether `stmt` can't throw: what makes values, what leaves with one,

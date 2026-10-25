@@ -128,3 +128,24 @@ Held by `test/corpus/drop_guard_name_shared.rs`, whose second closure's
 guard is still taken apart, and by the mutations
 `guard-named-twice-taken-apart` and `guard-named-twice-kept-whole`
 (`drops/inlined.ts`).
+
+## Amended (2026-10-25): a unit struct's guard, and a drop of nothing
+
+A unit struct's `Drop` guard, React's `struct FinishFlushing;` whose
+`drop` resets `isFlushing`, stayed the function each drop calls,
+`finishFlushingDrop_drop({ value: _finish })`, and `const _finish =
+undefined;`: its `&mut self` is a box of a value that isn't an object,
+and a closure called where it's made is in place only of a variable it's
+given (`js::applied_call`). **What a body that never reads its parameter
+is given, of no effects, is given nothing**: the drop is its body in the
+`finally`, `isFlushing = false;`, and the guard, read nowhere, goes. And
+**a `try` whose `finally` a drop of nothing to do left empty is its
+block** (`unwrapped_tries`), where what the block declares at its top
+is no other name there, as `future_size_unwinds`' `Big` and
+`map_stepped_from_its_back`'s `Noisy` leave it. Case A: the same code
+runs, in the same order.
+
+Held by `test/corpus/drop_unit_guard.rs` and the corpus's
+`drop_scopes`, `lock_destructors` and `refcell_unwind_releases`; the
+mutations `unused-parameter-argument-kept` (`js/applied.ts`) and
+`empty-finally-kept` (`drops/inlined.ts`).

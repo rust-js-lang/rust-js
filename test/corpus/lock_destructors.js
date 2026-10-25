@@ -10,16 +10,12 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 
-function guardDrop_drop(guard) {
-  console.log("drop guard");
-}
-
 function main() {
   let m;
   try {
     console.log("made");
   } finally {
-    guardDrop_drop({ value: m });
+    console.log("drop guard");
   }
   console.log("dropped");
   const shared = { value: { value: ["shared"] }, strong: 1, weak: 0 };

@@ -606,6 +606,7 @@ fn declares_underscore(body: &[Stmt]) -> bool {
 fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     block(body);
     left_out_params(params, body);
+    catches::tail_tries(body);
     if body
         .last()
         .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))

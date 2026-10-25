@@ -720,7 +720,9 @@ mod util {
 struct Noisy;
 
 impl Drop for Noisy {
-    fn drop(&mut self) {}
+    fn drop(&mut self) {
+        util::three();
+    }
 }
 
 pub fn nested() -> u32 {
@@ -760,7 +762,7 @@ pub fn guarded() -> u32 {
   // Made readable as a module's is: a `let mut` nothing sets again, a `const`.
   expect(js).toContain("  function listOf(n) {\n    const list = [];\n    list.push(n);");
   // Called before a destructor's `try`, it's written before it.
-  expect(js).toContain("  function later() {\n    return (three() + 4) >>> 0;\n  }\n  try {\n    return (first + later()) >>> 0;\n  } finally {\n    noisyDrop_drop({ value: _noisy });");
+  expect(js).toContain("  function later() {\n    return (three() + 4) >>> 0;\n  }\n  try {\n    return (first + later()) >>> 0;\n  } finally {\n    three();\n  }");
   // One in another's body is a declaration there too.
   expect(js).toContain("  function outer() {\n    function inner() {");
   expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded(), lib.nested()]).toEqual([[[1, 3], 2], 10, 14, 4]);

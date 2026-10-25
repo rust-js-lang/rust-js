@@ -339,4 +339,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
     snapshots: true,
   },
+  {
+    name: "ok-arm-leaving-err-after-kept",
+    breaks: "`match catch_unwind(f) { Ok(()) => return .., Err(e) => .. }` with code after it stays `$catchUnwind` and its `TAG` tested (ADR 0637, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        (true, None) if let Some(n) = caught_run(result, rest) => (then, &rest[..n], n),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tail-try-of-if-skipped",
+    breaks: "a `try` that ends an `if`'s branch that ends the function keeps its closure called in it (ADR 0660, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        StmtKind::If(_, then, otherwise) => {\n            tail_tries(then);\n",
+    replace: "        StmtKind::If(_, then, otherwise) => {\n            let _ = then;\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
+    snapshots: true,
+  },
 ];

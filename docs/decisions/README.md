@@ -489,7 +489,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0606 A blank line before an item's attributes is before the item](0606-a-blank-line-before-attributes.md)
 - [0607 A variable's field is given a call's value in place](0607-a-field-is-given-a-call-in-place.md)
-- [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md) *(amended: a name its body shares with the caller is named apart)*
+- [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md) *(amended: a name its body shares with the caller is named apart; amended: a unit struct's guard, and a drop of nothing)*
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](0610-a-forwarding-function-is-its-variable.md)
 - [0611 A default export the macro holds is the function's declaration](0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too; and one the naming form names)*
@@ -518,7 +518,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0634 A registered symbol is a `const`, and a `match` of them a `switch`](0634-a-registered-symbol-is-a-const.md) *(amended by 0771: an `==` of a `Some` is the `matches!` form)*
 - [0635 A `filter` by truth, then a fallback, is `||`](0635-a-filter-by-truth-then-a-fallback-is-or.md) *(extended by 0646: a chain held, then its fallback; 0651: a `let`, then its fallback)*
 - [0636 A guarded arm of a `match` of constants is a case](0636-a-guarded-arm-is-a-case.md)
-- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`)*
+- [0637 A `match` of a throwing call's `Result` is `try` and `catch`](0637-a-match-of-a-throwing-call-is-try-catch.md) *(amended by 0639: whether a call threw is `try`; 0660: `catch_unwind`'s too, and `unwrap_or(d)` returned; amended: an `Ok` arm that leaves, nothing after it, `catch {}`; amended: an `Ok` arm that leaves, what follows reading the `Err` its `catch`)*
 - [0638 A nullable function's call is `null` already](0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
@@ -541,7 +541,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0657 An `if` of one value each, a function's too, is a conditional](0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
 - [0658 A comment before a branch's value is before it in the conditional](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0659 Tidy is a list of stages, each with what it leaves a body with](0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too; a stage read again is the runner's)*
-- [0660 `catch_unwind` catches what JS throws, a panic among it](0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown; 0830: a `let Err(x)`'s `catch` is what follows that reads it; amended: an `Ok` arm that tests what it holds is in the `try`, a setter's write may throw; the `try`'s value by its pattern's name)*
+- [0660 `catch_unwind` catches what JS throws, a panic among it](0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown; 0830: a `let Err(x)`'s `catch` is what follows that reads it; amended: an `Ok` arm that tests what it holds is in the `try`, a setter's write may throw; the `try`'s value by its pattern's name; amended: a `return` in the closure of a `try` that ends the function is the function's)*
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](0664-a-functions-rest-slice-is-jss-rest-parameter.md) *(amended by 0851: a closure's error names rest arguments as a value)*
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](0667-console-is-a-value-and-rest-arguments-are-one.md) *(amended by 0851: a closure of them is JS's rest parameter, a `dyn Fn` of them called spread)*

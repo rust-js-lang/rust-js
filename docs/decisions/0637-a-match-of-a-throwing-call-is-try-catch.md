@@ -148,3 +148,20 @@ same runs either way.
 - `test/lowering-unwinds.test.ts`, "an if let Ok of catch_unwind that
   returns is a try whose catch does nothing", run where it throws and
   where it doesn't; mutation `ok-arm-leaving-alone-kept`.
+
+## Amendment (2026-10-25): an `Ok` arm that leaves, what follows reading the `Err`
+
+**`match catch_unwind(f) { Ok(()) => return, Err(e) => { .. } }` with
+code after it is `try { ..f; return; } catch (e) { .. }` and that code
+after the `try`**: what follows the `Ok` arm's `if` that reads the
+`Err`, or what that declares, is the `Err` arm's, the `catch`'s, as ADR
+0830's `let Err(x)` takes it (`caught_run`), and the rest runs after the
+`try`, where the call threw, as it ran after the `match`. React's
+`recursivelyFlushAsyncActWork` writes it so, `try { flushActQueue(queue);
+queueMacrotask(..); return; } catch (error) { thrownErrors.push(error);
+}`, which its port's `match` was `const value = $catchUnwind(..); if
+(value.TAG === "Ok") { return; } const error = value._0;`. Case A: the
+same runs either way.
+
+Held by `test/corpus/catch_unwind_ok_returns.rs`'s `flushed`; mutation
+`ok-arm-leaving-err-after-kept` (`prepare/catches.ts`).

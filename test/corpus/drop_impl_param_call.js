@@ -31,10 +31,6 @@ function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
-function loudDrop_drop(loud) {
-  console.log("dropped");
-}
-
 function main() {
   const w = [undefined];
   try {
@@ -42,12 +38,12 @@ function main() {
       `${peeked(
         w,
         wrapPeek({ clone: (value) => value }, (loud) => {
-          loudDrop_drop({ value: loud });
+          console.log("dropped");
         }),
       )}`,
     );
   } catch (error) {
-    loudDrop_drop({ value: w[0] });
+    console.log("dropped");
     throw error;
   }
   console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
