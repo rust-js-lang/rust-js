@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: "        (true, _) => Expr::bin(Op::Sub, range.end.clone(), Expr::int(1)),\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
   },
+  {
+    name: "while-exit-continue-moved",
+    breaks: "a `while (true) { if (t) { exit } rest }` whose exit goes on with the loop is `while (!t) { rest } exit`, its `continue` the outer loop's",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            && !js::continues(exit, label.as_deref())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
+  },
 ];

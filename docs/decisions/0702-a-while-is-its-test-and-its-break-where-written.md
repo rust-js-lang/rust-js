@@ -111,3 +111,33 @@ written: upstream's `do { .. } while (s >= 1 && c >= 0)` is the port's
 - Mutations `while-of-else-break-unread`, `while-of-tail-break-unread`,
   `broken-after-continued-branch`, `broken-after-continued-then`,
   `broken-after-then-unbroken`, `broken-after-else-unbroken`.
+
+## Amendment: an exit that goes on with the loop stays in it
+
+React's `findFirstSuspended` walks up while a fiber has no sibling:
+
+```rust
+while node.sibling.borrow().is_none() {
+    let return_fiber = node.r#return.borrow().clone();
+    match return_fiber {
+        Some(return_fiber) if !Rc::ptr_eq(&return_fiber, row) => node = return_fiber,
+        _ => return None,
+    }
+}
+```
+
+MIR tests it as `while (true) { if (node.sibling == null) { .. continue;
+.. break; } rest }`, and tidy's `while_tests` wrote `while (!t) { rest }
+exit` of an exit that leaves: the exit after the loop, its `continue`,
+which went on with the inner loop, then the outer one's. The JS climbed
+back to a fiber's child it had left, and never ended: a wrong answer.
+
+**An exit that goes on with the loop, a `continue` of it, stays in it**
+(`js::continues`): the loop is `while (true) { if (t) { .. } .. }`, as
+MIR has it. Case N: what runs is Rust's.
+
+- `test/corpus/while_exit_continues.rs`, beside native Rust; mutation
+  `while-exit-continue-moved`. Its loops, `bb2: while (true)` around
+  `while (true)`, count one more of `docs/readability.txt`'s labeled
+  blocks and `while (true)`s, blessed: the JS that runs as Rust does. No
+  other corpus case's or snapshot's JS changed.

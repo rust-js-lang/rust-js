@@ -571,6 +571,24 @@ pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
     })
 }
 
+/// Whether a `continue` in `stmts` goes on with the loop they're the body
+/// of, labeled `label`: one of no label not inside a loop of their own, a
+/// `switch`'s too, which takes none, or one of its label.
+pub fn continues(stmts: &[Stmt], label: Option<&str>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Continue(None) => true,
+        StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::If(_, a, b) => continues(a, label) || b.as_deref().is_some_and(|b| continues(b, label)),
+        StmtKind::Labeled(_, body) => continues(body, label),
+        StmtKind::Switch { cases, default, .. } => case_lists(cases, default).any(|body| continues(body, label)),
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| names_jump(body, l))
+        }
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => continues(a, label) || continues(b, label),
+        _ => false,
+    })
+}
+
 /// Whether a `break` in `stmts`, however deep, names `label`.
 pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {

@@ -543,8 +543,9 @@ fn broken_after(body: &mut Vec<Stmt>) {
 }
 
 /// `while (true) { if (t) { exit } rest }`, `exit` leaving, and nothing in
-/// `rest` leaving the loop: `while (!t) { rest } exit`, as the program
-/// wrote it; of an `exit` that ends with the loop's `break`, without it.
+/// `rest` leaving the loop, nor in `exit` going on with it: `while (!t) {
+/// rest } exit`, as the program wrote it; of an `exit` that ends with the
+/// loop's `break`, without it.
 pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Option<String>)]) {
     // The loop the program wrote that starts where it does, innermost, a
     // `while`: not a `loop` it wrote, which stays `while (true)`.
@@ -625,6 +626,9 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             && let broken = matches!(&last.kind, StmtKind::Break(l) if l.is_none() || *l == *label)
             && (broken || matches!(last.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
             && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_deref())
+            // A `continue` in the exit, after the loop, would go on with
+            // another, the one around it (ADR 0683, amended).
+            && !js::continues(exit, label.as_deref())
             // A `break` in it would run the exit, which it skips.
             && (exit.len() == usize::from(broken) || !breaks(rest, label.as_deref()))
         {
