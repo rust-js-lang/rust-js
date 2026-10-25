@@ -518,4 +518,12 @@ export const mutations: Mutation[] = [
     replace: "        _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
   },
+  {
+    name: "labeled-chain-unplaced",
+    breaks: "an `if let` chain MIR made a labeled block of is at the next statement's start, so the blank line before that is before the chain, ReactForwardRef's",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                span = made_where(span, &body);\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "an if let chain made of a labeled block"],
+  },
 ];

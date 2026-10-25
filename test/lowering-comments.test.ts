@@ -11,12 +11,13 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 beforeAll(buildReact, 600_000);
 
 /** `rust` compiled in a fixture of `name`, against the js crate: its JS,
- * and its module. */
-async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
+ * its module, and its source map. */
+async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown>; map: { mappings: string } }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  return { js, lib: await import(join(dir, "lib.js")), map: JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")) };
 }
 
 // React's addValueToProperties: `desc = '…'; // ellipsis`, and
@@ -570,4 +571,48 @@ pub fn erased(value: Option<&'static Unknown>, flag: bool) -> u32 {
   expect(js).toContain("  if (flag) {\n    n++;\n  }\n\n  const length = value.length;\n");
   expect([lib.glued(), lib.below(), lib.apart(), lib.afterAType(), lib.shown([1] as never, [1] as never), lib.pair(), lib.erased("ab" as never, true as never)])
     .toEqual([1, 2, 3, 4, "Shown(1) true", { a: 1, b: 2 }, 3]);
+});
+
+// React's ReactForwardRef: its `if (render != null && render.$$typeof ===
+// REACT_MEMO_TYPE) { .. } else if (..) { .. }` chain is apart from the `if
+// (render != null) {` below it, as its port's `if let` chains are. MIR's
+// structure makes a labeled block of the first, `l: { if (a) { if (b) { s;
+// break l; } } t }`, of no Rust of its own: its `if (a && b) { s } else {
+// t }` is where its first `if` is, not at the next statement's start, which
+// put the blank line before it (ADR 0865, amended).
+test("an if let chain made of a labeled block is where its first if is", async () => {
+  const { decodeMappings } = await import("./sourcemap");
+  const rust = `use js::{SymbolFor, Unknown};
+
+const MEMO: SymbolFor = SymbolFor("react.memo");
+
+pub fn checked(value: Option<&'static Unknown>) -> u32 {
+    let mut n = 0;
+    if let Some(value) = value
+        && SymbolFor::from_value(js::get(value, "$$typeof")) == Some(MEMO)
+    {
+        n += 1;
+    } else if js::type_of(value) != "function" {
+        n += 2;
+    }
+
+    if let Some(value) = value
+        && js::get(value, "b").is_some()
+    {
+        n += 4;
+    }
+    n
+}
+`;
+  const { js, lib, map } = await compiled("if-let-chain-apart", rust);
+  expect(js).toContain("  let n = 0;\n  if (value != null && value.$$typeof === MEMO) {\n");
+  expect(js).toContain("    n += 2;\n  }\n\n  if (value != null && value.b != null) {\n");
+  // Each `if` maps to its own `if let`'s pattern.
+  const lines = js.split("\n");
+  const rs = rust.split("\n");
+  const ifs = lines.flatMap((line, i) => (line.startsWith("  if (") ? [i] : []));
+  const mapped = ifs.map((i) => decodeMappings(map.mappings).find((s) => s.jsLine === i && s.jsCol === 2)?.srcLine);
+  expect(mapped).toEqual([rs.indexOf("    if let Some(value) = value"), rs.lastIndexOf("    if let Some(value) = value")]);
+  const memo = { $$typeof: Symbol.for("react.memo"), b: 1 };
+  expect([lib.checked(memo as never), lib.checked(undefined as never), lib.checked((() => 0) as never)]).toEqual([5, 2, 0]);
 });

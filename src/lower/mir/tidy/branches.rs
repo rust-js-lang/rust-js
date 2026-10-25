@@ -225,7 +225,7 @@ pub(super) fn branch_values(
     continues: &[(js::Span, js::Span)],
 ) {
     stmts.retain_mut(|stmt| {
-        let span = stmt.span;
+        let mut span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
         // A branch with nothing left, as `emptied_branch` writes it.
         let Some(kind) = emptied_branch(kind) else {
@@ -296,6 +296,7 @@ pub(super) fn branch_values(
             // s } else { t }`: the branch the program wrote first, first, its
             // test as written (ADR 0683).
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
+                span = made_where(span, &body);
                 let test = (tests.into_iter())
                     .rev()
                     .reduce(|b, a| Expr::bin(Op::And, a, b))
@@ -576,41 +577,6 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
     }
     tests.insert(0, test.clone());
     Some((tests, x.to_string(), yes, no.clone()))
-}
-
-/// Of `l: { if (a) { if (b) { s; break l; } } t }`: its tests, `[a, b]`,
-/// `s` and `t`, where `l` is named nowhere else.
-pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
-    let [first, then @ ..] = body else { return None };
-    let (tests, otherwise) = broken_chain(std::slice::from_ref(first), label)?;
-    if tests.is_empty() || js::names_jump(then, label) || js::names_jump(&otherwise, label) {
-        return None;
-    }
-    Some((tests, otherwise, then.to_vec()))
-}
-
-/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`.
-pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
-    match stmts {
-        [
-            Stmt {
-                kind: StmtKind::If(test, inner, None),
-                ..
-            },
-        ] => {
-            let (mut tests, otherwise) = broken_chain(inner, label)?;
-            tests.insert(0, test.clone());
-            Some((tests, otherwise))
-        }
-        [
-            rest @ ..,
-            Stmt {
-                kind: StmtKind::Break(Some(l)),
-                ..
-            },
-        ] if l == label => Some((Vec::new(), rest.to_vec())),
-        _ => None,
-    }
 }
 
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===

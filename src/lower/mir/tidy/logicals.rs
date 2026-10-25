@@ -1,6 +1,7 @@
 //! Tidy's logicals: a value the program wrote with `&&` and `||`, which MIR
 //! made branches of, returned as one value as it was written, and the
-//! tests of one condition joined with `&&`.
+//! tests of one condition joined with `&&`, a labeled block's chain of them
+//! too, and where its `if` is.
 
 use super::*;
 
@@ -374,5 +375,52 @@ pub(super) fn or_blocks(stmts: &mut Vec<Stmt>, logicals: &[js::Span]) {
             stmts.extend(rest);
         }
         i += 1;
+    }
+}
+
+/// Of `l: { if (a) { if (b) { s; break l; } } t }`: its tests, `[a, b]`,
+/// `s` and `t`, where `l` is named nowhere else.
+pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
+    let [first, then @ ..] = body else { return None };
+    let (tests, otherwise) = broken_chain(std::slice::from_ref(first), label)?;
+    if tests.is_empty() || js::names_jump(then, label) || js::names_jump(&otherwise, label) {
+        return None;
+    }
+    Some((tests, otherwise, then.to_vec()))
+}
+
+/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`.
+pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+    match stmts {
+        [
+            Stmt {
+                kind: StmtKind::If(test, inner, None),
+                ..
+            },
+        ] => {
+            let (mut tests, otherwise) = broken_chain(inner, label)?;
+            tests.insert(0, test.clone());
+            Some((tests, otherwise))
+        }
+        [
+            rest @ ..,
+            Stmt {
+                kind: StmtKind::Break(Some(l)),
+                ..
+            },
+        ] if l == label => Some((Vec::new(), rest.to_vec())),
+        _ => None,
+    }
+}
+
+/// Where the `if` a labeled block's chain is made is: where the program
+/// wrote the block, `'desc: {`, its `span`; of one MIR's structure made, of
+/// no Rust of its own, where its first `if` is, the chain's first code, not
+/// at the next statement's start, as a statement of none is (ADR 0865,
+/// amended).
+pub(super) fn made_where(span: js::Span, body: &[Stmt]) -> js::Span {
+    match body.first() {
+        Some(first) if span.is_none() => first.span,
+        _ => span,
     }
 }

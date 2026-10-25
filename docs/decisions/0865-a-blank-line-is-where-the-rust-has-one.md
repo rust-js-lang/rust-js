@@ -4,7 +4,8 @@ Status: Accepted. Supersedes [0303](0303-blank-lines.md) where the source
 tells, and keeps its rule where it can't. Amends
 [0444](0444-a-comment-is-where-its-code-is.md)'s fifth rule, whose blank
 lines between top-level statements were rust-js's, and its "part" of an
-object, which had none.
+object, which had none. Amended: an `if let` chain made of a labeled
+block is where its first `if` is.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): blank lines, which
 nothing runs.
@@ -96,3 +97,25 @@ between the code its JS is of", run; mutations `top-level-blank-untold`,
 `top-level-gap-blank-unwritten`, `one-line-told`, `erased-let-blank-lost`
 and `field-blank-lost` (`to_oxc.ts`) and `told-statements-spaced`
 (`format.ts`).
+
+## Amendment: an `if let` chain made of a labeled block is where its first `if` is
+
+React's `ReactForwardRef` sets its `if (render != null && render.$$typeof
+=== REACT_MEMO_TYPE) { .. } else if (..) { .. }` chain apart from the `if
+(render != null) {` below it, as its port's `if let` chains are; the JS
+had the blank line before the first chain instead, where the Rust has
+none. A test MIR reads through a temporary, the `$$typeof` it compares,
+makes the first chain a labeled block of MIR's, `l: { if (a) { if (b) {
+s; break l; } } t }`, of no Rust of its own, which tidy makes `if (a && b)
+{ s } else { t }` (ADR 0683). That `if` kept the block's span, none, so it
+was printed at the start of the next statement that has one (ADR 0444):
+the second chain's, after the blank line.
+
+**The `if` made of a labeled block is where the program wrote the block,
+`'desc: {`; of one MIR made, where its first `if` is** (`made_where`,
+`tidy/logicals.rs`), as every other `if` is: its source map entry is its
+first `if let`'s pattern, as the second's is its own.
+
+Held by `test/lowering-comments.test.ts`, "an if let chain made of a
+labeled block is where its first if is", run, and the mutation
+`labeled-chain-unplaced` (`tidy/branches.ts`).
