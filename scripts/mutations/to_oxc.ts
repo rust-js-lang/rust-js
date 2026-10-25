@@ -348,4 +348,20 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an unsafe block is its code's"],
   },
+  {
+    name: "arm-comment-run-split",
+    breaks: "of a run of comments before a match arm, only the last line is the arm's value's, the others before the `if`",
+    file: "src/to_oxc.rs",
+    find: "                    && only_comments(c.hi, at)\n",
+    replace: "                    && sources.text.get(c.hi as usize..at as usize).is_some_and(|gap| gap.trim().is_empty())\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
+  },
+  {
+    name: "unattached-comments-lost",
+    breaks: "a match arm's comment, of a `match` read as `prev?.types`, is before nothing printed, and lost",
+    file: "src/to_oxc.rs",
+    find: "        attached.extend(unattached);\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
+  },
 ];

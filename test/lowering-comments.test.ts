@@ -206,3 +206,65 @@ pub fn noted(n: u32, out: &mut Vec<u32>) {
   lib.noted(2 as never, out as never);
   expect(out).toEqual([2, 0]);
 });
+
+// React's startTransition writes a comment of five lines before what a
+// nested Transition shares, `prevTransition !== null ? // If we're a nested
+// transition .. prevTransition.types : null`; its port before the `match`
+// arm, `Some(prev_transition) => ..`. The lines are one run, none split
+// from the others into the arm (ADR 0590, amended); and where the arm is
+// read away, `prev?.types`, before the statement it's in, not lost (ADR
+// 0444, amended).
+test("a match arm's comment of many lines is its value's, none lost", async () => {
+  const { js, lib } = await compiled("comment-arm-lines", `use std::cell::Cell;
+
+pub struct Transition {
+    pub types: Cell<Option<u32>>,
+}
+
+pub fn shared(prev: Option<&Transition>) -> Option<u32> {
+    let current = Cell::new(None);
+    current.set(match prev {
+        // A nested one shares the parent's,
+        // as they're entangled.
+        Some(prev) => prev.types.get(),
+        None => None,
+    });
+    current.get()
+}
+
+pub fn counted(prev: Option<&Transition>) -> Option<u32> {
+    match prev {
+        // One more than the parent's,
+        // as it's inside it.
+        Some(prev) => Some(prev.types.get().unwrap_or(0) + 1),
+        None => None,
+    }
+}
+
+pub fn read(prev: Option<&Transition>) -> Option<u32> {
+    match prev {
+        // The parent's,
+        // as it is.
+        Some(prev) => prev.types.get(),
+        None => None,
+    }
+}
+
+pub fn branched(prev: Option<&Transition>) -> u32 {
+    match prev {
+        // A nested one's,
+        // its parent's.
+        Some(prev) => {
+            prev.types.set(Some(7));
+            1
+        }
+        None => 0,
+    }
+}
+`);
+  expect(js).toContain("  // A nested one shares the parent's,\n  // as they're entangled.\n");
+  expect(js).toContain("  // One more than the parent's,\n  // as it's inside it.\n  if (prev != null) {\n");
+  expect(js).toContain("  if (prev != null) {\n    // The parent's,\n    // as it is.\n    return prev.types;\n");
+  expect(js).toContain("  // A nested one's,\n  // its parent's.\n  if (prev != null) {\n");
+  expect([lib.shared({ types: 3 } as never), lib.shared(undefined as never), lib.counted({ types: 3 } as never), lib.branched(undefined as never)]).toEqual([3, undefined, 4, 0]);
+});

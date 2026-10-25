@@ -157,3 +157,27 @@ lost before, are kept too.
 
 Held by `test/lowering-comments.test.ts`, "a comment before an unsafe block
 is its code's", and the mutation `unsafe-opening-code` (`to_oxc.ts`).
+
+## Amended (2026-10-25): a run before a match arm is one, and none is lost
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's `startTransition` writes five lines before what a nested
+Transition shares; its port writes them before the `match` arm, `Some(prev_transition)
+=> prev_transition.types.borrow().clone()`. The last line was the arm's
+value's, in the `if`, and the four before it before the `if`: what was
+between a comment and the arm was taken for code where it was the run's
+other comments, so only the last, right above the arm, was the arm's
+(ADR 0590). And a `match` read as `prev?.types`, a statement of no arm,
+lost them all: they were before a start nothing printed.
+
+**A run of comments is one where what's between them is only comments**,
+so each line before a match arm is the arm's value's where the last is;
+and **a comment before nothing printed is before the innermost statement
+it's in**, not lost, a module's item aside, a function's, far above
+where it's written: `// If we're a nested transition .. current.types =
+prev?.types;`.
+
+Held by `test/lowering-comments.test.ts`, "a match arm's comment of many
+lines is its value's, none lost", and the mutations
+`arm-comment-run-split` and `unattached-comments-lost` (`to_oxc.ts`).

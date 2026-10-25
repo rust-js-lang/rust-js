@@ -482,18 +482,28 @@ fn comments_of(
                 });
             }
         }
-        let attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
+        let mut attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c))
             .filter_map(|c| {
                 // Before a match arm, `IMMEDIATE_PRIORITY => -1.0`, its body's: a start whose text to the next is only a pattern and
                 // its `=>` is the arm's test, which an `else if` isn't a
                 // statement of (ADR 0590).
+                // Of a run of comments before it, each line's: what's between
+                // is only comments (ADR 0590, amended).
+                let only_comments = |lo: u32, hi: u32| {
+                    let mut code = lo;
+                    (file.comments.iter())
+                        .filter(|other| other.lo >= lo && other.hi <= hi)
+                        .chain([&crate::program::Comment { lo: hi, hi, doc: false }])
+                        .all(|other| {
+                            let between = sources.text.get(code as usize..other.lo as usize);
+                            code = other.hi;
+                            between.is_some_and(|gap| gap.trim().is_empty())
+                        })
+                };
                 let mut next = starts.partition_point(|&s| s < c.hi);
                 while let [at, after, ..] = starts[next.min(starts.len())..]
-                    && sources
-                        .text
-                        .get(c.hi as usize..at as usize)
-                        .is_some_and(|gap| gap.trim().is_empty())
+                    && only_comments(c.hi, at)
                     && let Some(pattern) = sources.text.get(at as usize..after as usize)
                     && pattern.trim_end().ends_with("=>")
                     && !pattern.contains([';', '{', '}', '\n'])
@@ -583,6 +593,30 @@ fn comments_of(
             })
             .copied()
             .collect();
+        // One inside a statement that's before nothing printed of it, a
+        // match arm's of a `match` read as `prev?.types`: before the
+        // statement it's in, the innermost, never lost (ADR 0444, amended);
+        // not a module's item, a function's, far above where it's written.
+        let items: std::collections::HashSet<(u32, u32)> = (module.items.iter())
+            .flat_map(|item| match item {
+                js::Item::Function(f) => vec![f.span],
+                js::Item::Const(c) => vec![c.span],
+                js::Item::Namespace(n) => n.methods.iter().map(|m| m.span).collect(),
+                js::Item::Statements(_) => Vec::new(),
+            })
+            .map(|span| (span.lo, span.hi))
+            .collect();
+        let unattached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
+            .filter(|c| c.lo >= past && !after_code(c) && !ends.iter().any(|e| e.lo == c.lo))
+            .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo))
+            .filter_map(|c| {
+                let (lo, _) = (spans.iter())
+                    .filter(|&&(lo, hi)| lo < c.lo && c.hi <= hi && in_file(lo) && !items.contains(&(lo, hi)))
+                    .min_by_key(|&&(lo, hi)| hi - lo)?;
+                Some((*c, *lo))
+            })
+            .collect();
+        attached.extend(unattached);
         let mut starts_and_end: Vec<(u32, Vec<crate::program::Comment>)> = (starts.iter())
             .filter(|&&at| in_file(at))
             .map(|&at| (at, attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect()))
@@ -650,7 +684,7 @@ fn comments_of(
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
             if part {
             } else if (own.is_empty() && first_on_line && blank_before(at))
-                || (!own.is_empty() && {
+                || (!own.is_empty() && last <= at && {
                     // A line of nothing between: not a closure's opening's.
                     let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();
                     gap.len() > 2 && gap[1..gap.len() - 1].iter().any(|line| line.trim().is_empty())

@@ -572,7 +572,11 @@ ellipsis` of a conditional ([ADR
 0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md)),
 one inside an expression after the code right before it, `37 /* "%" */`
 ([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md)),
-and a `///` doc comment is a JSDoc an editor shows a JS caller. A file's
+and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
+comment lines before a `match` arm is one, the arm's; and a comment before
+what the JS reads away, an arm of `prev?.types`, is before the statement
+it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
+amended). A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
