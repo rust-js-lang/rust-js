@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "enumerate-own-nth-unsaid",
+    breaks: "an `enumerate()` doesn't say its `nth` is its source's own, so a `step_by` over it steps each item of a reversed `Vec`, back to front (#277)",
+    file: "src/runtime/back_steps.js",
+    find: "  if (iter.ownNth) enumerated.ownNth = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "nth-back-off-by-one",
     breaks: "`nth_back(n)` gives the item after the `n`th from the back",
     file: "src/runtime/back_steps.js",

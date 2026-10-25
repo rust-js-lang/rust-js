@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable, iterator_rev } from "@rust-js/std/ite
 import {
   $closing,
   $dropEach,
+  $enumerate,
   $held,
   $iter,
   $lent,
@@ -11,6 +12,7 @@ import {
   $nextBack,
   $nthDropping,
   $range,
+  $rev,
   $skipping,
   $someValue,
   $step,
@@ -229,5 +231,49 @@ function main() {
   };
   const value$5 = nth$2 ? map$2(nth$2) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  // And an `enumerate()`'s, its source's `nth`, counted (#277).
+  const enumerate = $enumerate($rev($closing($iter(louds(40, 5)), $dropEach(loudDrop_drop))));
+  let tmp$3;
+  try {
+    tmp$3 = id(3);
+  } catch (error) {
+    enumerate.return();
+    throw error;
+  }
+  const step$2 = $step(tmp$3);
+  const value$6 = $held(
+    $stepBy(enumerate, step$2, (value) => {
+      loudDrop_drop(value[1]);
+    }),
+  );
+  let nth$3;
+  try {
+    nth$3 = $nthDropping(
+      $lent(value$6),
+      id(1),
+      (value) => {
+        loudDrop_drop(value[1]);
+      },
+      false,
+    );
+  } catch (error) {
+    value$6.return();
+    throw error;
+  }
+  try {
+    value$6.return();
+  } catch (error) {
+    if (nth$3 != null) {
+      loudDrop_drop(nth$3[1]);
+    }
+    throw error;
+  }
+  const map$3 = ([at, loud]) => {
+    const result = [at, loud[0]];
+    loudDrop_drop(loud);
+    return result;
+  };
+  const value$7 = nth$3 ? map$3(nth$3) : undefined;
+  console.log(`${value$7 == null ? "None" : `Some((${value$7[0]}, ${value$7[1]}))`}`);
 }
 //# sourceMappingURL=case.js.map

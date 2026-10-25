@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nths-a-slice-not-through-enumerate",
+    breaks: "a `step_by` of an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#277)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                        | \"std::iter::Enumerate\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "nths-a-slice-not-through-fuse",
     breaks: "a `step_by` of a `Fuse` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
     file: "src/lower/recognition/iterators.rs",

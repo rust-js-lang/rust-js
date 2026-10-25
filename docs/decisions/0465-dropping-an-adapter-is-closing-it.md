@@ -266,3 +266,15 @@ then `b`'s (fuzz seed 53335). `chain_sides_own_steps` counts a reversed
 Readability: its `Vec`s of values with a destructor add `$iter` (77.6 to
 77.8 in 10,000 lines) and renamed temporaries (714.4 to 714.6), as each
 such case does.
+
+## Amendment: an `enumerate()`'s `nth` is its source's too (#277)
+
+`nths_a_slice` now passes through `Enumerate` as well. An `enumerate()`
+whose output's `nth` drops a slice is now `$enumerate`, whose `nth` asks
+its source's, not JS's `map`. It passes on its source's `ownNth`, so a
+`step_by` over it asks it. `step_by_compiled_source_nth` adds
+`rev().enumerate().step_by(3).nth(1)`. The mutations
+`nths-a-slice-not-through-enumerate`, `enumerate-own-nth-unsaid` and
+`enumerate-of-a-slice-nth-mapped` are caught.
+Readability: the line's renamed temporaries add to that share (714.6 to
+715.5 in 10,000 lines), as each such case does.

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "enumerate-of-a-slice-nth-mapped",
+    breaks: "an `enumerate()` of a reversed `Vec` is a JS `map`, whose `nth` steps each item back to front, not the source's one slice (#277)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    || self.recognition().nths_a_slice(output) =>\n",
+    replace: "                    || false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "mir-rev-items-forward",
     breaks: "`rev()` of items made already gives them in order",
     file: "src/lower/mir/iter/backs.rs",
@@ -293,8 +301,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-own-nth-mapped",
     breaks: "an enumerate of what reaches the crate's own nth is $enumerate",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().nths_its_own(output) =>",
-    replace: "                    || false =>",
+    find: "                    || self.recognition().nths_its_own(output)\n",
+    replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {

@@ -2645,7 +2645,9 @@ export function $enumerate(iter, count = 0) {
     };
   }
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
-  // it writes one (#182).
+  // it writes one (#182); its own where its source's is, which drops what
+  // it passes itself, a reversed `Vec`'s, as a `step_by` over it asks (#277).
+  if (iter.ownNth) enumerated.ownNth = true;
   if (iter.nth !== undefined) {
     enumerated.nth = (k) => {
       const step = enumerated.iter.nth(k);

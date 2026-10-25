@@ -26,4 +26,7 @@ fn main() {
     println!("{:?}", nth.map(|loud| loud.0));
     let nth = louds(30, 5).into_iter().rev().fuse().step_by(id(3)).nth(id(1));
     println!("{:?}", nth.map(|loud| loud.0));
+    // And an `enumerate()`'s, its source's `nth`, counted (#277).
+    let nth = louds(40, 5).into_iter().rev().enumerate().step_by(id(3)).nth(id(1));
+    println!("{:?}", nth.map(|(at, loud)| (at, loud.0)));
 }
