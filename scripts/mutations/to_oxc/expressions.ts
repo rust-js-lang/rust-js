@@ -258,4 +258,20 @@ export const mutations: Mutation[] = [
     replace: "                self.assignment_target(&js::Expr::var(&format!(\"{name}$unset\"))),\n                self.expr(value),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
   },
+  {
+    name: "branch-first-unplaced",
+    breaks: "a match arm's comment, of a conditional's branch whose first JS is a name read where it's bound, `prev` of `prev.types`, has no place in the JS, and is lost (ADR 0444, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "            first.span = e.span;\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
+  },
+  {
+    name: "stringed-unplaced",
+    breaks: "`String(n)` has no place in the JS, and a match arm's comment before it, in a conditional, is lost (ADR 0444, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "vec![(**value).clone()]).or_at(e.span))\n",
+    replace: "vec![(**value).clone()]))\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
+  },
 ];

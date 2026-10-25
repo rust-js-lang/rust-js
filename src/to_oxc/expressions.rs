@@ -4,6 +4,34 @@
 use super::*;
 
 impl<'a> Cx<'a> {
+    /// A conditional's branch, `c ? a : b`'s `a` or `b`. Of one with
+    /// comments, before its value (ADR 0658), the JS printed first is placed
+    /// where the value starts in the Rust, which the printer finds the branch
+    /// by: oxc places a member, an index and an operator by what's first in
+    /// them, which may be placed elsewhere, a name read in place where it's
+    /// bound, `prev` of `Some(prev) => prev.types.get()`, or nowhere, and
+    /// the comments were lost (ADR 0444, amended).
+    fn branch(&self, e: &js::Expr) -> Expression<'a> {
+        if e.span.is_none() || !self.commented_branches.contains(&e.span.lo) {
+            return self.expr(e);
+        }
+        let mut placed = e.clone();
+        let mut first = &mut placed;
+        while let ExprKind::Member(inner, _)
+        | ExprKind::OptionalMember(inner, _)
+        | ExprKind::Index(inner, _)
+        | ExprKind::OptionalIndex(inner, _)
+        | ExprKind::Binary(_, inner, _)
+        | ExprKind::Cond(inner, ..) = &mut first.kind
+        {
+            first = inner;
+        }
+        if !(e.span.lo <= first.span.lo && first.span.lo < e.span.hi) {
+            first.span = e.span;
+        }
+        self.expr(&placed)
+    }
+
     pub(super) fn expr(&self, e: &js::Expr) -> Expression<'a> {
         let b = &self.b;
         let sp = span(e.span);
@@ -70,8 +98,11 @@ impl<'a> Cx<'a> {
             ExprKind::Index(object, index) => {
                 Expression::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
             }
-            // `String(n)` where it isn't in a template (ADR 0066).
-            ExprKind::Stringed(value) => self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()])),
+            // `String(n)` where it isn't in a template (ADR 0066), placed
+            // where it is, as a call is.
+            ExprKind::Stringed(value) => {
+                self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()]).or_at(e.span))
+            }
             ExprKind::Array(items) => {
                 let items = items.iter().map(|item| match &item.kind {
                     ExprKind::Spread(all) => {
@@ -162,7 +193,7 @@ impl<'a> Cx<'a> {
                 }
             }
             ExprKind::Cond(test, then, els) => {
-                Expression::new_conditional_expression(sp, self.expr(test), self.expr(then), self.expr(els), b)
+                Expression::new_conditional_expression(sp, self.expr(test), self.branch(then), self.branch(els), b)
             }
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));

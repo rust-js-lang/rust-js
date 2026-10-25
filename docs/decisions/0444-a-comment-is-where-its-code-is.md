@@ -181,3 +181,18 @@ prev?.types;`.
 Held by `test/lowering-comments.test.ts`, "a match arm's comment of many
 lines is its value's, none lost", and the mutations
 `arm-comment-run-split` and `unattached-comments-lost` (`to_oxc.ts`).
+
+Then an `Option` never falsy was tested by its truth (ADR 0298, amended),
+and that `match` was `prev ? prev.types : undefined`, no `?.`: the arm
+was a conditional's branch again, whose comments the printer writes after
+its `?`, where the map places its first JS (ADR 0658). None of it was
+placed in the arm: oxc places a member by its object, and `prev`, a name
+read where it's bound, was placed at `Some(prev)`; `String(n)`, of
+`n.to_string()`, nowhere. The comments were lost again. **A branch with
+comments has its first JS placed where its value starts** (`Cx::branch`,
+`to_oxc/expressions.rs`), and `String(n)` where it's written, so they're
+before the value in the conditional, as React's `prevTransition !== null
+? // If we're a nested transition .. prevTransition.types : null` is; an
+arm read away, `n ?? given`, keeps them before its statement. Held by the
+same test, and the mutations `branch-first-unplaced` and
+`stringed-unplaced` (`to_oxc/expressions.ts`).

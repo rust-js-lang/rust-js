@@ -95,6 +95,7 @@ pub fn emit(
             .map(|c| c.attached_to)
             .collect(),
         across_lines: Default::default(),
+        commented_branches: arms.iter().map(|&(lo, ..)| lo).collect(),
     };
     let b = &cx.b;
 
@@ -1022,6 +1023,9 @@ struct Cx<'a> {
     /// each is in the arena (ADR 0835): which a visit of the program tells
     /// the formatter of, in its order (`across_lines`).
     across_lines: std::cell::RefCell<std::collections::HashSet<*const ObjectExpression<'a>>>,
+    /// Where a conditional's branch its comments are before starts (ADR
+    /// 0658), whose first JS is placed there (`Cx::branch`).
+    commented_branches: std::collections::HashSet<u32>,
 }
 
 /// Of each object of `program`, in the order a visit meets them, as its
