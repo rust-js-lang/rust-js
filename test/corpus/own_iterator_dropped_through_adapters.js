@@ -2,6 +2,7 @@
 
 import {
   fuseDoubleEndedIterator_nextBack,
+  fuseDoubleEndedIterator_nthBack,
   fuseExactSizeIterator_len,
   iterator_fuse,
 } from "@rust-js/std/iter.js";
@@ -11,6 +12,7 @@ import {
   $enumerate,
   $exactLen,
   $filterEnds,
+  $fuseRfold,
   $iter,
   $iterator,
   $knowing,
@@ -131,7 +133,11 @@ function main() {
           (iterator) =>
             fuseDoubleEndedIterator_nextBack(
               iterator,
-              { next_back: countDoubleEndedIterator_nextBack },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
               false,
               countDrop_drop,
             ),
@@ -139,6 +145,40 @@ function main() {
             fuseExactSizeIterator_len(
               iterator,
               { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+              countDrop_drop,
+            ),
+          (it, init, f) =>
+            $fuseRfold(
+              it,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              countDrop_drop,
+            ),
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              false,
               countDrop_drop,
             ),
         ),
@@ -170,7 +210,11 @@ function main() {
           (iterator) =>
             fuseDoubleEndedIterator_nextBack(
               iterator,
-              { next_back: countDoubleEndedIterator_nextBack },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
               false,
               countDrop_drop,
             ),
@@ -178,6 +222,40 @@ function main() {
             fuseExactSizeIterator_len(
               iterator,
               { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+              countDrop_drop,
+            ),
+          (it, init, f) =>
+            $fuseRfold(
+              it,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              countDrop_drop,
+            ),
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              false,
               countDrop_drop,
             ),
         ),
@@ -264,7 +342,76 @@ function main() {
   } finally {
     filter.return();
   }
-  console.log(`${odd == null ? "None" : `Some(${odd})`}`);
+  const value = $filterEnds(
+    $closing(
+      $knowing(
+        iterator_fuse(
+          count(),
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          false,
+          countDrop_drop,
+        ),
+        (iterator) =>
+          fuseDoubleEndedIterator_nextBack(
+            iterator,
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            false,
+            countDrop_drop,
+          ),
+        (iterator) =>
+          fuseExactSizeIterator_len(
+            iterator,
+            { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+            countDrop_drop,
+          ),
+        (it, init, f) =>
+          $fuseRfold(
+            it,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
+          ),
+        (iterator, k) =>
+          fuseDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            false,
+            countDrop_drop,
+          ),
+      ),
+      (it) => {
+        if (it.iter != null) {
+          countDrop_drop(it.iter);
+        }
+      },
+    ),
+    (x) => x % 2 === 1,
+  );
+  let fusedOdd;
+  try {
+    fusedOdd = $nextBack(value);
+  } finally {
+    value.return();
+  }
+  console.log(
+    `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
+  );
   console.log(
     `[${$rev(
       $mapEnds(
@@ -384,7 +531,11 @@ function main() {
       (iterator) =>
         fuseDoubleEndedIterator_nextBack(
           iterator,
-          { next_back: countDoubleEndedIterator_nextBack },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            rfold: countDoubleEndedIterator_rfold,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
           false,
           countDrop_drop,
         ),
@@ -394,11 +545,37 @@ function main() {
           { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
           countDrop_drop,
         ),
+      (it, init, f) =>
+        $fuseRfold(
+          it,
+          init,
+          f,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            rfold: countDoubleEndedIterator_rfold,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countDrop_drop,
+        ),
+      (iterator, k) =>
+        fuseDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            rfold: countDoubleEndedIterator_rfold,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          false,
+          countDrop_drop,
+        ),
     ),
   );
   let second;
   try {
-    second = $lent(rev).drop(1).take(1).toArray()[0];
+    second = $nth($lent(rev), 1);
   } finally {
     rev.return();
   }

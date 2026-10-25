@@ -56,7 +56,7 @@ function size(k) {
 
 function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeIterator) {
   return [
-    last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator.next_back)),
+    last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator)),
     size($given(IClone.clone(iter), IIterator, true, undefined, IExactSizeIterator.len)),
     $iterator(iter, IDoubleEndedIterator.next_back, true).toArray(),
   ];
@@ -67,7 +67,7 @@ function first(k) {
 }
 
 function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
-  return first($given(iter, IIterator, true, IDoubleEndedIterator.next_back));
+  return first($given(iter, IIterator, true, IDoubleEndedIterator));
 }
 
 function backwards(iter, IIterator, IClone, IDoubleEndedIterator) {

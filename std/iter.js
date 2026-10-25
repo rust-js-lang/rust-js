@@ -7,6 +7,7 @@ import {
   $given,
   $lastDropping,
   $lent,
+  $nthBack,
   $nthDropping,
   $peekableFold,
   $peekableHint,
@@ -150,20 +151,12 @@ export function peekableDoubleEndedIterator_rfold(
       return result;
     }
     const v = $someValue($someValue(peekable.peeked));
-    const acc = $foldBack(
-      $given(peekable.iter, IIterator, true, IDoubleEndedIterator.next_back),
-      init,
-      fold,
-    );
+    const acc = $foldBack($given(peekable.iter, IIterator, true, IDoubleEndedIterator), init, fold);
     result = fold(acc, v);
     dropFold?.(fold);
     return result;
   }
-  const value = $foldBack(
-    $given(peekable.iter, IIterator, true, IDoubleEndedIterator.next_back),
-    init,
-    fold,
-  );
+  const value = $foldBack($given(peekable.iter, IIterator, true, IDoubleEndedIterator), init, fold);
   dropFold?.(fold);
   return value;
 }
@@ -245,11 +238,7 @@ export function fuseDoubleEndedIterator_rfold(
 ) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
-    const value = $foldBack(
-      $given(iter, IIterator, true, IDoubleEndedIterator.next_back),
-      acc,
-      fold,
-    );
+    const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), acc, fold);
     dropFold?.(fold);
     acc = value;
     return acc;
@@ -257,6 +246,20 @@ export function fuseDoubleEndedIterator_rfold(
   const result = acc;
   dropFold?.(fold);
   return result;
+}
+
+export function fuseDoubleEndedIterator_nthBack(
+  fuse,
+  n,
+  IIterator,
+  IDoubleEndedIterator,
+  IFused,
+  dropI,
+  dropIItem,
+) {
+  return IFused
+    ? fuseFuseImplIFusedIterator_nthBack(fuse, n, IIterator, IDoubleEndedIterator, dropI, dropIItem)
+    : fuseFuseImplI_nthBack(fuse, n, IIterator, IDoubleEndedIterator, dropI, dropIItem);
 }
 
 export function fuseExactSizeIterator_len(fuse, IExactSizeIterator, dropI, dropIItem) {
@@ -345,6 +348,41 @@ export function fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, 
     option = $some(x);
     const v = $someValue(option);
     return IDoubleEndedIterator.next_back({ TAG: "Continue", _0: v }._0);
+  }
+  option = undefined;
+}
+
+export function fuseFuseImplI_nthBack(fuse, n, IIterator, IDoubleEndedIterator, dropI, dropIItem) {
+  const opt = { value: fuse.iter };
+  const result = andThenOrClear(
+    opt,
+    (x0) => $nthBack($given(x0.value, IIterator, true, IDoubleEndedIterator), n, $some, dropIItem),
+    dropI,
+    dropIItem,
+  );
+  fuse.iter = opt.value;
+  return result;
+}
+
+export function fuseFuseImplIFusedIterator_nthBack(
+  fuse,
+  n,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropIItem,
+) {
+  let option;
+  if (fuse.iter != null) {
+    const x = $someValue(fuse.iter);
+    option = $some(x);
+    const v = $someValue(option);
+    return $nthBack(
+      $given({ TAG: "Continue", _0: v }._0, IIterator, true, IDoubleEndedIterator),
+      n,
+      $some,
+      dropIItem,
+    );
   }
   option = undefined;
 }

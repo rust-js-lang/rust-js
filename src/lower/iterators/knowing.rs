@@ -735,8 +735,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if back.is_none() && len.is_none() {
                 return Ok(None);
             }
-            let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
-            return Ok(Some(Expr::call_helper("$knowing", vec![it, back, len])));
+            // And its `rfold` and `nth_back`, which pass the crate's own on,
+            // as std's `Fuse` does (#224): a fuse's `rfold`, `$fuseRfold` by
+            // its source's dictionaries, as its fold is `$fuseFold`, since
+            // the compiled one is generic over what it folds; its compiled
+            // `nth_back`.
+            let double_ended = self.recognition().double_ended_iterator();
+            let rfold = match (double_ended, ty.kind()) {
+                (Some(back), ty::Adt(_, args)) if self.recognition().is_fuse(ty) => {
+                    // Its source's dictionaries, a type parameter's given,
+                    // another's made here.
+                    let source = args.type_at(0);
+                    let iterator = match self.iterator_evidence(source, std_item(self.tcx, StdItem::Iterator)) {
+                        Some(given) => given,
+                        None => self.iterator_dictionary(source, span)?,
+                    };
+                    let back = match self.iterator_evidence(source, back) {
+                        Some(given) => given,
+                        None => self.iterator_extension_dictionary(back, source, span)?,
+                    };
+                    let mut given = vec![Expr::var("it"), Expr::var("init"), Expr::var("f"), iterator, back];
+                    given.extend(self.drop_function(source, span)?);
+                    Some(Expr::arrow(
+                        vec!["it".into(), "init".into(), "f".into()],
+                        vec![StmtKind::Return(Some(Expr::call_helper("$fuseRfold", given))).at(js::Span::NONE)],
+                    ))
+                }
+                _ => None,
+            };
+            let nth_back = match double_ended {
+                Some(back) if self.compiled_step(ty, back, "nth_back") => {
+                    Some(self.user_method(ty, back, "nth_back", &["k"], span)?.0)
+                }
+                _ => None,
+            };
+            let own = [rfold, nth_back];
+            let mut given = vec![
+                it,
+                back.unwrap_or_else(Expr::undefined),
+                len.unwrap_or_else(Expr::undefined),
+            ];
+            let last = own.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
+            given.extend(
+                own.into_iter()
+                    .take(last)
+                    .map(|entry| entry.unwrap_or_else(Expr::undefined)),
+            );
+            return Ok(Some(Expr::call_helper("$knowing", given)));
         }
         if !self.explicit_adapter(ty) {
             return Ok(None);

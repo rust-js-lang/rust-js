@@ -41,6 +41,20 @@ function $fuseFold(fuse, init, f, iterator, drop) {
   return $foldBy(iter, init, f, iterator, drop);
 }
 
+// A `Fuse`'s `rfold`, std's: its source's, while it has one, by its
+// dictionaries, `iterator` and `back`: the crate's own `rfold` where its impl
+// writes one, which takes the source and drops it, else each `next_back`,
+// the source dropped by `drop` after (#224).
+function $fuseRfold(fuse, init, f, iterator, back, drop) {
+  if (fuse.iter == null) return init;
+  const iter = $someValue(fuse.iter);
+  fuse.iter = undefined;
+  if (back?.rfold !== undefined) return back.rfold(iter, init, f);
+  const folded = $foldBack($given(iter, iterator, true, back), init, f);
+  drop?.(iter);
+  return folded;
+}
+
 // `try_fold` of `it`, by its `Iterator` dictionary, `iterator`, as
 // `$foldBy`'s fold (#214): a JS iterator's own `tryFold`, which a `$Steps`
 // passes to its source's as std's adapters do; else each `next`, its

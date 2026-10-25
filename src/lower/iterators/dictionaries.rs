@@ -17,8 +17,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => trait_id?,
                 false => return Some(None),
             };
+            // Its back, the dictionary itself, whose `next_back`, and own
+            // `rfold` and `nth_back`, `$given` reads (#224); its length,
+            // its `len`.
+            let dictionary = self.iterator_evidence(ty, trait_id)?;
+            if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
+                return Some(Some(dictionary));
+            }
             let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
-            Some(Some(Expr::member(self.iterator_evidence(ty, trait_id)?, name)))
+            Some(Some(Expr::member(dictionary, name)))
         };
         let back = entry(back, self.recognition().double_ended_iterator())?;
         let len = entry(len, self.recognition().exact_size_iterator())?;
@@ -77,10 +84,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ))),
             (_, None) => None,
         };
-        match entry {
-            Some(entry) => Ok(Expr::object(vec![js::Prop::Field(name.into(), entry)])),
-            None => Err(self.unsupported(span, &format!("the `{}` of a `{ty}`", self.tcx.item_name(trait_id)))),
+        let Some(entry) = entry else {
+            return Err(self.unsupported(span, &format!("the `{}` of a `{ty}`", self.tcx.item_name(trait_id))));
+        };
+        let mut props = vec![js::Prop::Field(name.into(), entry)];
+        // The crate's own `rfold` and `nth_back`, where its impl writes them,
+        // which std's compiled code of it, a `fuse()`'s, asks (#224).
+        // Of std's adapter over the crate's own, the JS iterator's, which
+        // passes it on as std's does, `$foldBack`.
+        if double_ended {
+            let rfold = match self.is_user_iterator(ty) {
+                true => self.own_methods(ty, false, span)?.rfold,
+                false => self.recognition().rfolds_its_own(ty).then(|| Expr::helper("$foldBack")),
+            };
+            let nth_back = match self.is_user_iterator(ty) {
+                true => self.own_methods(ty, false, span)?.nth_back,
+                false => None,
+            };
+            for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
+                if let Some(own) = own {
+                    props.push(js::Prop::Field(
+                        crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),
+                        own,
+                    ));
+                }
+            }
         }
+        Ok(Expr::object(props))
     }
 
     /// `it.cycle()` of `it`, of type `ty`, an iterator not std's over an

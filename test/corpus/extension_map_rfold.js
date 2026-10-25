@@ -23,19 +23,16 @@ function tagDebug_fmt(tag, TDebug) {
 const Ends = {
   taggedBack(ends, init, f, IIterator, IDoubleEndedIterator) {
     return $foldBack(
-      $mapEnds($given(ends.inner, IIterator, true, IDoubleEndedIterator.next_back), (value) => [
-        value,
-      ]),
+      $mapEnds($given(ends.inner, IIterator, true, IDoubleEndedIterator), (value) => [value]),
       init,
       f,
     );
   },
 
   heldBack(ends, IIterator, IDoubleEndedIterator) {
-    const tagged = $mapEnds(
-      $given(ends.inner, IIterator, true, IDoubleEndedIterator.next_back),
-      (value) => [value],
-    );
+    const tagged = $mapEnds($given(ends.inner, IIterator, true, IDoubleEndedIterator), (value) => [
+      value,
+    ]);
     return $nextBack(tagged);
   },
 };

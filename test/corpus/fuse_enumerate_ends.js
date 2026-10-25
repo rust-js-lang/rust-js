@@ -2,6 +2,7 @@
 
 import {
   fuseDoubleEndedIterator_nextBack,
+  fuseDoubleEndedIterator_nthBack,
   fuseExactSizeIterator_len,
   iterator_fuse,
 } from "@rust-js/std/iter.js";
@@ -9,6 +10,7 @@ import {
   $debugStr,
   $enumerate,
   $extend,
+  $fuseRfold,
   $iter,
   $iterator,
   $knowing,
@@ -45,8 +47,19 @@ function fusedBack(it, IFused) {
   const f = iterator_fuse(it, { next: $next }, IFused);
   const last = fuseDoubleEndedIterator_nextBack(f, { next_back: $nextBack }, IFused);
   const rest = $rev(
-    $knowing(f, (iterator) =>
-      fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, IFused),
+    $knowing(
+      f,
+      (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, IFused),
+      undefined,
+      (it, init, f) => $fuseRfold(it, init, f, { next: $next }, { next_back: $nextBack }),
+      (iterator, k) =>
+        fuseDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: $next },
+          { next_back: $nextBack },
+          IFused,
+        ),
     ),
   ).toArray();
   $extend(rest, last == null ? [] : [last]);

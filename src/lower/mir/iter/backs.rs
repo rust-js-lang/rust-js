@@ -261,14 +261,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let it = match self.given_stepped(receiver.clone(), iter_ty, true, false) {
                     Some(it) => it,
-                    // Closed to drop it, as a map's is (#225).
                     None if self.is_user_iterator(iter_ty) => {
-                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?;
-                        self.closing(knowing, held, span)?
+                        self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?
                     }
                     None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,
                     None => receiver.clone(),
                 };
+                // Closed to drop what it holds, as a map's is, the crate's
+                // iterator or a compiled `fuse()` of it (#225).
+                let it = self.closing(it, held, span)?;
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let p = self.unary_callback(values.next().expect("the test"), own);
                 Expr::call_helper("$filterEnds", vec![it, p])

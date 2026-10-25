@@ -5,7 +5,9 @@
 // `skip`'s `nth_back` are their source's, a `chain`'s its first side's; a
 // `take` steps its source's `nth_back` past what it won't give, from its
 // back, by its `rfold`, by its `try_rfold`, and so by a `filter`'s
-// `next_back`, which is its source's `rfind`, and a `skip`'s `rfold`.
+// `next_back`, which is its source's `rfind`, and a `skip`'s `rfold`; a
+// compiled `fuse()` passes them on, its `nth_back` the compiled one, its
+// `rfold` its source's (#224).
 struct Count {
     at: i32,
     end: i32,
@@ -127,8 +129,16 @@ fn main() {
     let lent = (&mut it).rev().nth(2);
     println!("{found:?} {lent:?} {:?}", it.next_back());
     println!("{}", Loud { left: 3 }.map(|x| x * 10).rfold(0, |a, x| a + x));
+    println!("{}", Loud { left: 2 }.fuse().rev().sum::<i32>());
     let skipped_last = count().skip(1).take(5).rev().last();
     let pair = count().enumerate().nth_back(1);
     println!("{skipped_last:?} {pair:?}");
     println!("{}", count().take(5).map(|x| x * 2).rev().take(2).sum::<i32>());
+    println!("{}", count().fuse().rev().sum::<i32>());
+    let fused = count().fuse().nth_back(1);
+    let fused_last = count().fuse().take(5).rev().last();
+    println!("{fused:?} {fused_last:?}");
+    println!("{}", count().map(|x| x * 2).fuse().rfold(0, |a, x| a + x));
+    let odd_last = count().fuse().filter(|x| x % 2 == 1).rev().last();
+    println!("{odd_last:?}");
 }

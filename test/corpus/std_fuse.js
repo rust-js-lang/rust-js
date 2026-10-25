@@ -4,6 +4,7 @@ import {
   fuseClone_clone,
   fuseDebug_fmt,
   fuseDoubleEndedIterator_nextBack,
+  fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
@@ -11,6 +12,7 @@ import {
 import {
   $debugStr,
   $exactLen,
+  $fuseRfold,
   $iter,
   $knowing,
   $next,
@@ -87,6 +89,9 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
       copy,
       (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
       (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
+      (it, init, f) => $fuseRfold(it, init, f, IIterator, IDoubleEndedIterator),
+      (iterator, k) =>
+        fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
     ),
   ).toArray();
   const total = fuseDoubleEndedIterator_rfold(

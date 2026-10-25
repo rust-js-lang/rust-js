@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "given-fold-unpassed",
     breaks: "a value given as it is is stepped by `next`, not its dictionary's own `fold`",
     file: "src/runtime/iterator.js",
-    find: "iterator.sizeHint, iterator.fold, iterator.nth, iterator.last);",
-    replace: "iterator.sizeHint, undefined, iterator.nth, iterator.last);",
+    find: "    iterator.sizeHint,\n    iterator.fold,\n",
+    replace: "    iterator.sizeHint,\n    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
 
@@ -73,6 +73,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iterator.js",
     find: "  if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));\n",
     replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "given-back-own-unpassed",
+    breaks: "a type parameter's iterator stepped from its back isn't given its `DoubleEndedIterator` dictionary's own `rfold` and `nth_back`, so a compiled `fuse()` steps the crate's by `next_back` (#224)",
+    file: "src/runtime/iterator.js",
+    find: "    back?.rfold,\n    back?.nthBack,\n",
+    replace: "    undefined,\n    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
 ];

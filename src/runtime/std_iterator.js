@@ -38,9 +38,11 @@ function $stdIterator(struct, steps) {
     it.last = () => step(steps.last(it));
     it.ownLast = true;
   }
-  it.knowing = (back, len) => {
+  it.knowing = (back, len, rfold, nthBack) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
+    if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);
+    if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
   };
   return it;
 }

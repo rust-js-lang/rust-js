@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "    it.last = () => step(steps.last(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
   },
+  {
+    name: "std-iterator-back-own-unknown",
+    breaks: "a compiled `fuse()` isn't given its `rfold` and `nth_back` where they're asked (#224)",
+    file: "src/runtime/std_iterator.js",
+    find: "    if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);\n    if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

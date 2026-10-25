@@ -220,3 +220,28 @@ now, the 40 left each a `fuse()`; the 2,254 of #216 still agree.
 `own_back_through_adapters` holds them, with 29 mutations. The
 readability baseline's `while (true)` share grows by 0.1 in 10,000
 lines: the case's two `rfold` impls, each a `while let`.
+
+## Amendment: through a `fuse()`
+
+A `fuse()` is std's compiled code (ADR 0561), given its source's
+dictionaries, and the `DoubleEndedIterator` one held `next_back` alone,
+so through it the crate's own back was stepped by `next_back`: the 40
+programs #220 left (#224). Now:
+
+- the `DoubleEndedIterator` dictionary of the crate's iterator gives its
+  own `rfold` and `nth_back`, and an adapter's over it `$foldBack`, which
+  asks the JS iterator's own; `$given` takes that dictionary, not its
+  `next_back` alone, and passes them on;
+- `$knowing` gives a compiled `Fuse` its `nth_back`, compiled, and its
+  `rfold`, `$fuseRfold`, by its source's dictionaries, as its fold is
+  `$fuseFold`, since the compiled `rfold` is generic over what it folds;
+  `$closing` passes them on as it does its back;
+- `rfolds_its_own` and `nth_backs_its_own` say a `fuse()`'s are its
+  source's;
+- `back_kept`'s filter closes what it's given, a compiled `fuse()` of the
+  crate's iterator with a destructor too, as its map does.
+
+All 1,100 of #220's programs agree, and of the 2,100 with a destructor
+all but #206's nine; #216's 2,044 still agree. `own_back_through_adapters`
+and `own_iterator_dropped_through_adapters` hold them, with nine
+mutations.

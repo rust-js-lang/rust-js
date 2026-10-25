@@ -28,9 +28,11 @@ function $closing(it, drop) {
   // Its iterator's back and length, a use site's, given it where it's
   // asked, as `$knowing` gives a compiled std iterator's (ADR 0561, #225).
   if (it.knowing !== undefined) {
-    closing.knowing = (back, size) => {
-      it.knowing(back, size);
+    closing.knowing = (back, size, rfold, nthBack) => {
+      it.knowing(back, size, rfold, nthBack);
       if (it.len !== undefined) closing.len = () => it.len();
+      if (it.rfold !== undefined) closing.rfold = rfoldClosing;
+      if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
     };
   }
   // Its `nth`, its iterator's, the crate's own where it writes one.
@@ -44,14 +46,13 @@ function $closing(it, drop) {
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-  if (it.rfold !== undefined) {
-    closing.rfold = (init, f) => {
-      const folded = it.rfold(init, f);
-      if (it.ownRfold) closed = true;
-      close();
-      return folded;
-    };
-  }
+  const rfoldClosing = (init, f) => {
+    const folded = it.rfold(init, f);
+    if (it.ownRfold) closed = true;
+    close();
+    return folded;
+  };
+  if (it.rfold !== undefined) closing.rfold = rfoldClosing;
   if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
   closing.tryFold = (init, f, broke) => {

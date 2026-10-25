@@ -85,7 +85,8 @@ fn main() {
     println!("{}", count().skip(2).rev().sum::<i32>());
     println!("{:?}", count().take(5).rev().collect::<Vec<_>>());
     let odd = count().filter(|x| x % 2 == 1).next_back();
-    println!("{odd:?}");
+    let fused_odd = count().fuse().filter(|x| x % 2 == 1).next_back();
+    println!("{odd:?} {fused_odd:?}");
     println!("{:?}", count().map(|x| x * 2).rev().collect::<Vec<_>>());
     println!("{}", count().step_by(2).sum::<i32>());
     let last = count().take(5).filter(|x| x % 2 == 1).last();

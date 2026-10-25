@@ -40,9 +40,7 @@ function wrapDoubleEndedIterator_nextBack(wrap, IDoubleEndedIterator) {
 
 function wrapDoubleEndedIterator_rfold(wrap, init, f, IIterator, IDoubleEndedIterator) {
   return $foldBack(
-    $mapEnds($given(wrap.inner, IIterator, true, IDoubleEndedIterator.next_back), (value) => [
-      value,
-    ]),
+    $mapEnds($given(wrap.inner, IIterator, true, IDoubleEndedIterator), (value) => [value]),
     init,
     f,
   );
@@ -58,7 +56,7 @@ const Wrap = {
   },
   lastKept(wrap, IIterator, IDoubleEndedIterator) {
     return $nextBackSome(
-      $filterEnds($given(wrap.inner, IIterator, true, IDoubleEndedIterator.next_back), kept),
+      $filterEnds($given(wrap.inner, IIterator, true, IDoubleEndedIterator), kept),
     );
   },
 };

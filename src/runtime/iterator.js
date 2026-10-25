@@ -63,18 +63,33 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
 // source's back and length, `back` and `len`, functions of the value the
 // `$iterator` it steps steps, which that's given: what it steps from its
 // back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
-// `$stdIterator`'s, given its own.
-function $knowing(it, back, len) {
+// `$stdIterator`'s, given its own, and its compiled `rfold` and `nth_back`,
+// which pass the crate's own on (#224).
+function $knowing(it, back, len, rfold, nthBack) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len);
+  source.knowing?.(back, len, rfold, nthBack);
   return it;
 }
 
 // A value of a type parameter given as it is (ADR 0411), as a JS iterator
 // stepped by its `Iterator` dictionary, `iterator`: its `next`, and its own
 // `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
-// `boxed`, its back and its length as `$iterator`'s.
-function $given(value, iterator, boxed = false, nextBack, len) {
-  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth, iterator.last);
+// `boxed` and its length as `$iterator`'s; its back by its
+// `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
+// `rfold` and `nth_back` where the crate's impl writes them (#224).
+function $given(value, iterator, boxed = false, back, len) {
+  return $iterator(
+    value,
+    iterator.next,
+    boxed,
+    back?.next_back,
+    len,
+    iterator.sizeHint,
+    iterator.fold,
+    iterator.nth,
+    iterator.last,
+    back?.rfold,
+    back?.nthBack,
+  );
 }

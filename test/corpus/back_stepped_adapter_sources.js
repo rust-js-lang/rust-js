@@ -2,6 +2,7 @@
 
 import {
   fuseDoubleEndedIterator_nextBack,
+  fuseDoubleEndedIterator_nthBack,
   fuseExactSizeIterator_len,
   iterator_fuse,
 } from "@rust-js/std/iter.js";
@@ -13,6 +14,7 @@ import {
   $filterEnds,
   $findBack,
   $foldBack,
+  $fuseRfold,
   $iter,
   $iterator,
   $knowing,
@@ -93,6 +95,15 @@ function main() {
         iterator_fuse($iter(v), { next: $next }, true),
         (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, true),
         (iterator) => fuseExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+        (it, init, f) => $fuseRfold(it, init, f, { next: $next }, { next_back: $nextBack }),
+        (iterator, k) =>
+          fuseDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next },
+            { next_back: $nextBack },
+            true,
+          ),
       ),
       (x) => x % 2 === 1,
     ),

@@ -589,20 +589,35 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
 // source's back and length, `back` and `len`, functions of the value the
 // `$iterator` it steps steps, which that's given: what it steps from its
 // back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
-// `$stdIterator`'s, given its own.
-export function $knowing(it, back, len) {
+// `$stdIterator`'s, given its own, and its compiled `rfold` and `nth_back`,
+// which pass the crate's own on (#224).
+export function $knowing(it, back, len, rfold, nthBack) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len);
+  source.knowing?.(back, len, rfold, nthBack);
   return it;
 }
 
 // A value of a type parameter given as it is (ADR 0411), as a JS iterator
 // stepped by its `Iterator` dictionary, `iterator`: its `next`, and its own
 // `fold`, `nth` and `size_hint` where the crate's impl writes them (#162);
-// `boxed`, its back and its length as `$iterator`'s.
-export function $given(value, iterator, boxed = false, nextBack, len) {
-  return $iterator(value, iterator.next, boxed, nextBack, len, iterator.sizeHint, iterator.fold, iterator.nth, iterator.last);
+// `boxed` and its length as `$iterator`'s; its back by its
+// `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
+// `rfold` and `nth_back` where the crate's impl writes them (#224).
+export function $given(value, iterator, boxed = false, back, len) {
+  return $iterator(
+    value,
+    iterator.next,
+    boxed,
+    back?.next_back,
+    len,
+    iterator.sizeHint,
+    iterator.fold,
+    iterator.nth,
+    iterator.last,
+    back?.rfold,
+    back?.nthBack,
+  );
 }
 
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks
@@ -1723,9 +1738,11 @@ export function $closing(it, drop) {
   // Its iterator's back and length, a use site's, given it where it's
   // asked, as `$knowing` gives a compiled std iterator's (ADR 0561, #225).
   if (it.knowing !== undefined) {
-    closing.knowing = (back, size) => {
-      it.knowing(back, size);
+    closing.knowing = (back, size, rfold, nthBack) => {
+      it.knowing(back, size, rfold, nthBack);
       if (it.len !== undefined) closing.len = () => it.len();
+      if (it.rfold !== undefined) closing.rfold = rfoldClosing;
+      if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
     };
   }
   // Its `nth`, its iterator's, the crate's own where it writes one.
@@ -1739,14 +1756,13 @@ export function $closing(it, drop) {
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-  if (it.rfold !== undefined) {
-    closing.rfold = (init, f) => {
-      const folded = it.rfold(init, f);
-      if (it.ownRfold) closed = true;
-      close();
-      return folded;
-    };
-  }
+  const rfoldClosing = (init, f) => {
+    const folded = it.rfold(init, f);
+    if (it.ownRfold) closed = true;
+    close();
+    return folded;
+  };
+  if (it.rfold !== undefined) closing.rfold = rfoldClosing;
   if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
   closing.tryFold = (init, f, broke) => {
@@ -9455,9 +9471,11 @@ export function $stdIterator(struct, steps) {
     it.last = () => step(steps.last(it));
     it.ownLast = true;
   }
-  it.knowing = (back, len) => {
+  it.knowing = (back, len, rfold, nthBack) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
+    if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);
+    if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
   };
   return it;
 }
@@ -11526,6 +11544,20 @@ export function $fuseFold(fuse, init, f, iterator, drop) {
   const iter = $someValue(fuse.iter);
   fuse.iter = undefined;
   return $foldBy(iter, init, f, iterator, drop);
+}
+
+// A `Fuse`'s `rfold`, std's: its source's, while it has one, by its
+// dictionaries, `iterator` and `back`: the crate's own `rfold` where its impl
+// writes one, which takes the source and drops it, else each `next_back`,
+// the source dropped by `drop` after (#224).
+export function $fuseRfold(fuse, init, f, iterator, back, drop) {
+  if (fuse.iter == null) return init;
+  const iter = $someValue(fuse.iter);
+  fuse.iter = undefined;
+  if (back?.rfold !== undefined) return back.rfold(iter, init, f);
+  const folded = $foldBack($given(iter, iterator, true, back), init, f);
+  drop?.(iter);
+  return folded;
 }
 
 // `try_fold` of `it`, by its `Iterator` dictionary, `iterator`, as

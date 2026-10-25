@@ -104,6 +104,39 @@
         "rest": false
       },
       {
+        "key": "608f92abc48d28daf89c72edcf1b7eec",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::DoubleEndedIterator>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDoubleEndedIterator_nthBack",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [
+          [
+            0,
+            "Fused"
+          ]
+        ],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ],
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
         "key": "608f92abc48d28da4f480206661c12b6",
         "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::DoubleEndedIterator>::rfold",
         "module": [
@@ -402,6 +435,62 @@
         "type_facts": [],
         "takes_location": false,
         "stepped": [
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
+        "key": "608f92abc48d28da158d96589811fd94",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplI_nthBack",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ],
+          [
+            0,
+            "608f92abc48d28daf245e2f3fcaec68a"
+          ]
+        ],
+        "rest": false
+      },
+      {
+        "key": "608f92abc48d28dabc50a00ff6fef20c",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplIFusedIterator_nthBack",
+        "member": null,
+        "drops": [
+          0,
+          1
+        ],
+        "fails": false,
+        "no_drops": [],
+        "type_facts": [],
+        "takes_location": false,
+        "stepped": [
+          [
+            0,
+            "608f92abc48d28da5bb321f20939e045"
+          ],
           [
             0,
             "608f92abc48d28daf245e2f3fcaec68a"
@@ -736,6 +825,7 @@
         "fuseIterator_sizeHint",
         "fuseDoubleEndedIterator_nextBack",
         "fuseDoubleEndedIterator_rfold",
+        "fuseDoubleEndedIterator_nthBack",
         "fuseExactSizeIterator_len",
         "fuseFuseImplI_next",
         "fuseFuseImplIFusedIterator_next",
@@ -745,6 +835,8 @@
         "fuseFuseImplIFusedIterator_nth",
         "fuseFuseImplI_nextBack",
         "fuseFuseImplIFusedIterator_nextBack",
+        "fuseFuseImplI_nthBack",
+        "fuseFuseImplIFusedIterator_nthBack",
         "fuseClone_clone",
         "fuseDebug_fmt",
         "iterator_peekable",
@@ -762,7 +854,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "672a63c0b732aaff"
+      "hash": "f57b4cc19475ffd0"
     },
     {
       "file": "iter.js.map",

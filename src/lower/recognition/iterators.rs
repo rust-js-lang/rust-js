@@ -403,8 +403,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `rfold` the impl of a crate's iterator writes, or its `nth_back`
     /// (#220): of that iterator, not through a `&mut`, whose `rfold` is
     /// std's; of a `rev()`, its source's `fold`; of each adapter whose
-    /// `rfold` is its source's, a `map`'s, a `filter`'s, an `enumerate`'s,
-    /// either side's of a `chain`; and of a `take`, its source's `nth_back`
+    /// `rfold` is its source's, a `map`'s, a `filter`'s, an `enumerate`'s, a
+    /// `fuse`'s (#224), either side's of a `chain`; and of a `take`, its source's `nth_back`
     /// past what it won't give, then its source's `rfold`.
     pub(in crate::lower) fn rfolds_its_own(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
@@ -416,7 +416,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
-            Some("Map" | "Filter" | "Enumerate") => {
+            Some("Map" | "Filter" | "Enumerate" | "Fuse") => {
                 args.types().next().is_some_and(|source| self.rfolds_its_own(source))
             }
             Some("Chain") => args.types().take(2).any(|side| self.rfolds_its_own(side)),
@@ -457,7 +457,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether std's `nth_back` of a `ty`, a double-ended iterator, reaches
     /// the `nth_back` the impl of a crate's iterator writes (#220): of that
     /// iterator, through a `&mut` of it too; of a `rev()`, its source's
-    /// `nth`; of a `skip`, a `take` and an `enumerate`, their source's; of a
+    /// `nth`; of a `skip`, a `take`, an `enumerate` and a `fuse`, their source's; of a
     /// `chain`, its first side's, after its second's stepped from its back.
     pub(in crate::lower) fn nth_backs_its_own(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
@@ -472,7 +472,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
-            Some("Skip" | "Take" | "Enumerate" | "Chain") => {
+            Some("Skip" | "Take" | "Enumerate" | "Chain" | "Fuse") => {
                 args.types().next().is_some_and(|source| self.nth_backs_its_own(source))
             }
             _ => false,

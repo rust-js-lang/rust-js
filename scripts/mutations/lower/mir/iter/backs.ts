@@ -379,10 +379,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-back-own-unclosed",
-    breaks: "a `filter` of the crate's iterator with a destructor stepped from its back isn't closed to drop it (#225)",
+    breaks: "a `filter` stepped from its back of the crate's iterator with a destructor, or a `fuse()` of it, isn't closed to drop it (#225)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?;\n                        self.closing(knowing, held, span)?\n",
-    replace: "                        self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?\n",
+    find: "                let it = self.closing(it, held, span)?;\n                let own = arg_tys.get(1)",
+    replace: "                let own = arg_tys.get(1)",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
   {

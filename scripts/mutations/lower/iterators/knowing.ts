@@ -338,4 +338,20 @@ export const mutations: Mutation[] = [
     replace: "            return self.user_iterator_knowing(it, ty, (back, len), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
+  {
+    name: "knowing-fuse-rfold-unasked",
+    breaks: "a compiled `fuse()` stepped from its back isn't given `$fuseRfold`, so `rev()` of it folds the crate's iterator by `next_back` (#224)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                (Some(back), ty::Adt(_, args)) if self.recognition().is_fuse(ty) => {\n",
+    replace: "                (Some(back), ty::Adt(_, args)) if false && self.recognition().is_fuse(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "knowing-fuse-nth-back-unasked",
+    breaks: "a compiled `fuse()` isn't given its compiled `nth_back` (#224)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                Some(back) if self.compiled_step(ty, back, \"nth_back\") => {\n",
+    replace: "                Some(back) if false && self.compiled_step(ty, back, \"nth_back\") => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

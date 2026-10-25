@@ -755,4 +755,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
     snapshots: true,
   },
+  {
+    name: "rfolds-its-own-no-fuse",
+    breaks: "a `fuse()`'s `rfold` isn't said to be its source's, so `rev().last()` of one doesn't fold by the crate's own (#224)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            Some(\"Map\" | \"Filter\" | \"Enumerate\" | \"Fuse\") => {\n                args.types().next().is_some_and(|source| self.rfolds_its_own(source))\n",
+    replace: "            Some(\"Map\" | \"Filter\" | \"Enumerate\") => {\n                args.types().next().is_some_and(|source| self.rfolds_its_own(source))\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

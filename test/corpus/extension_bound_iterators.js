@@ -56,11 +56,7 @@ function outer(iter, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function secondLast(iter, IIterator, IDoubleEndedIterator, IClone) {
-  return $nthBack(
-    $given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator.next_back),
-    1,
-    $some,
-  );
+  return $nthBack($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator), 1, $some);
 }
 
 function main() {
