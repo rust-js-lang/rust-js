@@ -216,3 +216,46 @@ pub fn get_parent_name(fiber: &Fiber) -> Option<String> {
   const child = { tag: 1, name: "Child", return: app };
   expect([lib.getParentName(child), lib.getParentName(app), lib.getParentName(root)]).toEqual(["Root", "Root", undefined]);
 });
+
+// React's getComponentNameFromFiber: `const {tag, type} = fiber;`. Its
+// port reads each cell, `let tag = fiber.tag.get(); let r#type =
+// fiber.r#type.get();`, a `Cell` field that's its property (ADR 0863): one
+// destructuring, each named as the property it reads, as a plain field's
+// are; not one named otherwise, `const returnFiber = node.return;`, nor
+// past a statement between (ADR 0598, amended).
+test("lets side by side of an object's cells, each by its name, are one destructuring", async () => {
+  const dir = fixture("cells-read-together");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Fiber {
+    pub tag: Cell<u32>,
+    pub r#type: Cell<u32>,
+    pub sibling: Cell<u32>,
+    pub r#return: Cell<u32>,
+}
+
+pub fn name(fiber: &Fiber) -> u32 {
+    let tag = fiber.tag.get();
+    let r#type = fiber.r#type.get();
+    tag * 10 + r#type
+}
+
+pub fn walked(node: &Fiber) -> u32 {
+    let sibling = node.sibling.get();
+    let return_fiber = node.r#return.get();
+    node.r#return.set(sibling);
+    let tag = node.tag.get();
+    sibling + return_fiber + tag
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const { tag, type } = fiber;\n  return (((tag * 10) >>> 0) + type) >>> 0;\n");
+  expect(js).toContain("  const sibling = node.sibling;\n  const returnFiber = node.return;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const node = { tag: 1, type: 2, sibling: 3, return: 4 };
+  expect([lib.name(node as never), lib.walked(node as never), node.return]).toEqual([12, 8, 3]);
+});

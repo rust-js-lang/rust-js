@@ -89,9 +89,10 @@ pub fn matched(point: &Labeled) -> f64 {
 }`);
   // \`children\` read after it: the name the program gave stays.
   expect(js).toContain("const lazy = children;");
+  // Two \`let\`s side by side, each named as the part it reads, as React
+  // writes \`const {tag, type} = fiber;\` (ADR 0598, amended).
   expect(js).toContain(`export function sum(p) {
-  const x = p.x;
-  const y = p.y;
+  const { x, y } = p;
   return x + y;
 }`);
   expect(js).toContain("const { x, y } = p;");

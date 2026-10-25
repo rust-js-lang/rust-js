@@ -113,8 +113,7 @@ function main() {
 
   // Of two numbers, given in order; handed to an iterator, given no more
   // than Rust gives it.
-  const atan2 = Math.atan2;
-  const hypot = Math.hypot;
+  const { atan2, hypot } = Math;
   const value = atan2(1, -1);
   const value$1 = atan2(-0, 1);
   console.log(`${$toFixed(value, 12)} ${$toFixed(value$1, 12)} ${$debugF64(hypot(3, 4))}`);

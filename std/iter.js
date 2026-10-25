@@ -827,8 +827,7 @@ export function mapDoubleEndedIterator_rfold(
   dropG,
   dropIItem,
 ) {
-  const iter = map.iter;
-  const f = map.f;
+  const { iter, f } = map;
   const f$1 = $dropping(
     (acc, elt) => g(acc, f(elt)),
     () => {
@@ -925,8 +924,7 @@ export function inspectDoubleEndedIterator_rfold(
   dropFold,
   dropIItem,
 ) {
-  const iter = inspect.iter;
-  const f = inspect.f;
+  const { iter, f } = inspect;
   const f$1 = $dropping(
     (acc, item) => {
       f(item);

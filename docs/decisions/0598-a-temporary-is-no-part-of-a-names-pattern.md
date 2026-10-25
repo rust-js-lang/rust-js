@@ -105,3 +105,26 @@ scope, to a name nothing else there has: case N, nothing that runs changes.
 
 Test: `lowering-shadows`'s "a binding of what take() gives names it", run.
 Mutation `taken-binding-named-old` (`lower/mir/tidy/bindings.ts`).
+
+## Amendment: `let`s side by side, each named as its part, are one destructuring
+
+React's getComponentNameFromFiber writes `const {tag, type} = fiber;`; its
+port reads each `Cell`, `let tag = fiber.tag.get(); let r#type =
+fiber.r#type.get();`, each a field that's its property (ADR 0863), and
+printed two `const`s, as a `let` of a name alone is its own statement
+(above). **A run of `const`s side by side in a body, each named as the
+property it reads of one variable, is one destructuring of it**, `const
+{ tag, type } = fiber;`, as React writes it and as a module's constants
+side by side are (ADR 0031's `read_together`, `prepare.rs`'s
+`read_together_in`), a plain field's and a cell's alike: the JS each is
+is a property read. One named otherwise stays its own statement, `const
+returnFiber = node.return;`, as mapIntoArray's `const payload =
+children._payload;` does, which a pattern would rename. Case N: each
+property is read once, in its order, either way. `sum`'s `let x = p.x;
+let y = p.y;` is `const { x, y } = p;` now; std's `rfold`s' `const { iter,
+f } = map;`, `math_values.rs`'s `const { atan2, hypot } = Math;` and
+`static_mut.rs`'s `const { calls, last } = STATS;` read so. Held by
+`test/lowering-field-cells.test.ts`, "lets side by side of an object's
+cells, each by its name, are one destructuring", run in JS,
+`test/lowering-parts.test.ts`, and the mutations `body-reads-apart` and
+`body-reads-renamed-together` (`prepare.ts`).

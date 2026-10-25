@@ -963,7 +963,10 @@ export function firstTwo(items) {
 - `let ... else` handles the pattern not matching: here, fewer than two
   items.
 - A pattern is one destructuring; a `let` of one field, `let x = p.x;`,
-  is a statement of its own, `const x = p.x;`, however many follow it
+  is a statement of its own, `const x = p.x;`, however many follow it,
+  but where each of a run side by side is named as the field it reads, a
+  `Cell`'s `get()` too: `let tag = fiber.tag.get(); let r#type =
+  fiber.r#type.get();` is `const { tag, type } = fiber;`
   ([ADR 0598](../../decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md), amended).
 
 ## `if` as an expression

@@ -102,8 +102,8 @@ pub fn roots(v: Vec<f64>) -> Vec<f64> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const line of [
-    "const sqrt = Math.sqrt;",
-    "const atan2 = Math.atan2;",
+    // Side by side, each by its property's name: one destructuring (ADR 0598, amended).
+    "const { sqrt, atan2 } = Math;",
     "const round = (n) => $round(n);",
     "const single = (n) => Math.fround(Math.sqrt(n));",
     "const narrow = (n) => Math.clz32(n) - 24;",

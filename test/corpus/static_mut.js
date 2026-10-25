@@ -38,8 +38,7 @@ function main() {
   record(8n);
   const stats = { ...STATS };
   record(1n);
-  const calls = STATS.calls;
-  const last = STATS.last;
+  const { calls, last } = STATS;
   const slot = SLOTS[1];
   console.log(`${statsDebug_fmt(stats)} ${calls} ${last} ${slot}`);
   const slots = SLOTS.slice().slice();
