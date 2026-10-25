@@ -698,7 +698,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md)
 - [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md)
 - [0899 A fn pointer runs what the crate made it of](0899-a-fn-pointer-runs-what-the-crate-made-it-of.md)
-- [0902 A fn pointer runs what the crate made it of](0902-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
