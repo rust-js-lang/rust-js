@@ -495,7 +495,7 @@ pub enum Known {
     /// `Set`, or a class of it, `$KeySet`: an array made here, whose
     /// `forEach` of a callback of the item alone is the set's own,
     /// `set.forEach((x) => ..)`, which steps the same items in the same
-    /// order, the set unchanged while Rust borrows it (ADR 0873).
+    /// order, the set unchanged while Rust borrows it (ADR 0877).
     SetItems,
     /// Never `undefined`, as Rust's types tell, though maybe `null`: a
     /// `Some`'s value, `map`'s, or what's set through a variable holding a

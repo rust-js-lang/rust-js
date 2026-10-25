@@ -1,6 +1,6 @@
 // A set's `iter().for_each(..)` is the set's own `forEach`, `set.forEach((x)
 // => ..)`, each item given once, in the set's order, as Rust's steps it
-// (ADR 0873): of numbers, of text, of tuples a `$KeySet` keeps, of objects
+// (ADR 0877): of numbers, of text, of tuples a `$KeySet` keeps, of objects
 // by themselves, and of one a `RefCell` lends. What each sees is told in
 // an order that doesn't hang on the set's, its sum or its items sorted. A
 // map's values are no set: `Array.from(map.values())`'s, as they were.

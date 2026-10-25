@@ -1,4 +1,4 @@
-# 0873. A set's `for_each` is the set's own `forEach`
+# 0877. A set's `for_each` is the set's own `forEach`
 
 Status: Accepted. Extends [0055](0055-iterator.md)'s eager chains,
 an array's own methods, to a set's.

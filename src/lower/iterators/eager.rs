@@ -250,7 +250,7 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             },
             ("forEach", [f]) => eager_items(chain, true, Some(f)).map(|(items, _)| match set_of(&items, f) {
                 // A set's items each given alone: the set's own `forEach`,
-                // `set.forEach((x) => ..)`, as JS writes it (ADR 0873).
+                // `set.forEach((x) => ..)`, as JS writes it (ADR 0877).
                 Some(set) => Expr::call(Expr::member(set, "forEach"), vec![f.clone()]),
                 None => array_method(items, "forEach", f.clone()),
             }),
@@ -293,7 +293,7 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
 /// items (`Known::SetItems`), where `f`, what each is given to, reads the
 /// item alone: an arrow of one parameter, or none, which a set's `forEach`
 /// gives the item first, as an array's does, then the item again and the
-/// set, where an array's gives its index and itself (ADR 0873).
+/// set, where an array's gives its index and itself (ADR 0877).
 fn set_of(items: &Expr, f: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(_, args) = &items.kind else {
         return None;

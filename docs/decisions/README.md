@@ -660,7 +660,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
-- [0873 A set's `for_each` is the set's own `forEach`](0873-a-sets-for-each-is-its-own.md)
+- [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0874 `instanceof` of a constructor held as a value is `js::instance_of`](0874-instanceof-of-a-constructor-value.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)
 - [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)

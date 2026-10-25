@@ -747,7 +747,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let listed = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
         // A set's own, whose `forEach` steps them as the array's does (ADR
-        // 0873).
+        // 0877).
         Ok(match self.is_set(map_ty) {
             true => Expr {
                 known: js::Known::SetItems,

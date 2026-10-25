@@ -4,7 +4,7 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "set-for-each-listed",
-    breaks: "a `HashSet`'s `iter().for_each(..)` is `Array.from(set).forEach(..)`, not the set's own `set.forEach(..)` (ADR 0873)",
+    breaks: "a `HashSet`'s `iter().for_each(..)` is `Array.from(set).forEach(..)`, not the set's own `set.forEach(..)` (ADR 0877)",
     file: "src/lower/iterators/eager.rs",
     find: "        ([set], js::ExprKind::Arrow(params, _)) if items.known == js::Known::SetItems && params.len() <= 1 => {\n",
     replace: "        ([set], js::ExprKind::Arrow(params, _)) if false && params.len() <= 1 => {\n",
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-for-each-of-any-items",
-    breaks: "a map's `values().for_each(..)` is `map.values().forEach(..)`, an iterator's, as if its values were a set's (ADR 0873)",
+    breaks: "a map's `values().for_each(..)` is `map.values().forEach(..)`, an iterator's, as if its values were a set's (ADR 0877)",
     file: "src/lower/iterators/eager.rs",
     find: "        ([set], js::ExprKind::Arrow(params, _)) if items.known == js::Known::SetItems && params.len() <= 1 => {\n",
     replace: "        ([set], js::ExprKind::Arrow(params, _)) if params.len() <= 1 => {\n",

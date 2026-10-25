@@ -230,7 +230,7 @@ export function middle(items) {
   runtime's `$KeyMap`. A set's `iter().for_each(..)` is the set's own
   `forEach`, `tags.forEach((tag) => ..)`, each item given in the order
   `Array.from(tags)` has them
-  ([ADR 0873](../../decisions/0873-a-sets-for-each-is-its-own.md)).
+  ([ADR 0877](../../decisions/0877-a-sets-for-each-is-its-own.md)).
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order.
 - **A `js::Map` is JS's `Map` of any key**, as TypeScript's `Map<K, V>`
