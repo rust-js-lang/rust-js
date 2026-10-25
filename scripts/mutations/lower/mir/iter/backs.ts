@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                self.as_exact_size(receiver, iter_ty, true, span)\n",
     replace: "                self.as_double_ended(receiver, iter_ty, span)\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
   {
     name: "held-by-ref-lent",

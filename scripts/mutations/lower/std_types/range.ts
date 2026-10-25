@@ -230,6 +230,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "                true => \"of\",\n                false => \"iter\",",
     replace: "                true => \"of\",\n                false => \"of\",",
-    tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
   },
 ];

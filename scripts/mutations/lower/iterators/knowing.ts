@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
     replace: "            return self.knows_its_back(source);\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^filters_held_double_ended.rs$"],
   },
   {
     name: "held-never-knowing",
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.compiled_struct_at(ty, span) && !made_in_place(&it) {\n",
     replace: "        if self.compiled_struct_at(ty, span) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(enumerate_rev_drops).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_in_place_through_adapters.rs$"],
   },
   {
     name: "compiled-rfold-unasked",

@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      return step.done ? step : pair(step, enumerated.count++);\n",
     replace: "      return step.done ? step : pair(step, enumerated.count);\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
     name: "map-ends-unclosed",
