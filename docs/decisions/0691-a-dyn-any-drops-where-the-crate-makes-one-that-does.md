@@ -1,6 +1,6 @@
 # 0691. A `dyn Any` drops where the crate makes one of what drops
 
-Status: Accepted. Amends [0436](0436-every-dyn-keeps-its-drop.md), whose
+Status: Accepted; amended (a library says whether it makes one). Amends [0436](0436-every-dyn-keeps-its-drop.md), whose
 `dyn Any` dropped where any type in the crate had a destructor, and
 [0660](0660-catch-unwind-catches-what-js-throws.md), whose `try` a
 `match` of `catch_unwind` whose `Err` arm sets its binding again is too.
@@ -137,3 +137,35 @@ try {
 - Mutations `any-dyn-drops-unseen`, `any-dyn-generic-unseen`
   (`analysis/closures.rs`), `any-dyn-drops-by-the-crate`
   (`drops/types.rs`), `try-catch-shadow-unbound` (`prepare.rs`).
+
+## Amended (2026-10-25): a library says whether it makes one
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same drops run;
+only how the JS reads changes.
+
+React's `startTransition`, in the react crate, catches what its scope
+threw, `if let Err(error) = catch_unwind(..) { report_global_error(..) }`,
+as JS's `catch (error)` in a crate of its own. In the react crate it was
+`catch (thrown) { const error = $unwound(thrown); try { .. } finally {
+error.impl.$drop?.(error.value); } }`: shared, its library, has `Drop`
+guards (`ReactComponentStackFrame`'s), and a `dyn Any` dropped what it held
+wherever a dependency had any (`foreign.any()`, every library that isn't
+built in), though shared makes none of them a `dyn Any`.
+
+**A library's contract says whether it makes a `dyn Any` of a value that
+drops, or of a type parameter's** (`Library::makes_dropping_anys`, its
+own `ClosureFacts::any_dyns_drop`), and **a crate's `dyn Any` drops what
+it holds where it makes one so, or a library it uses says it does**
+(`Foreign::makes_dropping_anys`). A library's is of what its dependencies
+say too, as its own `dyn Any` drops so; a type parameter's is one that may
+drop, as a library's consumers may have destructors (ADR 0190). A library
+a compiler wrote before is taken to make one, as before; built-in std's
+makes none.
+
+Held by `test/cross-crate-items.test.ts`, "a library's guards make no dyn
+Any of the crate's drop" (no payload's drop, a `catch (thrown)` that reads
+it) and "a library's dyn Any drops what it holds where the library makes
+one of what drops" (a library's `resume_unwind(Box::new(Restore(n)))`,
+dropped where its consumer caught it, run); mutations
+`any-drops-of-any-library` (`analysis.rs`), `library-dropping-anys-unsaid`
+(`lower/library.rs`) and `library-dropping-anys-unread` (`library.rs`).

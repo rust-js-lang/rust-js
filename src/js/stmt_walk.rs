@@ -355,6 +355,33 @@ pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
     a.len() == b.len() && canonical(a) == canonical(b)
 }
 
+/// `stmts` with each declaration and read of the name `from`, a closure's
+/// in them too, of `to`, which none of them mentions: the same program,
+/// where `from` is one `stmts` declare at their top.
+pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
+    let rename = |name: &mut String| {
+        if name == from {
+            *name = to.to_string();
+        }
+    };
+    rename_binders(stmts, &mut |n| rename(n));
+    each_expr_mut(stmts, &mut |e| match &mut e.kind {
+        ExprKind::Var(name) => rename(name),
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+            params.iter_mut().for_each(|p| p.each_name_mut(&mut |n| rename(n)));
+            rename_binders(body, &mut |n| rename(n));
+        }
+        ExprKind::Function(function) => {
+            function
+                .params
+                .iter_mut()
+                .for_each(|p| p.each_name_mut(&mut |n| rename(n)));
+            rename_binders(&mut function.body, &mut |n| rename(n));
+        }
+        _ => {}
+    });
+}
+
 /// The names `stmts` declare, in order, an arrow's in them too.
 fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
     rename_binders(stmts, &mut |name| declared.push(name.clone()));

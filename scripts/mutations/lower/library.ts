@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "            default: false,\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
+  {
+    name: "library-dropping-anys-unsaid",
+    breaks: "a library that resumes an unwind of a guard says it makes no `dyn Any` of what drops, so its consumer's `catch_unwind` never drops the guard it caught",
+    file: "src/lower/library.rs",
+    find: "        makes_dropping_anys: *makes_dropping_anys,\n",
+    replace: "        makes_dropping_anys: false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "where the library makes one of what drops"],
+  },
 ];

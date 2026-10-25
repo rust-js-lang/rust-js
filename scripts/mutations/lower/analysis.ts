@@ -302,4 +302,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
+  {
+    name: "any-drops-of-any-library",
+    breaks: "a crate whose library has destructors but makes no `dyn Any` of one drops what its `catch_unwind` caught, `error.impl.$drop?.(error.value)`, as React's react crate did of shared's guards",
+    file: "src/lower/analysis.rs",
+    find: "(params_may_drop, foreign.makes_dropping_anys())",
+    replace: "(params_may_drop, foreign.any())",
+    tests: ["test/cross-crate-items.test.ts", "-t", "guards make no dyn Any"],
+  },
 ];

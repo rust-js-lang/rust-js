@@ -195,25 +195,36 @@ fn in_place(
         }
         _ => return None,
     };
-    // What the body declares at its top is declared beside `stmt`: no other
-    // name of the function may be it, nor the variable it's given.
-    let mut declared = HashSet::new();
+    // What the body declares at its top is declared beside `stmt`: one that
+    // is another name of the function, or the variable it's given, is
+    // named apart from them, `borrow$1`, as lowering names a body's own
+    // (ADR 0352), and reclaimed where JS's scopes let it be (ADR 0357): a
+    // `Drop`'s body, a function of its own, names its temporaries as the
+    // function it's dropped in does (ADR 0589, amended).
+    let mut declared = Vec::new();
     for s in &body {
         match &s.kind {
-            StmtKind::Const(name, _) | StmtKind::Let(name, _) => _ = declared.insert(name.clone()),
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => declared.push(name.clone()),
             StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(str::to_string)),
-            StmtKind::Function(function) => _ = declared.insert(function.name.clone()),
+            StmtKind::Function(function) => declared.push(function.name.clone()),
             _ => {}
         }
     }
     if !declared.is_empty() {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names = HashSet::new();
+        let mut names = HashSet::from([given.clone()]);
         names_in(&others, &mut names);
         names_in(beside, &mut names);
-        if declared.contains(given) || declared.iter().any(|name| names.contains(name)) {
-            return None;
+        let mut mentioned = names.clone();
+        names_in(&body, &mut mentioned);
+        for from in declared.into_iter().filter(|name| names.contains(name)) {
+            let to = (1..)
+                .map(|k| crate::names::given_apart(&from, k))
+                .find(|to| !mentioned.contains(to))
+                .expect("a name nothing mentions");
+            renamed(&mut body, &from, &to);
+            mentioned.insert(to);
         }
     }
     if !matches!(&arg.kind, ExprKind::Var(v) if v == param) {

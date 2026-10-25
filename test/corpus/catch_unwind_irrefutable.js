@@ -150,37 +150,35 @@ function dropped(early) {
   const outer = "outer";
   let result;
   try {
+    throw new Error("dropped");
+  } catch (thrown) {
+    const x = $unwound(thrown);
+    const guard = "guard";
+    let option;
+    let len;
     try {
-      throw new Error("dropped");
-    } catch (thrown) {
-      const x = $unwound(thrown);
-      const guard = "guard";
-      let option;
-      let len;
-      try {
-        option = x.impl.typeId() === "&str" ? x.value : undefined;
-        len = option != null ? $byteLen(option) : 0;
-      } catch (error) {
-        console.log(`drop ${guard}`);
-        throw error;
-      }
-      try {
-        console.log(`len ${len}`);
-      } catch (error) {
-        console.log(`drop ${guard}`);
-        throw error;
-      }
-      if (early) {
-        result = 0;
-        console.log(`drop ${guard}`);
-        return result;
-      }
-      try {
-        console.log("late");
-        result = len;
-      } finally {
-        console.log(`drop ${guard}`);
-      }
+      option = x.impl.typeId() === "&str" ? x.value : undefined;
+      len = option != null ? $byteLen(option) : 0;
+    } catch (error) {
+      console.log(`drop ${guard}`);
+      throw error;
+    }
+    try {
+      console.log(`len ${len}`);
+    } catch (error) {
+      console.log(`drop ${guard}`);
+      throw error;
+    }
+    if (early) {
+      result = 0;
+      console.log(`drop ${guard}`);
+      return result;
+    }
+    try {
+      console.log("late");
+      result = len;
+    } finally {
+      console.log(`drop ${guard}`);
     }
   } finally {
     console.log(`drop ${outer}`);

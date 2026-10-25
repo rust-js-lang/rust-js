@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "setter-binding-called",
     breaks: "a setter binding, `history.set_scroll_restoration(\"auto\")`, calls the property, `history.scrollRestoration(\"auto\")`, instead of assigning it",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                let value = args.remove(0);\n                out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));\n                Expr::undefined()\n            }",
+    find: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::undefined()\n            }",
     replace: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                Expr::call(Expr::member(this, name), args)\n            }",
     tests: ["test/webapi-bindings.test.ts", "-t", "the history global is the page's history"],
   },

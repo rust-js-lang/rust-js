@@ -300,6 +300,16 @@ impl<'a> Cx<'a> {
         Statement::new_block_statement(commented_end(stmts), self.stmts(stmts), &self.b)
     }
 
+    /// `catch (error) { handler }`, or `catch { handler }` of no binding.
+    fn catch_clause(&self, error: Option<&str>, handler: &[js::Stmt]) -> ArenaBox<'a, CatchClause<'a>> {
+        let b = &self.b;
+        let param = error.map(|error| {
+            let name = BindingPattern::new_binding_identifier(SPAN, self.name(error), b);
+            CatchParameter::new(SPAN, name, None, b)
+        });
+        CatchClause::boxed(SPAN, param, BlockStatement::boxed(SPAN, self.stmts(handler), b), b)
+    }
+
     fn stmt(&self, s: &js::Stmt) -> Statement<'a> {
         let b = &self.b;
         let sp = span(s.span);
@@ -421,19 +431,30 @@ impl<'a> Cx<'a> {
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }
-            StmtKind::Try(body, finally) => Statement::new_try_statement(
-                sp,
-                BlockStatement::boxed(SPAN, self.stmts(body), b),
-                None,
-                Some(BlockStatement::boxed(SPAN, self.stmts(finally), b)),
-                b,
-            ),
+            // A `finally` whose `try` holds a `try` and `catch` alone is one
+            // `try`, `catch` and `finally`, as JS writes it: the same
+            // statement, the `finally` run after the `catch` either way
+            // (ADR 0098, amended).
+            StmtKind::Try(body, finally) => {
+                let (body, clause) = match body.as_slice() {
+                    [
+                        js::Stmt {
+                            kind: StmtKind::TryCatch(inner, error, handler),
+                            ..
+                        },
+                    ] => (inner, Some(self.catch_clause(error.as_deref(), handler))),
+                    _ => (body, None),
+                };
+                Statement::new_try_statement(
+                    sp,
+                    BlockStatement::boxed(SPAN, self.stmts(body), b),
+                    clause,
+                    Some(BlockStatement::boxed(SPAN, self.stmts(finally), b)),
+                    b,
+                )
+            }
             StmtKind::TryCatch(body, error, handler) => {
-                let param = error.as_ref().map(|error| {
-                    let name = BindingPattern::new_binding_identifier(SPAN, self.name(error), b);
-                    CatchParameter::new(SPAN, name, None, b)
-                });
-                let clause = CatchClause::boxed(SPAN, param, BlockStatement::boxed(SPAN, self.stmts(handler), b), b);
+                let clause = self.catch_clause(error.as_deref(), handler);
                 Statement::new_try_statement(
                     sp,
                     BlockStatement::boxed(SPAN, self.stmts(body), b),

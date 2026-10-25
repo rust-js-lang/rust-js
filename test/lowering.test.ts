@@ -328,15 +328,37 @@ pub fn doubles(doubled: u32) {
 pub fn doubles_too() {
     let _twice = Twice(4);
 }
+
+struct Shown(u32);
+
+impl Drop for Shown {
+    fn drop(&mut self) {
+        let bumped = self.0 + 1;
+        println!("bumped {bumped}");
+    }
+}
+
+pub fn shows(n: u32) -> u32 {
+    if n > 1 {
+        let bumped = n * 3;
+        println!("first {bumped}");
+    }
+    let _guard = Shown(n);
+    work(n)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  try {\n    note(n);\n    return work(n);\n  } finally {\n    depth = previous;\n  }\n}");
   expect(js).not.toContain("restoreDrop_drop");
   expect(js).not.toContain("loudDrop_drop");
-  // Where one drop can't be its body, its \`doubled\` the caller's, each
-  // calls the function.
-  expect(js).toContain("twiceDrop_drop(_twice)");
+  // Where a name its body declares is the caller's own, its \`doubled\`,
+  // it's named apart there, as lowering names a closure's (ADR 0608,
+  // amended); and the same where JS's scopes let it be, \`bumped\` beside
+  // an \`if\`'s.
+  expect(js).not.toContain("twiceDrop_drop");
+  expect(js).toContain("  const twice = doubled;\n  const doubled$1 = (twice * 2) >>> 0;\n  console.log(`doubled ${doubled$1}`);\n");
+  expect(js).toContain("  } finally {\n    const bumped = (guard + 1) >>> 0;\n    console.log(`bumped ${bumped}`);\n  }");
   expect(js).toContain("  return () => {\n    const level = depth;\n    depth = n;\n    try {\n      return work(n);\n    } finally {\n      depth = level;\n    }\n  };");
   expect(js).toContain("  let more = true;\n  try {\n    more = work(n) > 3;\n  } finally {\n    console.log(`more ${more}`);\n  }");
   expect(js).toContain('const name = "b";\n  try {\n    console.log(`drop ${name}`);\n  } finally {\n    console.log(`drop ${_a.name}`);\n  }');
@@ -346,6 +368,7 @@ pub fn doubles_too() {
   expect([lib.run(2), lib.current()]).toEqual([4, 0]);
   lib.doubles(3);
   lib.doublesToo();
+  expect(lib.shows(2)).toBe(2);
   expect(() => lib.run(10)).toThrow("too deep");
   expect(lib.current()).toBe(0);
   expect(lib.shown(3)).toBe(3);
@@ -353,6 +376,81 @@ pub fn doubles_too() {
   expect(readFileSync(join(dir, "lock.js"), "utf8")).toContain("export function heldDrop_drop(held)");
   lib.there();
   (await import(join(dir, "lock.js"))).here();
+});
+
+// React's startTransition: `try { .. } catch (error) {
+// reportGlobalError(error); } finally { warnAboutTransitionSubscriptions(..);
+// .. }`. Its port's guard, whose `Drop` does what the `finally` does, is
+// dropped around a `catch_unwind`: the drop's body in the `finally`, its
+// names apart from the function's where they're another block's, and one
+// `try`, `catch` and `finally` (ADRs 0608, 0693, amended).
+test("a guard dropped around catch_unwind is its try's catch and finally", async () => {
+  const dir = fixture("guard-around-catch");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+thread_local! {
+    static CURRENT: Cell<u32> = const { Cell::new(0) };
+}
+
+fn warn(previous: u32, current: u32) {
+    println!("warn {previous} {current}");
+}
+
+struct Finish {
+    previous: u32,
+    current: u32,
+}
+
+impl Drop for Finish {
+    fn drop(&mut self) {
+        warn(self.previous, self.current);
+        let shared = self.current + self.previous;
+        if shared > 3 {
+            println!("shared {shared}");
+        }
+        CURRENT.set(self.previous);
+    }
+}
+
+pub fn start(current: u32, scope: impl FnOnce()) {
+    let previous = CURRENT.get();
+    if previous > 0 {
+        let shared = previous * 2;
+        println!("nested {shared}");
+    }
+    CURRENT.set(current);
+    let _finish = Finish { previous, current };
+    if let Err(error) = catch_unwind(AssertUnwindSafe(scope)) {
+        println!("caught {:?}", error.downcast_ref::<String>());
+    }
+}
+
+pub fn current() -> u32 {
+    CURRENT.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("finishDrop_drop");
+  expect(js).toContain("  try {\n    scope();\n  } catch (thrown) {\n");
+  expect(js).toContain("  } finally {\n    warn(previous, current);\n    const shared = (current + previous) >>> 0;\n");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.start(2, () => {});
+    lib.start(5, () => {
+      lib.start(1, () => {
+        throw new Error("no");
+      });
+    });
+    expect(lib.current()).toBe(0);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["warn 0 2", "nested 10", 'caught Some("no")', "warn 5 1", "shared 6", "warn 0 5", "shared 5"]);
 });
 
 // What isn't a global's binding, a closure or an import, has no global to

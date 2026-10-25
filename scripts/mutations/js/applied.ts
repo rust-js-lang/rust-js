@@ -92,4 +92,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "thread_local_with_in_place"],
     snapshots: true,
   },
+  {
+    name: "applied-clash-refused",
+    breaks: "a `Drop`'s body that declares a name of the function it's dropped in, its `borrow` beside an `if`'s, stays a function each drop calls, `finishDrop_drop(_finish)`",
+    file: "src/js/applied.rs",
+    find: "        for from in declared.into_iter().filter(|name| names.contains(name)) {\n",
+    replace: "        if declared.iter().any(|name| names.contains(name)) {\n            return None;\n        }\n        for from in declared.into_iter().filter(|name| names.contains(name)) {\n",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
+  {
+    name: "applied-clash-kept",
+    breaks: "a `Drop`'s body's name that's the caller's own is kept, `const doubled = ..` where the caller's parameter is `doubled`, which JS refuses",
+    file: "src/js/applied.rs",
+    find: "            renamed(&mut body, &from, &to);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+  },
 ];

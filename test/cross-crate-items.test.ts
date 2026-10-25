@@ -193,3 +193,90 @@ pub fn local() -> (u32, u32, &'static str, u32) {
   const { called } = await import(join(dir, "app", "lib.js"));
   expect(called()).toEqual([7, 7, "19.3.0", 3, "19.3.0"]);
 });
+
+// A library says whether it makes a `dyn Any` of what drops (ADR 0691,
+// amended): React's react crate catches what its scope threw as JS's
+// `catch (error)`, though shared, its library, has `Drop` guards, as none
+// of them is made a `dyn Any`. One that resumes an unwind of a guard drops
+// it where the crate's `catch_unwind` drops what it caught.
+test("a library's dyn Any drops what it holds where the library makes one of what drops", async () => {
+  const dir = fixture("cross-crate-any-drops");
+  const { dep, app } = compiled(dir, `use std::panic::resume_unwind;
+
+pub struct Restore(pub u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        println!("restored {}", self.0);
+    }
+}
+
+pub fn guarded(n: u32) -> u32 {
+    let _restore = Restore(n);
+    n + 1
+}
+
+pub fn resumed(n: u32) {
+    if n > 2 {
+        resume_unwind(Box::new(Restore(n)));
+    }
+}
+`, `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn caught(scope: &dyn Fn()) -> u32 {
+    if let Err(error) = catch_unwind(AssertUnwindSafe(scope)) {
+        println!("caught {}", error.is::<dep::Restore>());
+        return dep::guarded(1);
+    }
+    0
+}
+
+pub fn run(n: u32) -> u32 {
+    caught(&|| dep::resumed(n))
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_anys).toBe(true);
+  expect(dep).toContain("$unwinding(");
+  expect(app).toContain("error.impl.$drop");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const { run } = await import(join(dir, "app", "lib.js"));
+    expect([run(1), run(3)]).toEqual([0, 2]);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["caught true", "restored 1", "restored 3"]);
+});
+
+test("a library's guards make no dyn Any of the crate's drop", async () => {
+  const dir = fixture("cross-crate-no-any-drops");
+  const { app } = compiled(dir, `pub struct Restore(pub u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        println!("restored {}", self.0);
+    }
+}
+
+pub fn guarded(n: u32) -> u32 {
+    let _restore = Restore(n);
+    n + 1
+}
+`, `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn caught(scope: &dyn Fn()) -> u32 {
+    if let Err(error) = catch_unwind(AssertUnwindSafe(scope)) {
+        println!("caught {}", error.is::<dep::Restore>());
+        return dep::guarded(1);
+    }
+    0
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_anys).toBe(false);
+  expect(app).not.toContain("$drop");
+  expect(app).toContain("  } catch (thrown) {\n");
+  const { caught } = await import(join(dir, "app", "lib.js"));
+  expect(caught(() => { throw new Error("no"); })).toBe(2);
+});

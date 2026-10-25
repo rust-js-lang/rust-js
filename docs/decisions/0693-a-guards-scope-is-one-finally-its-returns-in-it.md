@@ -1,6 +1,7 @@
 # 0693. A guard's scope is one `finally`, its `if`s, loops and `return`s in it
 
-Status: Accepted. Amends [0437](0437-a-scopes-drops-are-one-finally.md),
+Status: Accepted; amended (around a `catch`, one `try`, `catch` and
+`finally`). Amends [0437](0437-a-scopes-drops-are-one-finally.md),
 whose run of statements a drop ends was flat: an `if` or a loop in it, or
 a `return` from inside it, ended the run.
 Amended by [0705](0705-a-guards-scope-reads-as-any-body.md): what each
@@ -121,3 +122,23 @@ try {
 - Corpus case `drop_guard_scope_returns` against native Rust.
 - Mutations `scoped-drops-if-uncovered`, `scoped-drops-exit-kept`
   (`mir/tidy/unwinds.rs`).
+
+## Amended (2026-10-25): around a `catch`, one `try`, `catch` and `finally`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same statement.
+
+React's `startTransition` is `try { .. } catch (error) {
+reportGlobalError(error); } finally { .. }`. Its port's guard is dropped
+around a `catch_unwind`, which was `try { try { .. } catch (error) { ..
+} } finally { .. }`: the scope's `try` held the `catch_unwind`'s `try`
+and `catch` alone.
+
+**A `finally` whose `try` holds a `try` and `catch` alone is printed as
+one `try`, `catch` and `finally`** (`to_oxc`'s spelling of
+`StmtKind::Try`): JS runs the `finally` after the `catch` either way, and
+after what either throws or returns. The tree keeps its two statements,
+each of its own meaning to the passes before.
+
+Held by `test/lowering.test.ts`, "a guard dropped around catch_unwind is
+its try's catch and finally", run; the mutation
+`try-catch-finally-nested` (`to_oxc/statements.ts`).

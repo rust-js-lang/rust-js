@@ -29,17 +29,6 @@ function asksShared() {
   return result;
 }
 
-function probeDrop_drop(probe) {
-  const tryBorrowMut = $tryBorrow(probe[0], true);
-  try {
-    console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
-  } finally {
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
-  }
-}
-
 export const peekClone = { clone: peekClone_clone };
 
 function peekClone_clone(peek) {
@@ -141,7 +130,14 @@ function main() {
   const probe = [cell, 0];
   const n = (value$1.value.length + probe[1]) >>> 0;
   try {
-    probeDrop_drop(probe);
+    const tryBorrowMut = $tryBorrow(probe[0], true);
+    try {
+      console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
+    } finally {
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
+      }
+    }
   } finally {
     $unborrow(value$1);
   }

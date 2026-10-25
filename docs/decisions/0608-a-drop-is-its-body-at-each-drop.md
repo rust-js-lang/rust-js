@@ -1,6 +1,7 @@
 # 0608. A `Drop` is its body at each drop
 
-Status: Accepted. Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
+Status: Accepted; amended (a name its body shares with the caller is
+named apart). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: each drop runs the
 same code where it ran.
@@ -75,3 +76,31 @@ taken off only where what's left isn't a word JS keeps,
 `names::kept_word`, the one list of them. Held by
 `test/corpus/drop_guard_kept_words.rs` and the mutation
 `drop-guard-kept-word`.
+
+## Amended (2026-10-25): a name its body shares with the caller is named apart
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same code run
+in the same order.
+
+React's `startTransition` restores what it changed in a `finally`; its
+port's `FinishTransition` guard, whose `Drop` does it, stayed
+`finishTransitionDrop_drop(_finish)`, its guard `const _finish = { ..
+}`: its body's `borrow`, a `RefCell`'s, was the name of the caller's own
+`borrow`, in an `if` before it, and a drop whose body declares a name of
+the function's stayed the function each drop calls.
+
+**What a drop's body declares at its top that's another name of the
+function, or the variable it's given, is named apart there, `borrow$1`**,
+as lowering names a closure's body's apart from its function's (ADR
+0352), and **reclaimed where JS's scopes let it be** (ADR 0357): `borrow`
+in the `finally`, where the caller's is another block's. One its scope
+can't let be, a parameter's `doubled`, stays `doubled$1`, where the drop
+was a function a person never writes. The same is so of a closure called
+where it's made, `js::applied_blocks`'s, which shares the rule
+(`js::applied_call`).
+
+Held by `test/lowering.test.ts`, "a Drop dropped once is its body where
+it's dropped" (`Twice`'s `doubled$1`, `Shown`'s `bumped` reclaimed) and
+"a guard dropped around catch_unwind is its try's catch and finally"; the
+mutations `applied-clash-refused` and `applied-clash-kept`
+(`js/applied.ts`).

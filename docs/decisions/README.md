@@ -489,7 +489,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
 - [0606 A blank line before an item's attributes is before the item](0606-a-blank-line-before-attributes.md)
 - [0607 A variable's field is given a call's value in place](0607-a-field-is-given-a-call-in-place.md)
-- [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md)
+- [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md) *(amended: a name its body shares with the caller is named apart)*
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](0610-a-forwarding-function-is-its-variable.md)
 - [0611 A default export the macro holds is the function's declaration](0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too; and one the naming form names)*
@@ -564,9 +564,9 @@ reordered, and git merges this file by keeping both sides' lines
 - [0688 A `Result`'s JS, and an enum's, has one owner, `js::result` and `js`](0688-a-results-js-has-one-owner.md)
 - [0689 A move's decision is apart from the move: `moved` says where and why, `inlined` applies it](0689-a-moves-decision-is-apart-from-the-move.md) *(amended: two arms as one assignment, decided apart too, `one_assignment`; extended by 0750: past a method, and into a block)*
 - [0690 An iterator given as it is folds by its own `fold`, and drops once](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md) *(amended by 0711: `try_fold` passed on as its `fold` is)*
-- [0691 A `dyn Any` drops where the crate makes one of what drops](0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)
+- [0691 A `dyn Any` drops where the crate makes one of what drops](0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md) *(amended: a library says whether it makes one)*
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it; 0710: every payload's `&JsError` is what was thrown)*
-- [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables)*
+- [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables; amended: around a `catch`, one `try`, `catch` and `finally`)*
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](0694-four-refusals-of-drops-and-displays-lifted.md)
 - [0695 `new` of a function value is JS's `new`, `js::new`](0695-new-of-a-function-value-is-jss-new.md)
 - [0696 A constructor is a `fn` item, declared where it's written](0696-a-constructor-is-a-fn-item-where-its-written.md)

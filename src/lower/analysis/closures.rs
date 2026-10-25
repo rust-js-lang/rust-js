@@ -157,7 +157,8 @@ pub(super) fn fn_dyns_drop<'tcx>(
 
 /// Whether any of `all_bodies` makes a value a `dyn Any` that `drops` says
 /// has something to drop, or a type parameter's, where `params_may_drop`;
-/// or, where `foreign_drops`, a library may have made one (ADR 0691).
+/// or, where `foreign_drops`, a library made one, as its contract says
+/// (ADR 0691, amended).
 /// Only the crate makes one: std's of its own is a panic's message.
 pub(super) fn any_dyns_drop<'tcx>(
     tcx: TyCtxt<'tcx>,

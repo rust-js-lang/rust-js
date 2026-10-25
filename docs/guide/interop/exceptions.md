@@ -360,7 +360,10 @@ aborts.
 
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
 whose `finally` drops what it holds however it's left: a guard whose
-`Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)).
+`Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)),
+one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, and
+the drop's body is in it, what it declares named apart from the
+function's where JS's scopes need it ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md)).
 The scope reads as it would without the guard, and the guard's fields
 are the variables it was made of, `name` above, where nothing sets them
 once it's made ([ADR 0705](../../decisions/0705-a-guards-scope-reads-as-any-body.md)).
@@ -735,8 +738,8 @@ export function described(value) {
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
   message or what JS threw, unless the crate makes a `dyn Any` of a value
-  with a destructor, so a crate with destructors catches as JS's `try`
-  too ([ADR 0691](../../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)). rustc checks `UnwindSafe`;
+  with a destructor, or a library it uses says it does, so a crate with
+  destructors catches as JS's `try` too ([ADR 0691](../../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)). rustc checks `UnwindSafe`;
   `AssertUnwindSafe(|| ..)` is the closure it holds.
 - **A future's panic is its promise's**: `catch_unwind` of a closure that
   makes one is `Ok` of it, and the panic is thrown where it's awaited.

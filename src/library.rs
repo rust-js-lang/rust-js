@@ -124,6 +124,12 @@ pub struct Library {
     /// only then.
     #[serde(default)]
     pub writers_take_options: bool,
+    /// Whether it makes a `dyn Any` of a value that drops, or of a type
+    /// parameter's (ADR 0691, amended): a consumer's `dyn Any`, what a
+    /// `catch_unwind` caught among it, may then hold one. A library a
+    /// compiler wrote before is taken to.
+    #[serde(default = "made_before")]
+    pub makes_dropping_anys: bool,
     /// The bindings its modules hold (ADR 0633). A library a compiler
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -134,6 +140,12 @@ pub struct Library {
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
+}
+
+/// What a library a compiler wrote before a fact was in its contract is
+/// taken to have done, where not doing it would be wrong.
+fn made_before() -> bool {
+    true
 }
 
 /// A type an `Rc` points at, as a library's contract names it (ADR 0852):
@@ -188,6 +200,8 @@ pub struct Exports {
     pub builtin: bool,
     pub keeps_capacity: bool,
     pub writers_take_options: bool,
+    /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
+    pub makes_dropping_anys: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
     pub items: HashMap<String, Imported>,
@@ -243,6 +257,7 @@ impl Dependencies {
             let mut exports = Exports {
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
+                makes_dropping_anys: library.makes_dropping_anys,
                 writers_take_options: library.writers_take_options,
                 counted_rcs: library.counted_rcs,
                 impls: library.impls.into_iter().collect(),
@@ -326,6 +341,7 @@ impl Dependencies {
             crate_hash: library.crate_hash,
             builtin: true,
             keeps_capacity: library.keeps_capacity,
+            makes_dropping_anys: library.makes_dropping_anys,
             writers_take_options: library.writers_take_options,
             counted_rcs: library.counted_rcs,
             impls: library.impls.into_iter().collect(),

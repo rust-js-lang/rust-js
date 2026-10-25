@@ -29,12 +29,10 @@ function main() {
     return n.value % 2 === 0;
   });
   const counters = [{ n: 1 }, { n: 2 }];
-  keepSome(counters, (x0) =>
-    ((c) => {
-      c.n = (c.n + 10) >>> 0;
-      return c.n > 11;
-    })(x0.value),
-  );
+  keepSome(counters, (x0) => {
+    x0.value.n = (x0.value.n + 10) >>> 0;
+    return x0.value.n > 11;
+  });
   console.log(
     `[${numbers.join(", ")}] [${counters.map((item) => counterDebug_fmt(item)).join(", ")}]`,
   );

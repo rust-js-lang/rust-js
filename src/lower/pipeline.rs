@@ -1061,6 +1061,7 @@ pub fn lower_crate<'tcx>(
                     stepped: &stepped,
                     keeps_capacity,
                     writers_take_options,
+                    makes_dropping_anys: closure_facts.any_dyns_drop,
                     counted: &counted,
                 },
                 (&trait_impls, &held.modules),
