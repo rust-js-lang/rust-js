@@ -488,7 +488,12 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     if let Some((linked, sources)) = callbacks.lowered.take()
         && exit == ExitCode::SUCCESS
     {
-        plan.bound = callbacks.local_js.read();
+        // Of the program's own: not a dependency's artifact, which Cargo
+        // tracks by the dependency itself, and a deleted one of which is the
+        // tooling's to refuse (#300).
+        plan.bound = (callbacks.local_js.read().into_iter())
+            .filter(|file| !callbacks.dependencies.inputs.contains(file))
+            .collect();
         // What Cargo is told of the build, published with it (ADR 0101).
         plan.extra = match &recorded {
             Some((Some(manifest), Some((_, metadata)))) => cargo::record(manifest, &dependency_paths, metadata)?,

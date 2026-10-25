@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bound-of-dependencies-too",
+    breaks: "a dependency's JS, which the crate's JS imports, is told Cargo as the crate's own source, so a deleted one rebuilds the crate, which fails reading it, where the tooling says `cargo clean -p` (#300)",
+    file: "src/main.rs",
+    find: "            .filter(|file| !callbacks.dependencies.inputs.contains(file))\n",
+    replace: "",
+    tests: ["test/cargo-workspace.test.ts", "-t", "a Cargo build of rust-js's crates is done when their JS is, and not before"],
+  },
+  {
     name: "cargo-record-outside-plan",
     breaks: "what Cargo is told of a crate is written on its own, and a build that fails writing it has changed the JS",
     file: "src/main.rs",
@@ -94,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "bound-js-unread",
     breaks: "the JS files of its own a crate's bindings import, which decide what its modules' loads read by name, aren't what the build read: Cargo doesn't rebuild when one changes (ADR 0031, amended)",
     file: "src/main.rs",
-    find: "        plan.bound = callbacks.local_js.read();\n",
-    replace: "",
+    find: "        plan.bound = (callbacks.local_js.read().into_iter())\n",
+    replace: "        plan.bound = (Vec::<PathBuf>::new().into_iter())\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
 ];

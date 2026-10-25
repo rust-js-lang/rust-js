@@ -384,7 +384,7 @@ impl Dependencies {
             );
             for artifact in manifest.artifacts.iter().chain(&library.inputs) {
                 result.inputs.push(artifact.file.clone());
-                let bytes = std::fs::read(&artifact.file).map_err(|e| e.to_string())?;
+                let bytes = std::fs::read(&artifact.file).map_err(|e| format!("{}: {e}", artifact.file.display()))?;
                 if crate::manifest::fingerprint(&bytes) != artifact.hash {
                     return Err(format!("dependency artifact changed: {}", artifact.file.display()));
                 }

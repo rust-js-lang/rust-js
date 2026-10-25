@@ -376,3 +376,16 @@ Mutations `local-consts-none`, `local-const-read-outside`
 (`lower/analysis/naming.ts`), `local-const-after-its-read`,
 `local-const-after-a-call` (`lower/mir/closures.ts`),
 `local-const-hole-unfilled` (`lower/pipeline/holes.ts`).
+
+## Amendment: a dependency's JS isn't the crate's own source (#300)
+
+The files `LocalJs` reads, `bound`, are what the build read, and Cargo's
+dep-info lists them. Following imports, they took in a dependency's
+published `lib.js` too. Deleting that file made Cargo rebuild the
+crate, which then failed reading it with a bare "No such file or
+directory", where the tooling refuses a deleted library's JS with
+`cargo clean -p <package>`. `bound` now leaves out the dependencies' own
+artifacts, which Cargo tracks through the dependency itself, and that
+read's error names the file. `cargo-workspace`'s "a Cargo build of
+rust-js's crates is done when their JS is" holds it again, and
+`bound-of-dependencies-too` is caught.
