@@ -81,6 +81,13 @@ function $knowing(it, back, len, rfold, nthBack) {
 // `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
 // `rfold` and `nth_back` where the crate's impl writes them (#224).
 function $given(value, iterator, boxed = false, back, len) {
+  // A JS iterator stepped as it is, its dictionary JS's own: itself, whose
+  // own `last`, `nth` and `fold` are std's for its kind, a chain's sides'
+  // (#276).
+  if (iterator.next === $next && Object.keys(iterator).length === 1 && len === undefined
+    && (back === undefined || (back.next_back === $nextBack && Object.keys(back).length === 1))) {
+    return value;
+  }
   return $iterator(
     value,
     iterator.next,

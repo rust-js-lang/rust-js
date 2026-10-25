@@ -326,3 +326,29 @@ knows is `held_hint_known`'s answer, of `size_hint()` and `len()` both:
 of a `$iter`, a range, the crate's own iterator, a generic one's
 dictionary, an explicit adapter, or another such struct; a struct of a
 lazy std adapter is refused. Held by `test/corpus/held_hint_refused.rs`.
+
+## Amendment: a JS iterator given as it is is itself (#276)
+
+A compiled std struct's source can be a JS iterator, such as a chain, a
+`$rev` or a `Vec`'s `$iter`, whose dictionary is JS's own stepping,
+`{ next: $next }`. `$given` wrapped that source in a new `$iterator`
+that stepped `next`. The source's own `last`, `nth`, `nthBack` and chain
+`sides`, std's for its kind, were hidden behind the wrapper. So
+`chain(..).peekable().last()` dropped each item as it passed it, where
+std's `Chain::last` takes each side's `last` and drops the first side's
+after. And `rev().peekable().nth(3)` dropped a `Vec`'s items back to
+front, where its `nth_back` drops what it passes as one slice (fuzz
+seeds 51951, 50899, 51010 and 46168). Following ADR 0262's "results
+change" case, Rust's order is kept: `$given` of a value whose
+dictionaries are only JS's stepping, with no length, gives the value
+itself. A dictionary that names any method of the crate's still gets
+the wrapper that calls it.
+
+The `peekable_source_own_steps` corpus case checks a chain's `last`
+and a `Rev`'s `nth`, through a `Peekable` and through a `Fuse` then a
+`Peekable`, against native Rust. The mutation `given-js-iterator-wrapped`
+is caught.
+
+Readability: the case's `Vec`s of values with a destructor add `$iter`
+(77.6 to 77.8 in 10,000 lines) and renamed temporaries (715.6 to 716.5),
+as each such case does. The output reads no worse.

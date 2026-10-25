@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-js-iterator-wrapped",
+    breaks: "a compiled `Peekable`'s source that is a JS iterator is stepped through a wrapper, so `chain(..).peekable().last()` drops each item as it passes it, not by each side's `last` (#276)",
+    file: "src/runtime/iterator.js",
+    find: "    return value;\n  }\n  return $iterator(",
+    replace: "  }\n  return $iterator(",
+    tests: ["test/corpus.test.ts", "-t", "peekable_source_own_steps"],
+  },
+  {
     name: "iterator-of-forgotten",
     breaks: "a JS iterator of the crate's iterator doesn't say what it's of, which its drop drops",
     file: "src/runtime/iterator.js",
