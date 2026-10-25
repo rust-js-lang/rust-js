@@ -97,11 +97,7 @@ function main() {
   let r = ["r1"];
   const captured = r;
   const take = () => {
-    try {
-      console.log(`drop ${captured[0]}`);
-    } catch (error) {
-      throw error;
-    }
+    console.log(`drop ${captured[0]}`);
   };
   r = ["r2"];
 
@@ -145,11 +141,7 @@ function main() {
   try {
     keep(
       () => {
-        try {
-          console.log(`drop ${f}`);
-        } catch (error) {
-          throw error;
-        }
+        console.log(`drop ${f}`);
         return 4;
       },
       (value) => {
@@ -191,11 +183,7 @@ function main() {
     const h = i === 0 ? "h0" : "h1";
     maybe$live = true;
     const maybe = () => {
-      try {
-        console.log(`drop ${h}`);
-      } catch (error) {
-        throw error;
-      }
+      console.log(`drop ${h}`);
     };
     if (i === 1) {
       maybe$live = false;

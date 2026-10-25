@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(crate::lower::recognition::Std::Forget)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
+  {
+    name: "boxed-for-js-refused",
+    breaks: "`Box::new` of a closure handed to JS, which carries no drop, is refused as a function kept by what it's given to (ADR 0871)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id),\n",
+    replace: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+  },
 ];

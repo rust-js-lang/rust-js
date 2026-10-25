@@ -481,7 +481,9 @@ fields, `const previous = depth; try { .. } finally { depth = previous; }`
 ([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
 
 Differences: a value with a destructor that JS holds, given out by an
-exported generic function, is never dropped; a `drop` that panics while
+exported generic function, is never dropped, nor is what a function
+handed to a binding holds, even where JS gives it back
+([0871](../decisions/0871-a-function-handed-to-js-carries-no-drop.md)); a `drop` that panics while
 another panic unwinds replaces that panic, where Rust aborts, and
 `catch_unwind` catches the replacement ([0660](../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 
@@ -761,7 +763,9 @@ React and JSX are [their own pages](README.md#react).
     JS throws; a panic's message downcasts as a `&str` and a `String`, and
     every payload, a typed one's too, as the `&JsError` thrown; a
     `drop` panicking during a panic replaces it.
-12. A value with a destructor that JS holds is never dropped.
+12. A value with a destructor that JS holds is never dropped, a function
+    handed to a binding too, even where JS gives it back to Rust (ADR
+    0871).
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
 14. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.
 15. `zip` makes one more of its first side's items where its second ends

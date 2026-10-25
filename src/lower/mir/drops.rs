@@ -707,8 +707,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `body`, run so that a panic in it drops `cleanup` as it unwinds: a
     /// `try` whose `catch` drops it and throws the panic on. What `body`
-    /// declares, it assigns, declared before.
+    /// declares, it assigns, declared before. A cleanup that runs nothing,
+    /// of what's all moved, an `FnOnce`'s own self given away, needs none.
     pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {
+        if cleanup.is_empty() {
+            out.extend(body);
+            return;
+        }
         // What can't throw needs no `catch`: a value made of values, and
         // what's made so before what can, a closure the call is given.
         let first = body.iter().take_while(|s| s.only_makes_values()).count();

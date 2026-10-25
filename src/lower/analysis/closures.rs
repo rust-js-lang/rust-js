@@ -3,10 +3,11 @@
 //! 0521), and which are cloned apart (ADR 0522); and, as a `dyn Fn`'s, of
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
-use crate::lower::Body;
-use crate::lower::recognition::{any_trait, given_back, is_fn_dyn, rc_pointee};
+use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
+use crate::lower::{Body, bindings};
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
-use rustc_middle::thir::{ExprKind, Thir};
+use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use std::collections::HashSet;
@@ -23,6 +24,9 @@ pub struct ClosureFacts {
     pub any_dyns_drop: bool,
     /// The closures made a `dyn Fn`, each carrying its drop.
     made_fn_dyns: HashSet<DefId>,
+    /// The closures made a `dyn Fn` only to hand it to JS, which Rust never
+    /// drops, so none carries its drop (ADR 0871).
+    handed_fn_dyns: HashSet<DefId>,
     /// The closures cloned, `Clone::clone`'s or a `T: Clone`'s.
     cloned: HashSet<DefId>,
     /// Of them, those a clone of which isn't the closure itself, each made
@@ -46,9 +50,13 @@ impl ClosureFacts {
             ty::Closure(id, _) => Some(*id),
             _ => None,
         };
-        let made_fn_dyns = (all_bodies.iter())
+        let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-            .filter_map(closure_of)
+            .partition(|&(_, handed)| handed);
+        let made_fn_dyns: HashSet<DefId> = made.into_iter().filter_map(|(ty, _)| closure_of(ty)).collect();
+        let handed_fn_dyns = (handed.into_iter())
+            .filter_map(|(ty, _)| closure_of(ty))
+            .filter(|id| !made_fn_dyns.contains(id))
             .collect();
         let cloned = (cloned.iter())
             .flat_map(|ty| {
@@ -62,6 +70,7 @@ impl ClosureFacts {
             fn_dyns_drop: library,
             any_dyns_drop: false,
             made_fn_dyns,
+            handed_fn_dyns,
             cloned,
             cloned_apart: HashSet::new(),
             library,
@@ -80,6 +89,13 @@ impl ClosureFacts {
     /// each dropped where its maker's variables it took aren't seen.
     pub(in crate::lower) fn carries_its_drop(&self, tcx: TyCtxt<'_>, closure: DefId) -> bool {
         self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)
+    }
+
+    /// Whether the closure `closure` is made a `dyn Fn` only to hand it to
+    /// JS, which Rust then never drops (ADR 0871): it carries no drop, nor
+    /// is given one where it's made a `dyn Fn`.
+    pub(in crate::lower) fn handed_to_js(&self, closure: DefId) -> bool {
+        self.handed_fn_dyns.contains(&closure)
     }
 
     /// Whether the closure `closure` is cloned apart: made by a function of
@@ -152,7 +168,7 @@ pub(super) fn fn_dyns_drop<'tcx>(
     };
     (all_bodies.iter())
         .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-        .any(|from| drops(from) || from.has_non_region_param() && closure_drops())
+        .any(|(from, handed)| !handed && (drops(from) || from.has_non_region_param() && closure_drops()))
 }
 
 /// Whether any of `all_bodies` makes a value a `dyn Any` that `drops` says
@@ -173,13 +189,128 @@ pub(super) fn any_dyns_drop<'tcx>(
     foreign_drops
         || (all_bodies.iter())
             .flat_map(|body| dyn_sources(tcx, &body.thir, of_any))
+            .map(|(_, from)| from)
             .any(|from| drops(from) || params_may_drop && from.has_non_region_param())
 }
 
 /// The functions `thir` makes `dyn Fn`s of, `Box<F>` to `Box<dyn Fn()>`'s
-/// `F`.
-fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'a {
+/// `F`, each with whether it's a closure made one only to hand it to JS.
+fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = (Ty<'tcx>, bool)> + 'a {
+    let handed = handed_to_js(tcx, thir);
     dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates))
+        .map(move |(at, from)| (from, matches!(from.kind(), ty::Closure(..)) && handed.contains(&at)))
+}
+
+/// The coercions to a `dyn Fn` in `thir` handed straight to JS (ADR 0871):
+/// of a closure boxed where it's made, a binding's argument, or the `Some`
+/// of one, that nothing evaluated after it, before the call, can unwind
+/// past, of a binding that gives back no function, which might be the one
+/// it's given, as `widen`'s `this` does. JS keeps what it's given, and has
+/// no drop: Rust never drops it again.
+fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> HashSet<ExprId> {
+    let through = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+            e = inner;
+        }
+        e
+    };
+    let coercion = |arg: ExprId| {
+        let mut e = through(arg);
+        if let ExprKind::Adt(adt) = &thir[e].kind
+            && tcx.is_lang_item(adt.adt_def.did(), LangItem::Option)
+            && let [field] = &adt.fields[..]
+            && matches!(adt.base, AdtExprBase::None)
+        {
+            e = through(field.expr);
+        }
+        // Of a closure boxed where it's made, `Box::new(move || ..)`: nothing
+        // else holds it before.
+        let ExprKind::PointerCoercion {
+            cast: PointerCoercion::Unsize,
+            source,
+            ..
+        } = thir[e].kind
+        else {
+            return None;
+        };
+        let ExprKind::Call { fun, ref args, .. } = thir[through(source)].kind else {
+            return None;
+        };
+        let boxed = matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if pure_std(tcx, id) == Some(PureStd::BoxNew));
+        (boxed && matches!(&args[..], [made] if matches!(thir[through(*made)].kind, ExprKind::Closure(_)))).then_some(e)
+    };
+    let mut handed = HashSet::new();
+    for expr in thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        let ty::FnDef(id, _) = *thir[fun].ty.kind() else {
+            continue;
+        };
+        if !bindings::is_binding(tcx, id) || gives_back_a_function(tcx, id) {
+            continue;
+        }
+        for (i, &arg) in args.iter().enumerate() {
+            if let Some(e) = coercion(arg)
+                && args[i + 1..].iter().all(|&after| cannot_unwind(thir, after))
+            {
+                handed.insert(e);
+            }
+        }
+    }
+    handed
+}
+
+/// Whether the binding `id` may give a function back: what it returns, or
+/// writes through a `&mut` it's given, may hold one, a `dyn Fn`, a closure,
+/// an `impl Fn` or a type parameter's, by any pointer.
+fn gives_back_a_function(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let holds = |given: Ty<'_>| {
+        given
+            .walk()
+            .filter_map(|part| part.as_type())
+            .any(|ty| match ty.kind() {
+                ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
+                ty::Closure(..) | ty::FnPtr(..) | ty::Param(_) => true,
+                ty::Alias(_, alias) => matches!(alias.kind, ty::Opaque { .. }),
+                _ => false,
+            })
+    };
+    let sig = tcx.fn_sig(id).skip_binder().skip_binder();
+    holds(sig.output())
+        || (sig.inputs().iter()).any(|input| {
+            input
+                .walk()
+                .filter_map(|part| part.as_type())
+                .any(|ty| matches!(ty.kind(), ty::Ref(_, written, ty::Mutability::Mut) if holds(*written)))
+        })
+}
+
+/// Whether evaluating `e` can't unwind: a literal, a constant, a variable
+/// or a place of one, borrowed, and what's made of those alone.
+fn cannot_unwind(thir: &Thir<'_>, e: ExprId) -> bool {
+    match &thir[e].kind {
+        ExprKind::Scope { value: inner, .. }
+        | ExprKind::Use { source: inner }
+        | ExprKind::Field { lhs: inner, .. }
+        | ExprKind::Borrow { arg: inner, .. }
+        | ExprKind::PointerCoercion { source: inner, .. } => cannot_unwind(thir, *inner),
+        ExprKind::Literal { .. }
+        | ExprKind::NonHirLiteral { .. }
+        | ExprKind::ZstLiteral { .. }
+        | ExprKind::NamedConst { .. }
+        | ExprKind::ConstParam { .. }
+        | ExprKind::StaticRef { .. }
+        | ExprKind::VarRef { .. }
+        | ExprKind::UpvarRef { .. } => true,
+        ExprKind::Adt(adt) => {
+            matches!(adt.base, AdtExprBase::None) && adt.fields.iter().all(|field| cannot_unwind(thir, field.expr))
+        }
+        ExprKind::Tuple { fields } | ExprKind::Array { fields } => {
+            fields.iter().all(|&field| cannot_unwind(thir, field))
+        }
+        _ => false,
+    }
 }
 
 /// The values `thir` makes `dyn`s of that `of` says are its, `Box<T>` to
@@ -188,8 +319,8 @@ fn dyn_sources<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
     of: impl Fn(&'tcx ty::List<ty::PolyExistentialPredicate<'tcx>>) -> bool + 'a,
-) -> impl Iterator<Item = Ty<'tcx>> + 'a {
-    thir.exprs.iter().filter_map(move |expr| {
+) -> impl Iterator<Item = (ExprId, Ty<'tcx>)> + 'a {
+    thir.exprs.iter_enumerated().filter_map(move |(at, expr)| {
         let ExprKind::PointerCoercion {
             cast: PointerCoercion::Unsize,
             source,
@@ -203,7 +334,7 @@ fn dyn_sources<'a, 'tcx>(
             return None;
         };
         of(predicates).then_some(())?;
-        pointee(tcx, thir[source].ty)
+        Some((at, pointee(tcx, thir[source].ty)?))
     })
 }
 

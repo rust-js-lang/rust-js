@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "returned-closure-drop-refused",
     breaks: "a closure made elsewhere that carries its drop is refused where it's dropped",
     file: "src/lower/drops/parts.rs",
-    find: "            ty::Closure(def_id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) => {\n",
-    replace: "            ty::Closure(def_id, _) if false && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) => {\n",
+    find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    replace: "                if false && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
@@ -161,5 +161,13 @@ export const mutations: Mutation[] = [
     find: "                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {\n",
     replace: "                let value = match self.cell_dyn_trait(inner).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
+  },
+  {
+    name: "fn-once-disposes-itself",
+    breaks: "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0871)",
+    file: "src/lower/drops/parts.rs",
+    find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    replace: "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
 ];

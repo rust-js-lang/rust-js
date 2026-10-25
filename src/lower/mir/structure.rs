@@ -471,10 +471,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, &mut out)?;
                     self.settle_reads(state, block, &mut out);
                     let cleanup = self.mir_unwind(state, *unwind)?;
-                    match cleanup.is_empty() {
-                        true => out.extend(dropped),
-                        false => self.unwinding(dropped, cleanup, self.js_span(span), &mut out),
-                    }
+                    self.unwinding(dropped, cleanup, self.js_span(span), &mut out);
                 }
                 out.extend(self.mir_branch(state, block, *target)?);
             }

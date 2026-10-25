@@ -449,42 +449,6 @@ function main() {
           }
           throw error;
         }
-        try {
-        } catch (error) {
-          iter.return();
-          if (fused$live) {
-            if (fused.iter != null) {
-              for (const item of fused.iter) {
-                loudDrop_drop(item);
-              }
-            }
-          }
-          if (stepped$live) {
-            stepped.return();
-          }
-          if (taking$live) {
-            taking.return();
-          }
-          if (skipping$live) {
-            skipping.return();
-          }
-          if (numbered$live) {
-            numbered.return();
-          }
-          if (kept$live) {
-            kept.return();
-          }
-          if (chained$live) {
-            chained.return();
-          }
-          if (pair$live) {
-            if (pair != null) {
-              loudDrop_drop(pair[0]);
-              loudDrop_drop(pair[1]);
-            }
-          }
-          throw error;
-        }
         continue;
       }
       try {
@@ -562,42 +526,6 @@ function main() {
         }
         throw error;
       }
-    }
-    try {
-    } catch (error) {
-      iter.return();
-      if (fused$live) {
-        if (fused.iter != null) {
-          for (const item of fused.iter) {
-            loudDrop_drop(item);
-          }
-        }
-      }
-      if (stepped$live) {
-        stepped.return();
-      }
-      if (taking$live) {
-        taking.return();
-      }
-      if (skipping$live) {
-        skipping.return();
-      }
-      if (numbered$live) {
-        numbered.return();
-      }
-      if (kept$live) {
-        kept.return();
-      }
-      if (chained$live) {
-        chained.return();
-      }
-      if (pair$live) {
-        if (pair != null) {
-          loudDrop_drop(pair[0]);
-          loudDrop_drop(pair[1]);
-        }
-      }
-      throw error;
     }
     try {
       iter.return();

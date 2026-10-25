@@ -1411,3 +1411,51 @@ pub fn last() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.sizes(), lib.nones(), lib.last()]).toEqual([[1, 8, 8], [3, undefined], 7]);
 });
+
+// ADR 0871: a closure boxed as it's handed to a binding is JS's, and carries
+// no drop. The guide's twelfth difference: where JS gives it back, through
+// another binding, and Rust drops it, what it holds isn't dropped, where
+// native Rust, its binding giving back the box it was handed, would.
+test("a closure handed to a binding drops nothing of what it holds, given back", async () => {
+  const dir = fixture("handed-to-js");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+thread_local! {
+    static DROPS: Cell<u32> = const { Cell::new(0) };
+}
+pub struct Noisy(u32);
+impl Noisy {
+    fn id(&self) -> u32 {
+        self.0
+    }
+}
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        DROPS.set(DROPS.get() + 1);
+    }
+}
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.hold")]
+fn hold(task: Box<dyn Fn() -> u32>) {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.take")]
+fn take() -> Box<dyn Fn() -> u32> {
+    unreachable!()
+}
+pub fn handed() -> (u32, u32) {
+    let noisy = Noisy(7);
+    hold(Box::new(move || noisy.id()));
+    let task = take();
+    let id = task();
+    drop(task);
+    (id, DROPS.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  globalThis.hold(() => Noisy.id(noisy));\n");
+  expect(js).not.toContain("$dropping");
+  let held: unknown;
+  Object.assign(globalThis, { hold: (task: unknown) => (held = task), take: () => held });
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.handed()).toEqual([7, 0]);
+});

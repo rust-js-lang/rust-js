@@ -148,4 +148,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
     snapshots: true,
   },
+  {
+    name: "empty-cleanup-caught",
+    breaks: "a call whose unwinding drops nothing, an `FnOnce`'s self given away, is `try { .. } catch (error) { throw error; }` (ADR 0871)",
+    file: "src/lower/mir/drops.rs",
+    find: "        if cleanup.is_empty() {\n            out.extend(body);\n            return;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+    snapshots: true,
+  },
 ];

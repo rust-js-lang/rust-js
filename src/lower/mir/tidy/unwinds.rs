@@ -56,6 +56,33 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
     scoped
 }
 
+/// `stmts`, each `try` a scope's `finally` didn't take whose body can't
+/// throw, `try { result = $catchUnwind(f); } catch (error) { drop(x); throw
+/// error; }`, its body: `catch_unwind` catches whatever unwinds through it,
+/// so its call never unwinds to the drops of what's held around it (ADR
+/// 0871). Whether it found any.
+pub(super) fn unthrown_catches(stmts: &mut Vec<Stmt>) -> bool {
+    let unthrown = |stmt: &Stmt| {
+        matches!(&stmt.kind, StmtKind::TryCatch(body, Some(error), handler)
+            if body.iter().all(Stmt::cannot_throw) && handler.last().is_some_and(|last| rethrows(std::slice::from_ref(last), error)))
+    };
+    if !stmts.iter().any(unthrown) {
+        return false;
+    }
+    let mut out = Vec::with_capacity(stmts.len());
+    for stmt in std::mem::take(stmts) {
+        if unthrown(&stmt)
+            && let StmtKind::TryCatch(body, ..) = stmt.kind
+        {
+            out.extend(body);
+        } else {
+            out.push(stmt);
+        }
+    }
+    *stmts = out;
+    true
+}
+
 /// Where `stmt` is written: its own span's start, or of one placed nowhere,
 /// a temporary's `result = f()`, its value's, and a `try` a call's drops
 /// make, its first statement's.

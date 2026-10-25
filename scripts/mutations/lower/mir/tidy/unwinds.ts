@@ -112,4 +112,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
     snapshots: true,
   },
+  {
+    name: "unthrown-catch-kept",
+    breaks: "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0871)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "    if !stmts.iter().any(unthrown) {\n",
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "thrown-catch-dropped",
+    breaks: "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0871)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "            if body.iter().all(Stmt::cannot_throw) && handler",
+    replace: "            if handler",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+  },
 ];

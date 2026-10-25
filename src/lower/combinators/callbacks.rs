@@ -26,10 +26,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Kept by what drops it as it drops itself, `Box::new(f)`'s, of
             // one whose drop runs wherever it's dropped: a type parameter's,
-            // given, a `dyn`'s, or one that carries it (ADRs 0484, 0521).
+            // given, a `dyn`'s, or one that carries it (ADRs 0484, 0521); or
+            // of one boxed to hand to JS, which Rust never drops (ADR 0871).
+            let facts = &self.krate.closure_facts;
             let dropped_anywhere = match ty.kind() {
                 ty::Param(_) | ty::Dynamic(..) => true,
-                ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, *id),
+                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id),
                 _ => false,
             };
             let kept = output.walk().any(|part| part.as_type() == Some(ty));

@@ -703,6 +703,12 @@ export async function open(other) {
   `request_animation_frame` take, so it may move out what it holds. JS
   calls it with its parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md),
   [ADR 0869](../../decisions/0869-a-web-callback-called-once-is-fn-once.md)).
+  JS keeps it, and has no drop: a closure boxed as it's given to a
+  binding, `on_change(editor, Box::new(move || ..))`, drops nothing of
+  what it holds after, and carries no drop. One Rust still holds drops as
+  Rust drops it: as a panic unwinds before it's handed over, or where it
+  never is; and one a binding gives back, as `widen` does, is Rust's
+  again ([ADR 0871](../../decisions/0871-a-function-handed-to-js-carries-no-drop.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`: `button.onclick()` is an
   `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to

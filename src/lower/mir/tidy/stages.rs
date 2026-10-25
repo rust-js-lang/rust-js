@@ -554,6 +554,14 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returns through finally", |b, _| {
                 js::statement_lists(b, &mut unwinds::returned_through_finally)
             }),
+            // What's left of a call that can't throw, a `catch_unwind`'s,
+            // held apart for the drops a scope's `finally` didn't take: as it
+            // runs (ADR 0871).
+            pass("unthrown catches", |b, h| {
+                let mut unthrown = false;
+                js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
+                h.again.set(h.again.get() || unthrown);
+            }),
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,

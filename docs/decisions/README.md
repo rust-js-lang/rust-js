@@ -657,6 +657,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md)
 - [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md)
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
+- [0871 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0871-a-function-handed-to-js-carries-no-drop.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -755,7 +756,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0518 A held `filter_map`, and `$closing` a JS iterator](0518-filter-map-held-and-closing-iterators.md)
 - [0519 A `Cell` or a `OnceCell` of what has a destructor](0519-a-cell-of-what-has-a-destructor.md)
 - [0520 A counted `Rc<dyn T>` is its pair](0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
-- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md)
+- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md) *(amended by 0871: one handed to JS carries none, and an `FnOnce`'s own body drops what it took)*
 - [0522 A closure cloned apart is made again](0522-a-closure-cloned-apart-is-made-again.md)
 - [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none; by 0852: the types each counts, which its contract lists)*
 - [0524 A library's `dyn` in its consumer](0524-a-librarys-dyn-in-its-consumer.md)

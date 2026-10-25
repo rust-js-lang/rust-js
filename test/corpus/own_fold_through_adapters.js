@@ -65,14 +65,9 @@ function plainIterator_next(plain) {
 const Holder = {
   total(holder, IIterator, dropI) {
     const iter = holder.it;
-    let result;
-    try {
-      result = $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
-      if (IIterator.fold === undefined) {
-        dropI?.(iter);
-      }
-    } catch (error) {
-      throw error;
+    const result = $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
+    if (IIterator.fold === undefined) {
+      dropI?.(iter);
     }
     return result;
   },

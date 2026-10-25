@@ -326,6 +326,23 @@ impl Stmt {
             _ => false,
         }
     }
+
+    /// Whether running this can't throw, though it may run the program's
+    /// code: what only makes values, and what catches whatever its code
+    /// throws, `const result = $catchUnwind(() => ..)` (ADR 0871). What a
+    /// scope's `finally` runs past, as it runs past what makes values.
+    pub fn cannot_throw(&self) -> bool {
+        let caught = |value: &Expr| {
+            matches!(&value.kind, ExprKind::Call(callee, args)
+                if callee.helper_name() == Some("$catchUnwind") && !args.iter().any(Expr::may_throw))
+        };
+        self.only_makes_values()
+            || match &self.kind {
+                StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => caught(value),
+                StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && caught(value),
+                _ => false,
+            }
+    }
 }
 
 /// A `dyn`'s pair, `{ value, impl }`, made of what does nothing: a shared

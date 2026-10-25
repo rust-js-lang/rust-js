@@ -326,13 +326,6 @@ function main() {
       }
       throw error;
     }
-    try {
-    } catch (error) {
-      for (const item of iter) {
-        noisyDrop_drop(item[1]);
-      }
-      throw error;
-    }
   }
   iter = $iter([["m1"], ["m2"]]);
   let tmp$4;

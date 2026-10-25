@@ -169,8 +169,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
             }
             // One that carries its drop, its own, which its clones don't share
-            // (ADRs 0484, 0521, 0522), anywhere.
-            ty::Closure(def_id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) => {
+            // (ADRs 0484, 0521, 0522), anywhere but in its own body: an
+            // `FnOnce`'s, called, drops what it took as it ends, where the
+            // function it is has no name.
+            ty::Closure(def_id, _)
+                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>
+            {
                 out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));
             }
             ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken(*def_id, span, made, out)?,

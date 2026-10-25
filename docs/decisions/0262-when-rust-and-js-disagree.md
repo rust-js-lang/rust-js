@@ -140,3 +140,15 @@ made of little: the second case, listed among the guide's differences
 (`semantics.md`, 26), with a count collected through another adapter
 (#246) until it's checked.
 
+
+## Amendment: a function handed to a binding
+
+A value with a destructor that JS holds is never dropped (ADR 0098, the
+guide's twelfth difference); so with a function a binding is given,
+which JS keeps, and which carries no drop
+([0871](0871-a-function-handed-to-js-carries-no-drop.md)). Results change
+only where JS gives that function back to Rust, through another binding
+or an export, and Rust drops it: what it holds isn't dropped. A binding
+that may give a function back itself, `widen`'s `this`, isn't handed one.
+The second case, listed in the twelfth difference, and held by
+`test/lowering-functions.test.ts`.

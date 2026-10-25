@@ -331,4 +331,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_auto_trait_dropped.rs$"],
   },
+  {
+    name: "handed-closure-given-its-drop",
+    breaks: "a closure made a `dyn Fn` to hand to JS is given its drop where it's made one, `$dropping(f, drop)`, which nothing runs (ADR 0871)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                    if facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id))\n",
+    replace: "                    if facts.carries_its_drop(self.tcx, *id))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+    snapshots: true,
+  },
 ];

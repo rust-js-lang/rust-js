@@ -51,13 +51,6 @@ function firstOver(map, limit) {
         }
         throw error;
       }
-      try {
-      } catch (error) {
-        for (const item of iter) {
-          loudDrop_drop(item[1]);
-        }
-        throw error;
-      }
       continue;
     }
     const result = key;

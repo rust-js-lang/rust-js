@@ -452,12 +452,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A function made a `dyn Fn`, holding a value with a destructor: the
         // function carrying its drop, `$dropping(f, drop)`, which the `dyn`'s
         // drop runs, `$dispose(f)` (ADR 0521). One that carries it already,
-        // itself.
+        // itself; and a closure made one only to hand it to JS, which Rust
+        // never drops (ADR 0871), none.
         if let ty::Dynamic(predicates, ..) = self.pointee(target).kind()
             && crate::lower::recognition::is_fn_dyn(self.tcx, predicates)
         {
             let function = self.pointee(source);
-            let carried = matches!(function.kind(), ty::Closure(id, _) if self.krate.closure_facts.carries_its_drop(self.tcx, *id))
+            let facts = &self.krate.closure_facts;
+            let carried = matches!(function.kind(), ty::Closure(id, _)
+                    if facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id))
                 || matches!(function.kind(), ty::Dynamic(..));
             if carried || self.drops(function) == crate::lower::drops::Drops::Nothing {
                 return Ok(value);

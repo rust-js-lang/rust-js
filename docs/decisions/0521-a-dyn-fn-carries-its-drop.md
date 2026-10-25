@@ -62,6 +62,15 @@ draft](0523-libraries-share-one-counted-rc.md)'s trial found.
   drop, the coercion's `$dropping`, the `dyn Fn`'s `$dispose`, and refuse
   what `Box::new` keeps.
 
+## Amendment: a function handed to JS (ADR 0871)
+
+A closure boxed where it's made and made a `dyn Fn` straight into a
+binding's argument, which gives no function back, nothing after it
+before the call unwinding, carries no drop: JS keeps it, and nothing in
+Rust drops it again. And a closure that carries its drop, called by
+`FnOnce`, drops what it took in its own body, where it was `$dispose` of
+a function its body has no name for.
+
 ## Amendment: what a library hands a crate (ADR 0626)
 
 A crate using a library takes it to hand what the items of its the

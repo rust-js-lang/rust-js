@@ -756,6 +756,9 @@ export function described(value) {
   with a destructor, or a library it uses says it does, so a crate with
   destructors catches as JS's `try` too ([ADR 0691](../../decisions/0691-a-dyn-any-drops-where-the-crate-makes-one-that-does.md)). rustc checks `UnwindSafe`;
   `AssertUnwindSafe(|| ..)` is the closure it holds.
+- **It never unwinds itself**: what's held around it isn't dropped in a
+  `catch` of its call, so an `if let Err(_) = catch_unwind(f)` beside a
+  value a drop flag tracks is a `try` too ([ADR 0871](../../decisions/0871-a-function-handed-to-js-carries-no-drop.md)).
 - **A future's panic is its promise's**: `catch_unwind` of a closure that
   makes one is `Ok` of it, and the panic is thrown where it's awaited.
 - **Refused**: `std::panic::set_hook` and `take_hook`, as rust-js has no

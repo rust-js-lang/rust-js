@@ -185,4 +185,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
   },
+  {
+    name: "any-call-cannot-throw",
+    breaks: "any helper's call is taken to catch what it runs throws, so a `try` that drops what's held as it unwinds is lost (ADR 0871)",
+    file: "src/js/stmt_walk.rs",
+    find: "                if callee.helper_name() == Some(\"$catchUnwind\") && !args.iter().any(Expr::may_throw))\n",
+    replace: "                if callee.helper_name().is_some() && !args.iter().any(Expr::may_throw))\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
+  },
 ];
