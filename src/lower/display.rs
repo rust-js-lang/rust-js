@@ -625,24 +625,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// only a template makes text of, which makes what it's in a template,
 /// \`${x}${s}\` (ADR 0066).
 pub(super) fn join(parts: Vec<Expr>) -> Expr {
-    joined(parts, false)
+    joined(parts.into_iter().map(|part| (part, false)).collect(), false)
 }
 
 /// `join`, or, `separable`, of what's written piece by piece, as what may
 /// fail is (`append_written`): strings alone a template, \`${a}${b}\`,
 /// whose pieces are there to take apart, where `a + b` is one (ADR 0187).
-fn joined(parts: Vec<Expr>, separable: bool) -> Expr {
+/// Each part is a format argument written across lines, or not, which a
+/// template's value of it is (`TemplateLayout::across`).
+fn joined(parts: Vec<(Expr, bool)>, separable: bool) -> Expr {
     let pieces = merged(parts);
-    let is_text = |p: &Expr| matches!(p.kind, js::ExprKind::Str(_));
-    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(p));
+    let is_text = |(p, _): &(Expr, bool)| matches!(p.kind, js::ExprKind::Str(_));
+    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(&p.0));
     if pieces.iter().all(is_text) || strings_alone && !(separable && pieces.len() > 1) {
-        return pieces
-            .into_iter()
+        return (pieces.into_iter())
+            .map(|(piece, _)| piece)
             .reduce(|a, b| Expr::bin(Op::Add, a, b))
             .unwrap_or_else(|| Expr::str(""));
     }
-    let (texts, values) = texts_and_values(pieces);
-    Expr::template(texts, values)
+    let (texts, values, across) = texts_and_values(pieces);
+    Expr::template_across(texts, values, across)
 }
 
 /// The text JS's template makes of `value`, \`${value}\`, as `js::shown`'s
@@ -660,39 +662,49 @@ fn is_shown_text(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Template(texts, ..) if texts.iter().all(String::is_empty))
 }
 
+/// A format string's pieces as it's written, each its parts, each one and
+/// whether it's an argument written across lines, and whether the piece is
+/// (`join_written`).
+pub(super) type WrittenParts = Vec<(Vec<(Expr, bool)>, bool)>;
+
 /// Strings joined as their format string is written, `pieces` of it, each
 /// its parts and whether it's written across lines: one, as `join` joins
 /// it; `concat!`'s, each a template where it holds a value and otherwise
 /// a string, joined by `+` (ADR 0641). `separable`, of what's written
 /// piece by piece, as `joined` says.
-pub(super) fn join_written(mut pieces: Vec<(Vec<Expr>, bool)>, separable: bool) -> Expr {
+pub(super) fn join_written(mut pieces: WrittenParts, separable: bool) -> Expr {
     if pieces.len() == 1 {
         let (parts, lines) = pieces.pop().expect("a piece");
         return joined(parts, separable).with_lines(lines);
     }
     let pieces = (pieces.into_iter())
         .map(|(parts, lines)| {
-            let (texts, values) = texts_and_values(merged(parts));
-            (texts, values, lines)
+            let (texts, values, across) = texts_and_values(merged(parts));
+            (texts, values, across, lines)
         })
         .collect();
     Expr::template_pieces(pieces)
 }
 
-/// `parts`, each strings joined taken apart, and texts next to each other
-/// one.
-fn merged(parts: Vec<Expr>) -> Vec<Expr> {
-    let mut pieces: Vec<Expr> = Vec::new();
-    for piece in parts.into_iter().flat_map(joined_pieces) {
+/// `parts`, each strings joined taken apart, each piece of one written
+/// across lines as it is, and texts next to each other one.
+fn merged(parts: Vec<(Expr, bool)>) -> Vec<(Expr, bool)> {
+    let mut pieces: Vec<(Expr, bool)> = Vec::new();
+    let all = (parts.into_iter())
+        .flat_map(|(part, across)| joined_pieces(part).into_iter().map(move |piece| (piece, across)));
+    for (piece, across) in all {
         match (pieces.last_mut(), &piece.kind) {
             (
-                Some(Expr {
-                    kind: js::ExprKind::Str(before),
-                    ..
-                }),
+                Some((
+                    Expr {
+                        kind: js::ExprKind::Str(before),
+                        ..
+                    },
+                    _,
+                )),
                 js::ExprKind::Str(after),
             ) => before.push_str(after),
-            _ => pieces.push(piece),
+            _ => pieces.push((piece, across)),
         }
     }
     pieces
@@ -700,18 +712,19 @@ fn merged(parts: Vec<Expr>) -> Vec<Expr> {
 
 /// A template's texts and values of `pieces`, its text and values in turn:
 /// a `shown_text` among them a value of it, a template in a template.
-fn texts_and_values(pieces: Vec<Expr>) -> (Vec<String>, Vec<Expr>) {
-    let (mut texts, mut values) = (vec![String::new()], Vec::new());
-    for piece in pieces {
+fn texts_and_values(pieces: Vec<(Expr, bool)>) -> (Vec<String>, Vec<Expr>, Vec<bool>) {
+    let (mut texts, mut values, mut across) = (vec![String::new()], Vec::new(), Vec::new());
+    for (piece, lines) in pieces {
         match piece.kind {
             js::ExprKind::Str(text) => texts.last_mut().expect("a text").push_str(&text),
             _ => {
                 values.push(unstringed(piece));
+                across.push(lines);
                 texts.push(String::new());
             }
         }
     }
-    (texts, values)
+    (texts, values, across)
 }
 
 /// `String(n)` of a Rust number is `n` in a template, which makes it a

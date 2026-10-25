@@ -2,8 +2,9 @@
 
 Status: Accepted. Amends [0066](0066-template-literals.md), whose string
 written across lines was the one form a literal kept of its source.
-Amended: a format string of a `concat!` is its pieces too; and a comment
-between its pieces is before the piece it's written before.
+Amended: a format string of a `concat!` is its pieces too; a comment
+between its pieces is before the piece it's written before; and a format
+argument written across lines may break its template's line.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: `"a " + "b"` is the string `"a b"` is.
@@ -221,3 +222,44 @@ concat! is before the piece it's written before", a `const`'s and a
 call's argument's; mutations `concat-piece-unplaced`
 (`lower/literals.rs`), `concat-piece-no-start` and `concat-split-not-at-plus`
 (`to_oxc.rs`).
+
+## Amended (2026-10-25): a format argument written across lines may break its line
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, layout alone.
+
+React's `ReactChildren` throws an error whose message holds a
+conditional:
+
+```js
+`Objects are not valid as a React child (found: ${
+  childrenString === '[object Object]'
+    ? 'object with keys {' + Object.keys(children).join(', ') + '}'
+    : childrenString
+}). ` +
+```
+
+Its port's format argument is an `if .. { .. } else { .. }`, written
+across lines, and its JS was one line of 182 columns: oxfmt, as Prettier,
+breaks a template literal's line inside `${ }` only where its source has
+a line break there, and the printer writes none.
+
+**A format argument written across lines is one in its template too**:
+`literals::format_arguments` reads the call's arguments after its format
+string, each one's name and code, and `format_args::placeholder_arguments`
+gives each placeholder its argument, `{}` the next, `{0}` by index,
+`{name}` by name and none of one the call captures, where they're the
+template rustc made, which they aren't of a literal rustc wrote in it, or
+`{:.*}`'s two. The template keeps which of its values are so,
+`TemplateLayout::across`, through its pieces, constants folded and
+templates spliced, and the formatter is given a line break after each
+one's `${` (`format::as_written`), so it breaks the line where it's too
+long, as upstream's is, and keeps it on one where it fits. One written on
+one line is never broken.
+
+Held by `test/lowering-strings.test.ts`, "a format argument written across
+lines may break its template's line", run; mutations
+`interpolation-line-unwritten` (`format.ts`), `named-argument-unplaced`
+and `placeholders-counted-past-template` (`lower/format_args.ts`),
+`format-argument-unplaced` (`lower/mir/std_calls.ts`) and
+`template-across-dropped` (`js/make.ts`). The corpus, snapshots and the
+guide's examples are unchanged: none breaks a line it didn't.

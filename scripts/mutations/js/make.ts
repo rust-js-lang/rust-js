@@ -119,6 +119,14 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
+    name: "template-across-dropped",
+    breaks: "a template forgets which of its values a format argument written across lines is, so it's on the template's line however long (ADR 0641, amended)",
+    file: "src/js/make.rs",
+    find: "            across: Across::of(kept_across),\n",
+    replace: "            across: Across::default(),\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+  },
+  {
     name: "presence-unmarked",
     breaks: "an object's `Option` tested by its truth, `p ? p.x : undefined`, is no `p?.x`: its test isn't known as one of being set",
     file: "src/js/make.rs",

@@ -513,6 +513,10 @@ export function formatProdErrorMessage(code, url) {
   is split across two pieces, `concat!("{", "}")`, is one, as
   only the string they make has it; so is one rustc writes a literal
   argument into, `format!(concat!("a ", "{}"), "b")`.
+- A format argument written across lines, an `if .. { .. } else { .. }`,
+  may break its template literal's line after its `${` where the line is
+  too long for one, as Prettier breaks one written so; one written on one
+  line, or that fits, stays on the template's line.
 
 ## Functions and arrow functions
 

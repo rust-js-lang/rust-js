@@ -37,11 +37,20 @@ fn source_type(js_file_name: &str) -> SourceType {
     }
 }
 
+/// What the source writes across lines, of a module's JS, in the order a
+/// visit of its parse meets each: its objects (ADR 0835), and each value of
+/// its template literals (ADR 0641, amended).
+#[derive(Default)]
+pub(crate) struct Written {
+    pub objects: Vec<bool>,
+    pub interpolations: Vec<bool>,
+}
+
 /// `code` as oxfmt formats it, each of its objects, in the order a visit
 /// meets them, on lines of its own where `across_lines` says its source
 /// writes it so (ADR 0835), and `map`'s mappings moved to match. `None` if
 /// the formatter fails, and the caller keeps what it has.
-fn formatted(code: &str, map: &SourceMap<'_>, js_file_name: &str, across_lines: &[bool]) -> Option<(String, String)> {
+fn formatted(code: &str, map: &SourceMap<'_>, js_file_name: &str, across_lines: &Written) -> Option<(String, String)> {
     let source_type = source_type(js_file_name);
     let allocator = Allocator::default();
     let written = as_written(&allocator, code, source_type, across_lines)?;
@@ -201,34 +210,44 @@ fn options() -> JsFormatOptions {
 /// where `across_lines` says its source writes it across lines, and none
 /// there otherwise, which the printer writes of every object of two
 /// fields: what oxfmt, and the app's Prettier after it, keep or join
-/// (ADR 0835). `across_lines` is of its objects in the order a visit meets
-/// them; one of another count is none's. `None` if `code` doesn't parse.
-fn as_written(allocator: &Allocator, code: &str, source_type: SourceType, across_lines: &[bool]) -> Option<String> {
-    struct Objects {
-        // Where each starts, and its first property.
-        found: Vec<(u32, Option<u32>)>,
+/// (ADR 0835); and a line ending before each template literal's value the
+/// source writes across lines, after its `${`, so the formatter may break
+/// the line there where it's too long, as Prettier does of a value written
+/// so, and keeps one on one line otherwise (ADR 0641, amended).
+/// `across_lines` is of each in the order a visit meets them; one of another
+/// count is none's. `None` if `code` doesn't parse.
+fn as_written(allocator: &Allocator, code: &str, source_type: SourceType, across_lines: &Written) -> Option<String> {
+    #[derive(Default)]
+    struct Found {
+        // Where each object starts, and its first property.
+        objects: Vec<(u32, Option<u32>)>,
+        // Where each template literal's value starts.
+        values: Vec<u32>,
     }
-    impl<'a> Visit<'a> for Objects {
+    impl<'a> Visit<'a> for Found {
         fn visit_object_expression(&mut self, it: &oxc_ast::ast::ObjectExpression<'a>) {
-            self.found
+            self.objects
                 .push((it.span.start, it.properties.first().map(|p| p.span().start)));
             oxc_ast_visit::walk::walk_object_expression(self, it);
+        }
+        fn visit_template_literal(&mut self, it: &oxc_ast::ast::TemplateLiteral<'a>) {
+            self.values.extend(it.expressions.iter().map(|e| e.span().start));
+            oxc_ast_visit::walk::walk_template_literal(self, it);
         }
     }
     let parsed = parse_for_format(allocator, allocator.alloc_str(code), source_type);
     if parsed.diagnostics.errors().next().is_some() {
         return None;
     }
-    let mut objects = Objects { found: Vec::new() };
-    objects.visit_program(&parsed.program);
-    let none = vec![false; objects.found.len()];
-    let across_lines = match across_lines.len() == objects.found.len() {
-        true => across_lines,
-        false => &none,
+    let mut found = Found::default();
+    found.visit_program(&parsed.program);
+    let of = |across: &[bool], count: usize| match across.len() == count {
+        true => across.to_vec(),
+        false => vec![false; count],
     };
-    let mut written = String::with_capacity(code.len() + objects.found.len());
-    let mut past = 0;
-    for (&(start, first), &lines) in objects.found.iter().zip(across_lines) {
+    // Each edit, where it starts and ends in `code`, and what's written there.
+    let mut edits: Vec<(usize, usize, &str)> = Vec::new();
+    for (&(start, first), lines) in found.objects.iter().zip(of(&across_lines.objects, found.objects.len())) {
         let Some(first) = first else { continue };
         let (open, first) = (start as usize + 1, first as usize);
         let between = &code[open..first];
@@ -238,9 +257,25 @@ fn as_written(allocator: &Allocator, code: &str, source_type: SourceType, across
             (false, true) if between.trim().is_empty() => " ",
             _ => continue,
         };
-        written.push_str(&code[past..open]);
+        edits.push((open, first, replaced));
+    }
+    for (&start, lines) in found
+        .values
+        .iter()
+        .zip(of(&across_lines.interpolations, found.values.len()))
+    {
+        let start = start as usize;
+        if lines && !code[code[..start].trim_end().len()..start].contains('\n') {
+            edits.push((start, start, "\n"));
+        }
+    }
+    edits.sort_by_key(|&(start, ..)| start);
+    let mut written = String::with_capacity(code.len() + edits.len());
+    let mut past = 0;
+    for (start, end, replaced) in edits {
+        written.push_str(&code[past..start]);
         written.push_str(replaced);
-        past = first;
+        past = end;
     }
     written.push_str(&code[past..]);
     Some(written)
@@ -390,7 +425,7 @@ impl<'t> Lines<'t> {
 /// top-level statements apart as a person separates them (`spaced`); `map`
 /// moved to match. The app's Prettier lays it out after, where it has a
 /// config (ADR 0381).
-pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lines: &[bool]) -> (String, String) {
+pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lines: &Written) -> (String, String) {
     let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
     let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines).unwrap_or((code, map));
     spaced(code, map, js_file_name)

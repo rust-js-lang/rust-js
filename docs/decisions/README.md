@@ -522,7 +522,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0638 A nullable function's call is `null` already](0638-a-nullable-functions-call-is-null-already.md)
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](0639-concat-text-of-any-value-may-throw.md)
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
-- [0641 A `concat!` of literals is its pieces joined by `+`](0641-concat-is-its-pieces-joined-by-plus.md)
+- [0641 A `concat!` of literals is its pieces joined by `+`](0641-concat-is-its-pieces-joined-by-plus.md) *(amended: a format argument written across lines may break its template's line after `${`)*
 - [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](0642-a-place-found-in-a-string-is-js-units.md)
 - [0643 `unwrap()` of a throwing JS call is the call](0643-unwrap-of-a-throwing-call-is-the-call.md) *(extended by 0747: of the call each branch makes)*
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](0644-a-function-of-a-throwing-calls-result-throws.md)

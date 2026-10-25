@@ -523,6 +523,34 @@ pub struct TemplateLayout {
     pub lines: bool,
     /// Where its source breaks it into its next piece, in order.
     pub breaks: Vec<TemplateBreak>,
+    /// Which of its values, in turn, its source writes across lines, a
+    /// format argument's, whose JS may break the line after its `${` where
+    /// it's too long for one, as Prettier does of one written so (ADR 0641,
+    /// amended).
+    pub across: Across,
+}
+
+/// Which of a template's values, in turn, are written across lines
+/// (`TemplateLayout::across`): none, as of most, held in no room, so an
+/// expression is no bigger for it.
+#[derive(Clone, PartialEq, Default)]
+pub struct Across(Option<Box<[bool]>>);
+
+impl Across {
+    /// Of each value in turn, whether it's written across lines.
+    pub fn of(across: Vec<bool>) -> Across {
+        Across(across.contains(&true).then(|| across.into_boxed_slice()))
+    }
+
+    /// Whether the `i`th value is written across lines.
+    pub fn at(&self, i: usize) -> bool {
+        self.all().get(i) == Some(&true)
+    }
+
+    /// Each value's, in turn; none, where none is.
+    pub fn all(&self) -> &[bool] {
+        self.0.as_deref().unwrap_or_default()
+    }
 }
 
 impl TemplateLayout {
@@ -545,6 +573,12 @@ pub struct ObjectLayout {
     /// comment's place (ADR 0280, amended).
     pub commented: Vec<String>,
 }
+
+/// A piece of a template as its format string is written, `concat!`'s
+/// (`Expr::template_pieces`): its texts and values, as `Expr::template`
+/// takes them, which of its values are written across lines, and whether
+/// it is.
+pub type TemplatePiece = (Vec<String>, Vec<Expr>, Vec<bool>, bool);
 
 /// Where a template's source breaks it into its next piece: in a text, by
 /// its index, at a byte offset in it, as a value is never broken.

@@ -52,10 +52,48 @@ pub(super) fn written_pieces(tcx: TyCtxt<'_>, span: Span, template: Vec<Piece>) 
     vec![(template, lines)]
 }
 
+/// Where each placeholder's argument of the format string of the macro call
+/// at `span` is written, in turn, of `template`, the one rustc made of it:
+/// of one the call gives, its code; `None` of one it captures, `{name}`.
+/// `None` where they aren't `template`'s: an argument rustc wrote in it, a
+/// literal's, or `{:.*}`'s two (ADR 0641, amended).
+pub(super) fn placeholder_arguments(tcx: TyCtxt<'_>, span: Span, template: &[Piece]) -> Option<Vec<Option<Span>>> {
+    let text: String = (super::literals::format_string(tcx, span)?.iter())
+        .map(|piece| piece.text.as_str())
+        .collect();
+    let arguments = super::literals::format_arguments(tcx, span)?;
+    let (mut next, mut placed) = (0, Vec::new());
+    for segment in segments(&text)? {
+        let Segment::Placeholder(written) = segment else {
+            continue;
+        };
+        let (argument, spec) = written.split_once(':').unwrap_or((&written, ""));
+        if spec.contains(".*") {
+            return None;
+        }
+        let argument = argument.trim();
+        let index = match argument.parse::<usize>() {
+            _ if argument.is_empty() => {
+                next += 1;
+                Some(next - 1)
+            }
+            Ok(index) => Some(index),
+            Err(_) => arguments.iter().position(|(name, _)| name.as_deref() == Some(argument)),
+        };
+        placed.push(index.and_then(|i| arguments.get(i)).map(|&(_, at)| at));
+    }
+    let placeholders = template
+        .iter()
+        .filter(|piece| matches!(piece, Piece::Argument(..)))
+        .count();
+    (placed.len() == placeholders).then_some(placed)
+}
+
 /// A part of a format string, as its source writes it.
 enum Segment {
     Text(String),
-    Placeholder,
+    /// A placeholder, what's between its braces.
+    Placeholder(String),
 }
 
 /// The parts of `text`, one of a format string's pieces, `{{` and `}}` each
@@ -72,7 +110,7 @@ fn segments(text: &str) -> Option<Vec<Segment>> {
                 let end = at + text[at..].find('}')?;
                 while chars.next_if(|&(i, _)| i <= end).is_some() {}
                 segments.push(Segment::Text(std::mem::take(&mut literal)));
-                segments.push(Segment::Placeholder);
+                segments.push(Segment::Placeholder(text[at + 1..end].to_string()));
             }
             c => literal.push(c),
         }
@@ -108,7 +146,7 @@ fn split(template: Vec<Piece>, written: &[Vec<Segment>]) -> Option<Vec<Vec<Piece
                         }
                     }
                 }
-                Segment::Placeholder => match rest.pop_front() {
+                Segment::Placeholder(_) => match rest.pop_front() {
                     Some(argument @ Piece::Argument(..)) => pieces.push(argument),
                     _ => return None,
                 },

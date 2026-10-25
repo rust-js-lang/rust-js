@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "template-piece-lines-dropped",
     breaks: "a piece of a template's `concat!` written across lines prints its line breaks as `\\n`",
     file: "src/to_oxc/expressions.rs",
-    find: "                        _ => self.template_literal(sp, &piece_texts, &values[from..to], lines),",
-    replace: "                        _ => self.template_literal(sp, &piece_texts, &values[from..to], false),",
+    find: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, lines)",
+    replace: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, false)",
     tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {

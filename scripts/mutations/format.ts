@@ -133,4 +133,12 @@ export const mutations: Mutation[] = [
     replace: "            (false, true) if false => \" \",\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
+  {
+    name: "interpolation-line-unwritten",
+    breaks: "a template's value written across lines is on the template's line however long, `(found: ${childrenString === .. : childrenString}). `, 182 columns, where Prettier breaks it after `${` (ADR 0641, amended)",
+    file: "src/format.rs",
+    find: "            edits.push((start, start, \"\\n\"));\n",
+    replace: "",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+  },
 ];

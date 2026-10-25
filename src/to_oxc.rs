@@ -36,8 +36,8 @@ use oxc_ast::ast::{
     JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
     JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
     ObjectExpression, ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement,
-    StaticMemberExpression, StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, VariableDeclarationKind,
-    VariableDeclarator,
+    StaticMemberExpression, StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, TemplateLiteral,
+    VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;
@@ -95,6 +95,7 @@ pub fn emit(
             .map(|c| c.attached_to)
             .collect(),
         across_lines: Default::default(),
+        interpolations: Default::default(),
         commented_branches: arms.iter().map(|&(lo, ..)| lo).collect(),
     };
     let b = &cx.b;
@@ -132,7 +133,7 @@ pub fn emit(
         ..CodegenOptions::default()
     };
     let generated = Codegen::new().with_options(options).build(&program);
-    let objects = across_lines(&program, &cx.across_lines.borrow());
+    let written = across_lines(&program, &cx);
 
     // The header, imports and runtime helpers, plain text above the
     // generated code, none of which maps to Rust.
@@ -336,7 +337,7 @@ pub fn emit(
     };
     let map = crate::format::moved_positions(&map, to, js_file_name);
     // Laid out as oxfmt lays it out, rust-js's own layout.
-    let (code, map) = crate::format::laid_out(code, map, js_file_name, &objects);
+    let (code, map) = crate::format::laid_out(code, map, js_file_name, &written);
     Output { code, map }
 }
 
@@ -1095,34 +1096,43 @@ struct Cx<'a> {
     /// each is in the arena (ADR 0835): which a visit of the program tells
     /// the formatter of, in its order (`across_lines`).
     across_lines: std::cell::RefCell<std::collections::HashSet<*const ObjectExpression<'a>>>,
+    /// The template literals some of whose values the source writes across
+    /// lines, by where each is in the arena, and which (ADR 0641, amended).
+    interpolations: std::cell::RefCell<std::collections::HashMap<*const TemplateLiteral<'a>, Vec<bool>>>,
     /// Where a conditional's branch its comments are before starts (ADR
     /// 0658), whose first JS is placed there (`Cx::branch`).
     commented_branches: std::collections::HashSet<u32>,
 }
 
 /// Of each object of `program`, in the order a visit meets them, as its
-/// JS's parse does, whether it's one of `across_lines`, which the source
-/// writes across lines (ADR 0835).
-fn across_lines<'a>(
-    program: &Program<'a>,
-    across_lines: &std::collections::HashSet<*const ObjectExpression<'a>>,
-) -> Vec<bool> {
-    struct Objects<'s, 'a> {
-        across_lines: &'s std::collections::HashSet<*const ObjectExpression<'a>>,
-        found: Vec<bool>,
+/// JS's parse does, whether it's one of `cx`'s `across_lines`, which the
+/// source writes across lines (ADR 0835); and so of each template literal's
+/// values, `cx`'s `interpolations` (ADR 0641, amended).
+fn across_lines<'a>(program: &Program<'a>, cx: &Cx<'a>) -> crate::format::Written {
+    struct Found<'s, 'a> {
+        cx: &'s Cx<'a>,
+        found: crate::format::Written,
     }
-    impl<'a> Visit<'a> for Objects<'_, 'a> {
+    impl<'a> Visit<'a> for Found<'_, 'a> {
         fn visit_object_expression(&mut self, it: &ObjectExpression<'a>) {
-            self.found.push(self.across_lines.contains(&(it as *const _)));
+            (self.found.objects).push(self.cx.across_lines.borrow().contains(&(it as *const _)));
             oxc_ast_visit::walk::walk_object_expression(self, it);
         }
+        fn visit_template_literal(&mut self, it: &TemplateLiteral<'a>) {
+            let interpolations = self.cx.interpolations.borrow();
+            let across = interpolations.get(&(it as *const _));
+            (self.found.interpolations)
+                .extend((0..it.expressions.len()).map(|i| across.is_some_and(|across| across.get(i) == Some(&true))));
+            drop(interpolations);
+            oxc_ast_visit::walk::walk_template_literal(self, it);
+        }
     }
-    let mut objects = Objects {
-        across_lines,
-        found: Vec::new(),
+    let mut found = Found {
+        cx,
+        found: Default::default(),
     };
-    objects.visit_program(program);
-    objects.found
+    found.visit_program(program);
+    found.found
 }
 
 #[cfg(test)]

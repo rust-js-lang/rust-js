@@ -408,6 +408,92 @@ pub fn fails(n: u32) {
   expect(logged).toEqual([["n is 7!"], ["no placeholder"]]);
 });
 
+// React's ReactChildren throws `Objects are not valid as a React child
+// (found: ${childrenString === '[object Object]' ? .. : childrenString}).`,
+// its value across lines, as Prettier breaks one written so; its port's
+// argument, an `if`, is written across lines too, and so may its JS be,
+// where it's too long for one: a line break after `${` (ADR 0641,
+// amended). One that fits stays on its line, and one written on one line
+// is never broken; a named argument's and an index's are its argument's.
+test("a format argument written across lines may break its template's line", async () => {
+  const dir = fixture("format-argument-lines");
+  writeFileSync(join(dir, "lib.rs"), `pub fn thrown(children_string: String, keys: Vec<String>) -> String {
+    format!(
+        concat!(
+            "Objects are not valid as a React child (found: {}). ",
+            "If you meant to render a collection of children, use an array ",
+            "instead."
+        ),
+        if children_string == "[object Object]" {
+            "object with keys {".to_string() + &keys.join(", ") + "}"
+        } else {
+            children_string
+        },
+    )
+}
+
+pub fn fits(count: u32) -> String {
+    format!(
+        "{} items",
+        if count > 1 {
+            "many"
+        } else {
+            "one"
+        }
+    )
+}
+
+pub fn one_line(name: &str, count: u32) -> String {
+    format!("{} has {} items, which is a sentence long enough to be broken", name, if count > 1 { "many many many" } else { "one" })
+}
+
+pub fn named(count: u32) -> String {
+    format!(
+        "{0} counted, {kind} kind of a sentence long enough to be broken across lines",
+        count,
+        kind = if count > 1 {
+            "the plural and a great many more words"
+        } else {
+            "the single one"
+        }
+    )
+}
+
+pub fn inlined(n: u32) -> String {
+    format!(
+        "{} {} of a sentence long enough to be broken across lines",
+        r"a literal
+of lines",
+        if n > 1 { "the plural and a great many more words" } else { "the single one" }
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // rustc writes the literal in the template: its placeholder isn't one.
+  expect(js).toContain('of lines ${n > 1 ? "the plural and a great many more words" : "the single one"} of a sentence');
+  expect(js).toContain(
+    "    `Objects are not valid as a React child (found: ${\n" +
+      '      childrenString === "[object Object]"\n' +
+      '        ? "object with keys {" + keys.join(", ") + "}"\n' +
+      "        : childrenString\n" +
+      "    }). ` +\n",
+  );
+  expect(js).toContain('  return `${count > 1 ? "many" : "one"} items`;\n');
+  expect(js).toContain('`${name} has ${count > 1 ? "many many many" : "one"} items, which is a sentence long enough to be broken`');
+  expect(js).toContain("counted, ${\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.thrown("[object Object]", ["a", "b"]), lib.thrown("x", [])]).toEqual([
+    "Objects are not valid as a React child (found: object with keys {a, b}). If you meant to render a collection of children, use an array instead.",
+    "Objects are not valid as a React child (found: x). If you meant to render a collection of children, use an array instead.",
+  ]);
+  expect([lib.fits(2), lib.oneLine("n", 1), lib.named(2)]).toEqual([
+    "many items",
+    "n has one items, which is a sentence long enough to be broken",
+    "2 counted, the plural and a great many more words kind of a sentence long enough to be broken across lines",
+  ]);
+});
+
 // ADR 0034: a replacement is the text it is, as Rust's is: JS reads `$&` and
 // `$1` in a string as what's matched, so one with a `$` doubles it, and one
 // not written out is a function's, `() => t`. `replacen(.., 1)` is JS's

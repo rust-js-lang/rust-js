@@ -135,7 +135,7 @@ impl<'a> Cx<'a> {
                         false => span(piece.span),
                     };
                     match piece.lines {
-                        true => self.template_literal(at, &[&piece.text], &[], true),
+                        true => self.template_literal(at, &[&piece.text], &[], &[], true),
                         false => self.string_literal(at, &piece.text),
                     }
                 };
@@ -150,7 +150,7 @@ impl<'a> Cx<'a> {
             // lines, and otherwise a string literal (ADR 0641).
             ExprKind::Template(texts, values, layout) if layout.breaks.is_empty() => {
                 let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
-                self.template_literal(sp, &texts, values, layout.lines)
+                self.template_literal(sp, &texts, values, layout.across.all(), layout.lines)
             }
             ExprKind::Template(texts, values, layout) => {
                 let last = texts.len() - 1;
@@ -167,7 +167,10 @@ impl<'a> Cx<'a> {
                     };
                     match (from == to, lines) {
                         (true, false) => self.string_literal(sp, piece_texts[0]),
-                        _ => self.template_literal(sp, &piece_texts, &values[from..to], lines),
+                        _ => {
+                            let across = layout.across.all().get(from..to).unwrap_or_default();
+                            self.template_literal(sp, &piece_texts, &values[from..to], across, lines)
+                        }
                     }
                 });
                 let first = pieces.next().expect("a template's first piece");
@@ -287,7 +290,16 @@ impl<'a> Cx<'a> {
     /// A JSX element (ADR 0040), laid out by the formatter.
     /// `` `a ${x} b` ``: the texts around `values`, its line breaks as they
     /// are where it's written across `lines` (ADR 0066).
-    fn template_literal(&self, sp: Span, texts: &[&str], values: &[js::Expr], lines: bool) -> Expression<'a> {
+    /// A template literal of `texts` and `values`, which of them `across`
+    /// says its source writes across lines, as `TemplateLayout::across`.
+    fn template_literal(
+        &self,
+        sp: Span,
+        texts: &[&str],
+        values: &[js::Expr],
+        across: &[bool],
+        lines: bool,
+    ) -> Expression<'a> {
         let b = &self.b;
         let quasis = texts.iter().enumerate().map(|(i, text)| {
             let value = TemplateElementValue {
@@ -298,7 +310,15 @@ impl<'a> Cx<'a> {
         });
         let quasis = ArenaVec::from_iter_in(quasis, b);
         let values = ArenaVec::from_iter_in(values.iter().map(|v| self.expr(v)), b);
-        Expression::new_template_literal(sp, quasis, values, b)
+        let template = Expression::new_template_literal(sp, quasis, values, b);
+        // Each value the source writes across lines, after whose `${` the
+        // formatter may break the line, as Prettier does (ADR 0641, amended).
+        if let (true, Expression::TemplateLiteral(made)) = (across.contains(&true), &template) {
+            self.interpolations
+                .borrow_mut()
+                .insert(&**made as *const _, across.to_vec());
+        }
+        template
     }
 
     fn jsx(&self, sp: Span, jsx: &js::Jsx) -> Expression<'a> {

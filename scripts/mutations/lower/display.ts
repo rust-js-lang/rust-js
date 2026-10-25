@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
     name: "shown-texts-added",
     breaks: "`format!(\"{}{}\", js::shown(a), js::shown(b))` is `${a}` + `${b}`, not one template, `${a}${b}`",
     file: "src/lower/display.rs",
-    find: "    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(p));\n",
+    find: "    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(&p.0));\n",
     replace: "    let strings_alone = !pieces.iter().any(is_text);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
   },

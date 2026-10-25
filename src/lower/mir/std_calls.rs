@@ -111,7 +111,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `concat!`'s pieces (ADRs 0066, 0641).
                     let written = crate::lower::format_args::written_pieces(tcx, span, template);
                     let template: Vec<_> = written.iter().flat_map(|(pieces, _)| pieces.iter().cloned()).collect();
-                    let mut parts = this.written_parts(&items, &written, span)?;
+                    // Where each placeholder's argument is written (ADR 0641, amended).
+                    let arguments = crate::lower::format_args::placeholder_arguments(tcx, span, &template);
+                    let arguments = arguments.as_deref().unwrap_or_default();
+                    let mut parts = this.written_parts(&items, &written, arguments, span)?;
                     // Rust evaluates each argument before it formats any, where
                     // the template formats each where it's written: where that
                     // would run one after formatting that runs code, each
@@ -125,7 +128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 *value = this.spill("_$", std::mem::replace(value, Expr::undefined()), out);
                             }
                         }
-                        parts = this.written_parts(&items, &written, span)?;
+                        parts = this.written_parts(&items, &written, arguments, span)?;
                     }
                     // Of what may fail, its `Arguments` say so to `format!`'s or
                     // `print!`'s: `fmt_may_fail` of each, by its trait (ADR 0187).
@@ -223,7 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let mut formatted = false;
-        for part in self.formatted_parts(&stood, template, span)? {
+        for (part, _) in self.formatted_parts(&stood, template, &mut std::iter::empty(), span)? {
             let mut reads = false;
             part.visit_vars(&mut |var| reads |= (0..items.len()).any(|i| effectful[i] && var == stand_in(i)));
             if reads && formatted {
@@ -240,20 +243,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         items: &[Value<'tcx>],
         written: &[(Vec<Piece>, bool)],
+        arguments: &[Option<Span>],
         span: Span,
-    ) -> R<Vec<(Vec<Expr>, bool)>> {
+    ) -> R<crate::lower::display::WrittenParts> {
+        let mut arguments = arguments.iter().copied();
         (written.iter())
-            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))
+            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))
             .collect()
     }
 
     /// Each part of a format string's template, its text and each argument
-    /// of `items` formatted as its spec says.
-    fn formatted_parts(&mut self, items: &[Value<'tcx>], template: &[Piece], span: Span) -> R<Vec<Expr>> {
+    /// of `items` formatted as its spec says, and whether its code, of
+    /// `arguments`, each placeholder's in turn, is written across lines, as
+    /// its JS may be too (ADR 0641, amended).
+    fn formatted_parts(
+        &mut self,
+        items: &[Value<'tcx>],
+        template: &[Piece],
+        arguments: &mut dyn Iterator<Item = Option<Span>>,
+        span: Span,
+    ) -> R<Vec<(Expr, bool)>> {
         let mut parts = Vec::new();
         for piece in template {
             parts.push(match *piece {
-                Piece::Text(ref text) => Expr::str(text),
+                Piece::Text(ref text) => (Expr::str(text), false),
                 Piece::Argument(i, spec) => {
                     let bad = || self.unsupported(span, "this format argument, from its MIR");
                     let item = |i: usize| match items.get(i) {
@@ -275,7 +288,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(from) => Some(item(from).ok_or_else(bad)?.2),
                         None => spec.precision.map(|p| Expr::int(p.into())),
                     };
-                    self.format_value(value, (kind, ty), spec, (width, precision), span)?
+                    let value = self.format_value(value, (kind, ty), spec, (width, precision), span)?;
+                    let code = arguments.next().flatten();
+                    let code = code.and_then(|at| self.tcx.sess.source_map().span_to_snippet(at).ok());
+                    (value, code.is_some_and(|code| code.contains('\n')))
                 }
             });
         }

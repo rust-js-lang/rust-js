@@ -105,6 +105,60 @@ pub(super) fn format_string(tcx: TyCtxt<'_>, span: Span) -> Option<Vec<StrPiece>
     None
 }
 
+/// The arguments after the format string of the macro call at `span`, as
+/// `format_string` finds it, each as its source writes it: its name, of
+/// `name = ..`, and where its code is. `None` where the call isn't a format
+/// string and its arguments.
+pub(super) fn format_arguments(tcx: TyCtxt<'_>, span: Span) -> Option<Vec<(Option<String>, Span)>> {
+    let call = span.source_callsite();
+    let code = tcx.sess.source_map().span_to_snippet(call).ok()?;
+    let tokens = tokens(&code);
+    let bang = tokens.iter().position(|(kind, _)| *kind == TokenKind::Bang)?;
+    let [_, inner @ .., _] = tokens.get(bang + 1..)? else {
+        return None;
+    };
+    // Its arguments, split at each comma outside a bracket.
+    let mut arguments: Vec<&[(TokenKind, &str)]> = Vec::new();
+    let (mut depth, mut start) = (0usize, 0);
+    for (i, (kind, _)) in inner.iter().enumerate() {
+        match kind {
+            TokenKind::OpenParen | TokenKind::OpenBracket | TokenKind::OpenBrace => depth += 1,
+            TokenKind::CloseParen | TokenKind::CloseBracket | TokenKind::CloseBrace => depth = depth.checked_sub(1)?,
+            TokenKind::Comma if depth == 0 => {
+                arguments.push(&inner[start..i]);
+                start = i + 1;
+            }
+            _ => {}
+        }
+    }
+    if start < inner.len() {
+        arguments.push(&inner[start..]);
+    }
+    // After the format string: a literal, or a `concat!(..)`.
+    let format = arguments.iter().position(|argument| match argument {
+        [(TokenKind::Literal { kind, .. }, _)] => matches!(kind, LiteralKind::Str { .. } | LiteralKind::RawStr { .. }),
+        [(TokenKind::Ident, name), (TokenKind::Bang, _), ..] => *name == "concat",
+        _ => false,
+    })?;
+    let offset = |token: &str| rustc_span::BytePos((token.as_ptr() as usize - code.as_ptr() as usize) as u32);
+    (arguments[format + 1..].iter())
+        .map(|argument| {
+            let name = match argument {
+                [(TokenKind::Ident, name), (TokenKind::Eq, _), next, ..] if next.0 != TokenKind::Eq => {
+                    Some(name.to_string())
+                }
+                _ => None,
+            };
+            let code = &argument[if name.is_some() { 2 } else { 0 }..];
+            let (first, last) = (code.first()?.1, code.last()?.1);
+            let at = call
+                .with_lo(call.lo() + offset(first))
+                .with_hi(call.lo() + offset(last) + rustc_span::BytePos(last.len() as u32));
+            Some((name, at))
+        })
+        .collect()
+}
+
 /// `code`'s tokens, by Rust's lexer, each its kind and its text: not its
 /// whitespace or comments.
 fn tokens(code: &str) -> Vec<(TokenKind, &str)> {

@@ -118,4 +118,20 @@ export const mutations: Mutation[] = [
     replace: "                    true => shown,\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
+  {
+    name: "named-argument-unplaced",
+    breaks: "a placeholder of a named argument, `{kind}` of `kind = if .. { .. }`, is taken for one the call captures, so its value written across lines is on the template's line however long (ADR 0641, amended)",
+    file: "src/lower/format_args.rs",
+    find: "            Err(_) => arguments.iter().position(|(name, _)| name.as_deref() == Some(argument)),\n",
+    replace: "            Err(_) => None,\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+  },
+  {
+    name: "placeholders-counted-past-template",
+    breaks: "placeholders are matched to the template's though rustc wrote a literal argument in it, so `{} {}` of `\"lit\", x` places `x` where `\"lit\"` is written",
+    file: "src/lower/format_args.rs",
+    find: "    (placed.len() == placeholders).then_some(placed)\n",
+    replace: "    Some(placed)\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+  },
 ];

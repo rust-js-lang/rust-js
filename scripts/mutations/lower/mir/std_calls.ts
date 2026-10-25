@@ -166,8 +166,8 @@ export const mutations: Mutation[] = [
     name: "mir-format-pieces-unwritten",
     breaks: "a format string's pieces, `concat!`'s, are each formatted, but only the first is written",
     file: "src/lower/mir/std_calls.rs",
-    find: "            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))\n",
-    replace: "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, span)?, *lines)))\n",
+    find: "            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
+    replace: "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
@@ -776,5 +776,13 @@ export const mutations: Mutation[] = [
     replace: "                let read = true || !matches!(&state.body[state.at].terminator().kind,\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
+  },
+  {
+    name: "format-argument-unplaced",
+    breaks: "a format argument written across lines isn't told so, so its value is on the template's line however long (ADR 0641, amended)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    (value, code.is_some_and(|code| code.contains('\\n')))\n",
+    replace: "                    (value, code.is_some_and(|_| false))\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
   },
 ];
