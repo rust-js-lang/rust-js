@@ -345,6 +345,9 @@ struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
     /// What it knows of the body before it writes any of it (`local_facts.rs`).
     facts: local_facts::LocalFacts<'m, 'tcx>,
+    /// What naming its locals settles, its boxes, borrowed names and drop
+    /// flags (`local_facts::NamingFacts`), once it's named them.
+    naming: local_facts::NamingFacts,
     /// As its structure is made, the labeled block, of `facts`' jumps, each
     /// MIR block a `break` of one goes to ends (ADR 0742).
     left: HashMap<BasicBlock, usize>,
@@ -355,18 +358,9 @@ struct State<'m, 'tcx> {
     taken: Vec<Local>,
     /// The blocks being lowered whose label a `break` or a `continue` names.
     labels: Vec<BasicBlock>,
-    /// The names of the locals borrowed, which a call may change.
-    borrowed_names: std::collections::HashSet<String>,
     /// The names of the body's own locals: another variable, a static's, may
     /// change by any call.
     own_names: std::collections::HashSet<String>,
-    /// Of a closure: what it captured, each its environment's field.
-    /// And whether each is the place a `&mut` it captured is to.
-    captures: Vec<(Expr, bool)>,
-    /// What each `Drop` drops (`drops.rs`), and the flag of each path whose
-    /// drop a flag says.
-    drops: Option<drops::Elaboration<'tcx>>,
-    flags: IndexVec<MovePathIndex, Option<String>>,
     /// The cleanup the temporaries made and not yet used unwind to, if one
     /// that drops something: the statement that runs them is its `try`.
     unwind: Option<BasicBlock>,
@@ -377,8 +371,6 @@ struct State<'m, 'tcx> {
     /// back to its place once the call returns (ADR 0074); an object's, in
     /// place, which each name for it sees (ADR 0147).
     copy_backs: Vec<(Expr, String, bool)>,
-    /// The parameters that are boxes their callers give (ADR 0074).
-    boxes: std::collections::HashSet<String>,
     /// Each local holding a read whose `Option` only `.flatten()` reads,
     /// the JS read itself (ADR 0311).
     flattened: std::collections::HashSet<Local>,
@@ -449,11 +441,6 @@ impl<'tcx> State<'_, 'tcx> {
     /// first in the function's body.
     fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
         (self.settled.iter()).map(|&local| StmtKind::Let(self.locals.names[local].clone(), None).at(js::Span::NONE))
-    }
-
-    /// Each drop flag, by its name (`mir/drops.rs`).
-    fn flag_names(&self) -> HashSet<String> {
-        self.flags.iter().flatten().cloned().collect()
     }
 }
 
@@ -680,7 +667,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for &local in &dropped {
             locals.reads[local] += 2;
         }
-        let (facts, held_bindings) = self.local_facts(mir, &locals, seed.as_ref());
+        let given = captures.clone().unwrap_or_default();
+        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), seed.as_ref());
         let mut state = State {
             body: mir_body,
             facts,
@@ -689,15 +677,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             pending: Vec::new(),
             taken: Vec::new(),
             labels: Vec::new(),
-            borrowed_names: Default::default(),
+            naming: Default::default(),
             own_names: Default::default(),
-            captures: captures.clone().unwrap_or_default(),
-            flags: IndexVec::new(),
-            drops,
             unwind: None,
             refs: Default::default(),
             copy_backs: Vec::new(),
-            boxes: Default::default(),
             branches: Default::default(),
             defaults: Default::default(),
             binding_var: false,
@@ -760,6 +744,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let def_span = self.tcx.def_span(mir_body.source.def_id());
         self.check_signature_types(mir_body, (skip, formatter), def_span)?;
+        let mut boxes = HashSet::new();
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -785,7 +770,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
                 };
                 if boxed {
-                    state.boxes.insert(name.clone());
+                    boxes.insert(name.clone());
                 }
                 js::Pattern::Name(name)
             })
@@ -812,7 +797,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             params[i] = pattern;
         }
-        state.borrowed_names = (state.locals.borrowed.iter_enumerated())
+        let borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].clone())
             .collect();
@@ -883,8 +868,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
         let mut flagged = vec![false; mir_body.local_decls.len()];
-        if let Some(drops) = &state.drops {
-            state.flags = IndexVec::from_elem(None, &drops.move_data.move_paths);
+        let mut flags = IndexVec::new();
+        if let Some(drops) = state.facts.drops() {
+            flags = IndexVec::from_elem(None, &drops.move_data.move_paths);
             for (path, &is) in drops.flagged.iter_enumerated() {
                 if !is {
                     continue;
@@ -893,9 +879,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 flagged[place.local.as_usize()] = true;
                 let flag = self.flag_name(&state, place);
                 out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
-                state.flags[path] = Some(flag);
+                flags[path] = Some(flag);
             }
         }
+        state.naming = local_facts::NamingFacts::new(boxes, borrowed_names, flags);
         if let Some(name) = state.made_writing() {
             out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
         }
@@ -992,7 +979,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
-                flags: &state.flag_names(),
+                flags: &state.naming.flag_names(),
                 fuse: self.fuse_import().as_deref(),
                 until: self.krate.tidy_until,
                 params: &params,

@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `collect`'s, whose value holds no iterator; nor into an adapter
     /// dropped by closing, held itself, whose `hold()` holds it.
     fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local, depth: usize) -> bool {
-        let Some(drops) = state.drops.as_ref() else {
+        let Some(drops) = state.facts.drops() else {
             return false;
         };
         let body = state.body;
@@ -342,14 +342,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The flags set before `at`, as rustc sets them, after what's made
     /// before: a call's cleanup reads them as they were where it was made.
     pub(super) fn flag_sets(&mut self, state: &mut State<'_, 'tcx>, at: Location, out: &mut Vec<Stmt>) -> R<()> {
-        let Some(sets) = state.drops.as_ref().and_then(|drops| drops.sets.get(&at)).cloned() else {
+        let Some(sets) = state.facts.drops().and_then(|drops| drops.sets.get(&at)).cloned() else {
             return Ok(());
         };
         if !state.pending.is_empty() {
             self.flush(state, out)?;
         }
         for (path, present) in sets {
-            let flag = state.flags[path].clone().expect("a flagged path");
+            let flag = state.naming.flags()[path].clone().expect("a flagged path");
             out.push(StmtKind::Assign(Expr::var(&flag), Expr::bool(present)).at(js::Span::NONE));
         }
         Ok(())
@@ -366,7 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        let Some(drops) = &state.drops else {
+        let Some(drops) = state.facts.drops() else {
             return Ok(());
         };
         match drops.move_data.rev_lookup.find(place.as_ref()) {
@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        match state.drops.as_ref().expect("elaborated").style(block, path, true) {
+        match state.facts.drops().expect("elaborated").style(block, path, true) {
             Style::Dead => Ok(()),
             Style::Static => self.drop_place(state, place, span, out),
             Style::Conditional => self.complete_drop(state, block, (place, path), span, out),
@@ -405,11 +405,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        match state.drops.as_ref().expect("elaborated").style(block, path, false) {
+        match state.facts.drops().expect("elaborated").style(block, path, false) {
             Style::Dead => Ok(()),
             Style::Static => self.drop_place(state, place, span, out),
             Style::Conditional | Style::Open => {
-                let flag = state.flags[path].clone().expect("a flagged path");
+                let flag = state.naming.flags()[path].clone().expect("a flagged path");
                 let mut then = Vec::new();
                 self.drop_place(state, place, span, &mut then)?;
                 out.push(StmtKind::If(Expr::var(&flag), then, None).at(self.js_span(span)));
@@ -454,7 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         self.drop_ladder(state, block, (place, path, path), fields, cleanup, span, out)?;
-        if !cleanup && let Some(flag) = &state.flags[path] {
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
         Ok(())
@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         // An item's path: a subslice moved, `[a, rest @ ..]`, is each of its
         // items' too, as rustc's move paths have an array's.
-        let drops = state.drops.as_ref().expect("elaborated");
+        let drops = state.facts.drops().expect("elaborated");
         let item_path = |i: u64| {
             move_path_children_matching(
                 &drops.move_data,
@@ -516,7 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => self.complete_drop(state, block, (part, path), span, out)?,
             }
         }
-        if !cleanup && let Some(flag) = &state.flags[path] {
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
         Ok(())
@@ -542,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let field = FieldIdx::from_usize(i);
             let part = self.tcx.mk_place_field(place, field, field_ty);
-            let drops = state.drops.as_ref().expect("elaborated");
+            let drops = state.facts.drops().expect("elaborated");
             let subpath = move_path_children_matching(
                 &drops.move_data,
                 parts,
@@ -576,7 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arms = Vec::new();
         let (mut otherwise, mut glue) = (false, false);
         for (variant, def) in adt.variants().iter_enumerated() {
-            let drops = state.drops.as_ref().expect("elaborated");
+            let drops = state.facts.drops().expect("elaborated");
             let parts = move_path_children_matching(
                 &drops.move_data,
                 path,
@@ -639,7 +639,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         out.extend(chain.unwrap_or_default());
-        if !cleanup && let Some(flag) = &state.flags[path] {
+        if !cleanup && let Some(flag) = &state.naming.flags()[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
         Ok(())

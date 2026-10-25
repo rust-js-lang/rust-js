@@ -836,7 +836,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .next()
             .map(|local| mir_body.local_decls[local].ty.peel_refs());
         if let Some(ty::Closure(_, args)) = env.map(|ty| ty.kind()) {
-            for (ty, (capture, _)) in args.as_closure().upvar_tys().iter().zip(&state.captures) {
+            for (ty, (capture, _)) in args.as_closure().upvar_tys().iter().zip(state.facts.captures()) {
                 if let js::ExprKind::Var(name) = &capture.kind {
                     match ty.peel_refs().is_bool() {
                         true => booleans.insert(name.clone()),
@@ -856,7 +856,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// copy of one it does): as fixed in it as a parameter, which a clone of
 /// it may be read as (ADR 0879).
 pub(super) fn kept_captures(state: &State<'_, '_>) -> std::collections::HashSet<String> {
-    (state.captures.iter())
+    (state.facts.captures().iter())
         .filter(|(_, place)| !place)
         .filter_map(|(capture, _)| match &capture.kind {
             js::ExprKind::Var(name) => Some(name.clone()),

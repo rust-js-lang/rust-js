@@ -229,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = |e: &Expr| {
             matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
                 .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
-                || (state.captures.iter()).any(|(capture, place)| {
+                || (state.facts.captures().iter()).any(|(capture, place)| {
                     *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
                 })
         };

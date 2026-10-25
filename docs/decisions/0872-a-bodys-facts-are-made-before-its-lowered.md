@@ -54,4 +54,22 @@ each `let` is, and what its writes say of its `Option`s.
 - Of what `State` still holds, `boxes`, `borrowed_names`, `flags`, `drops`
   and `captures` are made before emission too, but of the names its
   parameters are given as they're lowered; they move to `LocalFacts` once
-  naming is a fact of its own.
+  naming is a fact of its own (done: the amendment below).
+
+## Amendment: what naming settles is a fact too
+
+The rest of P3. **`drops` and `captures` are `LocalFacts`'**, given it as
+it's made: a body's drop elaboration is made before its locals are, and a
+closure's captures are given it. **`boxes`, `borrowed_names` and `flags` are
+`NamingFacts`'**, a record of its own in `local_facts.rs`, private fields
+read through accessors, made once by `mir_function` where naming its
+locals and its drop flags is done, `state.naming`: what the parameters are
+called, which of them is a box their caller gives (ADR 0074), the names of
+the locals borrowed, and each drop flag's name.
+
+- `State` keeps what emission changes: `own_names`, which the
+  temporaries it names join, stays there.
+- The architecture test leaves out `naming` as it does `facts`, and holds
+  that `state.naming` is assigned once, in `mir.rs`.
+- Proved by the corpus, the snapshots and the lowering tests, whose JS is
+  the same to the byte.

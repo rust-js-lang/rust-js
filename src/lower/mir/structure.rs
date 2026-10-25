@@ -433,7 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.extend(chain.unwrap_or_default());
             }
             TerminatorKind::Assert { target, .. }
-                if let Some(check) = self.assert_check(state.body, state.drops.as_ref(), terminator) =>
+                if let Some(check) = self.assert_check(state.body, state.facts.drops(), terminator) =>
             {
                 if let Check::Deferred(index, write) = check {
                     state.deferred.insert(index, write);
@@ -488,7 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // a `try` whose `catch` drops it: the statement that runs it,
                 // as it may be written where it's used. What's made before
                 // that unwinds elsewhere runs first.
-                let unwind = drops::cleans_up(state.body, state.drops.as_ref(), *unwind);
+                let unwind = drops::cleans_up(state.body, state.facts.drops(), *unwind);
                 self.unread_defined_operands(state, func, args);
                 if state.unwind != unwind && self.may_throw_first(state) {
                     self.flush(state, &mut out)?;

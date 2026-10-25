@@ -827,7 +827,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let js::ExprKind::Member(boxed, field) = &place.kind
                 && field == js::HELD
                 && let js::ExprKind::Var(name) = &boxed.kind
-                && state.boxes.contains(name)
+                && state.naming.boxes().contains(name)
             {
                 exprs.push((**boxed).clone());
                 continue;

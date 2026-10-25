@@ -10,7 +10,7 @@ use super::*;
 
 /// A body's facts, made by `FnCx::local_facts` and read through `State`'s
 /// `facts`: each field private here, so what lowers a statement can read
-/// it, never change it.
+/// it, never change it. Its drops and a closure's captures too.
 pub(super) struct LocalFacts<'m, 'tcx> {
     /// The blocks whose call is an `.await` (`awaits.rs`).
     awaits: &'m HashSet<BasicBlock>,
@@ -49,6 +49,11 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each block that goes on to an arm past a guard that holds, and that
     /// arm's first block (`held_arms`): the edges to it the arm's.
     held_arms: HashMap<BasicBlock, BasicBlock>,
+    /// What each `Drop` drops (`drops.rs`), of a body that drops something.
+    drops: Option<drops::Elaboration<'tcx>>,
+    /// Of a closure: what it captured, each its environment's field, and
+    /// whether each is the place a `&mut` it captured is to.
+    captures: Vec<(Expr, bool)>,
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -107,6 +112,57 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     pub(super) fn held_arms(&self) -> &HashMap<BasicBlock, BasicBlock> {
         &self.held_arms
     }
+
+    pub(super) fn drops(&self) -> Option<&drops::Elaboration<'tcx>> {
+        self.drops.as_ref()
+    }
+
+    pub(super) fn captures(&self) -> &[(Expr, bool)] {
+        &self.captures
+    }
+}
+
+/// What naming a body's locals settles, before the first statement is
+/// lowered: each parameter that's a box its caller gives (ADR 0074), the
+/// names of the locals borrowed, which a call may change, and the flag of
+/// each path whose drop a flag says. Made once, by `FnCx::naming_facts`,
+/// never changed after; `State`'s `naming` (the review's P3, ADR 0872).
+#[derive(Default)]
+pub(super) struct NamingFacts {
+    boxes: HashSet<String>,
+    borrowed_names: HashSet<String>,
+    flags: IndexVec<MovePathIndex, Option<String>>,
+}
+
+impl NamingFacts {
+    pub(super) fn new(
+        boxes: HashSet<String>,
+        borrowed_names: HashSet<String>,
+        flags: IndexVec<MovePathIndex, Option<String>>,
+    ) -> Self {
+        NamingFacts {
+            boxes,
+            borrowed_names,
+            flags,
+        }
+    }
+
+    pub(super) fn boxes(&self) -> &HashSet<String> {
+        &self.boxes
+    }
+
+    pub(super) fn borrowed_names(&self) -> &HashSet<String> {
+        &self.borrowed_names
+    }
+
+    pub(super) fn flags(&self) -> &IndexVec<MovePathIndex, Option<String>> {
+        &self.flags
+    }
+
+    /// Each drop flag, by its name (`mir/drops.rs`).
+    pub(super) fn flag_names(&self) -> HashSet<String> {
+        self.flags.iter().flatten().cloned().collect()
+    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -116,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn local_facts<'m>(
         &self,
         mir: &'m Mir<'tcx>,
-        locals: &Locals,
+        (locals, drops, captures): (&Locals, Option<drops::Elaboration<'tcx>>, Vec<(Expr, bool)>),
         seed: Option<&offsets::Seed>,
     ) -> (LocalFacts<'m, 'tcx>, Vec<(Local, Local)>) {
         let body = &mir.body;
@@ -141,6 +197,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let_spans: self.mir_let_spans(body),
             options,
             held_arms,
+            drops,
+            captures,
         };
         (facts, bindings)
     }
