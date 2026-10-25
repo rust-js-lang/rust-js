@@ -238,3 +238,28 @@ pub fn keyed(map: &'static WeakMap<JsObject, f64>) -> impl Fn(&[Option<&'static 
       }`);
   expect(js).not.toContain("arg$1");
 }, 300_000);
+
+// React's ReactFiberLane, `markRootFinished`: `if let Some(hidden_updates_for_lane)
+// = hidden_updates[index].take()` is upstream's `const hiddenUpdatesForLane =
+// hiddenUpdates[index]`, the program's name for what `take()` gives, not
+// `old`, rust-js's, which the binding copied (ADR 0598, amended).
+test("a binding of what take() gives names it", async () => {
+  const dir = fixture("taken-binding-name");
+  writeFileSync(join(dir, "lib.rs"), `pub fn clear(hidden_updates: &mut [Option<Vec<i32>>], index: usize) -> i32 {
+    let mut n = 0;
+    if let Some(hidden_updates_for_lane) = hidden_updates[index].take() {
+        for update in hidden_updates_for_lane {
+            n += update;
+        }
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane) {\n    for (const update of hiddenUpdatesForLane) {\n");
+  expect(js).not.toContain("old");
+  const lib = await import(join(dir, "lib.js"));
+  const hidden = [[1, 2], undefined];
+  expect([lib.clear(hidden, 0), hidden, lib.clear(hidden, 1)]).toEqual([3, [undefined, undefined], 0]);
+});

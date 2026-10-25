@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-copied-bindings-kept",
     "breaks": "an if-let's binding of a variable MIR copies stays `const error = raw;`",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"copied bindings\", |b, _| {\n                js::statement_lists(b, &mut |s| copied_bindings(s))\n            }),\n",
+    "find": "            pass(\"copied bindings\", |b, h| {\n                js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))\n            }),\n",
     "replace": "",
     "tests": ["test/lowering-names.test.ts", "-t", "copy binding of a variable is the variable"]
   },

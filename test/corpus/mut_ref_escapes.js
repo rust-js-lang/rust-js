@@ -12,11 +12,11 @@ const Holder = {
   },
 
   bump(holder) {
-    const old = holder.held;
+    const x = holder.held;
     holder.held = undefined;
-    if (old != null) {
-      old.value = (old.value + 1) >>> 0;
-      holder.held = old;
+    if (x != null) {
+      x.value = (x.value + 1) >>> 0;
+      holder.held = x;
     }
   },
 };

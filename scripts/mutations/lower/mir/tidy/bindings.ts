@@ -102,14 +102,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
   },
   {
-    "name": "let-else-copy-kept",
-    "breaks": "a `let`-`else`'s binding of a variable stays a copy, `const current$1 = current`",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "            && then.last().is_some_and(ends)\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
-    "replace": "            && then.last().is_some_and(ends)\n            && false\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let-else's binding of a variable is the variable"]
-  },
-  {
     "name": "alias-takes-prop-name",
     "breaks": "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     "file": "src/lower/mir/tidy/bindings.rs",

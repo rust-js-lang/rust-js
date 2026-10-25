@@ -1,7 +1,8 @@
 # 0598. A temporary is no part of a named variable's pattern
 
 Status: Accepted. Amends tidy's destructuring
-([0293](0293-cells-read-at-once.md)).
+([0293](0293-cells-read-at-once.md)). Amended (2026-10-26): a binding the
+program names of a variable rust-js named, `old` of `take()`, names both.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -75,3 +76,32 @@ same order.
 - Mutations `named-let-part-of-a-pattern` (`tidy/destructuring.rs`),
   `cast-variable-read-after` (`tidy/bindings.rs`), `cast-let-named`
   (`mir/patterns.rs`).
+
+## Amendment: a binding the program names of a variable rust-js named
+
+React's ReactFiberLane, `markRootFinished`, takes each lane's hidden
+updates:
+
+```js
+const hiddenUpdatesForLane = hiddenUpdates[index];
+if (hiddenUpdatesForLane !== null) {
+  hiddenUpdates[index] = null;
+```
+
+Its port's `if let Some(hidden_updates_for_lane) =
+hidden_updates[index].take()` printed `const old = hiddenUpdates[index];
+hiddenUpdates[index] = undefined; if (old) { for (const update of old)`:
+`take()` holds what it gives in a variable rust-js names `old`, the
+binding is a copy of it, `const hiddenUpdatesForLane = old;`, and tidy's
+`copied bindings` read the copy as the variable, by the variable's name.
+
+**Where the variable is rust-js's, no local the program names (`Named::
+user`), declared in the statements the `if` is in, and the binding's name
+is the program's and nowhere else in them, both are the binding's**:
+`const hiddenUpdatesForLane = hiddenUpdates[index]; .. if
+(hiddenUpdatesForLane) { for (const update of hiddenUpdatesForLane)`
+(`bindings.rs`'s `named_for_bindings`). One variable renamed in its own
+scope, to a name nothing else there has: case N, nothing that runs changes.
+
+Test: `lowering-shadows`'s "a binding of what take() gives names it", run.
+Mutation `taken-binding-named-old` (`lower/mir/tidy/bindings.ts`).

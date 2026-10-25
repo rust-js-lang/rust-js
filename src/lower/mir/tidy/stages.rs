@@ -196,8 +196,8 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| destructured(s, (&HashSet::new(), &h.lets.named)))
             }),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
-            pass("copied bindings", |b, _| {
-                js::statement_lists(b, &mut |s| copied_bindings(s))
+            pass("copied bindings", |b, h| {
+                js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))
             }),
             // A variable given another type, `const lazy = children;`: the
             // variable, where it's read no more (ADR 0598, amended).

@@ -39,10 +39,10 @@ function hide(root, index, update) {
 function takeHidden(root, index) {
   const hidden = root.hiddenUpdates;
   $index(hidden, index);
-  const old = hidden[index];
+  const updates = hidden[index];
   hidden[index] = null;
-  if (old) {
-    return old.length;
+  if (updates) {
+    return updates.length;
   }
   return 0;
 }
