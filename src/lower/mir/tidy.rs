@@ -639,7 +639,7 @@ mod tests {
                 "nulled as they are"
             ]
         );
-        assert!(names.last().is_some_and(|n| n == "finish/appends"));
+        assert!(names.last().is_some_and(|n| n == "finish/nulled as they are"));
     }
 
     fn present(x: &str) -> Expr {
