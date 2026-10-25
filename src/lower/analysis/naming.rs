@@ -245,6 +245,9 @@ pub(super) fn name_imports(
 /// name is (ADR 0573): `use …::Link as NextLink` is next/link's `Link` by
 /// `NextLink`. Not a `pub use` that re-exports it, whose name is what it's
 /// exported by (`bindings::alias_name`, ADR 0596), not the module's own.
+/// A `use` of a name the item's module exports it by, `use
+/// crate::scheduler::unstable_now;`, names it so, as it's exported, not
+/// camelCase (`default_exports::own_aliases`, ADR 0596, amended).
 pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
     tcx.hir_module_items(module)
         .free_items()
@@ -254,7 +257,8 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
                 ItemKind::Use(path, UseKind::Single(ident)) if !super::is_reexport(tcx, item) => {
                     match path.res.value_ns {
                         Some(Res::Def(_, def_id)) if ident.name != tcx.item_name(def_id) => {
-                            Some((def_id, camel_case(ident.name.as_str())))
+                            let alias = crate::lower::default_exports::alias_named(tcx, def_id, ident.name);
+                            Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))
                         }
                         _ => None,
                     }

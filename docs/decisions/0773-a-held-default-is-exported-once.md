@@ -1,7 +1,9 @@
 # 0773. A binding a module's default names is exported as the default alone
 
 Status: Accepted; amended (every importer asks what a module exports an
-item as, below). Amends [0633](0633-a-binding-named-through-a-module-is-read-through-it.md),
+item as, below; by [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md)'s
+amendment, that's also the name a `pub use` of its module gives it, its
+manifest item's `exported_as` replacing `default`). Amends [0633](0633-a-binding-named-through-a-module-is-read-through-it.md),
 whose `pub use` of a binding the default names was exported by its name
 as well, and [0625](0625-a-default-constant-is-its-value.md), whose
 constant a `pub use` of its module renames is declared.

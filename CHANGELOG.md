@@ -785,6 +785,14 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A module's own item a `pub use` of it renames is exported by that name
+  alone** (ADR 0596, amended): React's scheduler is `function
+  shouldYieldToHost() {..}` and `export { getCurrentTime as unstable_now,
+  shouldYieldToHost as unstable_shouldYield };`, where it was `export
+  function shouldYieldToHost` as well, and its `.d.ts` `declare function`.
+  Every importer imports it by that name, `import { unstable_now as
+  getCurrentTime }`, another crate through its library's manifest, whose
+  item's `default` is now `exported_as`.
 - **A `None` field a comment is written on keeps its key** (ADR 0280,
   amended): React's `createCacheNode` is `v: undefined, // value, ..`,
   where the field and its comment were left out; and **a comment before an

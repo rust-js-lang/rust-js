@@ -720,27 +720,33 @@ pub fn lower_crate<'tcx>(
             f.export = true;
         }
     }
-    // What each module imports of another: its item's name, or the
-    // module's default, each by what the importer's `use` names it,
-    // `import { SandpackClient as Sandpack }`.
-    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, bool, String)>> = HashMap::new();
+    // What each module imports of another: what that module exports its
+    // item as, its name, its default or the name a `pub use` gives it
+    // (`default_exports::exported_as`), each by what the importer's `use`
+    // names it, `import { SandpackClient as Sandpack }`, or by its name,
+    // `import { unstable_now as getCurrentTime }`.
+    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, String, String)>> = HashMap::new();
     for &(from, id) in &pass.references {
         let info = &fns[&id];
         let name = info.owner.as_ref().unwrap_or(&info.name).clone();
-        let local = match info.owner {
-            Some(_) => name.clone(),
-            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
+        let (export, local) = match info.owner {
+            Some(_) => (name.clone(), name.clone()),
+            None => (
+                super::default_exports::exported_as(tcx, id, &name),
+                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
+            ),
         };
         targets
             .entry(from)
             .or_default()
-            .insert((info.module, name, defaulted.contains(&id), local));
+            .insert((info.module, name, export, local));
     }
     // And a binding it reads through another that holds it, by its export
     // there, named as the importer's `use` names it (ADR 0633).
     for (from, holder, name, default, binding) in &pass.held {
         let local = renamed_in(tcx, *from).remove(binding).unwrap_or_else(|| name.clone());
-        (targets.entry(*from).or_default()).insert((*holder, name.clone(), *default, local));
+        let export = if *default { "default".to_string() } else { name.clone() };
+        (targets.entry(*from).or_default()).insert((*holder, name.clone(), export, local));
     }
     // What another module than its own calls, which stays a function.
     let called_elsewhere: HashSet<DefId> = (pass.references.iter())
@@ -864,7 +870,8 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let (reexports, aliases) = reexports(tcx, module, &fns, &paths, (default_from, module_held));
+            let reexports = reexports(tcx, module, &fns, &paths, (default_from, module_held));
+            let aliased_items = aliases(tcx, module, &fns);
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
             let names = import_names.get(&module);
@@ -887,10 +894,7 @@ pub fn lower_crate<'tcx>(
             // its default alone (ADR 0625, amended). So is one a `pub use`
             // of its module names by another name, `export { VERSION as
             // RELEASE };`, which reads it by its name.
-            let aliased = |held: DefId| {
-                let name = super::bindings::fn_name(tcx, held);
-                aliases.iter().any(|(aliased, _)| *aliased == name)
-            };
+            let aliased = |held: DefId| aliased_items.iter().any(|&(item, _)| item == held);
             let read_default = default_export.filter(|&held| {
                 default_declared && tcx.def_kind(held) != DefKind::Fn && (read_at_home.contains(&held) || aliased(held))
             });
@@ -922,10 +926,11 @@ pub fn lower_crate<'tcx>(
                 (default_export, default_declared),
                 &paths,
                 &reexports,
-                &aliases,
+                &aliased_items,
                 (plain_ref_cells, &counted),
                 (&fns, module_held),
             );
+            let aliases: Vec<(String, String)> = aliased_items.into_iter().map(|(_, names)| names).collect();
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -966,6 +971,17 @@ pub fn lower_crate<'tcx>(
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
             };
+            // What it exports by another name it exports by that alone,
+            // `function getCurrentTime() {}`, whoever else reads it (ADR
+            // 0596, amended).
+            let aliased = |name: &str| lowered.aliases.iter().any(|(local, _)| local == name);
+            for item in &mut lowered.items {
+                match item {
+                    js::Item::Function(function) if aliased(&function.name) => function.export = false,
+                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,
+                    _ => {}
+                }
+            }
             let quiet: HashSet<&str> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .map(|key| fns[&key.to_def_id()].name.as_str())
@@ -1010,12 +1026,13 @@ pub fn lower_crate<'tcx>(
                     || loaded.contains(&package.from)
             });
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
-            imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
+            // By what each imports, `import { MAX as LIMIT, unstable_now as getCurrentTime }`.
+            imports.sort_by(|(a, an, ae, _), (b, bn, be, _)| (&paths[a], ae, an).cmp(&(&paths[b], be, bn)));
             let candidates: Vec<_> = imports
                 .into_iter()
-                .map(|(target, name, default, local)| ImportRequest {
+                .map(|(target, name, export, local)| ImportRequest {
                     symbol: module_symbol(target, &name),
-                    export: if default { "default".to_string() } else { name },
+                    export,
                     local,
                     path: paths[&target].clone(),
                 })
@@ -1086,10 +1103,9 @@ fn reexports(
     fns: &HashMap<DefId, FnInfo>,
     paths: &HashMap<LocalModId, Vec<String>>,
     (default_from, held): (Option<DefId>, &[super::bindings::HeldBinding]),
-) -> (Vec<Reexport>, Vec<(String, String)>) {
+) -> Vec<Reexport> {
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
     let mut specified: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
-    let mut aliases = Vec::new();
     // A binding it names through another module that holds it, that
     // module's export, by its name and as its default (ADR 0633).
     for held in held {
@@ -1150,17 +1166,14 @@ fn reexports(
         if info.owner.is_some() {
             continue;
         }
+        // Its own item by another name is `aliases`'s.
+        if info.module == module {
+            continue;
+        }
         let alias = match ident.name == tcx.item_name(def_id) {
             true => info.name.clone(),
             false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
         };
-        // Its own item by another name: `export { getCurrentTime as unstable_now };`.
-        if info.module == module {
-            if alias != info.name {
-                aliases.push((info.name.clone(), alias));
-            }
-            continue;
-        }
         let Some(from) = paths.get(&info.module) else { continue };
         grouped
             .entry(from.clone())
@@ -1175,7 +1188,20 @@ fn reexports(
         from: js::ImportFrom::Specifier(from),
         named,
     });
-    (modules.chain(specifiers).collect(), aliases)
+    modules.chain(specifiers).collect()
+}
+
+/// `module`'s own items it exports by other names, `export { getCurrentTime
+/// as unstable_now };`, each `(local, exported)` and the item, in the order
+/// its `pub use`s are written: by those alone, not by its own name (ADR
+/// 0596, amended; `default_exports::own_aliases`).
+fn aliases(tcx: TyCtxt<'_>, module: LocalModId, fns: &HashMap<DefId, FnInfo>) -> Vec<(DefId, (String, String))> {
+    (super::default_exports::own_aliases(tcx, module).into_iter())
+        .filter_map(|alias| {
+            let info = fns.get(&alias.item).filter(|info| info.owner.is_none())?;
+            Some((alias.item, (info.name.clone(), alias.exported)))
+        })
+        .collect()
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
@@ -1249,7 +1275,7 @@ fn refuse_dictionaries_in_load_cycles(
     tcx: TyCtxt<'_>,
     pass: &Pass,
     const_items: &HashMap<LocalModId, Vec<js::Const>>,
-    targets: &HashMap<LocalModId, HashSet<(LocalModId, String, bool, String)>>,
+    targets: &HashMap<LocalModId, HashSet<(LocalModId, String, String, String)>>,
 ) {
     // A dictionary, its cache and what its entries share run nothing of the
     // program's where they're made: not code a cycle's load runs.

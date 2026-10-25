@@ -1,7 +1,8 @@
 # 0596. A `pub use` of a module's own item exports it by that name
 
-Status: Accepted. Extends [0240](0240-reexports.md)'s re-exports and
-[0573](0573-every-rust-name-is-camel-case-in-js.md)'s names.
+Status: Accepted; amended (an item its own module renames is exported by
+that name alone, below). Extends [0240](0240-reexports.md)'s re-exports
+and [0573](0573-every-rust-name-is-camel-case-in-js.md)'s names.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A.
 
@@ -82,3 +83,115 @@ and next coverages read the `export` kind, a name imported into the module
 as well as its own, so @types/node's buffer exports stay bound. Held by
 `test/typescript.test.ts`, "read keeps an export list that names a type as
 text", and the node and next coverage tests.
+
+## Amendment: an item its own module renames is exported by that name alone
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A. No Rust program
+can tell; what JS can import of the module changes, to upstream's.
+
+The scheduler's port, `pub use self::get_current_time as unstable_now;`
+and `pub use self::should_yield_to_host as unstable_should_yield;`,
+exported each by both names, `export function shouldYieldToHost()` and
+`export { .., shouldYieldToHost as unstable_shouldYield }`, where
+upstream declares `function shouldYieldToHost()` and exports it by
+`unstable_shouldYield` alone. The `pub fn` is `pub` only because Rust
+can't say "public as the alias alone": a `pub use` of a private item is
+E0364.
+
+**A module exports its own function or constant that a `pub use` of it
+names by another name by that name alone**: declared without `export`,
+`function shouldYieldToHost() {..}`, `const LIMIT = 9;`, `declare
+function getCurrentTime(): number;` in the `.d.ts`, and listed in the
+one `export { .. }` after its code, each alias in the order the `pub
+use`s are written, with what else the module lists there (a `let` an
+exported function became, ADR 0610's).
+
+**Every importer imports it by that name**, which
+`default_exports::exported_as` answers, as it answers a default (ADR
+0773, amended): a module of the crate, another crate through the
+library's manifest, whose item says it (`Item::exported_as`, which
+replaces `default: bool`: `"default"` or the alias), a `pub use` of it
+in another module, a module's default naming it. The importer names
+it as its Rust does:
+
+```rust
+// report.rs
+pub fn report() -> f64 {
+    crate::scheduler::get_current_time() * 10.0
+}
+
+// lib.rs
+use scheduler::unstable_now;
+```
+
+```js
+// report.js
+import { unstable_now as getCurrentTime } from "./scheduler.js";
+
+// lib.js
+import { unstable_now } from "./scheduler.js";
+```
+
+A path that names the item by its own name, or through a re-export
+without a `use` (`scheduler::MAX`), reads it by its own name, as a
+default import is named after the item (ADR 0773); a `use` of the alias
+reads it by the name it's exported by, `unstable_now`, not camelCase
+`unstableNow` (`default_exports::alias_named`). An import names what it
+imports in order, `import { MAX as LIMIT, unstable_now as
+getCurrentTime }`. Where an item has two aliases, importers import the
+first.
+
+**The scheduler's JS changes**: `function shouldYieldToHost()`, where
+it was `export function`; `export { getCurrentTime as unstable_now,
+shouldYieldToHost as unstable_shouldYield };`, without the trailing
+`getCurrentTime` its `let` had been listed by; and its `.d.ts` `declare
+function getCurrentTime(): number;` and `declare function
+shouldYieldToHost(): boolean;`. Its package, `export * from
+'./src/forks/Scheduler'`, has upstream's names and no others.
+
+### Why
+
+- **Upstream's module**: React's scheduler and `ReactChildren.js`
+  declare their functions and list them once, `export {
+  forEachChildren as forEach, mapChildren as map, .. }`.
+- **What's exported is what's read**, as a default is exported once
+  (ADR 0773): nothing outside reads the item by its own name.
+
+### What can't be written
+
+React's `ReactChildren.js` lists `toArray` by its own name in that list.
+Rust has no spelling of it: `pub use self::to_array;` is E0255, the name
+defined twice, and so is `pub use self::to_array as to_array;`. Such a
+function stays `export function toArray`. Listing every function a
+module exports by name in its list once it has an alias would make one
+`pub fn` two forms by what else its module says, so it isn't done
+without a decision of its own.
+
+### Alternatives
+
+- **Exported by both names, as before**: a second export of the module
+  upstream doesn't have, which an `export *` passes on.
+- **An importer reading the alias wherever it names the item**: a
+  caller that writes `get_current_time()` reading `unstable_now()`; the
+  Rust it's written from says otherwise.
+
+### What holds it
+
+- `test/modules.test.ts`, "a pub use by another name of the module's own
+  function exports it by that" (a function and a constant, declared,
+  the list in order, nothing by its own name) and "a module's own item a
+  pub use renames is imported by that name" (a path, a `use` of the
+  alias, a `pub use` of it in another module, run).
+- `test/cross-crate-items.test.ts`, "a library's item its module exports
+  by another name is imported by that": the manifest's `exported_as`, the
+  consumer's import, run.
+- `test/manifest.test.ts`, "a manifest says what each module exports":
+  `main` by `start` alone.
+- `test/architecture.test.ts`, "what a module exports an item as is
+  exported_as's alone": `own_aliases` asked by the pipeline alone.
+- Mutations: `own-alias-exported-by-name`, `own-alias-constant-exported-by-name`,
+  `own-import-sorted-by-local`, `own-alias-importer-by-name`, `own-alias-of-another-module`,
+  `own-alias-use-camel-case`, `own-alias-declared-exported`,
+  `own-alias-reclaimed-unlisted` and the amended `own-alias-dropped`
+  (`default_exports.rs`, `pipeline.rs`, `analysis/naming.rs`,
+  `declarations.rs`, `prepare/reclaim.rs`).

@@ -1035,13 +1035,14 @@ test("a std call's `&mut` handle is handles_mut's alone", () => {
   expect(asking).toEqual([]);
 });
 
-// What a module exports an item of its own as, its default or its name, is
-// `default_exports::exported_as`'s, which a module of its crate, another
-// crate through its library's manifest, a `pub use` re-exporting it and a
-// `js::import!` of it all ask (ADR 0773, amended). Its crate imported a
-// block form's `export default function noop() {}` as its default while
-// the library's manifest listed it by its name, so another crate's
-// `import { noop }` found nothing.
+// What a module exports an item of its own as, its default, the name its
+// `pub use` gives it, or its name, is `default_exports::exported_as`'s,
+// which a module of its crate, another crate through its library's
+// manifest, a `pub use` re-exporting it and a `js::import!` of it all ask
+// (ADRs 0596 and 0773, amended). Its crate imported a block form's `export
+// default function noop() {}` as its default while the library's manifest
+// listed it by its name, so another crate's `import { noop }` found
+// nothing.
 test("what a module exports an item as is exported_as's alone", () => {
   const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/default_exports.rs");
   expect(lowering.filter((file) => /Symbol::intern\("export_default"\)/.test(read(file)))).toEqual([]);
@@ -1049,7 +1050,11 @@ test("what a module exports an item as is exported_as's alone", () => {
   // has one, the binding it holds, and the module's own made.
   const asking = lowering.filter((file) => /default_exports::default_exports\(/.test(read(file)));
   expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs", "src/lower/pipeline.rs"]);
-  expect(read("src/lower/library.rs")).toContain("default: super::default_exports::is_own_default(tcx, id),");
+  expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, &info.name))");
+  // A module's `pub use`s of its own items by other names are found
+  // there alone; the module's JS lists them, and exports them by no other.
+  const aliasing = lowering.filter((file) => /default_exports::own_aliases\(/.test(read(file)));
+  expect(aliasing).toEqual(["src/lower/pipeline.rs"]);
 });
 
 // Whether an arrow is only the function it passes its arguments on to,

@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "default-exported-as-name",
     breaks: "a `pub use` of a module's default re-exports it by its name, `export { noop } from \"./noop.js\"`, which that module doesn't export",
     file: "src/lower/default_exports.rs",
-    find: "        true => \"default\".to_string(),\n",
-    replace: "        true => name.to_string(),\n",
+    find: "        return \"default\".to_string();\n",
+    replace: "        return name.to_string();\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {
@@ -49,5 +49,21 @@ export const mutations: Mutation[] = [
     find: "    default.filter(|item| (item.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module))\n",
     replace: "    default\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
+  {
+    name: "own-alias-importer-by-name",
+    breaks: "another module imports `{ getCurrentTime }` of a module that exports it as `unstable_now` alone (ADR 0596, amended)",
+    file: "src/lower/default_exports.rs",
+    find: "        Some(alias) => alias.exported,\n",
+    replace: "        Some(_) => name.to_string(),\n",
+    tests: ["test/modules.test.ts", "-t", "a module's own item a pub use renames is imported by that name"],
+  },
+  {
+    name: "own-alias-of-another-module",
+    breaks: "`pub use crate::scheduler::get_current_time;` in another module is taken for that module's own alias",
+    file: "src/lower/default_exports.rs",
+    find: "            let own = (named.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module);\n",
+    replace: "            let own = named.as_local().is_some();\n",
+    tests: ["test/modules.test.ts", "-t", "a module's own item a pub use renames is imported by that name"],
   },
 ];

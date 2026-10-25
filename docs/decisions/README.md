@@ -477,7 +477,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](0593-a-lazy-argument-is-its-value.md)
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md)
-- [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md)
+- [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports)*
 - [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property)*
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md)
 - [0599 A result its branches make before it's coerced is returned where made](0599-a-coerced-result-is-returned-where-made.md)

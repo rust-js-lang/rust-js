@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "library-default-listed-by-name",
     breaks: "a library's manifest lists a module's default by its name, which a consumer imports and the module doesn't export",
     file: "src/lower/library.rs",
-    find: "            default: super::default_exports::is_own_default(tcx, id),\n",
-    replace: "            default: false,\n",
+    find: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
+    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n                .filter(|exported| exported != \"default\")\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {
@@ -153,5 +153,13 @@ export const mutations: Mutation[] = [
     find: "        makes_dropping_anys: *makes_dropping_anys,\n",
     replace: "        makes_dropping_anys: false,\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "where the library makes one of what drops"],
+  },
+  {
+    name: "library-alias-listed-by-name",
+    breaks: "a library's manifest lists an item its module exports as `unstable_now` alone by its name, which a consumer imports and the module doesn't export (ADR 0596, amended)",
+    file: "src/lower/library.rs",
+    find: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
+    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n                .filter(|exported| exported == \"default\")\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's item its module exports by another name is imported by that"],
   },
 ];

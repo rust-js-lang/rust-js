@@ -93,4 +93,12 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Var(name) if reads => f(name),\n",
     tests: ["test/snapshots.test.ts", "-t", "calc"],
   },
+  {
+    name: "own-alias-reclaimed-unlisted",
+    breaks: "a function exported by its alias alone, given back a global's name, `function console`, is still `console$` in `export { console$ as log }`, which names nothing",
+    file: "src/prepare/reclaim.rs",
+    find: "        module.aliases.iter_mut().map(|(local, _)| local).for_each(&mut rename);\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "a function exported by its .* alone is named as an unexported one"],
+  },
 ];

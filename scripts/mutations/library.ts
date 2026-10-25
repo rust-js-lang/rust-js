@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "library-default-imported-by-name",
     breaks: "a library's module's default is imported by its name, `import { noop }`, which its module doesn't export",
     file: "src/library.rs",
-    find: "        match self.default {\n",
-    replace: "        match false {\n",
+    find: "        self.exported_as.clone().unwrap_or_else(|| self.export.clone())\n",
+    replace: "        self.export.clone()\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {

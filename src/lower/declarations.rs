@@ -39,7 +39,7 @@ pub(super) fn module<'tcx>(
     (default_export, default_declared): (Option<DefId>, bool),
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
-    aliases: &[(String, String)],
+    aliases: &[(DefId, (String, String))],
     (plain_ref_cells, counted): (&HashSet<Ty<'tcx>>, &super::analysis::Counted<'tcx>),
     (fns, held): (&HashMap<DefId, super::FnInfo>, &[super::bindings::HeldBinding]),
 ) -> Option<Value> {
@@ -87,6 +87,13 @@ pub(super) fn module<'tcx>(
             _ => None,
         };
         let declaration = declaration.map(|mut declared| {
+            // What it exports by another name, by that alone, `declare
+            // function getCurrentTime(): number;`, as its JS (ADR 0596,
+            // amended).
+            if !held && aliases.iter().any(|&(item, _)| item == def_id) {
+                declared["exported"] = json!(false);
+                declared["declare"] = json!(true);
+            }
             if held {
                 let function = tcx.def_kind(def_id) == DefKind::Fn;
                 declared["exported"] = json!(function);
@@ -184,7 +191,8 @@ pub(super) fn module<'tcx>(
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
     // function by another name, after it, as its JS has it (ADR 0596).
     if !aliases.is_empty() {
-        declarations.push(json!({ "kind": "export", "names": aliases }));
+        let names: Vec<&(String, String)> = aliases.iter().map(|(_, names)| names).collect();
+        declarations.push(json!({ "kind": "export", "names": names }));
     }
     Some(json!({ "declarations": declarations }))
 }

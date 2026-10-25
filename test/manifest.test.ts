@@ -49,7 +49,8 @@ fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); 
   const read = parseManifest(readFileSync(join(out, "manifest.json"), "utf8"));
   const root = read.modules.find((module: { module: string[] }) => module.module.length === 0);
   // And, built to run them, its `#[test]` functions, which the runner imports.
-  expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "main", "start"]);
+  // `main` by `start` alone, as `pub use self::main as start;` exports it (ADR 0596, amended).
+  expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "start"]);
   expect(read.tests).toBe(join(realpathSync(out), "lib.test.js"));
   expect(existsSync(read.tests)).toBe(true);
 });

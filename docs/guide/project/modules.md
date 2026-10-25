@@ -175,9 +175,20 @@ export function welcome(name: string): string;
 
 A `pub use` of another module's function or constant is `export { .. }
 from` it, in the JS and the `.d.ts`. `pub use .. as` renames it, camelCase
-as any name is, or by its `#[rust_js::name]`; one of the module's own
-functions by another name is `export { .. as .. }`, and the module still
-reads it by its own name ([ADR 0596](../../decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)).
+as any name is, or by its `#[rust_js::name]`. One of the module's own
+functions or constants by another name is exported by that name alone:
+it's declared without `export`, and one `export { .. as .. }` after the
+module's code lists each such name, in the order the `pub use`s are
+written. The module still reads it by its own name. Every importer
+imports it by the name it's exported as: another module of the crate,
+another crate and a `pub use` of it. A module that names it by its own
+path reads it by its own name, `import { unstable_greet as greetAll }`;
+one whose `use` names the alias reads the alias
+([ADR 0596](../../decisions/0596-a-pub-use-of-a-modules-own-item-exports-it.md)).
+The item stays `pub` in Rust, as a `pub use` of a private item is an
+error (E0364). A module can't list an item by its own name this way:
+`pub use self::to_array;` is an error too (E0255), so such a function is
+`export function toArray`.
 
 ```rust
 // src/lib.rs
@@ -218,7 +229,7 @@ import { hello } from "./greet.js";
 export { px as pixels, BASE } from "./format/units.js";
 export { hello } from "./greet.js";
 
-export function greetAll(names) {
+function greetAll(names) {
   return names.map((name) => hello(name));
 }
 
@@ -230,7 +241,7 @@ export { px as pixels, BASE } from "./format/units.js";
 
 export { hello } from "./greet.js";
 
-export function greetAll(names: string[]): string[];
+declare function greetAll(names: string[]): string[];
 
 export { greetAll as unstable_greet };
 ```

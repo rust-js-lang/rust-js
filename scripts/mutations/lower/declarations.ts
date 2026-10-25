@@ -720,4 +720,12 @@ export const mutations: Mutation[] = [
     replace: "            .then(|| self.option(output))\n            .filter(|_| false)\n",
     tests: ["test/declarations.test.ts", "-t", "a nullable function's result is declared T or null"],
   },
+  {
+    name: "own-alias-declared-exported",
+    breaks: "a `.d.ts` exports `getCurrentTime` by its name too, where its JS exports it as `unstable_now` alone (ADR 0596, amended)",
+    file: "src/lower/declarations.rs",
+    find: "            if !held && aliases.iter().any(|&(item, _)| item == def_id) {\n",
+    replace: "            if false && aliases.iter().any(|&(item, _)| item == def_id) {\n",
+    tests: ["test/modules.test.ts", "-t", "a pub use by another name of the module's own function exports it by that"],
+  },
 ];

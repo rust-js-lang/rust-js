@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     name: "renamed-static-not-camel-case",
     breaks: "`use …::hero_img as banner_img` is `import banner_img from \"./hero.png\"`, not an asset's camel case",
     file: "src/lower/analysis/naming.rs",
-    find: "Some((def_id, camel_case(ident.name.as_str())))",
-    replace: "Some((def_id, ident.name.to_string()))",
+    find: "Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))",
+    replace: "Some((def_id, alias.unwrap_or_else(|| ident.name.to_string())))",
     tests: ["test/jsx.test.ts", "-t", "use renames it"],
   },
   {
@@ -203,5 +203,13 @@ export const mutations: Mutation[] = [
     find: "                (\"*\", _, Some(module)) => camel_case(&module),\n",
     replace: "                (\"*\", _, Some(module)) => module,\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
+  },
+  {
+    name: "own-alias-use-camel-case",
+    breaks: "`use scheduler::unstable_now;` imports it as `unstableNow`, not by the name it's exported as (ADR 0596, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                            let alias = crate::lower::default_exports::alias_named(tcx, def_id, ident.name);\n",
+    replace: "                            let alias: Option<String> = None;\n",
+    tests: ["test/modules.test.ts", "-t", "a module's own item a pub use renames is imported by that name"],
   },
 ];

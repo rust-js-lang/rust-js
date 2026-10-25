@@ -171,6 +171,9 @@ fn own_items(module: &mut js::Module) {
             }
         };
         module.default_export.iter_mut().for_each(&mut rename);
+        // One its `export { .. as .. }` names, exported by that alone (ADR
+        // 0596, amended).
+        module.aliases.iter_mut().map(|(local, _)| local).for_each(&mut rename);
         for item in &mut module.items {
             if let js::Item::Const(constant) = item {
                 rename(&mut constant.name);
@@ -273,6 +276,7 @@ fn mentions(module: &mut js::Module) -> HashSet<String> {
             .flat_map(|i| i.named.iter().map(|(_, l)| l.clone())),
     );
     names.extend(module.default_export.iter().cloned());
+    names.extend(module.aliases.iter().map(|(local, _)| local.clone()));
     names
 }
 

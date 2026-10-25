@@ -535,7 +535,10 @@ test("a pub use of another module's function is re-exported from it", async () =
 // A `pub use` of the module's own function, or another module's constant,
 // by another name exports it by that, its `#[rust_js::name]` or its name
 // camelCase, as React's scheduler exports `getCurrentTime` as `unstable_now`
-// and `ImmediatePriority` as `unstable_ImmediatePriority` (ADR 0596).
+// and `ImmediatePriority` as `unstable_ImmediatePriority` (ADR 0596). Its
+// own item it exports by those alone, as upstream's `function
+// getCurrentTime` is in its `export { .. }` alone (ADR 0596, amended): a
+// function, and a constant, in the order the `pub use`s are written.
 test("a pub use by another name of the module's own function exports it by that", async () => {
   const dir = fixture("aliases");
   writeFileSync(join(dir, "lib.rs"), `mod priorities;
@@ -545,22 +548,116 @@ pub use priorities::IMMEDIATE as UNSTABLE_IMMEDIATE;
 pub use priorities::IDLE;
 #[cfg_attr(rust_js, rust_js::name = "unstable_now")]
 pub use self::current_time as unstable_now;
+pub use self::LIMIT as MAX_LIMIT;
 pub use self::current_time as time_now;
+
+pub const LIMIT: u32 = 9;
 
 pub fn current_time() -> u32 {
     priorities::IMMEDIATE + priorities::IDLE
 }
+
+pub fn to_array() -> [u32; 2] {
+    [current_time(), LIMIT]
+}
 `);
   writeFileSync(join(dir, "priorities.rs"), "pub const IMMEDIATE: u32 = 1;\npub const IDLE: u32 = 5;\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export { currentTime as unstable_now, currentTime as timeNow };");
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain("\ndeclare const LIMIT: number;\n");
+  expect(dts).toContain("\ndeclare function currentTime(): number;\n");
+  expect(dts).toContain("\nexport function toArray(): number[];\n");
+  expect(dts).toContain("export { currentTime as unstable_now, LIMIT as MAX_LIMIT, currentTime as timeNow };");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('export { IMMEDIATE as unstable_ImmediatePriority, IDLE } from "./priorities.js";');
-  expect(js).toContain("export { currentTime as unstable_now, currentTime as timeNow };");
+  expect(js).toContain("\nconst LIMIT = 9;\n");
+  expect(js).toContain("\nfunction currentTime() {\n");
+  expect(js).toContain("\nexport function toArray() {\n");
+  expect(js).toContain("export { currentTime as unstable_now, LIMIT as MAX_LIMIT, currentTime as timeNow };");
   // The module reads them by their own names, not the names it exports them by.
   expect(js).toContain('import { IDLE, IMMEDIATE } from "./priorities.js";');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.unstable_now(), lib.timeNow(), lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 1, 5]);
+  expect([lib.unstable_now(), lib.timeNow(), lib.MAX_LIMIT, lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 9, 1, 5]);
+  expect([lib.currentTime, lib.LIMIT, lib.toArray()]).toEqual([undefined, undefined, [6, 9]]);
+});
+
+// One it exports by an alias alone is its module's own, so it takes the
+// name of a global its module doesn't read, `console`, as an unexported
+// function does (ADR 0352), and its `export { .. }` names it so (ADR 0596,
+// amended).
+test("a function exported by its alias alone is named as an unexported one", async () => {
+  const dir = fixture("aliases-reclaimed");
+  writeFileSync(join(dir, "lib.rs"), `pub use self::console as log;
+
+pub fn console() -> f64 {
+    1.0
+}
+
+pub fn twice() -> f64 {
+    console() * 2.0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("\nfunction console() {\n");
+  expect(js).toContain("\nexport { console as log };\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.log(), lib.twice()]).toEqual([1, 2]);
+});
+
+// A module that exports its own item by another name alone is imported by
+// that by every other module of its crate (`default_exports::exported_as`,
+// ADR 0596, amended): one that names it by its own path, as the Rust names
+// it, `import { unstable_now as getCurrentTime }`; one whose `use` names it
+// by the alias, by the name it's exported as; a `pub use` of it, from it.
+test("a module's own item a pub use renames is imported by that name", async () => {
+  const dir = fixture("aliases-imported");
+  writeFileSync(join(dir, "lib.rs"), `mod index;
+mod report;
+mod scheduler;
+
+use scheduler::unstable_now;
+
+pub fn by_alias() -> f64 {
+    unstable_now() + scheduler::to_array()
+}
+
+pub fn by_path() -> f64 {
+    report::report() + index::get_current_time() + scheduler::MAX
+}
+`);
+  writeFileSync(join(dir, "scheduler.rs"), `#[cfg_attr(rust_js, rust_js::name = "unstable_now")]
+pub use self::get_current_time as unstable_now;
+pub use self::LIMIT as MAX;
+
+pub const LIMIT: f64 = 100.0;
+
+pub fn get_current_time() -> f64 {
+    6.0
+}
+
+pub fn to_array() -> f64 {
+    get_current_time() + 1.0
+}
+`);
+  writeFileSync(join(dir, "report.rs"), "pub fn report() -> f64 {\n    crate::scheduler::get_current_time() * 10.0 + crate::scheduler::LIMIT\n}\n");
+  writeFileSync(join(dir, "index.rs"), "pub use crate::scheduler::get_current_time;\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const read = (file: string) => readFileSync(join(dir, file), "utf8");
+  expect(read("scheduler.js")).toContain("\nfunction getCurrentTime() {\n");
+  expect(read("scheduler.js")).toContain("export { getCurrentTime as unstable_now, LIMIT as MAX };");
+  // A path through a re-export is to the item, read by its alias where the
+  // module's `use` names it so, else by its own name.
+  expect(read("lib.js")).toContain('import { MAX as LIMIT, toArray, unstable_now } from "./scheduler.js";\n');
+  expect(read("lib.js")).toContain("return unstable_now() + toArray();");
+  expect(read("report.js")).toContain('import { MAX as LIMIT, unstable_now as getCurrentTime } from "./scheduler.js";');
+  expect(read("report.js")).toContain("return getCurrentTime() * 10 + LIMIT;");
+  expect(read("index.js")).toContain('export { unstable_now as getCurrentTime } from "./scheduler.js";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.byAlias(), lib.byPath()]).toEqual([13, 266]);
+  const index = await import(join(dir, "index.js"));
+  expect(Object.keys(index)).toEqual(["getCurrentTime"]);
+  expect(index.getCurrentTime()).toBe(6);
 });
 
 // A `pub use` of a binding of a JS module's export is a re-export from that

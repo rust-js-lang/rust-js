@@ -1,11 +1,12 @@
 //! A module's default export, `js::export_default!` (ADRs 0192, 0611,
-//! 0625): what each of the macro's forms makes the default, and what a
-//! module exports an item of its own as, which every importer asks
+//! 0625): what each of the macro's forms makes the default; each `pub use`
+//! of a module's own item by another name (`own_aliases`, ADR 0596); and
+//! what a module exports an item of its own as, which every importer asks
 //! (`exported_as`): a module of its crate, another crate through its
 //! library's manifest, a `pub use` re-exporting it, a `js::import!` of it.
 
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
+use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind, UseKind};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
 use rustc_span::{Span, Symbol, kw};
@@ -35,16 +36,77 @@ pub(super) fn held_by_default(tcx: TyCtxt<'_>, def: DefId) -> bool {
 /// its module, which every importer imports it by: `default`, where its
 /// module's `js::export_default!` makes it the default, of either form,
 /// `js::export_default! { pub fn noop() {} }` or `js::export_default!(page);`;
-/// else `name`, its name there (ADRs 0251, 0611, 0773).
+/// else the name its module's first `pub use` of it by another name gives
+/// it, `pub use self::get_current_time as unstable_now;`'s `unstable_now`,
+/// as its module exports it by that alone (`own_aliases`); else `name`, its
+/// name there (ADRs 0251, 0596, 0611, 0773).
 pub(super) fn exported_as(tcx: TyCtxt<'_>, item: DefId, name: &str) -> String {
-    match is_own_default(tcx, item) {
-        true => "default".to_string(),
-        false => name.to_string(),
+    if is_own_default(tcx, item) {
+        return "default".to_string();
+    }
+    match alias_of(tcx, item) {
+        Some(alias) => alias.exported,
+        None => name.to_string(),
     }
 }
 
+/// A `pub use` of its module's own function or constant by another name,
+/// `pub use self::get_current_time as unstable_now;` (ADR 0596).
+pub(super) struct Alias {
+    /// The item it names.
+    pub(super) item: DefId,
+    /// The name it gives the item in Rust, which a path through it ends in.
+    pub(super) name: Symbol,
+    /// What the module exports the item by: the `use`'s `#[rust_js::name]`,
+    /// `unstable_now`, or `name` camelCase (ADR 0573).
+    pub(super) exported: String,
+}
+
+/// Each `pub use` of `module`'s own function or constant by another name,
+/// in the order they're written, which its JS's `export { .. }` lists them
+/// in. The module exports the item by these alone, not by its own name,
+/// which Rust can't say: a `pub use` of a private item is E0364 (ADR 0596,
+/// amended). Not one of a binding, which is a JS module's re-export (ADR
+/// 0240).
+pub(super) fn own_aliases(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<Alias> {
+    (tcx.hir_module_free_items(module))
+        .filter_map(|id| {
+            let item = tcx.hir_item(id);
+            let ItemKind::Use(path, UseKind::Single(ident)) = item.kind else {
+                return None;
+            };
+            let Some(Res::Def(_, named)) = path.res.value_ns else {
+                return None;
+            };
+            let own = (named.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module);
+            let aliased = own && super::analysis::is_reexport(tcx, item) && !super::bindings::is_binding(tcx, named);
+            aliased.then(|| Alias {
+                item: named,
+                name: ident.name,
+                exported: super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+            })
+        })
+        .collect()
+}
+
+/// `item`'s first alias in its own module (`own_aliases`).
+fn alias_of(tcx: TyCtxt<'_>, item: DefId) -> Option<Alias> {
+    let module = tcx.parent_module_from_def_id(item.as_local()?);
+    own_aliases(tcx, module).into_iter().find(|alias| alias.item == item)
+}
+
+/// What `item`'s module exports it by where its `pub use` names it `name`
+/// in Rust, `unstable_now`, which a `use` of that name imports it as
+/// (`own_aliases`).
+pub(super) fn alias_named(tcx: TyCtxt<'_>, item: DefId, name: Symbol) -> Option<String> {
+    let module = tcx.parent_module_from_def_id(item.as_local()?);
+    (own_aliases(tcx, module).into_iter())
+        .find(|alias| alias.item == item && alias.name == name)
+        .map(|alias| alias.exported)
+}
+
 /// Whether `item` is its own module's default export (`exported_as`).
-pub(super) fn is_own_default(tcx: TyCtxt<'_>, item: DefId) -> bool {
+fn is_own_default(tcx: TyCtxt<'_>, item: DefId) -> bool {
     (item.as_local()).is_some_and(|local| own_default(tcx, tcx.parent_module_from_def_id(local)) == Some(item))
 }
 

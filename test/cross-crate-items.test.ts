@@ -145,7 +145,7 @@ pub mod again {
 }
 
 pub mod helpers {
-    pub fn twice(n: u32) -> u32 {
+    pub(crate) fn twice(n: u32) -> u32 {
         n * 2
     }
 }
@@ -180,7 +180,7 @@ pub fn local() -> (u32, u32, &'static str, u32) {
   expect(read("again.js")).toContain('export { default } from "./noop.js";\n');
   expect(read("twice.js")).toContain('export { twice as default } from "./helpers.js";\n');
   const manifest = JSON.parse(read("lib.manifest.json")).library;
-  expect(manifest.items.filter((item: any) => item.default).map((item: any) => item.export)).toEqual(["noop", "page", "VERSION"]);
+  expect(manifest.items.filter((item: any) => item.exported_as === "default").map((item: any) => item.export)).toEqual(["noop", "page", "VERSION"]);
   // Whichever path names it, it's its module's default, imported once.
   expect(app).toContain('import noop from "../dep/noop.js";\nimport page from "../dep/page.js";\nimport VERSION from "../dep/version.js";\n');
   expect(app).toContain("  return [noop(), noop(), VERSION, page(), VERSION];\n");
@@ -279,4 +279,42 @@ pub fn caught(scope: &dyn Fn()) -> u32 {
   expect(app).toContain("  } catch (thrown) {\n");
   const { caught } = await import(join(dir, "app", "lib.js"));
   expect(caught(() => { throw new Error("no"); })).toBe(2);
+});
+
+// React's scheduler exports `getCurrentTime` as `unstable_now` alone: a
+// library's module that exports its own item by the name a `pub use`
+// gives it is imported by that by another crate, its manifest's item
+// saying so, the import named after the item, as its own crate's path
+// names it (ADR 0596, amended).
+test("a library's item its module exports by another name is imported by that", async () => {
+  const dir = fixture("cross-crate-aliases");
+  const { dep, app } = compiled(dir, `pub mod scheduler {
+    #[cfg_attr(rust_js, rust_js::name = "unstable_now")]
+    pub use self::get_current_time as unstable_now;
+    pub use self::LIMIT as MAX;
+
+    pub const LIMIT: f64 = 100.0;
+
+    pub fn get_current_time() -> f64 {
+        6.0
+    }
+}
+
+pub fn local() -> f64 {
+    scheduler::get_current_time()
+}
+`, `pub fn called() -> f64 {
+    dep::scheduler::get_current_time() + dep::scheduler::unstable_now() + dep::scheduler::MAX
+}
+`);
+  const scheduler = readFileSync(join(dir, "dep", "scheduler.js"), "utf8");
+  expect(scheduler).toContain("\nconst LIMIT = 100;\n\nfunction getCurrentTime() {\n  return 6;\n}\n\nexport { getCurrentTime as unstable_now, LIMIT as MAX };\n");
+  expect(dep).toContain('import { unstable_now as getCurrentTime } from "./scheduler.js";\n');
+  const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library;
+  const aliased = manifest.items.filter((item: any) => item.exported_as).map((item: any) => [item.export, item.exported_as]);
+  expect(aliased.sort()).toEqual([["LIMIT", "MAX"], ["getCurrentTime", "unstable_now"]]);
+  expect(app).toContain('import { MAX as LIMIT, unstable_now as getCurrentTime } from "../dep/scheduler.js";\n');
+  expect(app).toContain("  return getCurrentTime() + getCurrentTime() + LIMIT;\n");
+  const { called } = await import(join(dir, "app", "lib.js"));
+  expect(called()).toBe(112);
 });
