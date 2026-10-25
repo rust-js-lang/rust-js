@@ -23,6 +23,8 @@ const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "-
 // What the snapshots and the diagnostics read: the compiler and the runtime.
 const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
 const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
+// A change to tidy is checked after each of its stages (ADR 0659).
+const tidy = all || changed.some((file) => /^src\/lower\/mir\/tidy/.test(file));
 
 // The mutations the change adds or changes: each `name` its lists' diff adds.
 const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
@@ -79,6 +81,7 @@ const jobs: [string, string[], Record<string, string>][] = [
     ] as const
   ).map(([name, files]): [string, string[], Record<string, string>] => [name, ["bun", "test", ...files], {}]),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),
+  ...(tidy ? [["tidy's stages", ["bun", "test", "test/tidy-stages.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
   // What pins the JS written, the names it gives and what it refuses; and
   // the guide's examples compiled, std's package and the readability ratchet,
   // each of which a lowering change has turned `main` red with (#212, #222).

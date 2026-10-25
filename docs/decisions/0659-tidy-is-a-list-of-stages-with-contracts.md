@@ -197,3 +197,38 @@ the lowering, JSX and snapshot tests and the ports with none, and its
 mutation, `late-unreachable-kept`, survived. The pass is gone with its
 mutation; the contract is what says none is left, and a debug build
 refuses a body where one is, as of any stage.
+
+## Amendment: each stage's JS runs as Rust does
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a program
+prints and how it ends are Rust's after every stage, as they are once
+tidy is done.
+
+A stage's contracts say its JS parses: each jump lands, no name is
+declared twice. Nothing said it does what the body did. Each stage is a
+readability rewrite of a body already correct (ADR 0364), so what it
+leaves must be correct too, or a later pass is what makes it so, and a
+shape that pass doesn't recognize keeps the wrong JS. An architecture
+review (2026-10-25) proposed checking that, translation validation, with
+the flag this ADR already has.
+
+- **`test/tidy-stages.test.ts` compiles a corpus case once for each
+  stage's end**, `--tidy-until` its last pass, as `--tidy-passes` lists
+  them, 16 of them with the stages run again, and runs each as the corpus
+  runs it, against native Rust. A run agreed with is kept by what it ran,
+  as the corpus's are (ADR 0567). `corpus-cases.ts` is the one reading of
+  a case's directives, which the corpus and this test both ask.
+- **The suite runs six cases** whose JS tidy changes most, control flow,
+  assignments, matches, early exits and drops, about 20 seconds; **the
+  nightly runs every case**, a sixth on each of six machines
+  (`TIDY_STAGES=corpus`). A control holds that the JS checked is each
+  stage's, not the finished JS sixteen times.
+- **What it found, the first time it ran**, of a quarter of the corpus:
+  `range_steps_known.rs` doesn't finish at any stage before `names`.
+  Its `(0..u32::MAX).step_by(1 << 30)` is its bounds' arithmetic only
+  once the `range steps` pass has folded it (ADR 0517, amended), and the
+  same range held in a variable, given to generic code, or of a start
+  tidy can't read, isn't folded at all, and never finishes once tidy is
+  done: issue #231. A pass is where a program's termination was decided.
+  Until it's fixed in the runtime, where std's is, the nightly's part
+  with that case fails, as it should.

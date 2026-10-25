@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     replace: "                if run_stage(body, hints, again, again.name) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a stage read again is its own"],
   },
+  {
+    name: "tidy-until-ignored",
+    breaks: "`--tidy-until` stops nowhere, so each stage's JS that's checked is the finished JS (ADR 0659, amended)",
+    file: "src/lower/mir/tidy.rs",
+    find: "        if hints.until == Some(&*pass_name(name, pass)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "isn't its JS after the last"],
+  },
 ];

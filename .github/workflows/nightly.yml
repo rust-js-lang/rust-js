@@ -2,8 +2,9 @@ name: Nightly
 
 # Every test there is, of `main`, each night at 02:00 UTC+7: check.yml's
 # jobs, the suite, the examples, the WASM compiler, rustc's tests, with
-# every mutation where a branch's check runs only its own, and a batch of
-# generated programs, new ones each night (ADR 0092). Of a public
+# every mutation where a branch's check runs only its own, a batch of
+# generated programs, new ones each night (ADR 0092), and each case of the
+# corpus after each of tidy's stages (ADR 0659). Of a public
 # repository, GitHub's machines cost nothing. A failure is mailed to whoever
 # last changed this schedule; `bun run ci:status` shows the latest run.
 on:
@@ -42,3 +43,34 @@ jobs:
     with:
       fuzz_seeds: '600'
       fuzz_start: ${{ needs.seeds.outputs.start }}
+
+  # Tidy's stages on the whole corpus (ADR 0659): each case's JS as tidy
+  # leaves it after each stage runs as native Rust does, a sixth of the
+  # cases on each of six machines; the suite runs a few of them.
+  stages:
+    name: tidy stages (${{ matrix.part }}/6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      # Each stage's JS runs under Node, whose TypeScript runner needs 22.18 or later.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      # Each case's native side is built with the pinned toolchain.
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run part ${{ matrix.part }} of 6
+        env:
+          TIDY_STAGES: corpus
+          RUST_JS_CASES: ${{ matrix.part }}/6
+          RUST_JS_COMPILER: target/release/rust-js
+        run: bun test --timeout=300000 test/tidy-stages.test.ts

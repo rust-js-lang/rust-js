@@ -78,6 +78,7 @@ branch's one running, and no branch's run touches another's.
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
 | The Vite example's build | | **examples** job | |
 | Generated programs (fuzz) | | | yes |
+| Each corpus case after each of tidy's stages, `test/tidy-stages.test.ts` | its six cases, in `check:fast` when tidy changes | its six cases, in the suite | every case, on 6 machines |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
@@ -381,8 +382,9 @@ gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 ### `nightly.yml`, each night at 02:00 UTC+7, of `main`
 
 Every test there is: `check.yml`'s jobs, its suite in 2 shards and every
-mutation on 16 machines where a branch's check runs only its own, and 600
-generated programs, new ones each night, from the day's number. It's a
+mutation on 16 machines where a branch's check runs only its own, 600
+generated programs, new ones each night, from the day's number, and every
+corpus case after each of tidy's stages on 6 machines (ADR 0659). It's a
 group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines

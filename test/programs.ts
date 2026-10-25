@@ -138,13 +138,17 @@ export function compileJs(
   edition = "2024",
   library = false,
   env: Record<string, string> = {},
+  // rust-js's own flags besides, `--tidy-until <pass>` say; then the JS is
+  // named for them, so each set's JS is kept apart in one `dir`.
+  flags: string[] = [],
 ): { js: string } | CompileError {
   const wrapper = join(dir, "lib.rs");
   writeFileSync(wrapper, `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`);
   // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
-  const js = library ? join(dir, "library", "case.js") : join(dir, "case.js");
-  const mode = library ? ["--library", "--manifest", join(dir, "library", "case.manifest.json")] : [];
-  const p = runSync([compiler, wrapper, "-o", js, ...mode, "--", `--edition=${edition}`, "-Awarnings", remapRoot], root, compileTimeout, env);
+  const name = flags.length === 0 ? "case" : `case-${flags.join("-").replaceAll(/[^A-Za-z0-9-]+/g, "_")}`;
+  const js = library ? join(dir, "library", `${name}.js`) : join(dir, `${name}.js`);
+  const mode = library ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
+  const p = runSync([compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot], root, compileTimeout, env);
   if (p.code === 0 && !stopped(p, compileTimeout)) return { js };
   const { kind, reason } = compileFailure(p, compileTimeout);
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };

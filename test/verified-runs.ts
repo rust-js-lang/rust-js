@@ -69,7 +69,7 @@ export function generatedTexts(dir: string, except: string[] = []): string[] {
 let sharedKey: string | undefined;
 export function shared(): string {
   if (sharedKey === undefined) {
-    const harness = ["corpus.test.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
+    const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
     const files = [...jsFiles(join(root, "runtime")), ...jsFiles(join(root, "std")), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([
