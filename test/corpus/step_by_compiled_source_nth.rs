@@ -29,4 +29,15 @@ fn main() {
     // And an `enumerate()`'s, its source's `nth`, counted (#277).
     let nth = louds(40, 5).into_iter().rev().enumerate().step_by(id(3)).nth(id(1));
     println!("{:?}", nth.map(|(at, loud)| (at, loud.0)));
+    // A `step_by` over a `take` past its end: the item its source's `nth`
+    // gives there, dropped by the drop the `take`'s `nth` is given (#289).
+    let sum: u32 = louds(60, 3)
+        .into_iter()
+        .rev()
+        .step_by(id(2))
+        .take(id(2))
+        .step_by(id(3))
+        .map(|loud| loud.0)
+        .sum();
+    println!("{sum}");
 }

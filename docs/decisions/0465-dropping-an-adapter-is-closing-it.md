@@ -332,3 +332,17 @@ which holds `nth-dropping-drop-ungiven`, `lent-nth-drop-unpassed` and
 `chain-nth-given-drop-unused` again. They had survived main's check of
 6d8613336. Readability: `$iter` 85.3 to 85.4 and renamed temporaries
 730.5 to 731.8 in 10,000 lines, as each such case does.
+
+## Amendment: a `step_by` gives the `nth` it asks the items' drop (#289)
+
+`$stepBy` asks an `ownNth` source's `nth`. A `take` over a `step_by` is
+one, and past its end it drops the item its source's `nth(n - 1)` gives,
+using the drop it's given, since it has none of its own (#285). `$stepBy`
+gave none, so `rev().step_by(2).take(2).step_by(3)` never dropped that
+item (fuzz seed 60523). It now passes its drop. Other callers that ask
+an `nth` and have a drop, `$skipping`, `$closing`, a chain's second side
+and `$rev`'s back, would pass it the same way. No case reaches them yet,
+so they get it with the case that does. `step_by_compiled_source_nth`
+adds the seed's shape, and `step-by-nth-drop-ungiven` is caught.
+Readability: the line's renamed temporaries add to that share (735 to
+736.1 in 10,000 lines), as each such case does.

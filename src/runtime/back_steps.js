@@ -194,7 +194,9 @@ function $stepBy(it, step, drop) {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
     // crate's own where it writes one (#162); from the back, its `nth_back`,
     // as std's `next_back` asks it (#245).
-    if (by === "next" && (drop === undefined || it.ownNth) && it.nth !== undefined) return it.nth(k);
+    // Given the items' drop, which an `ownNth` with none of its own, a
+    // `take`'s past its end, drops by (#289).
+    if (by === "next" && (drop === undefined || it.ownNth) && it.nth !== undefined) return it.nth(k, drop);
     if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();

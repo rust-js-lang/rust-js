@@ -275,5 +275,41 @@ function main() {
   };
   const value$7 = nth$3 ? map$3(nth$3) : undefined;
   console.log(`${value$7 == null ? "None" : `Some((${value$7[0]}, ${value$7[1]}))`}`);
+  // A `step_by` over a `take` past its end: the item its source's `nth`
+  // gives there, dropped by the drop the `take`'s `nth` is given (#289).
+  const value$8 = $rev($closing($iter(louds(60, 3)), $dropEach(loudDrop_drop)));
+  let tmp$4;
+  try {
+    tmp$4 = id(2);
+  } catch (error) {
+    value$8.return();
+    throw error;
+  }
+  const step$3 = $step(tmp$4);
+  const value$9 = $stepBy(value$8, step$3, loudDrop_drop);
+  let tmp$5;
+  try {
+    tmp$5 = id(2);
+  } catch (error) {
+    value$9.return();
+    throw error;
+  }
+  const take = value$9.take(tmp$5);
+  let tmp$6;
+  try {
+    tmp$6 = id(3);
+  } catch (error) {
+    take.return();
+    throw error;
+  }
+  const step$4 = $step(tmp$6);
+  const sum = $stepBy(take, step$4, loudDrop_drop)
+    .map((loud) => {
+      const result = loud[0];
+      loudDrop_drop(loud);
+      return result;
+    })
+    .reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`${sum}`);
 }
 //# sourceMappingURL=case.js.map

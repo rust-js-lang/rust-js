@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "step-by-nth-drop-ungiven",
+    breaks: "a `step_by` asks an `ownNth` source's `nth` without the items' drop, so a `take` past its end never drops the item its source gives there (#289)",
+    file: "src/runtime/back_steps.js",
+    find: "it.nth !== undefined) return it.nth(k, drop);\n",
+    replace: "it.nth !== undefined) return it.nth(k);\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "enumerate-own-nth-unsaid",
     breaks: "an `enumerate()` doesn't say its `nth` is its source's own, so a `step_by` over it steps each item of a reversed `Vec`, back to front (#277)",
     file: "src/runtime/back_steps.js",
