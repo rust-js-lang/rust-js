@@ -7,13 +7,11 @@ export function entry() {
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };
-
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
 }
 
 export const counterDisplay = { fmt: counterDisplay_fmt };
-
 function counterDisplay_fmt(counter) {
   return `counted ${counter[0].value}`;
 }
@@ -25,7 +23,6 @@ function missingDebug_fmt(missing) {
 }
 
 export const missingDisplay = { fmt: missingDisplay_fmt };
-
 function missingDisplay_fmt(missing) {
   return `missing ${missing[0]}`;
 }

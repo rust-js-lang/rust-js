@@ -3,7 +3,6 @@
 export function Empty() {
   return <></>;
 }
-
 export function Literals() {
   return (
     <div>
@@ -18,7 +17,6 @@ export function Literals() {
     </div>
   );
 }
-
 export function Expressions(show) {
   const pair = [1, 2];
   const list = [3, 4];
@@ -34,7 +32,6 @@ export function Expressions(show) {
     </section>
   );
 }
-
 export function Attributes() {
   const n = 2;
   return (

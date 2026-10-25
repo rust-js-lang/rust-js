@@ -43,19 +43,15 @@ export const Vec2 = {
 function vec2Add_add(vec2, o) {
   return Vec2.new(vec2.x + o.x, vec2.y + o.y);
 }
-
 function vec2Sub_sub(vec2, o) {
   return Vec2.new(vec2.x - o.x, vec2.y - o.y);
 }
-
 function vec2MulF64_mul(vec2, k) {
   return Vec2.new(vec2.x * k, vec2.y * k);
 }
-
 function vec2Neg_neg(vec2) {
   return Vec2.new(-vec2.x, -vec2.y);
 }
-
 function vec2AddAssign_addAssign(vec2, o) {
   vec2.x += o.x;
   vec2.y += o.y;

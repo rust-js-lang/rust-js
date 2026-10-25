@@ -11,21 +11,17 @@ function noisyDrop_drop(noisy) {
 }
 
 const loudZone = { offset: loudZone_offset, show: loudZone_show, $dropOffset: noisyDrop_drop };
-
 function loudZone_offset(loud, name) {
   return [name];
 }
-
 function loudZone_show(offset) {
   return `loud ${offset[0]}`;
 }
 
 const quietZone = { offset: quietZone_offset, show: quietZone_show };
-
 function quietZone_offset(quiet, name) {
   return $byteLen(name);
 }
-
 function quietZone_show(offset) {
   return `quiet ${offset}`;
 }
@@ -79,7 +75,6 @@ function describe(zone, ZZone) {
 }
 
 const loudSource = { make: loudSource_make, $dropItem: noisyDrop_drop };
-
 function loudSource_make(loud) {
   return ["made"];
 }

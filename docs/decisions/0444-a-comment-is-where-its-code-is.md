@@ -13,6 +13,9 @@ argument and an object literal's field are starts too.
 Extended by [0753](0753-a-branch-of-only-comments-keeps-them.md): a block
 of only comments keeps them, where it ends; an `else` of only comments is
 one.
+Amended by [0865](0865-a-blank-line-is-where-the-rust-has-one.md): a
+blank line between top-level statements, an object's fields, and after a
+`let` with no JS, is where the Rust has one, and nowhere else (rule 5).
 Amended: an `unsafe` block's opening is no code between a comment and
 what it's before, and a `None` field a comment is written on keeps its key
 ([0280](0280-undefined-fields-left-out.md), amended). Amended

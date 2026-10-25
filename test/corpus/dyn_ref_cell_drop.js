@@ -11,11 +11,9 @@ const noisyNamed = {
   rename: (arg0, arg1) => noisyNamed_rename(arg0.value, arg1),
   $drop: noisyDrop_drop,
 };
-
 function noisyNamed_name(noisy) {
   return noisy[0];
 }
-
 function noisyNamed_rename(noisy, to) {
   noisy[0] = to;
 }

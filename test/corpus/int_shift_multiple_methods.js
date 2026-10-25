@@ -14,7 +14,6 @@ export function entry() {
 function id(x) {
   return x;
 }
-
 function main() {
   id(1);
   const value$1 = id(1);

@@ -7,13 +7,11 @@ export function entry() {
 }
 
 const squareShape = { SIDES: 4, NAME: "square", area: squareShape_area };
-
 function squareShape_area(square) {
   return square[0] * square[0];
 }
 
 const triangleShape = { SIDES: 3, NAME: "shape", area: triangleShape_area };
-
 function triangleShape_area(triangle) {
   return (triangle[0] * triangle[0]) / 2;
 }
@@ -27,7 +25,6 @@ function total(shapes, SShape) {
 }
 
 const wrapShape = { SIDES: 0, NAME: "shape", area: wrapShape_area };
-
 function wrapShape_area(wrap) {
   return 0;
 }
@@ -45,7 +42,6 @@ const counterZero = {
 };
 
 const counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
-
 function counterBump_bump(counter) {
   counter.n = (counter.n + 1) >>> 0;
 }
@@ -53,7 +49,6 @@ function counterBump_bump(counter) {
 const u32Zero = { ZERO: 0 };
 
 const u32Bump = { bump: u32Bump_bump };
-
 function u32Bump_bump(self) {
   self.value = (self.value + 1) >>> 0;
 }

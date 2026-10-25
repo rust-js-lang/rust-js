@@ -34,7 +34,6 @@ function taskDebug_fmt(task) {
 }
 
 export const taskPartialEq = { eq: taskPartialEq_eq };
-
 function taskPartialEq_eq(task, other) {
   return task.id === other.id;
 }
@@ -43,13 +42,11 @@ export const taskPartialOrd = {
   PartialEq: () => taskPartialEq,
   partialCmp: taskPartialOrd_partialCmp,
 };
-
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }
 
 export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
-
 function taskOrd_cmp(task, other) {
   return $cmp(other.id, task.id);
 }
@@ -63,13 +60,11 @@ export const scorePartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: scorePartialOrd_partialCmp,
 };
-
 function scorePartialOrd_partialCmp(score, other) {
   return scoreOrd_cmp(score, other);
 }
 
 export const scoreOrd = { PartialOrd: () => scorePartialOrd, cmp: scoreOrd_cmp };
-
 function scoreOrd_cmp(score, other) {
   return $cmp(other[0], score[0]);
 }
@@ -78,13 +73,11 @@ export const sizePartialOrd = {
   PartialEq: () => ({ eq: (a, b) => a === b }),
   partialCmp: sizePartialOrd_partialCmp,
 };
-
 function sizePartialOrd_partialCmp(size, other) {
   return sizeOrd_cmp(size, other);
 }
 
 export const sizeOrd = { PartialOrd: () => sizePartialOrd, cmp: sizeOrd_cmp };
-
 function sizeOrd_cmp(size, other) {
   return $cmp(["Small", "Large"].indexOf(other), ["Small", "Large"].indexOf(size));
 }

@@ -18,7 +18,6 @@ export function entry() {
 }
 
 export const debugByteDebug = { fmt: debugByteDebug_fmt };
-
 function debugByteDebug_fmt(debugByte) {
   if (debugByte[0] === 32) {
     return "' '";

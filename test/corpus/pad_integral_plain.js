@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const fixedDisplay = { fmt: fixedDisplay_fmt };
-
 function fixedDisplay_fmt(fixed) {
   return (!fixed.negative ? "" : "-") + "" + fixed.digits;
 }

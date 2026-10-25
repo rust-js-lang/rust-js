@@ -11,13 +11,11 @@ export const loosePartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: loosePartialOrd_partialCmp,
 };
-
 function loosePartialOrd_partialCmp(loose, other) {
   return looseOrd_cmp(loose, other);
 }
 
 export const looseOrd = { PartialOrd: () => loosePartialOrd, cmp: looseOrd_cmp };
-
 function looseOrd_cmp(loose, other) {
   return $cmp(loose[0], other[0]);
 }

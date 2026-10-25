@@ -25,7 +25,6 @@ function versionDebug_fmt(version) {
 }
 
 export const versionPartialEq = { eq: versionPartialEq_eq };
-
 function versionPartialEq_eq(version, other) {
   return version[0] === other[0];
 }
@@ -34,13 +33,11 @@ export const versionPartialOrd = {
   PartialEq: () => versionPartialEq,
   partialCmp: versionPartialOrd_partialCmp,
 };
-
 function versionPartialOrd_partialCmp(version, other) {
   return versionOrd_cmp(version, other);
 }
 
 export const versionOrd = { PartialOrd: () => versionPartialOrd, cmp: versionOrd_cmp };
-
 function versionOrd_cmp(version, other) {
   return $cmp(version[0], other[0]);
 }

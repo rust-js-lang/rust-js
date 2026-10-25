@@ -10,7 +10,6 @@ const metersConvertF64 = {
   convert: metersConvertF64_convert,
   twice: (self) => [metersConvertF64_convert(self), metersConvertF64_convert(self)],
 };
-
 function metersConvertF64_convert(meters) {
   return meters[0];
 }
@@ -19,7 +18,6 @@ const metersConvertString = {
   convert: metersConvertString_convert,
   twice: (self) => [metersConvertString_convert(self), metersConvertString_convert(self)],
 };
-
 function metersConvertString_convert(meters) {
   return `${$displayF64(meters[0])} m`;
 }
@@ -33,13 +31,11 @@ function both(x, XConvertF64, XConvertString) {
 }
 
 const numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
-
 function numsTakeU32_take(nums) {
   return nums.list.pop();
 }
 
 const stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
-
 function stackTakeT_take(stack) {
   return $pop(stack.list);
 }
@@ -57,13 +53,11 @@ function count(x, XTakeT) {
 }
 
 const metersLabelU32 = { label: metersLabelU32_label };
-
 function metersLabelU32_label(meters) {
   return $f64ToInt(meters[0], 0, 4294967295);
 }
 
 const metersLabelString = { label: metersLabelString_label };
-
 function metersLabelString_label(meters) {
   return "meters";
 }

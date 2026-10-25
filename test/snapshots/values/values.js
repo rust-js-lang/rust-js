@@ -95,7 +95,6 @@ export const Value = {
 };
 
 export const valueDisplay = { fmt: valueDisplay_fmt };
-
 function valueDisplay_fmt(value) {
   let f = "";
   if (value === "Null") {
@@ -210,7 +209,6 @@ function bump(count, by) {
   count.value = (count.value + by) >>> 0;
   return count.value;
 }
-
 function log(out, line, count) {
   if (out.value) {
     out.value += "|";
@@ -218,7 +216,6 @@ function log(out, line, count) {
   out.value += line;
   bump(count, 1);
 }
-
 function settle(slot) {
   slot.value = ((slot.value ?? 0) + 10) >>> 0;
 }

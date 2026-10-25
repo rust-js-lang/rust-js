@@ -9,7 +9,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function lazy() {
   const v = [1, 2, 3, 4];
   const r = $lazyScan(
@@ -25,7 +24,6 @@ function lazy() {
   ).toArray();
   console.log(`[${r.join(", ")}]`);
 }
-
 function kept() {
   const v = [[1], [2], [3], [4]];
   const sums = $lazyScan($closing($iter(v), $dropEach(loudDrop_drop)), 0, (acc, l) => {
@@ -46,7 +44,6 @@ function kept() {
   }).toArray();
   console.log(`[${eager.join(", ")}]`);
 }
-
 function main() {
   lazy();
   kept();

@@ -5,13 +5,11 @@ export function entry() {
 }
 
 export const centimetersPartialEqMillimeters = { eq: centimetersPartialEqMillimeters_eq };
-
 function centimetersPartialEqMillimeters_eq(centimeters, other) {
   return ((centimeters[0] * 10) | 0) === other[0];
 }
 
 export const unitPartialEqI32 = { eq: unitPartialEqI32_eq };
-
 function unitPartialEqI32_eq(unit, other) {
   return ((unit._0 * 10) | 0) === other;
 }

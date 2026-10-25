@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const rangedLowerExp = { fmt: rangedLowerExp_fmt };
-
 function rangedLowerExp_fmt(ranged, options) {
   return $formatted($lowerExp(ranged[0], false, options?.precision), options, true);
 }

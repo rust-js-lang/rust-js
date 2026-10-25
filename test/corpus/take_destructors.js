@@ -18,7 +18,6 @@ export function entry() {
 function nDrop_drop(n) {
   console.log(`drop ${n[0]}`);
 }
-
 function splitFirst(iter, k, dropI, dropIItem) {
   let first;
   try {
@@ -42,7 +41,6 @@ function splitFirst(iter, k, dropI, dropIItem) {
   }
   return [first, result];
 }
-
 function main() {
   const v = $range(1, 6).map((value) => [value]);
   let iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);

@@ -87,7 +87,6 @@ export const limitedWrite = {
   writeAll: $ioWriteAll($limitedWrite_write),
   writeFmt: $ioWriteFmt($limitedWrite_write),
 };
-
 function limitedWrite_write(limited, bytes) {
   if (limited.room === 0) {
     return { TAG: "Err", _0: new $IoError("WriteZero", { value: "full", impl: $stringError() }) };

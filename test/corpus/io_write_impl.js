@@ -32,7 +32,6 @@ export function bufWrite(CAP) {
     };
   });
 }
-
 function bufWrite_write(buf, data, CAP) {
   const len = Math.min((CAP - buf.bytes.length) >>> 0, data.length);
   $extend(buf.bytes, $slice(data, 0, len));

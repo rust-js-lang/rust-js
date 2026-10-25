@@ -8,7 +8,6 @@ export function entry() {
 
 /** The same value, as JS's `===` has it. */
 export const valuePartialEq = { eq: valuePartialEq_eq };
-
 function valuePartialEq_eq(value, other) {
   return value === other;
 }

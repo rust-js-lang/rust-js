@@ -5,11 +5,9 @@ export function entry() {
 }
 
 function noisyDrop_drop(noisy) {}
-
 function generic(TNeedsDrop) {
   return TNeedsDrop;
 }
-
 function main() {
   console.log("false true false true");
   console.log(`${generic(true)} ${generic(false)} ${generic(true)}`);

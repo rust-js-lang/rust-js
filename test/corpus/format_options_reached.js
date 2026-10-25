@@ -16,7 +16,6 @@ export function entry() {
 }
 
 export const askedDisplay = { fmt: askedDisplay_fmt };
-
 function askedDisplay_fmt(asked, options) {
   const value = options?.align;
   let align;

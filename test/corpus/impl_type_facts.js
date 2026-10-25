@@ -17,7 +17,6 @@ function wrapFootprint(TSize) {
     footprint: (arg0) => wrapFootprint_footprint(arg0, TSize),
   }));
 }
-
 function wrapFootprint_footprint(wrap, TSize) {
   return bytes(wrap[0].length, TSize);
 }

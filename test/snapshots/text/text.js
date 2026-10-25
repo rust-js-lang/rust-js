@@ -30,7 +30,6 @@ export function chars(c) {
     c.charCodeAt(0) < 128,
   ];
 }
-
 export function ascii(c) {
   return [
     /^[0-9]$/.test(c),
@@ -43,7 +42,6 @@ export function ascii(c) {
     $toDigit(c, 8) !== undefined,
   ];
 }
-
 export function casts(c) {
   const code = c.codePointAt(0);
   const x = 7;
@@ -55,7 +53,6 @@ export function casts(c) {
     x,
   ];
 }
-
 export function parses(s) {
   const n = $parseInt(s, 0, 4294967295);
   const i = $parseInt(s, -128, 127);
@@ -69,7 +66,6 @@ export function parses(s) {
       : `Err(${$debugStr((i.TAG === "Err" ? { TAG: "Err", _0: i._0 } : i)._0)})`
   } ${f.TAG === "Ok" ? `Ok(${$debugF64(f._0)})` : `Err(${$debugStr(f._0)})`} ${b.TAG === "Ok" ? `Ok(${b._0})` : `Err(${$debugStr(b._0)})`} ${c.TAG === "Ok" ? `Ok(${$debugStr(c._0, "'")})` : `Err(${$debugStr(c._0)})`} ${$debugStr(owned)}`;
 }
-
 // `?` on a `parse`: its error converts to the function's.
 function sum(text) {
   let total = 0;
@@ -82,7 +78,6 @@ function sum(text) {
   }
   return { TAG: "Ok", _0: total };
 }
-
 export function words(text) {
   const words = text.split(/\p{White_Space}+/u).filter((word) => word !== "");
   const lines = $lines(text);
@@ -92,22 +87,18 @@ export function words(text) {
   const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r");
   return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
-
 export function slices(v) {
   const a = [10, 20, 30];
   const tail = a.slice(1).reduce((a, b) => (a + b) >>> 0, 0);
   return [$slice(v, 1, 3), $slice(v, 2), $slice(v, 0, 1), v.slice(), tail];
 }
-
 export function slicePanics(start, end) {
   const v = [1, 2, 3];
   return $slice(v, start, end);
 }
-
 export function escapes() {
   return `${$debugStr('a"b\\c\n	\r\0\x1Bé\u3000\xA0\u200B\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
 }
-
 // A template literal's own characters, in the text around the values.
 export function templates(n) {
   return `\`${n}\` costs \${n} \\ ${(n + 1) >>> 0}\t\u2028|\u0001|`;

@@ -20,7 +20,6 @@ export const bufWrite = {
   writeChar: $bufWrite_writeStr,
   writeFmt: $bufWrite_writeStr,
 };
-
 function bufWrite_writeStr(buf, s) {
   if (($byteLen(buf.text) + $byteLen(s)) >>> 0 > buf.cap) {
     return $fmtError();

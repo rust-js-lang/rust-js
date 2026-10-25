@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const vecTotal = { total: vecTotal_total };
-
 function vecTotal_total(vec) {
   return vec.reduce((a, b) => (a + b) >>> 0, 0);
 }
@@ -19,7 +18,6 @@ function refMutTTotal(TTotal) {
     total: (arg0) => refMutTTotal_total(arg0, TTotal),
   }));
 }
-
 function refMutTTotal_total(self, TTotal) {
   return (TTotal.total(self.value) + 100) >>> 0;
 }
@@ -45,7 +43,6 @@ export const counterWrite = {
   writeChar: $counterWrite_writeStr,
   writeFmt: $counterWrite_writeStr,
 };
-
 function counterWrite_writeStr(counter, s) {
   counter.text += s;
 }

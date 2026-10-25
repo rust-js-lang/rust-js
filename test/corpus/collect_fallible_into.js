@@ -48,7 +48,6 @@ function parseKv(s) {
     (values) => new Map(values),
   );
 }
-
 function bagDebug_fmt(bag) {
   return `Bag([${bag[0].join(", ")}])`;
 }

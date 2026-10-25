@@ -12,11 +12,9 @@ function plainIterator_next(plain) {
     return plain[1];
   }
 }
-
 function loudDrop_drop(loud) {
   console.log(`drop item ${loud[0]}`);
 }
-
 function second(items, dropI) {
   try {
     return $lent(Iterator.from(items)).drop(1).take(1).toArray()[0];
@@ -24,7 +22,6 @@ function second(items, dropI) {
     dropI?.(items);
   }
 }
-
 function secondOf(items, dropI, dropIItem) {
   try {
     return $nthDropping($lent(Iterator.from(items)), 1, dropIItem, true);
@@ -32,11 +29,9 @@ function secondOf(items, dropI, dropIItem) {
     dropI?.(items);
   }
 }
-
 function thirdRef(items) {
   return $lent(Iterator.from(items)).drop(2).take(1).toArray()[0];
 }
-
 function main() {
   const value = second($iterator(["a", 0], plainIterator_next), (it) => {
     console.log(`drop ${it.of[0]}`);

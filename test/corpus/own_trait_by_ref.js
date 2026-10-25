@@ -12,7 +12,6 @@ function counterIterator_next(counter) {
 }
 
 const counterDoubled = { byRef: (arg0) => counterDoubled_byRef(arg0.value) };
-
 function counterDoubled_byRef(counter) {
   return (counter.n * 2) >>> 0;
 }

@@ -13,7 +13,6 @@ const Message = {
 };
 
 export const messageDisplay = { fmt: messageDisplay_fmt };
-
 function messageDisplay_fmt(message) {
   if (message.TAG === "Literal") {
     return `literal ${message._0}`;

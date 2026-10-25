@@ -19,7 +19,7 @@ function nested(prev) {
   const current = {
     seen: new Set(),
   };
-  current.types = prev ? prev.types : undefined;
+  current.types = prev?.types;
   return current;
 }
 

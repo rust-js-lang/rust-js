@@ -84,7 +84,13 @@ pub fn emit(
     let allocator = Allocator::default();
     // The module's comments, each where its code is (ADR 0444), whose text
     // the program's source has, a doc comment's JSDoc after the Rust.
-    let (text, comments, trailing, arms) = comments_of(module, sources);
+    let Commented {
+        text,
+        comments,
+        trailing,
+        arms,
+        tops,
+    } = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
@@ -116,6 +122,9 @@ pub fn emit(
         }
         items = rest;
     }
+    // A blank line between two statements where the Rust has one between
+    // their code, where it tells (ADR 0444, amended).
+    let (comments, told) = apart(&body, comments, &tops, sources, text.len() as u32);
     let program = Program::new(
         Span::new(0, rust_source.len() as u32),
         SourceType::mjs(),
@@ -133,7 +142,10 @@ pub fn emit(
         ..CodegenOptions::default()
     };
     let generated = Codegen::new().with_options(options).build(&program);
-    let written = across_lines(&program, &cx);
+    let written = crate::format::Written {
+        told,
+        ..across_lines(&program, &cx)
+    };
 
     // The header, imports and runtime helpers, plain text above the
     // generated code, none of which maps to Rust.
@@ -401,13 +413,24 @@ fn with_inside_comments(line: &str, comments: &[(u32, &str)]) -> String {
 /// the program's source is, and the comments.
 type ArmComments = Vec<(u32, u32, &'static str, Vec<String>)>;
 
-fn comments_of(
-    module: &Module,
-    sources: &crate::program::Sources,
-) -> (String, Vec<oxc_ast::Comment>, Vec<Trailing>, ArmComments) {
+/// A module's comments, `comments_of`'s: the text they're of, the program's
+/// source and each doc comment's JSDoc after it; each before what it's
+/// before; each after code on its line; each branch's; and where the first
+/// of each statement's starts in the Rust, by where the statement does,
+/// what a blank line before it is before (`apart`).
+struct Commented {
+    text: String,
+    comments: Vec<oxc_ast::Comment>,
+    trailing: Vec<Trailing>,
+    arms: ArmComments,
+    tops: std::collections::HashMap<u32, u32>,
+}
+
+fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
+    let mut tops = std::collections::HashMap::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let (spans, comment_ends) = statement_spans(module);
@@ -531,7 +554,7 @@ fn comments_of(
                 // Not a part of what starts after it, a call the comment
                 // is before, not inside: `// c\n f(x);`'s is the statement's.
                 while let Some(at) = starts.get(next)
-                    && parts.get(at).is_some_and(|&whole| whole > c.lo)
+                    && parts.get(at).is_some_and(|&(whole, _)| whole > c.lo)
                     && !spans.iter().any(|&(lo, _)| lo == *at)
                 {
                     next += 1;
@@ -597,7 +620,17 @@ fn comments_of(
                 before = &body[..body.len() - last.len()];
             }
             let gap = &before[before.trim_end_matches(char::is_whitespace).len()..];
-            gap.matches('\n').count() >= 2
+            // And past `let`s with no JS of their own, as a comment is, an
+            // erased cast's, `let f: &dyn Fn() = unsafe { js::cast(f) };`
+            // (ADR 0865): only they, which no statement starts in, are after
+            // a blank line.
+            let past_lets = before.trim_end().rfind("\n\n").is_some_and(|blank| {
+                let (lets, rest) = leading_statements(&before[blank..]);
+                let at = |offset: usize| (file_start + offset) as u32;
+                let printed = spans.iter().any(|&(s, _)| at(blank) <= s && s < at(before.len()));
+                !lets.is_empty() && lets.iter().all(|s| s.starts_with("let ")) && rest.trim().is_empty() && !printed
+            });
+            gap.matches('\n').count() >= 2 || past_lets
         };
         // A blank line: a line comment of nothing, which prints as one.
         let blank = |text: &String| {
@@ -667,9 +700,11 @@ fn comments_of(
                 }
                 continue;
             }
-            // A part's, each as written, no blank line: Prettier keeps none
-            // between a call's arguments, nor before an object's first field.
-            let part = parts.contains_key(&at) && !spans.iter().any(|&(lo, _)| lo == at);
+            // A part's, each as written, no blank line before a call's
+            // argument, which Prettier keeps none between; an object's field
+            // has one where its struct literal's has (ADR 0444, amended), as
+            // Prettier keeps between properties, none before the first.
+            let part = (parts.get(&at)).is_some_and(|&(_, field)| !field) && !spans.iter().any(|&(lo, _)| lo == at);
             let mut pieces: Vec<(u32, u32)> = Vec::new();
             // A function kept out of line, `#[inline(never)]`, says so in its
             // JSDoc, the last line of its own, or one of its own (ADR 0649).
@@ -738,6 +773,11 @@ fn comments_of(
                 }
                 _ => {}
             }
+            let attached_to = classes.get(&at).copied().unwrap_or_else(|| printed_first(at));
+            if let Some(first) = own.first() {
+                let top = tops.entry(attached_to).or_insert(first.lo);
+                *top = (*top).min(first.lo);
+            }
             for (lo, hi) in pieces {
                 let written = &text[lo as usize..hi as usize];
                 let kind = match (written.starts_with("/*"), written.contains('\n')) {
@@ -746,7 +786,7 @@ fn comments_of(
                     (true, true) => CommentKind::MultiLineBlock,
                 };
                 let mut made = oxc_ast::Comment::new(lo, hi, kind);
-                made.attached_to = classes.get(&at).copied().unwrap_or_else(|| printed_first(at));
+                made.attached_to = attached_to;
                 // A block's of only comments, where it ends: no node starts
                 // there, so oxc prints it as it does a comment whose node is
                 // gone, before what follows or the block's `}` (ADR 0753).
@@ -760,7 +800,96 @@ fn comments_of(
             }
         }
     }
-    (text, found, trailing, arm_comments)
+    Commented {
+        text,
+        comments: found,
+        trailing,
+        arms: arm_comments,
+        tops,
+    }
+}
+
+/// `comments`, each of `body`'s statements but the first with a blank line
+/// before it where the Rust has one between the code of the one before
+/// and its own, and its comments, `tops` (`comments_of`), and none where
+/// it has none (ADR 0444, amended); and which the Rust told so, of two in
+/// one file, the code of the first ending before the second's starts,
+/// which `format::spaced` leaves as they are. Of the rest, a statement
+/// rust-js makes of no code of its own, or of another's, `spaced` sets
+/// them apart as a person does (ADR 0303). `end` is where the text of the
+/// comments ends, where a blank line's empty one is.
+fn apart(
+    body: &[Statement<'_>],
+    mut comments: Vec<oxc_ast::Comment>,
+    tops: &std::collections::HashMap<u32, u32>,
+    sources: &crate::program::Sources,
+    end: u32,
+) -> (Vec<oxc_ast::Comment>, Vec<bool>) {
+    use oxc_span::GetSpan;
+    // Where each statement's code ends in the Rust: the last its nodes are.
+    struct Reach {
+        end: u32,
+        limit: u32,
+    }
+    impl<'a> Visit<'a> for Reach {
+        fn enter_node(&mut self, kind: oxc_ast::AstKind<'a>) {
+            let span = kind.span();
+            if span.start < span.end && span.end <= self.limit {
+                self.end = self.end.max(span.end);
+            }
+        }
+    }
+    let limit = sources.text.len() as u32;
+    let ends: Vec<u32> = (body.iter())
+        .map(|statement| {
+            let mut reach = Reach { end: 0, limit };
+            reach.visit_statement(statement);
+            reach.end
+        })
+        .collect();
+    // The file each place is in, by where each starts.
+    let mut files = Vec::new();
+    let mut start = 0;
+    for file in &sources.files {
+        files.push((start, start + file.text.len() as u32));
+        start += file.text.len() as u32 + 1;
+    }
+    let file_of = |at: u32| files.iter().position(|&(lo, hi)| lo <= at && at <= hi);
+    let mut told = vec![false; body.len()];
+    for i in 1..body.len() {
+        let (code_end, start) = (ends[i - 1], body[i].span().start);
+        let top = tops.get(&start).map_or(start, |&first| first.min(start));
+        if code_end == 0
+            || start == 0
+            || code_end > top
+            || file_of(code_end).is_none()
+            || file_of(code_end) != file_of(top)
+        {
+            continue;
+        }
+        // Of one line, `#[derive(Debug, Serialize)]`'s functions, the Rust
+        // tells nothing of lines between them.
+        let lines: Vec<&str> = sources.text[code_end as usize..top as usize].split('\n').collect();
+        if lines.len() < 2 {
+            continue;
+        }
+        told[i] = true;
+        let blank = lines.len() > 2 && lines[1..lines.len() - 1].iter().any(|line| line.trim().is_empty());
+        // Its pieces' first, a blank line if it's one, before its comments:
+        // one `comments_of` saw right before it, or else one written here,
+        // where what's between has no JS, a type, an `impl`'s opening.
+        let first = comments.iter().position(|c| c.attached_to == start);
+        let had = first.is_some_and(|at| comments[at].span.is_empty());
+        if blank && !had {
+            let mut made = oxc_ast::Comment::new(end, end, oxc_ast::CommentKind::Line);
+            made.attached_to = start;
+            made.position = oxc_ast::CommentPosition::Leading;
+            made.set_preceded_by_newline(true);
+            made.set_followed_by_newline(true);
+            comments.insert(first.unwrap_or(comments.len()), made);
+        }
+    }
+    (comments, told)
 }
 
 /// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
@@ -815,23 +944,25 @@ struct Arm {
 /// Where each call's and `new`'s argument starts, and each object literal's
 /// field's value, of those that say, and where what they're parts of
 /// starts: what a comment before one in the Rust, inside what it's part
-/// of, is before in the JS, as oxc writes it (ADR 0708).
-fn part_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+/// of, is before in the JS, as oxc writes it (ADR 0708); and whether it's a field.
+fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
     let mut starts = std::collections::HashMap::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
-            let spans: Vec<js::Span> = match &e.kind {
-                ExprKind::Call(_, args) | ExprKind::New(_, args) => args.iter().map(|arg| arg.span).collect(),
-                ExprKind::Object(props, ..) => (props.iter())
-                    .filter_map(|prop| match prop {
+            let (spans, field): (Vec<js::Span>, bool) = match &e.kind {
+                ExprKind::Call(_, args) | ExprKind::New(_, args) => (args.iter().map(|arg| arg.span).collect(), false),
+                ExprKind::Object(props, ..) => {
+                    let values = props.iter().filter_map(|prop| match prop {
                         js::Prop::Field(_, value) => Some(value.span),
                         _ => None,
-                    })
-                    .collect(),
-                _ => Vec::new(),
+                    });
+                    (values.collect(), true)
+                }
+                _ => (Vec::new(), false),
             };
             if !e.span.is_none() {
-                starts.extend(spans.into_iter().filter(|s| !s.is_none()).map(|s| (s.lo, e.span.lo)));
+                let spans = spans.into_iter().filter(|s| !s.is_none());
+                starts.extend(spans.map(|s| (s.lo, (e.span.lo, field))));
             }
         });
     };

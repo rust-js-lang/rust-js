@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const listedDebug = { fmt: listedDebug_fmt };
-
 function listedDebug_fmt(listed) {
   return `[${Array.from(listed[0] == null ? [] : [listed[0]], (entry) => String(entry))
     .concat(

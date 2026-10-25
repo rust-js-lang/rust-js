@@ -44,7 +44,6 @@ const Bag = {
     return Iterator.from($chainEnds($iter(bag[0]), $iter([100, 200])));
   },
 };
-
 function main() {
   const b = [[1, 2, 3, 4, 6]];
   console.log(`[${$rev(Bag.oddSquares(b)).toArray().join(", ")}]`);

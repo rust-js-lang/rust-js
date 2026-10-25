@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const sevenShow = { show: sevenShow_show };
-
 function sevenShow_show(seven) {
   return 7;
 }
@@ -17,7 +16,6 @@ function noisyDrop_drop(noisy) {
 }
 
 const noisyShow = { show: noisyShow_show, $drop: noisyDrop_drop };
-
 function noisyShow_show(noisy) {
   return noisy[0] | 0;
 }

@@ -17,7 +17,6 @@ function iSorted(IIterator) {
     },
   }));
 }
-
 const countSummed = {
   total: (self) => {
     let n = 0;
@@ -28,7 +27,6 @@ const countSummed = {
     return n;
   },
 };
-
 const intoIterSummed = {
   total: (self) => {
     let n = 0;
@@ -39,7 +37,6 @@ const intoIterSummed = {
     return n;
   },
 };
-
 function countIterator_next(count) {
   const value = $checked(count[0] - 1, 0, 255);
   if (value == null) {
@@ -48,23 +45,18 @@ function countIterator_next(count) {
   count[0] = value;
   return ((count[0] * 3) & 255) % 5;
 }
-
 function through(t, TSorted, TItemOrd) {
   return TSorted.sorted(t, TItemOrd);
 }
-
 function counted(t, TIterator, TSorted) {
   return $given(t, TIterator, true).reduce((n) => n + 1, 0);
 }
-
 function summed(t, TSummed) {
   return TSummed.total(t);
 }
-
 function dynamic(s) {
   return s.impl.total(s.value);
 }
-
 function main() {
   console.log(
     `[${through($iter([5, 3, 9, 1]), iSorted({ next: $next }), { cmp: $cmp }).join(

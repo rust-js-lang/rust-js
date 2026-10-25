@@ -11,7 +11,6 @@ function noisyDrop_drop(noisy) {
 }
 
 export const tagClone = { clone: tagClone_clone, $drop: tagDrop_drop };
-
 function tagClone_clone(tag) {
   return [(tag[0] + 10) >>> 0];
 }

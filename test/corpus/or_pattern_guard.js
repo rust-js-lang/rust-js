@@ -18,7 +18,6 @@ export function f(p) {
   }
   return a;
 }
-
 function main() {
   for (const p of [
     [3, 42],

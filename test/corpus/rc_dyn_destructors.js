@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const squareShape = { area: squareShape_area, $drop: squareDrop_drop };
-
 function squareShape_area(square) {
   return Math.imul(square[0], square[0]) >>> 0;
 }

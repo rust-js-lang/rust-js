@@ -11,24 +11,19 @@ export const centsPartialEqU32 = { eq: centsPartialEqU32_eq };
 function centsPartialEqU32_eq(cents, o) {
   return cents[0] === (o * 100) >>> 0;
 }
-
 export const centsPartialOrdU32 = {
   PartialEq: () => centsPartialEqU32,
   partialCmp: centsPartialOrdU32_partialCmp,
 };
-
 function centsPartialOrdU32_partialCmp(cents, o) {
   return $cmp(cents[0], (o * 100) >>> 0);
 }
-
 function has(xs, n, TPartialEqU32) {
   return xs.some((x) => TPartialEqU32.eq(x, n));
 }
-
 function under(xs, n, TPartialOrdU32, TPartialEqU32) {
   return xs.map((x) => TPartialOrdU32.partialCmp(x, n) < 0 && !TPartialEqU32.eq(x, 0));
 }
-
 function main() {
   const cs = [[300], [150], [0]];
   console.log(

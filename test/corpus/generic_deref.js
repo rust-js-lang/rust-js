@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const trackedDeref = { deref: trackedDeref_deref };
-
 function trackedDeref_deref(tracked) {
   console.log(`deref ${tracked.name}`);
   return tracked.name;

@@ -27,7 +27,6 @@ const $tNamed = new Map();
 function tNamed(TName) {
   return $traitImpl($tNamed, [TName], () => ({ named: (arg0) => tNamed_named(arg0, TName) }));
 }
-
 function tNamed_named(self, TName) {
   return TName;
 }

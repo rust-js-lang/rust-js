@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const wDisplay = { fmt: wDisplay_fmt };
-
 function wDisplay_fmt(w, options) {
   const width = options?.width;
   return `${width == null ? "None" : `Some(${width})`} ${options?.align == null}`;

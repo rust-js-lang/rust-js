@@ -11,23 +11,19 @@ const squareShape = {
   scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
   name: (self) => "shape",
 };
-
 function squareShape_area(square) {
   return square[0] * square[0];
 }
-
 function squareShape_scale(square, k) {
   square[0] *= k;
 }
 
 const squareNamed = { Shape: () => squareShape, label: squareNamed_label };
-
 function squareNamed_label(square) {
   return `square ${$displayF64(square[0])}`;
 }
 
 const upCounter = { nextItem: (arg0) => upCounter_nextItem(arg0.value) };
-
 function upCounter_nextItem(up) {
   up[0] = (up[0] + 1) >>> 0;
   return up[0];

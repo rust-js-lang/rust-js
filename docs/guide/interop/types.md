@@ -1139,7 +1139,6 @@ pub fn each(items: &[u32], f: &dyn Fn(u32)) {
 
 ```js
 export const squareShape = { area: squareShape_area };
-
 function squareShape_area(square) {
   return square.side * square.side;
 }

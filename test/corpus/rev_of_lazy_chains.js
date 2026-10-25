@@ -10,7 +10,6 @@ function shout(x) {
   console.log(`map ${x}`);
   return (x * 2) | 0;
 }
-
 function main() {
   const v = [1, -2, 3, 4];
   const a = v.toReversed().map(shout);
@@ -42,7 +41,6 @@ function main() {
   );
   more();
 }
-
 function more() {
   const v = [5, 6, 7];
   const e = v.map((x, i) => [i, x]).toReversed();

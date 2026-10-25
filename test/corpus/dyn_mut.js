@@ -18,11 +18,9 @@ const cCounter = {
     cCounter_bump(self.value);
   },
 };
-
 function cCounter_bump(c) {
   c.n = (c.n + 1) | 0;
 }
-
 function cCounter_get(c) {
   return c.n;
 }
@@ -35,17 +33,14 @@ const i32Counter = {
     i32Counter_bump(self);
   },
 };
-
 function i32Counter_bump(self) {
   self.value = (self.value + 10) | 0;
 }
-
 function i32Counter_get(self) {
   return self;
 }
 
 const i32Sub = { Counter: () => i32Counter, name: i32Sub_name };
-
 function i32Sub_name(self) {
   return `i${self}`;
 }

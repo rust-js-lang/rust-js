@@ -9,7 +9,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function main() {
   const v = [[1], [2], [3]];
   const r = $rev($closing($iter(v), $dropEach(loudDrop_drop)));

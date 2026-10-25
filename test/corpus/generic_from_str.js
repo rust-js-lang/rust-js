@@ -49,7 +49,6 @@ function unitDebug_fmt(unit) {
 }
 
 export const unitFromStr = { fromStr: unitFromStr_fromStr };
-
 function unitFromStr_fromStr(s) {
   switch (s) {
     case "kg":

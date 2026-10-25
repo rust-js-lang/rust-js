@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const stringMonoid = { EMPTY: "", combine: stringMonoid_combine };
-
 function stringMonoid_combine(string, other) {
   return string + other;
 }
@@ -18,7 +17,6 @@ const vecMonoid = {
   },
   combine: vecMonoid_combine,
 };
-
 function vecMonoid_combine(vec, other) {
   return [...vec, ...other];
 }

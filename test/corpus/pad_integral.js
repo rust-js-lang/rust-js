@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const fixedDisplay = { fmt: fixedDisplay_fmt };
-
 function fixedDisplay_fmt(fixed, options) {
   return $padIntegral(!fixed.negative, "0d", fixed.digits, options);
 }

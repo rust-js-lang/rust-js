@@ -11,13 +11,11 @@ function noisyDrop_drop(noisy) {
 }
 
 const noisyShape = { name: noisyShape_name, $drop: noisyDrop_drop };
-
 function noisyShape_name(noisy) {
   return `noisy ${noisy[0]}`;
 }
 
 const quietShape = { name: quietShape_name };
-
 function quietShape_name(quiet) {
   return `quiet ${quiet[0]}`;
 }
@@ -32,7 +30,6 @@ function wrapShape(TDebug, dropT) {
     },
   }));
 }
-
 function wrapShape_name(wrap, TDebug, dropT) {
   return `wrap ${TDebug.fmt(wrap[0])}`;
 }

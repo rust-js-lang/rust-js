@@ -16,7 +16,6 @@ function holderCapacity(CAP) {
     full: (self) => holderCapacity(CAP).remaining(self) === 0,
   }));
 }
-
 function holderCapacity_len(holder, CAP) {
   return holder.items.length;
 }

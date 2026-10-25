@@ -57,7 +57,6 @@ export const smallHash = { hash: smallHash_hash, hashSlice: $hashSlice(smallHash
 function smallHash_hash(small, state, HHasher) {
   HHasher.writeU8(state, small);
 }
-
 const A = 3;
 const B = 7;
 
@@ -71,13 +70,11 @@ function wideHash_hash(wide, state, HHasher) {
 }
 
 export const nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
-
 function nameHash_hash(name, state, HHasher) {
   HHasher.writeStr(state, name[0].toLowerCase());
 }
 
 export const tokenHash = { hash: tokenHash_hash, hashSlice: tokenHash_hashSlice };
-
 function tokenHash_hash(token, state, HHasher) {
   HHasher.writeU8(state, 1);
 }

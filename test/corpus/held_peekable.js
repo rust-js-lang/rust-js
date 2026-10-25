@@ -35,7 +35,6 @@ export function withPositionClone(IClone, IItemClone) {
     clone: (arg0) => withPositionClone_clone(arg0, IClone, IItemClone),
   }));
 }
-
 function withPositionClone_clone(withPosition, IClone, IItemClone) {
   return {
     handledFirst: withPosition.handledFirst,
@@ -74,7 +73,6 @@ export function withPositionDebug(PeekableDebug) {
     fmt: (arg0, arg1) => withPositionDebug_fmt(arg0, arg1, PeekableDebug),
   }));
 }
-
 function withPositionDebug_fmt(withPosition, options, PeekableDebug) {
   return options?.alternate
     ? $pretty(

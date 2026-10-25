@@ -7,7 +7,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function main() {
   const option = [1];
   const other = [2];

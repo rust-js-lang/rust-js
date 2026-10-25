@@ -10,7 +10,6 @@ const numbersStack = {
   push: (arg0, arg1) => numbersStack_push(arg0.value, arg1),
   len: numbersStack_len,
 };
-
 function numbersStack_push(numbers, n) {
   numbers.items.push(n);
 }

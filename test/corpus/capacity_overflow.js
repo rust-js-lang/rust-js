@@ -19,7 +19,6 @@ function noisyDrop_drop(noisy) {
 }
 
 export const noisyClone = { clone: noisyClone_clone, $drop: noisyDrop_drop };
-
 function noisyClone_clone(noisy) {
   return [noisy[0]];
 }

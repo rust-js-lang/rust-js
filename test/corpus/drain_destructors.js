@@ -9,7 +9,6 @@ export function entry() {
 function ids(v) {
   return v.map((n) => n[0]);
 }
-
 function main() {
   const v = $range(1, 9).map((value) => [value]);
   try {

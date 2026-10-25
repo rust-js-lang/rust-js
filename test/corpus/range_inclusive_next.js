@@ -9,7 +9,6 @@ export function entry() {
 export function f(r) {
   return $rangeInclusiveNext(r);
 }
-
 function main() {
   const r = { start: 1, end: 3 };
   for (let i = 0; i < 5; i++) {

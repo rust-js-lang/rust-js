@@ -20,7 +20,6 @@ function wrapPeek(TClone, dropT) {
     },
   }));
 }
-
 function wrapPeek_peek(wrap, TClone, dropT) {
   const value = TClone.clone(wrap[0]);
   dropT?.(value);

@@ -33,11 +33,9 @@ const i32Step = {
     return i32Step_now(self.value);
   },
 };
-
 function i32Step_add(self, by) {
   self.value = (self.value + by) | 0;
 }
-
 function i32Step_now(self) {
   return self;
 }

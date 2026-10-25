@@ -50,7 +50,6 @@ function sumPastThree(it) {
 }
 
 export const refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };
-
 function refBagIntoIterator_intoIter(bag) {
   return $iter(bag.items);
 }
@@ -58,7 +57,6 @@ function refBagIntoIterator_intoIter(bag) {
 export const refMutBagIntoIterator = {
   intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value),
 };
-
 function refMutBagIntoIterator_intoIter(bag) {
   return $iter($mutItems(bag.items));
 }

@@ -19,7 +19,6 @@ export function entry() {
 const kept = {};
 
 export const loneClone = { clone: loneClone_clone, $drop: loneDrop_drop };
-
 function loneClone_clone(lone) {
   $withBorrowMut(
     kept,
@@ -47,7 +46,6 @@ export const probeClone = {
     $weakDrop(probe.me);
   },
 };
-
 function probeClone_clone(probe) {
   console.log(`owners while cloning: ${probe.me.strong}`);
   return { me: $weakNone };

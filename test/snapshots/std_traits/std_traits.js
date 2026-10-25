@@ -31,19 +31,16 @@ import {
 } from "@rust-js/runtime";
 
 export const configDefault = { default: configDefault_default };
-
 function configDefault_default() {
   return { retries: 3, name: "main" };
 }
 
 export const trackedClone = { clone: trackedClone_clone };
-
 function trackedClone_clone(tracked) {
   return { generation: (tracked.generation + 1) >>> 0 };
 }
 
 export const figureClone = { clone: figureClone_clone };
-
 function figureClone_clone(figure) {
   if (figure === "Dot") {
     return "Dot";
@@ -162,7 +159,6 @@ export function fallibleConversions(n) {
 }
 
 export const versionPartialEq = { eq: versionPartialEq_eq };
-
 function versionPartialEq_eq(version, other) {
   return version.major === other.major;
 }
@@ -230,7 +226,6 @@ export function genericEqualities() {
 
 /** A `PartialEq` with another type on the right: `!=` is its `eq` too. */
 export const metersPartialEqF64 = { eq: metersPartialEqF64_eq };
-
 function metersPartialEqF64_eq(meters, other) {
   return meters[0] === other;
 }
@@ -241,13 +236,11 @@ export function compared() {
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };
-
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
 }
 
 export const routeDisplay = { fmt: routeDisplay_fmt };
-
 function routeDisplay_fmt(route) {
   let f = "";
   if (route.stops.length === 0) {
@@ -271,7 +264,6 @@ function writeLoop(stops) {
 }
 
 export const figureDisplay = { fmt: figureDisplay_fmt };
-
 function figureDisplay_fmt(figure) {
   if (figure === "Dot") {
     return "a dot";
@@ -286,7 +278,6 @@ export function labeledDisplay(TDisplay) {
     fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
   }));
 }
-
 function labeledDisplay_fmt(labeled, TDisplay) {
   return `${labeled.label}: ${TDisplay.fmt(labeled.value)}`;
 }
@@ -396,13 +387,11 @@ export const wordPartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: wordPartialOrd_partialCmp,
 };
-
 function wordPartialOrd_partialCmp(word, other) {
   return wordOrd_cmp(word, other);
 }
 
 export const wordOrd = { PartialOrd: () => wordPartialOrd, cmp: wordOrd_cmp };
-
 function wordOrd_cmp(word, other) {
   const byLength = $cmp(Array.from(word[0]).length, Array.from(other[0]).length);
   return byLength !== 0 ? byLength : $cmp(word[0], other[0]);
@@ -534,7 +523,6 @@ function boxedDebug_fmt(boxed, TDebug) {
 }
 
 export const hiddenDebug = { fmt: hiddenDebug_fmt };
-
 function hiddenDebug_fmt(hidden) {
   return "<hidden>";
 }

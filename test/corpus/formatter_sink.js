@@ -32,7 +32,6 @@ const formatterSinkSink = {
   writeEncoded: (arg0, arg1) =>
     $writeResult(() => formatterSinkSink_writeEncoded(arg0.value, arg1)),
 };
-
 function formatterSinkSink_writeEncoded(formatterSink, encoded) {
   if (encoded === "bad") {
     return $fmtError();
@@ -42,7 +41,6 @@ function formatterSinkSink_writeEncoded(formatterSink, encoded) {
 }
 
 export const encodedDisplay = { fmt: encodedDisplay_fmt };
-
 function encodedDisplay_fmt(encoded) {
   let f = "";
   try {
@@ -68,7 +66,6 @@ function encodedDisplay_fmt(encoded) {
 const stringSinkSink = {
   writeEncoded: (arg0, arg1) => $writeResult(() => stringSinkSink_writeEncoded(arg0.value, arg1)),
 };
-
 function stringSinkSink_writeEncoded(stringSink, encoded) {
   stringSink.s.value += `<${encoded}>`;
 }
@@ -80,7 +77,6 @@ function check(n) {
 }
 
 export const checkedDisplay = { fmt: checkedDisplay_fmt };
-
 function checkedDisplay_fmt(checked) {
   let f = "";
   try {

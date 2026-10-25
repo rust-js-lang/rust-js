@@ -59,7 +59,6 @@ function hold(cell) {
 }
 
 const cellKeep = { keep: cellKeep_keep };
-
 function cellKeep_keep(cell) {
   return cell;
 }

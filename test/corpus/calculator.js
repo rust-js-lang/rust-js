@@ -47,7 +47,6 @@ function tokenDebug_fmt(token) {
 }
 
 export const calcErrorDisplay = { fmt: calcErrorDisplay_fmt };
-
 function calcErrorDisplay_fmt(calcError) {
   if (calcError.TAG === "Unexpected") {
     return `unexpected '${calcError._0}'`;

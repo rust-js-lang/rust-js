@@ -29,7 +29,6 @@ function iCollectSlice(IIterator) {
     },
   }));
 }
-
 function iCollectSlice_innerArray(self, N, IIterator) {
   const result = Array.from({ length: N });
 

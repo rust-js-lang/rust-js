@@ -11,7 +11,6 @@ const xCh = {
   },
   set: (arg0, arg1) => xCh_set(arg0.value, arg1),
 };
-
 function xCh_set(x, a) {
   x.a = a;
 }
@@ -25,7 +24,6 @@ const i32Ch = {
   },
   set: i32Ch_set,
 };
-
 function i32Ch_set(self, a) {
   self.value = (self.value + a) | 0;
 }

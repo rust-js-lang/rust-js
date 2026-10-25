@@ -28,7 +28,6 @@ export function stackClone(TClone, TSize) {
     clone: (arg0) => stackClone_clone(arg0, TClone, TSize),
   }));
 }
-
 function stackClone_clone(stack, TClone, TSize) {
   return stackFromIteratorT_fromIter(
     stack.items.values().map((item) => TClone.clone(item)),
@@ -43,7 +42,6 @@ function stackPushT(TSize) {
     put: (arg0, arg1) => stackPushT_put(arg0.value, arg1, TSize),
   }));
 }
-
 function stackPushT_put(stack, item, TSize) {
   stackExtendT_extend(stack, [item], TSize);
 }

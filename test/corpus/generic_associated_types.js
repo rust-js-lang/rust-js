@@ -25,7 +25,6 @@ const shelfContainer = {
     return $someAt(items, items.length - 1);
   },
 };
-
 function shelfContainer_items(shelf) {
   return $iter(shelf.books);
 }
@@ -38,7 +37,6 @@ const countsContainer = {
     return $someAt(items, items.length - 1);
   },
 };
-
 function countsContainer_items(counts) {
   return $iter(counts[0]);
 }
@@ -51,7 +49,6 @@ const countdownContainer = {
     return $someAt(items, items.length - 1);
   },
 };
-
 function countdownContainer_items(countdown) {
   return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
 }
@@ -80,13 +77,11 @@ function show(c, CContainer) {
 }
 
 const byteFilled = { filled: byteFilled_filled };
-
 function byteFilled_filled(byte, N) {
   return new Array(N).fill(byte[0]);
 }
 
 const uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
-
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };
 }
@@ -100,7 +95,6 @@ function downIterator_next(down) {
 }
 
 const from3Source = { numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next) };
-
 function from3Source_numbers(from3) {
   return [3];
 }

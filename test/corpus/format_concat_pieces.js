@@ -15,7 +15,6 @@ function react(code, url) {
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };
-
 function pointDisplay_fmt(point) {
   return "(" + `${point.x}, ${point.y}` + ")";
 }

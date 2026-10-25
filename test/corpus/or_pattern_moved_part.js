@@ -7,7 +7,6 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
-
 export function f(p) {
   let p$1$0$live = true;
   let p$0$0$live = true;
@@ -38,7 +37,6 @@ export function f(p) {
   }
   return result;
 }
-
 function main() {
   let r = f([[1], [2]]);
   try {

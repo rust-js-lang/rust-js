@@ -11,7 +11,6 @@ function pointDebug_fmt(point) {
 }
 
 const pointComponent = { Any: () => ({ typeId: () => "lib::Point" }), name: pointComponent_name };
-
 function pointComponent_name(point) {
   return "point";
 }

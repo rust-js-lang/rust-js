@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const peekClone = { clone: peekClone_clone };
-
 function peekClone_clone(peek) {
   const borrowMut = $borrowMut(peek[0], true);
   try {

@@ -9,7 +9,6 @@ export function entry() {
 function id(x) {
   return x;
 }
-
 function main() {
   const overflowingDiv = $overflowingDiv(id(-128), -1, -128);
   const overflowingRem = $overflowingRem(id(-9223372036854775808n), -1n, -9223372036854775808n);

@@ -14,28 +14,23 @@ function cIterator_next(c) {
   };
   return c.at < c.end ? value() : undefined;
 }
-
 function cIterator_nth(c, n) {
   console.log(`${c.tag} nth ${n}`);
   c.at = (c.at + n) >>> 0;
   return cIterator_next(c);
 }
-
 function cIterator_last(c) {
   console.log(`${c.tag} own last`);
   return c.at < c.end ? (c.end - 1) >>> 0 : undefined;
 }
-
 function cIterator_sizeHint(c) {
   console.log(`${c.tag} hint`);
   const n = (c.end - c.at) >>> 0;
   return [n, n];
 }
-
 function c(tag) {
   return { at: 0, end: 6, tag };
 }
-
 function main() {
   const value = $nth(
     $lent(

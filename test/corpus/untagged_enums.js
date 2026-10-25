@@ -56,7 +56,6 @@ function noisyDrop_drop(noisy) {
 const START = 3;
 
 export const namePartialEq = { eq: namePartialEq_eq };
-
 function namePartialEq_eq(name, other) {
   return name[0].toLowerCase() === other[0].toLowerCase();
 }

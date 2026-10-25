@@ -15,7 +15,6 @@ const unitTracked = {
   unread: unitTracked_unread,
   tagged: unitTracked_tagged,
 };
-
 // Its declaration's `#[track_caller]` is its own too.
 function unitTracked_inherited(unit, location) {
   return location;
@@ -45,7 +44,6 @@ const flagTracked = {
   unread: flagTracked_unread,
   tagged: (arg0, arg1, location, TDisplay) => flagTracked_tagged(arg0, arg1, TDisplay),
 };
-
 function flagTracked_fromDefault(flag, location) {
   const here = location;
   console.log(`flag ${flag[0]} called at line ${here.line}`);

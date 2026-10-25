@@ -22,7 +22,6 @@ function iPull(IIterator) {
     pullTwo: (self) => [iPull_pull(self.value, IIterator), iPull_pull(self.value, IIterator)],
   }));
 }
-
 function iPull_pull(self, IIterator) {
   return IIterator.next(self);
 }
@@ -46,7 +45,6 @@ function enumeratedPull(PPull) {
     ],
   }));
 }
-
 function enumeratedPull_pull(enumerated, PPull) {
   const self = { value: enumerated.inner };
   const pull = PPull.pull(self);

@@ -12,17 +12,14 @@ function counterIterator_next(counter) {
     return counter[0];
   }
 }
-
 function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
-
 function taken(items, IIterator, dropI) {
   return $closing($given(items, IIterator), (it) => {
     dropI?.(it.of);
   }).take(2);
 }
-
 function main() {
   console.log(
     `${taken([0], { next: counterIterator_next }, counterDrop_drop).reduce((a, b) => (a + b) >>> 0, 0)}`,

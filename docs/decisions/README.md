@@ -321,7 +321,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0300 A function takes the drops its body uses](0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it)*
 - [0301 A read that can't throw comes before a move](0301-reads-that-cannot-throw.md)
 - [0302 An `f64` known to be a whole number in range is cast as it is](0302-whole-number-casts.md)
-- [0303 Top-level statements that span lines are set apart](0303-blank-lines.md)
+- [0303 Top-level statements that span lines are set apart](0303-blank-lines.md) *(superseded by 0865 where the source tells: a blank line is where the Rust has one)*
 - [0304 `js::import!` of an item loads its module when it's asked for](0304-dynamic-import.md)
 - [0305 A binding marked `require` is read through `require(module)`](0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
 - [0306 A module's items are where its Rust has them](0306-item-order.md)
@@ -649,6 +649,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md)
 - [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md)
 - [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)
+- [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -29,18 +29,15 @@ function flakyIterator_next(flaky) {
   }
   return flaky.n;
 }
-
 function f() {
   return { n: 0 };
 }
-
 function twice(it) {
   const a = $lent(Iterator.from(it)).toArray();
   const b = $lent(Iterator.from(it)).toArray();
   const c = Iterator.from(it).toArray();
   return [a, b, c];
 }
-
 function main() {
   const value = twice($iterator(f(), flakyIterator_next).map((x) => (x * 10) >>> 0));
   console.log(`map ([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}])`);

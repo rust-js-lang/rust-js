@@ -27,13 +27,11 @@ export const sqDebug = { fmt: sqDebug_fmt };
 function sqDebug_fmt(sq) {
   return `Sq(${$debugF64(sq[0])})`;
 }
-
 export const ciDebug = { fmt: ciDebug_fmt };
 
 function ciDebug_fmt(ci) {
   return `Ci(${$debugF64(ci[0])})`;
 }
-
 const sqShape = {
   Debug: () => sqDebug,
   area: sqShape_area,
@@ -41,19 +39,15 @@ const sqShape = {
   kind: sqShape_kind,
   twice: (self) => sqShape_area(self) * 2,
 };
-
 function sqShape_area(sq) {
   return sq[0] * sq[0];
 }
-
 function sqShape_scale(sq, k) {
   return { value: [sq[0] * k], impl: sqShape };
 }
-
 function sqShape_kind(sq) {
   return "sq";
 }
-
 const ciShape = {
   Debug: () => ciDebug,
   area: ciShape_area,
@@ -61,23 +55,18 @@ const ciShape = {
   kind: (self) => "shape",
   twice: (self) => ciShape_area(self) * 2,
 };
-
 function ciShape_area(ci) {
   return 3 * ci[0] * ci[0];
 }
-
 function ciShape_scale(ci, k) {
   return { value: [ci[0] * k], impl: ciShape };
 }
-
 function biggest(xs, TShape) {
   return xs.map((s) => TShape.area(s)).reduce($f64Max, 0);
 }
-
 function show(s) {
   return `<${s}>`;
 }
-
 function main() {
   const value = [2];
   const shapes = [

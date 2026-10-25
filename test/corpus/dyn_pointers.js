@@ -11,15 +11,12 @@ const squareShape = {
   grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
   name: squareShape_name,
 };
-
 function squareShape_area(square) {
   return Math.imul(square.side, square.side) >>> 0;
 }
-
 function squareShape_grow(square, by) {
   square.side = (square.side + by) >>> 0;
 }
-
 function squareShape_name(square) {
   return "square";
 }
@@ -29,11 +26,9 @@ const rectShape = {
   grow: (arg0, arg1) => rectShape_grow(arg0.value, arg1),
   name: (self) => "shape",
 };
-
 function rectShape_area(rect) {
   return Math.imul(rect.w, rect.h) >>> 0;
 }
-
 function rectShape_grow(rect, by) {
   rect.w = (rect.w + by) >>> 0;
 }
@@ -87,7 +82,6 @@ function main() {
 }
 
 const squareNamed = { label: squareNamed_label };
-
 function squareNamed_label(square) {
   return "square";
 }

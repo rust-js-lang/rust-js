@@ -15,15 +15,12 @@ const circleShape = {
   scaled: circleShape_scaled,
   tagged: circleShape_tagged,
 };
-
 function circleShape_area(circle) {
   return 3 * circle[0] * circle[0];
 }
-
 function circleShape_scaled(circle, f) {
   return f(circleShape_area(circle));
 }
-
 function circleShape_tagged(circle, a, b, AClone, ADebug, BDisplay) {
   return `circle ${ADebug.fmt(AClone.clone(a))} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
 }
@@ -35,20 +32,16 @@ const squareShape = {
   tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
     squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
 };
-
 function squareShape_area(square) {
   return square[0] * square[0];
 }
-
 function squareShape_describe(square, label, TDisplay) {
   const arg = squareShape_area(square);
   return `square ${TDisplay.fmt(label)} of ${$displayF64(arg)}`;
 }
-
 function squareShape_scaled(square, f) {
   return f(square[0]);
 }
-
 function squareShape_tagged(square, a, b, ADebug, AClone, BDisplay) {
   return `square ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
 }

@@ -14,7 +14,6 @@ function countdownIterator_next(countdown) {
   countdown[0] = (countdown[0] - 1) >>> 0;
   return countdown[0];
 }
-
 function countdownIterator_sizeHint(countdown) {
   return [countdown[0], countdown[0]];
 }

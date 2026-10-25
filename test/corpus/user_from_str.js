@@ -38,7 +38,6 @@ function pointErrorDebug_fmt(pointError) {
 }
 
 export const pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
-
 function pointErrorDisplay_fmt(pointError) {
   if (pointError === "Shape") {
     return "expected x,y";

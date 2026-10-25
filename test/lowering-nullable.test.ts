@@ -123,7 +123,7 @@ pub fn clear(transition: &Transition) -> bool {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const current = {};\n  current.types = (prev ? prev.types : undefined) ?? null;\n  return current;\n");
+  expect(js).toContain("  const current = {};\n  current.types = prev?.types ?? null;\n  return current;\n");
   expect(js).toContain("    transition.types = [ty];\n");
   expect(js).toContain("  transition.types = null;\n");
   expect(js).not.toContain("$borrow");

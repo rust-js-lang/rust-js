@@ -9,11 +9,9 @@ export function entry() {
 function sum(s) {
   return s.reduce((a, b) => (a + b) | 0, 0);
 }
-
 function names(s) {
   return s.join(",");
 }
-
 function main() {
   const x = 5;
   console.log(`${sum([x])}`);

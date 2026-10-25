@@ -31,15 +31,12 @@ const Bag = {
     return $iter(bag[0]);
   },
 };
-
 function refBagIntoIterator_intoIter(bag) {
   return $iter(bag[0]);
 }
-
 function bag() {
   return [[4, 1, 3, 2]];
 }
-
 function main() {
   const b = bag();
   console.log(

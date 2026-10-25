@@ -15,7 +15,6 @@ const numbersSecond = {
     return $next(it) ?? 0;
   },
 };
-
 function numbersSecond_items(numbers) {
   return [4, 5, 6];
 }

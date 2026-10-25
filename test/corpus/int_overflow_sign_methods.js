@@ -20,7 +20,6 @@ export function entry() {
 function id(x) {
   return x;
 }
-
 function main() {
   console.log(
     `(${(id(1) << 33) >>> 0}, ${true}) (${id(-1) >> (9 & 7)}, ${true}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)([BigInt.asUintN(64, id(1n) << 63n), false])}`,

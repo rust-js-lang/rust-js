@@ -18,7 +18,6 @@ function wrapEmpty(dropT) {
     },
   }));
 }
-
 function wrapEmpty_empty(wrap, dropT) {
   $truncate(wrap[0], 0, dropT);
 }

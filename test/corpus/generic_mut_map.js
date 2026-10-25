@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const hashMapGrow = { grow: (arg0) => hashMapGrow_grow(arg0.value) };
-
 function hashMapGrow_grow(hashMap) {
   const n = hashMap.size;
   hashMap.set(n, (n * 10) >>> 0);

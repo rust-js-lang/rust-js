@@ -23,7 +23,6 @@ export const nodeClone = {
     $weakDrop(node.me);
   },
 };
-
 function nodeClone_clone(node) {
   const me = $upgrade(node.me);
   if (me) {

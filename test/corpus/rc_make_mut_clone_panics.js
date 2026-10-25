@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const failsClone = { clone: failsClone_clone };
-
 function failsClone_clone(fails) {
   throw new Error("clone failed");
 }

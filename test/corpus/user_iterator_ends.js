@@ -26,23 +26,19 @@ function countdownIterator_next(countdown) {
     return countdown.lo;
   }
 }
-
 function countdownIterator_sizeHint(countdown) {
   const n = (countdown.hi - countdown.lo) >>> 0;
   return [n, n];
 }
-
 function countdownDoubleEndedIterator_nextBack(countdown) {
   if (countdown.lo < countdown.hi) {
     countdown.hi = (countdown.hi - 1) >>> 0;
     return (countdown.hi + 1) >>> 0;
   }
 }
-
 function cd(n) {
   return { lo: 0, hi: n };
 }
-
 function main() {
   console.log(`[${$iterator(cd(5), countdownDoubleEndedIterator_nextBack).toArray().join(", ")}]`);
   console.log(

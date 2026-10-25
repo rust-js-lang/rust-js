@@ -19,13 +19,11 @@ function longest(words, SAsRefStr) {
 }
 
 export const nameAsRefStr = { asRef: nameAsRefStr_asRef };
-
 function nameAsRefStr_asRef(name) {
   return name.first;
 }
 
 export const scoresAsRefI32Slice = { asRef: scoresAsRefI32Slice_asRef };
-
 function scoresAsRefI32Slice_asRef(scores) {
   return scores[0];
 }

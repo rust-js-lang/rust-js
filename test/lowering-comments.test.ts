@@ -469,3 +469,105 @@ test("a comment before a ? statement is before its if", async () => {
   expect(js).toContain("  // Nothing to map.\n  if (children == null) {\n");
   expect([lib.mapped(undefined as never), lib.mapped("ab" as never)]).toEqual([undefined, 2]);
 });
+
+// React's ReactBaseClasses: `const emptyObject = {};` and the `if
+// (__DEV__)` that freezes it are one block, as its port's `static` and the
+// `js::on_load!` right below it are; its ReactNoopUpdateQueue's object has
+// a blank line between its fields, as its struct literal has; its
+// ReactChildren's `const iterator =` is apart from the `if` before it, as
+// its port's erased cast `let` before it is. A blank line in the JS is
+// where the Rust has one between the code its lines are of, and nowhere
+// else (ADR 0865).
+test("a blank line is where the Rust has one between the code its JS is of", async () => {
+  const { js, lib } = await compiled("blank-lines-as-written", `use js::Unknown;
+
+pub struct Empty {}
+
+unsafe impl js::Defined for Empty {}
+
+static EMPTY: Empty = Empty {};
+js::on_load! {
+    if js::type_of(Some(js::unknown(&EMPTY))) == "object" {
+        js::object::freeze(&EMPTY);
+    }
+}
+
+pub fn glued() -> u32 {
+    1
+}
+pub fn below() -> u32 {
+    2
+}
+
+pub fn apart() -> u32 {
+    3
+}
+
+pub struct Unit;
+pub fn after_a_type() -> u32 {
+    4
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Shown(pub u32);
+
+pub fn shown(a: &Shown, b: &Shown) -> String {
+    both(a, b)
+}
+
+fn both<T: std::fmt::Debug + PartialEq>(a: &T, b: &T) -> String {
+    format!("{a:?} {}", a == b)
+}
+
+pub struct Pair {
+    pub a: u32,
+    pub b: u32,
+}
+
+pub fn pair() -> Pair {
+    Pair {
+        a: 1,
+
+        b: 2,
+    }
+}
+
+pub struct Counter(u32);
+
+impl Counter {
+    pub fn first(&self) -> u32 {
+        self.0
+    }
+
+    pub fn second(&self) -> u32 {
+        self.0 + 1
+    }
+}
+
+pub fn erased(value: Option<&'static Unknown>, flag: bool) -> u32 {
+    let mut n = 0;
+    if flag {
+        n += 1;
+    }
+
+    let value: &Unknown = unsafe { js::cast(value) };
+    let length = js::get(value, "length");
+    if length.is_some() {
+        n += 2;
+    }
+    n
+}
+`);
+  expect(js).toContain("const EMPTY = {};\nif (");
+  expect(js).toContain("}\nexport function below() {");
+  expect(js).toContain("}\n\nexport function apart() {");
+  // Apart, as a type with no JS between is.
+  expect(js).toContain("}\n\nexport function afterAType() {");
+  // What one line, a derive, makes is set apart as a person sets it (ADR
+  // 0303): the Rust tells nothing of its lines.
+  expect(js).toContain("export const shownDebug = { fmt: shownDebug_fmt };\n\nfunction shownDebug_fmt(");
+  expect(js).toContain("    a: 1,\n\n    b: 2,\n");
+  expect(js).toContain("  if (flag) {\n    n++;\n  }\n\n  const length = value.length;\n");
+  expect([lib.glued(), lib.below(), lib.apart(), lib.afterAType(), lib.shown([1] as never, [1] as never), lib.pair(), lib.erased("ab" as never, true as never)])
+    .toEqual([1, 2, 3, 4, "Shown(1) true", { a: 1, b: 2 }, 3]);
+});

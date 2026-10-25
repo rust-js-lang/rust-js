@@ -23,49 +23,39 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function trackedDebug_fmt(tracked) {
   return `Tracked(${tracked[0]})`;
 }
-
 export const trackedClone = {
   clone: trackedClone_clone,
   cloneFrom: (arg0, arg1) => trackedClone_cloneFrom(arg0.value, arg1),
 };
-
 function trackedClone_clone(tracked) {
   console.log(`clone ${tracked[0]}`);
   return [tracked[0]];
 }
-
 function trackedClone_cloneFrom(tracked, source) {
   console.log(`clone_from ${source[0]} over ${tracked[0]}`);
   tracked[0] = source[0];
 }
-
 export const modeClone = { clone: modeClone_clone, cloneFrom: modeClone_cloneFrom };
-
 function modeClone_clone(mode) {
   if (mode === "On") {
     return "On";
   }
   return "Off";
 }
-
 function modeClone_cloneFrom(mode, source) {
   console.log(`mode clone_from ${source} over ${mode.value}`);
   const value = modeClone_clone(source);
   mode.value = value;
 }
-
 function pointDebug_fmt(point) {
   return `Point(${point[0]}, ${point[1]})`;
 }
-
 function ids(v) {
   return v.map((l) => l[0]);
 }
-
 function fill() {
   const v = [[1], [2], [3]];
   try {
@@ -105,7 +95,6 @@ function fill() {
     }
   }
 }
-
 function resize() {
   const v = [[1], [2], [3]];
   try {
@@ -128,7 +117,6 @@ function resize() {
     }
   }
 }
-
 function dedup() {
   const d = [[11], [11], [12], [12], [11]];
   try {
@@ -147,7 +135,6 @@ function dedup() {
     }
   }
 }
-
 function lend() {
   const d = [[11], [12], [13]];
   try {
@@ -262,7 +249,6 @@ function lend() {
     }
   }
 }
-
 function main() {
   fill();
   resize();

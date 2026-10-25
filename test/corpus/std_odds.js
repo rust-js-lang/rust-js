@@ -37,6 +37,7 @@ function main() {
 
   console.log("alloc::vec::Vec<core::option::Option<&str>>");
   console.log("(u8, f64) [i64; 2]");
+
   console.log("hello world");
   $print("no newline, ");
   console.log("then one");

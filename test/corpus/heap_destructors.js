@@ -18,7 +18,6 @@ export function entry() {
 function oDrop_drop(o) {
   console.log(`drop ${o[0]}`);
 }
-
 function main() {
   const h = [];
   try {

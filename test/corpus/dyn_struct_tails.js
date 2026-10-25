@@ -7,30 +7,23 @@ export function entry() {
 }
 
 const bar1ToBar = { toVal: bar1ToBar_toVal, bump: (arg0) => bar1ToBar_bump(arg0.value) };
-
 function bar1ToBar_toVal(bar1) {
   return bar1.f;
 }
-
 function bar1ToBar_bump(bar1) {
   bar1.f = (bar1.f + 1) | 0;
 }
-
 const isizeToBar = { toVal: isizeToBar_toVal, bump: isizeToBar_bump };
-
 function isizeToBar_toVal(self) {
   return self;
 }
-
 function isizeToBar_bump(self) {
   self.value = (self.value + 10) | 0;
 }
-
 function foo(x) {
   const y = { value: x.ptr, impl: x.impl };
   return (((x.f1 + x.impl.toVal(x.ptr)) | 0) + y.impl.toVal(y.value)) | 0;
 }
-
 function bump(x) {
   const receiver = {
     impl: x.impl,
@@ -43,11 +36,9 @@ function bump(x) {
   };
   receiver.impl.bump(receiver);
 }
-
 function deep(x) {
   return (x.ptr.impl.toVal(x.ptr.ptr) + foo(x.ptr)) | 0;
 }
-
 function main() {
   let f1 = { f1: 5, ptr: { f: 42 } };
   console.log(`${foo($dynCell(f1, bar1ToBar))}`);

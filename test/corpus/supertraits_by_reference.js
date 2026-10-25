@@ -25,13 +25,11 @@ function metersDebug_fmt(meters) {
 }
 
 export const metersAdd = { add: metersAdd_add };
-
 function metersAdd_add(meters, other) {
   return [(meters[0] + other[0]) | 0];
 }
 
 export const metersAddMeters = { add: metersAddMeters_add };
-
 function metersAddMeters_add(meters, other) {
   return [(meters[0] + ((other[0] * 10) | 0)) | 0];
 }

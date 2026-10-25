@@ -13,7 +13,6 @@ export function formatClone(IClone) {
     clone: (arg0) => formatClone_clone(arg0, IClone),
   }));
 }
-
 function formatClone_clone(format, IClone) {
   const inner = format.inner;
   format.inner = undefined;

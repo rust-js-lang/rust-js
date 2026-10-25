@@ -21,21 +21,17 @@ const circleShape = {
   grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1),
   name: circleShape_name,
 };
-
 function circleShape_area(circle) {
   return 3 * circle.r * circle.r;
 }
-
 function circleShape_grow(circle, by) {
   circle.r += by;
 }
-
 function circleShape_name(circle) {
   return `circle ${$displayF64(circle.r)}`;
 }
 
 const circleLabeled = { label: circleLabeled_label };
-
 function circleLabeled_label(circle) {
   return `r=${$displayF64(circle.r)}`;
 }
@@ -45,15 +41,12 @@ const squareShape = {
   grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
   name: squareShape_name,
 };
-
 function squareShape_area(square) {
   return square.side * square.side;
 }
-
 function squareShape_grow(square, by) {
   square.side += by;
 }
-
 function squareShape_name(square) {
   return `square ${$displayF64(square.side)}`;
 }

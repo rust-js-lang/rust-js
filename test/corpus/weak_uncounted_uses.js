@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const nodeNamed = { name: nodeNamed_name };
-
 function nodeNamed_name(node) {
   return node.label;
 }

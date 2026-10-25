@@ -11,7 +11,6 @@ function noisyDrop_drop(noisy) {
 }
 
 const noisyNamed = { name: noisyNamed_name, $drop: noisyDrop_drop };
-
 function noisyNamed_name(noisy) {
   return noisy[0];
 }

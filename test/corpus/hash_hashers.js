@@ -19,7 +19,6 @@ export const tallyHasher = $hasher({
   write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
   writeU64: (arg0, arg1) => tallyHasher_writeU64(arg0.value, arg1),
 });
-
 function tallyHasher_finish(tally) {
   return BigInt(tally[0].length);
 }
@@ -33,7 +32,6 @@ function tallyHasher_writeU64(tally, n) {
 }
 
 export const fnvDefault = { default: fnvDefault_default };
-
 function fnvDefault_default() {
   return [14695981039346656037n];
 }
@@ -42,7 +40,6 @@ export const fnvHasher = $hasher({
   finish: fnvHasher_finish,
   write: (arg0, arg1) => fnvHasher_write(arg0.value, arg1),
 });
-
 function fnvHasher_finish(fnv) {
   return fnv[0];
 }

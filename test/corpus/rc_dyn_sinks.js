@@ -24,7 +24,6 @@ const counterSink = {
   take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
   total: counterSink_total,
 };
-
 function counterSink_take(counter, n) {
   counter.sum = (counter.sum + n) >>> 0;
 }
@@ -40,7 +39,6 @@ const loudSink = {
     loudDrop_drop({ value: loud });
   },
 };
-
 function loudSink_take(loud, n) {
   console.log(`loud takes ${n}`);
 }

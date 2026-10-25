@@ -112,7 +112,6 @@ function go(d) {
 }
 
 const dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDrop_drop };
-
 function dCheckedDouble_checkedDouble(d) {
   if (d[0] < 10) {
     return [(d[0] * 2) >>> 0];

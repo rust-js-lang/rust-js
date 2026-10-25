@@ -30,7 +30,6 @@ function asksShared() {
 }
 
 export const peekClone = { clone: peekClone_clone };
-
 function peekClone_clone(peek) {
   const tryBorrowMut = $tryBorrow(peek[0], true);
   try {
@@ -81,7 +80,6 @@ export const nodeClone = {
     $weakDrop(node.me);
   },
 };
-
 function nodeClone_clone(node) {
   console.log(`node clone sees it borrowed: ${Node.asks(node)}`);
   return { me: $weakNone };
@@ -93,7 +91,6 @@ export const nodePartialEq = {
     $weakDrop(node.me);
   },
 };
-
 function nodePartialEq_eq(node, _) {
   console.log(`node == sees it borrowed: ${Node.asks(node)}`);
   return true;
@@ -105,7 +102,6 @@ export const nodeDebug = {
     $weakDrop(node.me);
   },
 };
-
 function nodeDebug_fmt(node) {
   return `Node(${Node.asks(node)})`;
 }

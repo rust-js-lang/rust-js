@@ -3,7 +3,6 @@
 export function Card(p) {
   return <section title={p.title}>{p.children}</section>;
 }
-
 export function Empty() {
   return <hr />;
 }

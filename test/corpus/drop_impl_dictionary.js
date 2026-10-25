@@ -16,7 +16,6 @@ function wrapConsume(TClone, dropT) {
     },
   }));
 }
-
 function wrapConsume_consume(wrap, TClone, dropT) {
   dropT?.(wrap[0]);
   return 1;
@@ -36,7 +35,6 @@ function wrapTake(dropT) {
     },
   }));
 }
-
 function wrapTake_take(wrap, dropT) {
   dropT?.(wrap[0]);
   return 2;
@@ -56,7 +54,6 @@ function wrapReset(TDefault, dropT) {
     },
   }));
 }
-
 function wrapReset_reset(wrap, TDefault, dropT) {
   const value = TDefault.default();
   try {
@@ -67,7 +64,6 @@ function wrapReset_reset(wrap, TDefault, dropT) {
 }
 
 export const loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
-
 function loudDefault_default() {
   return ["made by default"];
 }

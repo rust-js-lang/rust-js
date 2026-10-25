@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const plainNamed = { nameOf: plainNamed_nameOf, sizeOf: plainNamed_sizeOf };
-
 function plainNamed_nameOf(UName) {
   return UName;
 }

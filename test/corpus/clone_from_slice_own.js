@@ -10,7 +10,6 @@ export const countedClone = {
   clone: countedClone_clone,
   cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
 };
-
 function countedClone_clone(counted) {
   console.log(`clone ${counted[0]}`);
   return [counted[0]];
@@ -22,7 +21,6 @@ function countedClone_cloneFrom(counted, source) {
 }
 
 export const lightClone = { clone: lightClone_clone, cloneFrom: lightClone_cloneFrom };
-
 function lightClone_clone(light) {
   console.log("clone light");
   return light === "On" ? "On" : "Off";

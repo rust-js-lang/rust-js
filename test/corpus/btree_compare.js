@@ -20,14 +20,12 @@ export function entry() {
 function revOrd_cmp(rev, o) {
   return $cmp(o[0], rev[0]);
 }
-
 export const revPartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: revPartialOrd_partialCmp,
 };
 
 export const revOrd = { PartialOrd: () => revPartialOrd, cmp: revOrd_cmp };
-
 function revPartialOrd_partialCmp(rev, o) {
   return revOrd_cmp(rev, o);
 }

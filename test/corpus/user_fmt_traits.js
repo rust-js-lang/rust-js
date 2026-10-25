@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const idLowerHex = { fmt: idLowerHex_fmt };
-
 function idLowerHex_fmt(id, options) {
   let f = "";
   if (options?.alternate === true) {
@@ -18,14 +17,12 @@ function idLowerHex_fmt(id, options) {
 }
 
 export const idUpperHex = { fmt: idUpperHex_fmt };
-
 function idUpperHex_fmt(id, options) {
   return id[0].toString(16).toUpperCase().padStart(8, "0");
 }
 
 // Delegating to another of the crate's impls, as uuid's do.
 export const idOctal = { fmt: idOctal_fmt };
-
 function idOctal_fmt(id, options) {
   let f = idLowerHex_fmt(id, options);
   f += "/";
@@ -34,25 +31,21 @@ function idOctal_fmt(id, options) {
 }
 
 export const idBinary = { fmt: idBinary_fmt };
-
 function idBinary_fmt(id, options) {
   return $formatted(id[0].toString(2), options);
 }
 
 export const ratioLowerExp = { fmt: ratioLowerExp_fmt };
-
 function ratioLowerExp_fmt(ratio, options) {
   return `${$lowerExp(ratio[0])}~`;
 }
 
 export const handlePointer = { fmt: handlePointer_fmt };
-
 function handlePointer_fmt(handle, options) {
   return `@${handle[0]}`;
 }
 
 export const flagsDisplay = { fmt: flagsDisplay_fmt };
-
 function flagsDisplay_fmt(flags, options) {
   let f = "";
   let first = true;
@@ -84,13 +77,11 @@ export function bitsLowerHex(TLowerHex) {
     fmt: (arg0, arg1) => bitsLowerHex_fmt(arg0, arg1, TLowerHex),
   }));
 }
-
 function bitsLowerHex_fmt(bits, options, TLowerHex) {
   return TLowerHex.fmt(bits[0], options);
 }
 
 export const bitsUpperHex = { fmt: bitsUpperHex_fmt };
-
 function bitsUpperHex_fmt(bits, options) {
   return $formatted(
     (options?.alternate ? "0x" : "") + bits[0].toString(16).toUpperCase(),
@@ -100,19 +91,16 @@ function bitsUpperHex_fmt(bits, options) {
 }
 
 export const bitsOctal = { fmt: bitsOctal_fmt };
-
 function bitsOctal_fmt(bits, options) {
   return $formatted((options?.alternate ? "0o" : "") + bits[0].toString(8), options, true);
 }
 
 export const bitsBinary = { fmt: bitsBinary_fmt };
-
 function bitsBinary_fmt(bits, options) {
   return $formatted((options?.alternate ? "0b" : "") + (bits[0] & 255).toString(2), options, true);
 }
 
 export const circleDisplay = { fmt: circleDisplay_fmt };
-
 function circleDisplay_fmt(circle, options) {
   return `circle of ${circle[0]}`;
 }

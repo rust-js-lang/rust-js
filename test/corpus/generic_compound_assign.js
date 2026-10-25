@@ -13,7 +13,6 @@ function moneyDebug_fmt(money) {
 export const moneyAddAssign = {
   addAssign: (arg0, arg1) => moneyAddAssign_addAssign(arg0.value, arg1),
 };
-
 function moneyAddAssign_addAssign(money, other) {
   console.log(`add ${other[0]}`);
   money[0] = BigInt.asIntN(64, money[0] + other[0]);

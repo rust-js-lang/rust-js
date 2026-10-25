@@ -13,7 +13,6 @@ function loudDrop_drop(loud) {
 function tagDrop_drop(tag) {
   console.log(`tag ${tag[0]}`);
 }
-
 function genIterator_next(gen) {
   gen[0] = (gen[0] + 1) & 255;
   if (gen[0] < 5) {
@@ -99,7 +98,6 @@ function holderSkip(IIterator, dropI, dropIItem) {
     },
   }));
 }
-
 function holderSkip_skip(holder, IIterator, dropI, dropIItem) {
   const next = IIterator.next(holder[0]);
   if (next != null) {

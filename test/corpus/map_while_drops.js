@@ -18,7 +18,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function mapped() {
   const v = [1, 2, -3, 4];
   const pos = $lazyMapWhile(
@@ -56,7 +55,6 @@ function mapped() {
   ).toArray();
   console.log(`[${kept.join(", ")}]`);
 }
-
 function kept() {
   const flat = [1, $some(undefined), undefined]
     .map((x) => x)
@@ -78,7 +76,6 @@ function kept() {
     `${found == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(found))})`}`,
   );
 }
-
 function main() {
   mapped();
   kept();

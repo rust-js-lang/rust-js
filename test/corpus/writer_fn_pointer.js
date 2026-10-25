@@ -24,7 +24,6 @@ function quoted(x, options) {
 }
 
 export const joinedDisplay = { fmt: joinedDisplay_fmt };
-
 function joinedDisplay_fmt(joined, options) {
   return Joined.format(
     joined,
@@ -34,7 +33,6 @@ function joinedDisplay_fmt(joined, options) {
 }
 
 export const joinedLowerHex = { fmt: joinedLowerHex_fmt };
-
 function joinedLowerHex_fmt(joined, options) {
   return Joined.format(
     joined,
@@ -45,7 +43,6 @@ function joinedLowerHex_fmt(joined, options) {
 }
 
 export const joinedDebug = { fmt: joinedDebug_fmt };
-
 function joinedDebug_fmt(joined, options) {
   return Joined.format(joined, quoted, options);
 }

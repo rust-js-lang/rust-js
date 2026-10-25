@@ -13,14 +13,12 @@ import { EditorView, basicSetup } from "codemirror";
 // Made once, as the module loads (ADR 0037). One theme compartment serves
 // both editors: it only names the slot a view reconfigures.
 const theme = new Compartment();
-
 const source = [
   basicSetup,
   rust(),
   theme.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
-
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
 const jsOutput = output(javascript());

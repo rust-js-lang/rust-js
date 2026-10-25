@@ -5,15 +5,12 @@ import { createContext, forwardRef, lazy, memo } from "react";
 export function Card(p) {
   return <b>{p.label}</b>;
 }
-
 export function Provider() {
   return <i />;
 }
-
 export function Input(p, _) {
   return <b>{p.label}</b>;
 }
-
 export const Memo = memo(Card);
 export const Lazy = lazy(() => import("./lazy.jsx"));
 export const Forward = forwardRef(Input);

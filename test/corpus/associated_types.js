@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
-
 function countSource_nextItem(count) {
   if (count.n === 0) {
     return;
@@ -17,7 +16,6 @@ function countSource_nextItem(count) {
 }
 
 const wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };
-
 function wordsSource_nextItem(words) {
   return words.list.pop();
 }
@@ -46,13 +44,11 @@ function shown(s, SSource, SItemDebug) {
 }
 
 const countLabeled = { LabelDisplay: () => ({ fmt: String }), label: countLabeled_label };
-
 function countLabeled_label(count) {
   return count.n;
 }
 
 const wordsLabeled = { LabelDisplay: () => ({ fmt: (value) => value }), label: wordsLabeled_label };
-
 function wordsLabeled_label(words) {
   return words.list.join("+");
 }

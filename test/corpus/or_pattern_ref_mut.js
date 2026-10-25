@@ -32,7 +32,6 @@ export function f(p) {
   }
   x.value = (x.value + 1) | 0;
 }
-
 function main() {
   const iter = $iter([
     [0, 5],

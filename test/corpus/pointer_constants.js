@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const NULLED = { x: null };
-
 const INTERNED = {
   field: { value: 42 },
   tag: 7,

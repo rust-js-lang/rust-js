@@ -56,7 +56,6 @@ export function labeledDisplay(TDisplay) {
     fmt: (arg0) => labeledDisplay_fmt(arg0, TDisplay),
   }));
 }
-
 function labeledDisplay_fmt(labeled, TDisplay) {
   return `${labeled.label}=${TDisplay.fmt(labeled.value)}`;
 }
@@ -131,14 +130,12 @@ export function bfsOrder(n, edges) {
 function taskOrd_cmp(task, other) {
   return $cmp(task.pri, other.pri);
 }
-
 export const taskPartialOrd = {
   PartialEq: () => ({ eq: $eq }),
   partialCmp: taskPartialOrd_partialCmp,
 };
 
 export const taskOrd = { PartialOrd: () => taskPartialOrd, cmp: taskOrd_cmp };
-
 function taskPartialOrd_partialCmp(task, other) {
   return taskOrd_cmp(task, other);
 }

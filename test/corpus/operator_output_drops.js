@@ -7,9 +7,7 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 export const loudAdd = { add: loudAdd_add, $drop: loudDrop_drop, $dropOutput: loudDrop_drop };
-
 function loudAdd_add(loud, o) {
   const result = [(loud[0] + o[0]) & 255];
   try {
@@ -19,13 +17,11 @@ function loudAdd_add(loud, o) {
   }
   return result;
 }
-
 function sumDrop(a, b, TAdd) {
   const _x = TAdd.add(a, b);
   TAdd.$dropOutput?.(_x);
   return 0;
 }
-
 function main() {
   console.log(`${sumDrop([1], [2], loudAdd)}`);
   console.log(`${sumDrop(1, 2, { add: (a, b) => (a + b) | 0 })}`);

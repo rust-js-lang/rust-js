@@ -18,11 +18,9 @@ const tallyCounter = {
     self.value = other;
   },
 };
-
 function tallyCounter_get(tally) {
   return tally[0];
 }
-
 function tallyCounter_set(tally, n) {
   tally[0] = n;
 }
@@ -39,11 +37,9 @@ const i32Counter = {
     self.value = other;
   },
 };
-
 function i32Counter_get(self) {
   return self;
 }
-
 function i32Counter_set(self, n) {
   self.value = n;
 }

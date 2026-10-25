@@ -1,6 +1,9 @@
 # 0303. Top-level statements that span lines are set apart
 
-Status: Accepted.
+Status: Accepted. Superseded by [0865](0865-a-blank-line-is-where-the-rust-has-one.md)
+where the source tells: a blank line is where the Rust has one between the
+code of the JS. This rule is kept for what it can't tell of, a statement
+rust-js makes of no code of its own, or several of one line.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

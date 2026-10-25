@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const namePartialEq = { eq: namePartialEq_eq };
-
 function namePartialEq_eq(name, other) {
   return name[0].toLowerCase() === other[0].toLowerCase();
 }

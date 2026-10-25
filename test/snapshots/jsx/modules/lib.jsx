@@ -15,12 +15,10 @@ export function App() {
     </>
   );
 }
-
 export function Spread() {
   const props = { title: "Spread", children: <span>child</span> };
   return <Panel {...props} />;
 }
-
 export function Override() {
   const props = { title: "old", children: <span /> };
   return <Panel {...props} title="new" />;

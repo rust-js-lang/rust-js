@@ -15,7 +15,6 @@ function loudDrop_drop(loud) {
 }
 
 export const loudDisplay = { fmt: loudDisplay_fmt, $drop: loudDrop_drop };
-
 function loudDisplay_fmt(loud) {
   return `loud ${loud[0]}`;
 }

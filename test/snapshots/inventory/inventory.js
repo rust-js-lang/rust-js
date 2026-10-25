@@ -18,24 +18,19 @@ import {
 } from "@rust-js/runtime";
 
 export const minStockRule = { name: minStockRule_name, check: minStockRule_check };
-
 function minStockRule_name(minStock) {
   return `min-stock(${minStock.item})`;
 }
-
 function minStockRule_check(minStock, store) {
   const have = store.stock.get(minStock.item) ?? 0;
   if (have < minStock.min) {
     return `${minStock.item} low: ${have} < ${minStock.min}`;
   }
 }
-
 export const revenueRule = { name: revenueRule_name, check: revenueRule_check };
-
 function revenueRule_name(revenue) {
   return "revenue";
 }
-
 function revenueRule_check(revenue, store) {
   return store.revenue < revenue[0]
     ? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`
@@ -43,7 +38,6 @@ function revenueRule_check(revenue, store) {
 }
 
 export const storeDisplay = { fmt: storeDisplay_fmt };
-
 function storeDisplay_fmt(store) {
   let f = "";
   const items = Array.from(store.stock);

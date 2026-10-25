@@ -26,7 +26,6 @@ function writeTime(w, hours, minutes, label, WWrite) {
 }
 
 export const timeDisplay = { fmt: timeDisplay_fmt };
-
 function timeDisplay_fmt(time) {
   let f = "at ";
   const w = { value: f };
@@ -43,7 +42,6 @@ export const counterWrite = {
   writeChar: $counterWrite_writeStr,
   writeFmt: $counterWrite_writeStr,
 };
-
 function counterWrite_writeStr(counter, s) {
   const length = Array.from(s).length;
   counter.chars = (counter.chars + length) >>> 0;
@@ -67,7 +65,6 @@ function toWriter(bits, writer, Write) {
 }
 
 export const flagsDisplay = { fmt: flagsDisplay_fmt };
-
 function flagsDisplay_fmt(flags) {
   let f = "";
   const writer = { value: f };

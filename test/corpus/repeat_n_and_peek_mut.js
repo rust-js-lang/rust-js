@@ -8,16 +8,13 @@ export function entry() {
 }
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
-
 function loudClone_clone(loud) {
   console.log(`clone ${loud[0]}`);
   return [(loud[0] + 10) & 255];
 }
-
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function repeated() {
   const v = $repeatingN(7, 3).toArray();
   const s = $repeatingN("ab", 2).toArray().join("");
@@ -63,7 +60,6 @@ function repeated() {
     }
   }
 }
-
 function peeked() {
   const it = iterator_peekable($iter([1, 2, 3]), { next: $next });
   let x = $peekCell(it);
@@ -95,7 +91,6 @@ function peeked() {
   const value = $peekCell(empty);
   console.log(`${value == null ? "None" : `Some(${value.value})`}`);
 }
-
 function main() {
   repeated();
   peeked();

@@ -23,7 +23,6 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
-
 function main() {
   const t = (x) => {
     console.log(`f${x}`);

@@ -17,7 +17,6 @@ function shapeDebug_fmt(shape) {
 }
 
 const shapeArea = { area: shapeArea_area, unit: shapeArea_unit };
-
 function shapeArea_area(shape) {
   if (shape.TAG === "Circle") {
     return 3 * shape._0 * shape._0;
@@ -103,6 +102,7 @@ function main() {
   const somes = options.map((x) => x != null);
   const nones = options.map((x) => x == null);
   console.log(`[${somes.join(", ")}] [${nones.join(", ")}]`);
+
   loudDrop_drop([1]);
   give(
     (value) => {

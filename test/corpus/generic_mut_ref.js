@@ -19,11 +19,9 @@ const i32Bump = {
     return i32Bump_get(self.value);
   },
 };
-
 function i32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
 }
-
 function i32Bump_get(self) {
   return self;
 }
@@ -37,11 +35,9 @@ const cBump = {
     return cBump_get(self.value);
   },
 };
-
 function cBump_bump(c) {
   c.n = (c.n + 1) | 0;
 }
-
 function cBump_get(c) {
   return c.n;
 }

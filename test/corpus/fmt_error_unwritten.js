@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const badDisplay = { fmt: badDisplay_fmt };
-
 function badDisplay_fmt(bad) {
   try {
     $fmtError();

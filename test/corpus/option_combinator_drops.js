@@ -53,7 +53,6 @@ function found(value, fallback, dropT) {
 }
 
 const dNamed = { fromName: dNamed_fromName, $drop: dDrop_drop };
-
 function dNamed_fromName(name) {
   const result = $parseInt(name, 0, 4294967295);
   const value = result.TAG === "Ok" ? result._0 : undefined;

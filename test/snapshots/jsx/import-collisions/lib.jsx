@@ -6,7 +6,6 @@ import { Card as Card$3 } from "./second.jsx";
 export function Card() {
   return <b>local</b>;
 }
-
 export function View() {
   const render = (Card) => (
     <>

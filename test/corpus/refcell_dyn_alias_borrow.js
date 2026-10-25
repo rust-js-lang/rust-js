@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const circleShape = { grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1) };
-
 function circleShape_grow(circle, by) {
   circle.r += by;
 }

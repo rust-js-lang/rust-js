@@ -13,7 +13,6 @@ export function varPointer(TPointer) {
     fmt: (arg0, arg1) => varPointer_fmt(arg0, arg1, TPointer),
   }));
 }
-
 function varPointer_fmt(var$, options, TPointer) {
   return TPointer.fmt(var$[0], options);
 }
@@ -25,19 +24,16 @@ export function varLowerHex(TLowerHex) {
     fmt: (arg0, arg1) => varLowerHex_fmt(arg0, arg1, TLowerHex),
   }));
 }
-
 function varLowerHex_fmt(var$, options, TLowerHex) {
   return TLowerHex.fmt(var$[0], options);
 }
 
 export const handlePointer = { fmt: handlePointer_fmt };
-
 function handlePointer_fmt(handle, options) {
   return `@${handle[0]}`;
 }
 
 export const handleLowerHex = { fmt: handleLowerHex_fmt };
-
 function handleLowerHex_fmt(handle, options) {
   let f = "";
   if (options?.alternate === true) {

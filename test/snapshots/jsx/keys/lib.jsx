@@ -8,7 +8,6 @@ function Card(p) {
     </div>
   );
 }
-
 export function App() {
   const __jsx0 = 3;
   const title = globalThis.record(1);

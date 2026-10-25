@@ -46,37 +46,31 @@ function versionDebug_fmt(version) {
 }
 
 export const pointDebug = { fmt: pointDebug_fmt };
-
 function pointDebug_fmt(point) {
   return `Point { x: ${point.x}, label: ${$debugStr(point.label)}, tags: [${point.tags.join(", ")}] }`;
 }
 
 export const secretDebug = { fmt: secretDebug_fmt };
-
 function secretDebug_fmt(secret) {
   return `Secret { hint: ${secret[0]}, .. }`;
 }
 
 export const pairDebug = { fmt: pairDebug_fmt };
-
 function pairDebug_fmt(pair) {
   return `Pair(${pair[0]}, ${$debugStr(pair[1])})`;
 }
 
 export const bagDebug = { fmt: bagDebug_fmt };
-
 function bagDebug_fmt(bag) {
   return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;
 }
 
 export const lettersDebug = { fmt: lettersDebug_fmt };
-
 function lettersDebug_fmt(letters) {
   return `{${Array.from(letters[0], (entry) => $debugStr(entry, "'")).join(", ")}}`;
 }
 
 export const tableDebug = { fmt: tableDebug_fmt };
-
 function tableDebug_fmt(table) {
   return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;
 }

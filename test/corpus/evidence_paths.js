@@ -16,13 +16,11 @@ export function entry() {
 }
 
 const smallInt = { value: smallInt_value };
-
 function smallInt_value(small) {
   return small[0];
 }
 
 const u8NonZero = { nonZero: u8NonZero_nonZero };
-
 function u8NonZero_nonZero(self) {
   return self !== 0;
 }
@@ -44,7 +42,6 @@ function produced(t, TSource) {
 }
 
 export const celsiusDisplay = { fmt: celsiusDisplay_fmt };
-
 function celsiusDisplay_fmt(celsius) {
   return `${$displayF64(celsius[0])}°C`;
 }
@@ -64,7 +61,6 @@ function optionGetterT(TClone) {
     },
   }));
 }
-
 function optionGetterT_get(option, TClone) {
   return TClone.clone($someValue($unwrap(option)));
 }
@@ -73,7 +69,6 @@ const iDigits = {
   digitIter: iDigits_digitIter,
   digitSum: (self) => iDigits_digitIter(self).reduce((s, d) => (s + d) >>> 0, 0),
 };
-
 function iDigits_digitIter(self) {
   return self;
 }
@@ -86,11 +81,9 @@ function pointPositionedS(SClone) {
     x: (arg0) => pointPositionedS_x(arg0, SClone),
   }));
 }
-
 function pointPositionedS_setX(point, x, SClone) {
   point.x = x;
 }
-
 function pointPositionedS_x(point, SClone) {
   return SClone.clone(point.x);
 }
@@ -114,7 +107,6 @@ function bagDebug_fmt(bag) {
 }
 
 export const bagAdd = { add: bagAdd_add };
-
 function bagAdd_add(bag, other) {
   $extend(bag[0], other[0]);
   return bag;

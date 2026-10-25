@@ -5,15 +5,12 @@ import { Forward, Lazy, Memo as Cached, Provider, Theme } from "./wrapped.jsx";
 export function Generic(p) {
   return <span>{p.value}</span>;
 }
-
 export function Group(p) {
   return <div>{p.children}</div>;
 }
-
 export function Empty() {
   return <i />;
 }
-
 export function App() {
   const Selected = Generic;
   return (

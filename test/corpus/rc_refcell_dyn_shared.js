@@ -23,7 +23,6 @@ const loggerListener = {
   notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
   count: loggerListener_count,
 };
-
 function loggerListener_notify(logger, event) {
   logger.seen.push(event.toUpperCase());
 }
@@ -40,7 +39,6 @@ const counterSink = {
   take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
   total: counterSink_total,
 };
-
 function counterSink_take(counter, n) {
   counter.sum = (counter.sum + n) >>> 0;
 }
@@ -54,7 +52,6 @@ const loudSink = {
   total: loudSink_total,
   $drop: loudDrop_drop,
 };
-
 function loudSink_take(loud, n) {
   console.log(`${loud.name} takes ${n}`);
 }

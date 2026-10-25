@@ -9,7 +9,6 @@ export function entry() {
 function backwards(it) {
   return $rev(it).toArray();
 }
-
 function main() {
   console.log(`[${backwards($iter([1, 2, 3])).join(", ")}]`);
   const both = $iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack);

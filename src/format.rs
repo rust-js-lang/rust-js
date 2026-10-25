@@ -39,11 +39,14 @@ fn source_type(js_file_name: &str) -> SourceType {
 
 /// What the source writes across lines, of a module's JS, in the order a
 /// visit of its parse meets each: its objects (ADR 0835), and each value of
-/// its template literals (ADR 0641, amended).
+/// its template literals (ADR 0641, amended); and of each of its top-level
+/// statements, whether the source tells if a blank line is before it, which
+/// the printer has written as it tells (`to_oxc::apart`, ADR 0444, amended).
 #[derive(Default)]
 pub(crate) struct Written {
     pub objects: Vec<bool>,
     pub interpolations: Vec<bool>,
+    pub told: Vec<bool>,
 }
 
 /// `code` as oxfmt formats it, each of its objects, in the order a visit
@@ -428,16 +431,17 @@ impl<'t> Lines<'t> {
 pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lines: &Written) -> (String, String) {
     let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
     let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines).unwrap_or((code, map));
-    spaced(code, map, js_file_name)
+    spaced(code, map, js_file_name, &across_lines.told)
 }
 
 /// `code`, laid out, with a blank line between two top-level statements
 /// where either is a function or spans lines, but after a `let x;` of no
-/// value, as a person separates them,
+/// value, as a person separates them, of those the source doesn't tell of,
+/// `told`, its last statements' (ADR 0444, amended),
 /// and `map` moved to match. Its imports stay one block (ADR 0295). Read
 /// from its parse, so a line of a template literal is never taken for one.
-fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
-    let blank = blank_lines_before(&code);
+fn spaced(code: String, map: String, js_file_name: &str, told: &[bool]) -> (String, String) {
+    let blank = blank_lines_before(&code, told);
     if blank.is_empty() {
         return (code, map);
     }
@@ -458,8 +462,9 @@ fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
 }
 
 /// The lines of `code` that start a top-level statement to put a blank
-/// line before (`spaced`).
-fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
+/// line before (`spaced`), of none `told` says the source tells of, of its
+/// last statements in turn.
+fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<usize> {
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
     if parsed.diagnostics.errors().next().is_some() {
@@ -493,11 +498,13 @@ fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
         }
         line
     };
-    parsed
-        .program
-        .body
-        .windows(2)
-        .filter_map(|pair| {
+    let body = &parsed.program.body;
+    // Of the module's code, after its header: its last statements.
+    let header = body.len().checked_sub(told.len());
+    let is_told = |i: usize| header.is_some_and(|header| i >= header && told[i - header]);
+    (body.windows(2).enumerate())
+        .filter(|&(i, _)| !is_told(i + 1))
+        .filter_map(|(_, pair)| {
             let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
             let imports = matches!(pair[0], Statement::ImportDeclaration(_))
                 || matches!(pair[1], Statement::ImportDeclaration(_));

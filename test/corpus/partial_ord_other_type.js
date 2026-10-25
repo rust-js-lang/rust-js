@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const metersPartialEqU32 = { eq: metersPartialEqU32_eq };
-
 function metersPartialEqU32_eq(meters, other) {
   return meters[0] === other;
 }
@@ -16,7 +15,6 @@ export const metersPartialOrdU32 = {
   PartialEq: () => metersPartialEqU32,
   partialCmp: metersPartialOrdU32_partialCmp,
 };
-
 function metersPartialOrdU32_partialCmp(meters, other) {
   return $cmp(meters[0], other);
 }

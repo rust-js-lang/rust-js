@@ -9,7 +9,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function pick(a, b, dropT, dropU) {
   let kept;
   if (a == null) {
@@ -26,7 +25,6 @@ function pick(a, b, dropT, dropU) {
   }
   return value;
 }
-
 function main() {
   const option = [1];
   const f = [2];

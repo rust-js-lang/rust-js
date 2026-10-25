@@ -11,7 +11,6 @@ const $_T__N_Array = new Map();
 function _T__N_Array(N) {
   return $traitImpl($_T__N_Array, [N], () => ({ items: (arg0) => _T__N_Array_items(arg0, N) }));
 }
-
 function _T__N_Array_items(self, N) {
   return self;
 }
@@ -23,7 +22,6 @@ export function smallPartialEqSmall(AArray, BArray, AItemPartialEqBItem) {
     eq: (arg0, arg1) => smallPartialEqSmall_eq(arg0, arg1, AArray, BArray, AItemPartialEqBItem),
   }));
 }
-
 function smallPartialEqSmall_eq(small, other, AArray, BArray, AItemPartialEqBItem) {
   const value = AArray.items(small[0]);
   const other$1 = BArray.items(other[0]);

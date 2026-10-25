@@ -11,7 +11,6 @@ const $tNamed = new WeakMap();
 function tNamed(TDebug) {
   return $traitImpl($tNamed, [TDebug], () => ({ name: (arg0) => tNamed_name(arg0, TDebug) }));
 }
-
 function tNamed_name(self, TDebug) {
   return TDebug.fmt(self);
 }
@@ -21,7 +20,6 @@ const $tShout = new WeakMap();
 function tShout(TNamed) {
   return $traitImpl($tShout, [TNamed], () => ({ shout: (arg0) => tShout_shout(arg0, TNamed) }));
 }
-
 function tShout_shout(self, TNamed) {
   return TNamed.name(self).toUpperCase();
 }

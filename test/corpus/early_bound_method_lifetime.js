@@ -5,8 +5,8 @@ export function entry() {
 }
 
 const sevenPicker = { pick: (self, x) => (x + 7) & 255 };
-const doublePicker = { pick: doublePicker_pick };
 
+const doublePicker = { pick: doublePicker_pick };
 function doublePicker_pick(double, x) {
   return (x * 2) & 255;
 }

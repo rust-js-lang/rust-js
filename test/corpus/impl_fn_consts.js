@@ -28,7 +28,6 @@ const Ops = {
     ["neg", (x) => -x | 0],
   ],
 };
-
 const $wrapTrait = new WeakMap();
 
 function wrapTrait(TDefault, TIntoU32) {
@@ -39,11 +38,9 @@ function wrapTrait(TDefault, TIntoU32) {
     LIMIT: 4,
   }));
 }
-
 function apply(n, XTrait) {
   return (XTrait.ASSOC(n) + XTrait.LIMIT) >>> 0;
 }
-
 function main() {
   const f = ASSOC;
   console.log(`${f(2)} 9`);

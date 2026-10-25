@@ -15,7 +15,6 @@ function _T__N_Array(N, TSize, TAlign) {
     ItemAlign: TAlign,
   }));
 }
-
 function _T__N_Array_size(N) {
   return N;
 }

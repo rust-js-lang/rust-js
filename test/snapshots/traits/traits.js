@@ -3,36 +3,27 @@
 import { $displayF64, $f64Max, $traitImpl } from "@rust-js/runtime";
 
 export const circleShape = { area: circleShape_area, name: circleShape_name };
-
 function circleShape_area(circle) {
   return 3.14 * circle.r * circle.r;
 }
-
 function circleShape_name(circle) {
   return "circle";
 }
-
 export const squareShape = { area: squareShape_area, name: (self) => "shape" };
-
 function squareShape_area(square) {
   return square[0] * square[0];
 }
-
 export const blobShape = { area: blobShape_area, name: (self) => "shape" };
-
 function blobShape_area(blob) {
   if (blob === "Dot") {
     return 0;
   }
   return 0;
 }
-
 export const f64Shape = { area: f64Shape_area, name: (self) => "shape" };
-
 function f64Shape_area(self) {
   return self;
 }
-
 const $vecShape = new WeakMap();
 
 export function vecShape(TShape) {
@@ -41,11 +32,9 @@ export function vecShape(TShape) {
     name: (self) => "shape",
   }));
 }
-
 function vecShape_area(vec, TShape) {
   return total(vec, TShape);
 }
-
 export const circleLabeled = {
   Shape: () => circleShape,
   label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`,
@@ -54,11 +43,9 @@ export const circleLabeled = {
 export function total(shapes, TShape) {
   return shapes.map((s) => TShape.area(s)).reduce((a, b) => a + b, -0);
 }
-
 export function largest(shapes) {
   return shapes.map((s) => s.impl.area(s.value)).reduce($f64Max, 0);
 }
-
 export function fresh(TDefault, TShape) {
   return TShape.area(TDefault.default());
 }

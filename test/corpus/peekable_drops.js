@@ -21,7 +21,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function more() {
   const it = iterator_peekable(
     $iter([[1], [2]]),
@@ -77,7 +76,6 @@ function more() {
     }
   }
 }
-
 function main() {
   let it = iterator_peekable(
     $iter([[1], [2], [3]]),

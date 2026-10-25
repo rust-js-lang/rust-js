@@ -595,6 +595,17 @@ leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
+A blank line is where your Rust has one between the code of the JS's
+lines, and nowhere else: two functions, or a `static` and the
+`js::on_load!` it's frozen in, written right below each other are right
+below each other in the JS, and one apart is apart, a type with no JS
+between too. An object's fields are apart where the struct literal's are;
+a `let` with no JS of its own, an erased cast's, is no code between a
+blank line and the statement after it. What the Rust can't tell of, what
+rust-js writes of no code of its own or of one line, a derive's
+functions, is set apart as a person sets it ([ADR
+0865](../../decisions/0865-a-blank-line-is-where-the-rust-has-one.md)).
+
 A comment written on a struct literal's field is the field's, after its
 value on its line or on lines of their own before it, and a field that's
 `None`, which JS leaves out, keeps its key for it, `v: undefined, // why`

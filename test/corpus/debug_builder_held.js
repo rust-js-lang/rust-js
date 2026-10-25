@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const pairDebug = { fmt: pairDebug_fmt };
-
 function pairDebug_fmt(pair, options) {
   const parts = [];
   if (pair.first != null) {
@@ -24,7 +23,6 @@ function pairDebug_fmt(pair, options) {
 }
 
 export const evensDebug = { fmt: evensDebug_fmt };
-
 function evensDebug_fmt(evens, options) {
   const parts = [];
   for (const x of evens[0]) {
@@ -36,7 +34,6 @@ function evensDebug_fmt(evens, options) {
 }
 
 export const openDebug = { fmt: openDebug_fmt };
-
 function openDebug_fmt(open, options) {
   const parts = [];
   const first = open[0][0];
@@ -49,7 +46,6 @@ function openDebug_fmt(open, options) {
 }
 
 export const rowDebug = { fmt: rowDebug_fmt };
-
 function rowDebug_fmt(row, options) {
   const parts = [];
   for (const x of row[0]) {
@@ -63,7 +59,6 @@ function rowDebug_fmt(row, options) {
 }
 
 export const tagsDebug = { fmt: tagsDebug_fmt };
-
 function tagsDebug_fmt(tags, options) {
   const parts = [];
   parts.push(...Array.from(tags[0], (entry) => $debugStr(entry)));

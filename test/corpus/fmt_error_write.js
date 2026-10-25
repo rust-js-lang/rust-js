@@ -15,7 +15,6 @@ export function entry() {
 }
 
 export const hoursDisplay = { fmt: hoursDisplay_fmt };
-
 function hoursDisplay_fmt(hours) {
   let f = "";
   try {
@@ -31,7 +30,6 @@ function hoursDisplay_fmt(hours) {
 }
 
 export const spanDisplay = { fmt: spanDisplay_fmt };
-
 function spanDisplay_fmt(span) {
   let f = "";
   try {

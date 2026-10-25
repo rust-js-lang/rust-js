@@ -11,7 +11,6 @@ function pointDebug_fmt(point) {
 }
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
-
 function loudClone_clone(loud) {
   return [(loud[0] + 10) >>> 0];
 }

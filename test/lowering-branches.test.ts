@@ -119,7 +119,6 @@ pub fn one(n: u32, v: &mut Vec<u32>) {
   }
   v.push(1);
 }
-
 export function nested(a, b, out) {
   if (a != null) {
     if (b) {
@@ -127,7 +126,6 @@ export function nested(a, b, out) {
     }
   }
 }
-
 export function guarded(flag, cur, out) {
   if (flag && cur != null) {
     if ($byteLen(cur) > 2) {
@@ -135,7 +133,6 @@ export function guarded(flag, cur, out) {
     }
   }
 }
-
 export function one(n, v) {
   if (n === 1) {
     v.push(1);

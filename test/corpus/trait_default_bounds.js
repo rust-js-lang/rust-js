@@ -7,11 +7,9 @@ export function entry() {
 }
 
 const f64Zero = { zero: f64Zero_zero };
-
 function f64Zero_zero() {
   return 0;
 }
-
 const f64Signed = {
   Zero: () => f64Zero,
   PartialOrd: () => ({ partialCmp: $partialCmp }),
@@ -24,11 +22,9 @@ const f64Signed = {
 };
 
 const i32Zero = { zero: i32Zero_zero };
-
 function i32Zero_zero() {
   return 0;
 }
-
 const i32Signed = {
   Zero: () => i32Zero,
   PartialOrd: () => ({ partialCmp: $cmp }),
@@ -45,7 +41,6 @@ const u8One = {
   one: u8One_one,
   isOne: (self, SelfPartialEq) => self === u8One_one(),
 };
-
 function u8One_one() {
   return 1;
 }
@@ -59,7 +54,6 @@ function wrappingOne(TOne, WrappingMul) {
     isOne: (self, SelfPartialEq) => SelfPartialEq.eq(self, wrappingOne_one(TOne, WrappingMul)),
   }));
 }
-
 function wrappingOne_one(TOne, WrappingMul) {
   return [TOne.one()];
 }

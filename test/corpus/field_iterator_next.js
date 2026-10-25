@@ -9,7 +9,6 @@ export function entry() {
 export function f(l) {
   return $next(l.c);
 }
-
 function main() {
   const s = "héllo";
   const l = { c: $iter(Array.from(s)) };

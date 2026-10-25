@@ -18,14 +18,12 @@ export function vecStableDeref(dropT) {
     },
   }));
 }
-
 export const stringStableDeref = { Deref: () => ({ deref: (s) => s }) };
 const $rcStableDeref = new WeakMap();
 
 export function rcStableDeref(dropT) {
   return $traitImpl($rcStableDeref, [dropT], () => ({ Deref: () => ({ deref: (x) => x }) }));
 }
-
 const $refStableDeref = new WeakMap();
 
 export function refStableDeref(dropT) {
@@ -34,7 +32,6 @@ export function refStableDeref(dropT) {
     $drop: $unborrow,
   }));
 }
-
 const $refMutStableDeref = new WeakMap();
 
 export function refMutStableDeref(dropT) {

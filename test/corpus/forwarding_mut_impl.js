@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const i32Inc = { inc: i32Inc_inc };
-
 function i32Inc_inc(self) {
   self.value = (self.value + 1) | 0;
   return self.value;
@@ -18,19 +17,16 @@ const $refMutTInc = new WeakMap();
 function refMutTInc(TInc) {
   return $traitImpl($refMutTInc, [TInc], () => ({ inc: (arg0) => refMutTInc_inc(arg0, TInc) }));
 }
-
 function refMutTInc_inc(self, TInc) {
   return TInc.inc(self.value);
 }
 
 const stringSink = { put: stringSink_put };
-
 function stringSink_put(string, x) {
   string.value += String.fromCharCode((48 + x) & 255);
 }
 
 const vecSink = { put: (arg0, arg1) => vecSink_put(arg0.value, arg1) };
-
 function vecSink_put(vec, x) {
   vec.push(x);
 }
@@ -42,7 +38,6 @@ function refMutSSink(SSink) {
     put: (arg0, arg1) => refMutSSink_put(arg0, arg1, SSink),
   }));
 }
-
 function refMutSSink_put(self, x, SSink) {
   SSink.put(self.value, x);
 }

@@ -7,23 +7,17 @@ export function entry() {
 }
 
 const birdBase = { id: birdBase_id, $drop: birdDrop_drop };
-
 function birdBase_id(bird) {
   return bird[0];
 }
-
 const birdNamed = { Base: () => birdBase, name: birdNamed_name, $drop: birdDrop_drop };
-
 function birdNamed_name(bird) {
   return `bird${bird[0]}`;
 }
-
 const birdAnimal = { Named: () => birdNamed, legs: birdAnimal_legs, $drop: birdDrop_drop };
-
 function birdAnimal_legs(bird) {
   return 2;
 }
-
 function birdDrop_drop(bird) {
   console.log(`drop bird${bird[0]}`);
 }

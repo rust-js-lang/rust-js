@@ -17,7 +17,6 @@ export function entry() {
 function kDebug_fmt(k) {
   return `K(${k[0]}, ${$debugStr(k[1])})`;
 }
-
 function main() {
   const m = new $KeyMap();
   for (const [i, w] of ["a", "b", "a"].entries()) {

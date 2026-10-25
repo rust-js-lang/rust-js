@@ -19,7 +19,6 @@ export function vecStoreMutKV(dropK, dropV) {
     },
   }));
 }
-
 function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {
   const value = vec[i];
   return value

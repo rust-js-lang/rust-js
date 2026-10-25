@@ -17,7 +17,6 @@ function moneyAddAssign_addAssign(money, other) {
 export const refMutMoneyAddAssignMoney = {
   addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign(arg0.value, arg1),
 };
-
 function refMutMoneyAddAssignMoney_addAssign(money, other) {
   moneyAddAssign_addAssign(money.value, { ...other });
 }

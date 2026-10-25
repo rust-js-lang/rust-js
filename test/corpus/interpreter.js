@@ -68,7 +68,6 @@ function lexErrorDebug_fmt(lexError) {
 }
 
 export const lexErrorDisplay = { fmt: lexErrorDisplay_fmt };
-
 function lexErrorDisplay_fmt(lexError) {
   if (lexError.TAG === "Unexpected") {
     return `unexpected ${$debugStr(lexError._0, "'")} at ${lexError._1}`;
@@ -387,7 +386,6 @@ const Parser = {
 };
 
 export const valueDisplay = { fmt: valueDisplay_fmt };
-
 function valueDisplay_fmt(value) {
   if (value.TAG === "Num") {
     return $displayF64(value._0);

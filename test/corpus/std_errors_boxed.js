@@ -28,7 +28,6 @@ function negativeDebug_fmt(negative) {
 }
 
 export const negativeDisplay = { fmt: negativeDisplay_fmt };
-
 function negativeDisplay_fmt(negative) {
   return `${negative[0]} is negative`;
 }
@@ -90,7 +89,6 @@ const $tAsDyn = new WeakMap();
 function tAsDyn(TError) {
   return $traitImpl($tAsDyn, [TError], () => ({ asDyn: (arg0) => tAsDyn_asDyn(arg0, TError) }));
 }
-
 function tAsDyn_asDyn(self, TError) {
   return { value: self, impl: TError };
 }
@@ -108,7 +106,6 @@ function eReport(EError) {
     code: (arg0) => eReport_code(arg0, EError),
   }));
 }
-
 function eReport_code(self, EError) {
   return $byteLen(EError.Display().fmt(self));
 }

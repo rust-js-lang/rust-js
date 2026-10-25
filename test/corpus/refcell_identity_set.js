@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const fiberPartialEq = { eq: fiberPartialEq_eq };
-
 function fiberPartialEq_eq(fiber, other) {
   return fiber === other;
 }

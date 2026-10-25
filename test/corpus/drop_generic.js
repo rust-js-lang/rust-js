@@ -44,7 +44,6 @@ function made(TDefault, dropT) {
 }
 
 export const noisyDefault = { default: noisyDefault_default, $drop: noisyDrop_drop };
-
 function noisyDefault_default() {
   return ["default"];
 }
@@ -75,7 +74,6 @@ function shown(x, Display, dropDisplay) {
 }
 
 export const noisyDisplay = { fmt: noisyDisplay_fmt, $drop: noisyDrop_drop };
-
 function noisyDisplay_fmt(noisy) {
   return noisy[0];
 }

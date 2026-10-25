@@ -3,7 +3,6 @@
 export function Card(p) {
   return <section title={p.title}>{p.content}</section>;
 }
-
 export function App(active) {
   return (
     <main>
@@ -19,7 +18,6 @@ export function App(active) {
     </main>
   );
 }
-
 export function Tokens() {
   return <Card title={"jsx! { untouched }"} content={<span />} />;
 }

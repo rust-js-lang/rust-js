@@ -3,7 +3,6 @@
 import { Suspense, createContext } from "react";
 
 const Theme = createContext("light");
-
 export function App() {
   return (
     <Theme.Provider value="dark">

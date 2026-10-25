@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const hoursDisplay = { fmt: hoursDisplay_fmt };
-
 function hoursDisplay_fmt(hours) {
   let f = "";
   try {
@@ -23,7 +22,6 @@ function hoursDisplay_fmt(hours) {
 }
 
 export const pairDisplay = { fmt: pairDisplay_fmt };
-
 function pairDisplay_fmt(pair) {
   let f = "";
   try {

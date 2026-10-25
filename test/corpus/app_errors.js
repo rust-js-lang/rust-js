@@ -26,7 +26,6 @@ function appErrorDebug_fmt(appError) {
 }
 
 export const appErrorDisplay = { fmt: appErrorDisplay_fmt };
-
 function appErrorDisplay_fmt(appError) {
   if (appError.TAG === "Parse") {
     return `parse: ${appError._0}`;

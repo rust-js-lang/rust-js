@@ -9,13 +9,10 @@ export const innerDebug = { fmt: innerDebug_fmt };
 function innerDebug_fmt(inner) {
   return "Inner";
 }
-
 export const innerDisplay = { fmt: innerDisplay_fmt };
-
 function innerDisplay_fmt(inner) {
   return "inner";
 }
-
 const $innerError_source = () => undefined;
 
 export const innerError = {
@@ -31,13 +28,10 @@ export const outerDebug = { fmt: outerDebug_fmt };
 function outerDebug_fmt(outer) {
   return `Outer(${innerDebug_fmt(outer[0])})`;
 }
-
 export const outerDisplay = { fmt: outerDisplay_fmt };
-
 function outerDisplay_fmt(outer) {
   return "outer";
 }
-
 export const outerError = {
   Debug: () => outerDebug,
   Display: () => outerDisplay,
@@ -45,7 +39,6 @@ export const outerError = {
   description: () => "description() is deprecated; use Display",
   cause: outerError_source,
 };
-
 function outerError_source(outer) {
   return { value: outer[0], impl: innerError };
 }
@@ -55,13 +48,10 @@ export const oldDebug = { fmt: oldDebug_fmt };
 function oldDebug_fmt(old) {
   return "Old";
 }
-
 export const oldDisplay = { fmt: oldDisplay_fmt };
-
 function oldDisplay_fmt(old) {
   return "old";
 }
-
 export const oldError = {
   Debug: () => oldDebug,
   Display: () => oldDisplay,
@@ -69,11 +59,9 @@ export const oldError = {
   description: oldError_description,
   cause: oldError_cause,
 };
-
 function oldError_description(old) {
   return "an old error";
 }
-
 function oldError_cause(old) {
   return { impl: innerError };
 }

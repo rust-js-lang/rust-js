@@ -7,13 +7,11 @@ export function entry() {
 }
 
 export const tagDisplay = { fmt: tagDisplay_fmt };
-
 function tagDisplay_fmt(tag, options) {
   return $formatted(tag[0], options);
 }
 
 export const probeDisplay = { fmt: probeDisplay_fmt };
-
 function probeDisplay_fmt(probe, options) {
   const value = options?.align;
   let align;
@@ -34,7 +32,6 @@ function probeDisplay_fmt(probe, options) {
 }
 
 export const moneyDisplay = { fmt: moneyDisplay_fmt };
-
 function moneyDisplay_fmt(money, options) {
   const s = `$${money[0] / 100n}.${$zeroPad(String(money[0] % 100n), 2)}`;
   const w = options?.width;

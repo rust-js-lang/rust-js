@@ -21,7 +21,6 @@ function wrapPeek(TClone, dropT) {
     },
   }));
 }
-
 function wrapPeek_peek(wrap, TClone, dropT) {
   helper(wrap[0], TClone, dropT);
   return 1;

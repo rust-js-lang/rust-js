@@ -22,7 +22,6 @@ function knownIterator_next(known) {
   known[0] = value;
   return known[0];
 }
-
 function knownIterator_sizeHint(known) {
   return [known[0], known[0]];
 }
@@ -35,7 +34,6 @@ function indexedIterator_next(indexed) {
   indexed.at = (indexed.at + 1) >>> 0;
   return [(indexed.at - 1) >>> 0, item];
 }
-
 function indexedIterator_sizeHint(indexed) {
   return [0, undefined];
 }

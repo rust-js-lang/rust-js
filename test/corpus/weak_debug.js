@@ -30,7 +30,6 @@ function nodeDebug_fmt(node, options) {
     ? $pretty("Node {", [`val: ${shown}`, `parent: ${shown$1}`, `kids: ${shown$2}`], "}")
     : `Node { val: ${shown}, parent: ${shown$1}, kids: ${shown$2} }`;
 }
-
 function main() {
   const root = {
     val: 1,

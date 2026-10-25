@@ -9,20 +9,16 @@ export function entry() {
 function eDebug_fmt(e) {
   return `E { n: ${e.n}, tag: ${$debugStr(e.tag)} }`;
 }
-
 function inc(x) {
   x.value = (x.value + 1) | 0;
 }
-
 function twice(a, b) {
   a.value = (a.value * 2) | 0;
   b.value = (b.value + 1) & 255;
 }
-
 function pushTag(s) {
   s.value += "!";
 }
-
 function main() {
   const es = [
     { n: 1, tag: "a" },
@@ -77,7 +73,6 @@ function main() {
 function first(v) {
   return $handleOn($index(v, 0), 0);
 }
-
 function xOf(ps, i) {
   const length = ps.length;
   if (i >= length) {
@@ -92,7 +87,6 @@ function xOf(ps, i) {
     },
   };
 }
-
 function firstX(ps) {
   return $handleOn($index(ps, 0), "x");
 }

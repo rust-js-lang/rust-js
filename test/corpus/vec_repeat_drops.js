@@ -9,7 +9,6 @@ export function entry() {
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
-
 function main() {
   const r = { value: 5, strong: 1, weak: 0 };
   try {

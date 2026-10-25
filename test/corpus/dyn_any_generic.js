@@ -38,7 +38,6 @@ function made() {
 }
 
 const stringAsStr = { get: stringAsStr_get };
-
 function stringAsStr_get(string) {
   return string;
 }

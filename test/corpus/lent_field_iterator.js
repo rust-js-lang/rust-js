@@ -9,11 +9,9 @@ export function entry() {
 function first(it) {
   return $next(it);
 }
-
 export function f(p) {
   return first(p.v);
 }
-
 function main() {
   const p = { v: $iter([1, 2]) };
   const value = f(p);

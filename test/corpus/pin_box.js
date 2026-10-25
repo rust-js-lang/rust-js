@@ -15,7 +15,6 @@ const Counter = {
 };
 
 export const anyPartialEq = { eq: anyPartialEq_eq };
-
 function anyPartialEq_eq(any, _) {
   console.log("any ==");
   return true;

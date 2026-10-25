@@ -12,14 +12,12 @@ export function f(v) {
   $peek(p);
   return $exactLen($sizeHint(p));
 }
-
 function g(v) {
   const p = iterator_peekable($iter(v), { next: $next });
   const a = $next(p);
   $peek(p);
   return [$exactLen($sizeHint(p)), a, p.reduce((n) => n + 1, 0)];
 }
-
 function main() {
   const value = f([1, 2, 3]);
   const value$1 = f([]);

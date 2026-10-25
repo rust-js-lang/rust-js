@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const reasonDisplay = { fmt: reasonDisplay_fmt };
-
 function reasonDisplay_fmt(reason) {
   return `${reason[0]} is too big`;
 }

@@ -9,7 +9,6 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function innerLeft() {
   const first = $lazyRange(0, 3)
     .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
@@ -36,7 +35,6 @@ function innerLeft() {
     }
   }
 }
-
 function sourceLeft() {
   const v = [[1], [2], [3]];
   const firsts = $closing($iter(v), $dropEach(loudDrop_drop))
@@ -69,7 +67,6 @@ function sourceLeft() {
     }
   }
 }
-
 function bothLeft() {
   const w = [[30], [31]];
   const it = $flatMap($closing($iter(w), $dropEach(loudDrop_drop)), (l) =>
@@ -107,7 +104,6 @@ function bothLeft() {
     }
   }
 }
-
 function options() {
   const v = [1, 2, 3];
   const big = v
@@ -135,7 +131,6 @@ function options() {
     }
   }
 }
-
 function main() {
   innerLeft();
   sourceLeft();

@@ -10,9 +10,11 @@ const Empty = 0;
 const Complex = 1;
 const Primitive = 2;
 const Entries = 3;
+
 const Low = -1;
 const Mid = 7;
 const High = 3;
+
 const First = 0;
 const Second = 1;
 

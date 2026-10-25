@@ -9,17 +9,13 @@ export const dDebug = { fmt: dDebug_fmt, $drop: dDrop_drop };
 function dDebug_fmt(d) {
   return `D(${d[0]})`;
 }
-
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
-
 export const dDisplay = { fmt: dDisplay_fmt, $drop: dDrop_drop };
-
 function dDisplay_fmt(d) {
   return `D${d[0]}`;
 }
-
 const $dError_source = () => undefined;
 
 export const dError = {
@@ -30,11 +26,9 @@ export const dError = {
   cause: $dError_source,
   $drop: dDrop_drop,
 };
-
 function fail(n) {
   return n > 1 ? { TAG: "Err", _0: { value: [n], impl: dError } } : { TAG: "Ok", _0: n };
 }
-
 function main() {
   const a = { value: [1], impl: { typeId: () => "lib::D", $drop: dDrop_drop } };
   try {

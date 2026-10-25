@@ -63,6 +63,7 @@ function main() {
   taken.value = undefined;
   const name = old$1?.name;
   console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${!taken.value}`);
+
   const count = { value: 5 };
   const value$3 = $unwrap(count.value == null ? undefined : count);
   value$3.value = (value$3.value + 1) | 0;

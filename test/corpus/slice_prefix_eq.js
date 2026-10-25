@@ -23,7 +23,6 @@ function looseDebug_fmt(loose) {
 
 // Equal when they're within one of each other.
 export const loosePartialEq = { eq: loosePartialEq_eq };
-
 function loosePartialEq_eq(loose, other) {
   return (Math.abs((loose[0] - other[0]) | 0) | 0) <= 1;
 }

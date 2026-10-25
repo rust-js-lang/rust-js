@@ -29,23 +29,19 @@ const Doubled = {
     return $given(doubled.inner, IIterator).reduce((a, b) => (a + b) | 0, 0);
   },
 };
-
 function doubled(inner) {
   return { inner };
 }
-
 function sumDoubled(j) {
   return $iterator({ inner: j }, (iterator) =>
     doubledIterator_next(iterator, { next: $next }),
   ).reduce((a, b) => (a + b) | 0, 0);
 }
-
 // Given back, stepped through what holds it, and through itself.
 function skipOne(d, IIterator) {
   doubledIterator_next(d, IIterator);
   return d;
 }
-
 function takeTwo(it, IIterator) {
   let n = 0;
   for (const x of $lent($given(it, IIterator)).take(2)) {
@@ -66,32 +62,25 @@ const Pass = {
     return out;
   },
 };
-
 function first(i) {
   const w = [i];
   return $next(w[0]);
 }
-
 function second(w, IIterator) {
   IIterator.next(w[0]);
   return IIterator.next(w[0]);
 }
-
 export const intoIterKeyed = {};
-
 function sumKeyed(f, FKeyed) {
   return Iterator.from(f).reduce((a, b) => (a + b) | 0, 0);
 }
-
 // Given on to generic code as a JS iterator, stepped by its impl's `next`.
 function sumAll(j) {
   return Iterator.from(j).reduce((a, b) => (a + b) | 0, 0);
 }
-
 function totalOf(d, spare, IIterator) {
   return [sumAll($iterator(d, (iterator) => doubledIterator_next(iterator, IIterator))), spare];
 }
-
 function countdownIterator_next(countdown) {
   if (countdown[0] === 0) {
     return;
@@ -99,7 +88,6 @@ function countdownIterator_next(countdown) {
   countdown[0] = (countdown[0] - 1) | 0;
   return countdown[0];
 }
-
 function main() {
   const v = $iterator(doubled($iter([1, 2, 3])), (iterator) =>
     doubledIterator_next(iterator, { next: $next }),

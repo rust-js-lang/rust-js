@@ -141,4 +141,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
   },
+  {
+    name: "told-statements-spaced",
+    breaks: "a blank line is added where the Rust tells there's none, `const EMPTY = {};` and the `if` of the `js::on_load!` right below it",
+    file: "src/format.rs",
+    find: "        .filter(|&(i, _)| !is_told(i + 1))\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
+  },
 ];

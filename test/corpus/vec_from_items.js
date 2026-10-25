@@ -9,7 +9,6 @@ export function entry() {
 function pDebug_fmt(p) {
   return `P(${$debugStr(p[0])})`;
 }
-
 function main() {
   const a = [1, 2, 3];
   const v = a.slice(1);

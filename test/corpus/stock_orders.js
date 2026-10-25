@@ -29,7 +29,6 @@ export function entry() {
 }
 
 export const categoryDisplay = { fmt: categoryDisplay_fmt };
-
 function categoryDisplay_fmt(category, options) {
   let name;
   switch (category) {
@@ -62,7 +61,6 @@ function stockErrorDebug_fmt(stockError, options) {
 }
 
 export const stockErrorDisplay = { fmt: stockErrorDisplay_fmt };
-
 function stockErrorDisplay_fmt(stockError, options) {
   if (stockError.TAG === "UnknownSku") {
     return `no item ${stockError._0}`;
@@ -79,11 +77,9 @@ const linePriced = {
   totalCents: (self) =>
     BigInt.asUintN(64, BigInt(linePriced_unitCents(self)) * BigInt(linePriced_quantity(self))),
 };
-
 function linePriced_unitCents(line) {
   return line.unitCents;
 }
-
 function linePriced_quantity(line) {
   return line.quantity;
 }

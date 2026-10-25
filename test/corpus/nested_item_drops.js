@@ -158,7 +158,6 @@ function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItem
     }),
   );
 }
-
 function groupsFirstOfNext_firstOfNext(
   groups,
   IIterator,

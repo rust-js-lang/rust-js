@@ -54,7 +54,6 @@ const sevenMake = {
     return result;
   },
 };
-
 function sevenMake_size(seven) {
   return 7;
 }

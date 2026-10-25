@@ -5,7 +5,6 @@ export function entry() {
 }
 
 const enGreet = { hi: enGreet_hi };
-
 function enGreet_hi(en) {
   return "hello";
 }
@@ -20,12 +19,10 @@ function triple(x) {
 
 const F = double;
 const G = (x) => (x + 1) | 0;
-
 const TABLE = [
   ["double", double],
   ["triple", triple],
 ];
-
 const MAYBE = triple;
 const GREETER = { impl: enGreet };
 const SHOWN = { value: 42, impl: { fmt: String } };

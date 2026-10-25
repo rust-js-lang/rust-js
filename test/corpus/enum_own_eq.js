@@ -8,7 +8,6 @@ export function entry() {
 
 // `Auto` is either.
 export const modePartialEq = { eq: modePartialEq_eq };
-
 function modePartialEq_eq(mode, other) {
   if (mode === "Auto" || other === "Auto") {
     return true;

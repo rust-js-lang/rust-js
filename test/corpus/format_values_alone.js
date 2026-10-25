@@ -19,7 +19,6 @@ export function entry() {
 }
 
 export const hoursDisplay = { fmt: hoursDisplay_fmt };
-
 function hoursDisplay_fmt(hours) {
   let f = "";
   try {

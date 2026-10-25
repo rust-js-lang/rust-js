@@ -19,11 +19,9 @@ export function entry() {
 function keyDrop_drop(key) {
   console.log(`drop key ${key[0]} ${key[1]}`);
 }
-
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function main() {
   const h = $extendMap(
     new Map(),

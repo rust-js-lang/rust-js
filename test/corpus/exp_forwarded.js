@@ -7,13 +7,11 @@ export function entry() {
 }
 
 export const rangedLowerExp = { fmt: rangedLowerExp_fmt };
-
 function rangedLowerExp_fmt(ranged, options) {
   return $formatted($lowerExp(ranged[0], false, options?.precision), options, true);
 }
 
 export const rangedUpperExp = { fmt: rangedUpperExp_fmt };
-
 function rangedUpperExp_fmt(ranged, options) {
   return $formatted(
     $lowerExp(ranged[0], false, options?.precision).replace("e", "E"),
@@ -23,7 +21,6 @@ function rangedUpperExp_fmt(ranged, options) {
 }
 
 export const measureLowerExp = { fmt: measureLowerExp_fmt };
-
 function measureLowerExp_fmt(measure, options) {
   return $formatted($lowerExp(measure[0], false, options?.precision), options, true);
 }

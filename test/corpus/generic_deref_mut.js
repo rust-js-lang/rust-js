@@ -15,7 +15,6 @@ export function entry() {
 }
 
 export const wrapperDeref = { deref: wrapperDeref_deref };
-
 function wrapperDeref_deref(wrapper) {
   return wrapper[0];
 }
@@ -24,7 +23,6 @@ export const wrapperDerefMut = {
   Deref: () => wrapperDeref,
   derefMut: (arg0) => $cellOf(wrapperDerefMut_derefMut(arg0.value)),
 };
-
 function wrapperDerefMut_derefMut(wrapper) {
   return wrapper[0];
 }
@@ -142,7 +140,6 @@ export function eitherDeref(LDeref, RDeref, dropL, dropR) {
     },
   }));
 }
-
 function eitherDeref_deref(either, LDeref, RDeref, dropL, dropR) {
   return either.TAG === "Left" ? LDeref.deref(either._0) : RDeref.deref(either._0);
 }
@@ -163,7 +160,6 @@ export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
     },
   }));
 }
-
 function eitherDerefMut_derefMut(either, LDerefMut, RDerefMut, dropL, dropR) {
   return either.TAG === "Left"
     ? LDerefMut.derefMut({

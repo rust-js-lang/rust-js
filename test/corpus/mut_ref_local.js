@@ -45,6 +45,7 @@ function main() {
   const value = name.toUpperCase();
   name = value;
   console.log(`${name}`);
+
   let o = 4;
   if (o != null) {
     o = (o + 1) >>> 0;

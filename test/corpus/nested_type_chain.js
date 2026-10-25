@@ -19,7 +19,6 @@ function c0Debug_fmt(c0) {
   }
   return "Fourth(())";
 }
-
 function c1Debug_fmt(c1) {
   if (c1 === "Empty") {
     return "Empty";
@@ -35,7 +34,6 @@ function c1Debug_fmt(c1) {
   }
   return `Fourth(${c0Debug_fmt(c1._0)})`;
 }
-
 function c2Debug_fmt(c2) {
   if (c2 === "Empty") {
     return "Empty";
@@ -51,7 +49,6 @@ function c2Debug_fmt(c2) {
   }
   return `Fourth(${c1Debug_fmt(c2._0)})`;
 }
-
 function c3Debug_fmt(c3) {
   if (c3 === "Empty") {
     return "Empty";
@@ -67,7 +64,6 @@ function c3Debug_fmt(c3) {
   }
   return `Fourth(${c2Debug_fmt(c3._0)})`;
 }
-
 function c4Debug_fmt(c4) {
   if (c4 === "Empty") {
     return "Empty";
@@ -83,7 +79,6 @@ function c4Debug_fmt(c4) {
   }
   return `Fourth(${c3Debug_fmt(c4._0)})`;
 }
-
 function c5Debug_fmt(c5) {
   if (c5 === "Empty") {
     return "Empty";
@@ -99,7 +94,6 @@ function c5Debug_fmt(c5) {
   }
   return `Fourth(${c4Debug_fmt(c5._0)})`;
 }
-
 function c6Debug_fmt(c6) {
   if (c6 === "Empty") {
     return "Empty";
@@ -115,7 +109,6 @@ function c6Debug_fmt(c6) {
   }
   return `Fourth(${c5Debug_fmt(c6._0)})`;
 }
-
 function c7Debug_fmt(c7) {
   if (c7 === "Empty") {
     return "Empty";
@@ -131,7 +124,6 @@ function c7Debug_fmt(c7) {
   }
   return `Fourth(${c6Debug_fmt(c7._0)})`;
 }
-
 function c8Debug_fmt(c8) {
   if (c8 === "Empty") {
     return "Empty";
@@ -147,7 +139,6 @@ function c8Debug_fmt(c8) {
   }
   return `Fourth(${c7Debug_fmt(c8._0)})`;
 }
-
 function c9Debug_fmt(c9) {
   if (c9 === "Empty") {
     return "Empty";
@@ -163,7 +154,6 @@ function c9Debug_fmt(c9) {
   }
   return `Fourth(${c8Debug_fmt(c9._0)})`;
 }
-
 function c10Debug_fmt(c10) {
   if (c10 === "Empty") {
     return "Empty";
@@ -179,7 +169,6 @@ function c10Debug_fmt(c10) {
   }
   return `Fourth(${c9Debug_fmt(c10._0)})`;
 }
-
 function c11Debug_fmt(c11) {
   if (c11 === "Empty") {
     return "Empty";
@@ -195,7 +184,6 @@ function c11Debug_fmt(c11) {
   }
   return `Fourth(${c10Debug_fmt(c11._0)})`;
 }
-
 function c12Debug_fmt(c12) {
   if (c12 === "Empty") {
     return "Empty";
@@ -211,7 +199,6 @@ function c12Debug_fmt(c12) {
   }
   return `Fourth(${c11Debug_fmt(c12._0)})`;
 }
-
 function c13Debug_fmt(c13) {
   if (c13 === "Empty") {
     return "Empty";
@@ -227,7 +214,6 @@ function c13Debug_fmt(c13) {
   }
   return `Fourth(${c12Debug_fmt(c13._0)})`;
 }
-
 function c14Debug_fmt(c14) {
   if (c14 === "Empty") {
     return "Empty";
@@ -243,7 +229,6 @@ function c14Debug_fmt(c14) {
   }
   return `Fourth(${c13Debug_fmt(c14._0)})`;
 }
-
 function c15Debug_fmt(c15) {
   if (c15 === "Empty") {
     return "Empty";
@@ -259,7 +244,6 @@ function c15Debug_fmt(c15) {
   }
   return `Fourth(${c14Debug_fmt(c15._0)})`;
 }
-
 function c16Debug_fmt(c16) {
   if (c16 === "Empty") {
     return "Empty";
@@ -275,7 +259,6 @@ function c16Debug_fmt(c16) {
   }
   return `Fourth(${c15Debug_fmt(c16._0)})`;
 }
-
 function c17Debug_fmt(c17) {
   if (c17 === "Empty") {
     return "Empty";
@@ -291,7 +274,6 @@ function c17Debug_fmt(c17) {
   }
   return `Fourth(${c16Debug_fmt(c17._0)})`;
 }
-
 function c18Debug_fmt(c18) {
   if (c18 === "Empty") {
     return "Empty";
@@ -307,7 +289,6 @@ function c18Debug_fmt(c18) {
   }
   return `Fourth(${c17Debug_fmt(c18._0)})`;
 }
-
 function c19Debug_fmt(c19) {
   if (c19 === "Empty") {
     return "Empty";

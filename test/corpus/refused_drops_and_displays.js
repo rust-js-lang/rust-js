@@ -152,7 +152,6 @@ function pick(n) {
       return { TAG: "C", _0: n };
   }
 }
-
 function matched() {
   const w = [[3], 1];
   let tmp;
@@ -328,37 +327,28 @@ function matched() {
 }
 
 export const pDisplay = { fmt: pDisplay_fmt };
-
 function pDisplay_fmt(p, options) {
   return `P<${p[0]}>`;
 }
-
 export const pDebug = { fmt: pDebug_fmt };
-
 function pDebug_fmt(p, options) {
   return `dbg${p[0]}`;
 }
-
 function shown() {
   return 42;
 }
-
 function text() {
   return "hi";
 }
-
 function custom() {
   return [7];
 }
-
 function float() {
   return 2.5;
 }
-
 function many() {
   return [1, 2];
 }
-
 function displayed() {
   const a = shown();
   const value = text();

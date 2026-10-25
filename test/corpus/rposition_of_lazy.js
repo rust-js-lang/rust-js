@@ -12,12 +12,10 @@ function cIterator_next(c) {
     return c[0];
   }
 }
-
 function cIterator_sizeHint(c) {
   const left = (5 - c[0]) >>> 0;
   return [left, left];
 }
-
 function cDoubleEndedIterator_nextBack(c) {
   if (c[0] < 5) {
     const v = 5;
@@ -25,7 +23,6 @@ function cDoubleEndedIterator_nextBack(c) {
     return (((v + c[0]) >>> 0) - 1) >>> 0;
   }
 }
-
 function main() {
   const v = [1, 2, 3, 2, 5];
   const value = $rposition(

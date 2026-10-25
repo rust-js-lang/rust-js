@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const sSub = { f: sSub_f };
-
 function sSub_f(s) {
   return s[0];
 }

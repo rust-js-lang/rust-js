@@ -25,7 +25,6 @@ const logStore = {
     return item;
   },
 };
-
 function logStore_put(log, item, TDebug, dropT) {
   try {
     const value = TDebug.fmt(item);

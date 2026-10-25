@@ -5,43 +5,36 @@ export function entry() {
 }
 
 const vecI32Describe = { describe: vecI32Describe_describe };
-
 function vecI32Describe_describe(vec) {
   return `${vec.length} ints`;
 }
 
 const vecStringDescribe = { describe: vecStringDescribe_describe };
-
 function vecStringDescribe_describe(vec) {
   return `${vec.length} strings`;
 }
 
 const wrapperRefStrDescribe = { describe: wrapperRefStrDescribe_describe };
-
 function wrapperRefStrDescribe_describe(wrapper) {
   return `a str ${wrapper[0]}`;
 }
 
 const wrapperU8Describe = { describe: wrapperU8Describe_describe };
-
 function wrapperU8Describe_describe(wrapper) {
   return `a byte ${wrapper[0]}`;
 }
 
 const __ConvertU8 = { convert: __ConvertU8_convert };
-
 function __ConvertU8_convert(self) {
   return "to u8";
 }
 
 const __ConvertRefU8 = { convert: __ConvertRefU8_convert };
-
 function __ConvertRefU8_convert(self) {
   return "to &u8";
 }
 
 const localDescribe = { describe: localDescribe_describe };
-
 function localDescribe_describe(local) {
   return "the first local";
 }
@@ -51,7 +44,6 @@ function first() {
 }
 
 const localDescribe2 = { describe: localDescribe2_describe };
-
 function localDescribe2_describe(local) {
   return "the second local";
 }
@@ -61,13 +53,11 @@ function second() {
 }
 
 export const errorDeError = { custom: errorDeError_custom };
-
 function errorDeError_custom(msg) {
   return [`de: ${msg}`];
 }
 
 export const errorSerError = { custom: errorSerError_custom };
-
 function errorSerError_custom(msg) {
   return [`ser: ${msg}`];
 }

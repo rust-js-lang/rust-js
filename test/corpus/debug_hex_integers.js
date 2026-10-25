@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const transitionDebug = { fmt: transitionDebug_fmt };
-
 function transitionDebug_fmt(transition, options) {
   return `Transition(byte: ${transition.byte.toString(16).toUpperCase()}, next: ${transition.next})`;
 }

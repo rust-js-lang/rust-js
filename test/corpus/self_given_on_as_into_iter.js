@@ -15,7 +15,6 @@ export function entry() {
 }
 
 const _u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
-
 function _u32__u32_Collect_fromIterNoBuf(iter) {
   const it = $intoIter(iter);
   const value = $next(it);

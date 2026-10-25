@@ -26,7 +26,6 @@ function loudDrop_drop(loud) {
 }
 
 export const loudPartialEq = { eq: loudPartialEq_eq, $drop: loudDrop_drop };
-
 function loudPartialEq_eq(loud, other) {
   console.log(`eq ${loud[0]} ${other[0]}`);
   return loud[0] % 10 === other[0] % 10;

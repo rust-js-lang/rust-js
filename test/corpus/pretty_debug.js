@@ -96,7 +96,6 @@ export function wrapDebug(TDebug) {
 }
 
 export const builtDebug = { fmt: builtDebug_fmt };
-
 function builtDebug_fmt(built, options) {
   return options?.alternate
     ? $pretty(
@@ -142,7 +141,6 @@ function rawDebug_fmt(raw, options) {
 }
 
 export const asksDebug = { fmt: asksDebug_fmt };
-
 function asksDebug_fmt(asks, options) {
   if (options?.alternate === true) {
     return "pretty";
@@ -151,7 +149,6 @@ function asksDebug_fmt(asks, options) {
 }
 
 export const shownDisplay = { fmt: shownDisplay_fmt };
-
 function shownDisplay_fmt(shown, options) {
   if (options?.alternate === true) {
     return `#${shown[0]}`;
@@ -160,7 +157,6 @@ function shownDisplay_fmt(shown, options) {
 }
 
 export const delegateDebug = { fmt: delegateDebug_fmt };
-
 function delegateDebug_fmt(delegate, options) {
   return options?.alternate
     ? $pretty(

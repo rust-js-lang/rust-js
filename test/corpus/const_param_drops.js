@@ -32,7 +32,6 @@ function bufferDescribed(SIZE) {
     described: (self) => `${bufferDescribed_size(self, SIZE)} bytes`,
   }));
 }
-
 function bufferDescribed_size(buffer, SIZE) {
   return buffer.bytes.length;
 }

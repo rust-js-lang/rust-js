@@ -33,7 +33,6 @@ function rowErrorFromParseIntError_from(e) {
 }
 
 export const rowErrorDisplay = { fmt: rowErrorDisplay_fmt };
-
 function rowErrorDisplay_fmt(rowError) {
   if (rowError.TAG === "Fields") {
     return `expected 4 fields, got ${rowError._0}`;

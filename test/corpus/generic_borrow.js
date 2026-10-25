@@ -21,7 +21,6 @@ function qEquivalentK(QPartialEq, KBorrowQ) {
     equivalent: (arg0, arg1) => qEquivalentK_equivalent(arg0, arg1, QPartialEq, KBorrowQ),
   }));
 }
-
 function qEquivalentK_equivalent(self, key, QPartialEq, KBorrowQ) {
   return QPartialEq.eq(self, KBorrowQ.borrow(key));
 }
@@ -35,13 +34,11 @@ function uuidDebug_fmt(uuid) {
 }
 
 export const hyphenatedBorrowUuid = { borrow: hyphenatedBorrowUuid_borrow };
-
 function hyphenatedBorrowUuid_borrow(hyphenated) {
   return hyphenated[0];
 }
 
 export const tagBorrowStr = { borrow: tagBorrowStr_borrow };
-
 function tagBorrowStr_borrow(tag) {
   return tag.name;
 }
@@ -53,7 +50,6 @@ export function labelledPartialEq(KBorrowStr) {
     eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr),
   }));
 }
-
 function labelledPartialEq_eq(labelled, other, KBorrowStr) {
   return KBorrowStr.borrow(labelled[0]) === KBorrowStr.borrow(other[0]);
 }
@@ -66,7 +62,6 @@ export function labelledPartialOrd(KBorrowStr) {
     partialCmp: (arg0, arg1) => labelledPartialOrd_partialCmp(arg0, arg1, KBorrowStr),
   }));
 }
-
 function labelledPartialOrd_partialCmp(labelled, other, KBorrowStr) {
   return labelledOrd_cmp(labelled, other, KBorrowStr);
 }
@@ -79,7 +74,6 @@ export function labelledOrd(KBorrowStr) {
     cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
   }));
 }
-
 function labelledOrd_cmp(labelled, other, KBorrowStr) {
   return $cmp(KBorrowStr.borrow(labelled[0]), KBorrowStr.borrow(other[0]));
 }

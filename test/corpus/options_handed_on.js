@@ -14,7 +14,6 @@ export function entry() {
 }
 
 export const metersDisplay = { fmt: metersDisplay_fmt };
-
 function metersDisplay_fmt(meters, options) {
   let f = $formatFloat(meters[0], options, $displayF64);
   f += " m";
@@ -22,7 +21,6 @@ function metersDisplay_fmt(meters, options) {
 }
 
 export const nameDisplay = { fmt: nameDisplay_fmt };
-
 function nameDisplay_fmt(name, options) {
   return $formatted(name[0], options);
 }
@@ -36,7 +34,6 @@ function pointDebug_fmt(point, options) {
 }
 
 export const pairDebug = { fmt: pairDebug_fmt };
-
 function pairDebug_fmt(pair, options) {
   return options?.alternate
     ? $pretty("Pair(", [$formatted(String(pair[0]), options, true), $debugStr(pair[1])], ")")

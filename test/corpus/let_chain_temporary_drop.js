@@ -10,7 +10,6 @@ export const D = {
     return 1;
   },
 };
-
 export function f(b) {
   const d = [1];
   let tmp;
@@ -32,7 +31,6 @@ export function f(b) {
   console.log("else");
   return 0;
 }
-
 function main() {
   console.log(`${f(true)}`);
   console.log(`${f(false)}`);

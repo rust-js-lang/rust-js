@@ -81,7 +81,6 @@ export function positionsDebug(IDebug) {
     fmt: (arg0, arg1) => positionsDebug_fmt(arg0, arg1, IDebug),
   }));
 }
-
 function positionsDebug_fmt(positions, options, IDebug) {
   return options?.alternate
     ? $pretty(

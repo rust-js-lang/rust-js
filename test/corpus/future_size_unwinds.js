@@ -5,7 +5,6 @@ export function entry() {
 }
 
 function noop() {}
-
 async function fut() {}
 
 async function single() {

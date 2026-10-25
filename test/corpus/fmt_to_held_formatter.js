@@ -13,13 +13,11 @@ export const quotedWrite = {
   writeChar: $quotedWrite_writeStr,
   writeFmt: $quotedWrite_writeStr,
 };
-
 function quotedWrite_writeStr(quoted, s) {
   quoted[0].value += $escapeDebug(s, true);
 }
 
 export const messageDebug = { fmt: messageDebug_fmt };
-
 function messageDebug_fmt(message, options) {
   let f = '"';
   quotedWrite_writeStr(
@@ -49,7 +47,6 @@ const Tagged = {
 };
 
 export const pairDisplay = { fmt: pairDisplay_fmt };
-
 function pairDisplay_fmt(pair, options) {
   let f = "";
   Tagged.show(
@@ -106,7 +103,6 @@ const At = {
 };
 
 export const spotDisplay = { fmt: spotDisplay_fmt };
-
 function spotDisplay_fmt(spot, options) {
   let f = "";
   At.point(

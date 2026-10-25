@@ -11,7 +11,6 @@ const $_T__N_Array = new Map();
 function _T__N_Array(N) {
   return $traitImpl($_T__N_Array, [N], () => ({ size: () => _T__N_Array_size(N) }));
 }
-
 function _T__N_Array_size(N) {
   return N;
 }

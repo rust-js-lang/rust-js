@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const sevenRepeat = { repeat: sevenRepeat_repeat, twice: (self) => sevenRepeat_repeat(self, 2) };
-
 function sevenRepeat_repeat(seven, N) {
   return new Array(N).fill(7);
 }
@@ -17,13 +16,11 @@ function three(r, RRepeat) {
 }
 
 const metersScaled10 = { scaled: metersScaled10_scaled, factor: (self) => 10 };
-
 function metersScaled10_scaled(meters) {
   return (meters[0] * 10) >>> 0;
 }
 
 const metersScaled100 = { scaled: metersScaled100_scaled, factor: (self) => 100 };
-
 function metersScaled100_scaled(meters) {
   return (meters[0] * 100) >>> 0;
 }
@@ -36,13 +33,11 @@ function anyScaled(K) {
     factor: (self) => K,
   }));
 }
-
 function anyScaled_scaled(any, K) {
   return Math.imul(any[0], K) >>> 0;
 }
 
 const dotsPad = { pad: dotsPad_pad };
-
 function dotsPad_pad(dots, value, N, TDisplay) {
   return ".".repeat(N) + TDisplay.fmt(value);
 }

@@ -725,7 +725,6 @@ pub fn updated(fibers: &[&'static Fiber]) -> usize {
 
 ```js
 export const fiberPartialEq = { eq: fiberPartialEq_eq };
-
 function fiberPartialEq_eq(fiber, other) {
   return fiber === other;
 }
@@ -818,7 +817,6 @@ pub fn releases() -> BTreeSet<Release> {
 import { $cmp, $ordSet, $storedKey } from "@rust-js/runtime";
 
 export const releasePartialEq = { eq: releasePartialEq_eq };
-
 function releasePartialEq_eq(release, other) {
   return release.major === other.major;
 }
@@ -827,13 +825,11 @@ export const releasePartialOrd = {
   PartialEq: () => releasePartialEq,
   partialCmp: releasePartialOrd_partialCmp,
 };
-
 function releasePartialOrd_partialCmp(release, other) {
   return releaseOrd_cmp(release, other);
 }
 
 export const releaseOrd = { PartialOrd: () => releasePartialOrd, cmp: releaseOrd_cmp };
-
 function releaseOrd_cmp(release, other) {
   return $cmp(release.major, other.major);
 }

@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };
-
 function pointDisplay_fmt(point) {
   return `(${point[0]}, ${point[1]})`;
 }

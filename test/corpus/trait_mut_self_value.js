@@ -7,11 +7,9 @@ export function entry() {
 }
 
 const i32Bump = { bump: i32Bump_bump, bumpBy: i32Bump_bumpBy };
-
 function i32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
 }
-
 function i32Bump_bumpBy(self, by) {
   self.value = (self.value + by.value) | 0;
   by.value = (by.value + 1) | 0;
@@ -19,7 +17,6 @@ function i32Bump_bumpBy(self, by) {
 }
 
 const stringShout = { shout: stringShout_shout };
-
 function stringShout_shout(string) {
   string.value += "!";
 }

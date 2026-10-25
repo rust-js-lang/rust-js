@@ -103,7 +103,6 @@ function totalDerefMut_derefMut(total) {
 }
 
 const cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
-
 function cSlot_slot(c) {
   return {
     get value() {

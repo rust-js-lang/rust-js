@@ -27,7 +27,6 @@ function flagsDebug_fmt(flags) {
 }
 
 export const flagsBitOr = { bitor: flagsBitOr_bitor };
-
 function flagsBitOr_bitor(flags, other) {
   return [flags[0] | other[0]];
 }

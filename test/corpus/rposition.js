@@ -21,7 +21,6 @@ function main() {
   );
   kept();
 }
-
 function kept() {
   const v = [1, 9, 2, 9, 3];
   const it = $iter(v);

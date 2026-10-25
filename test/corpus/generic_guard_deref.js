@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const counterSequence = { nextValue: counterSequence_nextValue };
-
 function counterSequence_nextValue(counter) {
   return (counter[0] + 1) >>> 0;
 }
@@ -19,7 +18,6 @@ function mutexSequence(CSequence) {
     nextValue: (arg0) => mutexSequence_nextValue(arg0, CSequence),
   }));
 }
-
 function mutexSequence_nextValue(mutex, CSequence) {
   const value = $lock(mutex, true);
   try {

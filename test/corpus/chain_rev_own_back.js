@@ -21,7 +21,6 @@ function downIterator_next(down) {
   };
   return down.n > 0 ? value() : undefined;
 }
-
 function downDoubleEndedIterator_nextBack(down) {
   const value = () => {
     down.n = (down.n - 1) >>> 0;
@@ -29,7 +28,6 @@ function downDoubleEndedIterator_nextBack(down) {
   };
   return down.n > 0 ? value() : undefined;
 }
-
 function ends() {
   return Iterator.from(
     $chainEnds(
@@ -38,21 +36,18 @@ function ends() {
     ),
   );
 }
-
 function mapped() {
   return $mapEnds(
     $iterator({ n: 3 }, downIterator_next, false, downDoubleEndedIterator_nextBack),
     (x) => (x * 2) >>> 0,
   );
 }
-
 function filtered() {
   return $filterEnds(
     $iterator({ n: 4 }, downIterator_next, false, downDoubleEndedIterator_nextBack),
     (x) => x % 2 === 0,
   );
 }
-
 function main() {
   console.log(
     `[${$rev(

@@ -7,13 +7,11 @@ export function entry() {
 }
 
 const accAccount = { deposit: (arg0, arg1) => accAccount_deposit(arg0.value, arg1) };
-
 function accAccount_deposit(acc, n) {
   acc.b = (acc.b + n) >>> 0;
 }
 
 const u32Account = { deposit: u32Account_deposit };
-
 function u32Account_deposit(self, n) {
   self.value = (self.value + n) >>> 0;
 }

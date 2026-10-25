@@ -7,13 +7,11 @@ export function entry() {
 }
 
 const holderGet = { get: (arg0) => $cellOf(holderGet_get(arg0.value)) };
-
 function holderGet_get(holder) {
   return holder[0];
 }
 
 const numGet = { get: (arg0) => numGet_get(arg0.value) };
-
 function numGet_get(num) {
   return {
     get value() {
@@ -26,7 +24,6 @@ function numGet_get(num) {
 }
 
 const slotGet = { get: (arg0) => slotGet_get(arg0.value) };
-
 function slotGet_get(slot) {
   return {
     get value() {

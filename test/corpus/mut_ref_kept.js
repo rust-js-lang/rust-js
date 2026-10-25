@@ -36,7 +36,6 @@ const Counter = {
 };
 
 const refMutI32Bump = { bump: refMutI32Bump_bump };
-
 function refMutI32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
 }

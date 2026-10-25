@@ -13,7 +13,6 @@ export function f(m) {
   }
   k.value = (k.value + 1) | 0;
 }
-
 function main() {
   const m = new Map();
   f(m);

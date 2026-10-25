@@ -13,7 +13,6 @@ export function formatWithDisplay(IIterator) {
     fmt: (arg0, arg1) => formatWithDisplay_fmt(arg0, arg1, IIterator),
   }));
 }
-
 function formatWithDisplay_fmt(formatWith, options, IIterator) {
   let f = "";
   const old = formatWith.inner;
@@ -41,7 +40,6 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
 }
 
 export const eachDisplay = { fmt: eachDisplay_fmt };
-
 function eachDisplay_fmt(each, options) {
   let f = "";
   const show = (x) => {

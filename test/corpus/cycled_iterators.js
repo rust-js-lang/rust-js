@@ -39,7 +39,6 @@ export const counterClone = {
     loudDrop_drop(counter.tag);
   },
 };
-
 function counterClone_clone(counter) {
   console.log(`clone ${counter.tag[0]}`);
   return { n: counter.n, tag: [(counter.tag[0] + 10) & 255] };

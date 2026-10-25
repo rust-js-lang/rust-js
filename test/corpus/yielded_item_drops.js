@@ -52,7 +52,6 @@ function skipperSkip(IIterator, dropI, dropIItem) {
     },
   }));
 }
-
 function skipperSkip_skip(skipper, IIterator, dropI, dropIItem) {
   const next = IIterator.next(skipper.inner);
   if (next != null) {

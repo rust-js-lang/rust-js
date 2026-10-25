@@ -13,7 +13,6 @@ export const collectorWrite = {
   writeChar: $collectorWrite_writeStr,
   writeFmt: $collectorWrite_writeStr,
 };
-
 function collectorWrite_writeStr(collector, s) {
   collector.text += s;
   collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
@@ -26,7 +25,6 @@ export const shoutingWrite = {
   writeChar: (arg0, arg1) => shoutingWrite_writeChar(arg0.value, arg1),
   writeFmt: $shoutingWrite_writeStr,
 };
-
 function shoutingWrite_writeStr(shouting, s) {
   shouting[0] += s.toUpperCase();
 }
@@ -38,7 +36,6 @@ function shoutingWrite_writeChar(shouting, c) {
 }
 
 export const pointDisplay = { fmt: pointDisplay_fmt };
-
 function pointDisplay_fmt(point) {
   return `(${point.x}, ${point.y})`;
 }

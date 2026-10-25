@@ -18,7 +18,6 @@ function sinkTakeA(dropA) {
     make: (arg0) => sinkTakeA_make(arg0, dropA),
   }));
 }
-
 function sinkTakeA_take(sink, a, dropA) {
   try {
     console.log("sink");
@@ -27,7 +26,6 @@ function sinkTakeA_take(sink, a, dropA) {
   }
   return 1;
 }
-
 function sinkTakeA_make(a, dropA) {
   dropA?.(a);
 }
@@ -43,7 +41,6 @@ function relayTakeA(STakeA, dropA, dropS) {
     },
   }));
 }
-
 function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
   try {
     console.log("relay");
@@ -53,7 +50,6 @@ function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
   }
   return (STakeA.take(relay[0], a) + 1) & 255;
 }
-
 function relayTakeA_make(a, STakeA, dropA, dropS) {
   return [STakeA.make(a)];
 }
@@ -76,7 +72,6 @@ function wrapTakeNoisy(TDefault, dropT) {
     },
   }));
 }
-
 function wrapTakeNoisy_make(a, TDefault, dropT) {
   try {
     console.log(`make ${a[0]}`);
@@ -94,11 +89,9 @@ function keepTakeA(dropA) {
     make: (arg0) => keepTakeA_make(arg0, dropA),
   }));
 }
-
 function keepTakeA_take(keep, a, dropA) {
   return 2;
 }
-
 function keepTakeA_make(a, dropA) {
   dropA?.(a);
 }

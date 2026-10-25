@@ -99,19 +99,16 @@ function transform(s, withWord, boundary, options) {
 }
 
 export const kebabDisplay = { fmt: kebabDisplay_fmt };
-
 function kebabDisplay_fmt(kebab, options) {
   return transform(kebab[0], lowercase, (options) => "-", options);
 }
 
 export const titleDisplay = { fmt: titleDisplay_fmt };
-
 function titleDisplay_fmt(title, options) {
   return transform(title[0], capitalize, (options) => " ", options);
 }
 
 export const numberedDisplay = { fmt: numberedDisplay_fmt };
-
 function numberedDisplay_fmt(numbered, options) {
   let n = numbered[1];
   const numbered$1 = (word, options) => {
@@ -125,7 +122,6 @@ function numberedDisplay_fmt(numbered, options) {
 }
 
 export const columnsDisplay = { fmt: columnsDisplay_fmt };
-
 function columnsDisplay_fmt(columns, options) {
   return transform(
     columns[0],

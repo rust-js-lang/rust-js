@@ -34,6 +34,7 @@ function main() {
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${p.aCur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.aCur))})`}`,
   );
+
   let o = $some(undefined);
   o = 4;
   console.log(

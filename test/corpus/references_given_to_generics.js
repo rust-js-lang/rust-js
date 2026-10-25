@@ -32,29 +32,22 @@ function kHash_hash(k, state, HHasher) {
   HHasher.writeU8(state, k[0]);
   HHasher.writeStr(state, k[1]);
 }
-
 export const kDisplay = { fmt: kDisplay_fmt };
-
 function kDisplay_fmt(k) {
   return `<${k[0]}:${k[1]}>`;
 }
-
 function show(t, TDisplay) {
   return `[${TDisplay.fmt(t)}]`;
 }
-
 function dbg(t, TDebug) {
   return TDebug.fmt(t);
 }
-
 function same(a, b, TPartialEq) {
   return TPartialEq.eq(a, b);
 }
-
 function biggest(v, TOrd) {
   return $maxBy(v, TOrd.cmp, true);
 }
-
 function hashed(t, THash) {
   const h = new $SipHasher(1, 3);
   const state = { value: h };
@@ -62,26 +55,21 @@ function hashed(t, THash) {
   $assign(h, state.value);
   return h.finish();
 }
-
 function take2(it) {
   return Iterator.from(it).take(2).toArray();
 }
-
 function twice(f) {
   return f(f(1));
 }
-
 function fill(w, WWrite) {
   const self = { value: w };
   WWrite.writeFmt(self, "x=1");
   w = self.value;
   return w;
 }
-
 function pathLen(p, PAsRefPath) {
   return $byteLen($unwrap(PAsRefPath.asRef(p)));
 }
-
 function main() {
   const a = [1, "a"];
   const b = [2, "b"];
@@ -137,7 +125,6 @@ function main() {
 }
 
 export const textAsRefStr = { asRef: textAsRefStr_asRef };
-
 function textAsRefStr_asRef(text) {
   return text[0];
 }

@@ -399,7 +399,6 @@ function emailTryFromString_tryFrom(s) {
 }
 
 export const oddErrorDisplay = { fmt: oddErrorDisplay_fmt };
-
 function oddErrorDisplay_fmt(oddError) {
   return `${oddError[0]} is odd`;
 }

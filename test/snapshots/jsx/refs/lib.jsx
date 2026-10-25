@@ -5,22 +5,17 @@ import { forwardRef } from "react";
 export function Input(p, reference) {
   return <input ref={reference} tabIndex={p.label} />;
 }
-
 const ForwardedInput = forwardRef(Input);
-
 export function Plain(reference) {
   return <ForwardedInput label={1} ref={reference} />;
 }
-
 export function App(reference) {
   globalThis.record(1);
   return <ForwardedInput label={globalThis.record(2)} ref={reference} />;
 }
-
 export function Normal(p) {
   return <input ref={p.ref} tabIndex={p.title} />;
 }
-
 export function Ordinary(reference) {
   const title = globalThis.record(3);
   globalThis.record(4);

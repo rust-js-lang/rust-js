@@ -188,7 +188,6 @@ export const Counter = {
 };
 
 export const counterDefault = { default: counterDefault_default };
-
 function counterDefault_default() {
   return Counter.new(1);
 }
@@ -300,13 +299,11 @@ export const circleShape = {
   area: circleShape_area,
   describe: (self) => `a shape of area ${$toFixed(circleShape_area(self), 1)}`,
 };
-
 function circleShape_area(circle) {
   return 3.141592653589793 * circle.radius * circle.radius;
 }
 
 export const squareShape = { area: squareShape_area, describe: squareShape_describe };
-
 function squareShape_area(square) {
   return square.side * square.side;
 }
@@ -316,7 +313,6 @@ function squareShape_describe(square) {
 }
 
 export const squareDisplay = { fmt: squareDisplay_fmt };
-
 function squareDisplay_fmt(square) {
   return `Square(${$displayF64(square.side)})`;
 }
@@ -431,7 +427,6 @@ export const Stack = {
 };
 
 export const stackDefault = { default: stackDefault_default };
-
 function stackDefault_default() {
   return Stack.new();
 }
@@ -557,7 +552,6 @@ function configErrorDebug_fmt(configError) {
 }
 
 export const configErrorDisplay = { fmt: configErrorDisplay_fmt };
-
 function configErrorDisplay_fmt(configError) {
   if (configError.TAG === "Missing") {
     return `missing ${configError._0}`;

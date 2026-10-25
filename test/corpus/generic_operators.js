@@ -48,32 +48,27 @@ function v2Debug_fmt(v2) {
 }
 
 export const v2Add = { add: v2Add_add };
-
 function v2Add_add(v2, o) {
   return { x: v2.x + o.x, y: v2.y + o.y };
 }
 
 export const v2Mul = { mul: v2Mul_mul };
-
 function v2Mul_mul(v2, o) {
   return { x: v2.x * o.x, y: v2.y * o.y };
 }
 
 export const v2Neg = { neg: v2Neg_neg };
-
 function v2Neg_neg(v2) {
   return { x: -v2.x, y: -v2.y };
 }
 
 export const metersMulF64 = { mul: metersMulF64_mul };
-
 function metersMulF64_mul(meters, k) {
   return [meters[0] * k];
 }
 
 // A number's, of the crate's own on its right: the crate's impl.
 export const f64MulV2 = { mul: f64MulV2_mul };
-
 function f64MulV2_mul(self, v) {
   return { x: self * v.x, y: self * v.y };
 }

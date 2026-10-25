@@ -13,7 +13,6 @@ function holderShow(TCopy, TDisplay) {
     show: (arg0) => holderShow_show(arg0, TCopy, TDisplay),
   }));
 }
-
 function holderShow_show(holder, TCopy, TDisplay) {
   const copy = TCopy.copy(holder[0]);
   return TDisplay.fmt(copy);

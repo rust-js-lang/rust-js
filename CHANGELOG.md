@@ -807,6 +807,19 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A blank line is where the Rust has one between the code of the JS, and
+  nowhere else** (ADR 0865): React's `const emptyObject = {};` and the
+  `if (__DEV__)` of the `js::on_load!` right below its `static` are one
+  block; functions written right below each other are right below each
+  other; an object's fields are apart where its struct literal's are; a
+  `let` with no JS, an erased cast's, is no code between a blank line and
+  the statement after it. What the Rust can't tell of, what rust-js writes
+  of no code of its own or of one line, a derive's, is set apart as before
+  (ADR 0303).
+- **A format argument written across lines may break its template
+  literal's line after `${`** (ADR 0641, amended), where it's too long for
+  one, as Prettier breaks React's `(found: ${childrenString === .. :
+  childrenString})`.
 - **A module's own item a `pub use` of it renames is exported by that name
   alone** (ADR 0596, amended): React's scheduler is `function
   shouldYieldToHost() {..}` and `export { getCurrentTime as unstable_now,
@@ -1020,6 +1033,10 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **An object's `Option` tested by its truth is `p?.x` again** (ADR 0298,
+  amended): `match prev { Some(prev) => prev.types, None => None }` was
+  `prev ? prev.types : undefined` once its test was `prev`'s truth; that
+  test is now one of being set, as `prev != null` was.
 - **A map or a filter of a type parameter whose bounds give no back steps
   it forward** (ADR 0545, amended): the `either` crate, whose
   `IterEither::fold` maps an `R: Iterator` its `rfold` steps from the

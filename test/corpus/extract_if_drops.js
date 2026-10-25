@@ -19,11 +19,9 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 function ids(v) {
   return v.map((l) => l[0]);
 }
-
 function collected() {
   const v = [[1], [2], [3], [4], [5]];
   try {
@@ -43,7 +41,6 @@ function collected() {
     }
   }
 }
-
 function stoppedEarly() {
   const w = [[10], [11], [12], [13]];
   try {
@@ -61,7 +58,6 @@ function stoppedEarly() {
     }
   }
 }
-
 function counted() {
   const list = [[20], [21]];
   try {
@@ -79,7 +75,6 @@ function counted() {
     }
   }
 }
-
 function fromMaps() {
   const m = $treeFrom(
     new Map(),
@@ -132,7 +127,6 @@ function fromMaps() {
     }
   }
 }
-
 function main() {
   collected();
   stoppedEarly();

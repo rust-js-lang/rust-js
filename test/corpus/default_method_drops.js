@@ -74,7 +74,6 @@ const personGreet = {
     return result;
   },
 };
-
 function personGreet_id(person) {
   return 7;
 }

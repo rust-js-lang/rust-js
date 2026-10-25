@@ -5,7 +5,6 @@ export function entry() {
 }
 
 export const loudDebug = { fmt: loudDebug_fmt };
-
 function loudDebug_fmt(loud) {
   console.log(`fmt ${loud[0]}`);
   return `Loud(${loud[0]})`;

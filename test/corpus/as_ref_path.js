@@ -7,7 +7,6 @@ export function entry() {
 }
 
 export const nameAsRefPath = { asRef: nameAsRefPath_asRef };
-
 function nameAsRefPath_asRef(name) {
   return name.text;
 }

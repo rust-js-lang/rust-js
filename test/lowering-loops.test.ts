@@ -834,8 +834,8 @@ pub fn root(n: u32) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
-  expect(js).toContain("  }\n  return out;\n}\n\nexport function drained");
-  expect(js).toMatch(/\n  }\n  return out;\n}\n\nexport function early/);
+  expect(js).toContain("  }\n  return out;\n}\nexport function drained");
+  expect(js).toMatch(/\n  }\n  return out;\n}\nexport function early/);
   // A \`return\` the program wrote stays.
   expect(js).toContain("      return x;\n");
   expect(js).toContain("      return i;\n");

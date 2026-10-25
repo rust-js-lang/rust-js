@@ -34,6 +34,7 @@ function main() {
     const value = hits.value.value;
     try {
       console.log(`${$displayF64(value)} ${hits.strong}`);
+
       const total = 2;
       console.log(`${total}`);
 

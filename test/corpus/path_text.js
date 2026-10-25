@@ -10,7 +10,6 @@ const pathAsDisplay = {
   TargetDisplay: () => ({ fmt: (value) => value }),
   asDisplay: pathAsDisplay_asDisplay,
 };
-
 function pathAsDisplay_asDisplay(path) {
   return path;
 }

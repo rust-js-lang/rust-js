@@ -64,6 +64,7 @@ function main() {
     $rcDrop(a);
     throw error;
   }
+
   try {
     console.log(`${a.strong} ${a === b}`);
   } catch (error) {

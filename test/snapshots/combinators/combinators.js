@@ -30,14 +30,12 @@ function half(n) {
     return (n / 2) >>> 0;
   }
 }
-
 function parse(c) {
   if (c === "1") {
     return { TAG: "Ok", _0: 1 };
   }
   return c === "2" ? { TAG: "Ok", _0: 2 } : { TAG: "Err", _0: `bad ${c}` };
 }
-
 export function options(n) {
   const h = half(n);
   return [
@@ -49,7 +47,6 @@ export function options(n) {
     h != null && h < 5,
   ];
 }
-
 export function moreOptions(n) {
   const h = half(n);
   const r = h != null ? { TAG: "Ok", _0: h } : { TAG: "Err", _0: "odd" };
@@ -62,7 +59,6 @@ export function moreOptions(n) {
     h != null ? (h + 1) >>> 0 : 1000,
   ];
 }
-
 export function results(c) {
   const r = parse(c);
   const value = r.TAG === "Ok" ? { TAG: "Ok", _0: (r._0 * 10) >>> 0 } : r;
@@ -80,7 +76,6 @@ export function results(c) {
     r.TAG === "Ok" && r._0 === 2,
   ];
 }
-
 export function iters(n) {
   const v = $range(0, n);
   return [
@@ -97,7 +92,6 @@ export function iters(n) {
       .toArray(),
   ];
 }
-
 export function consumers(n) {
   const v = $range(1, (n + 1) >>> 0);
   return [
@@ -119,7 +113,6 @@ export function consumers(n) {
     $partition(v, (x) => x % 2 === 0),
   ];
 }
-
 export function vecs(n) {
   const v = [1, 1, 2, 3, 3, 3, 4];
   const has = v.includes(n);
@@ -133,49 +126,40 @@ export function vecs(n) {
   const c = $chunks(v, 4).map((c) => c.slice());
   return [has, v, removed, w, c, [[1, 2], [3]].flat()];
 }
-
 export function panics(i) {
   const v = [1, 2];
   return $removeAt(v, i);
 }
-
 // A slice's `concat` of parts written out is an array of them, spread, as
 // JS writes it: `[...path, last]`.
 export function joined(path, last) {
   return [...path, last];
 }
-
 // `then` of a closure that only returns is its value in place, closures in
 // it too: `ok ? items.map((n) => n + 1) : undefined`.
 export function bumped(ok, items) {
   return ok ? items.map((n) => (n + 1) >>> 0) : undefined;
 }
-
 // One that reads the value it's given is called: `x` is the argument.
 export function shifted(by, items) {
   const map = (x) => items.map((n) => (n + x) >>> 0);
   return by != null ? map(by) : undefined;
 }
-
 // A field of what's there, or nothing: `named?.name`, as a person writes it.
 export function nameOf(named) {
   return named?.name;
 }
-
 // Not of another's, nor where nothing isn't `undefined`.
 export function otherName(flag, named) {
   return flag != null ? named.name : undefined;
 }
-
 export function labelOf(named) {
   return named?.label ?? "none";
 }
-
 // Not where the fallback is a value: `?.` would give `undefined`.
 export function labelOrElse(named) {
   return named != null ? named.label : "none";
 }
-
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {

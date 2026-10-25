@@ -104,7 +104,6 @@ export function named(button) {
     globalThis.record(1);
   });
 }
-
 export function namedOnce(button) {
   button.addEventListener(
     "custom",

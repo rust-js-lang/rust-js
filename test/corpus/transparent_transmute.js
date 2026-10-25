@@ -25,7 +25,6 @@ const Uuid = {
 };
 
 export const hyphenatedDisplay = { fmt: hyphenatedDisplay_fmt };
-
 function hyphenatedDisplay_fmt(hyphenated) {
   const [a, b, c, d] = hyphenated;
   return `${a.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}-${c.toString(16).padStart(2, "0")}${d.toString(16).padStart(2, "0")}`;

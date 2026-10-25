@@ -7,7 +7,6 @@ export function entry() {
 }
 
 const i32Weight = { weight: i32Weight_weight };
-
 function i32Weight_weight(self) {
   return (self * 10) | 0;
 }

@@ -25,7 +25,6 @@ const fixedAutomaton = {
     return dst;
   },
 };
-
 function fixedAutomaton_ids(fixed) {
   return [[2], [0]];
 }

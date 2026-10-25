@@ -17,7 +17,6 @@ export function durationAdd(TAdd) {
     add: (arg0, arg1) => durationAdd_add(arg0, arg1, TAdd),
   }));
 }
-
 function durationAdd_add(duration, other, TAdd) {
   return [TAdd.add(duration[0], other[0])];
 }

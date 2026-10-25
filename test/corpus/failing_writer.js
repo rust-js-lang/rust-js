@@ -20,7 +20,6 @@ function fullWrite_writeStr(full, s) {
   }
   full[0] = (full[0] - $byteLen(s)) >>> 0;
 }
-
 function main() {
   const f = [5];
   console.log(

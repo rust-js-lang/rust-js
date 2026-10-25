@@ -9,14 +9,11 @@ export function entry() {
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
-
 export const loudDefault = { default: loudDefault_default, $drop: loudDrop_drop };
-
 function loudDefault_default() {
   console.log("default");
   return [0];
 }
-
 function mapped() {
   const a = [[1], [2]];
   const b = a.map((l) => {
@@ -38,7 +35,6 @@ function mapped() {
     }
   }
 }
-
 function defaults() {
   const o = undefined;
   const loud = o ?? loudDefault_default();
@@ -77,7 +73,6 @@ function defaults() {
   }
   console.log(`is ok ${holds}`);
 }
-
 function popped() {
   const v = [[7], [8]];
   try {
@@ -132,7 +127,6 @@ function popped() {
     }
   }
 }
-
 function main() {
   mapped();
   defaults();

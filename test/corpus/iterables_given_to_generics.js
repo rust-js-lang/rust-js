@@ -21,24 +21,20 @@ export function entry() {
 function total(i) {
   return Iterator.from(i).reduce((a, b) => (a + b) >>> 0, 0);
 }
-
 function bump(i) {
   for (const x of i) {
     x.value = (x.value + 1) >>> 0;
   }
 }
-
 function count(i) {
   return Iterator.from(i).reduce((n) => n + 1, 0);
 }
-
 function firsts(i, IItemDebug) {
   return Iterator.from(i)
     .take(2)
     .map((x) => IItemDebug.fmt(x))
     .toArray();
 }
-
 function main() {
   const v = [1, 2, 3];
   const arr = [4, 5];

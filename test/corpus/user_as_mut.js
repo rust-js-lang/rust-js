@@ -16,7 +16,6 @@ function stackBorrowMutI32Slice_borrowMut(stack) {
 
 // `BorrowMut` needs `Borrow`, its supertrait.
 export const stackBorrowI32Slice = { borrow: stackBorrowI32Slice_borrow };
-
 function stackBorrowI32Slice_borrow(stack) {
   return stack.items;
 }

@@ -15,7 +15,6 @@ export const partialDefault = {
     noisyDrop_drop(partial.y);
   },
 };
-
 function partialDefault_default() {
   console.log("default");
   return { x: [20], y: [21], n: 0 };
