@@ -646,6 +646,72 @@ pub fn all(object: &Unknown) -> Vec<String> {
   expect(lib.twice({ a: 1, b: 2 })).toBe("1b0a1b2");
 });
 
+// ADR 0440: a struct made a JS object, `js::Defined`, whose fields only JS
+// reads, by key, as React's `ReactBaseClasses.js` reads its deprecated
+// APIs: given `js::unknown`, a binding, its fields are read, and rust-js's
+// check warns of none; a struct JS isn't given is warned of still.
+test("a struct JS reads by key has its fields read", async () => {
+  const { lib, warnings } = await compiled("js-object-read-by-key", `use js::{PropertyDescriptor, Unknown, object};
+use webapi::console;
+
+struct DeprecatedApis {
+    is_mounted: (&'static str, &'static str),
+    replace_state: (&'static str, &'static str),
+}
+
+unsafe impl js::Defined for DeprecatedApis {}
+
+struct Unread {
+    hidden: u32,
+}
+
+pub fn unread() -> u32 {
+    let _ = Unread { hidden: 1 };
+    0
+}
+
+pub fn deprecate(target: &'static Unknown) {
+    let deprecated_apis = DeprecatedApis {
+        is_mounted: ("isMounted", "Clean up instead."),
+        replace_state: ("replaceState", "Use setState instead."),
+    };
+    let define_deprecation_warning = |method_name: &str, info: &'static (&'static str, &'static str)| {
+        object::define_property(
+            target,
+            method_name,
+            &PropertyDescriptor {
+                get: Some(&|| {
+                    console::warn(("%s(...) is deprecated. %s", info.0, info.1));
+                    None
+                }),
+                ..Default::default()
+            },
+        );
+    };
+    for fn_name in js::keys_in(js::unknown(&deprecated_apis)) {
+        if object::has_own_property.call(js::unknown(&deprecated_apis), &fn_name) {
+            define_deprecation_warning(&fn_name, unsafe { js::cast(js::get(js::unknown(&deprecated_apis), &fn_name)) });
+        }
+    }
+}
+`);
+  expect(warnings).toEqual(["warning: field `hidden` is never read"]);
+  const warned: unknown[][] = [];
+  const warn = console.warn;
+  console.warn = (...args: unknown[]) => warned.push(args);
+  try {
+    const target = {};
+    lib.deprecate(target);
+    expect([(target as any).isMounted, (target as any).replaceState]).toEqual([undefined, undefined]);
+  } finally {
+    console.warn = warn;
+  }
+  expect(warned).toEqual([
+    ["%s(...) is deprecated. %s", "isMounted", "Clean up instead."],
+    ["%s(...) is deprecated. %s", "replaceState", "Use setState instead."],
+  ]);
+});
+
 // ADR 0740: a function's `name`, `length` and source, `Function.prototype`'s
 // members, of any function, as React's `shared/ReactPerformanceTrackProperties.js`
 // reads them: `f.name`, `f.length`, `Function.prototype.toString.call(f)`.

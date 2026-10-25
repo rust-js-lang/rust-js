@@ -92,6 +92,9 @@ clippy's lints run through rust-js's liveness only where a driver links
 both, which none does yet.
 
 Held by `test/js-object.test.ts`, "console is a value, its functions
-read as values", React's `disableLogs` compiled with no warning, and
-`test/modules.test.ts`, "a function only js::export_default! names is no
-dead code", which warns of a function nothing names still.
+read as values", React's `disableLogs` compiled with no warning;
+`test/js-object.test.ts`, "a struct JS reads by key has its fields read",
+`ReactBaseClasses`' `DeprecatedApis`, a `js::Defined` struct given
+`js::unknown` and read by key, which warns of a struct JS isn't given
+still; and `test/modules.test.ts`, "a function only js::export_default!
+names is no dead code", which warns of a function nothing names still.
