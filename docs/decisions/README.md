@@ -652,7 +652,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
-- [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md) *(amended: each its module's `const`, read by its name; what a module's load makes reads another module's as its value)*
+- [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md) *(amended: each its module's `const`, read by its name; what a module's load makes reads another module's as its value; a variant's `#[rust_js::name]` names its `const`)*
 - [0436 Every `dyn` that's a pair keeps its value's drop, `dyn Send` too](0436-every-dyn-keeps-its-drop.md) *(amended by 0691: a `dyn Any` drops where the crate makes one of what drops)*
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](0438-an-optional-prop-is-given-some.md)

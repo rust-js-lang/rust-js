@@ -19,6 +19,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
   },
   {
+    name: "numbered-given-name-a-string",
+    breaks: "a `#[repr(u8)]` enum's variant named `#[rust_js::name = \"UNTERMINATED\"]` is the string `'UNTERMINATED'`, where it's its number, its module's `const UNTERMINATED = 0;`, as React's cache's",
+    file: "src/lower/bindings.rs",
+    find: "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_bool(tcx, v.def_id).is_none())\n",
+    replace: "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
+    name: "numbered-given-name-unchecked",
+    breaks: "a numbered enum's variant named `\"un-terminated\"`, which can't name a `const`, is written `const un-terminated = 0;`, JS that doesn't parse, where it's refused",
+    file: "src/lower/bindings.rs",
+    find: "                    && !crate::names::is_identifier(&given)\n",
+    replace: "                    && given.is_empty()\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+  },
+  {
     name: "any-length-a-strings",
     breaks: "an array's `get length` is taken for a JS string's, below `2^32 - 1`, so two steps below it lose their wrap",
     file: "src/lower/bindings.rs",

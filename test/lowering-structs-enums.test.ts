@@ -1152,7 +1152,7 @@ pub fn flat(inner: &Inner) -> Outer<'_> {
 // ADR 0722: a fieldless enum under a `#[repr(..)]` of an integer is its
 // number, `ArrayKind::Empty` `0`, as React's `const EMPTY_ARRAY = 0;` is;
 // its `as` the value, its `{:?}` its name, a `.d.ts` its numbers. One
-// without, or a variant named by `#[rust_js::name]`, its name, as ever.
+// without a `repr`, or of 64 bits, its name, as ever.
 test("a repr enum's variant is its number", async () => {
   const dir = fixture("repr-enum-numbers");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Debug, PartialEq)]
@@ -1314,6 +1314,20 @@ pub fn requests() -> String {
     format!("{:?}", [Some(Request::Pending), None])
 }
 
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+enum Cache {
+    #[cfg_attr(rust_js, rust_js::name = "UNTERMINATED")]
+    Unterminated = 0,
+    #[cfg_attr(rust_js, rust_js::name = "TERMINATED")]
+    Terminated = 1,
+}
+
+pub fn cached(done: bool) -> bool {
+    let status = if done { Cache::Terminated } else { Cache::Unterminated };
+    status == Cache::Terminated
+}
+
 pub mod theme {
     #[derive(Clone, Copy, PartialEq)]
     #[repr(u8)]
@@ -1373,6 +1387,13 @@ pub fn pace(fast: bool) -> &'static str {
   expect([lib.settle(second, false), lib.describe(second)]).toEqual([2, "rejected"]);
   expect([lib.code(false), lib.code(true), lib.requests(), lib.mode(true), lib.mode(false)]).toEqual([5, 6, "[Some(Pending), None]", 2, 1]);
   expect([lib.pace(true), lib.pace(false)]).toEqual(["fast", "slow"]);
+  // A variant's `#[rust_js::name]` names its `const`, as React's cache's
+  // `const UNTERMINATED = 0;`; one that isn't a JS name is refused.
+  expect(js).toContain("const UNTERMINATED = 0;\nconst TERMINATED = 1;\n");
+  expect(js).toContain("const status = done ? TERMINATED : UNTERMINATED;");
+  expect([lib.cached(true), lib.cached(false)]).toEqual([true, false]);
+  writeFileSync(join(dir, "named.rs"), '#[repr(u8)]\npub enum Cache {\n    #[cfg_attr(rust_js, rust_js::name = "un-terminated")]\n    Unterminated = 0,\n}\npub fn cache() -> Cache {\n    Cache::Unterminated\n}\n');
+  expect(() => run([compiler, join(dir, "named.rs"), "-o", join(dir, "named.js")])).toThrow("so it's a JS name: `un-terminated` isn't one");
 });
 
 // ADR 0835: an object of a struct literal written across lines, a line

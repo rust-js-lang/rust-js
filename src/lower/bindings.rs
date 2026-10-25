@@ -38,6 +38,22 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             super::refusal::refuse(tcx, tcx.def_span(def), super::refusal::Refused::Because(&what, why));
             valid = false;
         }
+        // A numbered enum's variant's name is its `const`'s, a JS name
+        // (ADR 0722, amended).
+        if tcx.def_kind(def) == DefKind::Enum && numbered(tcx, tcx.adt_def(def)) {
+            for variant in tcx.adt_def(def).variants() {
+                if let Some(given) = given_name(tcx, variant.def_id)
+                    && !crate::names::is_identifier(&given)
+                {
+                    let message = format!(
+                        "rust-js: `{}`'s `#[rust_js::name]` names its module's `const` of its number, as a `#[repr(..)]` enum's variant is one, so it's a JS name: `{given}` isn't one",
+                        tcx.item_name(variant.def_id)
+                    );
+                    tcx.dcx().span_err(tcx.def_span(variant.def_id), message);
+                    valid = false;
+                }
+            }
+        }
         let attrs: Vec<_> = tcx
             .get_attrs_by_path(def.to_def_id(), &[Symbol::intern("rust_js"), sym::link_name])
             .collect();
@@ -738,10 +754,11 @@ pub(super) fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
 
 /// Whether an enum's variants are its numbers in JS, as rustc numbers
 /// them: one of no fields under a `#[repr(..)]` of an integer JS holds as
-/// a number, of 32 bits or fewer, none of its variants named
-/// (`#[rust_js::name]`), neither tagged nor untagged, nor std's (ADR
-/// 0722). What `variant_tag` asks; each other question of its value asks
-/// this.
+/// a number, of 32 bits or fewer, neither tagged nor untagged, nor a
+/// discriminated union's (`#[rust_js::name = true]`), nor std's (ADR
+/// 0722). A variant's `#[rust_js::name]` names its module's `const`,
+/// `const UNTERMINATED = 0;`, not its value (ADR 0722, amended). What
+/// `variant_tag` asks; each other question of its value asks this.
 pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
     use rustc_abi::IntegerType;
     let narrow = match adt.repr().int {
@@ -752,8 +769,7 @@ pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
     narrow
         && adt.is_enum()
         && !adt.variants().is_empty()
-        && (adt.variants().iter())
-            .all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())
+        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_bool(tcx, v.def_id).is_none())
         && declared_tag(tcx, adt.did()).is_none()
         && !is_untagged(tcx, adt.did())
         && !super::recognition::is_std_item(tcx, adt.did())

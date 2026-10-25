@@ -4,7 +4,9 @@ Status: Accepted. Extends [0013](0013-fieldless-enums.md) and
 [0393](0393-an-enums-discriminant.md). Amended: each variant is its
 module's `const` of its number, read by its name, as a `const` item is
 ([0031](0031-consts.md), [0770](0770-a-librarys-const-is-imported-by-its-name.md)):
-`const Pending = 0;`, `payload._status = Pending` (below).
+`const Pending = 0;`, `payload._status = Pending` (below). Amended again:
+a variant's `#[rust_js::name]` names that `const`, `const UNTERMINATED =
+0;`, where it had made the enum its names (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: which JS value a
 variant is, nothing a program observes but through its own `==`, order,
@@ -43,8 +45,9 @@ numbers; each question of its value asks them:
   (`gives_own_name`, ADR 0264), which it is only of a string enum.
 
 A plain fieldless enum is its names, as before. So is one of a 64-bit
-or 128-bit `repr`, whose integers are BigInts (ADR 0086), one with a
-variant named by `#[rust_js::name]`, a tagged or untagged one, and std's.
+or 128-bit `repr`, whose integers are BigInts (ADR 0086), a tagged or
+untagged one, and std's; and, until the second amendment below, one with
+a variant named by `#[rust_js::name]`.
 
 ## Why
 
@@ -199,6 +202,80 @@ function start(payload) {
   a compiled std body's, `fused_iterator`'s `fuseDoubleEndedIterator_nextBack`,
   which no line of it read.
 
+## Amended: a variant's `#[rust_js::name]` names its `const`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: the variant is the
+same number, read by another name; its `{:?}`, its order, its `as` and
+serde are Rust's, by its Rust name.
+
+### Context
+
+React's `ReactCacheImpl` keeps a cache node's status as constants named
+as JS names constants: `const UNTERMINATED = 0; const TERMINATED = 1;
+const ERRORED = 2;`, then `s: UNTERMINATED` and `if (cacheNode.s ===
+TERMINATED)`. Rust names a variant `Unterminated`, and the attribute that
+says what an item is called in JS, `#[rust_js::name = "UNTERMINATED"]`,
+made the enum a string enum: `s: 'UNTERMINATED'`, `case 'TERMINATED':`,
+no `const`s, its `as u8` a table. The `#[repr(u8)]` that asked for the
+number was dropped for the name, and the name a function, a field or a
+`const` gets from the attribute was a value here.
+
+### Decision
+
+**A numbered enum's variant's `#[rust_js::name]` is the name of its
+module's `const`**, as the attribute names a function or a `const` item:
+the enum is still its numbers (`bindings::numbered` no longer asks the
+variants' names), and the `const` is named, declared, exported and
+imported by that name as any item is (`name_items`, by `fn_name`).
+
+```rust
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+enum Status {
+    #[cfg_attr(rust_js, rust_js::name = "UNTERMINATED")]
+    Unterminated = 0,
+    #[cfg_attr(rust_js, rust_js::name = "TERMINATED")]
+    Terminated = 1,
+}
+```
+
+```js
+const UNTERMINATED = 0;
+const TERMINATED = 1;
+
+function read(node) {
+  if (node.s === TERMINATED) {
+    return node.v;
+  }
+  ..
+}
+```
+
+- **A name that isn't a JS name is refused**, as it can't name a
+  `const`: "`Unterminated`'s `#[rust_js::name]` names its module's
+  `const` of its number, .., so it's a JS name: `un-terminated` isn't
+  one" (`bindings::validate`). One repeating the variant's own name is
+  refused already (ADR 0573).
+- **What reads the variant's Rust name still does**: `{:?}`'s table,
+  `["Unterminated", "Terminated"][status]`, and serde's names.
+- `#[rust_js::name = true]`, a discriminated union's (ADR 0284), is
+  still not numbered.
+
+### Why
+
+- **Upstream's JS**: the reader finds React's names.
+- **One meaning of the attribute**: what an item is called in JS. The
+  value of a numbered variant is said by its `repr`; a string enum is
+  written without one.
+
+### Alternatives
+
+- **Keep a named variant a string**: a `#[repr(u8)]` and a name could
+  not both be had, and React's constants could not be written.
+- **A name that isn't an identifier makes the enum its strings**: two
+  meanings of one attribute, chosen by its spelling. Rejected; a string
+  enum drops the `repr`.
+
 ## What holds it
 
 - `test/lowering-structs-enums.test.ts`, "a repr enum's variant is its
@@ -219,4 +296,7 @@ function start(payload) {
   `numbered-variant-consts-undeclared`, `unread-module-imported`,
   `unread-library-item-imported`, `load-reads-by-name`,
   `load-reads-own-module-by-value`, `load-reads-const-by-name`,
-  `load-reads-variant-by-name`.
+  `load-reads-variant-by-name`; and of the second amendment, `numbered-given-name-a-string`
+  and `numbered-given-name-unchecked`, which `test/lowering-structs-enums.test.ts`'s
+  "a repr enum's variants are its module's consts, each read by its name"
+  catches, and `test/corpus/repr_enum_given_names.rs` against native Rust.

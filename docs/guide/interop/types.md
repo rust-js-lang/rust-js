@@ -381,8 +381,9 @@ export function area(shape) {
   by that name, imported where another module or crate reads it, as a
   `const` is. Its `as u8` is the value, its `{:?}` its name, its
   `.d.ts` `0 | 1 | 2 | 3` and `export const Empty: 0;`, and serde still
-  writes its name. A 64-bit `repr`, or a variant named by
-  `#[rust_js::name]`, keeps the names
+  writes its name. A variant's `#[rust_js::name]` names its `const`,
+  React's `const UNTERMINATED = 0;`, a JS name or refused. A 64-bit
+  `repr` keeps the names
   ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)):
 
 ```rust
@@ -404,6 +405,32 @@ export const Complex = 1;
 
 export function kind(complex) {
   return complex ? Complex : Empty;
+}
+```
+
+Named, its `const` is that name:
+
+```rust
+#[derive(Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum Status {
+    #[cfg_attr(rust_js, rust_js::name = "UNTERMINATED")]
+    Unterminated = 0,
+    #[cfg_attr(rust_js, rust_js::name = "TERMINATED")]
+    Terminated = 1,
+}
+
+pub fn done(status: Status) -> bool {
+    status == Status::Terminated
+}
+```
+
+```js
+export const UNTERMINATED = 0;
+export const TERMINATED = 1;
+
+export function done(status) {
+  return status === TERMINATED;
 }
 ```
 - **A variant with fields is an object of its `TAG`** and its fields: a
