@@ -836,6 +836,114 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// The field `place`, `*r`, is an item of, where `r` is what an
+    /// `index_mut` gave of a `#[rust_js::nullable]` field's
+    /// `Vec<Option<T>>`, `r = v.index_mut(i)` of `v[i] = None`: whose
+    /// items' `None` is `null` (ADR 0586, amended).
+    pub(super) fn field_item(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<&'tcx ty::FieldDef> {
+        let [PlaceElem::Deref] = place.projection.as_slice() else {
+            return None;
+        };
+        let body = state.body;
+        body.basic_blocks.iter().find_map(|data| match &data.terminator().kind {
+            mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } if destination.local == place.local && destination.projection.is_empty() => {
+                let (id, _) = crate::lower::fn_def(func.ty(&body.local_decls, self.tcx))?;
+                (self.tcx.trait_of_assoc(id)).filter(|&t| self.tcx.is_lang_item(t, LangItem::IndexMut))?;
+                self.nullable_items_field(state, &args.first()?.node)
+            }
+            _ => None,
+        })
+    }
+
+    /// Whether the call that ends the block being lowered is given first a
+    /// `&mut` to an item of a `#[rust_js::nullable]` field's items,
+    /// `v[i].take()`'s (`field_item`): what it writes there, `null` for
+    /// `None` (ADR 0586, amended).
+    pub(super) fn lends_field_item(&self, state: &State<'_, 'tcx>) -> bool {
+        let mir::TerminatorKind::Call { args, .. } = &state.body.basic_blocks[state.at].terminator().kind else {
+            return false;
+        };
+        let Some(lent) = args.first().and_then(|arg| arg.node.place()) else {
+            return false;
+        };
+        let reborrowed = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+            mir::StatementKind::Assign(assign) if assign.0 == lent => match &assign.1 {
+                Rvalue::Ref(_, _, place) => Some(*place),
+                _ => None,
+            },
+            _ => None,
+        });
+        let item = reborrowed.unwrap_or_else(|| self.tcx.mk_place_deref(lent));
+        self.field_item(state, item).is_some()
+    }
+
+    /// The `#[rust_js::nullable]` field whose `Vec<Option<T>>` the items
+    /// `operand` gives are, if they are (ADR 0586, amended): the field,
+    /// lent, `&mut root.f`, or borrowed of its `RefCell` and dereferenced,
+    /// `root.f.borrow_mut()`, held in a variable or not. What an index of
+    /// it writes is `null` for `None`, as the field's elements are.
+    pub(super) fn nullable_items_field(
+        &self,
+        state: &State<'_, 'tcx>,
+        operand: &Operand<'tcx>,
+    ) -> Option<&'tcx ty::FieldDef> {
+        let body = state.body;
+        let mut place = operand.place()?;
+        // Each step back is a reference's or a call's, of which a body has
+        // few: as many as its locals bound the walk.
+        for _ in 0..body.local_decls.len() {
+            if let Some(field) = self.place_field(state, place) {
+                let ty = Place::ty_from(place.local, place.projection, &body.local_decls, self.tcx).ty;
+                return (bindings::is_nullable(self.tcx, field) && bindings::nullable_items(self.tcx, ty).is_some())
+                    .then_some(field);
+            }
+            if !matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]) {
+                return None;
+            }
+            let local = place.local;
+            let assigned = (body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+                mir::StatementKind::Assign(assign) if assign.0 == local.into() => Some(&assign.1),
+                _ => None,
+            });
+            place = match assigned {
+                Some(Rvalue::Ref(_, _, lent)) => *lent,
+                Some(Rvalue::Use(Operand::Copy(given) | Operand::Move(given), _)) => *given,
+                Some(_) => return None,
+                // What a `RefCell`'s `borrow_mut` gives, and a guard's
+                // `deref_mut`, of what they're given.
+                None => body
+                    .basic_blocks
+                    .iter()
+                    .find_map(|data| match &data.terminator().kind {
+                        mir::TerminatorKind::Call {
+                            func,
+                            args,
+                            destination,
+                            ..
+                        } if *destination == local.into() => {
+                            let (id, generic_args) = crate::lower::fn_def(func.ty(&body.local_decls, self.tcx))?;
+                            let derefs = (self.tcx.trait_of_assoc(id)).is_some_and(|t| {
+                                self.tcx.is_lang_item(t, LangItem::Deref)
+                                    || self.tcx.is_lang_item(t, LangItem::DerefMut)
+                            });
+                            let borrows = matches!(
+                                self.recognition().classify(id, generic_args),
+                                Some(crate::lower::Std::Borrow { .. })
+                            );
+                            (derefs || borrows).then(|| args.first()?.node.place()).flatten()
+                        }
+                        _ => None,
+                    })?,
+            };
+        }
+        None
+    }
+
     /// Whether `operand` is a `None` and nothing else: a local assigned
     /// once, a `None`, MIR's temporary of `S { label: None }`'s, or a
     /// `Cell::new` of one, `Cell::new(None)`'s. What an optional nullable

@@ -342,8 +342,8 @@ export const mutations: Mutation[] = [
     name: "nullable-field-unchecked",
     breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
-    replace: "                if false && nullable_option(tcx, ty).is_none() {\n",
+    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
+    replace: "                if false && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
     tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
   },
   {
@@ -446,8 +446,8 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-refused",
     breaks: "`#[rust_js::nullable]` of a `Cell<Option<T>>` field, React's shared internals', is refused, where its `None` can be `null`",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
-    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty) != Some(ty) {\n",
+    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
+    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty) != Some(ty) && nullable_items(tcx, ty).is_none() {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
   {
@@ -481,5 +481,13 @@ export const mutations: Mutation[] = [
     find: "            if (cell(*adt, super::recognition::StdItem::Cell) || cell(*adt, super::recognition::StdItem::RefCell))\n",
     replace: "            if cell(*adt, super::recognition::StdItem::Cell)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
+  },
+  {
+    name: "nullable-items-refused",
+    breaks: "`#[rust_js::nullable]` of a field of a `Vec<Option<T>>` is refused, as of what isn't an `Option`",
+    file: "src/lower/bindings.rs",
+    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
+    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
   },
 ];

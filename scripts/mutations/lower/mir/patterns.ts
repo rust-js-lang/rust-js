@@ -195,4 +195,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
     snapshots: true,
   },
+  {
+    name: "nullable-items-made-undefined",
+    breaks: "a `None` given where a nullable field's items are made, `create_lane_map(None)`, is `undefined`, not upstream's `createLaneMap(null)`",
+    file: "src/lower/mir/patterns.rs",
+    find: "            *given.entry(option).or_default() += 1;\n",
+    replace: "            let _ = option;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
+  },
 ];

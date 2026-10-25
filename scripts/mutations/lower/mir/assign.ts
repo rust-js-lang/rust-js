@@ -564,4 +564,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
     snapshots: true,
   },
+  {
+    name: "nullable-item-written-undefined",
+    breaks: "a nullable field's `Vec<Option<T>>` item set `None` by index is `undefined`, where React's JS tests `=== null`",
+    file: "src/lower/mir/assign.rs",
+    find: "            .or_else(|| self.field_item(state, *place))\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
+  },
 ];

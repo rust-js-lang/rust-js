@@ -154,6 +154,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // What makes a `#[rust_js::nullable]` field's `Vec<Option<T>>`, its
+        // cell's `new` and the call that gives its items, `RefCell::new(
+        // create_lane_map(None))`: each `Option` it's given, its `None`
+        // `null` where it's made, as upstream's `createLaneMap(null)` (ADR
+        // 0586, amended).
+        let mut items: std::collections::HashSet<Local> = Default::default();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && let Rvalue::Aggregate(kind, operands) = &assign.1
+                && let AggregateKind::Adt(did, variant, _, _, None) = **kind
+            {
+                let fields = &self.tcx.adt_def(did).variant(variant).fields;
+                for (field, operand) in fields.iter().zip(operands.iter()) {
+                    let ty = operand.ty(body, self.tcx);
+                    if let Some(read) = operand.place()
+                        && read.projection.is_empty()
+                        && bindings::is_nullable(self.tcx, field)
+                        && bindings::nullable_items(self.tcx, ty).is_some()
+                    {
+                        items.insert(read.local);
+                    }
+                }
+            }
+        }
+        let mut options: std::collections::HashSet<Local> = Default::default();
+        let mut grown = true;
+        while grown {
+            grown = false;
+            for block in body.basic_blocks.iter() {
+                if let mir::TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } = &block.terminator().kind
+                    && destination.projection.is_empty()
+                    && items.contains(&destination.local)
+                    && locals.reads[destination.local] == 1
+                {
+                    let cell_new = func.const_fn_def().is_some_and(|(def_id, generic_args)| {
+                        self.recognition().classify(def_id, generic_args) == Some(Std::CellNew)
+                    });
+                    for arg in args.iter() {
+                        let Some(read) = arg.node.place().filter(|read| read.projection.is_empty()) else {
+                            continue;
+                        };
+                        grown |= match cell_new {
+                            true => items.insert(read.local),
+                            false => self.option_of(read.ty(body, self.tcx).ty).is_some() && options.insert(read.local),
+                        };
+                    }
+                }
+            }
+        }
+        for option in options {
+            *given.entry(option).or_default() += 1;
+        }
         // A copy made once and only given to nullable fields or parameters
         // gives what it's a copy of to them: `let owner = None;`'s `None` is `null` where
         // it's made (ADR 0781).

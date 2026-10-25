@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "        let fields = (0..borrowed).any(|i| self.borrows_field(def_id, span, i));\n",
     tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
   },
+  {
+    name: "nullable-item-taken-undefined",
+    breaks: "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
+    file: "src/lower/mir/entries.rs",
+    find: "        let b = match b_place.is_none() && self.lends_field_item(state) {\n",
+    replace: "        let b = match b_place.is_none() && false {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
+  },
 ];

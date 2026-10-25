@@ -154,6 +154,72 @@ pub fn lent(slot: &Slot) -> &RefCell<Option<u32>> {
   );
 });
 
+// React's root's lane maps, `createLaneMap(null)`, whose items JS tests
+// `=== null`: a `#[rust_js::nullable]` field of a `Vec<Option<T>>` holds
+// its items' `None` as `null`, each written by index or taken, and each
+// `None` given where its items are made (ADR 0586, amended).
+test("a nullable field's Vec of Options holds null for each None", async () => {
+  const dir = fixture("nullable-items");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct FiberRoot {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub transition_lanes: RefCell<Vec<Option<u32>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub hidden_updates: Vec<Option<Vec<u32>>>,
+}
+
+pub fn create_lane_map<T: Copy>(initial: T) -> Vec<T> {
+    let mut lane_map = Vec::new();
+    for _ in 0..3 {
+        lane_map.push(initial);
+    }
+    lane_map
+}
+
+pub fn create_root() -> FiberRoot {
+    FiberRoot {
+        transition_lanes: RefCell::new(create_lane_map(None)),
+        hidden_updates: vec![Some(vec![1]), Some(vec![]), Some(vec![2, 3])],
+    }
+}
+
+pub fn mark(root: &FiberRoot, index: usize, lane: u32) {
+    let mut lanes = root.transition_lanes.borrow_mut();
+    lanes[index] = Some(lanes[index].unwrap_or(0) | lane);
+}
+
+pub fn clear(root: &FiberRoot, index: usize) {
+    if root.transition_lanes.borrow()[index].is_some() {
+        root.transition_lanes.borrow_mut()[index] = None;
+    }
+}
+
+pub fn take_hidden(root: &mut FiberRoot, index: usize) -> usize {
+    match root.hidden_updates[index].take() {
+        Some(updates) => updates.len(),
+        None => 0,
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    transitionLanes: createLaneMap(null),\n");
+  expect(js).toContain("] = null;\n");
+  expect(js).not.toContain("= undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  const root = lib.createRoot();
+  expect(root.transitionLanes).toEqual([null, null, null]);
+  lib.mark(root, 1, 4);
+  lib.mark(root, 1, 1);
+  expect(root.transitionLanes).toEqual([null, 5, null]);
+  lib.clear(root, 1);
+  lib.clear(root, 2);
+  expect(root.transitionLanes).toEqual([null, null, null]);
+  expect([lib.takeHidden(root, 2), lib.takeHidden(root, 2), lib.takeHidden(root, 1)]).toEqual([2, 0, 0]);
+  expect(root.hiddenUpdates).toEqual([[1], null, null]);
+});
+
 // React's `Fiber`, whose `child` the reconciler's other files read: a
 // struct's `RefCell` field is the value it holds by its declaration, not
 // by whether a body happens to borrow one of its type (ADR 0863, amended).

@@ -409,13 +409,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         found.plain = plain;
         // A `#[rust_js::nullable]` field's `RefCell` is the value it holds,
         // whose `None` is `null`, where it's plain: one that's a cell of
-        // its own holds `{ value }` (ADR 0863).
+        // its own holds `{ value }` (ADR 0863). Not one of a `Vec`'s, the
+        // array, whose items are nullable (ADR 0586, amended).
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                     if crate::lower::bindings::is_nullable(tcx, field)
                         && self.is_std_type(ty, StdItem::RefCell)
+                        && crate::lower::bindings::nullable_option(tcx, ty).is_some()
                         && !found.is_plain(tcx, ty)
                     {
                         tcx.dcx().span_err(

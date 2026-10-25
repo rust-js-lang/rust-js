@@ -202,6 +202,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let nullable = match self
             .place_field(state, *place)
             .or_else(|| self.field_got_mut(state, *place))
+            .or_else(|| self.field_item(state, *place))
         {
             Some(field) => bindings::is_nullable(self.tcx, field),
             None => self.own_nullable_param(state, *place),

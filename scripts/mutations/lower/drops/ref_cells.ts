@@ -204,4 +204,12 @@ export const mutations: Mutation[] = [
     replace: "                        let _ = ty;\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
   },
+  {
+    name: "nullable-items-cell-refused",
+    breaks: "a nullable field's `RefCell<Vec<Option<T>>>`, the array, is refused as a nullable `RefCell` that isn't plain",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                        && crate::lower::bindings::nullable_option(tcx, ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_items.rs$"],
+  },
 ];

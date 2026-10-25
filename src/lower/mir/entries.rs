@@ -297,6 +297,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::MemTake => (self.default_value(pointee, span)?, None),
             _ => (self.value_expr(values.next().expect("a value"), span)?, None),
         };
+        // An item of a `#[rust_js::nullable]` field's items stores `null`
+        // for `None`, `v[i].take()` (ADR 0586, amended).
+        let b = match b_place.is_none() && self.lends_field_item(state) {
+            true => js::Storage::NullForNone.written(b, false),
+            false => b,
+        };
         let old = self.spill(if b_place.is_some() { "t" } else { "old" }, a.clone(), out);
         out.push(StmtKind::Assign(a, b).at(js_span));
         Ok(Value::Expr(match b_place {

@@ -792,12 +792,17 @@ export function ratio(a, b) {
   function's result, a binding's too, kept in a variable or a `Drop`
   guard's field, `ReactSharedInternals.T = prevTransition;`, but not a
   trait's method's, whose impl may give `undefined`
-  ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md));
-  on anything else it's an error
+  ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)).
+  Of a `Vec<Option<T>>`, or a cell of one, it's each item's `None`,
+  upstream's `createLaneMap(null)`: an item set by index or taken,
+  `lanes[index] = null`, and a `None` given where its items are made,
+  `RefCell::new(create_lane_map(None))`, `createLaneMap(null)`. A `None`
+  made otherwise, by a closure's `map(|_| None)` say, is `undefined`, as
+  any `None` is. On anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```
-  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't
+  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, whose `None` is `null`; this one isn't
   ```
 
 - **`#[rust_js::optional]` on a nullable field makes it absent until
