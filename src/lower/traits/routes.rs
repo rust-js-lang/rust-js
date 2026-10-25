@@ -216,9 +216,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Root::Given(index) => self.given.evidence[*index].1.clone(),
             Root::Item(owner, name) => call(self.route_expr(owner), name),
         };
+        // Its methods the program's, whatever their names (ADR 0900).
         route
             .supers
             .iter()
             .fold(root, |dictionary, name| call(dictionary, name))
+            .evidence()
     }
 }

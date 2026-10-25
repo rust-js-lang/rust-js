@@ -668,7 +668,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0886 A function's evidence is one ordered list](0886-a-functions-evidence-is-one-ordered-list.md)
 - [0887 A std function or constant that's `Math`'s is `Math`'s as a value](0887-std-items-that-are-math-are-math.md)
 - [0889 An expression's facts are a set](0889-an-expressions-facts-are-a-set.md)
-- [0890 A binding's method is known as one, whatever its name](0890-a-bindings-method-is-known-as-one.md)
+- [0890 A binding's method is known as one, whatever its name](0890-a-bindings-method-is-known-as-one.md) *(extended by 0900: a dictionary's method too)*
 - [0892 What only reads, by Rust's types, does nothing](0892-what-only-reads-by-rusts-types-does-nothing.md)
 - [0893 A type parameter's evidence stays its own parameters, and the manifest's facts stay typed](0893-a-type-parameters-evidence-stays-its-own-parameters.md)
 - [0891 A window's constructor is the window's: `window.new_error_event(..)`](0891-a-windows-constructor-is-the-windows.md)
@@ -684,6 +684,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
 - [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md)
+- [0900 A dictionary's method is the program's, whatever its name](0900-a-dictionarys-method-is-the-programs.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

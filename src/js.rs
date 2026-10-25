@@ -559,6 +559,10 @@ pub enum Known {
     /// declared, which may do anything, whatever its name, `join` too (the
     /// review's P2, ADR 0890), never one of JS's own that only read.
     Binding,
+    /// A dictionary the function was given, `TStore` of `TStore.join(t)`:
+    /// its methods are the program's, whatever their names, never JS's own
+    /// that only read (ADR 0900).
+    Evidence,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
@@ -876,6 +880,17 @@ mod tests {
             .binding()
             .answered_by_a_getter();
         assert!(both.facts.has(Known::Binding) && both.facts.has(Known::Getter));
+    }
+
+    // A dictionary's method is the program's, whatever its name: `join` of
+    // a crate's trait is no array's (ADR 0900).
+    #[test]
+    fn a_dictionarys_method_runs_program_code() {
+        let given = Expr::call(
+            Expr::member(Expr::var("TStore").evidence(), "join"),
+            vec![Expr::var("t")],
+        );
+        assert!(!given.only_reads() && given.runs_program_code());
     }
 
     // What only an earlier phase resolves is found however deep it is.

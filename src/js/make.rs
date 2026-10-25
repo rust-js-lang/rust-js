@@ -903,6 +903,13 @@ impl Expr {
         self
     }
 
+    /// This, a dictionary the function was given, whose methods are the
+    /// program's (`Known::Evidence`), beside what else is known of it.
+    pub fn evidence(mut self) -> Expr {
+        self.facts = self.facts.with(Known::Evidence);
+        self
+    }
+
     /// This, a reference to one of the program's functions
     /// (`Known::Item`).
     pub fn item(self) -> Expr {

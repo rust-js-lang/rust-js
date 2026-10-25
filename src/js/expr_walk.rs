@@ -509,8 +509,10 @@ impl Expr {
                 ExprKind::Call(callee, _) | ExprKind::OptionalCall(callee, _) => match &callee.kind {
                     ExprKind::Var(_) if let Some(name) = callee.helper_name() => helper(name),
                     ExprKind::Var(name) => GLOBALS.contains(&name.as_str()),
-                    // A binding's method, whatever its name (`Known::Binding`).
+                    // A binding's method, whatever its name (`Known::Binding`),
+                    // and a dictionary's (`Known::Evidence`).
                     _ if callee.facts.has(Known::Binding) => false,
+                    ExprKind::Member(of, _) | ExprKind::OptionalMember(of, _) if of.facts.has(Known::Evidence) => false,
                     ExprKind::Member(of, method) | ExprKind::OptionalMember(of, method) => {
                         METHODS.contains(&method.as_str())
                             || matches!(&of.kind, ExprKind::Var(global) if GLOBALS.contains(&global.as_str()))
