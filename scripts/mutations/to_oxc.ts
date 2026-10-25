@@ -468,4 +468,12 @@ export const mutations: Mutation[] = [
     replace: "        code.push_str(&format!(\"\\nexport {{ {} }};\\n\", named.join(\", \")));\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
   },
+  {
+    name: "noinline-nested-unwritten",
+    breaks: "a function written in a body and marked `#[inline(never)]`, React's `UnknownOwner`'s inner frame, has no `/** @noinline */` (ADR 0649, amended)",
+    file: "src/to_oxc.rs",
+    find: "                if let StmtKind::Function(f) = &stmt.kind {\n                    note(f);\n",
+    replace: "                if let StmtKind::Function(f) = &stmt.kind {\n                    let _ = f;\n",
+    tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
 ];

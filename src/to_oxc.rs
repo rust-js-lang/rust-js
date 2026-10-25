@@ -1035,17 +1035,43 @@ fn list_spans(list: &[js::Stmt]) -> impl Iterator<Item = (u32, u32)> + '_ {
 /// `#[inline(never)]` (ADR 0649).
 const NOINLINE: &str = "@noinline";
 
-/// Where each of `module`'s functions marked `#[inline(never)]` starts.
+/// Where each of `module`'s functions marked `#[inline(never)]` starts: an
+/// item's, a method's, and one written in a body, `function inner() {
+/// .. }`, however deep (ADR 0649, amended).
 fn noinline_starts(module: &Module) -> std::collections::HashSet<u32> {
-    let functions = (module.items.iter()).flat_map(|item| match item {
-        js::Item::Function(f) => vec![f],
-        js::Item::Namespace(n) => n.methods.iter().collect(),
-        _ => Vec::new(),
-    });
-    functions
-        .filter(|f| f.noinline && !f.span.is_none())
-        .map(|f| f.span.lo)
-        .collect()
+    let mut starts = std::collections::HashSet::new();
+    let mut note = |f: &js::Function| {
+        if f.noinline && !f.span.is_none() {
+            starts.insert(f.span.lo);
+        }
+    };
+    let mut bodies: Vec<Vec<js::Stmt>> = Vec::new();
+    for item in module.items.iter() {
+        match item {
+            js::Item::Function(f) => {
+                note(f);
+                bodies.push(f.body.clone());
+            }
+            js::Item::Namespace(n) => {
+                for method in &n.methods {
+                    note(method);
+                    bodies.push(method.body.clone());
+                }
+            }
+            js::Item::Statements(stmts) => bodies.push(stmts.clone()),
+            js::Item::Const(c) => bodies.push(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+        }
+    }
+    for mut body in bodies {
+        js::each_block_mut(&mut body, &mut |stmts| {
+            for stmt in stmts.iter() {
+                if let StmtKind::Function(f) = &stmt.kind {
+                    note(f);
+                }
+            }
+        });
+    }
+    starts
 }
 
 /// The span of each statement and item of `module`, closures' and nested

@@ -284,6 +284,18 @@ impl Section {
 pub fn named(section: Section) -> &'static str {
     section.as_str()
 }
+
+// React's \`UnknownOwner\`, whose inner frame \`Error.stack\` shows, kept out
+// of line by Closure Compiler as upstream's IIFE is.
+#[inline(never)]
+pub fn unknown_owner() -> String {
+    #[inline(never)]
+    fn react_stack_top_frame() -> String {
+        // The frame React's owner stack pops.
+        "react-stack-top-frame".to_string()
+    }
+    react_stack_top_frame()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -292,7 +304,11 @@ pub fn named(section: Section) -> &'static str {
   expect(js).toContain("/**\n * Its docs,\n * over two lines.\n * @noinline\n */\nexport function long(n) {");
   expect(js).toContain("\nexport function hinted(n) {");
   expect(js).toContain("\nexport function always(n) {");
-  expect(js.match(/@noinline/g)?.length).toBe(5);
+  expect(js.match(/@noinline/g)?.length).toBe(7);
+  // A function written in a body, its own comment before it (ADR 0649, amended).
+  expect(js).toContain(
+    "/** @noinline */\nexport function unknownOwner() {\n  /** @noinline */\n  function reactStackTopFrame() {\n    // The frame React's owner stack pops.\n",
+  );
   expect(js).toContain("@noinline */\nexport function forwarded(n) {");
   // A function giving each variant its own name is called, not its
   // argument (ADR 0264).

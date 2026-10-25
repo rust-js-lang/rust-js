@@ -789,6 +789,11 @@ export function total(price, count, shipping) {
 A function marked `#[inline(never)]` is Closure Compiler's `@noinline`, its
 JSDoc's last line where it has one, and rust-js keeps it a function of its
 own, as React keeps `testStringCoercion` out of line for its stack trace.
+So is one written in a body: a frame a stack must show, which upstream JS
+writes as a function called where it's made, `(() => Error(..))()`, is a
+function in the body marked `#[inline(never)]`, as an applied closure is
+its body ([ADR 0581](../../decisions/0581-a-closure-called-as-a-statement-is-its-body.md))
+and clippy refuses one (`redundant_closure_call`).
 `#[inline]` and `#[inline(always)]` say nothing: a JS engine decides
 ([ADR 0649](../../decisions/0649-inline-never-is-noinline.md)):
 
@@ -802,6 +807,15 @@ fn test_string_coercion(value: f64) -> String {
 #[inline(never)]
 pub fn coerced(value: f64) -> String {
     test_string_coercion(value)
+}
+
+#[inline(never)]
+pub fn unknown_owner() -> &'static js::JsError {
+    #[inline(never)]
+    fn react_stack_top_frame() -> &'static js::JsError {
+        js::js_error::new("react-stack-top-frame")
+    }
+    react_stack_top_frame()
 }
 ```
 
@@ -819,6 +833,15 @@ function testStringCoercion(value) {
  */
 export function coerced(value) {
   return testStringCoercion(value);
+}
+
+/** @noinline */
+export function unknownOwner() {
+  /** @noinline */
+  function reactStackTopFrame() {
+    return new Error("react-stack-top-frame");
+  }
+  return reactStackTopFrame();
 }
 ```
 
