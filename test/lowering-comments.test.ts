@@ -1226,3 +1226,30 @@ pub fn entangled(lane: i32, entangled_lanes: i32, entanglements: &[i32], index: 
   lib.finish(lanes as never, 4 as never);
   expect([lib.next(0 as never, 7 as never, false as never, 2 as never), lib.keep(1 as never, 2 as never), lib.keep(32 as never, 256 as never), lanes, lib.entangled(1 as never, 1 as never, [0] as never, 0 as never), lib.entangled(2 as never, 1 as never, [0] as never, 0 as never)]).toEqual([5, 1, 256, [4], true, false]);
 });
+
+// React's ReactFiberLane, `markRootFinished`: `root.expiredLanes &=
+// remainingLanes;`, a blank line, `root.entangledLanes &= ..`. rustfmt
+// writes each `Cell`'s `set` on the line after its receiver, and the
+// statement's span starts at `.set`: its blank line is the one before the
+// receiver's line (ADR 0444, amended).
+test("a blank line before a method call on the line after its receiver is kept", async () => {
+  const { js, lib } = await compiled("blank-before-a-chain", `use std::cell::Cell;
+
+pub struct Root {
+    pub expired_lanes: Cell<i32>,
+    pub entangled_lanes: Cell<i32>,
+}
+
+pub fn finish(root: &Root, remaining_lanes: i32) {
+    root.expired_lanes
+        .set(root.expired_lanes.get() & remaining_lanes);
+
+    root.entangled_lanes
+        .set(root.entangled_lanes.get() & remaining_lanes);
+}
+`);
+  expect(js).toContain("  root.expiredLanes &= remainingLanes;\n\n  root.entangledLanes &= remainingLanes;\n");
+  const root = { expiredLanes: 7, entangledLanes: 6 };
+  lib.finish(root as never, 3 as never);
+  expect(root).toEqual({ expiredLanes: 3, entangledLanes: 2 });
+});

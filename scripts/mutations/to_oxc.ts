@@ -598,4 +598,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|c| c.lo >= past && !after_code(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
   },
+  {
+    name: "blank-before-chain-at-its-call",
+    breaks: "a blank line before `root.entangled_lanes\n.set(..)` is looked for before `.set`'s line, the receiver's, and lost (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                .starts_with('.')\n                && let Some(body) = before.strip_suffix('\\n')\n",
+    replace: "                .starts_with('\\u{0}')\n                && let Some(body) = before.strip_suffix('\\n')\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a method call on the line after its receiver"],
+  },
 ];

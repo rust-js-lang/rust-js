@@ -607,6 +607,16 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         let blank_before = |lo: u32| {
             let before = &sources.text[file_start..lo as usize];
             let mut before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
+            // Of a method call rustfmt writes on the line after its receiver,
+            // `root.lanes\n    .set(..)`, whose span starts at `.set`: the
+            // receiver's line, where the statement starts (ADR 0444, amended).
+            while sources.text[file_start + before.len()..lo as usize]
+                .trim_start()
+                .starts_with('.')
+                && let Some(body) = before.strip_suffix('\n')
+            {
+                before = &before[..body.rfind('\n').map_or(0, |i| i + 1)];
+            }
             // Its attributes' lines, `#[cfg_attr(..)]`, are its own: what's
             // before them (ADR 0606); and a macro's opening, `thread_local! {`,
             // its code's (ADR 0621).

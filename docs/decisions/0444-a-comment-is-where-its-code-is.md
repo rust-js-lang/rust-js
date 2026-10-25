@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -430,3 +430,18 @@ else, an if's test and a call are where it writes them", run;
 `test/lowering-loops.test.ts`'s else-if tests; and the mutations
 `commented-else-if` (`to_oxc/statements.ts`), `else-if-comment-in-block`,
 `unplaced-operand-no-start` and `start-rules-asked-once` (`to_oxc.ts`).
+
+## Amendment: a blank line before a method call on the line after its receiver
+
+ReactFiberLane's `markRootFinished` separates `root.expiredLanes &=
+remainingLanes;` and `root.entangledLanes &= remainingLanes;` by a blank
+line. Its port's `root.expired_lanes\n    .set(..)`, as rustfmt writes a
+`Cell`'s `set` too long for one line, gives a statement whose span starts
+at `.set`, so the blank line was looked for before the `.set` line, the
+receiver's, and none was found. **A statement whose span's line starts
+with `.` starts on the line before it, its receiver's, for the blank line
+before it**, as many lines back as the chain goes.
+
+Test: `lowering-comments`'s "a blank line before a method call on the
+line after its receiver is kept", run. Mutation
+`blank-before-chain-at-its-call` (`to_oxc.ts`).
