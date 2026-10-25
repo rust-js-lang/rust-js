@@ -77,7 +77,7 @@ export function results(c) {
   ];
 }
 export function iters(n) {
-  const v = $range(0, n);
+  const v = $range(0, n, 4);
   return [
     v.map(half).filter((item) => item != null),
     v
@@ -93,7 +93,7 @@ export function iters(n) {
   ];
 }
 export function consumers(n) {
-  const v = $range(1, (n + 1) >>> 0);
+  const v = $range(1, (n + 1) >>> 0, 4);
   return [
     $maxByKey(
       v,
