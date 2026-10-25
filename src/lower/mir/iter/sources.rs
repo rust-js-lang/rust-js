@@ -138,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let list = Expr::optional_args(vec![range.start.clone(), end], vec![size]);
         let mut items = Expr::call_helper("$range", list);
         if range.back {
-            items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
+            items = crate::lower::iterators::reversed(items);
         }
         Some(maps.into_iter().rev().fold(items, |items, (name, f)| {
             Expr::call(Expr::member(items, &name), vec![f])

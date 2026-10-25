@@ -545,6 +545,7 @@ impl<'a> Cx<'a> {
                 name,
                 start,
                 test,
+                down,
                 body,
             } => {
                 let id = BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
@@ -557,7 +558,11 @@ impl<'a> Cx<'a> {
                     b,
                 );
                 let counter = SimpleAssignmentTarget::new_assignment_target_identifier(SPAN, self.name(name), b);
-                let update = Expression::new_update_expression(SPAN, UpdateOperator::Increment, false, counter, b);
+                let step = match down {
+                    true => UpdateOperator::Decrement,
+                    false => UpdateOperator::Increment,
+                };
+                let update = Expression::new_update_expression(SPAN, step, false, counter, b);
                 let l = Statement::new_for_statement(
                     sp,
                     Some(init),

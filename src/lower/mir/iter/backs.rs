@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             },
         };
-        let items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
+        let items = crate::lower::iterators::reversed(items);
         Ok(self.stepped_items(items))
     }
 
@@ -492,7 +492,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
         let items = crate::lower::iterators::iterated(e.clone());
         return Some(Expr::call(
             (**callee).clone(),
-            vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
+            vec![crate::lower::iterators::reversed(items)],
         ));
     }
     // A range made here, stepped from its start, `$iterator({ start, end },
@@ -531,7 +531,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
             );
             Some(Expr::call(
                 (**stepper).clone(),
-                vec![Expr::call(Expr::member(items, "toReversed"), Vec::new())],
+                vec![crate::lower::iterators::reversed(items)],
             ))
         }
         ("map" | "filter", [f]) if no_index(f) => {

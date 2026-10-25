@@ -520,14 +520,14 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
 /// A range's numbers as `stepped_by` steps them, `$iterator({ start: a,
 /// end: b }, $rangeNext)`: its bounds, whether its end is in it, `a..=b`'s,
 /// and whether it's stepped from its end.
-pub(super) struct SteppedRange<'e> {
-    pub(super) start: &'e Expr,
-    pub(super) end: &'e Expr,
-    pub(super) inclusive: bool,
-    pub(super) back: bool,
+pub(in crate::lower) struct SteppedRange<'e> {
+    pub(in crate::lower) start: &'e Expr,
+    pub(in crate::lower) end: &'e Expr,
+    pub(in crate::lower) inclusive: bool,
+    pub(in crate::lower) back: bool,
 }
 
-pub(super) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
+pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
@@ -587,6 +587,25 @@ pub(super) fn iterated(e: Expr) -> Expr {
 /// that loop (ADR 0719).
 pub(in crate::lower) fn keys_in(object: Expr) -> Expr {
     Expr::call(Expr::helper("$keysIn"), vec![object])
+}
+
+/// An array's items reversed, a copy of them: `items.toReversed()`, what a
+/// `rev()` of them steps where it's made (ADR 0535).
+pub(in crate::lower) fn reversed(items: Expr) -> Expr {
+    Expr::call(Expr::member(items, "toReversed"), Vec::new())
+}
+
+/// What `e`, a `reversed` one, reverses: `items` of `items.toReversed()`.
+/// The one reader of its form: a `for` that reads them from the end
+/// instead, by index (ADR 0900).
+pub(in crate::lower) fn reversed_source(e: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match &callee.kind {
+        js::ExprKind::Member(items, method) if method == "toReversed" && args.is_empty() => Some(items),
+        _ => None,
+    }
 }
 
 /// What `e`, a `keys_in` one, steps the keys of: `object` of

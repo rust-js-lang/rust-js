@@ -412,12 +412,15 @@ pub enum StmtKind {
         body: Vec<Stmt>,
         keys: bool,
     },
-    /// `for (let name = start; test; name++) { .. }`: a `for` over a range.
+    /// `for (let name = start; test; name++) { .. }`: a `for` over a range;
+    /// or, `down`, `name--`, over a range or an array's indices from its
+    /// end (ADR 0900).
     For {
         label: Option<String>,
         name: String,
         start: Expr,
         test: Expr,
+        down: bool,
         body: Vec<Stmt>,
     },
     /// `label: { .. }`, which a `break label` leaves: a let chain's (ADR 0048).

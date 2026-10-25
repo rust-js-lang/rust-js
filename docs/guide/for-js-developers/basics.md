@@ -1601,6 +1601,33 @@ export function findPair(grid, target) {
 
 - A counting loop, `for (let i = 0; i < n; i++)`, is `for i in 0..n`; `0..=n`
   includes `n`.
+- A loop from the end, `for (let i = v.length - 1; i >= 0; i--)`, is `for
+  x in v.iter().rev()`, each item `v[i]`, no copy of the array made; and
+  `for i in (0..n).rev()` is `for (let i = n - 1; i >= 0; i--)`
+  ([ADR 0900](../../decisions/0900-a-loop-from-the-end-counts-down.md)):
+
+```rust
+pub fn last_named(names: &[String]) -> Option<&String> {
+    for name in names.iter().rev() {
+        if !name.is_empty() {
+            return Some(name);
+        }
+    }
+    None
+}
+```
+
+```js
+export function lastNamed(names) {
+  for (let i = names.length - 1; i >= 0; i--) {
+    const name = names[i];
+    if (name) {
+      return name;
+    }
+  }
+}
+```
+
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

@@ -26,7 +26,8 @@ function main() {
   for (const p of points) {
     p.x = (p.x + 1) | 0;
   }
-  for (const p of points.toReversed()) {
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
     p.x = (p.x * 2) | 0;
   }
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);

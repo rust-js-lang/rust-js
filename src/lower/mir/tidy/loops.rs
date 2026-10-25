@@ -218,6 +218,16 @@ pub(super) fn for_of(
                 );
                 out.extend(exit);
                 return Some(out);
+            } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, (numbers, mentions)) {
+                let (name, start, test, body) = down;
+                StmtKind::For {
+                    label: label.clone(),
+                    name,
+                    start,
+                    test,
+                    down: true,
+                    body,
+                }
             } else {
                 StmtKind::ForOf {
                     label: label.clone(),
@@ -281,6 +291,7 @@ pub(super) fn for_of(
                 test: Expr::bin(Op::Lt, Expr::var(&name), test),
                 name,
                 start: start.clone(),
+                down: false,
                 body,
             };
             let mut out: Vec<Stmt> = held
@@ -295,6 +306,82 @@ pub(super) fn for_of(
     let mut out = vec![looped.at(span)];
     out.extend(exit);
     Some(out)
+}
+
+/// A `for…of` of `iterable`, binding `pattern`, `mutable`, as a `for` that
+/// counts down (ADR 0900): its counter's name, start and test, and its
+/// body. Of an array's items reversed, `v.toReversed()`, which Rust's
+/// `v.iter().rev()` lends it, so nothing changes it meanwhile: its indices
+/// from the end, `for (let i = v.length - 1; i >= 0; i--) { const x = v[i];
+/// .. }`, of a `v` the body doesn't assign, no copy made. Of a range of
+/// numbers stepped from its end, `(a..b).rev()`: `for (let i = b - 1; i >=
+/// a; i--)`, of an `a` that reads the same each step, a constant or a
+/// variable the body doesn't assign; `b` read once, as Rust reads it.
+fn from_the_end(
+    iterable: &Expr,
+    pattern: &js::Pattern,
+    mutable: bool,
+    body: &[Stmt],
+    (numbers, mentions): (&HashSet<String>, &HashMap<String, usize>),
+) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
+    let fresh = |base: &str| {
+        std::iter::once(base.to_string())
+            .chain((1..).map(|k| format!("{base}${k}")))
+            .find(|n| !mentions.contains_key(n))
+            .expect("a name")
+    };
+    if let Some(items) = iterators::reversed_source(iterable) {
+        let ExprKind::Var(array) = &items.kind else {
+            return None;
+        };
+        if assigns(body, array) {
+            return None;
+        }
+        let index = fresh("i");
+        let item = Expr::index(items.clone(), Expr::var(&index));
+        let bound = match (pattern, mutable) {
+            (js::Pattern::Name(name), false) => StmtKind::Const(name.clone(), item),
+            (js::Pattern::Name(name), true) => StmtKind::Let(name.clone(), Some(item)),
+            (pattern, mutable) => StmtKind::Destructure {
+                pattern: pattern.clone(),
+                value: item,
+                mutable,
+            },
+        };
+        let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
+        let test = Expr::bin(Op::Ge, Expr::var(&index), Expr::int(0));
+        let mut stepped = vec![bound.at(js::Span::NONE)];
+        stepped.extend(body.iter().cloned());
+        return Some((index, last, test, stepped));
+    }
+    let range = iterators::stepped_range(iterable).filter(|range| range.back)?;
+    let js::Pattern::Name(name) = pattern else {
+        return None;
+    };
+    // JS's `--` steps a number: of a `char`'s range, text, none.
+    let number = |e: &Expr| {
+        e.as_int().is_some()
+            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v))
+            || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
+            || matches!(&e.kind, ExprKind::Member(_, length) if length == "length")
+            || matches!(&e.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Sub | Op::Mul | Op::Div | Op::Rem
+                | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr))
+    };
+    let same = range.start.is_constant() || matches!(&range.start.kind, ExprKind::Var(v) if !assigns(body, v));
+    if mutable || !number(range.start) || !number(range.end) || !same {
+        return None;
+    }
+    let name = match name.as_str() {
+        "_" => fresh("i"),
+        _ => name.clone(),
+    };
+    let start = match (range.inclusive, range.end.as_int()) {
+        (true, _) => range.end.clone(),
+        (false, Some(end)) => Expr::int(end - 1),
+        (false, None) => Expr::bin(Op::Sub, range.end.clone(), Expr::int(1)),
+    };
+    let test = Expr::bin(Op::Ge, Expr::var(&name), range.start.clone());
+    Some((name, start, test, body.to_vec()))
 }
 
 /// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,

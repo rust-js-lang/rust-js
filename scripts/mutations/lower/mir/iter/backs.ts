@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "mir-rev-items-forward",
     breaks: "`rev()` of items made already gives them in order",
     file: "src/lower/mir/iter/backs.rs",
-    find: "        let items = Expr::call(Expr::member(items, \"toReversed\"), Vec::new());\n",
+    find: "        let items = crate::lower::iterators::reversed(items);\n",
     replace: "        let items = { items };\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_array_iter|fused_iterator|str_bytes|sales_report|matrix_strings).rs$"],
   },

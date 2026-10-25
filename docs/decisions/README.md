@@ -655,6 +655,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
 - [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0899: `Flatten` held is std's)*
+- [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md) *(amended by 0900: a `for` over a slice or a range from its end counts down)*
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
@@ -689,6 +690,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
 - [0899 A guarded arm whose constants the next arm names falls through to its case](0899-a-guarded-arm-falls-to-the-next.md)
+- [0900 A `for` over a slice or a range from its end counts down](0900-a-loop-from-the-end-counts-down.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

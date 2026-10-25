@@ -7,7 +7,9 @@ recognizers' form of a `Rev` stepped where it's made,
 [0545](0545-a-map-stepped-from-its-back-is-made-knowing-it.md), whose
 analysis makes the source of a held `rev()` knowing its back, and
 [0526](0526-a-filter-steps-from-its-back.md), whose `$filterEnds` takes
-items with a destructor too.
+items with a destructor too. Amended by [0900](0900-a-loop-from-the-end-counts-down.md): a `for`
+over a slice's items reversed, or a range's, counts down, no
+`toReversed()` copy.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a held `Rev`
 steps, from either end, what it counts, drops, clones and shows is std's,
