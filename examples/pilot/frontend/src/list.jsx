@@ -10,10 +10,9 @@ export function ContactList() {
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
-    const query$1 = query;
     setLoaded("Loading");
     (async () => {
-      const value = await contacts(query$1, signal);
+      const value = await contacts(query, signal);
       if (value.TAG !== "Err") {
         setLoaded({ TAG: "Contacts", _0: value._0 });
       } else if (value._0 !== "Aborted") {
