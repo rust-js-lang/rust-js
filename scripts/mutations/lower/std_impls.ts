@@ -729,4 +729,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
+  {
+    name: "transparent-of-no-object-cloned",
+    breaks: "a derived `Clone` of a transparent struct of a function, written over where it's kept, is refused, \"cloning `Task`\" (ADR 0584, amended)",
+    file: "src/lower/std_impls.rs",
+    find: "            && !self.may_be_object(held)\n            && !self.has_user_impl(self.clone_trait(), ty)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_clone_through_rc.rs$"],
+  },
 ];

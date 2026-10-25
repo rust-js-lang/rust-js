@@ -15,7 +15,7 @@ import { open } from "@rust-js/typescript";
 
 /** The built-ins measured: classes, namespaces and objects of functions. */
 export const SCOPE = [
-  "Date", "RegExp", "Error", "Promise", "Symbol",
+  "Date", "RegExp", "Error", "AggregateError", "Promise", "Symbol",
   "ArrayBuffer", "SharedArrayBuffer", "DataView",
   "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
   "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
@@ -195,7 +195,7 @@ function bindings(): Set<string> {
   // `buffer`, its `ArrayBufferView`'s (ADR 0741).
   for (const f of files) {
     const text = readFileSync(join(src, f), "utf8");
-    for (const [, type, target] of text.matchAll(/^impl(?:<[^>]*>)? Deref for (\w+)(?:<[^>]*>)? \{\n\s+type Target = (\w+)/gm)) {
+    for (const [, type, target] of text.matchAll(/^impl(?:<[^>]*>)? (?:core::ops::)?Deref for (\w+)(?:<[^>]*>)? \{\n\s+type Target = (\w+)/gm)) {
       const [of, to] = [classes.get(type) ?? type, classes.get(target) ?? target];
       for (const b of [...bound]) if (b.startsWith(`${to}.`) && !b.includes(".static:") && !b.endsWith(".constructor")) bound.add(`${of}${b.slice(to.length)}`);
     }

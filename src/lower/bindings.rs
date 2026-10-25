@@ -12,6 +12,9 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
+mod rest_values;
+pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
+
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
 pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
@@ -858,6 +861,15 @@ pub(super) fn cannot_throw(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// `#[rust_js::runs_nothing]`: a binding that runs no code but its own,
+/// not even what it's given, as `new AggregateError(errors)` reads its
+/// array and not what's in it (ADR 0867): a borrow held while it runs
+/// meets no other.
+pub(super) fn runs_nothing(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("runs_nothing")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// Whether a binding gives `undefined`, whatever JS's types say of it,
 /// `#[rust_js::returns_undefined]`, as React's setter does (ADR 0040).
 pub(super) fn returns_undefined(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
@@ -870,51 +882,6 @@ pub(super) fn returns_undefined(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 pub(super) fn is_variadic(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("variadic")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
-}
-
-/// Whether `ty` is rest arguments as a value, `&dyn js::Rest<T>`, of the
-/// trait marked `#[rust_js::rest]` (ADR 0667): spread where it's given, to
-/// a variadic binding or to a `fn` pointer whose last parameter it is.
-pub(super) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("rest")];
-    match ty.kind() {
-        ty::Ref(_, inner, _) => match inner.kind() {
-            ty::Dynamic(traits, ..) => traits
-                .principal_def_id()
-                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some()),
-            _ => false,
-        },
-        _ => false,
-    }
-}
-
-/// What rest arguments as a value, `ty`, a `&dyn js::Rest<T>`, are read as:
-/// the slice their `Deref` gives, `[Option<&Unknown>]` of any value's, which
-/// JS's rest parameter is the array of (ADR 0851). `None` of another type,
-/// or of rest arguments of a `T` no `js::RestItem` reads.
-pub(super) fn rest_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let ty::Ref(_, rest, _) = ty.kind() else { return None };
-    if !is_rest_value(tcx, ty) {
-        return None;
-    }
-    let target = tcx.lang_items().deref_target()?;
-    let projection = Ty::new_projection(tcx, ty::IsRigid::No, target, [tcx.erase_and_anonymize_regions(*rest)]);
-    let read: Ty<'tcx> = tcx
-        .try_normalize_erasing_regions(
-            ty::TypingEnv::fully_monomorphized(),
-            ty::Unnormalized::new_wip(projection),
-        )
-        .ok()?;
-    (!matches!(read.kind(), ty::Alias(..))).then_some(read)
-}
-
-/// Whether a call of `trait_id`'s method on `self_ty` reads rest arguments as
-/// a value, `dyn js::Rest<T>`, through the js crate's `Deref` of them, a
-/// closure's `args.iter()` (ADR 0851): the array itself, which JS's rest
-/// parameter is.
-pub(super) fn reads_rest_value<'tcx>(tcx: TyCtxt<'tcx>, trait_id: DefId, self_ty: Ty<'tcx>) -> bool {
-    tcx.is_lang_item(trait_id, LangItem::Deref)
-        && is_rest_value(tcx, Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, self_ty))
 }
 
 /// Each parameter of the crate's function or closure `owner` marked

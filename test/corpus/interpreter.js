@@ -2,8 +2,6 @@
 
 import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
-  $borrow,
-  $borrowMut,
   $collectResults,
   $debugF64,
   $debugParseError,
@@ -15,7 +13,6 @@ import {
   $next,
   $parseF64,
   $peek,
-  $unborrow,
   $unwrapOk,
 } from "@rust-js/runtime";
 
@@ -408,28 +405,16 @@ const Env = {
   },
 
   get(env, name) {
-    const scope = $borrow(env[0], true);
-    let result;
-    try {
-      const v = scope.vars.get(name);
-      if (v) {
-        result = v;
-      } else {
-        result = scope.parent != null ? Env.get(scope.parent, name) : undefined;
-      }
-    } finally {
-      $unborrow(scope);
+    const scope = env[0];
+    const v = scope.vars.get(name);
+    if (v) {
+      return v;
     }
-    return result;
+    return scope.parent != null ? Env.get(scope.parent, name) : undefined;
   },
 
   set(env, name, value) {
-    const borrowMut = $borrowMut(env[0], true);
-    try {
-      borrowMut.vars.set(name, value);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    env[0].vars.set(name, value);
   },
 };
 

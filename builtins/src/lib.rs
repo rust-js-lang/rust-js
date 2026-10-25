@@ -1690,6 +1690,43 @@ pub mod js_error {
     }
 }
 
+/// An [`AggregateError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError):
+/// several errors as one, what `Promise.any` rejects with when every
+/// promise rejects. It's an `Error`, a `&JsError` by `Deref`.
+pub struct AggregateError(PhantomData<JsObject>);
+
+impl core::ops::Deref for AggregateError {
+    type Target = JsError;
+
+    fn deref(&self) -> &JsError {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const JsError) }
+    }
+}
+
+impl AggregateError {
+    /// [`e.errors`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/errors):
+    /// the errors it holds, each of any value, TypeScript's `any[]`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get errors")]
+    pub fn errors(&self) -> Vec<Option<&'static Unknown>> {
+        unreachable!()
+    }
+}
+
+pub mod aggregate_error {
+    use super::*;
+
+    /// [`new AggregateError(errors, message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/AggregateError):
+    /// an `AggregateError` of `errors`, each of any value, TypeScript's
+    /// `Iterable<any>`, and of `message`, or none. It runs none of the
+    /// crate's code: it reads the array, not what's in it.
+    #[cfg_attr(rust_js, rust_js::link_name = "new AggregateError")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn new(errors: &[Option<&Unknown>], message: Option<&str>) -> &'static AggregateError {
+        unreachable!()
+    }
+}
+
 /// JS's [`Object`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)
 /// functions, for a JS object an API takes or gives.
 pub mod object {
@@ -1899,6 +1936,7 @@ pub mod object {
 unsafe impl WeakKey for JsObject {}
 unsafe impl WeakKey for RegExp {}
 unsafe impl WeakKey for JsError {}
+unsafe impl WeakKey for AggregateError {}
 unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}
 unsafe impl WeakKey for ArrayBuffer {}

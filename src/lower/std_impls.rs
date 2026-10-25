@@ -71,6 +71,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.uncounted_weak(ty).is_some() {
             return false;
         }
+        // A `#[repr(transparent)]` struct of the program's is its field (ADR
+        // 0584): one of what's no object, a function, is told apart from
+        // its clone as that is, whatever's written over where it's kept,
+        // `*task = next`, unless its own `clone` runs code.
+        if let ty::Adt(adt, _) = ty.kind()
+            && !self.is_std(adt.did())
+            && let Some(held) = self.transparent(ty)
+            && !self.may_be_object(held)
+            && !self.has_user_impl(self.clone_trait(), ty)
+        {
+            return self.needs_clone_in(held, seen);
+        }
         if self.contains_mutated(ty) {
             return true;
         }

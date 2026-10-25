@@ -7,10 +7,10 @@
 //! `TASK_QUEUE`'s is taken, or the heap's `push` runs.
 
 use crate::lower::Body;
-use crate::lower::bindings::{JsForm, is_binding, js_form};
+use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing};
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{Recognition, Std, StdItem};
+use crate::lower::recognition::{Recognition, Std, StdItem, is_js_object_deref};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
@@ -317,11 +317,13 @@ enum Called<'tcx> {
 
 /// Whether a binding runs no code of the crate's: what makes a JSX element
 /// or an object, or casts a value, a component given called when React
-/// renders it; and a read of a property, `node.sortIndex`, `in` or
-/// `instanceof`, but by a JS getter that calls back into Rust.
+/// renders it; a read of a property, `node.sortIndex`, `in` or
+/// `instanceof`, but by a JS getter that calls back into Rust; whether the
+/// host has a global, `typeof X !== "undefined"`; and one that says it runs
+/// nothing, `#[rust_js::runs_nothing]` (ADR 0867).
 fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_binding(tcx, id)
-        && matches!(
+        && (matches!(
             js_form(tcx, id),
             JsForm::Jsx(_)
                 | JsForm::Prop(_)
@@ -333,7 +335,8 @@ fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | JsForm::InstanceOf(_)
                 | JsForm::Truthy
                 | JsForm::StrictEquals
-        )
+                | JsForm::Defined
+        ) || runs_nothing(tcx, id))
 }
 
 /// What calling `def_id`, of `args`, runs; `receiver` its first argument,
@@ -399,8 +402,15 @@ fn called<'tcx>(
         };
         return Called::Cell(Borrow { cell, mutable });
     }
-    if binding_runs_nothing(tcx, id) {
+    // A JS object type's `Deref` to the class it extends is the object
+    // itself, `AggregateError`'s to `Error`.
+    if binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id)) {
         return Called::Nothing;
+    }
+    // A method std derives, `Clone::clone` of `#[derive(Clone)]`, runs what
+    // it reads of its fields by its trait, as std's code does (ADR 0868).
+    if id.is_local() && derived_method(tcx, id).is_some() {
+        return Called::Std(id, instance.args);
     }
     match id.is_local() && !is_binding(tcx, id) {
         true => Called::Body(id, instance.args),
@@ -438,6 +448,18 @@ fn std_given<'tcx>(
     let tcx = recognition.tcx;
     let mut given = Given::default();
     let mut seen = HashSet::new();
+    // A derived method reads its type's fields by its trait.
+    if let Some(imp) = derived_method(tcx, id) {
+        let own = tcx.mk_args(&args[..tcx.generics_of(imp).count().min(args.len())]);
+        let ty = tcx.type_of(imp).instantiate(tcx, own).skip_normalization();
+        let trait_id = tcx
+            .impl_trait_ref(imp)
+            .instantiate_identity()
+            .skip_normalization()
+            .def_id;
+        bound_runs(recognition, impls, (ty, trait_id), &mut seen, &mut given);
+        return given;
+    }
     for (clause, _) in tcx.clauses_of(id).instantiate(tcx, args) {
         let Some(bound) = clause.skip_normalization().as_trait_clause() else {
             continue;
@@ -465,6 +487,13 @@ fn std_given<'tcx>(
         }
     }
     given
+}
+
+/// The impl std derives that `id`, the crate's, is a method of:
+/// `#[derive(Clone)]`'s `clone`.
+fn derived_method(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
+    tcx.trait_impl_of_assoc(id)
+        .filter(|&imp| crate::lower::recognition::known_derive(tcx, imp))
 }
 
 /// Whether a trait or one it extends has a method: what a bound by it may
@@ -495,6 +524,16 @@ fn bound_runs<'tcx>(
         let Some(part) = part.as_type() else { continue };
         // A raw pointer's, which std's code reads nothing of.
         if crate::lower::pointers::raw_pointee(tcx, part).is_some() {
+            continue;
+        }
+        // A type std's impls are of runs of what it's made of what those
+        // impls' bounds say, as std's functions do (ADR 0868): `Rc<T>`'s
+        // `Clone` clones no `T`, nor a `&T`'s, which copies it.
+        if let Some(bounds) = std_impl_bounds(recognition, part, &traits) {
+            walk.skip_current_subtree();
+            for bound in bounds {
+                bound_runs(recognition, impls, bound, seen, given);
+            }
             continue;
         }
         match *part.kind() {
@@ -595,6 +634,56 @@ fn bound_runs<'tcx>(
             _ => given.any = true,
         }
     }
+}
+
+/// The bounds std's impls of `traits` for `ty` are under, each a type and
+/// the trait it's bound by, `T: Clone` of `Option<T>`'s `Clone`: what
+/// they may run of what `ty` is made of (ADR 0868). `None` where `ty` is
+/// the crate's, a cell, which its own impl borrows, or has a trait of
+/// `traits` that isn't std's impl, a built-in one or one not selected.
+fn std_impl_bounds<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    traits: &[DefId],
+) -> Option<Vec<(Ty<'tcx>, DefId)>> {
+    let tcx = recognition.tcx;
+    let ours = matches!(ty.kind(), ty::Adt(adt, _) if adt.did().is_local());
+    if ours || recognition.is_borrowed_cell(ty) || ty.has_param() || ty.has_aliases() {
+        return None;
+    }
+    // A trait alias, `ptr::Thin`, which may stand for any, and has no impls.
+    if traits.iter().any(|&t| tcx.def_kind(t) != DefKind::Trait) {
+        return None;
+    }
+    let ty = tcx.erase_and_anonymize_regions(ty);
+    // A function pointer's impls, a copy, a comparison of where it points,
+    // never call it; only an `Fn` trait's does.
+    if ty.is_fn_ptr() {
+        let calls = traits.iter().any(|&t| tcx.fn_trait_kind_from_def_id(t).is_some());
+        return (!calls).then(Vec::new);
+    }
+    let own_methods =
+        |t: DefId| (tcx.associated_item_def_ids(t).iter()).any(|&item| matches!(tcx.def_kind(item), DefKind::AssocFn));
+    let mut bounds = Vec::new();
+    for &t in traits.iter().filter(|&&t| own_methods(t)) {
+        // A trait of arguments, `Fn(&T)`'s, `PartialEq<Rhs>`'s, which a
+        // bound here doesn't say.
+        if tcx.generics_of(t).count() != 1 {
+            return None;
+        }
+        let tr = ty::TraitRef::new(tcx, t, [ty]);
+        let (imp, args) = crate::lower::traits::evidence_impl(tcx, recognition.typing_env, tr)?;
+        if !recognition.in_sysroot(imp) {
+            return None;
+        }
+        for (clause, _) in tcx.clauses_of(imp).instantiate(tcx, args) {
+            if let Some(bound) = clause.skip_normalization().as_trait_clause() {
+                let bound = bound.skip_binder();
+                bounds.push((bound.self_ty(), bound.def_id()));
+            }
+        }
+    }
+    Some(bounds)
 }
 
 /// What a body borrows and runs, by its own expressions: each call's, each

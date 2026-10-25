@@ -198,7 +198,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Item references, traits, dictionaries and standard impls | `items.rs`, `traits.rs`, `traits/`, `std_impls.rs`, `ordering.rs` |
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
-| JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
+| JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
 | JS classes, `#[rust_js::class]` | `classes.rs` |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 

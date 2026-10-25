@@ -102,3 +102,21 @@ and this one's value is its field. Its order is its field's now, as its
 `==` was. uuid 1.28's `Uuid` is one, and the crate corpus's probe, which
 compares two, was refused (#122). Held by `test/corpus/transparent_ord.rs`
 and the mutation `transparent-order-refused`.
+
+## Amendment: its clone, of what's no object
+
+A derived `Clone` of a transparent struct of a function, React's
+`RendererTask(&'static dyn Fn(bool) -> Option<RendererTask>)`, was
+refused, "cloning `RendererTask`", where the program writes one over
+another where it's kept, `queue.borrow_mut()[i] = callback`: a type
+written through a `&mut` is "changed in place" (ADR 0020), so its clone
+was asked for, of a struct whose value is its field, which has no
+fields to copy. What's written over is where the value is kept, its
+array; the value, a function, isn't changed. **A transparent struct of
+the program's whose field is no object is told apart from its clone as
+its field is**, unless its own `clone` runs code (`needs_clone`): its
+clone is the function, `let callback = queue[i];`. A container of one
+written through a `&mut` is still copied, as `contains_mutated` says. Case
+A: a function is the same function however it's copied. Held by
+`test/corpus/refcell_clone_through_rc.rs`'s `Task` and the mutation
+`transparent-of-no-object-cloned` (`std_impls.ts`).

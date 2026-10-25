@@ -1374,3 +1374,66 @@ pub fn busy() -> bool {
   expect(() => lib.describe("")).toThrow("empty");
   expect(lib.busy()).toBe(false);
 });
+
+// ADR 0867: a binding runs JS no one can see, which may call back into the
+// crate, so a borrow held while it runs is counted, and meets a borrow the
+// crate's code JS calls makes, as Rust's would; unless it says it runs
+// nothing, `#[rust_js::runs_nothing]`, as `new AggregateError(errors)`
+// doesn't, nor `typeof`, nor a JS object's `Deref` to the class it extends.
+test("a borrow held while a binding runs is counted, unless it runs nothing", async () => {
+  const dir = fixture("binding-borrows");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Log {
+    pub calls: RefCell<Vec<u32>>,
+    pub quiet: RefCell<Vec<i32>>,
+}
+
+thread_local! {
+    pub static LOG: Log = Log { calls: RefCell::new(Vec::new()), quiet: RefCell::new(Vec::new()) };
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.report")]
+fn report(_calls: &[u32]) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.measure")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
+fn measure(_calls: &[i32]) -> usize {
+    unreachable!()
+}
+
+pub fn push(n: u32) {
+    LOG.with(|log| log.calls.borrow_mut().push(n));
+    LOG.with(|log| log.quiet.borrow_mut().push(n as i32));
+}
+
+pub fn reported() {
+    LOG.with(|log| report(&log.calls.borrow()));
+}
+
+pub fn measured() -> usize {
+    LOG.with(|log| measure(&log.quiet.borrow()))
+}
+
+js::export_default!(LOG);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("$borrow(log.calls");
+  expect(js).toContain("return globalThis.measure(log.quiet);");
+  expect(js).not.toContain("$borrow(log.quiet");
+  const lib = await import(join(dir, "lib.js"));
+  const globals = globalThis as any;
+  globals.report = () => lib.push(2);
+  globals.measure = (calls: number[]) => calls.length;
+  try {
+    lib.push(1);
+    expect(() => lib.reported()).toThrow("already borrowed");
+    expect(lib.measured()).toBe(1);
+  } finally {
+    delete globals.report;
+    delete globals.measure;
+  }
+});

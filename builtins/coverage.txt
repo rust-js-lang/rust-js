@@ -1,5 +1,11 @@
 # The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
-# members: 712 of 712 (100.0%)
+# members: 718 of 718 (100.0%)
+AggregateError.cause
+AggregateError.constructor
+AggregateError.errors
+AggregateError.message
+AggregateError.name
+AggregateError.stack
 ArrayBuffer.byteLength
 ArrayBuffer.constructor
 ArrayBuffer.resize

@@ -1357,3 +1357,68 @@ pub fn decimal(n: f64) -> String {
   expect(lib.read([4, 5].values())).toEqual([4, 5]);
   expect([lib.decimal(1e21), lib.decimal(Infinity), lib.decimal(0.5)]).toEqual(["1e+21", "Infinity", "0.5"]);
 });
+
+// ADR 0867: an `AggregateError` is TypeScript's of ES2021, `new
+// AggregateError(errors: Iterable<any>, message?: string)` and its `errors`,
+// an `Error` by `Deref`, as React's `act` makes one of what was thrown; and
+// its constructor runs nothing of the crate's, so a `RefCell` borrowed for
+// the call is the array it holds, `ReactSharedInternals.thrownErrors`.
+test("an AggregateError is ES2021's, and making one borrows nothing", async () => {
+  const dir = fixture("js-aggregate-error");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+use js::{Unknown, aggregate_error};
+
+pub struct Internals {
+    pub thrown_errors: RefCell<Option<Vec<Option<&'static Unknown>>>>,
+}
+
+thread_local! {
+    pub static INTERNALS: Internals = Internals { thrown_errors: RefCell::new(Some(Vec::new())) };
+}
+
+fn aggregate_errors(errors: &[Option<&'static Unknown>]) -> Option<&'static Unknown> {
+    if errors.len() > 1 && js::is_defined(aggregate_error::new) {
+        return aggregate_error::new(errors, None).as_unknown();
+    }
+    errors.first().copied().flatten()
+}
+
+pub fn record(error: Option<&'static Unknown>) {
+    INTERNALS.with(|i| i.thrown_errors.borrow_mut().as_mut().unwrap().push(error));
+}
+
+pub fn thrown() -> Option<&'static Unknown> {
+    let thrown = INTERNALS.with(|i| aggregate_errors(i.thrown_errors.borrow().as_ref().unwrap()));
+    INTERNALS.with(|i| i.thrown_errors.borrow_mut().as_mut().unwrap().clear());
+    thrown
+}
+
+pub fn named(errors: Vec<Option<&'static Unknown>>) -> (String, String, usize, bool) {
+    let e = aggregate_error::new(&errors, Some("several"));
+    (e.name(), e.message(), e.errors().len(), e.is_error())
+}
+
+js::export_default!(INTERNALS);
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return new AggregateError(errors);");
+  expect(js).toContain('const e = new AggregateError(errors, "several");');
+  expect(js).toContain("e.errors.length");
+  // The cell is the array, borrowed unchecked: no borrow meets another.
+  expect(js).toContain("const internals = { thrownErrors: [] };");
+  expect(js).toContain("aggregateErrors($unwrap(internals.thrownErrors))");
+  expect(js).not.toContain("$borrow");
+  const lib = await import(join(dir, "lib.js"));
+  const [a, b] = [new Error("a"), "b"];
+  lib.record(a);
+  expect(lib.thrown()).toBe(a);
+  lib.record(a);
+  lib.record(b);
+  const both = lib.thrown();
+  expect(both).toBeInstanceOf(AggregateError);
+  expect(both.errors).toEqual([a, b]);
+  expect(lib.default.thrownErrors).toEqual([]);
+  expect(lib.named([a, undefined])).toEqual(["AggregateError", "several", 2, true]);
+});

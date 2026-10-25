@@ -296,6 +296,13 @@ export function hasConfig(path) {
   ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md#amendment-what-was-caught-is-a-value-of-any-shape-as_unknown)).
   How V8 writes a `stack` is a hook of the node crate's,
   `Error.prepareStackTrace` ([`node`](../libraries/README.md#node-nodejs)).
+- **Several errors as one is an `AggregateError`**:
+  `js::aggregate_error::new(errors, message)` is `new
+  AggregateError(errors, message)`, `errors` a slice of any value,
+  `&[Option<&Unknown>]`, and `message` an `Option<&str>`; its `errors()`
+  is what it holds, and it's a `&JsError` by `Deref`, `as_unknown()` the
+  value to throw. Making one runs none of your code, so a `RefCell`
+  borrowed for it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
 - **The crates say which JS calls may throw.** The `js` crate's
   `decode_uri_component` and `Json::parse` return a `Result`, and
   `concat_text`, `"" + value`, of a value of any shape. webapi's

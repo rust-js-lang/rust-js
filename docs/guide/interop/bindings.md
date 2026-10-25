@@ -906,6 +906,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
+| `#[rust_js::runs_nothing]` | it runs no code but its own, not even what it's given, as `new AggregateError(errors)` doesn't: a `RefCell` borrowed across it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)) |
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |
 | `#[rust_js::position]` | it gives a position, or `-1`, as `indexOf` does |
 | `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says |

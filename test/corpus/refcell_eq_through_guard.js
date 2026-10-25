@@ -7,15 +7,10 @@ export function entry() {
 }
 
 function advance(state, done) {
-  state = $borrowMut(state, true);
   state.step = (state.step + 1) >>> 0;
   const line = `step ${state.step}`;
-  try {
-    state.log.push(line);
-    return $eq(state, done);
-  } finally {
-    $unborrow(state);
-  }
+  state.log.push(line);
+  return $eq(state, done);
 }
 
 function main() {
@@ -28,15 +23,11 @@ function main() {
     log: ["step 1", "step 2"],
   };
   console.log(`${advance(state, done)} ${advance(state, done)}`);
-  const held = $borrowMut(state, true);
-  try {
-    const same = $eq(held, done);
-    held.step = 3;
-    const arg = $eq(held, done);
-    console.log(`${same} ${arg}`);
-  } finally {
-    $unborrow(held);
-  }
+  const held = state;
+  const same = $eq(held, done);
+  held.step = 3;
+  const arg = $eq(held, done);
+  console.log(`${same} ${arg}`);
   const outer = [{ value: 1 }, { value: 2 }];
   const inner = $borrow(outer, true);
   try {

@@ -427,14 +427,6 @@ export const mutations: Mutation[] = [
     tests: ["test/node-bindings.test.ts", "-t", "stack trace hook is saved"],
   },
   {
-    name: "rest-value-unrecognized",
-    breaks: "a `&dyn js::Rest<T>` isn't rest arguments: `console::log` taken as a `fn` of one is refused",
-    file: "src/lower/bindings.rs",
-    find: "                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some()),\n",
-    replace: "                .is_some_and(|t| tcx.get_attrs_by_path(t, &path).next().is_some() && false),\n",
-    tests: ["test/js-object.test.ts", "-t", "console is a value"],
-  },
-  {
     name: "rest-marked-anywhere",
     breaks: "`#[rust_js::rest]` is read of no parameter, and a function marked so takes the array whole",
     file: "src/lower/bindings.rs",
@@ -473,14 +465,6 @@ export const mutations: Mutation[] = [
     find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) {\n",
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "an optional field that isn't nullable"],
-  },
-  {
-    name: "rest-items-undeclared",
-    breaks: "a function type's rest arguments as a value are declared one parameter of `any`, not `...args: string[]`",
-    file: "src/lower/bindings.rs",
-    find: "    (!matches!(read.kind(), ty::Alias(..))).then_some(read)\n",
-    replace: "    (!matches!(read.kind(), ty::Alias(..))).then_some(read).filter(|_| false)\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
   },
   {
     name: "nullable-refcell-refused",
