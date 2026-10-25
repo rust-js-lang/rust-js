@@ -32,6 +32,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/std_iterator.js",
     find: "      steps.close(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];
