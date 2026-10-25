@@ -268,6 +268,10 @@ export type Program = Stmt[];
 // A loop's or a pattern's variable can be read, not written.
 type Scope = { name: string; ty: Ty; mutable: boolean }[];
 
+/** `scope` as a match guard sees it: what the match reads is borrowed
+ * through the guard, which borrowck keeps unchanged, so it writes nothing. */
+const readOnly = (scope: Scope): Scope => scope.map((v) => ({ ...v, mutable: false }));
+
 function literal(r: Random, ty: Ty): Expr {
   if (ty === "bool") return { kind: "lit", ty, value: r.chance(0.5) };
   if (ty === "f64" || ty === "f32") return { kind: "flit", ty, text: r.pick(floatEdges[ty]) };
@@ -386,7 +390,9 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
       }
       const bind = `n${r.int(1_000_000)}`;
       const bound = [...scope, { name: bind, ty: t, mutable: false }];
-      return { pat: bind, bind, guard: expr(r, "bool", bound, depth - 1), value: expr(r, ty, bound, depth - 1) };
+      // A guard writes nothing, as the `E` match's (seed 53049).
+      const guard = expr(r, "bool", readOnly(bound), depth - 1);
+      return { pat: bind, bind, guard, value: expr(r, ty, bound, depth - 1) };
     });
     return { kind: "imatch", ty, scrut: expr(r, t, scope, depth - 1), arms, other: expr(r, ty, scope, depth - 1) };
   }
@@ -460,7 +466,7 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
       second: `${(literal(r, t2) as { value: bigint }).value}`,
       x,
       y,
-      guard: expr(r, "bool", bound, depth - 1),
+      guard: expr(r, "bool", readOnly(bound), depth - 1),
       whenFirst: sub(ty),
       whenSecond: sub(ty),
       whenGuard: expr(r, ty, bound, depth - 1),
@@ -616,7 +622,7 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
         bind,
         // A guard writes nothing: what the match reads is borrowed through
         // it, which borrowck keeps unchanged.
-        guard: guarded ? expr(r, "bool", withB.map((v) => ({ ...v, mutable: false })), depth - 1) : undefined,
+        guard: guarded ? expr(r, "bool", readOnly(withB), depth - 1) : undefined,
         whenB: expr(r, ty, withB, depth - 1),
         otherB: guarded ? sub(ty) : undefined,
         x,
