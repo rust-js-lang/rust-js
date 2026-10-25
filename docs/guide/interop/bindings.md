@@ -466,6 +466,13 @@ pub fn circle(radius: f64) -> &'static Circle {
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
 `get` of a static. A method of a module, `this` and `"pkg#f"`, is an error.
 
+A keyed read whose result is an `Option` of what may be `None` itself, an
+`Option`, a `()` or `js::Kind`, tells a key whose value is `undefined` or
+`null` from a key that isn't there, `Some(None)` from `None`, as JS's read
+alone can't: a method `"get"`, a `Map`'s, by `this.has(key)`,
+`$someGet(this, key)`; `"get []"`, a `Dict`'s, by its own key,
+`$dictGet(this, key)` ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md)).
+
 A getter runs once for each call of its binding, as Rust calls it: a
 property an `if let` chain tests and binds, `let Some(Kind::String(url)) =
 js::get(request, "url").map(js::classify)`, is read once, `const url =

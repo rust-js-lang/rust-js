@@ -2,7 +2,10 @@
 
 Status: Accepted. Extends [0849](0849-a-map-takes-any-key.md), whose
 `js::Map` keys any value, to a set of them; amends its `map::new()`,
-which now takes what the map starts with, `None` of nothing.
+which now takes what the map starts with, `None` of nothing. Amended by
+[0884](0884-a-maps-value-is-any-value.md): a `Map`'s value is any value,
+so BadMapPolyfill's port keys its frozen object to `null`, `Kind::Null`,
+as upstream does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 collection, a value the one `SameValueZero` says, as TypeScript's `Set<T>`
@@ -73,6 +76,8 @@ const empty = new Set();
 - A map whose value is `null`, upstream's `[[frozenObject, null]]`, has no
   Rust type: a `Map`'s value is `Defined`, never nullish, as its `get` is
   an `Option` of it; BadMapPolyfill's port gives the map a value of its own.
+  (Amended by 0884: a `Map`'s value is any value, `get` of an `Option`
+  told by `has`, and upstream's `null` is `Kind::Null`.)
 
 ## What holds it
 

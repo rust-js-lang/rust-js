@@ -249,6 +249,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
 | Which thread-locals are made where they're first used, and a read of one, its call (ADR 0037, amended) | `analysis/lazy_locals.rs`; `items.rs` | `lazy_locals`; `made_where_used`, `item_read` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
+| A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884) | `binding_calls.rs`; `bindings.rs` | `gives_boxed_option`; `reads_a_key` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |
 | Which `RefCell`s are the objects they hold, a field's plain one, which are never checked, and what a library's contract says of them (ADRs 0362, 0863) | `drops/ref_cells.rs` | `ref_cells`, `is_value_cell`, `plain_ref_cell`, `quiet_ref_cell`, `holds_itself` |

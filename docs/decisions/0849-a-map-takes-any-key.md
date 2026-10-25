@@ -1,7 +1,9 @@
 # 0849. A `js::Map` takes any key, as TypeScript's does
 
 Status: Accepted. Amends [0699](0699-a-map-of-objects-is-a-weak-map.md),
-whose `js::Map` took what a `WeakMap` keys alone.
+whose `js::Map` took what a `WeakMap` keys alone. Amended by
+[0884](0884-a-maps-value-is-any-value.md): its value is any value too, and
+`get` of an `Option` tells a `None` from a missing key, by `has`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: it's JS's own
 collection, its key the one `SameValueZero` says, as TypeScript's `Map` is.

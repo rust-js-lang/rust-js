@@ -254,6 +254,14 @@ pub(super) fn reads_string_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             .is_some_and(|this| this.peel_refs().is_str())
 }
 
+/// Is this binding a method `get(key)`, as a JS `Map`'s and `WeakMap`'s
+/// are? What it gives of a key it lacks is `undefined`, which its `has(key)`
+/// tells apart from a value that's `undefined` or `null`, as an own key
+/// tells a `Dict`'s, `get []` (ADRs 0225, 0884).
+pub(super) fn reads_a_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_method(tcx, def_id) && matches!(js_form(tcx, def_id), JsForm::Call(name) if name == "get")
+}
+
 /// A JS function whose first parameter is named `this` is a method:
 /// `f(x, a)` calls `x.f(a)`, a type's own as well, `Mouse::widen(this)`.
 /// So is a Rust method's `self`.

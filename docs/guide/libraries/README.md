@@ -164,6 +164,10 @@ What it has:
   A `Set` holds any value, as a `Map` keys one; each is made of what it
   starts with, `set::new(Some(&[a, b]))`, or `None`
   ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)). A
+  `Map`'s or a `WeakMap`'s value is any value too, an `Option` whose
+  `get` is `Some(None)` of a key whose value is `None`, as its `has` tells,
+  and JS's `null` is `Kind::Null`
+  ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md)). A
   `FinalizationRegistry`'s callback is a `Box<dyn Fn(T)>`, as any JS calls
   again, so `is_defined(finalization_registry::new::<T>)` asks whether the
   host has one.

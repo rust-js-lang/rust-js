@@ -243,7 +243,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0222 An editor checks the app through rust-js](0222-editor-check.md)
 - [0223 The webapi crate knows each event's type and each tag's element](0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key)*
 - [0226 A component looks inside its children as React's `Children` does](0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](0228-per-tag-attributes.md)
@@ -666,16 +666,17 @@ reordered, and git merges this file by keeping both sides' lines
 - [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
-- [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)
+- [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too)*
 - [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)
+- [0884 A `js::Map`'s value is any value, and `get` tells a `None` from a missing key](0884-a-maps-value-is-any-value.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)
 - [0851 A closure of rest arguments as a value is JS's rest parameter](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)
 - [0848 `function::apply` is `Function.prototype.apply`, and its `this` may be `null`](0848-apply-is-functions-and-its-this-may-be-null.md)
-- [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md) *(extended by 0875: a `js::Set` of any value; `map::new` takes its entries)*
-- [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md)
+- [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md) *(extended by 0875: a `js::Set` of any value; `map::new` takes its entries; amended by 0884: its value is any value, and `get` of an `Option` tells a `None` from a missing key)*
+- [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md) *(amended by 0884: a `WeakMap`'s value needn't be `Defined`)*
 - [0852 Each type's `Rc`s are counted apart](0852-each-types-rcs-are-counted-apart.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)

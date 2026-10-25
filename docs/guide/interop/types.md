@@ -288,6 +288,55 @@ export function takesFrozenKeys() {
 }
 ```
 
+- **A `js::Map`'s or a `js::WeakMap`'s value is any value**, as
+  TypeScript's `Map<K, V>` takes any `V` and a `js::Dict`'s is. An
+  `Option`'s `None` is `undefined`, as it is everywhere, and `get` tells
+  a key whose value is `None` from a key the map lacks, `Some(None)` from
+  `None`, as `map.has(key)` does: `$someGet(map, key)`, as a `HashMap`'s
+  `get` of an `Option` is. JS's `null` is `js::Kind::Null`
+  ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md)):
+
+```rust
+use js::{Kind, Map};
+
+pub fn has_bad_map_polyfill() -> bool {
+    let frozen_object = js::object::freeze(js::dict::new::<Kind>());
+    js::map::new(Some(&[(frozen_object, Kind::Null)]));
+    js::set::new(Some(&[frozen_object]));
+    false
+}
+
+pub fn counted(counts: &Map<str, Option<u32>>, key: &str) -> &'static str {
+    match counts.get(key) {
+        Some(Some(_)) => "counted",
+        Some(None) => "not counted yet",
+        None => "never seen",
+    }
+}
+```
+
+```js
+import { $someGet, $someValue } from "@rust-js/runtime";
+
+export function hasBadMapPolyfill() {
+  const frozenObject = Object.freeze({});
+  new Map([[frozenObject, null]]);
+  new Set([frozenObject]);
+  return false;
+}
+
+export function counted(counts, key) {
+  const get = $someGet(counts, key);
+  if (get != null) {
+    if ($someValue(get) != null) {
+      return "counted";
+    }
+    return "not counted yet";
+  }
+  return "never seen";
+}
+```
+
 ## Structs
 
 ```rust

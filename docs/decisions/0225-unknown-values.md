@@ -17,6 +17,10 @@ an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`. Amended by
 `&JsObject`, which derefs to the `Unknown` it is. Amended below: `()` is a
 structured clone's `undefined`, which a binding is given as one, and
 `Kind::Array`'s slice is the array itself, `js::unknown(items)` its value.
+Extended by [0884](0884-a-maps-value-is-any-value.md): a `Dict<Option<_>>`'s
+`get`, `Some(None)` of a `null` apart from `None` of a missing key, is a
+keyed read's rule, a `js::Map`'s `get` of an `Option` told by `has`,
+`$someGet`, as its value is any value.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

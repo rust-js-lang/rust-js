@@ -176,3 +176,57 @@ console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.counted([o, o, {}, unde
 `);
   expect(out).toBe('[false,[6,true,false,0],[true,false,true],["x"]]\n');
 });
+
+// ADR 0884: a `js::Map`'s or a `js::WeakMap`'s value is any value, as
+// TypeScript's `Map<K, V>` takes any `V`, as a `Dict`'s is (ADR 0225): of
+// an `Option`, `get` is `Some(None)` of a key whose value is `undefined` or
+// `null`, as `has` tells, and `None` of a key it lacks. React's
+// BadMapPolyfill keys a frozen object to `null`, `Kind::Null`.
+test("a Map's value is any value, and get tells a nullish one from a missing key", () => {
+  const { dir, js, dts } = compiled("js-map-options", `use js::{Dict, Kind, Map, Unknown, WeakMap};
+
+pub fn has_bad_map_polyfill() -> bool {
+    let frozen_object = js::object::freeze(js::dict::new::<Kind>());
+    js::map::new(Some(&[(frozen_object, Kind::Null)]));
+    js::set::new(Some(&[frozen_object]));
+    let map = js::map::new(Some(&[(frozen_object, Kind::Null)]));
+    !matches!(map.get(frozen_object), Some(Kind::Null))
+}
+
+pub fn options() -> Vec<String> {
+    let map: &Map<str, Option<u32>> = js::map::new(Some(&[("none", None), ("one", Some(1))]));
+    map.set("zero", Some(0));
+    map.set("later", None);
+    ["none", "one", "zero", "later", "absent"]
+        .iter()
+        .map(|key| format!("{key} {:?} {}", map.get(key), map.has(key)))
+        .collect()
+}
+
+pub fn given(map: &Map<str, Option<&'static Unknown>>, key: &str) -> &'static str {
+    match map.get(key) {
+        None => "absent",
+        Some(None) => "nullish",
+        Some(Some(_)) => "value",
+    }
+}
+
+pub fn weak(key: &Dict<u32>) -> (bool, bool, bool) {
+    let map: &WeakMap<Dict<u32>, Option<&str>> = js::weak_map::new();
+    map.set(key, None);
+    let other = js::dict::new();
+    let held: &Map<Dict<u32>, Option<&str>> = js::map::new(Some(&[(key, None)]));
+    (map.get(key) == Some(None), map.get(other).is_none(), held.get(key) == Some(None))
+}
+`);
+  expect(js).toContain("  new Map([[frozenObject, null]]);\n  new Set([frozenObject]);\n");
+  expect(js).toContain("$someGet(map, key)");
+  expect(dts).toContain("export function given(map: Map<string, unknown | null | undefined>, key: string): string;");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const given = new Map([["undefined", undefined], ["null", null], ["zero", 0]]);
+console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["undefined", "null", "zero", "absent"].map((key) => lib.given(given, key)), lib.weak({})]));
+`);
+  expect(out).toBe(
+    '[false,["none Some(None) true","one Some(Some(1)) true","zero Some(Some(0)) true","later Some(None) true","absent None false"],["nullish","nullish","value","absent"],[true,true,true]]\n',
+  );
+});

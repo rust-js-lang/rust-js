@@ -110,7 +110,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.pop();
         }
         given_to_js(&mut args);
+        // A keyed read of a value that may look like `None`, an `Option`
+        // itself: `Some(None)` of a key whose value is `undefined` or
+        // `null`, apart from `None` of a key it lacks, as JS's read alone
+        // couldn't tell (ADRs 0225, 0884).
+        let keyed_option = args.len() == 1 && self.gives_boxed_option(def_id, generic_args);
         let value = match (js_form(self.tcx, def_id), this) {
+            // A JS `Map`'s or `WeakMap`'s `get(key)`, whose `has(key)`
+            // tells the key is there.
+            (JsForm::Call(_), Some(this)) if keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {
+                Expr::call(Expr::helper("$someGet"), vec![this, args.remove(0)])
+            }
             // A method or a property is on `this`: it can't be an import.
             // Its method, looked up when it's called: of a JS value of any
             // shape, one a getter may answer (ADR 0750).
@@ -151,20 +161,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             (JsForm::This, Some(this)) if args.is_empty() => this,
-            // Of a value that's an `Option` itself, a JSON `null`'s
-            // `Some(None)`, which only an own key has (ADR 0225).
-            (JsForm::GetIndex, Some(this))
-                if args.len() == 1
-                    && self
-                        .option_of(
-                            self.tcx
-                                .fn_sig(def_id)
-                                .instantiate(self.tcx, generic_args)
-                                .skip_binder()
-                                .output(),
-                        )
-                        .is_some_and(|value| self.boxed_payload(value)) =>
-            {
+            // A `Dict`'s, a JSON `null`'s `Some(None)`, which only an own
+            // key has.
+            (JsForm::GetIndex, Some(this)) if keyed_option => {
                 Expr::call(Expr::helper("$dictGet"), vec![this, args.remove(0)])
             }
             (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)).answered_by_a_getter(),
@@ -217,6 +216,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         Ok(self.catching(def_id, generic_args, value))
+    }
+
+    /// Does binding `def_id`, of `generic_args`, give an `Option` of a
+    /// value that may look like `None`, whose `Some` is boxed (ADR 0051)?
+    fn gives_boxed_option(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_binder()
+            .output();
+        self.option_of(output).is_some_and(|value| self.boxed_payload(value))
     }
 
     /// `js::import!(f)` of the function `id`: its module's export, a

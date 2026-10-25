@@ -2,6 +2,9 @@
 
 Status: Accepted. Extends [0844](0844-a-library-that-reads-no-count-counts-no-rc.md),
 whose uncounted `Rc` is the value it points at, to a binding's values.
+Amended by [0884](0884-a-maps-value-is-any-value.md): a `WeakMap`'s and
+a `Map`'s value is any value, so one of an `Rc` needn't be `Defined`; an
+`Rc` still is where what it points at is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N of an uncounted
 `Rc`, the value itself, which JS shares as Rust does; D, refused, of a

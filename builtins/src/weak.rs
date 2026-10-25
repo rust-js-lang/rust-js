@@ -4,7 +4,7 @@
 // A binding's parameters are its JS function's: its body never runs.
 #![allow(unused_variables)]
 
-use super::{Defined, JsObject};
+use super::JsObject;
 use core::marker::PhantomData;
 
 /// What JS holds weakly: an object, or a symbol not the registry's, never a
@@ -19,13 +19,15 @@ unsafe impl<T> WeakKey for [T] {}
 unsafe impl WeakKey for dyn Fn() -> Option<&'static super::Unknown> + '_ {}
 
 /// [`WeakMap`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap):
-/// a value of each key it holds, the key held weakly.
+/// a value of each key it holds, the key held weakly, any value, as a
+/// [`Map`]'s is (ADR 0884).
 #[cfg_attr(rust_js, rust_js::types = "WeakMap<K, V>")]
-pub struct WeakMap<K: WeakKey + ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
+pub struct WeakMap<K: WeakKey + ?Sized, V>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
-impl<K: WeakKey + ?Sized, V: Defined> WeakMap<K, V> {
+impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// [`map.get(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/get):
-    /// its value of `key`, `None` of a key it doesn't have.
+    /// its value of `key`, `None` of a key it doesn't have; of an `Option`,
+    /// `Some(None)` of a key whose value is `None`, as a [`Map`]'s.
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
@@ -59,7 +61,7 @@ pub mod weak_map {
     /// [`new WeakMap()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/WeakMap):
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new WeakMap")]
-    pub fn new<K: WeakKey + ?Sized, V: Defined>() -> &'static WeakMap<K, V> {
+    pub fn new<K: WeakKey + ?Sized, V>() -> &'static WeakMap<K, V> {
         unreachable!()
     }
 }
@@ -72,14 +74,18 @@ pub mod weak_map {
 /// argument, an `Option<&Unknown>`. One of what a [`WeakMap`] keys is a
 /// `WeakMap` too, as TypeScript's is, so it derefs to one: what a program
 /// keeps where the host has no `WeakMap`, as React's `typeof WeakMap ===
-/// 'function' ? WeakMap : Map` does (ADR 0699). A map a program keeps of
-/// what Rust hashes is a `HashMap`, a `Map` in JS too.
+/// 'function' ? WeakMap : Map` does (ADR 0699). Its value is any value too,
+/// as TypeScript's `Map<K, V>` takes any `V` and a [`Dict`](super::Dict)'s
+/// is (ADR 0884): an `Option`'s `None` is `undefined`, as it is everywhere,
+/// and JS's `null` is `Kind::Null`, upstream's `new Map([[frozenObject,
+/// null]])` of `map::new(Some(&[(frozen_object, Kind::Null)]))`. A map a
+/// program keeps of what Rust hashes is a `HashMap`, a `Map` in JS too.
 #[cfg_attr(rust_js, rust_js::types = "Map<K, V>")]
-pub struct Map<K: ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
+pub struct Map<K: ?Sized, V>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
 /// A `Map` of what a `WeakMap` keys is a `WeakMap` of what it holds, as
 /// TypeScript's `Map<K, V>` is one: the map itself.
-impl<K: WeakKey + ?Sized, V: Defined> core::ops::Deref for Map<K, V> {
+impl<K: WeakKey + ?Sized, V> core::ops::Deref for Map<K, V> {
     type Target = WeakMap<K, V>;
 
     fn deref(&self) -> &WeakMap<K, V> {
@@ -88,9 +94,13 @@ impl<K: WeakKey + ?Sized, V: Defined> core::ops::Deref for Map<K, V> {
     }
 }
 
-impl<K: ?Sized, V: Defined> Map<K, V> {
+impl<K: ?Sized, V> Map<K, V> {
     /// [`map.get(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/get):
-    /// its value of `key`, `None` of a key it doesn't have.
+    /// its value of `key`, `None` of a key it doesn't have. Of a value
+    /// that may be `undefined` or `null`, an `Option`, `Some(None)` of a key
+    /// whose value is `None`, apart from `None` of a key it lacks, as
+    /// `map.has(key)` tells, where JS's `get` alone gives `undefined` of
+    /// each: `$someGet(map, key)` (ADR 0884).
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
@@ -139,7 +149,7 @@ pub mod map {
     /// one of each key and its value, the last of a key twice, or of
     /// nothing, `None`, as TypeScript's `new Map(entries?)` (ADR 0875).
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
-    pub fn new<K: ?Sized, V: Defined>(entries: Option<&[(&K, V)]>) -> &'static Map<K, V> {
+    pub fn new<K: ?Sized, V>(entries: Option<&[(&K, V)]>) -> &'static Map<K, V> {
         unreachable!()
     }
 }
