@@ -34,7 +34,6 @@ consts/zst_no_llvm_alloc.rs	node: ended {"panic":"assertion `left == right` fail
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
 drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
-dst/dst-coerce-rc.rs	error: rust-js does not support a counted `std::rc::Rc<i32>` made elsewhere as a `std::rc::Rc<dyn Baz>` yet
 dst/dst-field-align.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10000\n right: 0x11000"}
 dst/dst-raw.rs	error: rust-js does not support addressable memory yet: values of type `*const dyn Trait`
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::option::Option<Size>` as `u8`, which aren't numbers alone
