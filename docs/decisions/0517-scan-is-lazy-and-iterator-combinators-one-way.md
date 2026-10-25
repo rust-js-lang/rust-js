@@ -106,3 +106,30 @@ An adapter over a source that gives `None` and then more is std's now,
 not the difference this amendment left: every iterator the runtime makes
 of Rust's is a `$Steps`, whose `map`, `filter`, `take` and `drop` pass a
 `None` on ([ADR 0669](0669-an-adapter-steps-its-source-as-stds-does.md)).
+
+## Amendment: a range's `nth`, wherever it comes from
+
+A range's `step_by` and `skip` were its bounds' arithmetic only where
+tidy's `range steps` pass saw the range made at the call; held in a
+variable, given to generic code, of a start tidy couldn't read, reversed
+or skipped first, it was stepped one number at a time, and `(0..u32::MAX)
+.step_by(1 << 30)` never finished (#231). The rule is now where std's is:
+
+- a range's JS iterator, `$iterator(r, $rangeNext)` or its inclusive or
+  back form, has std's `Range::nth`, of its bounds (`$rangeNthOf`, a
+  `char`'s by code point), and so does `$lazyRange`;
+- a `step_by` of a range's numbers, a range's, a `rev()`'s or a
+  `skip(n)`'s of one (`steps_a_range`), is `$stepBy`, which steps its
+  source by its `nth`, and a `skip` is `$Steps`' `drop`, which does too;
+- tidy's fold of `$stepBy($lazyRange(a, b), n)` into `$lazyRange(a, b, n)`,
+  and of a reversed one into `$lazyRangeBack`, is a readability rewrite
+  only: each of tidy's stages' JS finishes, as the nightly's tidy stages
+  job asks. `as_double_ended` makes `$stepBy(range, n)` knowing its back,
+  `$stepByEnds`, as it does the filter it was.
+
+Tidy's folds of the `filter` of every `n`th a range's `step_by` was written
+as, from its start and from its end, are gone: nothing writes it now. The
+folds of `skip` stay, for how the JS reads; their mutations check
+snapshots. `test/corpus/range_steps_anywhere.rs` holds it, with eight mutations. The
+readability baseline's `Iterator.from` share grows by 0.1 in 10,000 lines,
+the case's generic function's.

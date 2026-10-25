@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "lazy-range-step-unread",
     breaks: "a range's numbers `step` apart are each number, `step_by` given no effect",
     file: "src/runtime/lazy_range.js",
-    find: "  for (let i = start; i < end; i = Number(i) + step) {",
-    replace: "  for (let i = start; i < end; i++) {",
+    find: "    at = Number(at) + step;\n    return { done: false, value };",
+    replace: "    at = Number(at) + 1;\n    return { done: false, value };",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
   },
   {
@@ -17,5 +17,13 @@ export const mutations: Mutation[] = [
     find: "  for (let i = inclusive ? end : end - (big ? 1n : 1); i >= start; i -= by) {\n",
     replace: "  for (let i = end - (big ? 1n : 1); i >= start; i -= by) {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
+  },
+  {
+    name: "lazy-range-nth-stepped",
+    breaks: "a lazy range has no `nth` of its bounds, so a `step_by` of one given to generic code steps each number and doesn't finish (#231)",
+    file: "src/runtime/lazy_range.js",
+    find: "  range.nth = (k) => {\n",
+    replace: "  range.unused = (k) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
   },
 ];

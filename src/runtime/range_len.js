@@ -81,3 +81,27 @@ function $rangeInclusiveFirst(range) {
 function $rangeInclusiveLen(range) {
   return range.start <= range.end ? range.end - range.start + 1 : 0;
 }
+
+// The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive
+// or back form's: std's `Range::nth`, of its bounds, which `skip` and
+// `step_by` step it by, so they don't step each number (#231); of a
+// `char`'s, which steps by code point, each stepped. `undefined` of another
+// `next`.
+function $rangeNthOf(next) {
+  const nth =
+    next === $rangeNext
+      ? $rangeNth
+      : next === $rangeInclusiveNext
+        ? $rangeInclusiveNth
+        : next === $rangeNextBack
+          ? $rangeNthBack
+          : next === $rangeInclusiveNextBack
+            ? $rangeInclusiveNthBack
+            : undefined;
+  if (nth === undefined) return undefined;
+  return (range, k) => {
+    if (typeof range.start !== "string") return nth(range, k);
+    for (; k > 0; k--) if (next(range) === undefined) return undefined;
+    return next(range);
+  };
+}

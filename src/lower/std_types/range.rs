@@ -92,6 +92,21 @@ pub(in crate::lower) enum RangeOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether an iterator of type `ty` steps a range's numbers, a range's,
+    /// a `rev()`'s or a `skip(n)`'s of one, whose `nth` is of its bounds,
+    /// which a `step_by` steps it by, not each number (#231).
+    pub(in crate::lower) fn steps_a_range(&self, ty: Ty<'tcx>) -> bool {
+        if self.range_kind(ty).is_some() {
+            return true;
+        }
+        let source = (self.recognition().reversed(ty)).or_else(|| {
+            crate::lower::recognition::counted_source(self.tcx, ty)
+                .filter(|(_, skip)| *skip)
+                .map(|(s, _)| s)
+        });
+        source.is_some_and(|source| self.steps_a_range(source))
+    }
+
     /// A range's own `nth(n)`, `last()` and `count()`, of `a..b` or
     /// `a..=b`, or of one reversed, `(a..b).rev()`, `values` it and `n`: of
     /// its bounds, without stepping each number, as std's are (#163),
@@ -421,21 +436,26 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
             };
             Some(args[0].clone())
         }
+        // `step_by(n)` of one, `$stepBy(range, n)`: its numbers from its end,
+        // `n` apart (#231).
+        js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$stepBy")
+                && let [made, n] = &args[..]
+                && n.reads_same()
+                && let Some(range) = crate::lower::iterators::stepped_range(made)
+                && range.back =>
+        {
+            let mut args = vec![range.start.clone(), range.end.clone(), n.clone()];
+            if range.inclusive {
+                args.push(Expr::bool(true));
+            }
+            Some(Expr::call_helper(LAZY_RANGE_BACK, args))
+        }
         js::ExprKind::Call(callee, args) => {
             let (js::ExprKind::Member(made, method), [n]) = (&callee.kind, &args[..]) else {
                 return None;
             };
             let range = crate::lower::iterators::stepped_range(made)?;
-            // `step_by(n)`, which tidy wrote as a filter of every `n`th:
-            // the numbers from its end, `n` apart.
-            if method == "filter" && range.back {
-                let step = every_nth(n)?;
-                let mut args = vec![range.start.clone(), range.end.clone(), step];
-                if range.inclusive {
-                    args.push(Expr::bool(true));
-                }
-                return Some(Expr::call_helper(LAZY_RANGE_BACK, args));
-            }
             if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {
                 return None;
             }
@@ -476,6 +496,17 @@ fn range_step(e: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
+    // `step_by(n)` of one, `$stepBy(range, n)`: its numbers `n` apart.
+    if callee.helper_name() == Some("$stepBy")
+        && let [source, n] = &args[..]
+        && n.reads_same()
+        && let Some((start, end, None)) = lazy_range_parts(source)
+    {
+        let mut list = vec![start];
+        list.push(end.unwrap_or_else(|| Expr::var("Infinity")));
+        list.push(n.clone());
+        return Some(Expr::call_helper(LAZY_RANGE, list));
+    }
     let js::ExprKind::Member(source, method) = &callee.kind else {
         return None;
     };
@@ -487,7 +518,6 @@ fn range_step(e: &Expr) -> Option<Expr> {
         Expr::call_helper(LAZY_RANGE, list)
     };
     match (method.as_str(), &args[..]) {
-        ("filter", [f]) if step.is_none() => every_nth(f).map(|n| made(start, Some(n))),
         ("drop", [n]) if n.reads_same() => {
             let skipped = match &step {
                 Some(step) => Expr::bin(Op::Mul, n.clone(), step.clone()),

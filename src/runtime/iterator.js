@@ -10,6 +10,8 @@
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220).
 function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
+  // A range's, stepped by its own step, has std's `Range::nth` (#231).
+  nth ??= $rangeNthOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which

@@ -306,4 +306,12 @@ export const mutations: Mutation[] = [
     replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "step-by-range-filtered",
+    breaks: "a `step_by` of a held range is a filter of every `n`th, which steps each number and doesn't finish (#231)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.steps_a_range(receiver_ty.peel_refs())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
+  },
 ];

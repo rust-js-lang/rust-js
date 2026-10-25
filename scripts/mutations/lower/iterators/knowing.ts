@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(back) if false && self.compiled_step(ty, back, \"nth_back\") => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "step-by-made-by-nth-backless",
+    breaks: "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && callee.helper_name() == Some(\"$stepBy\")\n            && let [source_value, step] = args.as_slice()\n",
+    replace: "            && callee.helper_name() == Some(\"$stepByNot\")\n            && let [source_value, step] = args.as_slice()\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
+  },
 ];

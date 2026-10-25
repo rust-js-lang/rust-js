@@ -540,6 +540,8 @@ export function $shift(items) {
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220).
 export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
+  // A range's, stepped by its own step, has std's `Range::nth` (#231).
+  nth ??= $rangeNthOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
@@ -2557,6 +2559,30 @@ export function $rangeInclusiveLen(range) {
   return range.start <= range.end ? range.end - range.start + 1 : 0;
 }
 
+// The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive
+// or back form's: std's `Range::nth`, of its bounds, which `skip` and
+// `step_by` step it by, so they don't step each number (#231); of a
+// `char`'s, which steps by code point, each stepped. `undefined` of another
+// `next`.
+export function $rangeNthOf(next) {
+  const nth =
+    next === $rangeNext
+      ? $rangeNth
+      : next === $rangeInclusiveNext
+        ? $rangeInclusiveNth
+        : next === $rangeNextBack
+          ? $rangeNthBack
+          : next === $rangeInclusiveNextBack
+            ? $rangeInclusiveNthBack
+            : undefined;
+  if (nth === undefined) return undefined;
+  return (range, k) => {
+    if (typeof range.start !== "string") return nth(range, k);
+    for (; k > 0; k--) if (next(range) === undefined) return undefined;
+    return next(range);
+  };
+}
+
 export function $nextBackSome(it) {
   const step = it.back();
   return step.done ? undefined : $some(step.value);
@@ -2755,11 +2781,22 @@ export function $parseBig(s, min, max, radix = 10) {
 }
 
 // A range's numbers, made as they're stepped, `step` apart: `$lazyRange(0,
-// n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`.
-export function* $lazyRange(start, end = Infinity, step = 1) {
-  for (let i = start; i < end; i = Number(i) + step) {
-    yield i;
-  }
+// n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`. Its `nth`
+// is std's `Range::nth`, of its bounds, which `skip` and `step_by` step it
+// by, so they don't make each number (#231).
+export function $lazyRange(start, end = Infinity, step = 1) {
+  let at = start;
+  const range = new $Steps(() => {
+    if (!(at < end)) return { done: true, value: undefined };
+    const value = at;
+    at = Number(at) + step;
+    return { done: false, value };
+  });
+  range.nth = (k) => {
+    if (k > 0 && at < end) at = Number(at) + k * step;
+    return range.next();
+  };
+  return range;
 }
 
 // A range's numbers from its end, `step` apart, made as they're stepped:

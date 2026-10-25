@@ -1,9 +1,20 @@
 // A range's numbers, made as they're stepped, `step` apart: `$lazyRange(0,
-// n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`.
-function* $lazyRange(start, end = Infinity, step = 1) {
-  for (let i = start; i < end; i = Number(i) + step) {
-    yield i;
-  }
+// n)` of `0..n`, `$lazyRange(0, n, 3)` of `(0..n).step_by(3)`. Its `nth`
+// is std's `Range::nth`, of its bounds, which `skip` and `step_by` step it
+// by, so they don't make each number (#231).
+function $lazyRange(start, end = Infinity, step = 1) {
+  let at = start;
+  const range = new $Steps(() => {
+    if (!(at < end)) return { done: true, value: undefined };
+    const value = at;
+    at = Number(at) + step;
+    return { done: false, value };
+  });
+  range.nth = (k) => {
+    if (k > 0 && at < end) at = Number(at) + k * step;
+    return range.next();
+  };
+  return range;
 }
 
 // A range's numbers from its end, `step` apart, made as they're stepped:

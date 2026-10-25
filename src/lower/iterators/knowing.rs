@@ -375,6 +375,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
             return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step]));
         }
+        // One made here by its source's `nth`, `$stepBy(src, n)`, a range's
+        // (#231): as the filter's, `$stepByEnds` of its source.
+        if let Some(source) = crate::lower::recognition::stepped_by_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && callee.helper_name() == Some("$stepBy")
+            && let [source_value, step] = args.as_slice()
+        {
+            let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
+            let source_value = self.as_exact_size(source_value, source.peel_refs(), true, span)?;
+            return Ok(Expr::call_helper("$stepByEnds", vec![source_value, step.clone()]));
+        }
         // A filter made here, `src.filter(p)`: its source's items `p` keeps,
         // from either end, as Rust's `Filter` steps them (ADR 0526).
         if let Some(source) = crate::lower::recognition::filtered_source(self.tcx, ty)

@@ -83,4 +83,12 @@ export const mutations: Mutation[] = [
     replace: "    undefined,\n    undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "range-iterator-nth-stepped",
+    breaks: "a range's JS iterator has no `nth` of its bounds, so a `skip` of a held range steps each number and doesn't finish (#231)",
+    file: "src/runtime/iterator.js",
+    find: "  nth ??= $rangeNthOf(next);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
+  },
 ];

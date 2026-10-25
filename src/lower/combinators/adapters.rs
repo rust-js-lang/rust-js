@@ -349,10 +349,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
                 // Of a source that may give more after a `None`, as std's
-                // steps it, by `nth`, which a `None` stops (#161); and of one
-                // whose `nth` reaches the crate's own, which std asks (#214).
+                // steps it, by `nth`, which a `None` stops (#161); of one
+                // whose `nth` reaches the crate's own, which std asks (#214);
+                // and of a range's numbers, whose `nth` is of its bounds,
+                // which tidy makes `$lazyRange(a, b, n)` where it's made
+                // there (#231).
                 if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())
                     || self.recognition().nths_its_own(receiver_ty)
+                    || self.steps_a_range(receiver_ty.peel_refs())
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);
