@@ -305,3 +305,14 @@ nightly's `truthy-option-map-unchained` survived. It is gone, along with
 that mutation. A `filter`'s truth test, `!!s` of text, carries no mark,
 so it keeps its conditional. `filter-truth-map-chained` now marks it and
 is caught.
+
+## Amendment: `presence_of` is gone; `null_test` answers its caller (#272)
+
+`js/stmt_walk.rs`'s `presence_of` read `!!x` as a test of being set even
+without the `Known::Presence` mark. That made it a second answer, next to
+`null_test`, and no program reached its extra arm: `Expr::presence`
+always marks the `!!x` it makes. Its one caller,
+`a != null && Array.isArray(a)` → `Array.isArray(a)`, now asks
+`null_test(.., true)`, and the arm's mutation `presence-truthy-unread`,
+which survived, is gone with it. `text-truth-chained` still breaks the
+optional-chain fold the same way, inline, and is still caught.

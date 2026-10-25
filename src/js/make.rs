@@ -709,7 +709,7 @@ impl Expr {
         // `null` or `undefined`. A chain after it, `&& ..`, is made from the
         // left, this first.
         if op == Op::And
-            && let Some(tested) = presence_of(&lhs)
+            && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Call(callee, args) = &rhs.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
             && matches!(&array.kind, ExprKind::Var(name) if name == "Array")

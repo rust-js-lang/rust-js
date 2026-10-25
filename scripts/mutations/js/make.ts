@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
     "file": "src/js/make.rs",
     "find": "        if let Some(tested) = null_test(&test, true)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    "replace": "        if let Some(tested) = presence_of(&test)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
+    "replace": "        if let Some(tested) = null_test(&test, true).or(match &test.kind { ExprKind::Unary(UnaryOp::Not, not) => match &not.kind { ExprKind::Unary(UnaryOp::Not, x) => Some(&**x), _ => None }, _ => None })\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
