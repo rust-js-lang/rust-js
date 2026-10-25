@@ -39,7 +39,9 @@ use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
-use naming::{exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions};
+use naming::{
+    exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions, refuse_two_names,
+};
 use rc_counts::counted_rcs;
 pub(super) use rc_counts::{Counted, Head, head};
 use rustc_hir::def::DefKind;
@@ -902,7 +904,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let named_expressions = named_expressions(tcx, all_bodies.iter().copied().chain(initializers));
     let local_functions = local_functions(tcx, all_bodies.iter().copied().chain(initializers), &named_expressions);
     let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls, &named_expressions);
-    let import_names = name_imports(tcx, &uses, &taken);
+    let failed = failed | refuse_two_names(tcx, &modules);
+    let import_names = name_imports(tcx, &uses, &taken, &foreign);
     for (module, names) in taken.iter_mut() {
         names.extend(import_names[module].values().cloned());
     }

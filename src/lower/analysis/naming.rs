@@ -146,6 +146,7 @@ pub(super) fn name_imports(
     tcx: TyCtxt<'_>,
     uses: &JsUses,
     taken: &HashMap<LocalModId, HashSet<String>>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
 ) -> HashMap<LocalModId, HashMap<Export, String>> {
     let (namespaces, others): (Vec<&Export>, Vec<&Export>) =
         uses.imported.keys().partition(|(_, export)| export == "*");
@@ -156,12 +157,7 @@ pub(super) fn name_imports(
             let (from, export) = export_key;
             // What holds the export itself, `next/app#default`, not one of its
             // members, `next/app#default.getInitialProps`.
-            let itself = |id: &&DefId| {
-                js_path(tcx, **id)
-                    .as_deref()
-                    .and_then(js_import)
-                    .is_some_and(|(_, member)| member.is_empty())
-            };
+            let itself = |id: &&DefId| binds_itself(tcx, **id);
             let held_by = match uses
                 .bound_to
                 .get(export_key)
@@ -217,6 +213,18 @@ pub(super) fn name_imports(
         .map(|(&module, items)| {
             let mut reserved: HashSet<String> = uses.globals.iter().chain(items).cloned().collect();
             let renamed = renamed_in(tcx, module);
+            // A library's item is named as the module's `use` renames it,
+            // its default or its name: `use shared::enqueue_task::enqueue_task
+            // as queue_macrotask;` is `import queueMacrotask from
+            // "../shared/enqueueTask.js"`, as React's ReactAct has it (ADR
+            // 0202, amended).
+            let library_renamed: HashMap<Export, &String> = (renamed.iter())
+                .filter_map(|(&id, alias)| {
+                    foreign
+                        .item(id)
+                        .map(|item| ((item.from.clone(), item.export.clone()), alias))
+                })
+                .collect();
             // What the module imports is named first, so it's named as it is
             // where another module imports another of its name: next/image's
             // `Image` there, next/legacy/image's here.
@@ -225,20 +233,36 @@ pub(super) fn name_imports(
                 .partition(|(export, _)| uses.imported[*export].contains(&module));
             let names = (own.into_iter().chain(others))
                 .map(|(export, base)| {
-                    // A default import is named as the module renames what
-                    // holds it: `use …::Link as NextLink` is
-                    // `import NextLink from "next/link"`, as react.dev's MDX
-                    // `Link` has it beside its own `Link`.
-                    let alias = (export.1 == "default")
-                        .then(|| uses.bound_to.get(*export))
-                        .flatten()
-                        .and_then(|held| held.iter().filter_map(|id| renamed.get(id)).min());
+                    // An import is named as the module renames what holds
+                    // it: `use …::Link as NextLink` is `import NextLink from
+                    // "next/link"`, as react.dev's MDX `Link` has it beside
+                    // its own `Link`; `use react::use_id as make_id` is
+                    // `import { useId as makeId }`, the binding of the
+                    // export itself, not of a member of it.
+                    let default = export.1 == "default";
+                    let alias = (uses.bound_to.get(*export))
+                        .and_then(|held| {
+                            (held.iter())
+                                .filter(|&&id| default || binds_itself(tcx, id))
+                                .filter_map(|id| renamed.get(id))
+                                .min()
+                        })
+                        .or_else(|| library_renamed.get(*export).copied());
                     ((*export).clone(), fresh_in(&mut reserved, alias.unwrap_or(base)))
                 })
                 .collect();
             (module, names)
         })
         .collect()
+}
+
+/// Whether a binding holds a JS module's export itself, `next/app#default`,
+/// not one of its members, `next/app#default.getInitialProps`.
+fn binds_itself(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    js_path(tcx, id)
+        .as_deref()
+        .and_then(js_import)
+        .is_some_and(|(_, member)| member.is_empty())
 }
 
 /// What a module's `use`s rename, by their new names, camel case as any
@@ -249,6 +273,18 @@ pub(super) fn name_imports(
 /// crate::scheduler::unstable_now;`, names it so, as it's exported, not
 /// camelCase (`default_exports::own_aliases`, ADR 0596, amended).
 pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashMap<DefId, String> {
+    let mut renamed: HashMap<DefId, String> = HashMap::new();
+    for (def_id, alias, _) in use_renames(tcx, module) {
+        // Of two, the first written: one import has one name in a file,
+        // and two that differ are refused (`refuse_two_names`).
+        renamed.entry(def_id).or_insert(alias);
+    }
+    renamed
+}
+
+/// Each `use` of the module that renames an item, in the order written:
+/// what it names, the import's name, and where it's written.
+fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc_span::Span)> {
     tcx.hir_module_items(module)
         .free_items()
         .filter_map(|id| {
@@ -265,12 +301,42 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
                         return None;
                     }
                     let alias = given.or_else(|| crate::lower::default_exports::alias_named(tcx, def_id, ident.name));
-                    Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))
+                    Some((
+                        def_id,
+                        alias.unwrap_or_else(|| camel_case(ident.name.as_str())),
+                        item.span,
+                    ))
                 }
                 _ => None,
             }
         })
         .collect()
+}
+
+/// A module whose `use`s give one item two names, `use dep::helper as
+/// assist;` and `use dep::helper as aid;`: refused, as its file imports it
+/// once, by one name, and either would leave the other unsaid (ADR 0202,
+/// amended).
+pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool {
+    let mut failed = false;
+    for &module in modules {
+        let mut first: HashMap<DefId, String> = HashMap::new();
+        for (def_id, alias, span) in use_renames(tcx, module) {
+            match first.get(&def_id) {
+                Some(named) if *named != alias => {
+                    let message = format!(
+                        "rust-js: this module's file imports `{}` once, by one name, and another `use` names it `{named}`; name it once",
+                        tcx.item_name(def_id)
+                    );
+                    tcx.dcx().span_err(span, message);
+                    failed = true;
+                }
+                Some(_) => {}
+                None => _ = first.insert(def_id, alias),
+            }
+        }
+    }
+    failed
 }
 
 /// An item's JS name before it's made unique: a trait impl's accessor

@@ -372,3 +372,36 @@ pub use dep::assign::assign;
   expect([module.LIMIT, module.renamed(), module.version, new module.Circle(2).radius]).toEqual([9, 9, "19.3.0", 2]);
   expect(module.assign).toBe(Object.assign);
 });
+
+// React's ReactAct imports shared's `enqueueTask` as `queueMacrotask`, the
+// name its Rust `use` gives it: a library's item is named as the module's
+// `use` renames it, its default and its name alike (ADR 0202, amended).
+test("a library's item is imported by the name a use renames it to", async () => {
+  const dir = fixture("cross-crate-renamed");
+  const { app } = compiled(dir, `pub mod enqueue {
+    js::export_default! {
+        pub fn enqueue_task(task: fn() -> u32) -> u32 {
+            task() + 1
+        }
+    }
+}
+
+pub fn helper() -> u32 {
+    3
+}
+`, `#[cfg_attr(rust_js, rust_js::name = "queueMacrotask")]
+use dep::enqueue::enqueue_task as queue_macrotask;
+#[cfg_attr(rust_js, rust_js::name = "helpOut")]
+use dep::helper as assist;
+
+pub fn run() -> u32 {
+    queue_macrotask(assist) + assist()
+}
+`);
+  // Its \`#[rust_js::name]\` too, as a crate module's is (ADR 0874).
+  expect(app).toContain('import queueMacrotask from "../dep/enqueue.js";\n');
+  expect(app).toContain('import { helper as helpOut } from "../dep/lib.js";\n');
+  expect(app).toContain("  return (queueMacrotask(helpOut) + helpOut()) >>> 0;\n");
+  const { run } = await import(join(dir, "app", "lib.js"));
+  expect(run()).toBe(7);
+});

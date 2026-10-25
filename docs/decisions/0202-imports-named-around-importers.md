@@ -66,3 +66,30 @@ sandpack } from "./inner.js"`, as react.dev's MDXComponents imports
 default import already was. A module test imports two so; a mutation
 drops the name. The JSX snapshots that rename a component, `Card as
 Panel`, `MEMO as Cached` and `THEME as Theme`, print those names.
+
+## Amendment: every import by its `use`'s name
+
+A `use .. as` names every import it renames, not only a crate module's
+function and a binding's default: a library's item, its default too, and
+a binding's named export. React's ReactAct writes `import queueMacrotask
+from 'shared/enqueueTask'`, shared's default, and its port's `use
+shared::enqueue_task::enqueue_task as queue_macrotask;` imported
+`enqueueTask` and called it so; `use react::use_id as make_id` imported
+`useId`. Each is now the name the module's `use` gives it,
+`import queueMacrotask from "../shared/enqueueTask.js"` and `import {
+useId as makeId } from "react"`, in that file alone. A binding of a
+member of an export, `./math.js#tools.scale`, renames no import: the
+export is `tools`, and `use bound::scale as scaled` reads
+`tools.scale(x)`. A `use`'s `#[rust_js::name]` is the name, as ADR 0874
+has it, a library's default's too: `#[cfg_attr(rust_js, rust_js::name =
+"queueMacrotask")]` was ignored there, silently. Two `use`s that give
+one item two names in one module are refused, as its file imports it
+once: either name would leave the other unsaid. Case: N (ADR 0262): a file's name of its import is no
+behavior; the call is the same function's.
+
+Tests: `cross-crate-items` imports a library's default and its function
+by their `use`s' names; `modules` a binding's default, its named export,
+and a member's export by its own name, and refuses two names of one.
+Mutations: each of the three left out, a member's `use` naming its
+export, and two names kept.
+

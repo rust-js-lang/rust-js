@@ -115,6 +115,43 @@ Imports are one block, in the order a person writes them: packages, then
 the crate's own modules, then imports for their effect, then
 `@rust-js/runtime` ([ADR 0295](../../decisions/0295-import-order.md)).
 
+A `use .. as` names the import as it renames the item, camelCase as any
+name is: another module's function, a library's item, a module's default
+too, `import queueMacrotask from "../shared/enqueueTask.js"`, and a
+binding's export, `import { useId as makeId } from "react"`; by its
+`#[rust_js::name]` where it has one. The module reads it by that name;
+every other module keeps its own. Two `use`s naming one item apart in
+one module are an error, as its file imports it once
+([ADR 0202](../../decisions/0202-imports-named-around-importers.md),
+amended):
+
+```rust
+// src/lib.rs
+mod format;
+
+use format::shout as loud;
+
+pub fn welcome(name: &str) -> String {
+    loud(name)
+}
+```
+
+```rust
+// src/format.rs
+pub fn shout(text: &str) -> String {
+    text.to_uppercase() + "!"
+}
+```
+
+```js
+// src/lib.js
+import { shout as loud } from "./format.js";
+
+export function welcome(name) {
+  return loud(name);
+}
+```
+
 ## `pub` and exports
 
 ```rust

@@ -730,6 +730,57 @@ test("a use that renames another module's function imports it as that", async ()
   expect(lib.run()).toBe(4);
 });
 
+// A binding's named export a `use` renames is imported by that name, as its
+// default is, `import { twice as double }` (ADR 0202, amended); one of a
+// member of an export doesn't rename the export.
+test("a use that renames a binding imports its export as that", async () => {
+  const dir = fixture("renamed-binding-import");
+  writeFileSync(join(dir, "lib.rs"), `mod bound {
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
+    pub fn twice(x: f64) -> f64 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#default")]
+    pub fn half(x: f64) -> f64 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#tools.scale")]
+    pub fn scale(x: f64) -> f64 {
+        unreachable!()
+    }
+}
+
+use bound::half as halve;
+use bound::scale as scaled;
+use bound::twice as double;
+
+pub fn run(x: f64) -> f64 {
+    scaled(double(halve(x)))
+}
+`);
+  writeFileSync(join(dir, "math.js"), "export function twice(x) {\n  return x * 2;\n}\n\nexport const tools = { scale: (x) => x * 10 };\n\nexport default function half(x) {\n  return x / 2;\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Of a member of an export, `tools.scale`, the export keeps its name.
+  expect(js).toContain('import halve, { tools, twice as double } from "./math.js";');
+  expect(js).toContain("return tools.scale(double(halve(x)));");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run(6)).toBe(60);
+});
+
+// A file imports an item once, by one name: two `use`s naming it apart are
+// refused, never one of them left unsaid (ADR 0202, amended).
+test("two uses naming one item apart are refused", () => {
+  const dir = fixture("two-import-names");
+  writeFileSync(join(dir, "lib.rs"), "mod inner;\nuse inner::client as first;\nuse inner::client as second;\n\npub fn run() -> u32 {\n    first() + second()\n}\n");
+  writeFileSync(join(dir, "inner.rs"), "pub fn client() -> u32 {\n    1\n}\n");
+  const built = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { stderr: "pipe" });
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("imports `client` once, by one name, and another `use` names it `first`; name it once");
+});
+
 // A module of re-exports only is a file of them, as react.dev's
 // Sidebar/index is `export {SidebarLink} from './SidebarLink'`.
 test("a module of only pub uses is a file of re-exports", async () => {
