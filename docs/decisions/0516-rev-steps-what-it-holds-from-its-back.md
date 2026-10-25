@@ -57,3 +57,11 @@ from the back on the same items, and `$rev($rev(it))` is `it`
 `$rev($iter(xs))` reads `$iter(xs.toReversed())` so too. The readability
 measure's `$iter` share grows by the new case's iterators, each closed to
 drop what it doesn't give, as any of items with a destructor is.
+
+## Amendment: one rule of `$rev($iter(v))`
+
+`stepped_in_place` (src/lower/iterators/in_place.rs) wrote `$rev($iter(v))`
+stepped till it ends as `$iter(v.toReversed())`, which #205's tidy pass
+"reversed inward" already does to every `$rev($iter(v))`, so nothing reached
+it: the nightly's mutation `rev-of-items-kept-in-place` survived (#228).
+`reversed_inward` is the one rule; `rev-of-items-not-reversed-inward` holds it.

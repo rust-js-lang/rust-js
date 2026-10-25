@@ -45,15 +45,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "rev-of-items-kept-in-place",
-    breaks: "`$rev($iter(v))` stepped till it ends isn't the array's `toReversed()`",
-    file: "src/lower/iterators/in_place.rs",
-    find: "        Some(\"$rev\") if let Some(items) = fresh_iter_source(&given[0]) => Expr::call_helper(\n",
-    replace: "        Some(\"$rev\") if false && let Some(items) = fresh_iter_source(&given[0]) => Expr::call_helper(\n",
-    tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
-    snapshots: true,
-  },
-  {
     name: "consumed-iterator-keeps-hint",
     breaks: "an iterator of the crate's stepped till it ends keeps a `size_hint` nothing asks, `$iterator(x, next, false, undefined, undefined, hint)`",
     file: "src/lower/iterators/in_place.rs",

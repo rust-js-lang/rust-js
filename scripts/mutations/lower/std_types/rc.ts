@@ -84,14 +84,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
   {
-    name: "rc-of-ref-unpeeled",
-    breaks: "`{}` of a counted `Rc<&i32>` is refused, the reference it holds left",
-    file: "src/lower/std_types/rc.rs",
-    find: "            (value, ty) = self.through_refs(held, inside);\n",
-    replace: "            (value, ty) = (held, inside);\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_mut_ref_shown.rs$"],
-  },
-  {
     name: "counted-dyn-pointee-held",
     breaks: "what a counted `Rc<dyn T>` points at is read as its `value`, not its pair",
     file: "src/lower/std_types/rc.rs",

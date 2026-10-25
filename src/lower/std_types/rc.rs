@@ -244,8 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a counted `Rc` points at, or a guard guards, through any others:
     /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
     /// `Pin`'s pointer does (ADR 0329); a `Box`'s or another `Rc`'s, which is
-    /// it in JS (ADR 0023), through the references it holds, an `Rc<&mut
-    /// T>`'s handle (#197). Any other value is itself.
+    /// it in JS (ADR 0023). Any other value is itself.
     pub(in crate::lower) fn through_boxes(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
         loop {
             if let Some(pointer) = self.recognition().pinned(ty) {
@@ -264,13 +263,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
                 _ => return (value, ty),
             };
-            // And the references it holds, an `Rc<&T>`'s (ADR 0504); a
-            // guard's `value`, an `Rc`'s what it points at (ADR 0520).
-            let held = match self.is_guard(ty) {
+            // A guard's `value`, an `Rc`'s what it points at (ADR 0520); a
+            // reference it holds, an `Rc<&T>`'s, is shown as references are,
+            // through it (ADR 0504, #228).
+            value = match self.is_guard(ty) {
                 true => Expr::held(value),
                 false => self.counted_pointee(value, inside),
             };
-            (value, ty) = self.through_refs(held, inside);
+            ty = inside;
         }
     }
 }

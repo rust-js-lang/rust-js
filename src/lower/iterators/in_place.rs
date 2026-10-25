@@ -48,11 +48,6 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
         Some("$knowing") if is_stepped_items(&given[0]) => given[0].clone(),
-        // `$rev($iter(v))`: the array's iterator from its end, `$iter(v.toReversed())`.
-        Some("$rev") if let Some(items) = fresh_iter_source(&given[0]) => Expr::call_helper(
-            "$iter",
-            vec![Expr::call(Expr::member(items.clone(), "toReversed"), Vec::new())],
-        ),
         _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),
         _ => return,
     };

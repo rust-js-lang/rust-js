@@ -31,3 +31,12 @@ that takes a value and its type through what holds it, goes through
 these too, then through the references they hold, as it does a counted
 `Rc`'s: `boxed.value`. `boxed_mut_ref_shown` holds both, a counted `Rc`'s
 too, with `box-of-mut-ref-shown-as-handle` and `rc-of-ref-unpeeled`.
+
+## Amendment: one place peels what an `Rc` holds
+
+`through_boxes` peeled the references a counted `Rc` holds, an
+`Rc<&mut T>`'s handle (#197), but `{}` and `{:?}` of a `&T` already show
+it through its referent, so the JS was the same without it: the
+nightly's mutation `rc-of-ref-unpeeled` survived (#228). The loop gives
+back the reference it reaches, and the reference's own formatting peels
+it.

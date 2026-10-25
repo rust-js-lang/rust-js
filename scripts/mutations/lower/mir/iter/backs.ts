@@ -417,4 +417,13 @@ export const mutations: Mutation[] = [
     replace: "        self.closing(reversed, iter_ty, span)\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
   },
+  {
+    name: "rev-of-items-not-reversed-inward",
+    breaks: "`$rev($iter(v))` isn't the array's `$iter(v.toReversed())`, the one rule of it since #228",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "    if crate::lower::iterators::is_stepped_items(e) {\n        let items = crate::lower::iterators::iterated(e.clone());\n",
+    replace: "    if false && crate::lower::iterators::is_stepped_items(e) {\n        let items = crate::lower::iterators::iterated(e.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^(fused_iterator|rev_of_closed_items|rev_drops).rs$"],
+    snapshots: true,
+  },
 ];
