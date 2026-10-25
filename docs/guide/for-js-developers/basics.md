@@ -1026,6 +1026,50 @@ export function timeout(level) {
 }
 ```
 
+A `match` of an `Option`'s text, `Some("fulfilled")`, is a `switch` of
+the value: no case takes `None`, which goes to the `default`, as it does
+in Rust. A last `_`'s statements are the `default`'s, and what follows the
+`match` follows the `switch`
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended):
+
+```rust
+pub fn resolve(status: Option<&str>, log: &mut Vec<String>) -> u32 {
+    match status {
+        Some("fulfilled") => return 1,
+        Some("rejected") => return 2,
+        _ => {
+            log.push("waiting".to_string());
+            match status {
+                Some("pending") => return 3,
+                Some("stale") => log.push("stale".to_string()),
+                _ => {}
+            }
+        }
+    }
+    0
+}
+```
+
+```js
+export function resolve(status, log) {
+  switch (status) {
+    case "fulfilled":
+      return 1;
+    case "rejected":
+      return 2;
+    default:
+      log.push("waiting");
+      switch (status) {
+        case "pending":
+          return 3;
+        case "stale":
+          log.push("stale");
+      }
+  }
+  return 0;
+}
+```
+
 A guarded arm, as clippy's `collapsible_match` asks an `if` in an arm to
 be written, is a case whose statements test the guard:
 

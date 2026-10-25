@@ -9,6 +9,7 @@ use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, SUBJECT, Switch, SwitchArm};
 use crate::lower::untagged::TypeofCase;
 
+use super::bindings::declared;
 use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 
 /// What a readable label a loop's given is, where a `break` of it in a
@@ -47,27 +48,7 @@ fn walk(
     while i < list.len() {
         if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut()) {
             list.splice(i..i + taken, switch);
-            // A temporary only its test reads, `const _5 = s.charCodeAt(i);`
-            // just before, but for what's declared, unset, `let v;`: its
-            // value, read in place.
-            let declared = (list[..i].iter().rev())
-                .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
-                .count();
-            if let Some(at) = i.checked_sub(declared + 1)
-                && let StmtKind::Const(name, value) = &list[at].kind
-                && is_temporary(name)
-                && let StmtKind::Switch { discriminant, .. } = &list[i].kind
-                && matches!(&discriminant.kind, ExprKind::Var(v) if v == name)
-                && js::mentions_in(&list[at + 1..], name) == 1
-            {
-                let value = value.clone();
-                if let StmtKind::Switch { discriminant, .. } = &mut list[i].kind {
-                    *discriminant = Expr {
-                        span: discriminant.span,
-                        ..value
-                    };
-                }
-                list.remove(at);
+            if discriminant_in_place(list, i) {
                 i -= 1;
             }
             named_value(list, i);
@@ -148,6 +129,34 @@ fn walk(
             _ => {}
         }
     }
+}
+
+/// A temporary only the test of the `switch` at `list[i]` reads, `const _5
+/// = s.charCodeAt(i);` just before, but for what's declared, unset, `let
+/// v;`: its value, read in place, `switch (s.charCodeAt(i))`. Whether it
+/// was, the `switch` then at `list[i - 1]`.
+fn discriminant_in_place(list: &mut Vec<Stmt>, i: usize) -> bool {
+    let declared = (list[..i].iter().rev())
+        .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
+        .count();
+    if let Some(at) = i.checked_sub(declared + 1)
+        && let StmtKind::Const(name, value) = &list[at].kind
+        && is_temporary(name)
+        && let StmtKind::Switch { discriminant, .. } = &list[i].kind
+        && matches!(&discriminant.kind, ExprKind::Var(v) if v == name)
+        && js::mentions_in(&list[at + 1..], name) == 1
+    {
+        let value = value.clone();
+        if let StmtKind::Switch { discriminant, .. } = &mut list[i].kind {
+            *discriminant = Expr {
+                span: discriminant.span,
+                ..value
+            };
+        }
+        list.remove(at);
+        return true;
+    }
+    false
 }
 
 /// A temporary each case of the `switch` at `list[i]` gives a value, read
@@ -236,15 +245,33 @@ fn switch_at(
     let going: Vec<usize> = (0..cases.len())
         .filter(|&c| !cases[c].1.last().is_some_and(js::ends))
         .collect();
-    // Each arm a case: one that does nothing, left out, goes on too.
+    // Each arm a case: one that does nothing, left out, goes on too. Of
+    // the `default`, a `_`'s, what follows that's written in it or MIR's,
+    // up to the first of what's written past it, which stays after the
+    // `switch`, where nothing there reads what it declares: what MIR placed
+    // after the chain of the arms before a last `_ => { .. }`, which only
+    // that case goes on to (ADR 0629, amended). One that does nothing, `_
+    // => {}`, is left out where it's then nothing (`breaks_past_switches`).
     if let [only] = going[..]
         && cases.len() == arms.len()
-        && !cases[only].2
         && !after.is_empty()
-        && (after.iter()).all(|s| written_at(s).is_none_or(|at| within(at, cases[only].3)))
     {
-        cases[only].1.extend(after.iter().cloned());
-        taken = stmts.len() - at;
+        let arm = cases[only].3;
+        let own = |s: &Stmt| written_at(s).is_none_or(|at| within(at, arm));
+        let n = match cases[only].2 {
+            false if after.iter().all(own) => after.len(),
+            false => 0,
+            true => {
+                let n = (after.iter()).take_while(|s| own(s)).count();
+                let rest = &after[n..];
+                match declared(&after[..n]).all(|name| js::mentions_in(rest, name) == 0) {
+                    true => n,
+                    false => 0,
+                }
+            }
+        };
+        cases[only].1.extend(after[..n].iter().cloned());
+        taken += n;
     }
     // Each arm of `null`, which `typeof` says is an object, an `if` of its
     // test in `case "object"`; and each of an array, an `if` of its test
@@ -846,14 +873,92 @@ fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
 /// the `switch`'s own `break` does, nothing between: that `break`, as a
 /// person writes a case's end (ADR 0731); and the block's label, which
 /// nothing names now, gone.
+///
+/// And an `Option`'s test of `None` before a `switch` of its value, `if (x
+/// == null) { break l; } switch (x) { .. }` where they end the block, or
+/// `if (x != null) { switch (x) { .. } }`, where no case is `null`'s and
+/// the `default` does nothing: the `switch` alone, as JS's `switch` takes
+/// what no case is, `switch (thenable.status) { case "fulfilled": .. }`, of
+/// `match status.as_deref() { Some("fulfilled") => .., _ => {} }` (ADR
+/// 0629, amended); a `default` of a `break` alone, nothing.
 pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
             let label = label.clone();
             ending_switches(body, &mut |case| case_breaks(case, &label));
+            // `None`, which no case takes, goes past the `switch` to the
+            // block's end, as the `break` does.
+            if let [.., guard, switch] = &body[..]
+                && let StmtKind::If(test, then, None) = &guard.kind
+                && let [
+                    Stmt {
+                        kind: StmtKind::Break(Some(to)),
+                        ..
+                    },
+                ] = &then[..]
+                && *to == label
+                && js::null_test(test, false).is_some_and(|x| switch_of(switch, x))
+            {
+                body.remove(body.len() - 2);
+            }
         }
     }
     unlabeled(stmts);
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(test, then, None) = &stmts[i].kind
+            && let [switch] = &then[..]
+            && js::null_test(test, true).is_some_and(|x| switch_of(switch, x))
+        {
+            let switch = switch.clone();
+            stmts[i] = switch;
+        }
+        if let StmtKind::Switch { default, .. } = &mut stmts[i].kind {
+            if default.as_deref().is_some_and(does_nothing) {
+                *default = None;
+            }
+            if discriminant_in_place(stmts, i) {
+                i -= 1;
+            }
+        }
+        i += 1;
+    }
+}
+
+/// Whether a `default`'s statements do nothing: none, or the `break` that
+/// leaves the `switch`, which its end does.
+fn does_nothing(stmts: &[Stmt]) -> bool {
+    matches!(
+        stmts,
+        [] | [Stmt {
+            kind: StmtKind::Break(None),
+            ..
+        }]
+    )
+}
+
+/// Whether `stmt` is a `switch` of the variable `x`, each case a literal,
+/// which `null` and `undefined` aren't, and a `default` that does nothing:
+/// one that does nothing of what's nullish.
+fn switch_of(stmt: &Stmt, x: &Expr) -> bool {
+    let StmtKind::Switch {
+        discriminant,
+        cases,
+        default,
+    } = &stmt.kind
+    else {
+        return false;
+    };
+    let literal = |v: &Expr| {
+        matches!(
+            v.kind,
+            ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::Bool(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
+        )
+    };
+    matches!(&x.kind, ExprKind::Var(_))
+        && js::same_path(discriminant, x)
+        && default.as_deref().is_none_or(does_nothing)
+        && (cases.iter()).all(|(values, _)| values.iter().all(literal))
 }
 
 /// A block a case ends with, through the branches of an `if` it ends with,

@@ -183,3 +183,44 @@ Case N: a `break` there does nothing.
 - `test/lowering-switch-ends.test.ts`, "a case needs no break where it
   leaves or it's the last"; mutations `last-case-broken` and
   `tried-case-broken`.
+
+## Amendment: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`
+
+React's `resolveThenable` (ReactChildren.js), ported, read
+
+```js
+switch (thenable.status) {          // upstream: the same, and
+  case "fulfilled": return ..;      //   default: {
+  case "rejected": throw ..;        //     if (typeof thenable.status === ..) ..
+}                                   //     switch (thenable.status) { .. }
+if (typeof thenable.status ..) ..   //   }
+const status = thenable.status;
+if (status != null) {
+  switch (status) { ..; default: break; }
+}
+```
+
+MIR tests the arms before a last `_ => { .. }` as an `if` and its `else`,
+and puts the `_`'s statements after that chain, which the `switch` left
+after it; and of `match s.as_deref() { Some("a") => .., _ => {} }` it
+tests `None` first, `if (status == null) { break bb; }` or `if (status !=
+null) { .. }`, around the `switch`, its `_` a `default` of that `break`.
+
+**A last `_`'s statements are its `default`**: of what follows the chain,
+what's written in the arm or MIR's, up to the first statement written past
+it, which stays after the `switch`, where nothing there reads what the
+`default` then declares. **A `default` of a `break` alone is none**; and
+**a test of `None` before a `switch` of the value**, `if (x == null) {
+break l; } switch (x)` ending block `l`, or `if (x != null) { switch (x)
+}`, **goes**, where each case is a literal and the `default` does nothing:
+`switch` takes what no case is, `null` and `undefined` too, as Rust's `_`
+does. The temporary its test read, the `switch`'s alone, is then read in
+place, `switch (thenable.status)`. Case N: each moves a statement only
+one path reaches, or drops a test whose branches do the same.
+
+- `test/lowering-switches.test.ts`, "React's resolveThenable is upstream's
+  switch, its last arm its default"; `test/corpus/switch_option_text.rs`,
+  beside native Rust. No other corpus case's or snapshot's JS changed.
+- Mutations `default-statements-after-switch`,
+  `none-guard-kept-before-switch`, `none-guard-around-switch-kept`,
+  `default-break-kept`, `guarded-switch-temporary-kept`.

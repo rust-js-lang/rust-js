@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     name: "switch-temporary-kept",
     breaks: "a temporary only the tests read stays, `const len = $byteLen(s); switch (len)`, not `switch ($byteLen(s))`",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "                && is_temporary(name)\n                && let StmtKind::Switch",
-    replace: "                && !is_temporary(name)\n                && let StmtKind::Switch",
+    find: "        && is_temporary(name)\n        && let StmtKind::Switch",
+    replace: "        && !is_temporary(name)\n        && let StmtKind::Switch",
     tests: switches,
   },
   {
@@ -191,5 +191,47 @@ export const mutations: Mutation[] = [
     find: "    if written(last.span) || !a.last().is_some_and(js::ends) {\n",
     replace: "    if written(last.span) {\n",
     tests: ["test/lowering-labels.test.ts", "-t", "an else the program wrote in a case"],
+  },
+  {
+    name: "default-statements-after-switch",
+    breaks: "a last `_`'s statements MIR placed after the chain stay after the `switch`, not its `default:` (React's `resolveThenable`)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                match declared(&after[..n]).all(|name| js::mentions_in(rest, name) == 0) {\n",
+    replace: "                match false {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
+  },
+
+
+  {
+    name: "none-guard-kept-before-switch",
+    breaks: "`if (status == null) { break bb4; } switch (status) { .. }` keeps its test of `None`, which no case takes",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                body.remove(body.len() - 2);\n",
+    replace: "",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
+  },
+  {
+    name: "none-guard-around-switch-kept",
+    breaks: "`if (status != null) { switch (status) { .. } }` keeps its test of `None`, which no case takes",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            stmts[i] = switch;\n",
+    replace: "            let _ = switch;\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
+  },
+  {
+    name: "default-break-kept",
+    breaks: "a `default` of a `break` alone stays, `default: break;`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                *default = None;\n",
+    replace: "",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
+  },
+  {
+    name: "guarded-switch-temporary-kept",
+    breaks: "the temporary a `switch` its guard went from reads stays, `const status = thenable.status; switch (status)`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            if discriminant_in_place(stmts, i) {\n",
+    replace: "            if false && discriminant_in_place(stmts, i) {\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
   },
 ];

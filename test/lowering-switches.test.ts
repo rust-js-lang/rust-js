@@ -1142,3 +1142,161 @@ console.log(JSON.stringify([
     [[1, 3, 5, 1, 5, 5, 1, 3], [1, 5, 5, 1, 5, 5, 1, 5]],
   ]);
 });
+
+// ADR 0629, amended: React's `resolveThenable` (ReactChildren.js). A last
+// `_`'s statements, which MIR placed after the chain of the arms before
+// it, are its `default`, up to its last statement written there; what
+// follows the `match` stays after the `switch`. And a `match` of an
+// `Option`'s text, `Some("fulfilled")`, whose `_ => {}` does nothing, is a
+// `switch` of the value as JS writes it: no test of `None`, which no case
+// takes, no temporary and no `default: break;`.
+test("React's resolveThenable is upstream's switch, its last arm its default", async () => {
+  const dir = fixture("thenable-switch");
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+use js::{JsObject, Unknown};
+
+pub struct Thenable(PhantomData<JsObject>);
+
+unsafe impl js::Defined for Thenable {}
+
+impl Thenable {
+    #[cfg_attr(rust_js, rust_js::link_name = "get status")]
+    pub fn status(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "set status")]
+    pub fn set_status(&self, status: &str) {
+        let _ = status;
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get value")]
+    pub fn value(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get reason")]
+    pub fn reason(&self) -> Option<&'static Unknown> {
+        unreachable!()
+    }
+}
+
+pub fn resolve(thenable: &'static Thenable) -> Option<&'static Unknown> {
+    match thenable.status().as_deref() {
+        Some("fulfilled") => return thenable.value(),
+        Some("rejected") => js::throw(thenable.reason()),
+        _ => {
+            if js::type_of(js::get(thenable, "status")) == "string" {
+                thenable.set_status("seen");
+            } else {
+                thenable.set_status("pending");
+            }
+
+            // Check one more time in case the thenable resolved synchronously.
+            match thenable.status().as_deref() {
+                Some("fulfilled") => return thenable.value(),
+                Some("rejected") => js::throw(thenable.reason()),
+                _ => {}
+            }
+        }
+    }
+    js::throw(Some(js::unknown(thenable)))
+}
+
+pub fn check(thenable: &'static Thenable) -> Option<&'static Unknown> {
+    thenable.set_status("pending");
+    match thenable.status().as_deref() {
+        Some("fulfilled") => return thenable.value(),
+        Some("rejected") => js::throw(thenable.reason()),
+        _ => {}
+    }
+    js::throw(Some(js::unknown(thenable)))
+}
+
+pub fn code(thenable: &'static Thenable) -> u32 {
+    match thenable.status().as_deref() {
+        Some("fulfilled") => 1,
+        Some("rejected") => 2,
+        _ => {
+            thenable.set_status("seen");
+            3
+        }
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function resolve(thenable) {
+  switch (thenable.status) {
+    case "fulfilled":
+      return thenable.value;
+    case "rejected":
+      throw thenable.reason;
+    default:
+      if (typeof thenable.status === "string") {
+        thenable.status = "seen";
+      } else {
+        thenable.status = "pending";
+      }
+
+      // Check one more time in case the thenable resolved synchronously.
+      switch (thenable.status) {
+        case "fulfilled":
+          return thenable.value;
+        case "rejected":
+          throw thenable.reason;
+      }
+  }
+  throw thenable;
+}`);
+  expect(js).toContain(`    default:
+      thenable.status = "seen";
+      return 3;
+  }
+}`);
+  expect(js).toContain(`export function check(thenable) {
+  thenable.status = "pending";
+  switch (thenable.status) {
+    case "fulfilled":
+      return thenable.value;
+    case "rejected":
+      throw thenable.reason;
+  }
+  throw thenable;
+}`);
+  const lib = await import(join(dir, "lib.js"));
+  const thrown = (f: () => unknown) => {
+    try {
+      return ["returned", f()];
+    } catch (e) {
+      return ["threw", e];
+    }
+  };
+  const settling = { status: "x", set value(_: unknown) {} } as { status: unknown; value?: unknown };
+  const later = {
+    _status: undefined as unknown,
+    get status() {
+      return this._status;
+    },
+    set status(s: unknown) {
+      this._status = s === "pending" ? "fulfilled" : s;
+    },
+    value: 7,
+  };
+  expect([
+    thrown(() => lib.resolve({ status: "fulfilled", value: 1 })),
+    thrown(() => lib.resolve({ status: "rejected", reason: 2 })),
+    thrown(() => lib.resolve(later)),
+  ]).toEqual([["returned", 1], ["threw", 2], ["returned", 7]]);
+  const pending = {} as { status?: string };
+  expect(thrown(() => lib.resolve(pending))).toEqual(["threw", pending]);
+  expect(pending.status).toBe("pending");
+  expect(thrown(() => lib.resolve(settling))).toEqual(["threw", settling]);
+  expect(settling.status).toBe("seen");
+  const checked = { status: "x" } as { status?: string };
+  expect([thrown(() => lib.check(checked)), checked.status]).toEqual([["threw", checked], "pending"]);
+  const unknown = { status: undefined } as { status?: string };
+  expect([lib.code({ status: "fulfilled" }), lib.code({ status: "rejected" }), lib.code(unknown), unknown.status]).toEqual([1, 2, 3, "seen"]);
+});
