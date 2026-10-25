@@ -783,6 +783,38 @@ function restItem(type: string): string {
   throw new Error(`a rest parameter of \`${type}\`: no \`Takes\` says what it takes`);
 }
 
+// Operations that call each callback they're given once at most, a request
+// for one later call or for one answer: each a `Box<dyn FnOnce(..)>`, as
+// the js crate's `setTimeout` takes, so it may move what it holds out
+// (ADR 0869). WebIDL doesn't say it; each spec's algorithm does.
+const CALLED_ONCE = new Set([
+  "Window.queueMicrotask",
+  "WindowOrWorkerGlobalScope.queueMicrotask",
+  "Window.requestAnimationFrame",
+  "Window.requestIdleCallback",
+  "HTMLVideoElement.requestVideoFrameCallback",
+  "HTMLCanvasElement.toBlob",
+  "DataTransferItem.getAsString",
+  "Geolocation.getCurrentPosition",
+  "BaseAudioContext.decodeAudioData",
+  "Scheduler.postTask",
+  "LockManager.request",
+  "FileSystemDirectoryEntry.getFile",
+  "FileSystemDirectoryEntry.getDirectory",
+  "FileSystemDirectoryReader.readEntries",
+  "FileSystemEntry.getParent",
+  "FileSystemFileEntry.file",
+  "Notification.requestPermission",
+  "RTCPeerConnection.createOffer",
+  "RTCPeerConnection.createAnswer",
+  "RTCPeerConnection.setLocalDescription",
+  "RTCPeerConnection.setRemoteDescription",
+  "RTCPeerConnection.addIceCandidate",
+]);
+
+/** A parameter of an operation `CALLED_ONCE` names: its callbacks called once. */
+const once = (param: string) => param.replaceAll("Box<dyn FnMut(", "Box<dyn FnOnce(");
+
 // Operations whose typed form, by an event's or a tag's type (ADR 0223), has
 // their name: the form that takes any string is `_named`.
 const NAMED: Record<string, string> = {
@@ -1138,7 +1170,8 @@ function functionsOf(declared: Interface): Fn[] {
       const base = lead.length > 0 ? identifier(`${plain(name)}_with_${lead.join("_and_")}`) : name;
       const v = form(base, sig, m.arguments ?? []);
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
-      fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc, variadic: v.variadic });
+      const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: orNull(result, m.idlType!), doc, variadic: v.variadic });
     }
   }
 

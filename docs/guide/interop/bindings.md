@@ -698,8 +698,11 @@ export async function open(other) {
   through, as a panic ([Errors, panics and exceptions](exceptions.md)).
 - **A promise is a `Promise<T>`**, to `.await` ([Promises and async](async.md)).
 - **A callback is a closure**: `Box<dyn Fn(..)>` for one JS may call again,
-  `Box<dyn FnOnce()>` for one it calls once. JS calls it with its
-  parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md)).
+  `Box<dyn FnOnce()>` for one it calls once, as the js crate's
+  `set_timeout` and webapi's `queue_microtask` and
+  `request_animation_frame` take, so it may move out what it holds. JS
+  calls it with its parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md),
+  [ADR 0869](../../decisions/0869-a-web-callback-called-once-is-fn-once.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`: `button.onclick()` is an
   `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to

@@ -117,6 +117,41 @@ pub fn later(then: &'static dyn Fn()) {
   }
 });
 
+// ADR 0869: a callback a web API calls once, `queueMicrotask`'s, is a
+// `Box<dyn FnOnce()>`, so it may move out what it holds, as React's
+// `queueSeveralMicrotasks` gives the callback it's given to the next
+// microtask: `queueMicrotask(() => queueMicrotask(callback))`.
+test("a callback a web API calls once moves what it holds", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("called-once");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::global;
+
+pub fn twice_later(callback: Box<dyn Fn()>) {
+    global::queue_microtask(Box::new(move || global::queue_microtask(callback)));
+}
+
+pub fn framed(log: Box<dyn FnOnce(f64)>) -> u32 {
+    webapi::window.request_animation_frame(Box::new(move |time| log(time)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("queueMicrotask(() => {\n    queueMicrotask(callback);\n  });");
+  expect(js).toContain("return window.requestAnimationFrame((time) => {\n    log(time);\n  });");
+  const { twiceLater } = await import(join(dir, "lib.js"));
+  const ran: string[] = [];
+  twiceLater(() => ran.push("callback"));
+  await Promise.resolve();
+  ran.push("one microtask");
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(ran).toEqual(["one microtask", "callback"]);
+  const lib = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
+  expect(lib).toContain("pub fn queue_microtask(callback: Box<dyn FnOnce()>)");
+  // One JS calls again stays an `FnMut`: an observer's, a listener's.
+  expect(lib).toMatch(/pub fn new\(callback: Box<dyn FnMut\(&\[&ResizeObserverEntry\]/);
+});
+
 // The `history` global, a window's, as `document` is, as react.dev's _app
 // sets `history.scrollRestoration` where the browser is Safari.
 test("the history global is the page's history", async () => {

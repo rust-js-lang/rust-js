@@ -278,7 +278,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0257 A closure that only spawns an async block is an async arrow](0257-spawning-closure-async-arrow.md)
 - [0258 A promise's then, a module of a component, next/head and the Router](0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)
-- [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`)*
+- [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`; amended by 0869: one the API calls once is an `FnOnce`)*
 - [0261 Defaults that do nothing don't move what's made beside them](0261-defaults-made-in-place.md)
 - [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](0263-with-router.md)
@@ -653,6 +653,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0866 A `let` only the `if let` that takes it apart reads is read there](0866-a-let-only-its-if-let-reads-is-read-there.md)
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
+- [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -6,6 +6,8 @@ Status: Accepted. Extends [0024](0024-web-crate.md) and
 JS gives is a `dyn Fn` of its signature, not a `JsObject`.
 Amended by [0282](0282-event-listener-methods.md): event listener methods
 take closures directly; other WebIDL callbacks retain their existing forms.
+Amended by [0869](0869-a-web-callback-called-once-is-fn-once.md): a callback
+the API calls once is a `Box<dyn FnOnce(..)>`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

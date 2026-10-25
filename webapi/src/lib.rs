@@ -13128,7 +13128,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<(), &'static JsError> {
+    pub fn to_blob(&self, callback: Box<dyn FnOnce(Option<&Blob>)>, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -15676,7 +15676,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "requestVideoFrameCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_video_frame_callback(&self, callback: Box<dyn FnMut(f64, VideoFrameCallbackMetadata)>) -> u32 {
+    pub fn request_video_frame_callback(&self, callback: Box<dyn FnOnce(f64, VideoFrameCallbackMetadata)>) -> u32 {
         unreachable!()
     }
 
@@ -18768,7 +18768,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_idle_callback(&self, callback: Box<dyn FnMut(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
+    pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
         unreachable!()
     }
 
@@ -20963,7 +20963,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn queue_microtask(&self, callback: Box<dyn FnMut()>) {
+    pub fn queue_microtask(&self, callback: Box<dyn FnOnce()>) {
         unreachable!()
     }
 
@@ -21019,7 +21019,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_animation_frame(&self, callback: Box<dyn FnMut(f64)>) -> u32 {
+    pub fn request_animation_frame(&self, callback: Box<dyn FnOnce(f64)>) -> u32 {
         unreachable!()
     }
 
@@ -44113,7 +44113,7 @@ impl BaseAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "decodeAudioData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn decode_audio_data(&self, audio_data: &ArrayBuffer, success_callback: Option<Box<dyn FnMut(&AudioBuffer)>>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<&'static AudioBuffer> {
+    pub fn decode_audio_data(&self, audio_data: &ArrayBuffer, success_callback: Option<Box<dyn FnOnce(&AudioBuffer)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<&'static AudioBuffer> {
         unreachable!()
     }
 
@@ -52032,7 +52032,7 @@ impl DataTransferItem {
     #[cfg_attr(rust_js, rust_js::link_name = "getAsString")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_as_string(&self, callback: Box<dyn FnMut(&str)>) {
+    pub fn get_as_string(&self, callback: Box<dyn FnOnce(&str)>) {
         unreachable!()
     }
 
@@ -54299,7 +54299,7 @@ impl FileSystemDirectoryEntry {
     #[cfg_attr(rust_js, rust_js::link_name = "getFile")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnMut(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) {
+    pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
         unreachable!()
     }
 
@@ -54307,7 +54307,7 @@ impl FileSystemDirectoryEntry {
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectory")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnMut(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) {
+    pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
         unreachable!()
     }
 
@@ -54382,7 +54382,7 @@ impl FileSystemDirectoryReader {
     #[cfg_attr(rust_js, rust_js::link_name = "readEntries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_entries(&self, success_callback: Box<dyn FnMut(&[&FileSystemEntry])>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) {
+    pub fn read_entries(&self, success_callback: Box<dyn FnOnce(&[&FileSystemEntry])>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
         unreachable!()
     }
 
@@ -54437,7 +54437,7 @@ impl FileSystemEntry {
     #[cfg_attr(rust_js, rust_js::link_name = "getParent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_parent(&self, success_callback: Option<Box<dyn FnMut(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) {
+    pub fn get_parent(&self, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
         unreachable!()
     }
 
@@ -54473,7 +54473,7 @@ impl FileSystemFileEntry {
     #[cfg_attr(rust_js, rust_js::link_name = "file")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn file(&self, success_callback: Box<dyn FnMut(&File)>, error_callback: Option<Box<dyn FnMut(&DOMException)>>) {
+    pub fn file(&self, success_callback: Box<dyn FnOnce(&File)>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
         unreachable!()
     }
 
@@ -57485,7 +57485,7 @@ impl Geolocation {
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentPosition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_current_position(&self, success_callback: Box<dyn FnMut(&GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&GeolocationPositionError)>>, options: Option<PositionOptions>) {
+    pub fn get_current_position(&self, success_callback: Box<dyn FnOnce(&GeolocationPosition)>, error_callback: Option<Box<dyn FnOnce(&GeolocationPositionError)>>, options: Option<PositionOptions>) {
         unreachable!()
     }
 
@@ -60827,7 +60827,7 @@ impl LockManager {
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request(&self, name: &str, callback: Box<dyn FnMut(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
+    pub fn request(&self, name: &str, callback: Box<dyn FnOnce(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -60835,7 +60835,7 @@ impl LockManager {
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_with_lock_options_and_callback(&self, name: &str, options: LockOptions<'_>, callback: Box<dyn FnMut(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
+    pub fn request_with_lock_options_and_callback(&self, name: &str, options: LockOptions<'_>, callback: Box<dyn FnOnce(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -66065,7 +66065,7 @@ pub mod notification {
     #[cfg_attr(rust_js, rust_js::link_name = "Notification.requestPermission")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_permission(deprecated_callback: Option<Box<dyn FnMut(&str)>>) -> Promise<String> {
+    pub fn request_permission(deprecated_callback: Option<Box<dyn FnOnce(&str)>>) -> Promise<String> {
         unreachable!()
     }
 
@@ -71156,7 +71156,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "setLocalDescription")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
+    pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71188,7 +71188,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "setRemoteDescription")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
+    pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71220,7 +71220,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "addIceCandidate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnMut()>>, failure_callback: Option<Box<dyn FnMut(&DOMException)>>) -> Promise<()> {
+    pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&DOMException)>>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71419,7 +71419,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "createOffer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_offer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>, options: Option<RTCOfferOptions>) -> Promise<()> {
+    pub fn create_offer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&DOMException)>, options: Option<RTCOfferOptions>) -> Promise<()> {
         unreachable!()
     }
 
@@ -71427,7 +71427,7 @@ impl RTCPeerConnection {
     #[cfg_attr(rust_js, rust_js::link_name = "createAnswer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_answer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnMut(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnMut(&DOMException)>) -> Promise<()> {
+    pub fn create_answer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&DOMException)>) -> Promise<()> {
         unreachable!()
     }
 
@@ -74308,7 +74308,7 @@ impl Scheduler {
     #[cfg_attr(rust_js, rust_js::link_name = "postTask")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn post_task(&self, callback: Box<dyn FnMut() -> Option<&'static Unknown>>, options: Option<SchedulerPostTaskOptions<'_>>) -> Promise<Option<&'static Unknown>> {
+    pub fn post_task(&self, callback: Box<dyn FnOnce() -> Option<&'static Unknown>>, options: Option<SchedulerPostTaskOptions<'_>>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -87725,7 +87725,7 @@ pub mod global {
     #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn queue_microtask(callback: Box<dyn FnMut()>) {
+    pub fn queue_microtask(callback: Box<dyn FnOnce()>) {
         unreachable!()
     }
 
@@ -87955,7 +87955,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_idle_callback(callback: Box<dyn FnMut(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
+    pub fn request_idle_callback(callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
         unreachable!()
     }
 
@@ -87979,7 +87979,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_animation_frame(callback: Box<dyn FnMut(f64)>) -> u32 {
+    pub fn request_animation_frame(callback: Box<dyn FnOnce(f64)>) -> u32 {
         unreachable!()
     }
 
