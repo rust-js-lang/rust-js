@@ -636,8 +636,8 @@ export const mutations: Mutation[] = [
     name: "written-const-expanded",
     breaks: "a `const`'s type written with an alias, `Context<Toc>`, is what it stands for",
     file: "src/lower/declarations.rs",
-    find: "        let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));\n        json!({\n            \"kind\": \"const\",",
-    replace: "        let ty = self.ts(ty);\n        json!({\n            \"kind\": \"const\",",
+    find: "            None => self.as_written(self.written_type(def_id), |out| out.ts(ty)),\n",
+    replace: "            None => self.ts(ty),\n",
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },
   {
@@ -751,5 +751,21 @@ export const mutations: Mutation[] = [
     find: "                if self.ref_cells.is_value_cell(tcx, ty) {\n",
     replace: "                if false && self.ref_cells.is_value_cell(tcx, ty) {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
+  },
+  {
+    name: "variable-declared-const",
+    breaks: "an exported variable its module sets is declared `export const enabled: boolean;` (ADR 0270, amended)",
+    file: "src/lower/declarations.rs",
+    find: "            declared[\"mutable\"] = json!(true);\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+  },
+  {
+    name: "variable-declared-cell",
+    breaks: "an exported variable is declared as its cell, `export let enabled: { value: boolean };` (ADR 0270, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                ty::Adt(_, held) if variable.is_some() => held.type_at(0),\n",
+    replace: "                ty::Adt(_, held) if variable.is_some() && held.is_empty() => held.type_at(0),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
   },
 ];

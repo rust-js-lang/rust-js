@@ -431,11 +431,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// A module's own `const X = { value: init }`, a thread-local's cell MIR reads
-/// by its `value`, that its module reads and sets only so, by name, and doesn't
-/// export: `let X = init`, `X` where it's read, `const` where nothing sets it
-/// (ADR 0270). One `quiet`, whose borrows ask nothing of borrows, gives the
-/// closure of each what it holds, an object's, which it shares (ADR 0328).
-pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
+/// by its `value`, that its module reads and sets only so, by name: `let X =
+/// init`, `X` where it's read, `const` where nothing sets it (ADR 0270). One
+/// it exports is one only where it's `quiet`, which another module only
+/// reads, by `get` and a quiet `with_borrow`, `imported_variables`'s to
+/// make its name (ADR 0270, amended): the names of those it exports so, the
+/// module's variables. One `quiet`, whose borrows ask nothing of borrows,
+/// gives the closure of each what it holds, an object's, which it shares
+/// (ADR 0328).
+pub(in crate::lower) fn plain_statics(
+    items: &mut [js::Item],
+    quiet: &std::collections::HashSet<&str>,
+) -> Vec<(String, bool)> {
     // The module's `{ value }` cells; a `RefCell` of an object is the
     // object (ADR 0863), given itself, as its `with_borrow`'s third
     // argument says.
@@ -476,18 +483,11 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
     // A closure called where it's made: its body (ADRs 0581, 0840), in a
     // function or in what the module runs when it's loaded, which no
     // `return` ends.
-    for item in items.iter_mut() {
-        if let js::Item::Statements(stmts) = item {
-            js::applied_blocks(stmts, false);
-        }
-        for function in item.functions_mut() {
-            js::applied_blocks(&mut function.body, true);
-        }
-    }
+    applied_in_place(items);
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c)
-                if !c.export
+                if (!c.export || quiet.contains(c.name.as_str()))
                     && matches!(&c.value.kind, js::ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
             {
@@ -496,6 +496,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             _ => None,
         })
         .collect();
+    let mut exported = Vec::new();
     for name in cells {
         let (mut reads, mut values, mut sets) = (0, 0, 0);
         js::each_item_expr_mut(items, &mut |e| match &e.kind {
@@ -589,7 +590,61 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             {
                 c.value = init;
                 c.mutable = sets > 0;
+                if c.export {
+                    exported.push((name.clone(), c.mutable));
+                }
             }
+        }
+    }
+    exported
+}
+
+/// What a module reads of another's thread-locals that are that module's
+/// variables, `export let x` (`plain_statics`), each `variable`, a
+/// `Symbol` of the crate's or a library's import (ADR 0270, amended): `x`
+/// of what was `x.value`, and a `with_borrow`'s closure given `x`, called
+/// as a statement its body (ADRs 0581, 0840). The module only reads it,
+/// as `outside_writes` holds.
+pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dyn Fn(&Expr) -> bool) {
+    let mut changed = false;
+    js::each_item_expr_mut(items, &mut |e| match &mut e.kind {
+        js::ExprKind::Member(of, key) if key == js::HELD && variable(of) => {
+            let read = std::mem::replace(&mut **of, Expr::undefined());
+            *e = Expr {
+                span: e.span,
+                known: js::Known::Live,
+                ..read
+            };
+            changed = true;
+        }
+        js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key)) =>
+        {
+            let (mut key, f) = (args.remove(0), args.remove(0));
+            key.known = js::Known::Live;
+            *e = Expr {
+                span: e.span,
+                ..apply(f, vec![key])
+            };
+            changed = true;
+        }
+        _ => {}
+    });
+    if changed {
+        applied_in_place(items);
+    }
+}
+
+/// Each closure called where it's made, its body (ADRs 0581, 0840), in a
+/// function or in what the module runs when it's loaded, which no
+/// `return` ends.
+fn applied_in_place(items: &mut [js::Item]) {
+    for item in items.iter_mut() {
+        if let js::Item::Statements(stmts) = item {
+            js::applied_blocks(stmts, false);
+        }
+        for function in item.functions_mut() {
+            js::applied_blocks(&mut function.body, true);
         }
     }
 }

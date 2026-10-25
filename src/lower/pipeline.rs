@@ -789,7 +789,9 @@ pub fn lower_crate<'tcx>(
         .map(|&(_, id)| id)
         .collect();
     refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, &targets);
-    let lowered = modules
+    // The exported thread-locals their modules made their variables.
+    let mut variables: HashSet<DefId> = HashSet::new();
+    let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
         .map(|module| {
             // One `import` per JS module, of what this file uses from it.
@@ -962,17 +964,7 @@ pub fn lower_crate<'tcx>(
             }
             let no_ref_cells = super::drops::RefCells::default();
             let ref_cells = ref_cells.get().unwrap_or(&no_ref_cells);
-            let declarations = super::declarations::module(
-                tcx,
-                module,
-                (default_export, default_declared),
-                &paths,
-                &reexports,
-                &aliased_items,
-                (ref_cells, &counted),
-                (&fns, module_held),
-            );
-            let aliases: Vec<(String, String)> = aliased_items.into_iter().map(|(_, names)| names).collect();
+            let aliases: Vec<(String, String)> = aliased_items.iter().map(|(_, names)| names.clone()).collect();
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -1008,7 +1000,7 @@ pub fn lower_crate<'tcx>(
                 ),
                 default_export: default_export.map(|function| super::bindings::fn_name(tcx, function)),
                 default_declared: default_declared && read_default.is_none(),
-                declarations,
+                declarations: None,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
@@ -1028,7 +1020,41 @@ pub fn lower_crate<'tcx>(
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
-            super::std_types::cell::plain_statics(&mut lowered.items, &quiet);
+            // Those it exports as its variables, `export let x`, which
+            // their importers read by name (ADR 0270, amended).
+            let made = super::std_types::cell::plain_statics(&mut lowered.items, &quiet);
+            let module_variables: HashMap<DefId, bool> = (quiet_locals.iter())
+                .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+                .filter_map(|key| {
+                    let name = &fns[&key.to_def_id()].name;
+                    let &(_, set) = made.iter().find(|(made, _)| made == name)?;
+                    Some((key.to_def_id(), set))
+                })
+                .collect();
+            variables.extend(module_variables.keys().copied());
+            // A library's, by the name the module imports it as.
+            let names = import_names.get(&module);
+            let foreign_variables: HashSet<&str> = (foreign.all())
+                .filter(|item| item.calling.variable && item.member.is_none())
+                .filter_map(|item| names?.get(&(item.from.clone(), item.export.clone())))
+                .map(String::as_str)
+                .collect();
+            if !foreign_variables.is_empty() {
+                super::std_types::cell::imported_variables(
+                    &mut lowered.items,
+                    &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.as_str())),
+                );
+            }
+            lowered.declarations = super::declarations::module(
+                tcx,
+                module,
+                (default_export, default_declared),
+                &paths,
+                &lowered.reexports,
+                &aliased_items,
+                (ref_cells, &counted),
+                (&fns, module_held, &module_variables),
+            );
             // A `Drop` impl's `drop` of this module no other module calls,
             // which may be its body where its one drop is (ADR 0588).
             let drop_trait = tcx.lang_items().drop_trait();
@@ -1086,6 +1112,22 @@ pub fn lower_crate<'tcx>(
             }
         })
         .collect();
+    // What each module reads of another's variables, by their names (ADR
+    // 0270, amended).
+    let symbols: HashSet<js::Symbol> = (variables.iter())
+        .map(|id| {
+            let target = &fns[id];
+            module_symbol(target.module, target.owner.as_ref().unwrap_or(&target.name))
+        })
+        .collect();
+    if !symbols.is_empty() {
+        for unlinked in &mut lowered {
+            super::std_types::cell::imported_variables(
+                &mut unlinked.module.items,
+                &|e| matches!(&e.kind, js::ExprKind::Symbol(symbol) if symbols.contains(symbol)),
+            );
+        }
+    }
     // A library's trait method without a default whose entries take its
     // caller's location, which its manifest, of functions, can't say to its
     // consumers' calls through them (ADR 0427).
@@ -1141,6 +1183,7 @@ pub fn lower_crate<'tcx>(
                     counted: &counted,
                     ref_cells: ref_cell_facts(),
                     lazy_locals: &lazy_locals,
+                    variables: &variables,
                 },
                 (&trait_impls, &held.modules),
                 dependencies,

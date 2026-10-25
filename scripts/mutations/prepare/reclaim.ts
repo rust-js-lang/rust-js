@@ -101,4 +101,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a function exported by its .* alone is named as an unexported one"],
   },
+  {
+    name: "live-import-aliased",
+    breaks: "`const rendering = isRendering;` of another module's variable is the import by that name, read where the `const` is read, after its module set it again (ADR 0270, amended)",
+    file: "src/prepare/reclaim.rs",
+    find: "                        if value.known != js::Known::Live && matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
+    replace: "                        if matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
+    tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
+  },
 ];

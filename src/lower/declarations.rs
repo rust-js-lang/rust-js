@@ -41,12 +41,17 @@ pub(super) fn module<'tcx>(
     reexports: &[Reexport],
     aliases: &[(DefId, (String, String))],
     (ref_cells, counted): (&super::drops::RefCells<'tcx>, &super::analysis::Counted<'tcx>),
-    (fns, held): (&HashMap<DefId, super::FnInfo>, &[super::bindings::HeldBinding]),
+    (fns, held, variables): (
+        &HashMap<DefId, super::FnInfo>,
+        &[super::bindings::HeldBinding],
+        &HashMap<DefId, bool>,
+    ),
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         module,
         fns,
+        variables,
         files,
         ref_cells,
         counted,
@@ -304,6 +309,10 @@ struct Declarations<'a, 'tcx> {
     /// Each function's and `const`'s JS name, as its JS has it: `new$` of a
     /// `new` (ADR 0546).
     fns: &'a HashMap<DefId, super::FnInfo>,
+    /// The thread-locals it exports as its variables, of what their cells
+    /// hold, and whether it sets each, `export let`, or not, `export const`
+    /// (ADR 0270, amended).
+    variables: &'a HashMap<DefId, bool>,
     /// The `RefCell`s a field holds as their value (ADR 0362).
     ref_cells: &'a super::drops::RefCells<'tcx>,
     /// The `Rc`s counted, `{ value, strong, weak }`: every other, and its
@@ -1085,21 +1094,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `export const IconChevron: NamedExoticComponent<IconChevronProps>;`, a
-    /// `thread_local!`'s value, or a `const`'s.
+    /// `thread_local!`'s value, or a `const`'s; of a thread-local that's
+    /// its module's variable, what its cell holds, `export let enabled:
+    /// boolean;` where its module sets it (ADR 0270, amended).
     fn constant(&mut self, def_id: DefId) -> Value {
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        let variable = self.variables.get(&def_id).copied();
         let ty = match ty.kind() {
-            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::LocalKey) => args.type_at(0),
+            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::LocalKey) => match args.type_at(0).kind() {
+                ty::Adt(_, held) if variable.is_some() => held.type_at(0),
+                _ => args.type_at(0),
+            },
             _ => ty,
         };
-        let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));
-        json!({
+        let ty = match variable {
+            Some(_) => self.ts(ty),
+            None => self.as_written(self.written_type(def_id), |out| out.ts(ty)),
+        };
+        let mut declared = json!({
             "kind": "const",
             "name": self.js_name(def_id),
             "exported": true,
             "declare": false,
             "type": ty,
-        })
+        });
+        if variable == Some(true) {
+            declared["mutable"] = json!(true);
+        }
+        declared
     }
 
     /// An item's type as the Rust writes it, a `const`'s or an alias's.

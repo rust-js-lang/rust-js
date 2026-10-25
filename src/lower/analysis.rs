@@ -813,9 +813,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What `with_borrow` runs while its thread-local is borrowed, that can't
     // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it.
     // It's held as a `with_borrow_mut`'s, which nothing may ask of.
-    let quiet = |given: plain_locals::Given<'tcx>, key: LocalDefId| {
+    let quiet = |given: plain_locals::Given<'tcx>, key: DefId| {
         let held = Borrow {
-            cell: Cell::Key(key.to_def_id()),
+            cell: Cell::Key(key),
             mutable: true,
         };
         match given {
@@ -848,6 +848,22 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),
         &quiet,
     );
+    // Another module's write of a thread-local of a value, its module's
+    // variable, which JS lets only that module set (ADR 0270, amended).
+    let variable = |key: DefId| foreign.item(key).is_some_and(|item| item.calling.variable);
+    let refused = plain_locals::outside_writes(tcx, all_bodies, &variable, &quiet);
+    for &(span, key) in &refused {
+        let name = tcx.item_name(key);
+        tcx.dcx().span_err(
+            span,
+            format!(
+                "rust-js: this sets `{name}`, or hands out its cell, from outside the module it's declared in, but `{name}` is its module's variable, which JS lets only that module set: write a `pub fn` in that module that sets it, and call that; another module reads it with `get` or `with_borrow` (ADR 0270, amended)"
+            ),
+        );
+    }
+    if !refused.is_empty() {
+        return None;
+    }
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).

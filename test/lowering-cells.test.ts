@@ -612,7 +612,8 @@ pub fn deferred(key: &'static str) -> impl Fn() {
 // React's startTransition reports through `REPORT_GLOBAL_ERROR.with(|&f|
 // ..)`, a thread-local of shared's module: another module's thread-local's
 // `with` is its closure's body too, of what the module imports (ADR 0840,
-// amended).
+// amended). A cell's is in its own module, which alone sets it, and
+// another reads it by its name (ADR 0270, amended).
 test("another module's thread-local's with is its closure's body", async () => {
   const dir = fixture("applied-with-imported");
   writeFileSync(join(dir, "lib.rs"), `pub mod report {
@@ -621,6 +622,10 @@ test("another module's thread-local's with is its closure's body", async () => {
     thread_local! {
         pub static REPORT: fn(u32) = |n| println!("reported {n}");
         pub static COUNT: Cell<u32> = const { Cell::new(0) };
+    }
+
+    pub fn count() {
+        COUNT.with(|count| count.set(count.get() + 1));
     }
 }
 
@@ -633,10 +638,8 @@ pub fn told(n: u32) {
 }
 
 pub fn counted() -> u32 {
-    report::COUNT.with(|count| {
-        count.set(count.get() + 1);
-        count.get()
-    })
+    report::count();
+    report::COUNT.get()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);

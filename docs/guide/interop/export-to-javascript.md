@@ -715,10 +715,8 @@ thread_local! {
 }
 
 pub fn click() -> u32 {
-    CLICK_COUNT.with(|count| {
-        count.set(count.get() + 1);
-        count.get()
-    })
+    CLICK_COUNT.set(CLICK_COUNT.get() + 1);
+    CLICK_COUNT.get()
 }
 ```
 
@@ -727,19 +725,27 @@ export const MAX_CLICKS = 100;
 
 export const GREETING = "hello";
 
-export const clickCount = { value: 0 };
+export let clickCount = 0;
 
 export function click() {
-  clickCount.value = (clickCount.value + 1) >>> 0;
-  return clickCount.value;
+  clickCount = (clickCount + 1) >>> 0;
+  return clickCount;
 }
 ```
 
 - A `pub const` and a `pub static` are `export const`s.
-- A `pub` thread-local is its module's variable, exported. A `Cell` or a
-  `RefCell` in it is `{ value }`, which JS reads and Rust code sees
-  change; a `RefCell` of an array, a `Map`, a `Set` or an object is that
-  object ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+- A `pub` thread-local is its module's variable, exported. Of a `Cell`, or
+  a `RefCell` of a number, text or an `Option`, it's what the cell holds,
+  `export let`, which an importer, JS's or Rust's, reads as it is now,
+  ES's live binding, and `export const` where nothing sets it. Only its
+  module sets it: another module's `set`, `replace`, `take` or
+  `with_borrow_mut` of it, or its cell handed out by `with`, is refused,
+  so write a `pub fn` in its module that sets it, as JS does. One its own
+  module hands out by `with` is `{ value }`
+  ([ADR 0270](../../decisions/0270-module-variables.md)). A `RefCell` of
+  an array, a `Map`, a `Set` or an object is that object, which any
+  module changes in place
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
 
 ## Modules and `pub use`
 

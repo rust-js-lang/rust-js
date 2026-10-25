@@ -524,6 +524,11 @@ pub enum Known {
     /// same function wherever and whenever it's read (`Expr::is_fixed`,
     /// ADR 0693, amended).
     Item,
+    /// A read of another module's variable, an imported `export let x`
+    /// that its module sets (ADR 0270, amended): what it is where it's
+    /// read, as ES's live binding, never another name's that read it
+    /// before.
+    Live,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

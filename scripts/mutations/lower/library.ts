@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "        ref_cells: Default::default(),\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
+  {
+    name: "contract-variable-unsaid",
+    breaks: "a library's manifest doesn't say its exported cell is its module's variable, so a consumer reads its `value` (ADR 0270, amended)",
+    file: "src/lower/library.rs",
+    find: "                variable: variables.contains(&id),\n",
+    replace: "                variable: false,\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
+  },
 ];

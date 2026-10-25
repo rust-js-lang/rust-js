@@ -260,6 +260,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884) | `binding_calls.rs`; `bindings.rs` | `gives_boxed_option`; `reads_a_key` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
+| Which thread-locals are their module's variables, exported ones `export let`, what other modules read of them, and which of their writes are refused (ADR 0270, amended) | `analysis/plain_locals.rs`; `std_types/cell.rs` | `plain_thread_locals`, `outside_writes`, `holds_a_value`; `imported_variables` |
 | A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |
 | Which `RefCell`s are the objects they hold, a field's plain one, which are never checked, and what a library's contract says of them (ADRs 0362, 0863) | `drops/ref_cells.rs` | `ref_cells`, `is_value_cell`, `plain_ref_cell`, `quiet_ref_cell`, `holds_itself` |
 | What a call, std's code's too, and a cell's own impls may borrow (ADRs 0580, 0863) | `analysis/cell_borrows.rs` | `call_asks`, `call_runs_unseen`, `impls_ask`, `may_be_cell` |

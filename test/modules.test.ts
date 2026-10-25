@@ -12,7 +12,8 @@ beforeAll(buildReact, 600_000);
 // ADR 0270: a thread-local only read and set, in its own module, is the
 // module's variable, a `let` if it's set, as react.dev's errors page caches
 // the codes it fetched: nothing shares its cell, so it needs no `{ value }`.
-// One another module may read, or whose cell `with` hands out, keeps it.
+// One whose cell `with` hands out keeps it; a public one, and one another
+// module reads, is its `export let` (ADR 0270, amended).
 test("a thread-local only read and set is the module's let", async () => {
   const dir = fixture("module-let");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
@@ -76,11 +77,11 @@ pub fn tick() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
-  expect(readFileSync(join(join(dir, "mir"), "counter.js"), "utf8")).toContain("export const ticks = { value: 0 };");
+  expect(readFileSync(join(join(dir, "mir"), "counter.js"), "utf8")).toContain("export let ticks = 0;");
   const js = readFileSync(join(join(dir, "mir"), "lib.js"), "utf8");
   expect(js).toContain("let count = 0;");
   expect(js).toContain("const log = [];");
-  expect(js).toContain("export const SHARED = { value: 0 };");
+  expect(js).toContain("export let SHARED = 0;");
   expect(js).toContain("count = (count + 1) >>> 0;");
   // Its borrow's closure where it's read, not first: the closure's body.
   expect(js).toContain("return (n + log.length) >>> 0;");

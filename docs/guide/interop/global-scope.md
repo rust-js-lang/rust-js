@@ -460,8 +460,15 @@ export function last() {
 - **A `let` if it's set, a `const` otherwise.**
 - **A `const` is a constant, named as written**, `MAX_RECENT`.
 - **It's the cell, `{ value }`,** where the cell itself is handed out,
-  `with(|cell| ..)`, or another module or crate reads it: what holds the
-  cell must see it change.
+  `with(|cell| ..)`: what holds the cell must see it change.
+- **Exported, it's `export let`**, which another module or crate reads by
+  its name, as it is now, ES's live binding. Only its module sets it:
+  another's `set`, `replace`, `take` or `with_borrow_mut` of it, or its
+  cell handed out, is refused, as JS lets no importer set it, so its
+  module writes a `pub fn` that sets it, as React's ReactCurrentFiber
+  exports `setIsRendering`. A `RefCell` of an array or an object is that
+  object, which any module changes in place
+  ([ADR 0270](../../decisions/0270-module-variables.md), amended).
 - **A `with_borrow` closure that may borrow the cell again keeps the cell**,
   borrowed while the closure runs, so a second `borrow_mut()` panics as
   std's does. What a closure, or a function given to `with_borrow`, may

@@ -338,8 +338,8 @@ export const mutations: Mutation[] = [
     name: "mir-statics-boxed",
     breaks: "a thread-local only its module reads and sets stays `{ value }`",
     file: "src/lower/pipeline.rs",
-    find: "            super::std_types::cell::plain_statics(&mut lowered.items, &quiet);\n",
-    replace: "",
+    find: "            let made = super::std_types::cell::plain_statics(&mut lowered.items, &quiet);\n",
+    replace: "            let made: Vec<(String, bool)> = Vec::new();\n",
     tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
   },
   {
@@ -536,5 +536,21 @@ export const mutations: Mutation[] = [
     find: "                    .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))\n",
     replace: "                    .and_then(|_| None)\n",
     tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+  },
+  {
+    name: "library-variable-read-as-cell",
+    breaks: "a consumer reads a library's variable's `value`, `hasBadMapPolyfill.value`, of a boolean (ADR 0270, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "                .filter(|item| item.calling.variable && item.member.is_none())\n",
+    replace: "                .filter(|item| item.calling.variable && item.member.is_some())\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
+  },
+  {
+    name: "crate-variable-read-as-cell",
+    breaks: "another of the crate's modules reads an exported variable's `value`, `enabled.value` (ADR 0270, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "    if !symbols.is_empty() {\n",
+    replace: "    if symbols.is_empty() {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
   },
 ];

@@ -66,6 +66,11 @@ pub struct Calling {
     /// calling it, `START()` (ADR 0037, amended).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub lazy: bool,
+    /// Whether it's a thread-local that's its module's variable of what
+    /// its cell holds, `export let hasBadMapPolyfill`, read by its name,
+    /// which only its module sets (ADR 0270, amended).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub variable: bool,
 }
 
 impl Calling {

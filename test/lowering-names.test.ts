@@ -920,7 +920,7 @@ pub fn yield_ms() -> f64 {
   expect(js).toContain('export const OWNER_SYMBOL = Symbol("owner");');
   expect(js).toContain("export const FRAME_YIELD_MS = ");
   expect(js).toContain("export const localNow = Date.now;");
-  expect(js).toContain("export const clickCount = { value: 0 };");
+  expect(js).toContain("export const clickCount = 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.isOwner(lib.OWNER_SYMBOL), lib.isOwner(Symbol("owner")), lib.yieldMs()]).toEqual([true, false, 5]);
 });

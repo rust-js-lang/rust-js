@@ -22,7 +22,9 @@ pub(super) fn module(module: &mut js::Module) {
 /// `import IS from "./objectIs.js"; .. const is = IS;`, an import its module
 /// reads once, a `const` at a function's top: the import by that name,
 /// `import is from "./objectIs.js";`, where the module declares the name
-/// nowhere else (ADR 0616).
+/// nowhere else (ADR 0616). Not another module's variable, `Known::Live`,
+/// which its module may set before a later read of the `const` (ADR 0270,
+/// amended).
 fn aliased_imports(module: &mut js::Module) {
     let locals: Vec<String> = (module.packages.iter())
         .flat_map(|p| p.default.iter().chain(p.named.iter().map(|(_, local)| local)))
@@ -48,7 +50,8 @@ fn aliased_imports(module: &mut js::Module) {
         for item in &mut module.items {
             for function in item.functions_mut() {
                 if let Some(k) = function.body.iter().position(|s| {
-                    matches!(&s.kind, StmtKind::Const(_, value) if matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                    matches!(&s.kind, StmtKind::Const(_, value)
+                        if value.known != js::Known::Live && matches!(&value.kind, ExprKind::Var(v) if *v == local))
                 }) && let StmtKind::Const(name, _) = &function.body[k].kind
                 {
                     alias = Some(name.clone());

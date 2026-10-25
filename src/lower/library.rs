@@ -58,6 +58,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) ref_cells: crate::library::RefCellFacts,
     /// The thread-locals made where they're first used (ADR 0037, amended).
     pub(super) lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    /// The exported thread-locals that are their module's variables (ADR
+    /// 0270, amended).
+    pub(super) variables: &'a HashSet<DefId>,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -115,6 +118,7 @@ pub(super) fn exports<'tcx>(
         counted,
         ref_cells: _,
         lazy_locals: _,
+        variables,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -138,6 +142,7 @@ pub(super) fn exports<'tcx>(
                 lazy: id
                     .as_local()
                     .is_some_and(|local| contracts.lazy_locals.contains(&local)),
+                variable: variables.contains(&id),
             },
         })
         .collect();

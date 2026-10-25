@@ -21,7 +21,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
  *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
  *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
- *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, docs?: string }
+ *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, mutable?: boolean, docs?: string }
  *   | { kind: "export-default", name: string }
  *   | { kind: "export", from?: string, names: [string, string][] }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
@@ -504,7 +504,8 @@ function statement(declaration) {
         modifiers(declaration),
         f.createVariableDeclarationList(
           [f.createVariableDeclaration(id(declaration.name), undefined, typeNode(declaration.type))],
-          NodeFlags.Const,
+          // A module's variable it sets, `export let` (ADR 0270, amended).
+          declaration.mutable ? NodeFlags.Let : NodeFlags.Const,
         ),
       );
     case "export-default":
