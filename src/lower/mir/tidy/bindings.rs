@@ -24,6 +24,9 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usiz
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && !mentions.contains_key(name)
             && let ExprKind::Array(parts) = &value.kind
+            // A spread's effect is the stepping it does, which only an
+            // array or a call's arguments write: the array whole (#256).
+            && !parts.iter().any(|part| matches!(part.kind, ExprKind::Spread(_)))
         {
             let span = stmts[i].span;
             let done: Vec<Stmt> = (parts.iter())

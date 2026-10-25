@@ -290,3 +290,14 @@ Held by `test/corpus/or_pattern_constant_alternative.rs`,
 baseline's renamed `x$1` share grows by 0.1 in 10,000 lines. The new
 or-pattern case binds `x` and `y` twice, and the second pair's drop
 flags are `x$1$live` and `y$1$live`.
+
+## Amendment: `names` and `written` clear the `if`s they empty too (#247)
+
+Fuzz seeds 44670, 44691 and 44977 crashed the compiler in `names` and
+`written`, as 43967 did in `in place`. Each had an `if let` in a loop
+whose binding is only read, or whose body makes what nothing reads,
+which those stages' passes emptied. Each stage that empties one now ends
+with `never taken`. A stage that can't, of the others that promise "no
+empty if", gets it when a program shows it can: each such pass is held
+by a corpus case and a mutation, `test/corpus/loop_branch_emptied.rs`
+with `names-empty-if-kept` and `written-empty-if-kept`.

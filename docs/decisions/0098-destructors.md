@@ -579,3 +579,14 @@ $dropEach(drop))` (`deque_into_iter_drops`, `deque-into-iter-unowned`),
 where it was `Iterator.from(items.slice())`. The readability measure's
 `$iter` share grows by that case's five, each a deque's or a heap's
 stepped where what it holds must be dropped, as a `Vec`'s is.
+
+## Amendment: an unread array of spreads stays whole (#256)
+
+A `const` nothing reads, of an array made only to be dropped, is taken
+apart into what making it does: each part with effects, a statement.
+A spread's effect is the stepping it does, and only an array or a call's
+arguments write one, so `let _v: Vec<i32> = a.into_iter().chain(b)
+.collect();`, `[...a, ...b]`, crashed the printer with a bare `...a;`
+(fuzz seed 44880). An array with a spread is now kept whole. Held by
+`test/corpus/unread_collected_chain.rs`, whose `map(probe)` side still
+prints as it's stepped, and the mutation `unread-spreads-apart`.

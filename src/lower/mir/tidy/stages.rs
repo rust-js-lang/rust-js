@@ -207,6 +207,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("unwrapped values", |b, _| {
                 js::statement_lists(b, &mut |s| unwrapped_values(s))
             }),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures (#247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
         ],
         ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],
@@ -467,6 +470,9 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("let else first", |b, _| js::statement_lists(b, &mut let_else_first)),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures (#247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,

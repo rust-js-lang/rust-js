@@ -477,4 +477,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,
   },
+  {
+    name: "unread-spreads-apart",
+    breaks: "an unread `[...a, ...b]`, a `chain` collected, is taken apart into `...a;` statements, which no JS writes: the compiler crashes (#256)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            && !parts.iter().any(|part| matches!(part.kind, ExprKind::Spread(_)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
+  },
 ];
