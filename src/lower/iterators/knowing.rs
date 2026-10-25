@@ -190,6 +190,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = stepped_value(&value).unwrap_or(value);
             return self.user_iterator_knowing(value, ty, (back, true), span);
         }
+        // A `rev()` of it made in place, as `reversed_user_knowing` makes it.
+        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
+            && made_in_place(&value)
+            && self.is_user_iterator(source)
+        {
+            return self.reversed_user_knowing(value, source, (back, true), span);
+        }
         if self.knows_its_length(ty) && (!back || self.knows_its_back(ty)) {
             return Ok(value);
         }
@@ -272,6 +279,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `dyn`'s or a type parameter's, itself.
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
+        // A `rev()` of the crate's iterator made in place, of its form, as
+        // `reversed_user_knowing` makes it again.
+        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
+            && made_in_place(&value)
+            && self.is_user_iterator(source)
+        {
+            return self.reversed_user_knowing(value, source, (true, false), span);
+        }
         let value = stepped_value(&value).unwrap_or(value);
         // One a struct holds, which keeps its source (ADR 0542): of one given
         // as it is, its back and length this use's dictionaries', wherever it
@@ -491,18 +506,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(double_ended) if back => Some(self.user_next(ty, double_ended, "next_back", span)?.0),
             _ => None,
         };
-        let len = (len && self.user_exact_size(ty)).then(|| {
-            let hint_of = match &hint {
-                Some(hint) => Expr::call(hint.clone(), vec![Expr::var("it")]),
-                None => Expr::array(vec![Expr::int(0), Expr::undefined()]),
-            };
-            let exact = Expr::call_helper("$exactLen", vec![hint_of]);
-            Expr::arrow(
-                vec!["it".into()],
-                vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
-            )
-        });
+        let len = (len && self.user_exact_size(ty)).then(|| exact_len_by(&hint));
         let own = self.own_methods(ty, false, span)?;
+        Ok(stepped_ends(value, next, boxed, back, len, hint, own))
+    }
+
+    /// `rev()` of the crate's iterator of type `ty` made in place,
+    /// `reversed_user`'s `$iterator(it, nextBack)`, made again knowing what a
+    /// step past the call that made it asks (#257): its back, the
+    /// iterator's own `next`, and its length, the iterator's, where it's
+    /// exact-sized; its folds and its `nth`s each the other end's, as std's
+    /// `Rev` passes them on. Closed to drop it still, and lent as it was, as
+    /// `user_iterator_knowing`'s is.
+    pub(in crate::lower) fn reversed_user_knowing(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        (back, len): (bool, bool),
+        span: Span,
+    ) -> R<Expr> {
+        let closed = crate::lower::iterators::closed_parts(&value).map(|(it, drop)| (it.clone(), drop.clone()));
+        if let Some((it, drop)) = closed {
+            let knowing = self.reversed_user_knowing(it, ty, (back, len), span)?;
+            return Ok(self.closed_by(knowing, drop, ty));
+        }
+        let lent = super::in_place::is_lent(&value).then(|| crate::lower::iterators::unlent(&value).clone());
+        if let Some(lent) = lent {
+            let borrowed = ty::Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, ty.peel_refs());
+            return self.reversed_user_knowing(lent, borrowed, (back, len), span);
+        }
+        // Of the form it's made in, `$iterator(it, nextBack)`: not one a
+        // variable holds, whose form isn't there to be made again.
+        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned() else {
+            return Err(self.unsupported(
+                span,
+                &format!("a `rev()` of a `{ty}` a variable holds, stepped from its back past what's made of it"),
+            ));
+        };
+        let Some(double_ended) = self.own_next_back(ty)? else {
+            return Err(self.unsupported(span, &format!("`rev` of a `{ty}`, from its MIR")));
+        };
+        let (next, boxed) = self.user_next(ty, double_ended, "next_back", span)?;
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let back = match back {
+            true => Some(self.user_next(ty, iterator, "next", span)?.0),
+            false => None,
+        };
+        let hint = self.own_size_hint(ty, span)?;
+        let len = (len && self.user_exact_size(ty)).then(|| exact_len_by(&hint));
+        let forward = self.own_methods(ty, false, span)?;
+        let own = crate::lower::iterators::OwnMethods {
+            fold: forward.rfold,
+            nth: forward.nth_back,
+            last: None,
+            rfold: forward.fold,
+            nth_back: forward.nth,
+        };
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
 
@@ -887,4 +946,19 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr)> {
         (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone())),
         _ => None,
     }
+}
+
+/// The length of the crate's iterator by its hint, `hint` its own
+/// `size_hint` or std's, which std's `len()` checks is exact (`$exactLen`,
+/// ADR 0456): `(it) => $exactLen(hint(it))`.
+fn exact_len_by(hint: &Option<Expr>) -> Expr {
+    let hint_of = match hint {
+        Some(hint) => Expr::call(hint.clone(), vec![Expr::var("it")]),
+        None => Expr::array(vec![Expr::int(0), Expr::undefined()]),
+    };
+    let exact = Expr::call_helper("$exactLen", vec![hint_of]);
+    Expr::arrow(
+        vec!["it".into()],
+        vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
+    )
 }

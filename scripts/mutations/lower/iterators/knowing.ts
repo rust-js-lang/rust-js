@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-of-a-js-iterator-again",
     breaks: "a map's source made a JS iterator, `$iterator(range, $rangeNext)`, is stepped as a range again, and gives nothing",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let ty = self.reveal(ty);\n        let value = stepped_value(&value).unwrap_or(value);\n",
-    replace: "        let ty = self.reveal(ty);\n",
+    find: "        }\n        let value = stepped_value(&value).unwrap_or(value);\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
+    replace: "        }\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
   {
@@ -388,4 +388,37 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
 
+  {
+    name: "reversed-held-made-again",
+    breaks: "a variable's `rev()` of the crate's iterator, whose form isn't there, is made again as if it were the iterator itself: a wrong answer, not refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned() else {\n",
+    replace: "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned().or(Some(value)) else {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
+  },
+  {
+    name: "reversed-unknowing-length",
+    breaks: "an in-place `rev()` of the crate's iterator asked its length past a `skip` isn't made knowing it: refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.reversed_user_knowing(value, source, (back, true), span);\n",
+    replace: "            return Err(self.unsupported(span, \"\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
+  },
+  {
+    name: "reversed-unknowing-back",
+    breaks: "an in-place `rev()` of the crate's iterator asked its back past a `step_by` isn't made knowing it: refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.reversed_user_knowing(value, source, (true, false), span);\n",
+    replace: "            return Err(self.unsupported(span, \"\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
+  },
+  {
+    name: "reversed-own-folds-unswapped",
+    breaks: "an in-place `rev()` of the crate's iterator made knowing its back folds from its back by the iterator's own `fold`, not its `rfold`",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            fold: forward.rfold,\n",
+    replace: "            fold: None,\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|own_back_through_adapters).rs$"],
+  },
 ];

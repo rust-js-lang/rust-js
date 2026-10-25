@@ -514,6 +514,11 @@ pub enum Known {
     /// `!o` (`Expr::presence`, ADR 0298, amended): true exactly where `o`
     /// is set, or isn't, as `o != null` is, which `null_test` reads it as.
     Presence,
+    /// A `Rev`, an `Enumerate` or a `Map` made in place, the recognizers'
+    /// JS iterator, not std's struct, as the call that takes it says
+    /// (`mir_iter_call`, ADR 0871): a step past that call, which takes its
+    /// form apart, reads it here, not from its form.
+    InPlace,
     /// One of the program's functions, its own or a library's, by its
     /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the
     /// same function wherever and whenever it's read (`Expr::is_fixed`,

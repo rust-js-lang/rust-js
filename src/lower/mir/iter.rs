@@ -29,8 +29,31 @@ use crate::lower::{FnCx, R, bindings};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
-    /// iterator, from MIR: `None` if it's another.
+    /// iterator, from MIR: `None` if it's another. What a `rev()`, an
+    /// `enumerate()` or a `map()` made in place gives, and each such it's
+    /// given, is marked so (`made_in_place`, #257).
     pub(in crate::lower) fn mir_iter_call(
+        &mut self,
+        def_id: DefId,
+        arg_tys: &[Ty<'tcx>],
+        values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let values = self.marked_in_place(values, arg_tys, span);
+        let in_place = self.adapter_in_place(def_id, span);
+        let made = self.mir_iter_made(def_id, arg_tys, values, output, span, made)?;
+        Ok(made.map(|mut made| {
+            if in_place && made.known == js::Known::Nothing {
+                made.known = js::Known::InPlace;
+            }
+            made
+        }))
+    }
+
+    /// `mir_iter_call`'s, of what it's given marked.
+    fn mir_iter_made(
         &mut self,
         def_id: DefId,
         arg_tys: &[Ty<'tcx>],
@@ -39,16 +62,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let tcx = self.tcx;
-        let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
+        let Some(trait_id) = self.tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
-        let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
+        let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         if !receiver_ty.is_ref()
-            && is_std_def(tcx, trait_id, StdItem::Iterator)
+            && is_std_def(self.tcx, trait_id, StdItem::Iterator)
             && self.dropped_after(def_id, receiver_ty, output, !values.is_empty(), span)?
         {
-            let held = self.spill("iter", values.remove(0), made);
+            let held = self.spill_marked(values.remove(0), made);
             values.insert(0, held.clone());
             let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
                 return Ok(None);
@@ -236,6 +258,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
         }
         Ok(())
+    }
+
+    /// `values`, of `arg_tys`, that the call at `span` takes, each a `Rev`,
+    /// an `Enumerate` or a `Map` made in place marked so (`made_in_place`):
+    /// what takes them apart past this call, `as_double_ended` of a `skip`'s
+    /// source, asks it of them, never std's compiled back (#257).
+    fn marked_in_place(&self, values: Vec<Expr>, arg_tys: &[Ty<'tcx>], span: Span) -> Vec<Expr> {
+        let in_place = |ty: Ty<'tcx>| {
+            let ty = ty.peel_refs();
+            crate::lower::recognition::is_held_compiled(self.tcx, ty) && !self.compiled_struct_at(ty, span)
+        };
+        (values.into_iter().enumerate())
+            .map(|(i, mut value)| {
+                if arg_tys.get(i).is_some_and(|&ty| in_place(ty)) && value.known == js::Known::Nothing {
+                    value.known = js::Known::InPlace;
+                }
+                value
+            })
+            .collect()
+    }
+
+    /// `value` spilled, `const iter = value;`, its mark kept on the name
+    /// that reads it (`marked_in_place`).
+    fn spill_marked(&mut self, value: Expr, made: &mut Vec<Stmt>) -> Expr {
+        let known = value.known;
+        let mut held = self.spill("iter", value, made);
+        if known == js::Known::InPlace {
+            held.known = known;
+        }
+        held
     }
 
     /// Whether a value of `ty` the call at `span` takes is std's compiled

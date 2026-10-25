@@ -120,14 +120,25 @@ pub(in crate::lower) fn stepped_ends(
 }
 
 /// What a JS iterator `stepped_ends` made steps, `value` of `$iterator(value,
-/// next, ..)`: the one reader of its form. A map's source made a JS iterator
-/// before it's asked its back, `$iterator(range, $rangeNext)`, is stepped
-/// again from what it steps, not from the JS iterator (ADR 0535).
+/// next, ..)`. A map's source made a JS iterator before it's asked its back,
+/// `$iterator(range, $rangeNext)`, is stepped again from what it steps, not
+/// from the JS iterator (ADR 0535). Not one made in place (`made_in_place`):
+/// a `rev()` of the crate's iterator, `$iterator(it, nextBack)`, is its own
+/// form, which only `stepped_form` reads into (#257).
 pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
+    if made_in_place(e) {
+        return None;
+    }
+    stepped_form(e).cloned()
+}
+
+/// `value` of `$iterator(value, next, ..)` or `$given(value, ..)`, whatever
+/// it stands for: the one reader of its form.
+pub(in crate::lower) fn stepped_form(e: &Expr) -> Option<&Expr> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
-    matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first().cloned())?
+    matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first())?
 }
 
 /// What a JS iterator closed to drop it is made of, `it` and `drop` of
@@ -579,18 +590,11 @@ fn enumerating() -> Expr {
     )
 }
 
-/// Whether `e` is what the recognizers make of a `Rev`, an `Enumerate` or a
-/// `Map` stepped where it's made (ADR 0871): a JS chain, `$rev(it)`,
-/// `$enumerate(it)`, `it.map(f)`, `$mapEnds(it, f)` or an array reversed, never
-/// std's struct, which one held is. The one answer of which a value of such
-/// a type is, where a step past the call that made it asks.
+/// Whether `e`, of a `Rev`, an `Enumerate` or a `Map`, is what the
+/// recognizers made of it in place, never std's struct, which one held is:
+/// as the call that took it marked it (`Known::InPlace`, ADR 0871).
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
-    let stepped = stepped_value(e);
-    let e = stepped.as_ref().unwrap_or(e);
-    enumeration_source(e).is_some()
-        || matches!(&e.kind, js::ExprKind::Call(callee, _)
-            if matches!(callee.helper_name(), Some("$rev" | "$enumerate" | "$mapEnds"))
-                || matches!(&callee.kind, js::ExprKind::Member(_, method) if method == "toReversed" || method == "map"))
+    e.known == js::Known::InPlace
 }
 
 /// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>

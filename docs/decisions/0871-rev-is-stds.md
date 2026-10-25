@@ -236,3 +236,43 @@ The readability baseline is blessed with it: `while (true)` 10.3 to 10.2,
 `$iter` 75.4 to 76.2, `return;` 9.7 to 9.8, of `std_map.rs`'s own early
 returns, and renames 723.5 to 720.9 in ten thousand lines.
 Map's coverage 3 of 8 to 6 of 8.
+
+## Amendment: what's made in place is marked where it's made (#257)
+
+`c().rev().skip(2).rev().sum()` threw, of the crate's `Count`. Its first
+`rev()` is made in place, the recognizers' reversed iterator,
+`$closing($iterator(c(), countDoubleEndedIterator_nextBack, ..))`, but the
+outer `rev()`, asking the `skip`'s back and length, took the `skip` apart by
+its JS form and asked `knowing_held` of what it held with its own span:
+`compiled_struct_at` said std's struct, and `iterators::made_in_place`,
+reading JS forms, knew neither `$closing` nor a reversed `$iterator`, so it
+was given `Rev`'s compiled back, which read `Count`'s fields as a `Rev`'s.
+The old runtime hid it; the compiler always wrote this.
+
+**Which form a `Rev`, an `Enumerate` or a `Map` has is marked where it's
+known, on the value** (`Known::InPlace`, the review's P2: a fact carried on
+the JS tree, not reconstructed from it):
+
+- `mir_iter_call` marks what a `rev()`, an `enumerate()` or a `map()` made
+  in place gives (`adapter_in_place`), and each such value a std iterator
+  method is given in place (`compiled_struct_at` at its own span), a
+  variable's too.
+- `made_in_place` reads the mark, not a list of JS forms.
+- **A value made in place is its own form**: `stepped_value` never peels
+  it, since a reversed `$iterator(it, nextBack)` wraps the crate's
+  iterator, not the `Rev` it stands for; only `stepped_form`, the one reader
+  of the form, reads into it.
+- **A `rev()` of the crate's iterator made in place is made again knowing
+  what's asked past it** (`reversed_user_knowing`): its back, the crate's
+  `next`, and its length, the crate's exact one, its folds and `nth`s each
+  the other end's, as std's `Rev` passes them on; closed and lent as it
+  was. One a variable holds, whose form isn't there to be made again, is
+  refused, not given another's back.
+
+Tested by `rev_in_place_through_adapters.rs` against native Rust, the
+issue's programs through a `skip`, a `take`, a `step_by`, a `map` and a
+`filter`, of an iterator with a destructor and one without, and by the
+refusal of a variable's in `diagnostics.test.ts`; the corpus's 326 programs
+that map, reverse or enumerate are unchanged. `mir_iter_call`'s cap is 18,
+its body `mir_iter_made`. The readability baseline is blessed with it,
+`while (true)` 10.2 to 10.3 of the case's own `while let` in its `rfold`.

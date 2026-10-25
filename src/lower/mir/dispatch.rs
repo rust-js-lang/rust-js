@@ -584,7 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a `map()` whose adapter a std iterator's method steps where it's
     /// made, `body_queries::in_place_adapters` says: what the recognizers
     /// make of it, not std's compiled one (ADR 0871).
-    fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+    pub(super) fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
         crate::lower::recognition::makes_held_compiled(self.tcx, def_id)
             && self.frame.facts.in_place_adapters.contains(&span)
     }
