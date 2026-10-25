@@ -1276,3 +1276,27 @@ pub fn changed(node: &Fiber, clear: &dyn Fn(&Fiber)) -> String {
   expect([lib.next(lib.fiber("child", null, parent)), lib.next(lib.fiber("lone", null, null))]).toEqual(["uncle", undefined]);
   expect(() => lib.changed(parent, (n: { sibling: unknown }) => (n.sibling = null))).toThrow("on a `None` value");
 });
+
+// A nullable function's `return ref_prop;` where `js::strict_equals(ref_prop,
+// None)` holds: `ref_prop` is `undefined` there, its `None` `null` as the
+// function gives it, `refProp ?? null`. It was `return refProp;`, giving
+// `undefined`: the test against the `None` given, `refProp === undefined`,
+// was read as one against a literal, which says it's there (ADR 0620,
+// amended).
+test("a nullable result tested equal to a None given is null", async () => {
+  const dir = fixture("nullable-tested-none");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn ref_or(props: Option<&'static js::Unknown>, other: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    let ref_prop = js::get(props, "ref");
+    if js::strict_equals(ref_prop, None::<&js::Unknown>) {
+        return ref_prop;
+    }
+    other
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (refProp === undefined) {\n    return refProp ?? null;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.refOr({} as never, 4 as never), lib.refOr({ ref: 3 } as never, 4 as never)]).toEqual([null, 4]);
+});

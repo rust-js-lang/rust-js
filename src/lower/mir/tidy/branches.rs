@@ -751,12 +751,17 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
         {
             js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != "object" && t != "undefined")
         }
+        // Not where `x === undefined`, of a `None` given to JS as it is
+        // too, `strict_equals(x, None)`'s (ADR 0620, amended).
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {
             js::same_path(x, y)
                 && literal.is_constant()
-                && !matches!(literal.kind, ExprKind::Null | ExprKind::Undefined)
+                && !matches!(
+                    literal.kind,
+                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined
+                )
         }
         (ExprKind::Binary(Op::Eq, kind, name), ExprKind::Binary(Op::Eq, y, literal))
             if let ExprKind::Unary(UnaryOp::Typeof, x) = &kind.kind =>

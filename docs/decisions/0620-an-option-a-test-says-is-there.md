@@ -146,3 +146,18 @@ panic can't happen.
 - Mutations `field-test-undecided-where-its-variable-changes`,
   `unwrap-of-tested-kept`, `unwrap-past-a-call`
   (`lower/mir/tidy/branches.ts`).
+
+## Amendment: a test against a `None` given says it isn't there
+
+A nullable function's `if js::strict_equals(ref_prop, None) { return
+ref_prop; }` printed `if (refProp === undefined) { return refProp; }`,
+giving `undefined` where the function gives its `None` as `null`: a wrong
+answer, a JS caller's `=== null` failing. Decided tests read `x ===
+lit`, of a constant not `null` or `undefined`, as saying `x != null`, and
+the `None` given to `strict_equals` is a `GivenUndefined` (ADR 0330),
+which wasn't counted as `undefined`. **A test of `x` against a `None`
+given says nothing of its being there** (`branches.rs`'s `implies`): its
+`refProp ?? null` stays. Case R: results changed, now Rust's. Held by
+`test/lowering-nullable.test.ts`, "a nullable result tested equal to a
+None given is null", run in JS, and the mutation
+`implies-given-none-a-literal` (`tidy/branches.ts`).

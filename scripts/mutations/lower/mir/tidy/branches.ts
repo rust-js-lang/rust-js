@@ -519,4 +519,12 @@ export const mutations: Mutation[] = [
     replace: "                    && true =>\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
+  {
+    name: "implies-given-none-a-literal",
+    breaks: "`x === undefined` of a `None` given, `strict_equals(x, None)`, is read as a literal's test that says `x` is there, and a nullable result's `x ?? null` there is `x`, `undefined` (ADR 0620, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined\n",
+    replace: "                    ExprKind::Null | ExprKind::Undefined\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable result tested equal to a None given is null"],
+  },
 ];
