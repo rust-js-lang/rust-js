@@ -176,3 +176,12 @@ Held by `test/lowering-cells.test.ts`, "a thread-local's with is its
 closure's body where it's called", whose `deferred` closure sets a
 thread-local's dictionary through `with(|&did_warn| ..)`, run; and the
 mutation `applied-closures-skipped`.
+
+Another module's thread-local too, `REPORT_GLOBAL_ERROR` in the react
+crate, which its module imports: its `with` was given a symbol the linker
+resolves, which the closure's parameter couldn't be read as, so it stayed
+`((reportGlobalError) => { .. })(reportGlobalError)`. A symbol, or a
+field of one, reads the same as a variable does, and the linker names its
+import apart from what the body declares. Held by
+`test/lowering-cells.test.ts`, "another module's thread-local's with is
+its closure's body", and the mutation `applied-imported-refused`.

@@ -185,14 +185,18 @@ fn in_place(
     };
     // What it's given, read the same wherever it's read: a variable, or a
     // field of one, a thread-local's `value`.
+    // Or another module's, a thread-local imported, `REPORT_GLOBAL_ERROR`,
+    // which the linker names apart from what's here (ADR 0840, amended).
     let given = match &arg.kind {
-        ExprKind::Var(name) => name,
+        ExprKind::Var(name) => Some(name),
         ExprKind::Member(of, _)
             if arg.reads_same()
                 && let ExprKind::Var(name) = &of.kind =>
         {
-            name
+            Some(name)
         }
+        ExprKind::Symbol(_) => None,
+        ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => None,
         _ => return None,
     };
     // What the body declares at its top is declared beside `stmt`: one that
@@ -213,7 +217,7 @@ fn in_place(
     if !declared.is_empty() {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names = HashSet::from([given.clone()]);
+        let mut names: HashSet<String> = given.into_iter().cloned().collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
         let mut mentioned = names.clone();

@@ -598,6 +598,53 @@ pub fn deferred(key: &'static str) -> impl Fn() {
   expect(lib.warn("c")).toBe(1);
 });
 
+// React's startTransition reports through `REPORT_GLOBAL_ERROR.with(|&f|
+// ..)`, a thread-local of shared's module: another module's thread-local's
+// `with` is its closure's body too, of what the module imports (ADR 0840,
+// amended).
+test("another module's thread-local's with is its closure's body", async () => {
+  const dir = fixture("applied-with-imported");
+  writeFileSync(join(dir, "lib.rs"), `pub mod report {
+    use std::cell::Cell;
+
+    thread_local! {
+        pub static REPORT: fn(u32) = |n| println!("reported {n}");
+        pub static COUNT: Cell<u32> = const { Cell::new(0) };
+    }
+}
+
+pub fn told(n: u32) {
+    if n > 0 {
+        report::REPORT.with(|&report| report(n));
+    }
+    let deferred = move || report::REPORT.with(|&report| report(n + 1));
+    deferred();
+}
+
+pub fn counted() -> u32 {
+    report::COUNT.with(|count| {
+        count.set(count.get() + 1);
+        count.get()
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("((report) =>");
+  expect(js).toContain("  if (n > 0) {\n    report(n);\n  }\n");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.told(2);
+    expect([lib.counted(), lib.counted()]).toEqual([1, 2]);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["reported 2", "reported 3"]);
+});
+
 // ADR 0582: `Rc::ptr_eq` of an `Rc` of a struct with fields, a JS object,
 // is `===` of the objects, whose identity it is: React's scheduler asks
 // whether the task it ran is still the first, `peek(taskQueue) ===

@@ -36,6 +36,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "applied-imported-refused",
+    breaks: "another module's thread-local's `with(|&report| ..)` stays `((report) => { .. })(report)`, React's `REPORT_GLOBAL_ERROR`'s",
+    file: "src/js/applied.rs",
+    find: "        ExprKind::Symbol(_) => None,\n",
+    replace: "",
+    tests: ["test/lowering-cells.test.ts", "-t", "another module's thread-local"],
+  },
+  {
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
     file: "src/js/applied.rs",
