@@ -669,7 +669,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.copies_own_captures(ty) {
                 return Err(self.unsupported(span, "copying a closure that changes what it captured"));
             }
-            let copy = self.copy(Expr::var("value"), ty);
+            let value = Expr::var("value");
+            let copy = self.copy(value.clone(), ty);
+            // A value that's its own copy is given none (ADR 0289, amended).
+            if js::same_path(&copy, &value) {
+                return Ok(Expr::undefined());
+            }
             return Ok(Expr::object(vec![Prop::Field(
                 "copy".into(),
                 Expr::arrow(

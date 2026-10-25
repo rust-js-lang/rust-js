@@ -23,12 +23,13 @@ function total(items, TAddAssign, TDefault, TCopy) {
   const iter = $iter(items);
   let value;
   while ((value = $nextSome(iter)) != null) {
-    const item = TCopy.copy($someValue(value));
+    const value$1 = $someValue(value);
+    const item = TCopy ? TCopy.copy(value$1) : value$1;
     const self = { value: sum };
-    TAddAssign.addAssign(self, TCopy.copy(item));
+    TAddAssign.addAssign(self, TCopy ? TCopy.copy(item) : item);
     sum = self.value;
   }
-  return TCopy.copy(sum);
+  return TCopy ? TCopy.copy(sum) : sum;
 }
 
 function scaled(x, by, less, TMulAssign, TSubAssign) {
@@ -74,7 +75,6 @@ function main() {
         },
       },
       { default: () => 0 },
-      { copy: (value) => value },
     )} ${moneyDebug_fmt(total([[5n], [7n]], moneyAddAssign, { default: () => [0n] }, { copy: (value) => [value[0]] }))}`,
   );
   console.log(

@@ -11,18 +11,21 @@ const START = [250];
 const STEP = [7];
 
 function pow(base, one, exp, TMul, TCopy) {
-  let acc = TCopy.copy(one);
+  let acc = TCopy ? TCopy.copy(one) : one;
   for (let i = 0; i < exp; i++) {
-    acc = TMul.mul(TCopy.copy(acc), TCopy.copy(base));
+    acc = TMul.mul(TCopy ? TCopy.copy(acc) : acc, TCopy ? TCopy.copy(base) : base);
   }
-  return TCopy.copy(acc);
+  return TCopy ? TCopy.copy(acc) : acc;
 }
 
 function total(items, zero, TAdd, TCopy) {
-  return items.reduce((acc, _3) => {
-    const x = TCopy.copy(_3);
-    return TAdd.add(TCopy.copy(acc), TCopy.copy(x));
-  }, TCopy.copy(zero));
+  return items.reduce(
+    (acc, _3) => {
+      const x = TCopy ? TCopy.copy(_3) : _3;
+      return TAdd.add(TCopy ? TCopy.copy(acc) : acc, TCopy ? TCopy.copy(x) : x);
+    },
+    TCopy ? TCopy.copy(zero) : zero,
+  );
 }
 
 function same(a, b, TPartialEq) {
@@ -46,7 +49,7 @@ function main() {
     `${(wrapping$1[0] << 35) >>> 0} ${wrapping$2[0] >> 2n} ${(wrapping$3[0] << (9 & 7)) & 255}`,
   );
   console.log(
-    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 }, { copy: (value) => value })}`,
+    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 })}`,
   );
   console.log(
     `${total([[250], [10]], [0], { add: (a, b) => [(a[0] + b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${same([5n], [5n], { eq: $eq })}`,

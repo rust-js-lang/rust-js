@@ -229,6 +229,11 @@ console.log(await fetchCount()); // 1
 - **A generic function takes its trait dictionaries after its
   arguments**, `totalArea(shapes, circleShape)`: see
   [Structs, enums and traits](objects.md#generic-code-takes-a-dictionary).
+- **What a generic function copies or drops by, JS leaves out**: a
+  `T: Copy`'s `TCopy`, a `dropT`. A JS value is its own copy and drops
+  nothing, so `createContext(defaultValue)` is how JS calls
+  `create_context<T: Copy>`, a library's or a program's alike; a Rust
+  caller gives one only for a value that needs it ([ADR 0289](../../decisions/0289-copy-bounds.md)).
 
 ## Optional parameters
 

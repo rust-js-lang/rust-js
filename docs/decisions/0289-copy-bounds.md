@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0052](0052-std-trait-impls.md): a `T: Copy`
 copies with its dictionary only where it may be given a value whose copy
-is another object.
+is another object. Amended: a caller whose value is its own copy, JS
+among them, gives none, and the copy is the value.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -57,4 +58,72 @@ kept(point)                // kept({ ...point }, { copy: (value) => ({ ...value 
 ## Consequences
 
 - A function is given a copy function by one caller that needs it, and
-  every caller then passes one, as with drops (ADR 0098).
+  every caller then passes one, as with drops (ADR 0098). (Amended: a
+  caller whose value is its own copy passes none.)
+
+## Amendment: a caller whose value is its own copy gives none
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. A JS value, and
+a Rust one this ADR calls its own copy, is the same value copied or not;
+a value whose copy is another object is still copied.
+
+React's port made `react-reconciler` use `react`'s crate, so `react`
+became a library (ADR 0360), and each public `T: Copy` of a library takes
+a copy (above). Its `createContext(defaultValue)` became
+`createContext(defaultValue, TCopy)`, which read `TCopy.copy(defaultValue)`:
+React's own JS, which calls `createContext(defaultValue)` as its
+declarations say, `createContext<T>(defaultValue: T)`, threw, and 147 of
+its tests failed.
+
+**A copy function is given only for a value that may not be its own
+copy; a function given none copies nothing.** Given one, it copies `x`
+by it, `TCopy ? TCopy.copy(x) : x`; a caller whose value is its own copy,
+JS or a Rust caller's number, gives none, left out at the end as a drop
+is (ADRs 0098, 0313).
+
+```rust
+pub fn create_context<T: Copy>(default_value: T) -> Rc<Context<T>> { .. }
+
+dep::create_context(7)               // createContext(7)
+dep::create_context(Point { x: 1 })  // createContext({ x: 1 }, { copy: (value) => ({ ...value }) })
+```
+
+```js
+export function createContext(defaultValue, TCopy) {
+  return {
+    currentValue: TCopy ? TCopy.copy(defaultValue) : defaultValue,
+    currentValue2: TCopy ? TCopy.copy(defaultValue) : defaultValue,
+  };
+}
+```
+
+- JS calls a function as its declarations say, which list no copy or
+  drop: in a program and a library alike, what JS gives is copied as the
+  program's form copies it, not at all.
+- A dictionary's `Copy` of a type that's its own copy, a supertrait's
+  accessor say, is `undefined` too: whatever gives it, it's read the same.
+- A crate's JS still changes when another crate starts using it, a
+  program's becoming a library's (ADR 0360), but no JS caller's call of
+  it does.
+
+**Alternatives:**
+
+- **A default, `TCopy = { copy: (value) => value }`:** each body is then
+  `TCopy.copy(x)`, but only a parameter can have one; a copy an impl's
+  dictionary or a supertrait's accessor gives would still be read as
+  given: two forms where one reads every source.
+- **A library writing its public functions as a program does**, no copy:
+  wrong for a consumer whose `Point` it changes, as `copy_given` shows:
+  `Cell::replace` hands it the object both cells hold.
+- **`react` built as a program however it's used:** two forms of one
+  crate again, which ADR 0360's amendment removed.
+
+**Consequences:** `test/crates/pairs/copy_given` runs a library's
+`create_context`, `twice` and `first` against native Rust, given a
+`Point` its consumer changes, which they copy, and numbers, which they
+don't, and calls each from JS as declared, `createContext(object)`,
+getting the object itself. The corpus's in-crate callers that gave
+`{ copy: (value) => value }` give nothing. A copy of what isn't a place,
+`$someValue(value)`, is taken once, as every copy of one is, its `const`
+named after the copy's parameter, `value`: `value$1` beside a `value`,
+which `docs/readability.txt`'s renames count, blessed for it.

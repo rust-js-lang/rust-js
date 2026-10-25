@@ -205,4 +205,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(slice_patterns|str_mut).rs$"],
     snapshots: true,
   },
+  {
+    name: "copy-not-given-called",
+    breaks: "a copy a caller gives none of is called, and JS's `createContext(defaultValue)` throws on `TCopy.copy`",
+    file: "src/lower/copies.rs",
+    find: "                Expr::cond(dictionary.clone(), copy, place)\n",
+    replace: "                copy\n",
+    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
 ];

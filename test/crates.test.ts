@@ -12,6 +12,7 @@ import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync 
 import { join } from "node:path";
 import { buildCompiler, buildReact, buildSerde, compiler, fixture, root, run, target } from "./support";
 import { printed } from "./crates";
+import { node } from "./programs";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -193,7 +194,7 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   const out = chain(pairs, "rc_uncounted", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   expect(dep).toContain("  context.provider = context;\n  context.consumer = {\n    context,\n  };\n  return context;\n");
-  expect(dep).toContain("export function sharedCell(value, TCopy) {\n  return { value: TCopy.copy(value) };\n}");
+  expect(dep).toContain("export function sharedCell(value, TCopy) {\n  return { value: TCopy ? TCopy.copy(value) : value };\n}");
   expect(dep).not.toContain("strong");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("strong");
   expect(contract(out).counted_rcs).toBeUndefined();
@@ -211,11 +212,11 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
 test("a library counts each type's Rcs apart, and its consumer as it does", () => {
   const out = chain(pairs, "rc_per_type", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n  const context = {\n    value: TCopy.copy(defaultValue),\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
+  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n  const context = {\n    value: TCopy ? TCopy.copy(defaultValue) : defaultValue,\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
   expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
   expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  const context = createContext(1, { copy: (value) => value });\n  console.log(`${useContext(context)} ${useContext(context)}`);\n  const again = context;\n");
+  expect(app).toContain("  const context = createContext(1);\n  console.log(`${useContext(context)} ${useContext(context)}`);\n  const again = context;\n");
   expect(app).toContain("  again.value = 2;\n");
   expect(app).toContain("console.log(`${a.value.value[0]} ${a.strong}`);");
   expect(contract(out).counted_rcs).toEqual([{ of: expect.any(String), args: [{}] }]);
@@ -224,6 +225,30 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
   const shared = chain(triples, "rc_shared", ["dep", "mid", "app"]);
   expect(() => counting(shared, "pub fn main() {\n    println!(\"{}\", std::rc::Rc::strong_count(&dep::tag(\"t\")));\n}\n"))
     .toThrow("this crate counts an `Rc<std::string::String>`");
+}, 300_000);
+
+// ADR 0289, amended: a library's generic function of a `T: Copy` takes a
+// copy only from a caller whose value may not be its own copy. JS, whose
+// values are, calls it as its declarations say, as React's JS calls
+// `createContext(defaultValue)`, and gets what the program's would give;
+// its consumer gives a `Point` it changes a copy, and a number none.
+test("a library's Copy bound takes a copy only where one is given, and JS calls it as declared", () => {
+  const out = chain(pairs, "copy_given", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n");
+  expect(dep).toContain("    currentValue: TCopy ? TCopy.copy(defaultValue) : defaultValue,\n");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("createContext({ x: 1 }, { copy: (value) => ({ ...value }) })");
+  expect(app).toContain("createContext(7)");
+  expect(app).toContain("twice(8)");
+  const lib = JSON.stringify(join(out, "dep", "lib.js"));
+  const called = `const dep = await import(${lib});
+const object = { name: "default" };
+const context = dep.createContext(object);
+console.log(context.currentValue === object, context.currentValue2 === object);
+const [a, b] = dep.twice(object);
+console.log(a === object, b === object, dep.first([object]) === object, dep.first([]));`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", called])).toBe("true true\ntrue true true undefined\n");
 }, 300_000);
 
 // ADR 0863: a library's `RefCell`s, as React's `Transition` holds its

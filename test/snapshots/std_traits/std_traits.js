@@ -399,7 +399,7 @@ function wordOrd_cmp(word, other) {
 
 export function largest(xs, TOrd, TCopy) {
   return $maxBy(
-    xs.values().map((item) => TCopy.copy(item)),
+    xs.values().map((item) => (TCopy ? TCopy.copy(item) : item)),
     TOrd.cmp,
     true,
   );

@@ -13,7 +13,7 @@ function f64Zero_zero() {
 const f64Signed = {
   Zero: () => f64Zero,
   PartialOrd: () => ({ partialCmp: $partialCmp }),
-  Copy: () => ({ copy: (value) => value }),
+  Copy: () => undefined,
   Sub: () => ({ sub: (a, b) => a - b }),
   Neg: () => ({ neg: (value) => -value }),
   negative: (self) => self < f64Zero_zero(),
@@ -28,7 +28,7 @@ function i32Zero_zero() {
 const i32Signed = {
   Zero: () => i32Zero,
   PartialOrd: () => ({ partialCmp: $cmp }),
-  Copy: () => ({ copy: (value) => value }),
+  Copy: () => undefined,
   Sub: () => ({ sub: (a, b) => (a - b) | 0 }),
   Neg: () => ({ neg: (value) => -value | 0 }),
   negative: (self) => self < i32Zero_zero(),

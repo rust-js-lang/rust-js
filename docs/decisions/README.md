@@ -307,7 +307,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
 - [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used)*
 - [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md) *(extended by 0847: a `OnceCell`'s too, absent until it's set)*
-- [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md)
+- [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md) *(amended: a caller whose value is its own copy, JS among them, gives none)*
 - [0290 A pattern names a variable set again while nothing sets it](0290-steady-bindings.md)
 - [0291 A `let` taking a variable apart is JS's destructuring](0291-let-destructures-places.md)
 - [0292 An index a condition shows in bounds is read as it is](0292-known-bounds.md)

@@ -22,7 +22,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(dictionary) =
                 self.given_evidence(|tr| tr.self_ty() == ty && self.tcx.is_lang_item(tr.def_id, LangItem::Copy))
         {
-            return Expr::call(Expr::member(dictionary, "copy"), vec![place]);
+            // A caller whose value is its own copy gives none, as JS gives
+            // none, which its declarations ask for: the value (ADR 0289,
+            // amended). Read once, `((value) => ..)(source)`.
+            let copied = |place: Expr| {
+                let copy = Expr::call(Expr::member(dictionary.clone(), "copy"), vec![place.clone()]);
+                Expr::cond(dictionary.clone(), copy, place)
+            };
+            if place.reads_same() {
+                return copied(place);
+            }
+            return Expr::call(
+                Expr::arrow(
+                    vec!["value".into()],
+                    vec![js::StmtKind::Return(Some(copied(Expr::var("value")))).at(js::Span::NONE)],
+                ),
+                vec![place],
+            );
         }
         // A copy reads its source once per part: a value that isn't a place,
         // like `$unwrap(v[0])`, is taken once, `((value) => ..)(source)`.

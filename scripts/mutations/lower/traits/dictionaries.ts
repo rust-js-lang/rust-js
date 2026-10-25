@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "copy-of-itself-given",
+    breaks: "a value that's its own copy is given `{ copy: (value) => value }`, `createContext(7, ..)`, where JS gives none",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            if js::same_path(&copy, &value) {\n",
+    replace: "            if false {\n",
+    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
 ];

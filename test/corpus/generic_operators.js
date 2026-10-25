@@ -17,14 +17,15 @@ export function entry() {
 }
 
 function total(values, zero, TAdd, TCopy) {
-  let sum = TCopy.copy(zero);
+  let sum = TCopy ? TCopy.copy(zero) : zero;
   const iter = $iter(values);
   let value;
   while ((value = $nextSome(iter)) != null) {
-    const v = TCopy.copy($someValue(value));
-    sum = TAdd.add(TCopy.copy(sum), TCopy.copy(v));
+    const value$1 = $someValue(value);
+    const v = TCopy ? TCopy.copy(value$1) : value$1;
+    sum = TAdd.add(TCopy ? TCopy.copy(sum) : sum, TCopy ? TCopy.copy(v) : v);
   }
-  return TCopy.copy(sum);
+  return TCopy ? TCopy.copy(sum) : sum;
 }
 
 function affine(x, a, b, TMul, TAdd) {
@@ -84,12 +85,9 @@ function scaled(x, k, TMulF64) {
 function main() {
   // `u8`'s and `i32`'s wrap as they do outside generic code.
   console.log(
-    `${total(
-      [1, 2, 3],
-      0,
-      { add: (a, b) => (a + b) >>> 0 },
-      { copy: (value) => value },
-    )} ${$displayF64(total([1.5, 2.25], 0, { add: (a, b) => a + b }, { copy: (value) => value }))} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 }, { copy: (value) => value })}`,
+    `${total([1, 2, 3], 0, {
+      add: (a, b) => (a + b) >>> 0,
+    })} ${$displayF64(total([1.5, 2.25], 0, { add: (a, b) => a + b }))} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 })}`,
   );
   console.log(
     `${affine(2, -3, 7, { mul: (a, b) => Math.imul(a, b) }, { add: (a, b) => (a + b) | 0 })} ${$displayF64(affine(0.5, 4, 1, { mul: (a, b) => a * b }, { add: (a, b) => a + b }))}`,

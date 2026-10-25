@@ -14,14 +14,14 @@ function holderShow(TCopy, TDisplay) {
   }));
 }
 function holderShow_show(holder, TCopy, TDisplay) {
-  const copy = TCopy.copy(holder[0]);
+  const copy = TCopy ? TCopy.copy(holder[0]) : holder[0];
   return TDisplay.fmt(copy);
 }
 
 function main() {
   const loud = "a";
   try {
-    console.log(`${holderShow_show([3], { copy: (value) => value }, { fmt: String })}`);
+    console.log(`${holderShow_show([3], undefined, { fmt: String })}`);
   } finally {
     console.log(`drop ${loud}`);
   }

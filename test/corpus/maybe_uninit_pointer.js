@@ -13,7 +13,8 @@ function _T__N_Array(N) {
 }
 
 function first(m, AArray, AItemCopy) {
-  return AItemCopy.copy($ptrFirst($ptrTo(m)).value);
+  const value = $ptrFirst($ptrTo(m)).value;
+  return AItemCopy ? AItemCopy.copy(value) : value;
 }
 
 function setSecond(m, v, AArray) {
@@ -37,7 +38,7 @@ function main() {
   setSecond(m$1, 9, _T__N_Array(3));
   m = m$1.value;
   const arr = m;
-  console.log(`${first([4, 5], _T__N_Array(2), { copy: (value) => value })} [${arr.join(", ")}]`);
+  console.log(`${first([4, 5], _T__N_Array(2))} [${arr.join(", ")}]`);
   const x = 5;
   console.log(`${x}`);
   console.log(`${reinterpret({ value: 5 }, false) == null}`);
