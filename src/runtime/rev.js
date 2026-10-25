@@ -27,6 +27,8 @@ function $rev(it) {
   };
   if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);
   if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
+  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s (#234).
+  if (it.ownNthBack) rev.ownNth = true;
   if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);
   return rev;
 }

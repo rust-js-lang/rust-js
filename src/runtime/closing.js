@@ -4,7 +4,7 @@
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
 // fold takes it and drops it itself (#162).
-function $closing(it, drop) {
+function $closing(it, drop, slices = true) {
   let closed = false;
   const close = () => {
     if (!closed) {
@@ -23,6 +23,20 @@ function $closing(it, drop) {
   };
   const closing = new $Steps(() => done(it.next()), close);
   closing.from = [it];
+  // Of an array's items it owns, a `Vec`'s `IntoIter`'s, std's `nth_back`:
+  // what it passes over dropped as one slice, front to back, as its
+  // `advance_back_by` drops them, then its next from the back; not of one
+  // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
+  if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
+    closing.nthBack = (k) => {
+      const n = Math.min(k, it.len());
+      const passed = it.items.slice(it.end - n, it.end);
+      it.end -= n;
+      for (const item of passed) drop.each(item);
+      return done(n < k ? { done: true, value: undefined } : it.back());
+    };
+    closing.ownNthBack = true;
+  }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).

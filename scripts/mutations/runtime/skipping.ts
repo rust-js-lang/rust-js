@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "      const folded = skipping.tryRfold(init, f, () => false);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
+  {
+    name: "skipping-next-each",
+    breaks: "`rev().skip(n)` of a `Vec` drops the `n` one at a time from the back, not as its source's `nth` drops them, one slice (#234)",
+    file: "src/runtime/skipping.js",
+    find: "      if (skipping.n > 0 && skipping.iter.ownNth) {",
+    replace: "      if (false) {",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "skipping-nth-unasked",
+    breaks: "`rev().skip(1).nth(2)` of a `Vec` drops what it passes one at a time from the back, not as `Skip::nth`'s `nth(n + k)` of its source, one slice (#234)",
+    file: "src/runtime/skipping.js",
+    find: "  if (iter.ownNth) {\n    skipping.nth = (k) => {",
+    replace: "  if (false) {\n    skipping.nth = (k) => {",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
 ];

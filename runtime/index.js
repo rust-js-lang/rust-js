@@ -1786,7 +1786,7 @@ export function $findDropping(it, test, drop, boxed) {
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
 // fold takes it and drops it itself (#162).
-export function $closing(it, drop) {
+export function $closing(it, drop, slices = true) {
   let closed = false;
   const close = () => {
     if (!closed) {
@@ -1805,6 +1805,20 @@ export function $closing(it, drop) {
   };
   const closing = new $Steps(() => done(it.next()), close);
   closing.from = [it];
+  // Of an array's items it owns, a `Vec`'s `IntoIter`'s, std's `nth_back`:
+  // what it passes over dropped as one slice, front to back, as its
+  // `advance_back_by` drops them, then its next from the back; not of one
+  // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
+  if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
+    closing.nthBack = (k) => {
+      const n = Math.min(k, it.len());
+      const passed = it.items.slice(it.end - n, it.end);
+      it.end -= n;
+      for (const item of passed) drop.each(item);
+      return done(n < k ? { done: true, value: undefined } : it.back());
+    };
+    closing.ownNthBack = true;
+  }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
@@ -1857,6 +1871,13 @@ export function $closing(it, drop) {
 export function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {
+      // Std's `Skip::next`, its source's `nth(n)`, where that drops what
+      // it passes over itself, a reversed `Vec`'s as one slice (#234).
+      if (skipping.n > 0 && skipping.iter.ownNth) {
+        const n = skipping.n;
+        skipping.n = 0;
+        return skipping.iter.nth(n);
+      }
       for (; skipping.n > 0; skipping.n--) {
         const step = skipping.iter.next();
         if (step.done) {
@@ -1871,6 +1892,16 @@ export function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
+  // it passes over itself, a reversed `Vec`'s as one slice (#234).
+  if (iter.ownNth) {
+    skipping.nth = (k) => {
+      const skip = skipping.n;
+      skipping.n = 0;
+      return skipping.iter.nth(skip + k);
+    };
+    skipping.ownNth = true;
+  }
   skipping.hint = () => {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
@@ -2135,9 +2166,21 @@ export function $nextBack(it) {
 // `None`; of items that could look like `None`, its `Some`, `$some`, given
 // as `found` (ADR 0051). Its own `nth_back`, where it reaches the crate's
 // (#220).
-export function $nthBack(it, n, found = (item) => item, drop) {
+export function $nthBack(it, n, found = (item) => item, drop, slices = true) {
   if (it.nthBack !== undefined) {
     const step = it.nthBack(n);
+    return step.done ? undefined : found(step.value);
+  }
+  // Of an array's items it owns, a `Vec`'s `IntoIter`'s, what it passes
+  // over dropped as one slice, front to back, as std's `advance_back_by`
+  // drops them; not of one that drops each, `slices` false (#234).
+  if (slices && drop !== undefined && it.items !== undefined) {
+    const k = Math.min(n, it.len());
+    const passed = it.items.slice(it.end - k, it.end);
+    it.end -= k;
+    for (const item of passed) drop(item);
+    if (k < n) return undefined;
+    const step = it.back();
     return step.done ? undefined : found(step.value);
   }
   for (let step = it.back(); !step.done; step = it.back()) {
@@ -2310,7 +2353,7 @@ export function $stepBy(it, step, drop) {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
     // crate's own where it writes one (#162); from the back, its `nth_back`,
     // as std's `next_back` asks it (#245).
-    if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
+    if (by === "next" && (drop === undefined || it.ownNth) && it.nth !== undefined) return it.nth(k);
     if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();
@@ -2329,6 +2372,9 @@ export function $stepBy(it, step, drop) {
   );
   stepped.first = true;
   stepped.skip = skip;
+  // Its `nth` its source's, which drops what it passes over itself, a
+  // reversed `Vec`'s as one slice (#234).
+  if (it.ownNth) stepped.ownNth = true;
   stepped.nth = (n) => {
     if (stepped.first) {
       stepped.first = false;
@@ -2372,10 +2418,15 @@ export function $stepBy(it, step, drop) {
 // finds it.
 export function $stepByEnds(it, step) {
   const stepped = $stepBy(it, step);
-  stepped.back = () => {
+  // Std's `next_back_index`: how many its back passes over first.
+  const backIndex = () => {
     const rem = it.len() % step;
-    return stepped.skip(stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
+    return stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem;
   };
+  stepped.back = () => stepped.skip(backIndex(), "back");
+  // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
+  // one call, the crate's own where it writes one (#245).
+  stepped.nthBack = (n) => stepped.skip(n * step + backIndex(), "back");
   return stepped;
 }
 
@@ -10601,9 +10652,12 @@ export const $sipHasher = Object.fromEntries(
 // What drops each item an iterator, or an array, hasn't given, by `drop`,
 // as Rust's drops an owning iterator's (ADRs 0098, 0465).
 export function $dropEach(drop) {
-  return (items) => {
+  const dropped = (items) => {
     for (const item of items) drop(item);
   };
+  // Each item's own drop, which a slice it passes over is dropped by (#234).
+  dropped.each = drop;
+  return dropped;
 }
 
 // A `Duration` is its nanoseconds, a BigInt (ADR 0188): std's `MAX` is
@@ -11113,6 +11167,8 @@ export function $rev(it) {
   };
   if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);
   if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
+  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s (#234).
+  if (it.ownNthBack) rev.ownNth = true;
   if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);
   return rev;
 }

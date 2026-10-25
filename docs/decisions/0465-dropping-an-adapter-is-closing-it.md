@@ -108,3 +108,41 @@ mutations; what else of such an iterator isn't dropped, through a
 `step_by`, a `filter` or a `skip` stepped from its back, is #225. The
 readability baseline's `while (true)` share grows by 0.1 in 10,000
 lines: the case's `rfold`, a `while let`.
+
+## Amendment: a `Vec`'s `IntoIter` drops what it passes from its back as one slice (#234)
+
+std's `vec::IntoIter::advance_back_by(n)` drops the `n` items it passes
+as one slice, in the order they're in the `Vec`. `array::IntoIter`'s,
+`VecDeque`'s and `BinaryHeap`'s do the same. A `Drain`'s and a B-tree's
+`IntoIter` use the default, which drops each item from the back as it
+passes. So `vec![D(1), D(2), D(3), D(4)].into_iter().rev().step_by(3)`
+drops 2 then 3, where the JS dropped 3 then 2. Six of seven fuzz failures
+in seeds 44000–44499 were this.
+
+- **The type says it** (`drops_passed_as_slice`, recognition). Its
+  `$closing` is `$closing(it, drop)`, whose `nthBack` drops a slice; one
+  that owns an array's items and drops each as passed is `$closing(it,
+  drop, false)` (`closed_by`, the one builder, and `passes_each_owned`).
+  `$nthBack` of a plain `$iter` takes the same `false`. A `Vec`'s, the
+  common case, reads as before.
+- **What asks its `nth_back` reaches it**, as std's adapters ask: `$rev`'s
+  `nth`, which says it drops what it passes (`ownNth`); `$skipping`'s
+  first step and its `nth`, std's `Skip::next` and `Skip::nth`, of its
+  source's `nth`; and `$stepBy`, which a `step_by` of a reversed `Vec`'s,
+  or of a `step_by` or `skip` of one (`nths_a_slice`), is lowered to in
+  place of the filter, which drops each as it passes.
+
+`$stepByEnds` gains std's `StepBy::nth_back`: one `nth_back(n * step +
+next_back_index)` of its source, which `rev().nth(k)` asks, where it
+stepped its back `k + 1` times (#245).
+
+A `chain` of a reversed `Vec`'s skipped, `rev().chain(..).skip(2)`,
+still drops each as it passes, since `$lazyChain` has no `advance_by`
+that passes a slice on (#250). Held by
+`test/corpus/vec_skipped_from_back_drops.rs`, whose `Drain` drops each
+from its back, `test/corpus/step_by_nth_back.rs`, and eleven mutations.
+The droppable sweep's 2,100 programs agree; 80 that were refused now
+compile, where a reversed `Vec`'s `step_by` is `$stepBy`. The readability
+baseline's `while (true)` share grows by 0.2 in 10,000 lines and its
+`$iter` share by 0.5. Both come from the new case, whose three `for`
+loops each drop what they're given, over its eight `Vec`s.

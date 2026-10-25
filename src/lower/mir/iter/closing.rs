@@ -78,9 +78,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         Ok(match self.closing_drop(ty, span)? {
-            Some(drop) => Expr::call_helper("$closing", vec![it, drop]),
+            Some(drop) => self.closed_by(it, drop, ty),
             None => it,
         })
+    }
+
+    /// `$closing(it, drop)`, `it` a `ty` closed by `drop`, which drops what
+    /// an array's items it passes over from its back as one slice, as a
+    /// `Vec`'s `IntoIter` does; of one that owns them and drops each as it's
+    /// passed, a `Drain`'s or a B-tree's, `$closing(it, drop, false)` (#234).
+    pub(in crate::lower) fn closed_by(&self, it: Expr, drop: Expr, ty: Ty<'tcx>) -> Expr {
+        let mut args = vec![it, drop];
+        if self.passes_each_owned(ty) {
+            args.push(Expr::bool(false));
+        }
+        Expr::call_helper("$closing", args)
+    }
+
+    /// Whether `ty` owns an array's items and drops each it passes over
+    /// from its back as it's passed, not as one slice (#234).
+    pub(in crate::lower) fn passes_each_owned(&self, ty: Ty<'tcx>) -> bool {
+        self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)
     }
 
     /// What closes a `ty` an adapter holds, its own drop: of one that owns
@@ -130,7 +148,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.
         let other = self.as_js_iterator(other, other_ty, span)?;
         let other = match self.closing_drop(other_ty, span)? {
-            Some(drop) => Expr::call_helper("$closing", vec![self.js_iterator(other), drop]),
+            Some(drop) => {
+                let it = self.js_iterator(other);
+                self.closed_by(it, drop, other_ty)
+            }
             None => other,
         };
         let it = match lent {

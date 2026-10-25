@@ -8,6 +8,13 @@
 function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {
+      // Std's `Skip::next`, its source's `nth(n)`, where that drops what
+      // it passes over itself, a reversed `Vec`'s as one slice (#234).
+      if (skipping.n > 0 && skipping.iter.ownNth) {
+        const n = skipping.n;
+        skipping.n = 0;
+        return skipping.iter.nth(n);
+      }
       for (; skipping.n > 0; skipping.n--) {
         const step = skipping.iter.next();
         if (step.done) {
@@ -22,6 +29,16 @@ function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
+  // it passes over itself, a reversed `Vec`'s as one slice (#234).
+  if (iter.ownNth) {
+    skipping.nth = (k) => {
+      const skip = skipping.n;
+      skipping.n = 0;
+      return skipping.iter.nth(skip + k);
+    };
+    skipping.ownNth = true;
+  }
   skipping.hint = () => {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];

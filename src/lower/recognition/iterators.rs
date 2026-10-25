@@ -112,6 +112,43 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Reverse")
     }
 
+    /// Whether `ty` drops what it passes over from its back as one slice,
+    /// front to back, as `vec::IntoIter`'s, `array::IntoIter`'s,
+    /// `VecDeque`'s and `BinaryHeap`'s `advance_back_by` does, where the
+    /// default, a `Drain`'s or a B-tree's, drops each as it's passed (#234).
+    pub(in crate::lower) fn drops_passed_as_slice(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::vec::IntoIter"
+                | "std::array::IntoIter"
+                | "std::collections::vec_deque::IntoIter"
+                | "std::collections::binary_heap::IntoIter"
+        )
+    }
+
+    /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
+    /// of one that does so from its back, a `Vec`'s, or a `StepBy` or a
+    /// `Skip` of one whose `nth` does, which ask it (#234).
+    pub(in crate::lower) fn nths_a_slice(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        if let Some(source) = self.reversed(ty) {
+            return self.drops_passed_as_slice(source);
+        }
+        match ty.kind() {
+            ty::Adt(adt, args)
+                if matches!(
+                    std_path(self.tcx, adt.did()).as_str(),
+                    "std::iter::StepBy" | "std::iter::Skip"
+                ) =>
+            {
+                self.nths_a_slice(args.type_at(0))
+            }
+            _ => false,
+        }
+    }
+
     /// std's iterator over an array's items, whose JS value is the array
     /// (ADR 0061): `Some(false)` of `slice::Iter`, which borrows them, and
     /// `Some(true)` of `array::IntoIter` and `vec::IntoIter`, which own them,

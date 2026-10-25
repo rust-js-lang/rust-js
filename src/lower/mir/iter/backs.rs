@@ -333,7 +333,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Expr::undefined(),
             });
         }
+        // Of one that owns an array's items and drops each it passes
+        // over, not as one slice as a `Vec`'s does, `false` (#234).
+        let each = method == IterMethod::NthBack && drop.is_some() && self.passes_each_owned(iter_ty);
         given.extend(drop);
+        if each {
+            given.push(Expr::bool(false));
+        }
         let helper = match method {
             IterMethod::NthBack => "$nthBack",
             IterMethod::RFold => "$foldBack",

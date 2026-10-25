@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "        let size = self.room_size_of(&list[1], item);\n        let drop: Option<Expr> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
+  {
+    name: "step-by-of-slice-filtered",
+    breaks: "`rev().step_by(n)` of a `Vec` is a filter dropping each it steps over from the back, not `$stepBy` asking its `nth`'s slice (#234)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.recognition().nths_a_slice(receiver_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
 ];

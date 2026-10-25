@@ -194,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self.stepped_items(value),
             None => self.as_js_iterator(value, inner, span)?,
         };
-        let closed = Expr::call_helper("$closing", vec![it, drop]);
+        let closed = self.closed_by(it, drop, inner);
         Ok(Some(Expr::arrow(
             vec![param.into()],
             vec![StmtKind::Return(Some(closed)).at(js::Span::NONE)],
@@ -372,6 +372,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())
                     || self.recognition().nths_its_own(receiver_ty)
                     || self.steps_a_range(receiver_ty.peel_refs())
+                    // And of a `Vec`'s reversed, whose `nth` drops what it
+                    // passes over as one slice (#234).
+                    || self.recognition().nths_a_slice(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

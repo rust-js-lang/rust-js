@@ -43,6 +43,12 @@ impl Iterator for Count {
         let n = (self.end - self.at).max(0) as usize;
         (n, Some(n))
     }
+
+    fn nth(&mut self, n: usize) -> Option<i32> {
+        println!("nth {n}");
+        self.at = self.at.saturating_add(n as i32);
+        self.next()
+    }
 }
 
 impl DoubleEndedIterator for Count {
@@ -129,6 +135,7 @@ fn consume(n: usize) {
     println!("{:?}", stepped.next().map(|l| l.0));
     println!("{}", stepped.next().is_none());
     println!("after");
+    println!("{:?}", counter(3).step_by(2).chain(counter(2)).collect::<Vec<_>>());
     held(n);
 }
 

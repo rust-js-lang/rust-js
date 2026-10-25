@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let it = stepped_value(it).unwrap_or_else(|| it.clone());
             let drop = drop.clone();
             let knowing = self.user_iterator_knowing(it, ty, (back, len), span)?;
-            return Ok(Expr::call_helper("$closing", vec![knowing, drop]));
+            return Ok(self.closed_by(knowing, drop, ty));
         }
         // One lent as a `&mut`, `$lent($iterator(value, next))`: what it
         // lends made knowing them, given its own methods as std's `&mut I`

@@ -7,9 +7,21 @@
 // `None`; of items that could look like `None`, its `Some`, `$some`, given
 // as `found` (ADR 0051). Its own `nth_back`, where it reaches the crate's
 // (#220).
-function $nthBack(it, n, found = (item) => item, drop) {
+function $nthBack(it, n, found = (item) => item, drop, slices = true) {
   if (it.nthBack !== undefined) {
     const step = it.nthBack(n);
+    return step.done ? undefined : found(step.value);
+  }
+  // Of an array's items it owns, a `Vec`'s `IntoIter`'s, what it passes
+  // over dropped as one slice, front to back, as std's `advance_back_by`
+  // drops them; not of one that drops each, `slices` false (#234).
+  if (slices && drop !== undefined && it.items !== undefined) {
+    const k = Math.min(n, it.len());
+    const passed = it.items.slice(it.end - k, it.end);
+    it.end -= k;
+    for (const item of passed) drop(item);
+    if (k < n) return undefined;
+    const step = it.back();
     return step.done ? undefined : found(step.value);
   }
   for (let step = it.back(); !step.done; step = it.back()) {
@@ -182,7 +194,7 @@ function $stepBy(it, step, drop) {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
     // crate's own where it writes one (#162); from the back, its `nth_back`,
     // as std's `next_back` asks it (#245).
-    if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
+    if (by === "next" && (drop === undefined || it.ownNth) && it.nth !== undefined) return it.nth(k);
     if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();
@@ -201,6 +213,9 @@ function $stepBy(it, step, drop) {
   );
   stepped.first = true;
   stepped.skip = skip;
+  // Its `nth` its source's, which drops what it passes over itself, a
+  // reversed `Vec`'s as one slice (#234).
+  if (it.ownNth) stepped.ownNth = true;
   stepped.nth = (n) => {
     if (stepped.first) {
       stepped.first = false;
@@ -244,10 +259,15 @@ function $stepBy(it, step, drop) {
 // finds it.
 function $stepByEnds(it, step) {
   const stepped = $stepBy(it, step);
-  stepped.back = () => {
+  // Std's `next_back_index`: how many its back passes over first.
+  const backIndex = () => {
     const rem = it.len() % step;
-    return stepped.skip(stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem, "back");
+    return stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem;
   };
+  stepped.back = () => stepped.skip(backIndex(), "back");
+  // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
+  // one call, the crate's own where it writes one (#245).
+  stepped.nthBack = (n) => stepped.skip(n * step + backIndex(), "back");
   return stepped;
 }
 

@@ -54,6 +54,12 @@ function countIterator_sizeHint(count) {
   return [n, n];
 }
 
+function countIterator_nth(count, n) {
+  console.log(`nth ${n}`);
+  count.at = Math.min(Math.max(count.at + (n | 0), -2147483648), 2147483647);
+  return countIterator_next(count);
+}
+
 function countDoubleEndedIterator_nextBack(count) {
   if (count.at < count.end) {
     count.end = (count.end - 1) | 0;
@@ -316,7 +322,7 @@ function consume(n) {
           (it) => $exactLen(countIterator_sizeHint(it)),
           countIterator_sizeHint,
           undefined,
-          undefined,
+          countIterator_nth,
           undefined,
           undefined,
           countDoubleEndedIterator_nthBack,
@@ -339,7 +345,7 @@ function consume(n) {
         undefined,
         countIterator_sizeHint,
         undefined,
-        undefined,
+        countIterator_nth,
         undefined,
         undefined,
         countDoubleEndedIterator_nthBack,
@@ -386,6 +392,57 @@ function consume(n) {
       }
     }
     console.log("after");
+    const stepBy = $stepBy(
+      $closing(
+        $iterator(
+          counter(3),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          countIterator_sizeHint,
+          undefined,
+          countIterator_nth,
+          undefined,
+          undefined,
+          countDoubleEndedIterator_nthBack,
+        ),
+        (it) => {
+          console.log(`drop count ${it.of.at} ${it.of.end}`);
+        },
+      ),
+      2,
+    );
+    let count;
+    try {
+      count = counter(2);
+    } catch (error) {
+      stepBy.return();
+      throw error;
+    }
+    console.log(
+      `[${[
+        ...stepBy,
+        ...$closing(
+          $iterator(
+            count,
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            countIterator_sizeHint,
+            undefined,
+            countIterator_nth,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_nthBack,
+          ),
+          (it) => {
+            console.log(`drop count ${it.of.at} ${it.of.end}`);
+          },
+        ),
+      ].join(", ")}]`,
+    );
     held(n);
   } finally {
     stepped.return();
@@ -500,7 +557,7 @@ function held(n) {
                     undefined,
                     countIterator_sizeHint,
                     undefined,
-                    undefined,
+                    countIterator_nth,
                     undefined,
                     undefined,
                     countDoubleEndedIterator_nthBack,
@@ -546,7 +603,7 @@ function held(n) {
                         undefined,
                         countIterator_sizeHint,
                         undefined,
-                        undefined,
+                        countIterator_nth,
                         undefined,
                         undefined,
                         countDoubleEndedIterator_nthBack,

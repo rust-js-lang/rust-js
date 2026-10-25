@@ -958,9 +958,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // Closed to drop what it holds, a JS iterator of it.
                             Ok(match this.closing_drop(ty, span)? {
                                 Some(drop) if crate::lower::iterators::is_js_iterator(&e) => {
-                                    Expr::call_helper("$closing", vec![e, drop])
+                                    this.closed_by(e, drop, ty)
                                 }
-                                Some(drop) => Expr::call_helper("$closing", vec![this.js_iterator(e), drop]),
+                                Some(drop) => {
+                                    let it = this.js_iterator(e);
+                                    this.closed_by(it, drop, ty)
+                                }
                                 None => e,
                             })
                         })

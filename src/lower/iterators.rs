@@ -131,13 +131,15 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
 }
 
 /// What a JS iterator closed to drop it is made of, `it` and `drop` of
-/// `$closing(it, drop)`, as `closing` makes it: the one reader of its form.
+/// `$closing(it, drop)`, or of `$closing(it, drop, true)`, a `Vec`'s that
+/// drops what it passes over as one slice (#234), as `closing` makes it:
+/// the one reader of its form.
 pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
     match args.as_slice() {
-        [it, drop] if callee.helper_name() == Some("$closing") => Some((it, drop)),
+        [it, drop] | [it, drop, _] if callee.helper_name() == Some("$closing") => Some((it, drop)),
         _ => None,
     }
 }

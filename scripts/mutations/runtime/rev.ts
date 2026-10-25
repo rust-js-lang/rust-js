@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "  rev.unused = (m, drop) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "rev-own-nth-unset",
+    breaks: "a reversed `Vec`'s `nth` isn't said to drop what it passes over, so `skip` drops each one by one from the back (#234)",
+    file: "src/runtime/rev.js",
+    find: "  if (it.ownNthBack) rev.ownNth = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
 ];

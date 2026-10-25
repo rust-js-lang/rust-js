@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "eq-other-not-closing",
     breaks: "`eq`'s other side that owns items with a destructor isn't closed to drop what's left",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            Some(drop) => Expr::call_helper(\"$closing\", vec![self.js_iterator(other), drop]),\n",
+    find: "            Some(drop) => {\n                let it = self.js_iterator(other);\n                self.closed_by(it, drop, other_ty)\n            }\n",
     replace: "            Some(_) => other,\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
@@ -186,5 +186,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(rev_drops|rev_lazy_drops|rev_of_closed_items).rs$"],
     snapshots: true,
+  },
+  {
+    name: "drain-passed-as-slice",
+    breaks: "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed (#234)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
+    replace: "        false && self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
 ];
