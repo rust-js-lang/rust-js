@@ -41,8 +41,7 @@ const Buf = {
       const old = layoutArray(buf.cap, TSize, TAlign);
       const new$ = layoutArray((buf.cap * 2) >>> 0, TSize, TAlign);
       const grown = $realloc($ptrBytes(buf.ptr), old, new$.size);
-      const value = $ptrTyped($unwrap(grown));
-      buf.ptr = value;
+      buf.ptr = $ptrTyped($unwrap(grown));
       buf.cap = (buf.cap * 2) >>> 0;
     }
     $ptrAdd(buf.ptr, buf.len).value = value;

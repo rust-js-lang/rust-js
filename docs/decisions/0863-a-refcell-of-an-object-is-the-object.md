@@ -15,6 +15,9 @@ field). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.m
 (what std's impls and derives run is what their bounds say); amended
 (a `#[repr(transparent)]` struct's `RefCell`, and a thread-local
 `RefCell`'s `set`, a field's plain one by its declaration, below).
+Amended by [0897](0897-an-element-a-guard-reaches-is-its-place.md): a
+guard a temporary holds is its object where it's read, as `&mut guard`
+given to `deref_mut` writes only what it guards.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, decided by the user
 (2026-10-25). A `RefCell` of an object being the object changes no run:

@@ -74,4 +74,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
+  {
+    name: "guard-deref-writes-guard",
+    breaks: "a `&mut guard` given to `deref_mut` is a write of the guard, so a temporary's guard of a `RefCell` that's its object is named, `const lanes = root.lanes`",
+    file: "src/lower/mir/locals.rs",
+    find: "                        let itself = derefed\n",
+    replace: "                        let itself = false\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
+    snapshots: true,
+  },
 ];

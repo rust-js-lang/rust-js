@@ -30,8 +30,7 @@ const Buffer = {
       ),
       items,
     )) {
-      const value = $some(item);
-      slot.value = value;
+      slot.value = $some(item);
     }
     return { cur: 0, buf };
   },

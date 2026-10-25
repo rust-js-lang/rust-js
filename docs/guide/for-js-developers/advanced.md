@@ -914,6 +914,31 @@ export function twoLoggers() {
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)):
   a `borrow_mut()` while another borrow is alive panics with
   `RefCell already borrowed`, as in native Rust ([ADR 0328](../../decisions/0328-refcell-borrow-counts.md)).
+- **An element of one is its place**, as a `&mut` to one is: what
+  `borrow_mut()[index]` reads and writes is the array's element, its
+  index checked as Rust checks it
+  ([ADR 0897](../../decisions/0897-an-element-a-guard-reaches-is-its-place.md)):
+
+```rust
+use std::cell::RefCell;
+
+pub struct Root {
+    pub lanes: RefCell<Vec<u32>>,
+}
+
+pub fn entangle(root: &Root, index: usize, lane: u32) {
+    root.lanes.borrow_mut()[index] |= lane;
+}
+```
+
+```js
+import { $at } from "@rust-js/runtime";
+
+export function entangle(root, index, lane) {
+  root.lanes[$at(root.lanes, index)] = (root.lanes[index] | lane) >>> 0;
+}
+```
+
 - A `Cell<T>` is the same for a `Copy` value, a number say, with `get` and
   `set` and no borrows to count.
 - In a React component, state is a hook instead: [Hooks](../react/hooks.md).

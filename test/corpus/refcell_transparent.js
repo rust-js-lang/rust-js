@@ -30,16 +30,15 @@ function main() {
 
   const shared = { value: ["x"], strong: 1, weak: 0 };
   let other;
+
   try {
     other = $rcClone(shared);
   } catch (error) {
     $rcDrop(shared);
     throw error;
   }
-  const value = other.value;
-
   try {
-    value.push("y");
+    other.value.push("y");
   } catch (error) {
     $rcDrop(other);
     $rcDrop(shared);
@@ -53,50 +52,19 @@ function main() {
     throw error;
   }
   const counts = [1];
-  let borrowMut;
   try {
-    borrowMut = $borrowMut(counts, true);
+    counts.push(2);
   } catch (error) {
     $rcDrop(other);
     $rcDrop(shared);
     throw error;
   }
-  try {
-    borrowMut.push(2);
-  } catch (error) {
-    $unborrow(borrowMut);
-    $rcDrop(other);
-    $rcDrop(shared);
-    throw error;
-  }
-  try {
-    $unborrow(borrowMut);
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(shared);
-    throw error;
-  }
-  const value$1 = [7, 8, 9];
-  let tmp;
-  try {
-    tmp = $borrowMut(counts, true);
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(shared);
-    throw error;
-  }
-  $assign(tmp, value$1);
+  $assign(counts, [7, 8, 9]);
   try {
     try {
-      $unborrow(tmp);
-      const taken = $take($borrowMut(counts), []);
-      const old = $take($borrowMut(counts), [4]);
-      const borrow = $borrow(counts, true);
-      try {
-        console.log(`[${taken.join(", ")}] [${old.join(", ")}] [${borrow.join(", ")}]`);
-      } finally {
-        $unborrow(borrow);
-      }
+      const taken = $take(counts, []);
+      const old = $take(counts, [4]);
+      console.log(`[${taken.join(", ")}] [${old.join(", ")}] [${counts.join(", ")}]`);
 
       const first = [];
       const second = ["held"];

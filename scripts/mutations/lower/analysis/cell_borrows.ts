@@ -257,4 +257,13 @@ export const mutations: Mutation[] = [
     replace: "                    true || impls.non_blanket_impls().contains_key(&own)\n",
     tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
+  {
+    name: "intrinsic-runs-anything",
+    breaks: "an intrinsic, `vec![..]`'s `write_box_via_move`, may run anything, so a borrow held across `vec![..]` is counted, and every borrow of its cell's type",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            false => Called::Std(id, instance.args),\n",
+    replace: "            false => Called::Any,\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
+    snapshots: true,
+  },
 ];

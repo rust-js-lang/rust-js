@@ -7,8 +7,7 @@ export function entry() {
 }
 
 function bump(d) {
-  const value = $durationAdd(d.value, 1n * 1000000000n);
-  d.value = value;
+  d.value = $durationAdd(d.value, 1n * 1000000000n);
 }
 
 function shorten(d) {

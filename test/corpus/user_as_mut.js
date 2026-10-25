@@ -26,13 +26,12 @@ function gridAsMutU8Slice_asMut(grid) {
 
 function main() {
   const stack = { items: [3, 1, 2] };
-  const value$1 = stackAsMutI32Slice_asMut(stack);
-  value$1[$at(value$1, 0)] = 9;
+  const value = stackAsMutI32Slice_asMut(stack);
+  value[$at(value, 0)] = 9;
   console.log(`[${stack.items.join(", ")}]`);
   const slice = stackBorrowMutI32Slice_borrowMut(stack);
   slice.sort((a, b) => a - b);
-  const value = (slice[$at(slice, 2)] + 1) | 0;
-  slice[2] = value;
+  slice[2] = (slice[$at(slice, 2)] + 1) | 0;
   console.log(`[${stack.items.join(", ")}]`);
   const all = stackAsMutI32Slice_asMut(stack);
   all.reverse();

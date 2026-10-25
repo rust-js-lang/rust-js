@@ -18,9 +18,8 @@ function total(log) {
 function bump(holder) {
   const count = $borrowMut(holder.count, true);
   count.value = (count.value + 2) >>> 0;
-  const result = count.value;
   $unborrow(count);
-  return result;
+  return count.value;
 }
 
 function main() {

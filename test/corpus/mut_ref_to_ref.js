@@ -7,8 +7,7 @@ export function entry() {
 }
 
 function shorten(s) {
-  const value = $strSlice(s.value, 1);
-  s.value = value;
+  s.value = $strSlice(s.value, 1);
 }
 
 function pick(slot, other) {

@@ -149,19 +149,18 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
   const css = [];
   const iter = $iter(sources);
-  let value$1;
-  while ((value$1 = $next(iter))) {
-    for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
+  let value;
+  while ((value = $next(iter))) {
+    for (const [, specifier] of Array.from(value[1].matchAll(cssImports))) {
       const find = styles.find(([name]) => name === specifier);
       if (find && !css.includes(find[1])) {
         css.push(find[1]);
       }
     }
     const known = styles.map(([name]) => name);
-    const value = value$1[1].replace(cssImports, (whole, specifier) =>
+    value[1] = value[1].replace(cssImports, (whole, specifier) =>
       known.includes(specifier) ? "" : whole,
     );
-    value$1[1] = value;
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   // Imports from JS modules (ADR 0028) name packages or files the page

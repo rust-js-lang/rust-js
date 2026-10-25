@@ -44,8 +44,7 @@ function toRefs(list) {
 
 function setAll(refs, v, TClone) {
   for (const r of refs) {
-    const value = TClone.clone(v);
-    r.value = value;
+    r.value = TClone.clone(v);
   }
 }
 

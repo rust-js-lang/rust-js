@@ -47,8 +47,7 @@ function main() {
   );
   const m = [1, 2, 3, 4, 5];
   for (const c of $chunksMut(m, 2).toReversed()) {
-    const value = (c[$at(c, 0)] * 10) | 0;
-    c[0] = value;
+    c[0] = (c[$at(c, 0)] * 10) | 0;
   }
   console.log(`[${m.join(", ")}]`);
   const value$3 = $nthBack($iter($chunks(v, 2)), 1);

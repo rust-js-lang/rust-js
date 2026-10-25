@@ -823,6 +823,31 @@ pub(super) fn promoted_some<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>)
     (referred == Some(made)).then_some(inside)
 }
 
+/// Whether `local` is given one value, and only one: assigned once, or a
+/// parameter never assigned, whose argument it holds throughout.
+fn given_once(state: &State<'_, '_>, local: Local) -> bool {
+    state.locals.writes[local] + usize::from(is_parameter(state, local)) == 1
+}
+
+/// Whether `place` is of variables each given one value, and constants:
+/// `lanes[index]` of a parameter `index` and a `const lanes`, which
+/// nothing evaluated meanwhile can make another place.
+pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
+    let settled = |name: &str| {
+        let named = || (state.locals.names.iter_enumerated()).filter(|&(_, n)| n == name);
+        named().next().is_some() && named().all(|(local, _)| given_once(state, local))
+    };
+    match &place.kind {
+        js::ExprKind::Var(name) => settled(name),
+        js::ExprKind::Member(object, _) => settled_place(state, object),
+        js::ExprKind::Index(object, index) => {
+            settled_place(state, object)
+                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))
+        }
+        _ => false,
+    }
+}
+
 /// Whether `local` is written again after it's first given its value, a
 /// reference reassigned, so a place through it isn't the one it was. A
 /// parameter's first value is its argument.
@@ -847,7 +872,7 @@ pub(super) fn is_parameter(state: &State<'_, '_>, local: Local) -> bool {
 
 /// Whether `place` names the same place wherever it's read: variables and
 /// their fields, and elements at an index that's a constant, or a variable
-/// assigned once.
+/// given one value, a parameter never assigned too.
 pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
     match &place.kind {
         js::ExprKind::Var(_) => true,
@@ -857,7 +882,7 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
                 && (index.is_constant()
                     || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] == 1)))
+                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && given_once(state, l))))
         }
         _ => false,
     }

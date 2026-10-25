@@ -368,6 +368,20 @@ fn called<'tcx>(
     let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) else {
         return Called::Any;
     };
+    // An intrinsic, the compiler's own, runs only what it's given: a
+    // function by a bound, `const_eval_select`'s, as std's code does; and
+    // a pointer to one or a `dyn`, `catch_unwind`'s, which may be any.
+    // `vec![x]`'s `write_box_via_move` moves `x` into its box.
+    if let ty::InstanceKind::Intrinsic(id) = instance.def {
+        let sig = tcx.fn_sig(id).instantiate(tcx, instance.args).skip_normalization();
+        let given_code = (sig.skip_binder().inputs().iter())
+            .flat_map(|input| input.walk().filter_map(|part| part.as_type()))
+            .any(|part| matches!(part.kind(), ty::FnPtr(..) | ty::Dynamic(..)));
+        return match given_code {
+            true => Called::Any,
+            false => Called::Std(id, instance.args),
+        };
+    }
     let ty::InstanceKind::Item(id) = instance.def else {
         return Called::Any;
     };

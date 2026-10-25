@@ -117,7 +117,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md)
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](0097-deref-and-marker-impls.md)
 - [0098 A destructor runs where rustc runs it, in a `finally`](0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing)*
-- [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says)*
+- [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says; extended by 0897: a parameter's index, and a `RefCell` guard's element)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
 - [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0860: JS's iterator protocol, `js::Iterator`)*
@@ -461,7 +461,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md)
-- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say)*
+- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing)*
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
@@ -647,7 +647,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0860 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0861 A function's own nullable parameter is `null` where it's given or set `None`](0861-a-functions-own-nullable-parameter-is-set-null.md)
 - [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md) *(amended: a `try`'s and a `catch`'s block too)*
-- [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md) *(amended by 0867: a binding that says it runs nothing, and a JS object's `Deref`, borrow nothing; 0868: what std's impls and derives run is what their bounds say; amended: a `#[repr(transparent)]` struct's `RefCell` is the struct, and a thread-local `RefCell`'s `set` is its `replace`; a field's `RefCell` is plain by its declaration, borrowed or not)*
+- [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md) *(amended by 0867: a binding that says it runs nothing, and a JS object's `Deref`, borrow nothing; 0868: what std's impls and derives run is what their bounds say; amended: a `#[repr(transparent)]` struct's `RefCell` is the struct, and a thread-local `RefCell`'s `set` is its `replace`; a field's `RefCell` is plain by its declaration, borrowed or not; amended by 0897: a temporary's guard is its object where it's read)*
 - [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md) *(amended: `==` of two values is `===`, and its `PartialEq`'s dictionary is written only where it's reached; a library's contract lists its; an `Rc` of one is one too)*
 - [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md) *(amended: a guard's `let` too, its `try` where its first statement is; an `export default` tells nothing of the code; amended by 0883: before an `if` whose test has a comment, the `if`'s)*
 - [0866 A `let` only the `if let` that takes it apart reads is read there](0866-a-let-only-its-if-let-reads-is-read-there.md)
@@ -681,6 +681,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0894 A bitwise operator's assignment is its compound](0894-a-bitwise-assignment-is-its-compound.md)
 - [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
 - [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md)
+- [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

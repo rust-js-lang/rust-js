@@ -29,13 +29,12 @@ function productIterator_next(product, IIterator, JClone, JIterator, IItemClone)
   let eltB;
   if (next == null) {
     $assign(b, JClone.clone(bOrig));
-    const value$1 = JIterator.next(b);
-    if (value$1 == null) {
+    const value = JIterator.next(b);
+    if (value == null) {
       return;
     }
-    const x = $someValue(value$1);
-    const value = IIterator.next(a);
-    product.aCur = value;
+    const x = $someValue(value);
+    product.aCur = IIterator.next(a);
     eltB = x;
   } else {
     const x = $someValue(next);

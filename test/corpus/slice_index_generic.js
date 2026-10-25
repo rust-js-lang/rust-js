@@ -18,14 +18,13 @@ function main() {
   const s = { items: [1, 2, 3, 4] };
   smallIndexMutI_indexMut(s, 1, $sliceIndexes.item).value = 20;
   smallIndexMutI_indexMut(s, { start: 2 }, $sliceIndexes.from).value.sort((a, b) => $cmp(b, a));
-  const value$1 = smallIndexMutI_indexMut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
-  const value = (value$1[$at(value$1, 0)] + 5) >>> 0;
-  value$1[0] = value;
-  const value$2 = smallIndexI_index(s, 1, $sliceIndexes.item);
-  const value$3 = smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
-  const value$4 = smallIndexI_index(s, undefined, $sliceIndexes.full);
+  const value = smallIndexMutI_indexMut(s, { end: 1 }, $sliceIndexes.toInclusive).value;
+  value[0] = (value[$at(value, 0)] + 5) >>> 0;
+  const value$1 = smallIndexI_index(s, 1, $sliceIndexes.item);
+  const value$2 = smallIndexI_index(s, { start: 1, end: 3 }, $sliceIndexes.range);
+  const value$3 = smallIndexI_index(s, undefined, $sliceIndexes.full);
   console.log(
-    `${value$2} [${value$3.join(", ")}] [${value$4.join(", ")}] [${s.items.join(", ")}] ${smallIndexI_index(s, { end: 1 }, $sliceIndexes.toInclusive).length}`,
+    `${value$1} [${value$2.join(", ")}] [${value$3.join(", ")}] [${s.items.join(", ")}] ${smallIndexI_index(s, { end: 1 }, $sliceIndexes.toInclusive).length}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -226,4 +226,13 @@ export const mutations: Mutation[] = [
     replace: "                && a.0.local == local\n                && a.0.projection.is_empty()\n            {\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
+  {
+    name: "index-parameter-not-given-once",
+    breaks: "an element at a parameter's index, `root.lanes.borrow_mut()[index] |= lane`, is a getter and a setter of it, the parameter counted as written never",
+    file: "src/lower/mir/queries.rs",
+    find: "    state.locals.writes[local] + usize::from(is_parameter(state, local)) == 1\n}\n",
+    replace: "    state.locals.writes[local] == 1\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
+    snapshots: true,
+  },
 ];

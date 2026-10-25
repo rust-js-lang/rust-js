@@ -438,9 +438,8 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$2 = other$1.value;
   try {
-    value$2.push(2);
+    other$1.value.push(2);
   } catch (error) {
     $rcDrop(other$1);
     $rcDrop(shared);
@@ -457,9 +456,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$3 = shared.value;
+  const value$2 = shared.value;
   try {
-    console.log(`[${value$3.join(", ")}] ${count(shared)}`);
+    console.log(`[${value$2.join(", ")}] ${count(shared)}`);
   } catch (error) {
     $rcDrop(other$1);
     $rcDrop(shared);
@@ -495,7 +494,7 @@ function main() {
     throw error;
   }
   const owned = tmp$6;
-  const value$4 = other$1.value;
+  const value$3 = other$1.value;
   let arg$1;
 
   try {
@@ -516,7 +515,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`[${owned.join(", ")}] [${value$4.join(", ")}] ${arg$1}`);
+    console.log(`[${owned.join(", ")}] [${value$3.join(", ")}] ${arg$1}`);
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -636,7 +635,7 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$5 = owner.strong;
+  const value$4 = owner.strong;
   let tmp$7;
   try {
     tmp$7 = $upgrade(owner.value.me);
@@ -677,7 +676,7 @@ function main() {
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
   try {
-    console.log(`${value$5} ${owner === tmp$7}`);
+    console.log(`${value$4} ${owner === tmp$7}`);
   } catch (error) {
     $rcDrop(tmp$7, (value) => {
       $weakDrop(value.me);
@@ -722,12 +721,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$6 = { value: 5, strong: 1, weak: 0 };
+  const value$5 = { value: 5, strong: 1, weak: 0 };
   let arg$2;
   try {
-    arg$2 = $cmp(value$6.value, defaulted.value) > 0;
+    arg$2 = $cmp(value$5.value, defaulted.value) > 0;
   } catch (error) {
-    $rcDrop(value$6);
+    $rcDrop(value$5);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -749,7 +748,7 @@ function main() {
   try {
     console.log(`${defaulted.value} ${arg$2}`);
   } catch (error) {
-    $rcDrop(value$6);
+    $rcDrop(value$5);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -769,7 +768,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(value$6);
+    $rcDrop(value$5);
   } catch (error) {
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {

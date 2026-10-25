@@ -47,8 +47,7 @@ function modeClone_clone(mode) {
 }
 function modeClone_cloneFrom(mode, source) {
   console.log(`mode clone_from ${source} over ${mode.value}`);
-  const value = modeClone_clone(source);
-  mode.value = value;
+  mode.value = modeClone_clone(source);
 }
 function pointDebug_fmt(point) {
   return `Point(${point[0]}, ${point[1]})`;

@@ -39,6 +39,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// Whether `place = rvalue`, the last of `data`'s statements, is `&mut
+    /// guard` of a `RefCell`'s guard given at once to `deref_mut` alone,
+    /// `guard[i] = x`'s, which writes what the guard guards, never the
+    /// guard itself.
+    fn derefs_guard(
+        &self,
+        body: &mir::Body<'tcx>,
+        data: &mir::BasicBlockData<'tcx>,
+        place: &Place<'tcx>,
+        rvalue: &Rvalue<'tcx>,
+    ) -> bool {
+        let Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) = rvalue else {
+            return false;
+        };
+        let guard = borrowed.ty(&body.local_decls, self.tcx).ty;
+        let ref_cell_guard = [StdItem::RefCellRef, StdItem::RefCellRefMut]
+            .into_iter()
+            .any(|item| self.is_std_type(guard, item));
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            return false;
+        };
+        ref_cell_guard
+            && borrowed.projection.is_empty()
+            && matches!(&args[..], [only] if matches!(&only.node, Operand::Move(given) if given == place))
+            && fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(id, _)| {
+                (self.tcx.trait_of_assoc(id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::DerefMut))
+            })
+    }
+
     /// Each local's name, the user's where it has one, and how it's used.
     pub(super) fn mir_locals(
         &mut self,
@@ -101,10 +130,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let _ = block;
-            for statement in &data.statements {
+            for (at, statement) in data.statements.iter().enumerate() {
                 match &statement.kind {
                     StatementKind::Assign(assign) => {
                         let (place, rvalue) = &**assign;
+                        let derefed = at + 1 == data.statements.len() && self.derefs_guard(body, data, place, rvalue);
                         let place = match self.whole(body, place) {
                             true => &Place::from(place.local),
                             false => place,
@@ -116,7 +146,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if borrowed.ty(body, self.tcx).ty.is_freeze(self.tcx, self.typing_env));
                         // A `&mut` to a pin is the pin, which only what it
                         // points at is written through (ADR 0329).
-                        let itself = matches!(rvalue, Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed)
+                        let itself = derefed
+                            || matches!(rvalue, Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed)
                             if self.mut_is_the_pin(borrowed.ty(&body.local_decls, self.tcx).ty));
                         count_rvalue(&mut locals, rvalue, frozen, itself);
                         // The whole through its box or `MaybeUninit` borrowed mutably,

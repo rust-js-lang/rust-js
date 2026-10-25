@@ -19,8 +19,7 @@ const Unit = {
 };
 
 function callAndRef(x, f) {
-  const value = $some(f());
-  x.value = value;
+  x.value = $some(f());
   return $unwrap(x.value == null ? undefined : $someMut(x));
 }
 

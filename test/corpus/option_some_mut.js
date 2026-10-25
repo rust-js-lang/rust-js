@@ -28,8 +28,7 @@ function setIfConsistent(old, new$, TPartialEq) {
       return { TAG: "Err" };
     }
   }
-  const value = $some(new$);
-  old.value = value;
+  old.value = $some(new$);
   return { TAG: "Ok" };
 }
 

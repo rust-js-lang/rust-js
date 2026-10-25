@@ -55,8 +55,8 @@ function main() {
   console.log(`${part.length} [${v.join(", ")}]`);
   bumpAll($view(v, 0, 2));
   console.log(`[${v.join(", ")}]`);
-  const value$1 = tail(v);
-  value$1[$at(value$1, 0)] = -1;
+  const value = tail(v);
+  value[$at(value, 0)] = -1;
   console.log(`[${v.join(", ")}]`);
   const result = $view($view(v, 1, 5), 1, 3);
   $rotateLeft(result, 1, "mid");
@@ -66,8 +66,8 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   const [left, right] = $splitAtMut(v, 3);
-  const value$2 = $index(right, 0);
-  left[$at(left, 0)] = value$2;
+  const value$1 = $index(right, 0);
+  left[$at(left, 0)] = value$1;
   const length = left.length;
   right[$at(right, 2)] = length | 0;
   console.log(`[${v.join(", ")}]`);
@@ -75,8 +75,7 @@ function main() {
   const [a, b] = $sliceSplitAt(v, 4);
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   const [, b$1] = $splitAtMut(v, 5);
-  const value = (b$1[$at(b$1, 0)] + 1) | 0;
-  b$1[0] = value;
+  b$1[0] = (b$1[$at(b$1, 0)] + 1) | 0;
   const splitAtMutChecked = $splitAtMut(v, 6, true);
   if (splitAtMutChecked) {
     const a = splitAtMutChecked[0];
@@ -103,8 +102,7 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   for (const chunk of $chunksMut(v, 4)) {
-    const value$1 = (chunk[$at(chunk, 0)] * 2) | 0;
-    chunk[0] = value$1;
+    chunk[0] = (chunk[$at(chunk, 0)] * 2) | 0;
   }
   console.log(`[${v.join(", ")}]`);
   const exact = $iter($chunksExactMut(v, 4));
@@ -202,12 +200,12 @@ function main() {
 
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
   const [head$1, tail$1] = $splitAtMut(points, 1);
-  const value$3 = $index(tail$1, 1).x;
-  const value$4 = head$1.length;
-  if (0 >= value$4) {
-    throw new Error(`index out of bounds: the len is ${value$4} but the index is 0`);
+  const value$2 = $index(tail$1, 1).x;
+  const value$3 = head$1.length;
+  if (0 >= value$3) {
+    throw new Error(`index out of bounds: the len is ${value$3} but the index is 0`);
   }
-  head$1[0].x = value$3;
+  head$1[0].x = value$2;
   tail$1[$at(tail$1, 0)] = { x: 0 };
   const result$1 = $view(points, 1);
   $swap(result$1, 0, 1);

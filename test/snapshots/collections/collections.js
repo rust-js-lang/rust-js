@@ -195,8 +195,7 @@ export function indexed(i) {
   v[i] = (read + 1) >>> 0;
   v[$at(v, 0)] = (v[0] + 5) >>> 0;
   const slice = v;
-  const value = (slice[$at(slice, 2)] * 2) >>> 0;
-  slice[2] = value;
+  slice[2] = (slice[$at(slice, 2)] * 2) >>> 0;
   return [read, $index(v, i), v];
 }
 

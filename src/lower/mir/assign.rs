@@ -343,22 +343,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `place = value`: a temporary's value kept for where it's used, a
     /// variable's `const` where it's made once, or an assignment.
-    /// Each `&mut` named where it's used, `state.refs`, whose place is
-    /// through `local`, `x.value`, made of what `local` holds now, held:
-    /// `local` is about to be written.
+    /// Each `&mut` named where it's used, `state.refs`, and each place a
+    /// temporary's read in, `state.in_place`, `s.v` of `&mut s.v`, whose
+    /// place is through `local`, `x.value`, made of what `local` holds now,
+    /// held: `local` is about to be written, `s = o` while `s.v[0]` is
+    /// borrowed.
     fn hold_refs_through(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<()> {
         let name = state.locals.names[local].clone();
-        if name.is_empty()
-            || !state
-                .refs
-                .values()
-                .any(|target| root_var(target) == Some(name.as_str()))
-        {
+        let through = |target: &Expr| root_var(target) == Some(name.as_str());
+        if name.is_empty() || !(state.refs.values()).chain(state.in_place.values()).any(through) {
             return Ok(());
         }
         self.flush(state, out)?;
         let held = self.spill(&name, Expr::var(&name), out);
-        for target in state.refs.values_mut() {
+        for target in (state.refs.values_mut()).chain(state.in_place.values_mut()) {
             if root_var(target) == Some(name.as_str()) {
                 *target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target.clone());
             }
@@ -657,13 +655,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `more = ..` assigning it in place: `more.has = work();` (ADR 0607).
         // And of a place JS reaches as a variable, a closure's capture's
         // `*(_1.0)`, `result = callback();`, which JS sets once the value is
-        // made, nothing reached before it (ADR 0879).
+        // made, nothing reached before it (ADR 0879). And of a place of
+        // variables each given one value, `lanes[index] = ..`, which what
+        // makes the value can't make another (ADR 0897).
         let mut value = expr;
         let fixed = (place.projection.iter()).all(|elem| matches!(elem, PlaceElem::Field(..)));
         let target = if !place.projection.is_empty() && value.has_effects() && !fixed {
             let mut reached = Vec::new();
             let target = self.mir_place(state, place, span, &mut reached)?;
-            if !reached.is_empty() || !matches!(target.kind, js::ExprKind::Var(_)) {
+            if !reached.is_empty() || !(matches!(target.kind, js::ExprKind::Var(_)) || settled_place(state, &target)) {
                 value = self.spill("value", value, out);
             }
             out.extend(reached);

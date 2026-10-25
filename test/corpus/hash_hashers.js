@@ -46,8 +46,7 @@ function fnvHasher_finish(fnv) {
 
 function fnvHasher_write(fnv, bytes) {
   for (const byte of bytes) {
-    const value = BigInt.asUintN(64, (fnv[0] ^ BigInt(byte)) * 1099511628211n);
-    fnv[0] = value;
+    fnv[0] = BigInt.asUintN(64, (fnv[0] ^ BigInt(byte)) * 1099511628211n);
   }
 }
 
