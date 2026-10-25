@@ -6,7 +6,9 @@ a closure that carries its drop, called by `FnOnce`, drops what it took in
 its own body. Extends [0098](0098-destructors.md)'s "a value with a
 destructor that JS holds is never dropped" to the functions a binding is
 given, and [0660](0660-catch-unwind-catches-what-js-throws.md): a
-`catch_unwind`'s call unwinds to nothing around it.
+`catch_unwind`'s call unwinds to nothing around it. Amended
+(2026-10-25): an `unwrap()` whose panic drops what no scope's `finally`
+does is its test, as an `assert!`'s is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): B, the guide's twelfth
 difference, where JS gives a function it was handed back to Rust, which
@@ -194,3 +196,65 @@ queueMicrotask(callback); }); }`.
 
 - `test/corpus/dyn_fn_handed_to_js.rs`, `dyn_fn_handed_only.rs` and
   `dyn_fn_once_drops_itself.rs`, against native Rust.
+
+## Amended (2026-10-25): an `unwrap()` that drops is its test
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same drops run,
+then the same panic is thrown: a panic writes nothing as it's thrown
+(ADR 0660), so what runs between its test and its throw, the drops, is
+all anything sees, in the order Rust runs it.
+
+React's `enqueueTask` calls `enqueueTaskImpl(task)`; its port,
+`ENQUEUE_TASK_IMPL.get().unwrap()(task)`, whose `unwrap()` may panic
+before the task is handed over, which Rust drops as it unwinds. The call
+unwinding to that drop was its own `try`, as a call's is (`unwinding`,
+`mir/drops.rs`), which no scope's `finally` took, the task moved by the
+call after it; and the callee was held in its temporary, outside the
+`try`, so that only the `unwrap()` is the drop's, not the call it hands
+the task to:
+
+```js
+let task$live = true;
+let tmp;
+try {
+  tmp = $unwrap(enqueueTaskImpl);
+  task$live = false;
+} catch (error) {
+  if (task$live) {
+    $dispose(task);
+  }
+  throw error;
+}
+tmp(task);
+```
+
+**Such a `try` of an `unwrap()` or an `expect("..")` of a `Some` that's
+its value, read in place, is its test and panic, as an `assert!`'s are**
+(ADR 0012): `if (option == null) { drops; throw new Error(message); }`,
+then the option its value, read in place as tidy reads any temporary,
+and the drop flags it leaves known settled again:
+
+```js
+if (enqueueTaskImpl == null) {
+  $dispose(task);
+  throw new Error("called `Option::unwrap()` on a `None` value");
+}
+enqueueTaskImpl(task);
+```
+
+`option::unwrap_tested`, of `$unwrap`'s owner, says what its call tests
+and throws; `unwinds::tested_unwraps`, a pass of the `scopes` stage after
+the scopes are made, writes it, so one a scope's `finally` drops around
+stays `$unwrap(option)` in its `try`. It panics before the call, with
+Rust's message, as ADR 0752 has `$unwrap(f)(x)` do. One of an option a
+call makes, or of an `expect` whose message is read, a variable's, keeps
+its `try`: read twice, its test and its value, the call would run twice, and the message
+be read after the drops, which may change it. `rc_counted_uses`' two
+`unwrap()`s of what a `Weak`'s `upgrade()` gives are tests too, and a flag
+it never set live, `again$live`, is gone with its tests.
+
+Held by `test/corpus/unwrap_dropping.rs`, against native Rust, and the
+mutations `unwrap-tested-made` and `unwrap-tested-drops-lost`
+(`mir/tidy/unwinds.ts`), `unwrap-tested-not` and
+`unwrap-tested-flags-unsettled` (`mir/tidy/stages.ts`) and
+`unwrap-tested-message-late` (`std_types/option.ts`).

@@ -469,6 +469,26 @@ pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
     }
 }
 
+/// Of `$unwrap(option)` or `$unwrap(option, "message")`, an `unwrap()`'s
+/// or an `expect(..)`'s of a `Some` that's its value: the test that it
+/// panics, `option == null`, as `$unwrap`'s is, the option, its value
+/// where it doesn't, and the panic it throws where it does.
+pub(in crate::lower) fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    if callee.helper_name() != Some("$unwrap") {
+        return None;
+    }
+    let (option, message) = match args.as_slice() {
+        [option] => (option, Expr::str("called `Option::unwrap()` on a `None` value")),
+        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => (option, message.clone()),
+        _ => return None,
+    };
+    let test = Expr::bin(Op::LooseEq, option.clone(), Expr::null());
+    Some((test, option, Expr::panic(message)))
+}
+
 /// The field of the box of a `Some` that looks like `None` (ADR 0051),
 /// `{ $someNone: 0 }`, how deep a `None` it holds, as the runtime's `$some`
 /// makes it.

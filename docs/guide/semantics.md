@@ -491,6 +491,10 @@ with no `Drop` impl has no extra JS ([0098](../decisions/0098-destructors.md)).
 A `Drop` is its body where it's dropped, at each drop, its guard its
 fields, `const previous = depth; try { .. } finally { depth = previous; }`
 ([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
+An `unwrap()` or `expect("..")` whose panic drops what no `finally` does
+is its test, as an `assert!` is: `if (f == null) { $dispose(task); throw
+new Error(".."); } f(task);`
+([0873](../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
 
 Differences: a value with a destructor that JS holds, given out by an
 exported generic function, is never dropped, nor is what a function

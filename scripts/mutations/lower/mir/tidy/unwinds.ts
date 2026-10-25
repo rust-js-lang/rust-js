@@ -129,4 +129,20 @@ export const mutations: Mutation[] = [
     replace: "            if handler",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
   },
+  {
+    name: "unwrap-tested-made",
+    breaks: "the `try` of an `unwrap()` of an option a call makes is its test, which runs the call again for its value, `counted()` twice",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        let given = option.reads_same()\n            && rest",
+    replace: "        let given = rest",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+  },
+  {
+    name: "unwrap-tested-drops-lost",
+    breaks: "an `unwrap()`'s test throws its panic without the drops its `catch` ran, so the task no impl takes isn't dropped",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        handler.push(StmtKind::Throw(panic).at(last.span));\n",
+    replace: "        handler = vec![StmtKind::Throw(panic).at(last.span)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+  },
 ];

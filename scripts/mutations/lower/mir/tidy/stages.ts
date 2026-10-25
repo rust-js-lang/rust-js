@@ -593,4 +593,22 @@ export const mutations: Mutation[] = [
     replace: "            pass(\"tried first\", |b, _| js::statement_lists(b, &mut tried_first)),\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied.rs$"],
   },
+  {
+    name: "unwrap-tested-not",
+    breaks: "an `unwrap()` whose panic drops the task is `let tmp; try { tmp = $unwrap(enqueueTaskImpl); .. } catch ..`, not its test, `if (enqueueTaskImpl == null) { $dispose(task); throw .. }` (ADR 0873, amended)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |stmts| tested |= unwinds::tested_unwraps(stmts));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "unwrap-tested-flags-unsettled",
+    breaks: "the drop flags an `unwrap()`'s test leaves known stay, `let task$live = true; if (enqueueTaskImpl == null) { if (task$live) { .. } }`",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                if tested {\n                    flags::settled_flags(b, h.flags);\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+    snapshots: true,
+  },
 ];

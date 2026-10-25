@@ -1479,7 +1479,7 @@ test("a stage read again is its own in tidy's trace", () => {
     "again/in place",
     "again/chains",
   ]);
-  expect(at("scopes/unthrown catches")).toBe(at(again[0]) - 1);
+  expect(at("scopes/tested unwraps")).toBe(at(again[0]) - 1);
   expect(at("finish/temporaries named")).toBe(at(again.at(-1)!) + 1);
   const dir = fixture("tidy-again");
   const after = (pass?: string) => {

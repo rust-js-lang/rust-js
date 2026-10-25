@@ -1,7 +1,11 @@
 # 0752. An `Option`'s function unwrapped and called panics before the call
 
 Status: Accepted. No change to the compiler: `$unwrap` is kept where
-the value it unwraps is called, as it is where it's read.
+the value it unwraps is called, as it is where it's read. Amended by
+[0873](0873-a-function-handed-to-js-carries-no-drop.md) (2026-10-25): where
+its panic drops a task no scope's `finally` does, it's its test, `if
+(enqueueTaskImpl == null) { $dispose(task); throw new Error(..); }
+enqueueTaskImpl(task);`, which panics before the call too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's: a `None`
 called would change what the program does.

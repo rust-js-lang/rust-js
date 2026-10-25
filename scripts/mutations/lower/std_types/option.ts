@@ -377,4 +377,12 @@ export const mutations: Mutation[] = [
     replace: "                    value\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
+  {
+    name: "unwrap-tested-message-late",
+    breaks: "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
+    file: "src/lower/std_types/option.rs",
+    find: "        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => (option, message.clone()),",
+    replace: "        [option, message] => (option, message.clone()),",
+    tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
+  },
 ];

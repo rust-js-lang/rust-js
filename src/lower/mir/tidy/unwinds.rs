@@ -83,6 +83,60 @@ pub(super) fn unthrown_catches(stmts: &mut Vec<Stmt>) -> bool {
     true
 }
 
+/// `stmts`, each `try` a scope's `finally` didn't take of one `$unwrap`
+/// read in place, `let tmp; try { tmp = $unwrap(f); task$live = false; }
+/// catch (error) { $dispose(task); throw error; } tmp(task);`: its test and
+/// panic, as an `assert!`'s are, the drops before the throw, `if (f ==
+/// null) { $dispose(task); throw new Error(..); } tmp = f;`, which reads
+/// `f(task)` once its temporary is read in place (ADR 0873, amended). The
+/// same drops, then the same panic: a panic writes nothing as it's thrown
+/// (ADR 0660). Whether it found any.
+pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
+    let tested = |stmt: &Stmt| {
+        let StmtKind::TryCatch(body, Some(error), handler) = &stmt.kind else {
+            return None;
+        };
+        let [first, rest @ ..] = body.as_slice() else {
+            return None;
+        };
+        let (StmtKind::Assign(_, value) | StmtKind::Expr(value)) = &first.kind else {
+            return None;
+        };
+        let (test, option, panic) = crate::lower::std_types::option::unwrap_tested(value)?;
+        let (last, drops) = handler.split_last()?;
+        let given = option.reads_same()
+            && rest.iter().all(Stmt::cannot_throw)
+            && rethrows(std::slice::from_ref(last), error)
+            && js::mentions_in(drops, error) == 0;
+        given.then(|| (test, option.clone(), panic))
+    };
+    if !stmts.iter().any(|stmt| tested(stmt).is_some()) {
+        return false;
+    }
+    let mut out = Vec::with_capacity(stmts.len());
+    for stmt in std::mem::take(stmts) {
+        let Some((test, option, panic)) = tested(&stmt) else {
+            out.push(stmt);
+            continue;
+        };
+        let StmtKind::TryCatch(mut body, _, mut handler) = stmt.kind else {
+            unreachable!("tested")
+        };
+        let last = handler.pop().expect("tested");
+        handler.push(StmtKind::Throw(panic).at(last.span));
+        out.push(StmtKind::If(test, handler, None).at(stmt.span));
+        match &mut body[0].kind {
+            StmtKind::Assign(_, value) => *value = option,
+            _ => {
+                body.remove(0);
+            }
+        }
+        out.extend(body);
+    }
+    *stmts = out;
+    true
+}
+
 /// Where `stmt` is written: its own span's start, or of one placed nowhere,
 /// a temporary's `result = f()`, its value's, and a `try` a call's drops
 /// make, its first statement's.

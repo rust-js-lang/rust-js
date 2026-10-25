@@ -568,6 +568,16 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
                 h.again.set(h.again.get() || unthrown);
             }),
+            // And an `unwrap()`'s, its test and panic, as an `assert!`'s:
+            // where its drops' flags are known again (ADR 0873, amended).
+            pass("tested unwraps", |b, h| {
+                let mut tested = false;
+                js::statement_lists(b, &mut |stmts| tested |= unwinds::tested_unwraps(stmts));
+                if tested {
+                    flags::settled_flags(b, h.flags);
+                }
+                h.again.set(h.again.get() || tested);
+            }),
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,
