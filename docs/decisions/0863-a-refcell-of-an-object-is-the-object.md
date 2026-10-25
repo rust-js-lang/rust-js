@@ -330,3 +330,24 @@ one, `late.initWith([8, 9])`, not a `{ value }` of it.
 - Mutations `local-refcell-set-of-a-box`, `local-refcell-set-unchecked`,
   `local-refcell-set-old-undropped` and `lazy-set-made-a-box`
   (`std_types/cell.rs`).
+
+## Amendment: a body std's code runs of no args is not known (#240)
+
+`instantiated` read a callee's summary with the args of the call that
+runs it. std's code that runs the crate's bodies, a `for` loop's
+`Iterator::next` of a generic impl of the crate's, gave no args, so the
+impl's own parameters, `[T; N]`'s, stayed in the caller's summary. When
+`entry` ran `main`, they were instantiated with `main`'s `[]`, and the
+compiler panicked (rustc's `issue-70507.rs` and
+`projection-cache-registers-obligations.rs`). Each body std's code is
+given now carries the args its type says: a closure's `closure_args`, a
+function item's own args, and identity args for a closure the body
+makes, since its parameters are the body's own. An impl's method that no
+type gives args to, whose summary holds a parameter, is not known, so a
+borrow held across it is checked. Held by
+`test/corpus/generic_iterator_std_runs.rs` and the mutation
+`unargued-summary-instantiated`. That closures carry their args changes
+no output today, since a generic function's borrows across them are
+counted already, so no mutation holds it. The readability baseline's
+`while (true)` share grows by 0.1 in 10,000 lines and its `return;` by
+0.2: the new case's `for` loop and its `next`'s early `None`.

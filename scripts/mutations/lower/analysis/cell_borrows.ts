@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "impls-ask-nothing",
     breaks: "a `RefCell`'s own `clone`, which holds it while what it holds clones, is taken to ask nothing, so a `Clone` that borrows it mutably runs on where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "        given.any\n            || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))\n            || (given.bodies.iter()).any(|&body| self.runs_asks(tcx, body, None, held, drops))\n    }\n\n    /// Whether calling",
+    find: "        given.any\n            || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))\n            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))\n    }\n\n    /// Whether calling",
     replace: "        false\n    }\n\n    /// Whether calling",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_borrows_itself.rs$"],
   },
@@ -232,5 +232,13 @@ export const mutations: Mutation[] = [
     find: "        if tcx.generics_of(t).count() != 1 {\n            return None;\n        }\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
+  },
+  {
+    name: "unargued-summary-instantiated",
+    breaks: "a generic impl's method std's code runs, of no args a type says, has its own parameters read with its caller's: the compiler crashes instantiating them (#240)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "    if args.is_none()\n        && (summary.drops.iter().any(typed)\n",
+    replace: "    if false\n        && (summary.drops.iter().any(typed)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_iterator_std_runs.rs$"],
   },
 ];

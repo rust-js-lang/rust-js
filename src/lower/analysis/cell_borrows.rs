@@ -152,7 +152,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 let given = std_given(recognition, &self.impls, id, args);
                 given.any
                     || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
-                    || (given.bodies.iter()).any(|&body| self.runs_asks(tcx, body, None, held, drops))
+                    || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
             }
             Called::Any => true,
         }
@@ -197,7 +197,7 @@ impl<'tcx> CellBorrows<'tcx> {
         };
         given.any
             || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
-            || (given.bodies.iter()).any(|&body| self.runs_asks(tcx, body, None, held, drops))
+            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
     }
 
     /// Whether calling `def_id`, of `args`, may run code rust-js can't see
@@ -214,7 +214,7 @@ impl<'tcx> CellBorrows<'tcx> {
             Called::Body(body, _) => !summarized(&body),
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
-                given.any || !given.bodies.iter().all(summarized)
+                given.any || !given.bodies.iter().all(|(body, _)| summarized(body))
             }
             Called::Any => true,
         }
@@ -253,6 +253,18 @@ fn instantiated<'tcx>(
     args: Option<ty::GenericArgsRef<'tcx>>,
     drops: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Option<Summary<'tcx>> {
+    // Of a body run of no args a type says, an impl's method std's code
+    // runs, whose types are of its own parameters: not known (#240).
+    let typed = |ty: &Ty<'tcx>| ty.has_param();
+    if args.is_none()
+        && (summary.drops.iter().any(typed)
+            || summary
+                .cells
+                .iter()
+                .any(|borrow| matches!(borrow.cell, Cell::Type(ty) if ty.has_param())))
+    {
+        return None;
+    }
     let of = |ty: Ty<'tcx>| match args {
         Some(args) if ty.has_param() => tcx.erase_and_anonymize_regions(
             ty::EarlyBinder::bind(tcx, ty)
@@ -427,9 +439,10 @@ fn called<'tcx>(
 struct Given<'tcx> {
     /// The cells it borrows, a `RefCell<T>`'s by `RefCell<T>: Clone`, say.
     cells: Vec<Borrow<'tcx>>,
-    /// The crate's bodies it may run: a closure or function it's given, an
-    /// impl's method.
-    bodies: Vec<DefId>,
+    /// The crate's bodies it may run, and of what args where its type says:
+    /// a closure or function it's given, an impl's method, whose args no
+    /// type says (#240).
+    bodies: Vec<(DefId, Option<ty::GenericArgsRef<'tcx>>)>,
     /// What rust-js can't see: a type parameter's, a `dyn`'s or a
     /// library's type's impl.
     any: bool,
@@ -546,21 +559,23 @@ fn bound_runs<'tcx>(
                     given.any = true;
                     continue;
                 }
-                given.bodies.push(closure);
+                given.bodies.push((closure, Some(closure_args)));
                 if tcx.fn_trait_kind_from_def_id(trait_id).is_none() {
                     for upvar in closure_args.as_closure().upvar_tys() {
                         bound_runs(recognition, impls, (upvar, trait_id), seen, given);
                     }
                 }
             }
-            ty::CoroutineClosure(closure, _) | ty::Coroutine(closure, _) => {
+            ty::CoroutineClosure(closure, args) | ty::Coroutine(closure, args) => {
                 walk.skip_current_subtree();
                 match closure.is_local() {
-                    true => given.bodies.push(closure),
+                    true => given.bodies.push((closure, Some(args))),
                     false => given.any = true,
                 }
             }
-            ty::FnDef(f, _) if f.is_local() && !is_binding(tcx, f) => given.bodies.push(f),
+            ty::FnDef(f, args) if f.is_local() && !is_binding(tcx, f) => {
+                given.bodies.push((f, Some(args.skip_binder())))
+            }
             ty::Adt(..) if recognition.is_borrowed_cell(part) => given.cells.push(Borrow {
                 cell: Cell::Type(tcx.erase_and_anonymize_regions(part)),
                 mutable: !recognition.is_std_type(part, StdItem::RefCell),
@@ -603,7 +618,8 @@ fn bound_runs<'tcx>(
                     }
                     given.bodies.extend(
                         (tcx.associated_item_def_ids(imp).iter())
-                            .filter(|&&item| matches!(tcx.def_kind(item), DefKind::AssocFn)),
+                            .filter(|&&item| matches!(tcx.def_kind(item), DefKind::AssocFn))
+                            .map(|&item| (item, None)),
                     );
                 }
             }
@@ -710,14 +726,18 @@ fn direct<'tcx>(
                             let given = std_given(recognition, impls, id, args);
                             found.any |= given.any;
                             found.own.cells.extend(given.cells);
-                            found.runs.extend(given.bodies.into_iter().map(|body| (body, None)));
+                            found.runs.extend(given.bodies);
                         }
                         Called::Any => found.any = true,
                     }
                 }
                 None => found.any = true,
             },
-            ExprKind::Closure(ref closure) => found.runs.push((closure.closure_id.to_def_id(), None)),
+            // Of the body's own parameters, as it is.
+            ExprKind::Closure(ref closure) => {
+                let id = closure.closure_id.to_def_id();
+                found.runs.push((id, Some(ty::GenericArgs::identity_for_item(tcx, id))));
+            }
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => found.any = true,
             _ => {}
         }
