@@ -13,7 +13,7 @@ function pair(a, b) {
 }
 
 function half(n) {
-  if (n % 2 === 0) {
+  if (!(n % 2)) {
     return (n / 2) >>> 0;
   }
 }
@@ -44,7 +44,7 @@ function divided(n, by) {
   const checked$1 = pair(["checked"], checked(n));
   const halved = pair(["by two"], (n / 2) >>> 0);
   const noisy = ["by a variable"];
-  if (by === 0) {
+  if (!by) {
     console.log(`drop ${noisy[0]}`);
     throw new Error("attempt to divide by zero");
   }
