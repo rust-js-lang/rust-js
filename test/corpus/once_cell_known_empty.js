@@ -145,9 +145,7 @@ function main() {
   const closed = {
     id: 6,
   };
-  const setIt = () => {
-    fill(closed);
-  };
+  const setIt = () => fill(closed);
   setIt();
   const unset$5 = closed.cache === undefined;
   if (unset$5) {

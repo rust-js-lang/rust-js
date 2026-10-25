@@ -443,10 +443,11 @@ fn cn(parts: &[Option<&str>]) -> String {
 pub struct ButtonProps<'a, C: ReactNode> {
     pub children: C,
     pub on_click: Option<Box<dyn Fn(&MouseEvent)>>,
+    pub on_double_click: Option<Box<dyn Fn(&MouseEvent)>>,
     pub class_name: Option<&'a str>,
 }
-pub fn Button<C: ReactNode>(ButtonProps { children, on_click, class_name }: ButtonProps<C>) -> JSX::Element {
-    let _ = on_click;
+pub fn Button<C: ReactNode>(ButtonProps { children, on_click, on_double_click, class_name }: ButtonProps<C>) -> JSX::Element {
+    let _ = (on_click, on_double_click);
     jsx! { <button className={class_name.unwrap_or_default()}>{children}</button> }
 }
 pub fn Example(deep: bool) -> JSX::Element {
@@ -454,7 +455,10 @@ pub fn Example(deep: bool) -> JSX::Element {
     jsx! {
         <Button
             className={Some(cn(&[deep.then_some("deep"), (!deep).then_some("plain")]).as_str())}
-            onClick={Some(Box::new(move |_| set_expanded.update(|current| !current)))}>
+            onClick={Some(Box::new(move |_| set_expanded.update(|current| !current)))}
+            onDoubleClick={Some(Box::new(move |_| {
+                set_expanded.set(false);
+            }))}>
             <span>{if *expanded { "Hide" } else { "Show" }}</span>
         </Button>
     }
@@ -463,6 +467,8 @@ pub fn Example(deep: bool) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("onClick={() => setExpanded((current) => !current)}");
+  // A handler's of a statement too (ADR 0040), not another closure's (ADR 0883).
+  expect(jsx).toContain("onDoubleClick={() => setExpanded(false)}");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => lib.Example(true)))).toBe('<button class="deep"><span>Show</span></button>');
 });

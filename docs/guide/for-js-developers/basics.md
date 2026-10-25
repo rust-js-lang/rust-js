@@ -556,6 +556,60 @@ export function applyTwice(x) {
 }
 ```
 
+A closure of nothing, `()`, whose body you write as one call's value, no
+`;`, is that call's arrow, `() => log(n)`, where the call's JS gives
+`undefined` too: a function of the crate's, a closure of its own, or a
+binding that says so, a web API WebIDL says gives `undefined` among them.
+A comment before the call is after the `=>`, as Prettier writes it. Written
+as a statement, `|| { log(n); }`, it's a block, and so is one of a call
+whose JS gives a value Rust's `()` doesn't, `|| v.push(n)`'s array's
+count
+([ADR 0883](../../decisions/0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)):
+
+```rust
+use std::cell::RefCell;
+
+fn log(seen: &RefCell<Vec<u32>>, n: u32) {
+    seen.borrow_mut().push(n);
+}
+
+fn later(f: impl FnOnce()) {
+    f();
+}
+
+pub fn run(seen: &RefCell<Vec<u32>>) {
+    later(|| log(seen, 1));
+    later(|| {
+        // Logged second.
+        log(seen, 2)
+    });
+    later(|| {
+        log(seen, 3);
+    });
+}
+```
+
+```js
+function log(seen, n) {
+  seen.push(n);
+}
+
+function later(f) {
+  f();
+}
+
+export function run(seen) {
+  later(() => log(seen, 1));
+  later(() =>
+    // Logged second.
+    log(seen, 2),
+  );
+  later(() => {
+    log(seen, 3);
+  });
+}
+```
+
 Closures that capture and change their surroundings are in
 [Advanced: closures](advanced.md#closures).
 

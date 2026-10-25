@@ -218,13 +218,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         stmts.splice(0..0, directives);
         let forwarding = self.closure_calls_rust(body, false);
         let concise = self.closure_calls_for_nothing(body);
-        if forwarding || concise {
+        if forwarding || concise.is_some() {
             let span = self.js_span(span);
             if forwarding {
                 self.locals.mir.forwarding.push(span);
             }
-            if concise {
-                self.locals.mir.concise.push(span);
+            if let Some(written) = concise {
+                self.locals.mir.concise.push((span, written));
             }
             return Ok(Expr {
                 span,

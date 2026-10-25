@@ -676,11 +676,10 @@ function main() {
     $rcDrop(converted);
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
-  const value$6 = tmp$7;
   try {
-    console.log(`${value$5} ${owner === value$6}`);
+    console.log(`${value$5} ${owner === tmp$7}`);
   } catch (error) {
-    $rcDrop(value$6, (value) => {
+    $rcDrop(tmp$7, (value) => {
       $weakDrop(value.me);
     });
     $rcDrop(owner, (value) => {
@@ -701,7 +700,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(value$6, (value) => {
+    $rcDrop(tmp$7, (value) => {
       $weakDrop(value.me);
     });
   } catch (error) {
@@ -723,12 +722,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$7 = { value: 5, strong: 1, weak: 0 };
+  const value$6 = { value: 5, strong: 1, weak: 0 };
   let arg$2;
   try {
-    arg$2 = $cmp(value$7.value, defaulted.value) > 0;
+    arg$2 = $cmp(value$6.value, defaulted.value) > 0;
   } catch (error) {
-    $rcDrop(value$7);
+    $rcDrop(value$6);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -750,7 +749,7 @@ function main() {
   try {
     console.log(`${defaulted.value} ${arg$2}`);
   } catch (error) {
-    $rcDrop(value$7);
+    $rcDrop(value$6);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -770,7 +769,7 @@ function main() {
     throw error;
   }
   try {
-    $rcDrop(value$7);
+    $rcDrop(value$6);
   } catch (error) {
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {

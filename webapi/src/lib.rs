@@ -140,6 +140,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopPropagation)
     #[cfg_attr(rust_js, rust_js::link_name = "stopPropagation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop_propagation(&self) {
@@ -164,6 +165,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/stopImmediatePropagation)
     #[cfg_attr(rust_js, rust_js::link_name = "stopImmediatePropagation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop_immediate_propagation(&self) {
@@ -204,6 +206,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/preventDefault)
     #[cfg_attr(rust_js, rust_js::link_name = "preventDefault")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prevent_default(&self) {
@@ -244,6 +247,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>) {
@@ -478,6 +482,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/normalize)
     #[cfg_attr(rust_js, rust_js::link_name = "normalize")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn normalize(&self) {
@@ -642,6 +647,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/appendData)
     #[cfg_attr(rust_js, rust_js::link_name = "appendData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append_data(&self, data: &str) {
@@ -650,6 +656,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/insertData)
     #[cfg_attr(rust_js, rust_js::link_name = "insertData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_data(&self, offset: u32, data: &str) {
@@ -658,6 +665,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/deleteData)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_data(&self, offset: u32, count: u32) {
@@ -666,6 +674,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceData)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_data(&self, offset: u32, count: u32, data: &str) {
@@ -691,6 +700,7 @@ impl CharacterData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -700,6 +710,7 @@ impl CharacterData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -709,6 +720,7 @@ impl CharacterData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -717,6 +729,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self) {
@@ -1182,6 +1195,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttribute")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_attribute(&self, qualified_name: &str, value: &str) {
@@ -1190,6 +1204,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttributeNS")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_attribute_ns(&self, namespace: &str, qualified_name: &str, value: &str) {
@@ -1198,6 +1213,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/removeAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "removeAttribute")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_attribute(&self, qualified_name: &str) {
@@ -1206,6 +1222,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/removeAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "removeAttributeNS")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_attribute_ns(&self, namespace: &str, local_name: &str) {
@@ -1358,6 +1375,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentText)
     #[cfg_attr(rust_js, rust_js::link_name = "insertAdjacentText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_adjacent_text(&self, r#where: &str, data: &str) {
@@ -1408,6 +1426,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTML")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
@@ -1416,6 +1435,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
@@ -1448,6 +1468,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "insertAdjacentHTML")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_adjacent_html(&self, position: &str, string: &str) {
@@ -1456,6 +1477,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setPointerCapture)
     #[cfg_attr(rust_js, rust_js::link_name = "setPointerCapture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_pointer_capture(&self, pointer_id: i32) {
@@ -1464,6 +1486,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/releasePointerCapture)
     #[cfg_attr(rust_js, rust_js::link_name = "releasePointerCapture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_pointer_capture(&self, pointer_id: i32) {
@@ -1553,6 +1576,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1562,6 +1586,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1571,6 +1596,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1579,6 +1605,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_before(&self, node: &Node, child: &Node) {
@@ -1620,6 +1647,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1629,6 +1657,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1638,6 +1667,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -1646,6 +1676,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self) {
@@ -3102,6 +3133,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -3111,6 +3143,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/write)
     #[cfg_attr(rust_js, rust_js::link_name = "write")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn write(&self, text: impl Rest<str>) {
@@ -3120,6 +3153,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/writeln)
     #[cfg_attr(rust_js, rust_js::link_name = "writeln")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn writeln(&self, text: impl Rest<str>) {
@@ -3354,6 +3388,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -3362,6 +3397,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/captureEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "captureEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn capture_events(&self) {
@@ -3370,6 +3406,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/releaseEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_events(&self) {
@@ -3436,6 +3473,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPointerLock)
     #[cfg_attr(rust_js, rust_js::link_name = "exitPointerLock")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn exit_pointer_lock(&self) {
@@ -3637,6 +3675,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -3646,6 +3685,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -3655,6 +3695,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -3663,6 +3704,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_before(&self, node: &Node, child: &Node) {
@@ -5525,6 +5567,7 @@ impl DocumentFragment {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/prepend)
     #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -5534,6 +5577,7 @@ impl DocumentFragment {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -5543,6 +5587,7 @@ impl DocumentFragment {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/replaceChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -5551,6 +5596,7 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_before(&self, node: &Node, child: &Node) {
@@ -5619,6 +5665,7 @@ impl DOMTokenList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, tokens: impl Rest<str>) {
@@ -5628,6 +5675,7 @@ impl DOMTokenList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self, tokens: impl Rest<str>) {
@@ -5684,6 +5732,7 @@ impl DOMTokenList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, u32, &DOMTokenList)>) {
@@ -5751,6 +5800,7 @@ impl<T> NodeList<T> {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&T, u32, &NodeList<T>)>) {
@@ -5853,6 +5903,7 @@ impl AbortController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort(&self, reason: Option<&dyn IntoUnknown>) {
@@ -5929,6 +5980,7 @@ impl AbortSignal {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/throwIfAborted)
     #[cfg_attr(rust_js, rust_js::link_name = "throwIfAborted")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn throw_if_aborted(&self) {
@@ -6126,6 +6178,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/click)
     #[cfg_attr(rust_js, rust_js::link_name = "click")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn click(&self) {
@@ -6278,6 +6331,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/showPopover)
     #[cfg_attr(rust_js, rust_js::link_name = "showPopover")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn show_popover(&self, options: Option<ShowPopoverOptions<'_>>) {
@@ -6286,6 +6340,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidePopover)
     #[cfg_attr(rust_js, rust_js::link_name = "hidePopover")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hide_popover(&self) {
@@ -8195,6 +8250,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus(&self, options: Option<FocusOptions>) {
@@ -8203,6 +8259,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/blur)
     #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur(&self) {
@@ -8883,6 +8940,7 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -9195,6 +9253,7 @@ impl HTMLFormElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/submit)
     #[cfg_attr(rust_js, rust_js::link_name = "submit")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn submit(&self) {
@@ -9203,6 +9262,7 @@ impl HTMLFormElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/requestSubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "requestSubmit")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_submit(&self, submitter: Option<&HTMLElement>) {
@@ -9211,6 +9271,7 @@ impl HTMLFormElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -10343,6 +10404,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/stepUp)
     #[cfg_attr(rust_js, rust_js::link_name = "stepUp")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn step_up(&self, n: Option<i32>) {
@@ -10351,6 +10413,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/stepDown)
     #[cfg_attr(rust_js, rust_js::link_name = "stepDown")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn step_down(&self, n: Option<i32>) {
@@ -10399,6 +10462,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -10415,6 +10479,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/select)
     #[cfg_attr(rust_js, rust_js::link_name = "select")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select(&self) {
@@ -10471,6 +10536,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setRangeText)
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_range_text(&self, replacement: &str, start: Option<u32>, end: Option<u32>, selection_mode: Option<&str>) {
@@ -10479,6 +10545,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setSelectionRange)
     #[cfg_attr(rust_js, rust_js::link_name = "setSelectionRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_selection_range(&self, start: u32, end: u32, direction: Option<&str>) {
@@ -10487,6 +10554,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/showPicker)
     #[cfg_attr(rust_js, rust_js::link_name = "showPicker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn show_picker(&self) {
@@ -11067,6 +11135,7 @@ impl HTMLOutputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOutputElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -11315,6 +11384,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement, before: Option<&dyn IntoHTMLElementOrNumber>) {
@@ -11323,6 +11393,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self, index: Option<i32>) {
@@ -11411,6 +11482,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -11419,6 +11491,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/showPicker)
     #[cfg_attr(rust_js, rust_js::link_name = "showPicker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn show_picker(&self) {
@@ -11776,6 +11849,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -11792,6 +11866,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/select)
     #[cfg_attr(rust_js, rust_js::link_name = "select")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select(&self) {
@@ -11848,6 +11923,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setRangeText)
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_range_text(&self, replacement: &str, start: Option<u32>, end: Option<u32>, selection_mode: Option<&str>) {
@@ -11856,6 +11932,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setSelectionRange)
     #[cfg_attr(rust_js, rust_js::link_name = "setSelectionRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_selection_range(&self, start: u32, end: u32, direction: Option<&str>) {
@@ -11976,6 +12053,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/deleteCaption)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteCaption")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_caption(&self) {
@@ -12008,6 +12086,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/deleteTHead)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTHead")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_t_head(&self) {
@@ -12040,6 +12119,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/deleteTFoot)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTFoot")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_t_foot(&self) {
@@ -12080,6 +12160,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/deleteRow)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRow")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_row(&self, index: i32) {
@@ -12276,6 +12357,7 @@ impl HTMLTableSectionElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement/deleteRow)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRow")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_row(&self, index: i32) {
@@ -12408,6 +12490,7 @@ impl HTMLTableRowElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement/deleteCell)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteCell")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_cell(&self, index: i32) {
@@ -15316,6 +15399,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -15682,6 +15766,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/cancelVideoFrameCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelVideoFrameCallback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_video_frame_callback(&self, handle: u32) {
@@ -16068,6 +16153,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/load)
     #[cfg_attr(rust_js, rust_js::link_name = "load")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn load(&self) {
@@ -16116,6 +16202,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/fastSeek)
     #[cfg_attr(rust_js, rust_js::link_name = "fastSeek")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fast_seek(&self, time: f64) {
@@ -16260,6 +16347,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/pause)
     #[cfg_attr(rust_js, rust_js::link_name = "pause")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause(&self) {
@@ -17432,6 +17520,7 @@ impl HTMLFieldSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/setCustomValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setCustomValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_custom_validity(&self, error: &str) {
@@ -17593,6 +17682,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/show)
     #[cfg_attr(rust_js, rust_js::link_name = "show")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn show(&self) {
@@ -17601,6 +17691,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/showModal)
     #[cfg_attr(rust_js, rust_js::link_name = "showModal")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn show_modal(&self) {
@@ -17609,6 +17700,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self, return_value: Option<&str>) {
@@ -17617,6 +17709,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/requestClose)
     #[cfg_attr(rust_js, rust_js::link_name = "requestClose")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_close(&self, return_value: Option<&str>) {
@@ -18086,6 +18179,7 @@ impl HTMLSlotElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assign)
     #[cfg_attr(rust_js, rust_js::link_name = "assign")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn assign(&self, nodes: impl Rest<dyn IntoElementOrText>) {
@@ -18187,6 +18281,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_to(&self, x: i32, y: i32) {
@@ -18195,6 +18290,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_by(&self, x: i32, y: i32) {
@@ -18203,6 +18299,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
     #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resize_to(&self, width: i32, height: i32) {
@@ -18211,6 +18308,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
     #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resize_by(&self, x: i32, y: i32) {
@@ -18523,6 +18621,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -18539,6 +18638,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self) {
@@ -18547,6 +18647,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus(&self) {
@@ -18555,6 +18656,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/blur)
     #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur(&self) {
@@ -18651,6 +18753,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn alert(&self, message: Option<&str>) {
@@ -18675,6 +18778,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/print)
     #[cfg_attr(rust_js, rust_js::link_name = "print")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn print(&self) {
@@ -18683,6 +18787,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<WindowPostMessageOptions<'_>>) {
@@ -18691,6 +18796,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/captureEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "captureEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn capture_events(&self) {
@@ -18699,6 +18805,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/releaseEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_events(&self) {
@@ -18774,6 +18881,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelIdleCallback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_idle_callback(&self, handle: u32) {
@@ -20903,6 +21011,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/reportError)
     #[cfg_attr(rust_js, rust_js::link_name = "reportError")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn report_error<E>(&self, e: E) {
@@ -20936,6 +21045,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout)
     #[cfg_attr(rust_js, rust_js::link_name = "clearTimeout")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_timeout(&self, id: Option<i32>) {
@@ -20953,6 +21063,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/clearInterval)
     #[cfg_attr(rust_js, rust_js::link_name = "clearInterval")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_interval(&self, id: Option<i32>) {
@@ -20961,6 +21072,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/queueMicrotask)
     #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn queue_microtask(&self, callback: Box<dyn FnOnce()>) {
@@ -21025,6 +21137,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelAnimationFrame")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_animation_frame(&self, handle: u32) {
@@ -21210,6 +21323,7 @@ impl Location {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/assign)
     #[cfg_attr(rust_js, rust_js::link_name = "assign")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn assign(&self, url: &str) {
@@ -21218,6 +21332,7 @@ impl Location {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/replace)
     #[cfg_attr(rust_js, rust_js::link_name = "replace")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace(&self, url: &str) {
@@ -21226,6 +21341,7 @@ impl Location {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/reload)
     #[cfg_attr(rust_js, rust_js::link_name = "reload")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reload(&self) {
@@ -21281,6 +21397,7 @@ impl History {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/go)
     #[cfg_attr(rust_js, rust_js::link_name = "go")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn go(&self, delta: Option<i32>) {
@@ -21289,6 +21406,7 @@ impl History {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/back)
     #[cfg_attr(rust_js, rust_js::link_name = "back")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn back(&self) {
@@ -21297,6 +21415,7 @@ impl History {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/forward)
     #[cfg_attr(rust_js, rust_js::link_name = "forward")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn forward(&self) {
@@ -21363,6 +21482,7 @@ impl Storage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/removeItem)
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_item(&self, key: &str) {
@@ -21371,6 +21491,7 @@ impl Storage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -21438,6 +21559,7 @@ impl DataTransfer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/setDragImage)
     #[cfg_attr(rust_js, rust_js::link_name = "setDragImage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_drag_image(&self, image: &Element, x: i32, y: i32) {
@@ -21462,6 +21584,7 @@ impl DataTransfer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/setData)
     #[cfg_attr(rust_js, rust_js::link_name = "setData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_data(&self, format: &str, data: &str) {
@@ -21470,6 +21593,7 @@ impl DataTransfer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/clearData)
     #[cfg_attr(rust_js, rust_js::link_name = "clearData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_data(&self, format: Option<&str>) {
@@ -21658,6 +21782,7 @@ impl MessageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_message_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, data: Option<&dyn IntoUnknown>, origin: Option<&str>, last_event_id: Option<&str>, source: Option<&dyn IntoMessageEventSource>, ports: Option<&[&MessagePort]>) {
@@ -21827,6 +21952,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearResourceTimings)
     #[cfg_attr(rust_js, rust_js::link_name = "clearResourceTimings")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_resource_timings(&self) {
@@ -21835,6 +21961,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/setResourceTimingBufferSize)
     #[cfg_attr(rust_js, rust_js::link_name = "setResourceTimingBufferSize")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_resource_timing_buffer_size(&self, max_size: u32) {
@@ -21868,6 +21995,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearMarks)
     #[cfg_attr(rust_js, rust_js::link_name = "clearMarks")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_marks(&self, mark_name: Option<&str>) {
@@ -21884,6 +22012,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearMeasures)
     #[cfg_attr(rust_js, rust_js::link_name = "clearMeasures")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_measures(&self, measure_name: Option<&str>) {
@@ -21944,6 +22073,7 @@ impl UIEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_ui_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, detail_arg: Option<i32>) {
@@ -22200,6 +22330,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_mouse_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, detail_arg: Option<i32>, screen_x_arg: Option<i32>, screen_y_arg: Option<i32>, client_x_arg: Option<i32>, client_y_arg: Option<i32>, ctrl_key_arg: Option<bool>, alt_key_arg: Option<bool>, shift_key_arg: Option<bool>, meta_key_arg: Option<bool>, button_arg: Option<i16>, related_target_arg: Option<&EventTarget>) {
@@ -22352,6 +22483,7 @@ impl KeyboardEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_keyboard_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, key_arg: Option<&str>, location_arg: Option<u32>, ctrl_key: Option<bool>, alt_key: Option<bool>, shift_key: Option<bool>, meta_key: Option<bool>) {
@@ -22581,6 +22713,7 @@ impl CompositionEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_composition_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, data_arg: Option<&str>) {
@@ -23076,6 +23209,7 @@ impl CSSStyleDeclaration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/setProperty)
     #[cfg_attr(rust_js, rust_js::link_name = "setProperty")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_property(&self, property: &str, value: &str, priority: Option<&str>) {
@@ -31955,6 +32089,7 @@ impl MediaQueryList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/addListener)
     #[cfg_attr(rust_js, rust_js::link_name = "addListener")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_listener(&self, callback: Box<dyn FnMut(&Event)>) {
@@ -31963,6 +32098,7 @@ impl MediaQueryList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/removeListener)
     #[cfg_attr(rust_js, rust_js::link_name = "removeListener")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_listener(&self, callback: Box<dyn FnMut(&Event)>) {
@@ -32107,6 +32243,7 @@ impl IntersectionObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn observe(&self, target: &Element) {
@@ -32115,6 +32252,7 @@ impl IntersectionObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/unobserve)
     #[cfg_attr(rust_js, rust_js::link_name = "unobserve")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unobserve(&self, target: &Element) {
@@ -32123,6 +32261,7 @@ impl IntersectionObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self) {
@@ -32249,6 +32388,7 @@ pub mod headers {
 impl Headers {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, name: &str, value: &str) {
@@ -32257,6 +32397,7 @@ impl Headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete(&self, name: &str) {
@@ -32289,6 +32430,7 @@ impl Headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set(&self, name: &str, value: &str) {
@@ -32297,6 +32439,7 @@ impl Headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &Headers)>) {
@@ -32762,6 +32905,7 @@ pub mod form_data {
 impl FormData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, name: &str, value: &str) {
@@ -32770,6 +32914,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
@@ -32778,6 +32923,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete(&self, name: &str) {
@@ -32810,6 +32956,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set(&self, name: &str, value: &str) {
@@ -32818,6 +32965,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
@@ -32826,6 +32974,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(FormDataEntryValue<'_>, &str, &FormData)>) {
@@ -33474,6 +33623,7 @@ pub mod url {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/revokeObjectURL)
     #[cfg_attr(rust_js, rust_js::link_name = "URL.revokeObjectURL")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn revoke_object_url(url: &str) {
@@ -33995,6 +34145,7 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/registerProtocolHandler)
     #[cfg_attr(rust_js, rust_js::link_name = "registerProtocolHandler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn register_protocol_handler(&self, scheme: &str, url: &str) {
@@ -34003,6 +34154,7 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/unregisterProtocolHandler)
     #[cfg_attr(rust_js, rust_js::link_name = "unregisterProtocolHandler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unregister_protocol_handler(&self, scheme: &str, url: &str) {
@@ -36018,6 +36170,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus(&self, options: Option<FocusOptions>) {
@@ -36026,6 +36179,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/blur)
     #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur(&self) {
@@ -36310,6 +36464,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/deselectAll)
     #[cfg_attr(rust_js, rust_js::link_name = "deselectAll")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn deselect_all(&self) {
@@ -36398,6 +36553,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/unsuspendRedraw)
     #[cfg_attr(rust_js, rust_js::link_name = "unsuspendRedraw")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unsuspend_redraw(&self, suspend_handle_id: u32) {
@@ -36406,6 +36562,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/unsuspendRedrawAll)
     #[cfg_attr(rust_js, rust_js::link_name = "unsuspendRedrawAll")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unsuspend_redraw_all(&self) {
@@ -36414,6 +36571,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/forceRedraw)
     #[cfg_attr(rust_js, rust_js::link_name = "forceRedraw")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn force_redraw(&self) {
@@ -36422,6 +36580,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/pauseAnimations)
     #[cfg_attr(rust_js, rust_js::link_name = "pauseAnimations")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause_animations(&self) {
@@ -36430,6 +36589,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/unpauseAnimations)
     #[cfg_attr(rust_js, rust_js::link_name = "unpauseAnimations")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unpause_animations(&self) {
@@ -36454,6 +36614,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/setCurrentTime)
     #[cfg_attr(rust_js, rust_js::link_name = "setCurrentTime")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_current_time(&self, seconds: f32) {
@@ -37753,6 +37914,7 @@ impl SVGTextContentElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/selectSubString)
     #[cfg_attr(rust_js, rust_js::link_name = "selectSubString")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select_sub_string(&self, charnum: u32, nchars: u32) {
@@ -38230,6 +38392,7 @@ impl SVGMarkerElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGMarkerElement/setOrientToAuto)
     #[cfg_attr(rust_js, rust_js::link_name = "setOrientToAuto")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_orient_to_auto(&self) {
@@ -38238,6 +38401,7 @@ impl SVGMarkerElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGMarkerElement/setOrientToAngle)
     #[cfg_attr(rust_js, rust_js::link_name = "setOrientToAngle")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_orient_to_angle(&self, angle: &SVGAngle) {
@@ -39069,6 +39233,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/beginElement)
     #[cfg_attr(rust_js, rust_js::link_name = "beginElement")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_element(&self) {
@@ -39077,6 +39242,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/beginElementAt)
     #[cfg_attr(rust_js, rust_js::link_name = "beginElementAt")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_element_at(&self, offset: f32) {
@@ -39085,6 +39251,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/endElement)
     #[cfg_attr(rust_js, rust_js::link_name = "endElement")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_element(&self) {
@@ -39093,6 +39260,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/endElementAt)
     #[cfg_attr(rust_js, rust_js::link_name = "endElementAt")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_element_at(&self, offset: f32) {
@@ -40477,6 +40645,7 @@ impl SVGFEDropShadowElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEDropShadowElement/setStdDeviation)
     #[cfg_attr(rust_js, rust_js::link_name = "setStdDeviation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_std_deviation(&self, std_deviation_x: f32, std_deviation_y: f32) {
@@ -40665,6 +40834,7 @@ impl SVGFEGaussianBlurElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement/setStdDeviation)
     #[cfg_attr(rust_js, rust_js::link_name = "setStdDeviation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_std_deviation(&self, std_deviation_x: f32, std_deviation_y: f32) {
@@ -41827,6 +41997,7 @@ pub mod analyser_node {
 impl AnalyserNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getFloatFrequencyData)
     #[cfg_attr(rust_js, rust_js::link_name = "getFloatFrequencyData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_float_frequency_data(&self, array: &Float32Array) {
@@ -41835,6 +42006,7 @@ impl AnalyserNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getByteFrequencyData)
     #[cfg_attr(rust_js, rust_js::link_name = "getByteFrequencyData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_byte_frequency_data(&self, array: &Uint8Array) {
@@ -41843,6 +42015,7 @@ impl AnalyserNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getFloatTimeDomainData)
     #[cfg_attr(rust_js, rust_js::link_name = "getFloatTimeDomainData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_float_time_domain_data(&self, array: &Float32Array) {
@@ -41851,6 +42024,7 @@ impl AnalyserNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/getByteTimeDomainData)
     #[cfg_attr(rust_js, rust_js::link_name = "getByteTimeDomainData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_byte_time_domain_data(&self, array: &Uint8Array) {
@@ -42122,6 +42296,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/cancel)
     #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel(&self) {
@@ -42130,6 +42305,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/finish)
     #[cfg_attr(rust_js, rust_js::link_name = "finish")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn finish(&self) {
@@ -42138,6 +42314,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/play)
     #[cfg_attr(rust_js, rust_js::link_name = "play")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn play(&self) {
@@ -42146,6 +42323,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/pause)
     #[cfg_attr(rust_js, rust_js::link_name = "pause")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause(&self) {
@@ -42154,6 +42332,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/updatePlaybackRate)
     #[cfg_attr(rust_js, rust_js::link_name = "updatePlaybackRate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn update_playback_rate(&self, playback_rate: f64) {
@@ -42162,6 +42341,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/reverse)
     #[cfg_attr(rust_js, rust_js::link_name = "reverse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reverse(&self) {
@@ -42170,6 +42350,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/persist)
     #[cfg_attr(rust_js, rust_js::link_name = "persist")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn persist(&self) {
@@ -42178,6 +42359,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/commitStyles)
     #[cfg_attr(rust_js, rust_js::link_name = "commitStyles")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn commit_styles(&self) {
@@ -42249,6 +42431,7 @@ impl AnimationEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/updateTiming)
     #[cfg_attr(rust_js, rust_js::link_name = "updateTiming")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn update_timing(&self, timing: Option<OptionalEffectTiming<'_>>) {
@@ -42483,6 +42666,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyFromChannel)
     #[cfg_attr(rust_js, rust_js::link_name = "copyFromChannel")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_from_channel(&self, destination: &Float32Array, channel_number: u32, buffer_offset: Option<u32>) {
@@ -42491,6 +42675,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyToChannel)
     #[cfg_attr(rust_js, rust_js::link_name = "copyToChannel")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_to_channel(&self, source: &Float32Array, channel_number: u32, buffer_offset: Option<u32>) {
@@ -42798,6 +42983,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/copyTo)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_to(&self, destination: impl IntoAllowSharedBufferSource, options: AudioDataCopyToOptions<'_>) {
@@ -42814,6 +43000,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -42899,6 +43086,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn configure(&self, config: AudioDecoderConfig) {
@@ -42907,6 +43095,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/decode)
     #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn decode(&self, chunk: &EncodedAudioChunk) {
@@ -42923,6 +43112,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -42931,6 +43121,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -43052,6 +43243,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn configure(&self, config: AudioEncoderConfig) {
@@ -43060,6 +43252,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/encode)
     #[cfg_attr(rust_js, rust_js::link_name = "encode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn encode(&self, data: &AudioData) {
@@ -43076,6 +43269,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -43084,6 +43278,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -43171,6 +43366,7 @@ impl AudioListener {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/setPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "setPosition")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_position(&self, x: f32, y: f32, z: f32) {
@@ -43179,6 +43375,7 @@ impl AudioListener {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/setOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "setOrientation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_orientation(&self, x: f32, y: f32, z: f32, x_up: f32, y_up: f32, z_up: f32) {
@@ -43223,6 +43420,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/connect)
     #[cfg_attr(rust_js, rust_js::link_name = "connect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn connect_with_audio_param(&self, destination_param: &AudioParam, output: Option<u32>) {
@@ -43231,6 +43429,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self, output: Option<u32>) {
@@ -43239,6 +43438,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect_with_destination_node(&self, destination_node: &AudioNode, output: Option<u32>, input: Option<u32>) {
@@ -43247,6 +43447,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect_with_destination_param(&self, destination_param: &AudioParam, output: Option<u32>) {
@@ -43453,6 +43654,7 @@ pub struct AudioParamMap(PhantomData<JsObject>);
 impl AudioParamMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&AudioParam, &str, &AudioParamMap)>) {
@@ -43614,6 +43816,7 @@ impl AudioScheduledSourceNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self, when: Option<f64>) {
@@ -43622,6 +43825,7 @@ impl AudioScheduledSourceNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self, when: Option<f64>) {
@@ -44247,6 +44451,7 @@ impl BiquadFilterNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/getFrequencyResponse)
     #[cfg_attr(rust_js, rust_js::link_name = "getFrequencyResponse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_frequency_response(&self, frequency_hz: &Float32Array, mag_response: &Float32Array, phase_response: &Float32Array) {
@@ -44351,6 +44556,7 @@ impl BroadcastChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(&self, message: M) {
@@ -44359,6 +44565,7 @@ impl BroadcastChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -45134,6 +45341,7 @@ impl CSSGroupingRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSGroupingRule/deleteRule)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRule")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_rule(&self, index: u32) {
@@ -45355,6 +45563,7 @@ impl CSSKeyframesRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/appendRule)
     #[cfg_attr(rust_js, rust_js::link_name = "appendRule")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append_rule(&self, rule: &str) {
@@ -45363,6 +45572,7 @@ impl CSSKeyframesRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/deleteRule)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRule")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_rule(&self, select: &str) {
@@ -46032,6 +46242,7 @@ pub mod css_numeric_array {
 impl CSSNumericArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&CSSNumericValue, u32, &CSSNumericArray)>) {
@@ -47908,6 +48119,7 @@ impl CSSStyleSheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/replaceSync)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceSync")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_sync(&self, text: &str) {
@@ -48086,6 +48298,7 @@ pub mod css_transform_value {
 impl CSSTransformValue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&CSSTransformComponent, u32, &CSSTransformValue)>) {
@@ -48366,6 +48579,7 @@ pub mod css_unparsed_value {
 impl CSSUnparsedValue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(CSSUnparsedSegment<'_>, u32, &CSSUnparsedValue)>) {
@@ -48639,6 +48853,7 @@ impl CanvasCaptureMediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasCaptureMediaStreamTrack/requestFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "requestFrame")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_frame(&self) {
@@ -48654,6 +48869,7 @@ pub struct CanvasGradient(PhantomData<JsObject>);
 impl CanvasGradient {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasGradient/addColorStop)
     #[cfg_attr(rust_js, rust_js::link_name = "addColorStop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_color_stop(&self, offset: f64, color: &str) {
@@ -48669,6 +48885,7 @@ pub struct CanvasPattern(PhantomData<JsObject>);
 impl CanvasPattern {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasPattern/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
@@ -48700,6 +48917,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/save)
     #[cfg_attr(rust_js, rust_js::link_name = "save")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn save(&self) {
@@ -48708,6 +48926,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/restore)
     #[cfg_attr(rust_js, rust_js::link_name = "restore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn restore(&self) {
@@ -48716,6 +48935,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -48732,6 +48952,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/scale)
     #[cfg_attr(rust_js, rust_js::link_name = "scale")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scale(&self, x: f64, y: f64) {
@@ -48740,6 +48961,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/rotate)
     #[cfg_attr(rust_js, rust_js::link_name = "rotate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rotate(&self, angle: f64) {
@@ -48748,6 +48970,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/translate)
     #[cfg_attr(rust_js, rust_js::link_name = "translate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn translate(&self, x: f64, y: f64) {
@@ -48756,6 +48979,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/transform)
     #[cfg_attr(rust_js, rust_js::link_name = "transform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
@@ -48772,6 +48996,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
@@ -48780,6 +49005,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/resetTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "resetTransform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset_transform(&self) {
@@ -48996,6 +49222,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/clearRect)
     #[cfg_attr(rust_js, rust_js::link_name = "clearRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -49004,6 +49231,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fillRect)
     #[cfg_attr(rust_js, rust_js::link_name = "fillRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -49012,6 +49240,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/strokeRect)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -49020,6 +49249,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/beginPath)
     #[cfg_attr(rust_js, rust_js::link_name = "beginPath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_path(&self) {
@@ -49028,6 +49258,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill(&self, fill_rule: Option<&str>) {
@@ -49036,6 +49267,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
@@ -49044,6 +49276,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/stroke)
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke(&self, path: Option<&Path2D>) {
@@ -49052,6 +49285,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clip(&self, fill_rule: Option<&str>) {
@@ -49060,6 +49294,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clip_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
@@ -49100,6 +49335,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawFocusIfNeeded)
     #[cfg_attr(rust_js, rust_js::link_name = "drawFocusIfNeeded")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_focus_if_needed(&self, element: &Element) {
@@ -49108,6 +49344,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawFocusIfNeeded)
     #[cfg_attr(rust_js, rust_js::link_name = "drawFocusIfNeeded")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_focus_if_needed_with_path2_d_and_element(&self, path: &Path2D, element: &Element) {
@@ -49116,6 +49353,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fillText)
     #[cfg_attr(rust_js, rust_js::link_name = "fillText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
@@ -49124,6 +49362,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/strokeText)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
@@ -49140,6 +49379,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
@@ -49148,6 +49388,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: f64, sy: f64, sw: f64, sh: f64, dx: f64, dy: f64, dw: f64, dh: f64) {
@@ -49181,6 +49422,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/putImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: Option<i32>, dirty_y: Option<i32>, dirty_width: Option<i32>, dirty_height: Option<i32>) {
@@ -49253,6 +49495,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/setLineDash)
     #[cfg_attr(rust_js, rust_js::link_name = "setLineDash")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_line_dash(&self, segments: &[f64]) {
@@ -49461,6 +49704,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/closePath)
     #[cfg_attr(rust_js, rust_js::link_name = "closePath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close_path(&self) {
@@ -49469,6 +49713,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/moveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_to(&self, x: f64, y: f64) {
@@ -49477,6 +49722,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/lineTo)
     #[cfg_attr(rust_js, rust_js::link_name = "lineTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_to(&self, x: f64, y: f64) {
@@ -49485,6 +49731,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/quadraticCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "quadraticCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
@@ -49493,6 +49740,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/bezierCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "bezierCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
@@ -49501,6 +49749,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/arcTo)
     #[cfg_attr(rust_js, rust_js::link_name = "arcTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
@@ -49509,6 +49758,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/rect)
     #[cfg_attr(rust_js, rust_js::link_name = "rect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -49517,6 +49767,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
@@ -49525,6 +49776,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -49533,6 +49785,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -49734,6 +49987,7 @@ pub mod close_watcher {
 impl CloseWatcher {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/requestClose)
     #[cfg_attr(rust_js, rust_js::link_name = "requestClose")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_close(&self) {
@@ -49742,6 +49996,7 @@ impl CloseWatcher {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -49750,6 +50005,7 @@ impl CloseWatcher {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/destroy)
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn destroy(&self) {
@@ -50401,6 +50657,7 @@ pub mod custom_element_registry {
 impl CustomElementRegistry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/define)
     #[cfg_attr(rust_js, rust_js::link_name = "define")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn define(&self, name: &str, constructor: Box<dyn FnMut() -> &'static HTMLElement>, options: Option<ElementDefinitionOptions<'_>>) {
@@ -50433,6 +50690,7 @@ impl CustomElementRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/upgrade)
     #[cfg_attr(rust_js, rust_js::link_name = "upgrade")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn upgrade(&self, root: &Node) {
@@ -50441,6 +50699,7 @@ impl CustomElementRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/initialize)
     #[cfg_attr(rust_js, rust_js::link_name = "initialize")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn initialize(&self, root: &Node) {
@@ -50493,6 +50752,7 @@ impl CustomEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_custom_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, detail: Option<&dyn IntoUnknown>) {
@@ -50508,6 +50768,7 @@ pub struct CustomStateSet(PhantomData<JsObject>);
 impl CustomStateSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &CustomStateSet)>) {
@@ -50556,6 +50817,7 @@ impl CustomStateSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, value: &str) {
@@ -50572,6 +50834,7 @@ impl CustomStateSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -52030,6 +52293,7 @@ impl DataTransferItem {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItem/getAsString)
     #[cfg_attr(rust_js, rust_js::link_name = "getAsString")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_as_string(&self, callback: Box<dyn FnOnce(&str)>) {
@@ -52089,6 +52353,7 @@ impl DataTransferItemList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self, index: u32) {
@@ -52097,6 +52362,7 @@ impl DataTransferItemList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -52539,6 +52805,7 @@ impl DocumentType {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/before)
     #[cfg_attr(rust_js, rust_js::link_name = "before")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn before(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -52548,6 +52815,7 @@ impl DocumentType {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/after)
     #[cfg_attr(rust_js, rust_js::link_name = "after")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn after(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -52557,6 +52825,7 @@ impl DocumentType {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/replaceWith)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn replace_with(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
@@ -52565,6 +52834,7 @@ impl DocumentType {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self) {
@@ -52672,6 +52942,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/setFormValue)
     #[cfg_attr(rust_js, rust_js::link_name = "setFormValue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_form_value(&self, value: impl IntoFileOrStrOrFormData, state: Option<&dyn IntoFileOrStrOrFormData>) {
@@ -52688,6 +52959,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/setValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setValidity")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_validity(&self, flags: Option<ValidityStateFlags>, message: Option<&str>, anchor: Option<&HTMLElement>) {
@@ -53635,6 +53907,7 @@ impl EncodedAudioChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/copyTo)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_to(&self, destination: impl IntoAllowSharedBufferSource) {
@@ -53694,6 +53967,7 @@ impl EncodedVideoChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/copyTo)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_to(&self, destination: impl IntoAllowSharedBufferSource) {
@@ -53785,6 +54059,7 @@ pub struct EventCounts(PhantomData<JsObject>);
 impl EventCounts {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(f64, &str, &EventCounts)>) {
@@ -53961,6 +54236,7 @@ impl EventSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -53976,6 +54252,7 @@ pub struct External(PhantomData<JsObject>);
 impl External {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/External/AddSearchProvider)
     #[cfg_attr(rust_js, rust_js::link_name = "AddSearchProvider")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_search_provider(&self) {
@@ -53984,6 +54261,7 @@ impl External {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/External/IsSearchProviderInstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "IsSearchProviderInstalled")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn is_search_provider_installed(&self) {
@@ -54072,6 +54350,7 @@ pub mod file_reader {
 impl FileReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readAsArrayBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "readAsArrayBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_as_array_buffer(&self, blob: &Blob) {
@@ -54080,6 +54359,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readAsBinaryString)
     #[cfg_attr(rust_js, rust_js::link_name = "readAsBinaryString")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_as_binary_string(&self, blob: &Blob) {
@@ -54088,6 +54368,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readAsText)
     #[cfg_attr(rust_js, rust_js::link_name = "readAsText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_as_text(&self, blob: &Blob, encoding: Option<&str>) {
@@ -54096,6 +54377,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readAsDataURL)
     #[cfg_attr(rust_js, rust_js::link_name = "readAsDataURL")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_as_data_url(&self, blob: &Blob) {
@@ -54104,6 +54386,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort(&self) {
@@ -54297,6 +54580,7 @@ impl FileSystemDirectoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getFile)
     #[cfg_attr(rust_js, rust_js::link_name = "getFile")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
@@ -54305,6 +54589,7 @@ impl FileSystemDirectoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getDirectory)
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectory")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
@@ -54380,6 +54665,7 @@ pub struct FileSystemDirectoryReader(PhantomData<JsObject>);
 impl FileSystemDirectoryReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryReader/readEntries)
     #[cfg_attr(rust_js, rust_js::link_name = "readEntries")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_entries(&self, success_callback: Box<dyn FnOnce(&[&FileSystemEntry])>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
@@ -54435,6 +54721,7 @@ impl FileSystemEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemEntry/getParent)
     #[cfg_attr(rust_js, rust_js::link_name = "getParent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_parent(&self, success_callback: Option<Box<dyn FnOnce(&FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
@@ -54471,6 +54758,7 @@ pub mod file_system_file_entry {
 impl FileSystemFileEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemFileEntry/file)
     #[cfg_attr(rust_js, rust_js::link_name = "file")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn file(&self, success_callback: Box<dyn FnOnce(&File)>, error_callback: Option<Box<dyn FnOnce(&DOMException)>>) {
@@ -54853,6 +55141,7 @@ pub mod font_face_set {
 impl FontFaceSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&FontFace, &FontFace, &FontFaceSet)>) {
@@ -54901,6 +55190,7 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, value: &FontFace) {
@@ -54917,6 +55207,7 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -55326,6 +55617,7 @@ impl GPUBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/unmap)
     #[cfg_attr(rust_js, rust_js::link_name = "unmap")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unmap(&self) {
@@ -55334,6 +55626,7 @@ impl GPUBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/destroy)
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn destroy(&self) {
@@ -55373,6 +55666,7 @@ impl GPUCanvasContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn configure(&self, configuration: GPUCanvasConfiguration) {
@@ -55381,6 +55675,7 @@ impl GPUCanvasContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/unconfigure)
     #[cfg_attr(rust_js, rust_js::link_name = "unconfigure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unconfigure(&self) {
@@ -55451,6 +55746,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferToBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_buffer_to_buffer(&self, source: &GPUBuffer, destination: &GPUBuffer, size: Option<f64>) {
@@ -55459,6 +55755,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferToBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset(&self, source: &GPUBuffer, source_offset: f64, destination: &GPUBuffer, destination_offset: f64, size: Option<f64>) {
@@ -55467,6 +55764,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferToTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_buffer_to_texture(&self, source: GPUTexelCopyBufferInfo<'_>, destination: GPUTexelCopyTextureInfo<'_>, copy_size: impl IntoGPUExtent3D) {
@@ -55475,6 +55773,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyTextureToBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTextureToBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_texture_to_buffer(&self, source: GPUTexelCopyTextureInfo<'_>, destination: GPUTexelCopyBufferInfo<'_>, copy_size: impl IntoGPUExtent3D) {
@@ -55483,6 +55782,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyTextureToTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTextureToTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_texture_to_texture(&self, source: GPUTexelCopyTextureInfo<'_>, destination: GPUTexelCopyTextureInfo<'_>, copy_size: impl IntoGPUExtent3D) {
@@ -55491,6 +55791,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/clearBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_buffer(&self, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
@@ -55499,6 +55800,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/resolveQuerySet)
     #[cfg_attr(rust_js, rust_js::link_name = "resolveQuerySet")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resolve_query_set(&self, query_set: &GPUQuerySet, first_query: u32, query_count: u32, destination: &GPUBuffer, destination_offset: f64) {
@@ -55531,6 +55833,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/pushDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "pushDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_debug_group(&self, group_label: &str) {
@@ -55539,6 +55842,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/popDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "popDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pop_debug_group(&self) {
@@ -55547,6 +55851,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/insertDebugMarker)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDebugMarker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_debug_marker(&self, marker_label: &str) {
@@ -55632,6 +55937,7 @@ pub struct GPUComputePassEncoder(PhantomData<JsObject>);
 impl GPUComputePassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setPipeline)
     #[cfg_attr(rust_js, rust_js::link_name = "setPipeline")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_pipeline(&self, pipeline: &GPUComputePipeline) {
@@ -55640,6 +55946,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/dispatchWorkgroups)
     #[cfg_attr(rust_js, rust_js::link_name = "dispatchWorkgroups")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dispatch_workgroups(&self, workgroup_count_x: u32, workgroup_count_y: Option<u32>, workgroup_count_z: Option<u32>) {
@@ -55648,6 +55955,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/dispatchWorkgroupsIndirect)
     #[cfg_attr(rust_js, rust_js::link_name = "dispatchWorkgroupsIndirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dispatch_workgroups_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
@@ -55656,6 +55964,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/end)
     #[cfg_attr(rust_js, rust_js::link_name = "end")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end(&self) {
@@ -55680,6 +55989,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/pushDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "pushDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_debug_group(&self, group_label: &str) {
@@ -55688,6 +55998,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/popDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "popDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pop_debug_group(&self) {
@@ -55696,6 +56007,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/insertDebugMarker)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDebugMarker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_debug_marker(&self, marker_label: &str) {
@@ -55704,6 +56016,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[u32]>) {
@@ -55712,6 +56025,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
@@ -55811,6 +56125,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/destroy)
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn destroy(&self) {
@@ -55947,6 +56262,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/pushErrorScope)
     #[cfg_attr(rust_js, rust_js::link_name = "pushErrorScope")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_error_scope(&self, filter: &str) {
@@ -56197,6 +56513,7 @@ pub struct GPUQuerySet(PhantomData<JsObject>);
 impl GPUQuerySet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQuerySet/destroy)
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn destroy(&self) {
@@ -56244,6 +56561,7 @@ pub struct GPUQueue(PhantomData<JsObject>);
 impl GPUQueue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/submit)
     #[cfg_attr(rust_js, rust_js::link_name = "submit")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn submit(&self, command_buffers: &[&GPUCommandBuffer]) {
@@ -56260,6 +56578,7 @@ impl GPUQueue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "writeBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn write_buffer(&self, buffer: &GPUBuffer, buffer_offset: f64, data: impl IntoAllowSharedBufferSource, data_offset: Option<f64>, size: Option<f64>) {
@@ -56268,6 +56587,7 @@ impl GPUQueue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "writeTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn write_texture(&self, destination: GPUTexelCopyTextureInfo<'_>, data: impl IntoAllowSharedBufferSource, data_layout: GPUTexelCopyBufferLayout, size: impl IntoGPUExtent3D) {
@@ -56276,6 +56596,7 @@ impl GPUQueue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/copyExternalImageToTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "copyExternalImageToTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_external_image_to_texture(&self, source: GPUCopyExternalImageSourceInfo<'_>, destination: GPUCopyExternalImageDestInfo<'_>, copy_size: impl IntoGPUExtent3D) {
@@ -56354,6 +56675,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/pushDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "pushDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_debug_group(&self, group_label: &str) {
@@ -56362,6 +56684,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/popDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "popDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pop_debug_group(&self) {
@@ -56370,6 +56693,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/insertDebugMarker)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDebugMarker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_debug_marker(&self, marker_label: &str) {
@@ -56378,6 +56702,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[u32]>) {
@@ -56386,6 +56711,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
@@ -56394,6 +56720,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setPipeline)
     #[cfg_attr(rust_js, rust_js::link_name = "setPipeline")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_pipeline(&self, pipeline: &GPURenderPipeline) {
@@ -56402,6 +56729,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setIndexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setIndexBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_index_buffer(&self, buffer: &GPUBuffer, index_format: &str, offset: Option<f64>, size: Option<f64>) {
@@ -56410,6 +56738,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setVertexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setVertexBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_vertex_buffer(&self, slot: u32, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
@@ -56418,6 +56747,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/draw)
     #[cfg_attr(rust_js, rust_js::link_name = "draw")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw(&self, vertex_count: u32, instance_count: Option<u32>, first_vertex: Option<u32>, first_instance: Option<u32>) {
@@ -56426,6 +56756,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndexed)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexed")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indexed(&self, index_count: u32, instance_count: Option<u32>, first_index: Option<u32>, base_vertex: Option<i32>, first_instance: Option<u32>) {
@@ -56434,6 +56765,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndirect)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
@@ -56442,6 +56774,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndexedIndirect)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexedIndirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
@@ -56457,6 +56790,7 @@ pub struct GPURenderPassEncoder(PhantomData<JsObject>);
 impl GPURenderPassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setViewport)
     #[cfg_attr(rust_js, rust_js::link_name = "setViewport")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_viewport(&self, x: f32, y: f32, width: f32, height: f32, min_depth: f32, max_depth: f32) {
@@ -56465,6 +56799,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setScissorRect)
     #[cfg_attr(rust_js, rust_js::link_name = "setScissorRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_scissor_rect(&self, x: u32, y: u32, width: u32, height: u32) {
@@ -56473,6 +56808,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBlendConstant)
     #[cfg_attr(rust_js, rust_js::link_name = "setBlendConstant")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_blend_constant(&self, color: impl IntoGPUColor) {
@@ -56481,6 +56817,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setStencilReference)
     #[cfg_attr(rust_js, rust_js::link_name = "setStencilReference")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_stencil_reference(&self, reference: u32) {
@@ -56489,6 +56826,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/beginOcclusionQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "beginOcclusionQuery")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_occlusion_query(&self, query_index: u32) {
@@ -56497,6 +56835,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/endOcclusionQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "endOcclusionQuery")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_occlusion_query(&self) {
@@ -56505,6 +56844,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/executeBundles)
     #[cfg_attr(rust_js, rust_js::link_name = "executeBundles")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn execute_bundles(&self, bundles: &[&GPURenderBundle]) {
@@ -56513,6 +56853,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/end)
     #[cfg_attr(rust_js, rust_js::link_name = "end")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end(&self) {
@@ -56537,6 +56878,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/pushDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "pushDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_debug_group(&self, group_label: &str) {
@@ -56545,6 +56887,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/popDebugGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "popDebugGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pop_debug_group(&self) {
@@ -56553,6 +56896,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/insertDebugMarker)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDebugMarker")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_debug_marker(&self, marker_label: &str) {
@@ -56561,6 +56905,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[u32]>) {
@@ -56569,6 +56914,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: u32, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: u32) {
@@ -56577,6 +56923,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setPipeline)
     #[cfg_attr(rust_js, rust_js::link_name = "setPipeline")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_pipeline(&self, pipeline: &GPURenderPipeline) {
@@ -56585,6 +56932,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setIndexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setIndexBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_index_buffer(&self, buffer: &GPUBuffer, index_format: &str, offset: Option<f64>, size: Option<f64>) {
@@ -56593,6 +56941,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setVertexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setVertexBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_vertex_buffer(&self, slot: u32, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
@@ -56601,6 +56950,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/draw)
     #[cfg_attr(rust_js, rust_js::link_name = "draw")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw(&self, vertex_count: u32, instance_count: Option<u32>, first_vertex: Option<u32>, first_instance: Option<u32>) {
@@ -56609,6 +56959,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndexed)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexed")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indexed(&self, index_count: u32, instance_count: Option<u32>, first_index: Option<u32>, base_vertex: Option<i32>, first_instance: Option<u32>) {
@@ -56617,6 +56968,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndirect)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
@@ -56625,6 +56977,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndexedIndirect)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexedIndirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
@@ -56725,6 +57078,7 @@ pub struct GPUSupportedFeatures(PhantomData<JsObject>);
 impl GPUSupportedFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &GPUSupportedFeatures)>) {
@@ -57075,6 +57429,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/destroy)
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn destroy(&self) {
@@ -57483,6 +57838,7 @@ pub struct Geolocation(PhantomData<JsObject>);
 impl Geolocation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/getCurrentPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentPosition")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_current_position(&self, success_callback: Box<dyn FnOnce(&GeolocationPosition)>, error_callback: Option<Box<dyn FnOnce(&GeolocationPositionError)>>, options: Option<PositionOptions>) {
@@ -57499,6 +57855,7 @@ impl Geolocation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/clearWatch)
     #[cfg_attr(rust_js, rust_js::link_name = "clearWatch")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_watch(&self, watch_id: i32) {
@@ -58627,6 +58984,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self) {
@@ -58635,6 +58993,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self) {
@@ -58695,6 +59054,7 @@ impl HTMLOptionsCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement, before: Option<&dyn IntoHTMLElementOrNumber>) {
@@ -58703,6 +59063,7 @@ impl HTMLOptionsCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self, index: i32) {
@@ -58916,6 +59277,7 @@ pub mod highlight {
 impl Highlight {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&AbstractRange, &AbstractRange, &Highlight)>) {
@@ -58964,6 +59326,7 @@ impl Highlight {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, value: &AbstractRange) {
@@ -58980,6 +59343,7 @@ impl Highlight {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -59027,6 +59391,7 @@ pub struct HighlightRegistry(PhantomData<JsObject>);
 impl HighlightRegistry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&Highlight, &str, &HighlightRegistry)>) {
@@ -59083,6 +59448,7 @@ impl HighlightRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set(&self, key: &str, value: &Highlight) {
@@ -59099,6 +59465,7 @@ impl HighlightRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -59162,6 +59529,7 @@ impl IDBCursor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/advance)
     #[cfg_attr(rust_js, rust_js::link_name = "advance")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn advance(&self, count: u32) {
@@ -59170,6 +59538,7 @@ impl IDBCursor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/continue)
     #[cfg_attr(rust_js, rust_js::link_name = "continue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#continue(&self, key: Option<&dyn IntoUnknown>) {
@@ -59178,6 +59547,7 @@ impl IDBCursor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/continuePrimaryKey)
     #[cfg_attr(rust_js, rust_js::link_name = "continuePrimaryKey")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn continue_primary_key<K, P>(&self, key: K, primary_key: P) {
@@ -59298,6 +59668,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -59314,6 +59685,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/deleteObjectStore)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteObjectStore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_object_store(&self, name: &str) {
@@ -59784,6 +60156,7 @@ impl IDBObjectStore {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/deleteIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteIndex")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_index(&self, name: &str) {
@@ -60032,6 +60405,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/commit)
     #[cfg_attr(rust_js, rust_js::link_name = "commit")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn commit(&self) {
@@ -60040,6 +60414,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort(&self) {
@@ -60187,6 +60562,7 @@ pub mod iir_filter_node {
 impl IIRFilterNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IIRFilterNode/getFrequencyResponse)
     #[cfg_attr(rust_js, rust_js::link_name = "getFrequencyResponse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_frequency_response(&self, frequency_hz: &Float32Array, mag_response: &Float32Array, phase_response: &Float32Array) {
@@ -60241,6 +60617,7 @@ impl ImageBitmap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmap/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -60264,6 +60641,7 @@ impl ImageBitmapRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmapRenderingContext/transferFromImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "transferFromImageBitmap")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transfer_from_image_bitmap(&self, bitmap: &ImageBitmap) {
@@ -60449,6 +60827,7 @@ impl ImageDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -60457,6 +60836,7 @@ impl ImageDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -60679,6 +61059,7 @@ impl KeyframeEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/setKeyframes)
     #[cfg_attr(rust_js, rust_js::link_name = "setKeyframes")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_keyframes(&self, keyframes: &dyn core::any::Any) {
@@ -61014,6 +61395,7 @@ pub struct MIDIInputMap(PhantomData<JsObject>);
 impl MIDIInputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&MIDIInput, &str, &MIDIInputMap)>) {
@@ -61142,6 +61524,7 @@ pub mod midi_output {
 impl MIDIOutput {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutput/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send(&self, data: &[u8], timestamp: Option<f64>) {
@@ -61157,6 +61540,7 @@ pub struct MIDIOutputMap(PhantomData<JsObject>);
 impl MIDIOutputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&MIDIOutput, &str, &MIDIOutputMap)>) {
@@ -63147,6 +63531,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus(&self, options: Option<FocusOptions>) {
@@ -63155,6 +63540,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/blur)
     #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur(&self) {
@@ -63637,6 +64023,7 @@ pub struct MediaKeyStatusMap(PhantomData<JsObject>);
 impl MediaKeyStatusMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, BufferSource<'_>, &MediaKeyStatusMap)>) {
@@ -63790,6 +64177,7 @@ impl MediaList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/appendMedium)
     #[cfg_attr(rust_js, rust_js::link_name = "appendMedium")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append_medium(&self, medium: &str) {
@@ -63798,6 +64186,7 @@ impl MediaList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/deleteMedium)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteMedium")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_medium(&self, medium: &str) {
@@ -64075,6 +64464,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self, timeslice: Option<u32>) {
@@ -64083,6 +64473,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self) {
@@ -64091,6 +64482,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/pause)
     #[cfg_attr(rust_js, rust_js::link_name = "pause")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause(&self) {
@@ -64099,6 +64491,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/resume)
     #[cfg_attr(rust_js, rust_js::link_name = "resume")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resume(&self) {
@@ -64107,6 +64500,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/requestData)
     #[cfg_attr(rust_js, rust_js::link_name = "requestData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_data(&self) {
@@ -64154,6 +64548,7 @@ impl MediaSession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/setActionHandler)
     #[cfg_attr(rust_js, rust_js::link_name = "setActionHandler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_action_handler(&self, action: &str, handler: Box<dyn FnMut(MediaSessionActionDetails<'_>)>) {
@@ -64162,6 +64557,7 @@ impl MediaSession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/setPositionState)
     #[cfg_attr(rust_js, rust_js::link_name = "setPositionState")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_position_state(&self, state: Option<MediaPositionState>) {
@@ -64337,6 +64733,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/removeSourceBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "removeSourceBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_source_buffer(&self, source_buffer: &SourceBuffer) {
@@ -64345,6 +64742,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/endOfStream)
     #[cfg_attr(rust_js, rust_js::link_name = "endOfStream")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_of_stream(&self, error: Option<&str>) {
@@ -64353,6 +64751,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/setLiveSeekableRange)
     #[cfg_attr(rust_js, rust_js::link_name = "setLiveSeekableRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_live_seekable_range(&self, start: f64, end: f64) {
@@ -64361,6 +64760,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/clearLiveSeekableRange)
     #[cfg_attr(rust_js, rust_js::link_name = "clearLiveSeekableRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_live_seekable_range(&self) {
@@ -64449,6 +64849,7 @@ impl MediaStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/addTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "addTrack")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_track(&self, track: &MediaStreamTrack) {
@@ -64457,6 +64858,7 @@ impl MediaStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/removeTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "removeTrack")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_track(&self, track: &MediaStreamTrack) {
@@ -64746,6 +65148,7 @@ impl MediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self) {
@@ -64909,6 +65312,7 @@ pub mod message_port {
 impl MessagePort {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
@@ -64917,6 +65321,7 @@ impl MessagePort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self) {
@@ -64925,6 +65330,7 @@ impl MessagePort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -65085,6 +65491,7 @@ pub mod mutation_observer {
 impl MutationObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn observe(&self, target: &Node, options: Option<MutationObserverInit<'_>>) {
@@ -65093,6 +65500,7 @@ impl MutationObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self) {
@@ -65395,6 +65803,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
     #[cfg_attr(rust_js, rust_js::link_name = "intercept")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn intercept(&self, options: Option<NavigationInterceptOptions<'_>>) {
@@ -65403,6 +65812,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/scroll)
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll(&self) {
@@ -65455,6 +65865,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/updateCurrentEntry)
     #[cfg_attr(rust_js, rust_js::link_name = "updateCurrentEntry")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn update_current_entry(&self, options: NavigationUpdateCurrentEntryOptions<'_>) {
@@ -65841,6 +66252,7 @@ pub struct NavigationPrecommitController(PhantomData<JsObject>);
 impl NavigationPrecommitController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPrecommitController/redirect)
     #[cfg_attr(rust_js, rust_js::link_name = "redirect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn redirect(&self, url: &str, options: Option<NavigationNavigateOptions<'_>>) {
@@ -65849,6 +66261,7 @@ impl NavigationPrecommitController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPrecommitController/addHandler)
     #[cfg_attr(rust_js, rust_js::link_name = "addHandler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_handler(&self, handler: Box<dyn FnMut() -> Promise<()>>) {
@@ -66021,6 +66434,7 @@ impl NodeIterator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/detach)
     #[cfg_attr(rust_js, rust_js::link_name = "detach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn detach(&self) {
@@ -66237,6 +66651,7 @@ impl Notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -66523,6 +66938,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/save)
     #[cfg_attr(rust_js, rust_js::link_name = "save")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn save(&self) {
@@ -66531,6 +66947,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/restore)
     #[cfg_attr(rust_js, rust_js::link_name = "restore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn restore(&self) {
@@ -66539,6 +66956,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -66555,6 +66973,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/scale)
     #[cfg_attr(rust_js, rust_js::link_name = "scale")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scale(&self, x: f64, y: f64) {
@@ -66563,6 +66982,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/rotate)
     #[cfg_attr(rust_js, rust_js::link_name = "rotate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rotate(&self, angle: f64) {
@@ -66571,6 +66991,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/translate)
     #[cfg_attr(rust_js, rust_js::link_name = "translate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn translate(&self, x: f64, y: f64) {
@@ -66579,6 +67000,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/transform)
     #[cfg_attr(rust_js, rust_js::link_name = "transform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
@@ -66595,6 +67017,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
@@ -66603,6 +67026,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/resetTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "resetTransform")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset_transform(&self) {
@@ -66819,6 +67243,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/clearRect)
     #[cfg_attr(rust_js, rust_js::link_name = "clearRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -66827,6 +67252,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fillRect)
     #[cfg_attr(rust_js, rust_js::link_name = "fillRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -66835,6 +67261,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/strokeRect)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke_rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -66843,6 +67270,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/beginPath)
     #[cfg_attr(rust_js, rust_js::link_name = "beginPath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_path(&self) {
@@ -66851,6 +67279,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill(&self, fill_rule: Option<&str>) {
@@ -66859,6 +67288,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
@@ -66867,6 +67297,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/stroke)
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke(&self, path: Option<&Path2D>) {
@@ -66875,6 +67306,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clip(&self, fill_rule: Option<&str>) {
@@ -66883,6 +67315,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clip_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
@@ -66923,6 +67356,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fillText)
     #[cfg_attr(rust_js, rust_js::link_name = "fillText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fill_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
@@ -66931,6 +67365,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/strokeText)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeText")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stroke_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
@@ -66947,6 +67382,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
@@ -66955,6 +67391,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: f64, sy: f64, sw: f64, sh: f64, dx: f64, dy: f64, dw: f64, dh: f64) {
@@ -66988,6 +67425,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/putImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn put_image_data(&self, image_data: &ImageData, dx: i32, dy: i32, dirty_x: Option<i32>, dirty_y: Option<i32>, dirty_width: Option<i32>, dirty_height: Option<i32>) {
@@ -67060,6 +67498,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/setLineDash)
     #[cfg_attr(rust_js, rust_js::link_name = "setLineDash")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_line_dash(&self, segments: &[f64]) {
@@ -67268,6 +67707,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/closePath)
     #[cfg_attr(rust_js, rust_js::link_name = "closePath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close_path(&self) {
@@ -67276,6 +67716,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/moveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_to(&self, x: f64, y: f64) {
@@ -67284,6 +67725,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/lineTo)
     #[cfg_attr(rust_js, rust_js::link_name = "lineTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_to(&self, x: f64, y: f64) {
@@ -67292,6 +67734,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/quadraticCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "quadraticCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
@@ -67300,6 +67743,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/bezierCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "bezierCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
@@ -67308,6 +67752,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/arcTo)
     #[cfg_attr(rust_js, rust_js::link_name = "arcTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
@@ -67316,6 +67761,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/rect)
     #[cfg_attr(rust_js, rust_js::link_name = "rect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -67324,6 +67770,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
@@ -67332,6 +67779,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -67340,6 +67788,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -67467,6 +67916,7 @@ impl OscillatorNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/setPeriodicWave)
     #[cfg_attr(rust_js, rust_js::link_name = "setPeriodicWave")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_periodic_wave(&self, periodic_wave: &PeriodicWave) {
@@ -67871,6 +68321,7 @@ impl PannerNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/setPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "setPosition")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_position(&self, x: f32, y: f32, z: f32) {
@@ -67879,6 +68330,7 @@ impl PannerNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/setOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "setOrientation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_orientation(&self, x: f32, y: f32, z: f32) {
@@ -67906,6 +68358,7 @@ pub mod path2_d {
 impl Path2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/addPath)
     #[cfg_attr(rust_js, rust_js::link_name = "addPath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_path(&self, path: &Path2D, transform: Option<DOMMatrix2DInit>) {
@@ -67914,6 +68367,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/closePath)
     #[cfg_attr(rust_js, rust_js::link_name = "closePath")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close_path(&self) {
@@ -67922,6 +68376,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/moveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_to(&self, x: f64, y: f64) {
@@ -67930,6 +68385,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/lineTo)
     #[cfg_attr(rust_js, rust_js::link_name = "lineTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_to(&self, x: f64, y: f64) {
@@ -67938,6 +68394,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/quadraticCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "quadraticCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
@@ -67946,6 +68403,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/bezierCurveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "bezierCurveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
@@ -67954,6 +68412,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/arcTo)
     #[cfg_attr(rust_js, rust_js::link_name = "arcTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
@@ -67962,6 +68421,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/rect)
     #[cfg_attr(rust_js, rust_js::link_name = "rect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
@@ -67970,6 +68430,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
@@ -67978,6 +68439,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -67986,6 +68448,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
@@ -68217,6 +68680,7 @@ pub mod payment_request_update_event {
 impl PaymentRequestUpdateEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/updateWith)
     #[cfg_attr(rust_js, rust_js::link_name = "updateWith")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn update_with(&self, details_promise: Promise<PaymentDetailsUpdate>) {
@@ -68726,6 +69190,7 @@ pub mod performance_observer {
 impl PerformanceObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn observe(&self, options: Option<PerformanceObserverInit<'_>>) {
@@ -68734,6 +69199,7 @@ impl PerformanceObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self) {
@@ -69542,6 +70008,7 @@ pub mod plugin_array {
 impl PluginArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/refresh)
     #[cfg_attr(rust_js, rust_js::link_name = "refresh")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn refresh(&self) {
@@ -69694,6 +70161,7 @@ impl ProcessingInstruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/setAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttribute")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_attribute(&self, name: &str, value: &str) {
@@ -69702,6 +70170,7 @@ impl ProcessingInstruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/removeAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "removeAttribute")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_attribute(&self, name: &str) {
@@ -70141,6 +70610,7 @@ pub mod rtcdtmf_sender {
 impl RTCDTMFSender {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/insertDTMF)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDTMF")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_dtmf(&self, tones: &str, duration: Option<u32>, inter_tone_gap: Option<u32>) {
@@ -70427,6 +70897,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -70468,6 +70939,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send(&self, data: &str) {
@@ -70476,6 +70948,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send_with_blob(&self, data: &Blob) {
@@ -70484,6 +70957,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send_with_array_buffer(&self, data: &ArrayBuffer) {
@@ -70492,6 +70966,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send_with_array_buffer_view(&self, data: impl IntoArrayBufferView) {
@@ -71266,6 +71741,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/restartIce)
     #[cfg_attr(rust_js, rust_js::link_name = "restartIce")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn restart_ice(&self) {
@@ -71282,6 +71758,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setConfiguration)
     #[cfg_attr(rust_js, rust_js::link_name = "setConfiguration")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_configuration(&self, configuration: Option<RTCConfiguration>) {
@@ -71290,6 +71767,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -71466,6 +71944,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/removeTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "removeTrack")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_track(&self, sender: &RTCRtpSender) {
@@ -71827,6 +72306,7 @@ impl RTCRtpSender {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/setStreams)
     #[cfg_attr(rust_js, rust_js::link_name = "setStreams")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_streams(&self, streams: impl Rest<MediaStream>) {
@@ -71914,6 +72394,7 @@ impl RTCRtpTransceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop(&self) {
@@ -71922,6 +72403,7 @@ impl RTCRtpTransceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/setCodecPreferences)
     #[cfg_attr(rust_js, rust_js::link_name = "setCodecPreferences")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_codec_preferences(&self, codecs: &[RTCRtpCodec]) {
@@ -72057,6 +72539,7 @@ pub struct RTCStatsReport(PhantomData<JsObject>);
 impl RTCStatsReport {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&dyn core::any::Any, &str, &RTCStatsReport)>) {
@@ -72305,6 +72788,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setStart)
     #[cfg_attr(rust_js, rust_js::link_name = "setStart")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_start(&self, node: &Node, offset: u32) {
@@ -72313,6 +72797,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "setEnd")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_end(&self, node: &Node, offset: u32) {
@@ -72321,6 +72806,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setStartBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "setStartBefore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_start_before(&self, node: &Node) {
@@ -72329,6 +72815,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setStartAfter)
     #[cfg_attr(rust_js, rust_js::link_name = "setStartAfter")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_start_after(&self, node: &Node) {
@@ -72337,6 +72824,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setEndBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "setEndBefore")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_end_before(&self, node: &Node) {
@@ -72345,6 +72833,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/setEndAfter)
     #[cfg_attr(rust_js, rust_js::link_name = "setEndAfter")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_end_after(&self, node: &Node) {
@@ -72353,6 +72842,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/collapse)
     #[cfg_attr(rust_js, rust_js::link_name = "collapse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn collapse(&self, to_start: Option<bool>) {
@@ -72361,6 +72851,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/selectNode)
     #[cfg_attr(rust_js, rust_js::link_name = "selectNode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select_node(&self, node: &Node) {
@@ -72369,6 +72860,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/selectNodeContents)
     #[cfg_attr(rust_js, rust_js::link_name = "selectNodeContents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select_node_contents(&self, node: &Node) {
@@ -72385,6 +72877,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/deleteContents)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteContents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_contents(&self) {
@@ -72409,6 +72902,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/insertNode)
     #[cfg_attr(rust_js, rust_js::link_name = "insertNode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_node(&self, node: &Node) {
@@ -72417,6 +72911,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/surroundContents)
     #[cfg_attr(rust_js, rust_js::link_name = "surroundContents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn surround_contents(&self, new_parent: &Node) {
@@ -72433,6 +72928,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/detach)
     #[cfg_attr(rust_js, rust_js::link_name = "detach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn detach(&self) {
@@ -72504,6 +73000,7 @@ impl ReadableByteStreamController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -72512,6 +73009,7 @@ impl ReadableByteStreamController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/enqueue)
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enqueue(&self, chunk: impl IntoArrayBufferView) {
@@ -72520,6 +73018,7 @@ impl ReadableByteStreamController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
@@ -72555,6 +73054,7 @@ impl ReadableStreamBYOBReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/releaseLock)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseLock")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_lock(&self) {
@@ -72594,6 +73094,7 @@ impl ReadableStreamBYOBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/respond)
     #[cfg_attr(rust_js, rust_js::link_name = "respond")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn respond(&self, bytes_written: f64) {
@@ -72602,6 +73103,7 @@ impl ReadableStreamBYOBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/respondWithNewView)
     #[cfg_attr(rust_js, rust_js::link_name = "respondWithNewView")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn respond_with_new_view(&self, view: impl IntoArrayBufferView) {
@@ -72625,6 +73127,7 @@ impl ReadableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -72633,6 +73136,7 @@ impl ReadableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/enqueue)
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enqueue(&self, chunk: Option<&dyn IntoUnknown>) {
@@ -72641,6 +73145,7 @@ impl ReadableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
@@ -72676,6 +73181,7 @@ impl ReadableStreamDefaultReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/releaseLock)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseLock")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_lock(&self) {
@@ -72830,6 +73336,7 @@ pub mod reporting_observer {
 impl ReportingObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn observe(&self) {
@@ -72838,6 +73345,7 @@ impl ReportingObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self) {
@@ -72873,6 +73381,7 @@ pub mod resize_observer {
 impl ResizeObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn observe(&self, target: &Element, options: Option<ResizeObserverOptions<'_>>) {
@@ -72881,6 +73390,7 @@ impl ResizeObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/unobserve)
     #[cfg_attr(rust_js, rust_js::link_name = "unobserve")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unobserve(&self, target: &Element) {
@@ -72889,6 +73399,7 @@ impl ResizeObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disconnect(&self) {
@@ -73048,6 +73559,7 @@ impl SVGAngle {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/newValueSpecifiedUnits)
     #[cfg_attr(rust_js, rust_js::link_name = "newValueSpecifiedUnits")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_value_specified_units(&self, unit_type: u16, value_in_specified_units: f32) {
@@ -73056,6 +73568,7 @@ impl SVGAngle {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/convertToSpecifiedUnits)
     #[cfg_attr(rust_js, rust_js::link_name = "convertToSpecifiedUnits")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn convert_to_specified_units(&self, unit_type: u16) {
@@ -73471,6 +73984,7 @@ impl SVGLength {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/newValueSpecifiedUnits)
     #[cfg_attr(rust_js, rust_js::link_name = "newValueSpecifiedUnits")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_value_specified_units(&self, unit_type: u16, value_in_specified_units: f32) {
@@ -73479,6 +73993,7 @@ impl SVGLength {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/convertToSpecifiedUnits)
     #[cfg_attr(rust_js, rust_js::link_name = "convertToSpecifiedUnits")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn convert_to_specified_units(&self, unit_type: u16) {
@@ -73522,6 +74037,7 @@ impl SVGLengthList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -73636,6 +74152,7 @@ impl SVGNumberList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -73727,6 +74244,7 @@ impl SVGPointList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -73902,6 +74420,7 @@ impl SVGStringList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -74013,6 +74532,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "setMatrix")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_matrix(&self, matrix: Option<DOMMatrix2DInit>) {
@@ -74021,6 +74541,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setTranslate)
     #[cfg_attr(rust_js, rust_js::link_name = "setTranslate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_translate(&self, tx: f32, ty: f32) {
@@ -74029,6 +74550,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setScale)
     #[cfg_attr(rust_js, rust_js::link_name = "setScale")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_scale(&self, sx: f32, sy: f32) {
@@ -74037,6 +74559,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setRotate)
     #[cfg_attr(rust_js, rust_js::link_name = "setRotate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_rotate(&self, angle: f32, cx: f32, cy: f32) {
@@ -74045,6 +74568,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setSkewX)
     #[cfg_attr(rust_js, rust_js::link_name = "setSkewX")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_skew_x(&self, angle: f32) {
@@ -74053,6 +74577,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setSkewY)
     #[cfg_attr(rust_js, rust_js::link_name = "setSkewY")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_skew_y(&self, angle: f32) {
@@ -74096,6 +74621,7 @@ impl SVGTransformList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -74421,6 +74947,7 @@ impl ScreenOrientation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScreenOrientation/unlock)
     #[cfg_attr(rust_js, rust_js::link_name = "unlock")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unlock(&self) {
@@ -74778,6 +75305,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/addRange)
     #[cfg_attr(rust_js, rust_js::link_name = "addRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_range(&self, range: &Range) {
@@ -74786,6 +75314,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/removeRange)
     #[cfg_attr(rust_js, rust_js::link_name = "removeRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_range(&self, range: &Range) {
@@ -74794,6 +75323,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/removeAllRanges)
     #[cfg_attr(rust_js, rust_js::link_name = "removeAllRanges")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_all_ranges(&self) {
@@ -74802,6 +75332,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/empty)
     #[cfg_attr(rust_js, rust_js::link_name = "empty")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn empty(&self) {
@@ -74818,6 +75349,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/collapse)
     #[cfg_attr(rust_js, rust_js::link_name = "collapse")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn collapse(&self, node: &Node, offset: Option<u32>) {
@@ -74826,6 +75358,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/setPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "setPosition")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_position(&self, node: &Node, offset: Option<u32>) {
@@ -74834,6 +75367,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/collapseToStart)
     #[cfg_attr(rust_js, rust_js::link_name = "collapseToStart")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn collapse_to_start(&self) {
@@ -74842,6 +75376,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/collapseToEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "collapseToEnd")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn collapse_to_end(&self) {
@@ -74850,6 +75385,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/extend)
     #[cfg_attr(rust_js, rust_js::link_name = "extend")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn extend(&self, node: &Node, offset: Option<u32>) {
@@ -74858,6 +75394,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/setBaseAndExtent)
     #[cfg_attr(rust_js, rust_js::link_name = "setBaseAndExtent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_base_and_extent(&self, anchor_node: &Node, anchor_offset: u32, focus_node: &Node, focus_offset: u32) {
@@ -74866,6 +75403,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/selectAllChildren)
     #[cfg_attr(rust_js, rust_js::link_name = "selectAllChildren")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn select_all_children(&self, node: &Node) {
@@ -74874,6 +75412,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/modify)
     #[cfg_attr(rust_js, rust_js::link_name = "modify")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn modify(&self, alter: Option<&str>, direction: Option<&str>, granularity: Option<&str>) {
@@ -74882,6 +75421,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/deleteFromDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteFromDocument")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_from_document(&self) {
@@ -75128,6 +75668,7 @@ impl ServiceWorker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
@@ -75238,6 +75779,7 @@ impl ServiceWorkerContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/startMessages)
     #[cfg_attr(rust_js, rust_js::link_name = "startMessages")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start_messages(&self) {
@@ -75531,6 +76073,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/setHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTML")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
@@ -75539,6 +76082,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/setHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
@@ -75889,6 +76433,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/appendBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "appendBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append_buffer(&self, data: impl IntoBufferSource) {
@@ -75897,6 +76442,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort(&self) {
@@ -75905,6 +76451,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/changeType)
     #[cfg_attr(rust_js, rust_js::link_name = "changeType")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn change_type(&self, r#type: &str) {
@@ -75913,6 +76460,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self, start: f64, end: f64) {
@@ -76265,6 +76813,7 @@ impl SpeechSynthesis {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/speak)
     #[cfg_attr(rust_js, rust_js::link_name = "speak")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn speak(&self, utterance: &SpeechSynthesisUtterance) {
@@ -76273,6 +76822,7 @@ impl SpeechSynthesis {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/cancel)
     #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel(&self) {
@@ -76281,6 +76831,7 @@ impl SpeechSynthesis {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/pause)
     #[cfg_attr(rust_js, rust_js::link_name = "pause")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause(&self) {
@@ -76289,6 +76840,7 @@ impl SpeechSynthesis {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/resume)
     #[cfg_attr(rust_js, rust_js::link_name = "resume")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resume(&self) {
@@ -76876,6 +77428,7 @@ impl StorageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_storage_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, key: Option<&str>, old_value: Option<&str>, new_value: Option<&str>, url: Option<&str>, storage_area: Option<&Storage>) {
@@ -76952,6 +77505,7 @@ impl StylePropertyMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set(&self, property: &str, values: impl Rest<dyn IntoCSSStyleValueOrStr>) {
@@ -76961,6 +77515,7 @@ impl StylePropertyMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, property: &str, values: impl Rest<dyn IntoCSSStyleValueOrStr>) {
@@ -76969,6 +77524,7 @@ impl StylePropertyMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete(&self, property: &str) {
@@ -76977,6 +77533,7 @@ impl StylePropertyMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMap/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -77004,6 +77561,7 @@ pub mod style_property_map_read_only {
 impl StylePropertyMapReadOnly {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&[&CSSStyleValue], &str, &StylePropertyMapReadOnly)>) {
@@ -77297,6 +77855,7 @@ pub mod task_controller {
 impl TaskController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/setPriority)
     #[cfg_attr(rust_js, rust_js::link_name = "setPriority")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_priority(&self, priority: &str) {
@@ -77548,6 +78107,7 @@ impl TextEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_text_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, view: Option<&Window>, data: Option<&str>) {
@@ -77759,6 +78319,7 @@ impl TextTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/addCue)
     #[cfg_attr(rust_js, rust_js::link_name = "addCue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_cue(&self, cue: &TextTrackCue) {
@@ -77767,6 +78328,7 @@ impl TextTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/removeCue)
     #[cfg_attr(rust_js, rust_js::link_name = "removeCue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_cue(&self, cue: &TextTrackCue) {
@@ -78178,6 +78740,7 @@ impl TransformStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/enqueue)
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enqueue(&self, chunk: Option<&dyn IntoUnknown>) {
@@ -78186,6 +78749,7 @@ impl TransformStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self, reason: Option<&dyn IntoUnknown>) {
@@ -78194,6 +78758,7 @@ impl TransformStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/terminate)
     #[cfg_attr(rust_js, rust_js::link_name = "terminate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn terminate(&self) {
@@ -78447,6 +79012,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn append(&self, name: &str, value: &str) {
@@ -78455,6 +79021,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete(&self, name: &str, value: Option<&str>) {
@@ -78487,6 +79054,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set(&self, name: &str, value: &str) {
@@ -78495,6 +79063,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/sort)
     #[cfg_attr(rust_js, rust_js::link_name = "sort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sort(&self) {
@@ -78503,6 +79072,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &URLSearchParams)>) {
@@ -79148,6 +79718,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn configure(&self, config: VideoDecoderConfig) {
@@ -79156,6 +79727,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/decode)
     #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn decode(&self, chunk: &EncodedVideoChunk) {
@@ -79172,6 +79744,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -79180,6 +79753,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -79265,6 +79839,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/configure)
     #[cfg_attr(rust_js, rust_js::link_name = "configure")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn configure(&self, config: VideoEncoderConfig) {
@@ -79273,6 +79848,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/encode)
     #[cfg_attr(rust_js, rust_js::link_name = "encode")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn encode(&self, frame: &VideoFrame, options: Option<VideoEncoderEncodeOptions>) {
@@ -79289,6 +79865,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -79297,6 +79874,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -79428,6 +80006,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self) {
@@ -79566,6 +80145,7 @@ impl ViewTransition {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransition/skipTransition)
     #[cfg_attr(rust_js, rust_js::link_name = "skipTransition")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn skip_transition(&self) {
@@ -79589,6 +80169,7 @@ pub struct ViewTransitionTypeSet(PhantomData<JsObject>);
 impl ViewTransitionTypeSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &ViewTransitionTypeSet)>) {
@@ -79637,6 +80218,7 @@ impl ViewTransitionTypeSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, value: &str) {
@@ -79653,6 +80235,7 @@ impl ViewTransitionTypeSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self) {
@@ -79803,6 +80386,7 @@ pub struct WGSLLanguageFeatures(PhantomData<JsObject>);
 impl WGSLLanguageFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn for_each(&self, callback: Box<dyn FnMut(&str, &str, &WGSLLanguageFeatures)>) {
@@ -81784,6 +82368,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/activeTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "activeTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_texture(&self, texture: u32) {
@@ -81792,6 +82377,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/attachShader)
     #[cfg_attr(rust_js, rust_js::link_name = "attachShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn attach_shader(&self, program: &WebGLProgram, shader: &WebGLShader) {
@@ -81800,6 +82386,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindAttribLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "bindAttribLocation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_attrib_location(&self, program: &WebGLProgram, index: u32, name: &str) {
@@ -81808,6 +82395,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_buffer(&self, target: u32, buffer: &WebGLBuffer) {
@@ -81816,6 +82404,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_framebuffer(&self, target: u32, framebuffer: &WebGLFramebuffer) {
@@ -81824,6 +82413,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_renderbuffer(&self, target: u32, renderbuffer: &WebGLRenderbuffer) {
@@ -81832,6 +82422,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_texture(&self, target: u32, texture: &WebGLTexture) {
@@ -81840,6 +82431,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendColor)
     #[cfg_attr(rust_js, rust_js::link_name = "blendColor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
@@ -81848,6 +82440,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendEquation)
     #[cfg_attr(rust_js, rust_js::link_name = "blendEquation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_equation(&self, mode: u32) {
@@ -81856,6 +82449,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendEquationSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "blendEquationSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_equation_separate(&self, mode_rgb: u32, mode_alpha: u32) {
@@ -81864,6 +82458,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "blendFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_func(&self, sfactor: u32, dfactor: u32) {
@@ -81872,6 +82467,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blendFuncSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "blendFuncSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_func_separate(&self, src_rgb: u32, dst_rgb: u32, src_alpha: u32, dst_alpha: u32) {
@@ -81888,6 +82484,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self, mask: u32) {
@@ -81896,6 +82493,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearColor)
     #[cfg_attr(rust_js, rust_js::link_name = "clearColor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
@@ -81904,6 +82502,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearDepth)
     #[cfg_attr(rust_js, rust_js::link_name = "clearDepth")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_depth(&self, depth: f32) {
@@ -81912,6 +82511,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearStencil)
     #[cfg_attr(rust_js, rust_js::link_name = "clearStencil")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_stencil(&self, s: i32) {
@@ -81920,6 +82520,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/colorMask)
     #[cfg_attr(rust_js, rust_js::link_name = "colorMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn color_mask(&self, red: bool, green: bool, blue: bool, alpha: bool) {
@@ -81928,6 +82529,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compileShader)
     #[cfg_attr(rust_js, rust_js::link_name = "compileShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compile_shader(&self, shader: &WebGLShader) {
@@ -81936,6 +82538,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, x: i32, y: i32, width: i32, height: i32, border: i32) {
@@ -81944,6 +82547,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, x: i32, y: i32, width: i32, height: i32) {
@@ -82000,6 +82604,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/cullFace)
     #[cfg_attr(rust_js, rust_js::link_name = "cullFace")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cull_face(&self, mode: u32) {
@@ -82008,6 +82613,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
@@ -82016,6 +82622,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_framebuffer(&self, framebuffer: &WebGLFramebuffer) {
@@ -82024,6 +82631,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_program(&self, program: &WebGLProgram) {
@@ -82032,6 +82640,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_renderbuffer(&self, renderbuffer: &WebGLRenderbuffer) {
@@ -82040,6 +82649,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteShader)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_shader(&self, shader: &WebGLShader) {
@@ -82048,6 +82658,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_texture(&self, texture: &WebGLTexture) {
@@ -82056,6 +82667,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/depthFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "depthFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_func(&self, func: u32) {
@@ -82064,6 +82676,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/depthMask)
     #[cfg_attr(rust_js, rust_js::link_name = "depthMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_mask(&self, flag: bool) {
@@ -82072,6 +82685,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/depthRange)
     #[cfg_attr(rust_js, rust_js::link_name = "depthRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_range(&self, z_near: f32, z_far: f32) {
@@ -82080,6 +82694,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/detachShader)
     #[cfg_attr(rust_js, rust_js::link_name = "detachShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn detach_shader(&self, program: &WebGLProgram, shader: &WebGLShader) {
@@ -82088,6 +82703,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/disable)
     #[cfg_attr(rust_js, rust_js::link_name = "disable")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disable(&self, cap: u32) {
@@ -82096,6 +82712,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/disableVertexAttribArray)
     #[cfg_attr(rust_js, rust_js::link_name = "disableVertexAttribArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disable_vertex_attrib_array(&self, index: u32) {
@@ -82104,6 +82721,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawArrays)
     #[cfg_attr(rust_js, rust_js::link_name = "drawArrays")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) {
@@ -82112,6 +82730,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawElements)
     #[cfg_attr(rust_js, rust_js::link_name = "drawElements")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_elements(&self, mode: u32, count: i32, r#type: u32, offset: f64) {
@@ -82120,6 +82739,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/enable)
     #[cfg_attr(rust_js, rust_js::link_name = "enable")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enable(&self, cap: u32) {
@@ -82128,6 +82748,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/enableVertexAttribArray)
     #[cfg_attr(rust_js, rust_js::link_name = "enableVertexAttribArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enable_vertex_attrib_array(&self, index: u32) {
@@ -82136,6 +82757,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/finish)
     #[cfg_attr(rust_js, rust_js::link_name = "finish")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn finish(&self) {
@@ -82144,6 +82766,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/flush)
     #[cfg_attr(rust_js, rust_js::link_name = "flush")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn flush(&self) {
@@ -82152,6 +82775,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn framebuffer_renderbuffer(&self, target: u32, attachment: u32, renderbuffertarget: u32, renderbuffer: &WebGLRenderbuffer) {
@@ -82160,6 +82784,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferTexture2D)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTexture2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn framebuffer_texture2_d(&self, target: u32, attachment: u32, textarget: u32, texture: &WebGLTexture, level: i32) {
@@ -82168,6 +82793,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/frontFace)
     #[cfg_attr(rust_js, rust_js::link_name = "frontFace")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn front_face(&self, mode: u32) {
@@ -82176,6 +82802,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/generateMipmap)
     #[cfg_attr(rust_js, rust_js::link_name = "generateMipmap")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn generate_mipmap(&self, target: u32) {
@@ -82344,6 +82971,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/hint)
     #[cfg_attr(rust_js, rust_js::link_name = "hint")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hint(&self, target: u32, mode: u32) {
@@ -82408,6 +83036,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/lineWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "lineWidth")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_width(&self, width: f32) {
@@ -82416,6 +83045,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/linkProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "linkProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn link_program(&self, program: &WebGLProgram) {
@@ -82424,6 +83054,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/pixelStorei)
     #[cfg_attr(rust_js, rust_js::link_name = "pixelStorei")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pixel_storei(&self, pname: u32, param: i32) {
@@ -82432,6 +83063,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/polygonOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "polygonOffset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn polygon_offset(&self, factor: f32, units: f32) {
@@ -82440,6 +83072,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/renderbufferStorage)
     #[cfg_attr(rust_js, rust_js::link_name = "renderbufferStorage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn renderbuffer_storage(&self, target: u32, internalformat: u32, width: i32, height: i32) {
@@ -82448,6 +83081,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/sampleCoverage)
     #[cfg_attr(rust_js, rust_js::link_name = "sampleCoverage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sample_coverage(&self, value: f32, invert: bool) {
@@ -82456,6 +83090,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/scissor)
     #[cfg_attr(rust_js, rust_js::link_name = "scissor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scissor(&self, x: i32, y: i32, width: i32, height: i32) {
@@ -82464,6 +83099,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/shaderSource)
     #[cfg_attr(rust_js, rust_js::link_name = "shaderSource")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shader_source(&self, shader: &WebGLShader, source: &str) {
@@ -82472,6 +83108,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_func(&self, func: u32, r#ref: i32, mask: u32) {
@@ -82480,6 +83117,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilFuncSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFuncSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_func_separate(&self, face: u32, func: u32, r#ref: i32, mask: u32) {
@@ -82488,6 +83126,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilMask)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_mask(&self, mask: u32) {
@@ -82496,6 +83135,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilMaskSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilMaskSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_mask_separate(&self, face: u32, mask: u32) {
@@ -82504,6 +83144,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilOp)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilOp")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_op(&self, fail: u32, zfail: u32, zpass: u32) {
@@ -82512,6 +83153,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/stencilOpSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilOpSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_op_separate(&self, face: u32, fail: u32, zfail: u32, zpass: u32) {
@@ -82520,6 +83162,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texParameterf)
     #[cfg_attr(rust_js, rust_js::link_name = "texParameterf")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_parameterf(&self, target: u32, pname: u32, param: f32) {
@@ -82528,6 +83171,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texParameteri)
     #[cfg_attr(rust_js, rust_js::link_name = "texParameteri")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_parameteri(&self, target: u32, pname: u32, param: i32) {
@@ -82536,6 +83180,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1f(&self, location: &WebGLUniformLocation, x: f32) {
@@ -82544,6 +83189,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2f(&self, location: &WebGLUniformLocation, x: f32, y: f32) {
@@ -82552,6 +83198,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3f(&self, location: &WebGLUniformLocation, x: f32, y: f32, z: f32) {
@@ -82560,6 +83207,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4f(&self, location: &WebGLUniformLocation, x: f32, y: f32, z: f32, w: f32) {
@@ -82568,6 +83216,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1i(&self, location: &WebGLUniformLocation, x: i32) {
@@ -82576,6 +83225,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2i(&self, location: &WebGLUniformLocation, x: i32, y: i32) {
@@ -82584,6 +83234,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3i(&self, location: &WebGLUniformLocation, x: i32, y: i32, z: i32) {
@@ -82592,6 +83243,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4i(&self, location: &WebGLUniformLocation, x: i32, y: i32, z: i32, w: i32) {
@@ -82600,6 +83252,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/useProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "useProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn use_program(&self, program: &WebGLProgram) {
@@ -82608,6 +83261,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/validateProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "validateProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn validate_program(&self, program: &WebGLProgram) {
@@ -82616,6 +83270,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib1f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib1f(&self, index: u32, x: f32) {
@@ -82624,6 +83279,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib2f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib2f(&self, index: u32, x: f32, y: f32) {
@@ -82632,6 +83288,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib3f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib3f(&self, index: u32, x: f32, y: f32, z: f32) {
@@ -82640,6 +83297,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib4f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib4f(&self, index: u32, x: f32, y: f32, z: f32, w: f32) {
@@ -82648,6 +83306,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib1fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -82656,6 +83315,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib2fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -82664,6 +83324,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib3fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -82672,6 +83333,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttrib4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib4fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -82680,6 +83342,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribPointer)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribPointer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_pointer(&self, index: u32, size: i32, r#type: u32, normalized: bool, stride: i32, offset: f64) {
@@ -82688,6 +83351,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/viewport)
     #[cfg_attr(rust_js, rust_js::link_name = "viewport")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn viewport(&self, x: i32, y: i32, width: i32, height: i32) {
@@ -82696,6 +83360,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyBufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferSubData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_buffer_sub_data(&self, read_target: u32, write_target: u32, read_offset: f64, write_offset: f64, size: f64) {
@@ -82704,6 +83369,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getBufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferSubData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_buffer_sub_data(&self, target: u32, src_byte_offset: f64, dst_buffer: impl IntoArrayBufferView, dst_offset: Option<f64>, length: Option<u32>) {
@@ -82712,6 +83378,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/blitFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "blitFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blit_framebuffer(&self, src_x_0: i32, src_y_0: i32, src_x_1: i32, src_y_1: i32, dst_x_0: i32, dst_y_0: i32, dst_x_1: i32, dst_y_1: i32, mask: u32, filter: u32) {
@@ -82720,6 +83387,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferTextureLayer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTextureLayer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn framebuffer_texture_layer(&self, target: u32, attachment: u32, texture: &WebGLTexture, level: i32, layer: i32) {
@@ -82728,6 +83396,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/invalidateFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "invalidateFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn invalidate_framebuffer(&self, target: u32, attachments: &[u32]) {
@@ -82736,6 +83405,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/invalidateSubFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "invalidateSubFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn invalidate_sub_framebuffer(&self, target: u32, attachments: &[u32], x: i32, y: i32, width: i32, height: i32) {
@@ -82744,6 +83414,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "readBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_buffer(&self, src: u32) {
@@ -82760,6 +83431,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/renderbufferStorageMultisample)
     #[cfg_attr(rust_js, rust_js::link_name = "renderbufferStorageMultisample")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn renderbuffer_storage_multisample(&self, target: u32, samples: i32, internalformat: u32, width: i32, height: i32) {
@@ -82768,6 +83440,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texStorage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texStorage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_storage2_d(&self, target: u32, levels: i32, internalformat: u32, width: i32, height: i32) {
@@ -82776,6 +83449,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texStorage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texStorage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_storage3_d(&self, target: u32, levels: i32, internalformat: u32, width: i32, height: i32, depth: i32) {
@@ -82784,6 +83458,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image3_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, pbo_offset: f64) {
@@ -82792,6 +83467,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image3_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -82800,6 +83476,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
@@ -82808,6 +83485,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image3_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, pbo_offset: f64) {
@@ -82816,6 +83494,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image3_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -82824,6 +83503,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
@@ -82832,6 +83512,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/copyTexSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTexSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_tex_sub_image3_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, x: i32, y: i32, width: i32, height: i32) {
@@ -82840,6 +83521,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_image3_d(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, image_size: i32, offset: f64) {
@@ -82848,6 +83530,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, depth: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<u32>) {
@@ -82856,6 +83539,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_sub_image3_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, image_size: i32, offset: f64) {
@@ -82864,6 +83548,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<u32>) {
@@ -82880,6 +83565,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1ui")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1ui(&self, location: &WebGLUniformLocation, v0: u32) {
@@ -82888,6 +83574,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2ui")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2ui(&self, location: &WebGLUniformLocation, v0: u32, v1: u32) {
@@ -82896,6 +83583,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3ui")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3ui(&self, location: &WebGLUniformLocation, v0: u32, v1: u32, v2: u32) {
@@ -82904,6 +83592,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4ui")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4ui(&self, location: &WebGLUniformLocation, v0: u32, v1: u32, v2: u32, v3: u32) {
@@ -82912,6 +83601,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1uiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82920,6 +83610,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2uiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82928,6 +83619,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3uiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82936,6 +83628,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4uiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4uiv(&self, location: &WebGLUniformLocation, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82944,6 +83637,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix3x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82952,6 +83646,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix4x2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82960,6 +83655,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix2x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82968,6 +83664,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix4x3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82976,6 +83673,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix2x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82984,6 +83682,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix3x4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -82992,6 +83691,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribI4i)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_i_4i(&self, index: u32, x: i32, y: i32, z: i32, w: i32) {
@@ -83000,6 +83700,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribI4iv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_i_4iv(&self, index: u32, values: impl IntoInt32List) {
@@ -83008,6 +83709,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribI4ui)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4ui")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_i_4ui(&self, index: u32, x: u32, y: u32, z: u32, w: u32) {
@@ -83016,6 +83718,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribI4uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribI4uiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_i_4uiv(&self, index: u32, values: impl IntoUint32List) {
@@ -83024,6 +83727,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribIPointer)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribIPointer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_i_pointer(&self, index: u32, size: i32, r#type: u32, stride: i32, offset: f64) {
@@ -83032,6 +83736,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/vertexAttribDivisor)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribDivisor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_divisor(&self, index: u32, divisor: u32) {
@@ -83040,6 +83745,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawArraysInstanced)
     #[cfg_attr(rust_js, rust_js::link_name = "drawArraysInstanced")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_arrays_instanced(&self, mode: u32, first: i32, count: i32, instance_count: i32) {
@@ -83048,6 +83754,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawElementsInstanced)
     #[cfg_attr(rust_js, rust_js::link_name = "drawElementsInstanced")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_elements_instanced(&self, mode: u32, count: i32, r#type: u32, offset: f64, instance_count: i32) {
@@ -83056,6 +83763,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawRangeElements)
     #[cfg_attr(rust_js, rust_js::link_name = "drawRangeElements")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_range_elements(&self, mode: u32, start: u32, end: u32, count: i32, r#type: u32, offset: f64) {
@@ -83064,6 +83772,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawBuffers)
     #[cfg_attr(rust_js, rust_js::link_name = "drawBuffers")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_buffers(&self, buffers: &[u32]) {
@@ -83072,6 +83781,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferfv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_bufferfv(&self, buffer: u32, drawbuffer: i32, values: impl IntoFloat32List, src_offset: Option<f64>) {
@@ -83080,6 +83790,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferiv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_bufferiv(&self, buffer: u32, drawbuffer: i32, values: impl IntoInt32List, src_offset: Option<f64>) {
@@ -83088,6 +83799,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferuiv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferuiv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_bufferuiv(&self, buffer: u32, drawbuffer: i32, values: impl IntoUint32List, src_offset: Option<f64>) {
@@ -83096,6 +83808,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfi)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferfi")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_bufferfi(&self, buffer: u32, drawbuffer: i32, depth: f32, stencil: i32) {
@@ -83112,6 +83825,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteQuery")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_query(&self, query: &WebGLQuery) {
@@ -83128,6 +83842,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/beginQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "beginQuery")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_query(&self, target: u32, query: &WebGLQuery) {
@@ -83136,6 +83851,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/endQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "endQuery")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_query(&self, target: u32) {
@@ -83168,6 +83884,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteSampler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_sampler(&self, sampler: &WebGLSampler) {
@@ -83184,6 +83901,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "bindSampler")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_sampler(&self, unit: u32, sampler: &WebGLSampler) {
@@ -83192,6 +83910,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/samplerParameteri)
     #[cfg_attr(rust_js, rust_js::link_name = "samplerParameteri")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sampler_parameteri(&self, sampler: &WebGLSampler, pname: u32, param: i32) {
@@ -83200,6 +83919,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/samplerParameterf)
     #[cfg_attr(rust_js, rust_js::link_name = "samplerParameterf")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sampler_parameterf(&self, sampler: &WebGLSampler, pname: u32, param: f32) {
@@ -83232,6 +83952,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteSync)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteSync")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_sync(&self, sync: &WebGLSync) {
@@ -83248,6 +83969,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/waitSync)
     #[cfg_attr(rust_js, rust_js::link_name = "waitSync")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn wait_sync(&self, sync: &WebGLSync, flags: u32, timeout: f64) {
@@ -83272,6 +83994,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_transform_feedback(&self, tf: &WebGLTransformFeedback) {
@@ -83288,6 +84011,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_transform_feedback(&self, target: u32, tf: &WebGLTransformFeedback) {
@@ -83296,6 +84020,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/beginTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "beginTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn begin_transform_feedback(&self, primitive_mode: u32) {
@@ -83304,6 +84029,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/endTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "endTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_transform_feedback(&self) {
@@ -83312,6 +84038,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/transformFeedbackVaryings)
     #[cfg_attr(rust_js, rust_js::link_name = "transformFeedbackVaryings")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transform_feedback_varyings(&self, program: &WebGLProgram, varyings: &[&str], buffer_mode: u32) {
@@ -83328,6 +84055,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/pauseTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "pauseTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pause_transform_feedback(&self) {
@@ -83336,6 +84064,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/resumeTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "resumeTransformFeedback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resume_transform_feedback(&self) {
@@ -83344,6 +84073,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBufferBase)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBufferBase")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_buffer_base(&self, target: u32, index: u32, buffer: &WebGLBuffer) {
@@ -83352,6 +84082,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBufferRange)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBufferRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_buffer_range(&self, target: u32, index: u32, buffer: &WebGLBuffer, offset: f64, size: f64) {
@@ -83408,6 +84139,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformBlockBinding)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformBlockBinding")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_block_binding(&self, program: &WebGLProgram, uniform_block_index: u32, uniform_block_binding: u32) {
@@ -83424,6 +84156,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteVertexArray)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteVertexArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_vertex_array(&self, vertex_array: &WebGLVertexArrayObject) {
@@ -83440,6 +84173,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindVertexArray)
     #[cfg_attr(rust_js, rust_js::link_name = "bindVertexArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_vertex_array(&self, array: &WebGLVertexArrayObject) {
@@ -83448,6 +84182,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data(&self, target: u32, size: f64, usage: u32) {
@@ -83456,6 +84191,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data_with_allow_shared_buffer_source(&self, target: u32, src_data: impl IntoAllowSharedBufferSource, usage: u32) {
@@ -83464,6 +84200,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_sub_data(&self, target: u32, dst_byte_offset: f64, src_data: impl IntoAllowSharedBufferSource) {
@@ -83472,6 +84209,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data_with_array_buffer_view_and_src_offset(&self, target: u32, src_data: impl IntoArrayBufferView, usage: u32, src_offset: f64, length: Option<u32>) {
@@ -83480,6 +84218,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_sub_data_with_array_buffer_view_and_src_offset(&self, target: u32, dst_byte_offset: f64, src_data: impl IntoArrayBufferView, src_offset: f64, length: Option<u32>) {
@@ -83488,6 +84227,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
@@ -83496,6 +84236,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -83504,6 +84245,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
@@ -83512,6 +84254,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -83520,6 +84263,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d_with_f64(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pbo_offset: f64) {
@@ -83528,6 +84272,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -83536,6 +84281,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d_with_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
@@ -83544,6 +84290,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d_with_f64(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pbo_offset: f64) {
@@ -83552,6 +84299,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -83560,6 +84308,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d_with_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
@@ -83568,6 +84317,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, image_size: i32, offset: f64) {
@@ -83576,6 +84326,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_image2_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<u32>) {
@@ -83584,6 +84335,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, image_size: i32, offset: f64) {
@@ -83592,6 +84344,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_sub_image2_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<u32>) {
@@ -83600,6 +84353,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83608,6 +84362,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83616,6 +84371,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83624,6 +84380,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4fv(&self, location: &WebGLUniformLocation, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83632,6 +84389,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83640,6 +84398,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83648,6 +84407,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83656,6 +84416,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4iv(&self, location: &WebGLUniformLocation, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83664,6 +84425,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83672,6 +84434,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83680,6 +84443,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<u32>) {
@@ -83688,6 +84452,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView, dst_offset: Option<f64>) {
@@ -83696,6 +84461,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_pixels_with_f64(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, offset: f64) {
@@ -84788,6 +85554,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/activeTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "activeTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_texture(&self, texture: u32) {
@@ -84796,6 +85563,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/attachShader)
     #[cfg_attr(rust_js, rust_js::link_name = "attachShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn attach_shader(&self, program: &WebGLProgram, shader: &WebGLShader) {
@@ -84804,6 +85572,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindAttribLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "bindAttribLocation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_attrib_location(&self, program: &WebGLProgram, index: u32, name: &str) {
@@ -84812,6 +85581,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_buffer(&self, target: u32, buffer: &WebGLBuffer) {
@@ -84820,6 +85590,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_framebuffer(&self, target: u32, framebuffer: &WebGLFramebuffer) {
@@ -84828,6 +85599,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_renderbuffer(&self, target: u32, renderbuffer: &WebGLRenderbuffer) {
@@ -84836,6 +85608,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn bind_texture(&self, target: u32, texture: &WebGLTexture) {
@@ -84844,6 +85617,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendColor)
     #[cfg_attr(rust_js, rust_js::link_name = "blendColor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
@@ -84852,6 +85626,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendEquation)
     #[cfg_attr(rust_js, rust_js::link_name = "blendEquation")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_equation(&self, mode: u32) {
@@ -84860,6 +85635,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendEquationSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "blendEquationSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_equation_separate(&self, mode_rgb: u32, mode_alpha: u32) {
@@ -84868,6 +85644,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "blendFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_func(&self, sfactor: u32, dfactor: u32) {
@@ -84876,6 +85653,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/blendFuncSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "blendFuncSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blend_func_separate(&self, src_rgb: u32, dst_rgb: u32, src_alpha: u32, dst_alpha: u32) {
@@ -84892,6 +85670,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear(&self, mask: u32) {
@@ -84900,6 +85679,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearColor)
     #[cfg_attr(rust_js, rust_js::link_name = "clearColor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_color(&self, red: f32, green: f32, blue: f32, alpha: f32) {
@@ -84908,6 +85688,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearDepth)
     #[cfg_attr(rust_js, rust_js::link_name = "clearDepth")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_depth(&self, depth: f32) {
@@ -84916,6 +85697,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/clearStencil)
     #[cfg_attr(rust_js, rust_js::link_name = "clearStencil")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_stencil(&self, s: i32) {
@@ -84924,6 +85706,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/colorMask)
     #[cfg_attr(rust_js, rust_js::link_name = "colorMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn color_mask(&self, red: bool, green: bool, blue: bool, alpha: bool) {
@@ -84932,6 +85715,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/compileShader)
     #[cfg_attr(rust_js, rust_js::link_name = "compileShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compile_shader(&self, shader: &WebGLShader) {
@@ -84940,6 +85724,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/copyTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, x: i32, y: i32, width: i32, height: i32, border: i32) {
@@ -84948,6 +85733,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/copyTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn copy_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, x: i32, y: i32, width: i32, height: i32) {
@@ -85004,6 +85790,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/cullFace)
     #[cfg_attr(rust_js, rust_js::link_name = "cullFace")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cull_face(&self, mode: u32) {
@@ -85012,6 +85799,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteBuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
@@ -85020,6 +85808,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteFramebuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_framebuffer(&self, framebuffer: &WebGLFramebuffer) {
@@ -85028,6 +85817,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_program(&self, program: &WebGLProgram) {
@@ -85036,6 +85826,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_renderbuffer(&self, renderbuffer: &WebGLRenderbuffer) {
@@ -85044,6 +85835,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteShader)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_shader(&self, shader: &WebGLShader) {
@@ -85052,6 +85844,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTexture")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delete_texture(&self, texture: &WebGLTexture) {
@@ -85060,6 +85853,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/depthFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "depthFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_func(&self, func: u32) {
@@ -85068,6 +85862,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/depthMask)
     #[cfg_attr(rust_js, rust_js::link_name = "depthMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_mask(&self, flag: bool) {
@@ -85076,6 +85871,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/depthRange)
     #[cfg_attr(rust_js, rust_js::link_name = "depthRange")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_range(&self, z_near: f32, z_far: f32) {
@@ -85084,6 +85880,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/detachShader)
     #[cfg_attr(rust_js, rust_js::link_name = "detachShader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn detach_shader(&self, program: &WebGLProgram, shader: &WebGLShader) {
@@ -85092,6 +85889,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/disable)
     #[cfg_attr(rust_js, rust_js::link_name = "disable")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disable(&self, cap: u32) {
@@ -85100,6 +85898,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/disableVertexAttribArray)
     #[cfg_attr(rust_js, rust_js::link_name = "disableVertexAttribArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn disable_vertex_attrib_array(&self, index: u32) {
@@ -85108,6 +85907,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawArrays)
     #[cfg_attr(rust_js, rust_js::link_name = "drawArrays")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_arrays(&self, mode: u32, first: i32, count: i32) {
@@ -85116,6 +85916,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawElements)
     #[cfg_attr(rust_js, rust_js::link_name = "drawElements")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn draw_elements(&self, mode: u32, count: i32, r#type: u32, offset: f64) {
@@ -85124,6 +85925,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/enable)
     #[cfg_attr(rust_js, rust_js::link_name = "enable")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enable(&self, cap: u32) {
@@ -85132,6 +85934,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/enableVertexAttribArray)
     #[cfg_attr(rust_js, rust_js::link_name = "enableVertexAttribArray")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn enable_vertex_attrib_array(&self, index: u32) {
@@ -85140,6 +85943,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/finish)
     #[cfg_attr(rust_js, rust_js::link_name = "finish")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn finish(&self) {
@@ -85148,6 +85952,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/flush)
     #[cfg_attr(rust_js, rust_js::link_name = "flush")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn flush(&self) {
@@ -85156,6 +85961,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/framebufferRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferRenderbuffer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn framebuffer_renderbuffer(&self, target: u32, attachment: u32, renderbuffertarget: u32, renderbuffer: &WebGLRenderbuffer) {
@@ -85164,6 +85970,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/framebufferTexture2D)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTexture2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn framebuffer_texture2_d(&self, target: u32, attachment: u32, textarget: u32, texture: &WebGLTexture, level: i32) {
@@ -85172,6 +85979,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/frontFace)
     #[cfg_attr(rust_js, rust_js::link_name = "frontFace")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn front_face(&self, mode: u32) {
@@ -85180,6 +85988,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/generateMipmap)
     #[cfg_attr(rust_js, rust_js::link_name = "generateMipmap")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn generate_mipmap(&self, target: u32) {
@@ -85348,6 +86157,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/hint)
     #[cfg_attr(rust_js, rust_js::link_name = "hint")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hint(&self, target: u32, mode: u32) {
@@ -85412,6 +86222,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/lineWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "lineWidth")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_width(&self, width: f32) {
@@ -85420,6 +86231,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/linkProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "linkProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn link_program(&self, program: &WebGLProgram) {
@@ -85428,6 +86240,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/pixelStorei)
     #[cfg_attr(rust_js, rust_js::link_name = "pixelStorei")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pixel_storei(&self, pname: u32, param: i32) {
@@ -85436,6 +86249,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/polygonOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "polygonOffset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn polygon_offset(&self, factor: f32, units: f32) {
@@ -85444,6 +86258,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/renderbufferStorage)
     #[cfg_attr(rust_js, rust_js::link_name = "renderbufferStorage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn renderbuffer_storage(&self, target: u32, internalformat: u32, width: i32, height: i32) {
@@ -85452,6 +86267,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/sampleCoverage)
     #[cfg_attr(rust_js, rust_js::link_name = "sampleCoverage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sample_coverage(&self, value: f32, invert: bool) {
@@ -85460,6 +86276,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/scissor)
     #[cfg_attr(rust_js, rust_js::link_name = "scissor")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scissor(&self, x: i32, y: i32, width: i32, height: i32) {
@@ -85468,6 +86285,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/shaderSource)
     #[cfg_attr(rust_js, rust_js::link_name = "shaderSource")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shader_source(&self, shader: &WebGLShader, source: &str) {
@@ -85476,6 +86294,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilFunc)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFunc")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_func(&self, func: u32, r#ref: i32, mask: u32) {
@@ -85484,6 +86303,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilFuncSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFuncSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_func_separate(&self, face: u32, func: u32, r#ref: i32, mask: u32) {
@@ -85492,6 +86312,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilMask)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilMask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_mask(&self, mask: u32) {
@@ -85500,6 +86321,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilMaskSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilMaskSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_mask_separate(&self, face: u32, mask: u32) {
@@ -85508,6 +86330,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilOp)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilOp")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_op(&self, fail: u32, zfail: u32, zpass: u32) {
@@ -85516,6 +86339,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/stencilOpSeparate)
     #[cfg_attr(rust_js, rust_js::link_name = "stencilOpSeparate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stencil_op_separate(&self, face: u32, fail: u32, zfail: u32, zpass: u32) {
@@ -85524,6 +86348,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texParameterf)
     #[cfg_attr(rust_js, rust_js::link_name = "texParameterf")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_parameterf(&self, target: u32, pname: u32, param: f32) {
@@ -85532,6 +86357,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texParameteri)
     #[cfg_attr(rust_js, rust_js::link_name = "texParameteri")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_parameteri(&self, target: u32, pname: u32, param: i32) {
@@ -85540,6 +86366,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1f(&self, location: &WebGLUniformLocation, x: f32) {
@@ -85548,6 +86375,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2f(&self, location: &WebGLUniformLocation, x: f32, y: f32) {
@@ -85556,6 +86384,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3f(&self, location: &WebGLUniformLocation, x: f32, y: f32, z: f32) {
@@ -85564,6 +86393,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4f(&self, location: &WebGLUniformLocation, x: f32, y: f32, z: f32, w: f32) {
@@ -85572,6 +86402,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1i(&self, location: &WebGLUniformLocation, x: i32) {
@@ -85580,6 +86411,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2i(&self, location: &WebGLUniformLocation, x: i32, y: i32) {
@@ -85588,6 +86420,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3i(&self, location: &WebGLUniformLocation, x: i32, y: i32, z: i32) {
@@ -85596,6 +86429,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4i")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4i(&self, location: &WebGLUniformLocation, x: i32, y: i32, z: i32, w: i32) {
@@ -85604,6 +86438,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/useProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "useProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn use_program(&self, program: &WebGLProgram) {
@@ -85612,6 +86447,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/validateProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "validateProgram")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn validate_program(&self, program: &WebGLProgram) {
@@ -85620,6 +86456,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib1f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib1f(&self, index: u32, x: f32) {
@@ -85628,6 +86465,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib2f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib2f(&self, index: u32, x: f32, y: f32) {
@@ -85636,6 +86474,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib3f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib3f(&self, index: u32, x: f32, y: f32, z: f32) {
@@ -85644,6 +86483,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib4f)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4f")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib4f(&self, index: u32, x: f32, y: f32, z: f32, w: f32) {
@@ -85652,6 +86492,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib1fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib1fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -85660,6 +86501,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib2fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -85668,6 +86510,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib3fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -85676,6 +86519,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttrib4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttrib4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib4fv(&self, index: u32, values: impl IntoFloat32List) {
@@ -85684,6 +86528,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/vertexAttribPointer)
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribPointer")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vertex_attrib_pointer(&self, index: u32, size: i32, r#type: u32, normalized: bool, stride: i32, offset: f64) {
@@ -85692,6 +86537,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/viewport)
     #[cfg_attr(rust_js, rust_js::link_name = "viewport")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn viewport(&self, x: i32, y: i32, width: i32, height: i32) {
@@ -85700,6 +86546,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data(&self, target: u32, size: f64, usage: u32) {
@@ -85708,6 +86555,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_data_with_allow_shared_buffer_source(&self, target: u32, data: impl IntoAllowSharedBufferSource, usage: u32) {
@@ -85716,6 +86564,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_sub_data(&self, target: u32, offset: f64, data: impl IntoAllowSharedBufferSource) {
@@ -85724,6 +86573,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/compressedTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_image2_d(&self, target: u32, level: i32, internalformat: u32, width: i32, height: i32, border: i32, data: impl IntoArrayBufferView) {
@@ -85732,6 +86582,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/compressedTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compressed_tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, data: impl IntoArrayBufferView) {
@@ -85740,6 +86591,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/readPixels)
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
@@ -85748,6 +86600,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
@@ -85756,6 +86609,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -85764,6 +86618,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
@@ -85772,6 +86627,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/texSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
@@ -85780,6 +86636,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
@@ -85788,6 +86645,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
@@ -85796,6 +86654,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
@@ -85804,6 +86663,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4fv(&self, location: &WebGLUniformLocation, v: impl IntoFloat32List) {
@@ -85812,6 +86672,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform1iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
@@ -85820,6 +86681,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform2iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
@@ -85828,6 +86690,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform3iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
@@ -85836,6 +86699,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform4iv(&self, location: &WebGLUniformLocation, v: impl IntoInt32List) {
@@ -85844,6 +86708,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix2fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
@@ -85852,6 +86717,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix3fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
@@ -85860,6 +86726,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn uniform_matrix4fv(&self, location: &WebGLUniformLocation, transpose: bool, value: impl IntoFloat32List) {
@@ -86066,6 +86933,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self, code: Option<u16>, reason: Option<&str>) {
@@ -86107,6 +86975,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send(&self, data: impl IntoBufferSourceOrBlobOrStr) {
@@ -86182,6 +87051,7 @@ impl WebTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close(&self, close_info: Option<WebTransportCloseInfo>) {
@@ -86484,6 +87354,7 @@ pub mod worker {
 impl Worker {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/terminate)
     #[cfg_attr(rust_js, rust_js::link_name = "terminate")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn terminate(&self) {
@@ -86492,6 +87363,7 @@ impl Worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
@@ -86632,6 +87504,7 @@ impl WritableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
@@ -86699,6 +87572,7 @@ impl WritableStreamDefaultWriter {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/releaseLock)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseLock")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_lock(&self) {
@@ -86816,6 +87690,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn open(&self, method: &str, url: &str, r#async: Option<bool>, username: Option<&str>, password: Option<&str>) {
@@ -86824,6 +87699,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/setRequestHeader)
     #[cfg_attr(rust_js, rust_js::link_name = "setRequestHeader")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_request_header(&self, name: &str, value: &str) {
@@ -86872,6 +87748,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send(&self, body: Option<&dyn IntoDocumentOrXMLHttpRequestBodyInit>) {
@@ -86880,6 +87757,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn abort(&self) {
@@ -86928,6 +87806,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/overrideMimeType)
     #[cfg_attr(rust_js, rust_js::link_name = "overrideMimeType")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn override_mime_type(&self, mime: &str) {
@@ -87364,6 +88243,7 @@ pub mod xslt_processor {
 impl XSLTProcessor {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/importStylesheet)
     #[cfg_attr(rust_js, rust_js::link_name = "importStylesheet")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn import_stylesheet(&self, style: &Node) {
@@ -87388,6 +88268,7 @@ impl XSLTProcessor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/setParameter)
     #[cfg_attr(rust_js, rust_js::link_name = "setParameter")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_parameter<V>(&self, namespace_uri: &str, local_name: &str, value: V) {
@@ -87404,6 +88285,7 @@ impl XSLTProcessor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/removeParameter)
     #[cfg_attr(rust_js, rust_js::link_name = "removeParameter")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove_parameter(&self, namespace_uri: &str, local_name: &str) {
@@ -87412,6 +88294,7 @@ impl XSLTProcessor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/clearParameters)
     #[cfg_attr(rust_js, rust_js::link_name = "clearParameters")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear_parameters(&self) {
@@ -87420,6 +88303,7 @@ impl XSLTProcessor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XSLTProcessor/reset)
     #[cfg_attr(rust_js, rust_js::link_name = "reset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn reset(&self) {
@@ -87511,6 +88395,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
     #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn assert(condition: Option<bool>, data: impl Rest<dyn IntoUnknown>) {
@@ -87519,6 +88404,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/clear)
     #[cfg_attr(rust_js, rust_js::link_name = "console.clear")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clear() {
@@ -87528,6 +88414,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/debug)
     #[cfg_attr(rust_js, rust_js::link_name = "console.debug")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn debug(data: impl Rest<dyn IntoUnknown>) {
@@ -87537,6 +88424,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/error)
     #[cfg_attr(rust_js, rust_js::link_name = "console.error")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(data: impl Rest<dyn IntoUnknown>) {
@@ -87546,6 +88434,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/info)
     #[cfg_attr(rust_js, rust_js::link_name = "console.info")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn info(data: impl Rest<dyn IntoUnknown>) {
@@ -87555,6 +88444,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/log)
     #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn log(data: impl Rest<dyn IntoUnknown>) {
@@ -87563,6 +88453,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/table)
     #[cfg_attr(rust_js, rust_js::link_name = "console.table")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn table(tabular_data: Option<&dyn IntoUnknown>, properties: Option<&[&str]>) {
@@ -87572,6 +88463,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/trace)
     #[cfg_attr(rust_js, rust_js::link_name = "console.trace")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn trace(data: impl Rest<dyn IntoUnknown>) {
@@ -87581,6 +88473,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/warn)
     #[cfg_attr(rust_js, rust_js::link_name = "console.warn")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn warn(data: impl Rest<dyn IntoUnknown>) {
@@ -87589,6 +88482,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dir)
     #[cfg_attr(rust_js, rust_js::link_name = "console.dir")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dir(item: Option<&dyn IntoUnknown>, options: Option<&dyn core::any::Any>) {
@@ -87598,6 +88492,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dirxml)
     #[cfg_attr(rust_js, rust_js::link_name = "console.dirxml")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dirxml(data: impl Rest<dyn IntoUnknown>) {
@@ -87606,6 +88501,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
     #[cfg_attr(rust_js, rust_js::link_name = "console.count")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn count(label: Option<&str>) {
@@ -87614,6 +88510,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
     #[cfg_attr(rust_js, rust_js::link_name = "console.countReset")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn count_reset(label: Option<&str>) {
@@ -87623,6 +88520,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/group)
     #[cfg_attr(rust_js, rust_js::link_name = "console.group")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn group(data: impl Rest<dyn IntoUnknown>) {
@@ -87632,6 +88530,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupCollapsed)
     #[cfg_attr(rust_js, rust_js::link_name = "console.groupCollapsed")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn group_collapsed(data: impl Rest<dyn IntoUnknown>) {
@@ -87640,6 +88539,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "console.groupEnd")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn group_end() {
@@ -87648,6 +88548,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
     #[cfg_attr(rust_js, rust_js::link_name = "console.time")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn time(label: Option<&str>) {
@@ -87657,6 +88558,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeLog")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn time_log(label: Option<&str>, data: impl Rest<dyn IntoUnknown>) {
@@ -87665,6 +88567,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeEnd")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn time_end(label: Option<&str>) {
@@ -87699,6 +88602,7 @@ pub mod global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/reportError)
     #[cfg_attr(rust_js, rust_js::link_name = "reportError")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn report_error<E>(e: E) {
@@ -87723,6 +88627,7 @@ pub mod global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/queueMicrotask)
     #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn queue_microtask(callback: Box<dyn FnOnce()>) {
@@ -87777,6 +88682,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
     #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_to(x: i32, y: i32) {
@@ -87785,6 +88691,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn move_by(x: i32, y: i32) {
@@ -87793,6 +88700,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
     #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resize_to(width: i32, height: i32) {
@@ -87801,6 +88709,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
     #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resize_by(x: i32, y: i32) {
@@ -87857,6 +88766,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close() {
@@ -87865,6 +88775,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stop() {
@@ -87873,6 +88784,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus() {
@@ -87881,6 +88793,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/blur)
     #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur() {
@@ -87897,6 +88810,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn alert(message: Option<&str>) {
@@ -87921,6 +88835,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/print)
     #[cfg_attr(rust_js, rust_js::link_name = "print")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn print() {
@@ -87929,6 +88844,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn post_message<M: StructuredClone>(message: M, options: Option<WindowPostMessageOptions<'_>>) {
@@ -87937,6 +88853,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/captureEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "captureEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn capture_events() {
@@ -87945,6 +88862,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/releaseEvents)
     #[cfg_attr(rust_js, rust_js::link_name = "releaseEvents")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn release_events() {
@@ -87961,6 +88879,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelIdleCallback")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_idle_callback(handle: u32) {
@@ -87985,6 +88904,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cancelAnimationFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelAnimationFrame")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_animation_frame(handle: u32) {

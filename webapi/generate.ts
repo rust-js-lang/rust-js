@@ -1380,6 +1380,10 @@ function generic(f: Fn): string {
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
     ...(f.variadic ? ["    #[cfg_attr(rust_js, rust_js::variadic)]"] : []),
     ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
+    // An operation WebIDL says gives `undefined` gives it, which a closure
+    // of its call's value may give back (ADR 0883); not a setter, whose
+    // assignment's value is what it's given.
+    ...(f.result === "()" && !f.jsName.startsWith("set ") ? ["    #[cfg_attr(rust_js, rust_js::returns_undefined)]"] : []),
     "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
     "    #[allow(unused_variables)]",
     `    pub fn ${f.name}${names.length > 0 ? `<${names.join(", ")}>` : ""}(${params.join(", ")})${result} {`,

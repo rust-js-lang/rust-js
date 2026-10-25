@@ -108,19 +108,13 @@ function main() {
     console.log(`enqueued in ${host}`);
   }
   enqueueTaskImpl = undefined;
-  let unwound = $catchUnwind(() => {
-    enqueueTask(task("posted"), "browser");
-  });
+  let unwound = $catchUnwind(() => enqueueTask(task("posted"), "browser"));
   console.log(`posted: ${unwound.TAG === "Err"}`);
-  unwound = $catchUnwind(() => {
-    enqueueTask(task("hostless"), "");
-  });
+  unwound = $catchUnwind(() => enqueueTask(task("hostless"), ""));
   console.log(`hostless: ${unwound.TAG === "Err"}`);
   ports.push(1, 0);
   for (const at of [0, 1, 2]) {
-    const unwound = $catchUnwind(() => {
-      enqueueOn(task("on a port"), at);
-    });
+    const unwound = $catchUnwind(() => enqueueOn(task("on a port"), at));
     console.log(`port ${at}: ${unwound.TAG === "Err"}`);
   }
   const noisy = ["microtask"];

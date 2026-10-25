@@ -190,12 +190,11 @@ function main() {
           dDrop_drop(value);
         }
       }
-      const filter = kept;
       try {
-        console.log(`none ${!filter}`);
+        console.log(`none ${!kept}`);
       } finally {
-        if (filter != null) {
-          dDrop_drop(filter);
+        if (kept != null) {
+          dDrop_drop(kept);
         }
       }
       const value$1 = make(5);

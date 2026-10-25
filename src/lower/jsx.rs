@@ -11,6 +11,17 @@ use rustc_middle::ty::Ty;
 use rustc_span::{BytePos, Span};
 use std::collections::HashMap;
 
+/// How a closure's body is its one call whose JS gives `undefined`
+/// (`closure_calls_for_nothing`): as the program wrote it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) enum OneCall {
+    /// The body's value, `|| f()` or `|| { f() }`, with no `;`: `() =>
+    /// f()` (ADR 0883).
+    Value,
+    /// A statement, `|| { f(); }`: a block, but a handler's (ADR 0040).
+    Statement,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Element construction is inert (ADR 0040). Capture its inputs at the
     /// original evaluation point while leaving the element in the JSX tree.
@@ -490,40 +501,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a closure's body is one call whose JS gives `undefined`
     /// whatever it is: a function of the crate's that gives `()`, a closure
     /// of its own, or a binding that says so, `#[rust_js::returns_undefined]`
-    /// (ADR 0040). A component's handler of one, held or written in place,
-    /// returns it, `onSubmit={() => submit(false)}`: it reads what Rust's
-    /// gives, `undefined`.
-    pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> bool {
+    /// (ADR 0040), and how it's written. A component's handler of one, held
+    /// or written in place, returns it, `onSubmit={() => submit(false)}`:
+    /// it reads what Rust's gives, `undefined`; and any closure whose body
+    /// is its call's value, `|| f()`, is `() => f()` (ADR 0883).
+    pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> Option<OneCall> {
         let thir = &body.thir;
-        let Some(root) = body.root() else { return false };
+        let root = body.root()?;
         let mut call = super::body_queries::strip(thir, root);
+        let mut written = OneCall::Value;
         if let ExprKind::Block { block } = thir[call].kind {
             call = match (&thir[block].stmts[..], thir[block].expr) {
                 ([], Some(value)) => super::body_queries::strip(thir, value),
                 ([stmt], None) => match thir[*stmt].kind {
-                    thir::StmtKind::Expr { expr, .. } => super::body_queries::strip(thir, expr),
-                    _ => return false,
+                    thir::StmtKind::Expr { expr, .. } => {
+                        written = OneCall::Statement;
+                        super::body_queries::strip(thir, expr)
+                    }
+                    _ => return None,
                 },
-                _ => return false,
+                _ => return None,
             };
         }
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
-            return false;
+            return None;
         };
-        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
-            return false;
-        };
+        let (def_id, _) = fn_def(thir[fun].ty)?;
         if !thir[call].ty.is_unit() {
-            return false;
+            return None;
         }
-        match self.tcx.trait_of_assoc(def_id) {
+        let nothing = match self.tcx.trait_of_assoc(def_id) {
             // A closure of the crate's, `next()`: Rust's, which gives nothing.
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
                 matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))
             }
             _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),
             _ => def_id.is_local(),
-        }
+        };
+        nothing.then_some(written)
     }
 
     /// Where each prop `props`, a struct of type `ty`, is given is written,

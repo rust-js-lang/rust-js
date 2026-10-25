@@ -3,6 +3,20 @@
 
 use super::*;
 
+/// The value an arrow's body only returns, `() => x`'s `x`: printed as
+/// its body, `=>` its value.
+pub(super) fn arrow_value(body: &[js::Stmt]) -> Option<&js::Expr> {
+    match body {
+        [
+            js::Stmt {
+                kind: StmtKind::Return(Some(value)),
+                ..
+            },
+        ] => Some(value),
+        _ => None,
+    }
+}
+
 impl<'a> Cx<'a> {
     /// A conditional's branch, `c ? a : b`'s `a` or `b`. Of one with
     /// comments, before its value (ADR 0658), the JS printed first is placed
@@ -203,18 +217,11 @@ impl<'a> Cx<'a> {
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));
                 let params = ArenaBox::new_in(self.params(FormalParameterKind::ArrowFormalParameters, params), b);
-                // `() => x` when the body only returns a value, and no
-                // comment is printed before it: a statement's.
-                let body = match body.as_slice() {
-                    [
-                        js::Stmt {
-                            kind: StmtKind::Return(Some(value)),
-                            span,
-                        },
-                    ] if span.is_none() || !self.commented.contains(&span.lo) => {
-                        ArrowFunctionBody::from(self.expr(value))
-                    }
-                    _ => ArrowFunctionBody::FunctionBody(ArenaBox::new_in(self.function_body(body), b)),
+                // `() => x` when the body only returns a value, a comment
+                // before it after the `=>` (ADR 0883).
+                let body = match arrow_value(body) {
+                    Some(value) => ArrowFunctionBody::from(self.branch(value)),
+                    None => ArrowFunctionBody::FunctionBody(ArenaBox::new_in(self.function_body(body), b)),
                 };
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)
             }

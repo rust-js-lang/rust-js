@@ -704,7 +704,7 @@ pub fn Ticker() -> JSX::Element {
   expect(jsx).toMatch(/useCallback\(\s*function handleClick\(\) \{/);
   expect(jsx).toContain("const twice = () => n;");
   expect(jsx).toContain("const report = () => n;");
-  expect(jsx).toMatch(/const step\$1 = \(\) => \{\n\s*setN\(step\);\n\s*\};\n\s*useEffect\(step\$1, \[n\]\);/);
+  expect(jsx).toMatch(/const step\$1 = \(\) => setN\(step\);\n\s*useEffect\(step\$1, \[n\]\);/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Ticker))).toBe("<button>0</button>");
 });

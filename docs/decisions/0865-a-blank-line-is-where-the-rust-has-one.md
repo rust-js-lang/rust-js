@@ -7,7 +7,7 @@ lines between top-level statements were rust-js's, and its "part" of an
 object, which had none. Amended: an `if let` chain made of a labeled
 block is where its first `if` is. Amended (2026-10-25): a guard's `let` too, whose
 `try` starts where its first statement does, and what's after the code,
-an `export default`, tells nothing of it.
+an `export default`, tells nothing of it. Amended by [0883](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md): before an `if` whose test has comments after its keyword, the blank line is looked for before the `if`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): blank lines, which
 nothing runs.

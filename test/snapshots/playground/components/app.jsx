@@ -193,9 +193,7 @@ export function App() {
     }
   };
 
-  const openFile = (path) => {
-    setProject(Project.opening(project, path, live()));
-  };
+  const openFile = (path) => setProject(Project.opening(project, path, live()));
   const deleteFile = (path) => {
     if (window.confirm(`Delete ${path}?`)) {
       setProject(Project.removing(project, path));

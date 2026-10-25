@@ -816,8 +816,9 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('app.append(input, "!");');
   // Constructors, and a global used as an `EventTarget` through `Deref`.
   expect(js).toContain('const ping = new Event("ping");');
-  // A closure returning \`()\` is a block body: JS gets no return value Rust didn't have.
-  expect(js).toContain('app.addEventListener("ping", (e) => {\n    e.preventDefault();\n  });');
+  // A closure returning \`()\` returns nothing JS can tell from Rust's: a
+  // call WebIDL says gives \`undefined\`, its value (ADR 0883).
+  expect(js).toContain('app.addEventListener("ping", (e) => e.preventDefault());');
   expect(js).toContain("window.dispatchEvent(ping);");
   // Optional arguments, each an `Option`, a trailing `None` none (ADR 0443).
   expect(js).toContain('const bytes = new TextEncoder().encode(text);');

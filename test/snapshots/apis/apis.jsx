@@ -56,14 +56,7 @@ export function Store() {
       <span className="store">{value}</span>
       <span className="deferred">{deferred}</span>
       <span className="pending">{pending ? "pending" : "idle"}</span>
-      <button
-        className="transition"
-        onClick={() =>
-          start(() => {
-            setFilter(7);
-          })
-        }
-      >
+      <button className="transition" onClick={() => start(() => setFilter(7))}>
         go
       </button>
     </div>
@@ -138,9 +131,7 @@ export function Refs() {
   const onLog = useEffectEvent(() => {
     globalThis.log(shown ? "shown" : "hidden");
   });
-  useEffect(() => {
-    onLog();
-  }, [shown]);
+  useEffect(() => onLog(), [shown]);
   return (
     <div>
       <FancyInput handle={handle} />
@@ -198,9 +189,7 @@ export function Places() {
       <button
         className="flush"
         onClick={() => {
-          flushSync(() => {
-            setFlushed(1);
-          });
+          flushSync(() => setFlushed(1));
           // flushSync has already put the new count on the page.
           globalThis.log(`flushed ${globalThis.flushedText()}`);
         }}

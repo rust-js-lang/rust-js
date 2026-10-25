@@ -20,8 +20,7 @@ function flushActQueue(queue, callback) {
       const continuation = callback(task);
       if (continuation != null) {
         if (didUsePromise) {
-          const borrowMut = queue;
-          borrowMut[$at(borrowMut, i)] = task;
+          queue[$at(queue, i)] = task;
           return i;
         }
         task = continuation;

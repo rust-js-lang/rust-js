@@ -124,9 +124,7 @@ export function Title() {
 export function Ticker() {
   const [ticks, setTicks] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => {
-      setTicks((n) => (n + 1) | 0);
-    }, 1000);
+    const id = setInterval(() => setTicks((n) => (n + 1) | 0), 1000);
     return () => {
       clearInterval(id);
     };
@@ -249,9 +247,7 @@ function filterTodos(todos, tab) {
 export function TodoList({ todos, tab }) {
   const visible = useMemo(() => filterTodos(todos, tab), [todos, tab]);
   const [picked, setPicked] = useState(0);
-  const pick = useCallback((n) => {
-    setPicked(n);
-  }, []);
+  const pick = useCallback((n) => setPicked(n), []);
   return (
     <p onClick={() => pick(visible.length)}>
       {visible.length} shown, {picked} picked
@@ -357,12 +353,7 @@ import { useState } from "react";
 
 export function useToggle(initial) {
   const [on, setOn] = useState(initial);
-  return [
-    on,
-    () => {
-      setOn((on) => !on);
-    },
-  ];
+  return [on, () => setOn((on) => !on)];
 }
 
 export function Lamp() {

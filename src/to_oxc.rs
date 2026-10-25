@@ -95,11 +95,6 @@ pub fn emit(
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
         source: rust_source,
-        // A blank line's piece is no comment (`comments_of`).
-        commented: (comments.iter())
-            .filter(|c| !c.span.is_empty())
-            .map(|c| c.attached_to)
-            .collect(),
         across_lines: Default::default(),
         interpolations: Default::default(),
         commented_branches: arms.iter().map(|&(lo, ..)| lo).collect(),
@@ -527,9 +522,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 });
             }
         }
-        // Whether the code before a comment, past other comments, is an
-        // `if`, the keyword: the comment is between it and its test.
-        let after_if = |c: &crate::program::Comment| {
+        // Where the `if` is, the keyword, of a comment the code before which,
+        // past other comments, is it: the comment is between it and its test.
+        let if_keyword = |c: &crate::program::Comment| {
             let mut end = c.lo as usize;
             loop {
                 let code = sources.text[file_start..end].trim_end();
@@ -542,11 +537,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     _ => {
                         break code
                             .strip_suffix("if")
-                            .is_some_and(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'));
+                            .filter(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
+                            .map(|before| (file_start + before.len()) as u32);
                     }
                 }
             }
         };
+        let after_if = |c: &crate::program::Comment| if_keyword(c).is_some();
         let mut attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c))
             .filter_map(|c| {
@@ -737,6 +734,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // The constructors a class's struct's comments are before.
         let mut documented = std::collections::HashSet::new();
         for (at, mut own) in starts_and_end {
+            // Where its Rust starts, what a blank line is before: an `if`'s
+            // keyword, before the comments its test's are (ADR 0883).
+            let mut written = at;
             // An `if`'s test's, those written after its `if`, after its `if
             // (`; the rest its statement's.
             if let Some(&Arm {
@@ -747,6 +747,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }) = arms.get(&at)
             {
                 let (inside, before): (Vec<_>, Vec<_>) = own.into_iter().partition(|c| after_if(c));
+                if let Some(keyword) = inside.first().and_then(if_keyword) {
+                    written = keyword;
+                }
                 if !inside.is_empty() {
                     let texts = inside
                         .iter()
@@ -783,7 +786,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             let mut i = 0;
             while i < own.len() {
                 let comment = own[i];
-                if blank_before(comment.lo) && !part {
+                // One after an `if`, its test's that the test's statement
+                // took, `return c ? a : b`'s: before the keyword.
+                if blank_before(if_keyword(&comment).unwrap_or(comment.lo)) && !part {
                     pieces.push(blank(&text));
                 }
                 let is_doc_line =
@@ -816,7 +821,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
             if part {
-            } else if (own.is_empty() && first_on_line && blank_before(at))
+            } else if (own.is_empty() && first_on_line && blank_before(written))
                 || (!own.is_empty() && last <= at && {
                     // A line of nothing between: not a closure's opening's.
                     let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();
@@ -974,6 +979,12 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let spans: Vec<(js::Span, &'static str, bool)> = match &e.kind {
                 ExprKind::Cond(_, yes, no) => vec![(yes.span, "?", false), (no.span, ":", false)],
+                // An arrow's value, after its `=>`, as Prettier writes a
+                // comment before it (ADR 0883).
+                ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => expressions::arrow_value(body)
+                    .map(|value| (value.span, "=>", false))
+                    .into_iter()
+                    .collect(),
                 ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| (piece.span, "+", false)).collect(),
                 ExprKind::Binary(op, _, r) => {
                     vec![(r.span, expressions::operator(*op), true)]
@@ -1199,6 +1210,9 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
             }
         });
         js::each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
+            // One whose body is its value, `() => f()`, has no statement:
+            // what's before the value is its arm's (`arm_starts`).
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) if expressions::arrow_value(body).is_some() => {}
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
                 js::statement_lists(body, &mut |stmts| list(stmts, starts));
             }
@@ -1341,8 +1355,6 @@ struct Cx<'a> {
     allocator: &'a Allocator,
     /// The program's text, where a number is written as it was (ADR 0627).
     source: &'a str,
-    /// Where a statement a comment is printed before starts.
-    commented: std::collections::HashSet<u32>,
     /// The objects made of those the source writes across lines, by where
     /// each is in the arena (ADR 0835): which a visit of the program tells
     /// the formatter of, in its order (`across_lines`).

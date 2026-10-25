@@ -341,7 +341,7 @@ pub fn below() -> u32 {
   expect(js).toContain("/**\n * The sum, documented.\n * Of two lines.\n */\nexport function sum(x) {\n  // Add them.\n  const y");
   expect(js).toContain("  /* Then b. */\n  return (y + b()) >>> 0;");
   expect(js).not.toContain("No JS");
-  expect(js).toContain("/** One line. */\nexport function later(v) {\n  const first = v.length; // Its length.\n\n  // In a closure.\n  const f = (x) => {\n    // Inside.\n    return (x + 1) >>> 0;\n  };\n  // Before a match.\n  const x = v[0];\n  let n;");
+  expect(js).toContain("/** One line. */\nexport function later(v) {\n  const first = v.length; // Its length.\n\n  // In a closure.\n  const f = (x) =>\n    // Inside.\n    (x + 1) >>> 0;\n  // Before a match.\n  const x = v[0];\n  let n;");
   expect(js).toContain("/// Globs: `src/**/*.rs`.\nexport function glob() {\n  return 3;");
   expect(js).not.toContain("nested");
   expect(js).toContain("}\n\n/** The count's start. */\nconst START = 5;\n");
@@ -876,7 +876,7 @@ pub fn make(immediate: bool) -> Box<dyn Fn()> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => \{\n/);
+  expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => work\(\);\n/);
 });
 
 // ADR 0619: a thread-local of a primitive, never written, keeps its name as a

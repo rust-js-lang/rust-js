@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-concise-handlers-kept",
     "breaks": "a held handler of one call from MIR keeps its block, `() => { f(); }`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                && concise.contains(&value.span)\n",
+    "find": "                && of(value).is_some()\n",
     "replace": "                && false\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
@@ -231,5 +231,21 @@ export const mutations: Mutation[] = [
     find: "        if hints.until == Some(&*pass_name(name, pass)) {\n",
     replace: "        if false {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "isn't its JS after the last"],
+  },
+  {
+    name: "arrow-of-a-value-kept-a-block",
+    breaks: "`|| log(&seen, 1)` of a function of the crate's is `() => { log(seen, 1); }`, not its call's value as written (ADR 0883)",
+    file: "src/lower/mir/tidy.rs",
+    find: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {\n",
+    replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && false {\n",
+    tests: ["test/lowering-arrows.test.ts"],
+  },
+  {
+    name: "arrow-of-a-statement-its-value",
+    breaks: "`|| { log(&seen, 2); }` is `() => log(seen, 2)`, a statement made a value (ADR 0883)",
+    file: "src/lower/mir/tidy.rs",
+    find: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {\n",
+    replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
+    tests: ["test/lowering-arrows.test.ts"],
   },
 ];

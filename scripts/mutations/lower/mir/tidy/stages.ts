@@ -611,4 +611,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
     snapshots: true,
   },
+  {
+    name: "declared-aliases-kept",
+    breaks: "`const borrowMut = queue; borrowMut[$at(borrowMut, i)] = t;`, a temporary of a variable made a `const` late, kept (ADR 0883)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"declared aliases\", |b, _| alias_variables(b)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(closures_of_their_value|branches_as_written).rs$"],
+    snapshots: true,
+  },
 ];

@@ -100,9 +100,7 @@ export function Clock() {
   renders.current = (renders.current + 1) | 0;
   useEffect(() => {
     setTicks((t) => (t + 10) | 0);
-    return () => {
-      setTicks(-1);
-    };
+    return () => setTicks(-1);
   }, []);
   return (
     <>

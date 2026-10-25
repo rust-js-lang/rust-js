@@ -95,7 +95,7 @@ pub(super) struct Hints<'h> {
     pub(super) forwarding: &'h [js::Span],
     /// Where each closure of one call whose JS gives `undefined` is written:
     /// a component's handler of one, `() => f()` (ADR 0040).
-    pub(super) concise: &'h [js::Span],
+    pub(super) concise: &'h [(js::Span, crate::lower::jsx::OneCall)],
     /// Each drop flag, `noisy$live`: whether a value is there to drop.
     pub(super) flags: &'h HashSet<String>,
     /// What `Iterator::fuse`'s compiled body is called here, `iterator_fuse`,
@@ -238,14 +238,25 @@ fn shown_children(e: &mut Expr, booleans: &HashSet<String>) {
     }
 }
 
-/// A handler of one call a component's given, `() => { f(); }`, held then
-/// read in place: `() => f()`.
-fn concise_handlers(e: &mut Expr, concise: &[js::Span]) {
+/// A closure of one call whose JS gives `undefined`, held then read in
+/// place: a handler a component's given, `() => { f(); }` too (ADR 0040),
+/// and any other the program wrote as its call's value, `|| f()`, as it
+/// wrote it (ADR 0883): `() => f()`.
+fn concise_arrows(e: &mut Expr, concise: &[(js::Span, crate::lower::jsx::OneCall)]) {
+    let of = |value: &Expr| {
+        concise
+            .iter()
+            .find(|(span, _)| *span == value.span)
+            .map(|&(_, written)| written)
+    };
+    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {
+        js::returning_its_call(e);
+    }
     if let ExprKind::Jsx(jsx) = &mut e.kind {
         for prop in &mut jsx.props {
             if let js::Prop::Field(name, value) = prop
                 && js::is_handler_name(name)
-                && concise.contains(&value.span)
+                && of(value).is_some()
             {
                 js::returning_its_call(value);
             }

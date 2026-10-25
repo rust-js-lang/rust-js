@@ -120,11 +120,7 @@ pub fn report(error: Option<&'static Unknown>) {
 
 ```js
 const reportGlobalError =
-  typeof reportError !== "undefined"
-    ? reportError
-    : (error) => {
-        console.error(error);
-      };
+  typeof reportError !== "undefined" ? reportError : (error) => console.error(error);
 
 export function report(error) {
   reportGlobalError(error);
@@ -949,7 +945,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::runs_nothing]` | it runs no code but its own, not even what it's given, as `new AggregateError(errors)` doesn't: a `RefCell` borrowed across it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)) |
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |
 | `#[rust_js::position]` | it gives a position, or `-1`, as `indexOf` does |
-| `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says |
+| `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says; the webapi crate's say it of each operation WebIDL says gives `undefined` ([ADR 0883](../../decisions/0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)) |
 | `#[rust_js::test = "react#isValidElement"]` | of a type: the function that tells one, where no class does |
 
 A function of yours that JS calls with rest arguments is the other side

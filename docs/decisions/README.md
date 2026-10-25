@@ -87,7 +87,7 @@ reordered, and git merges this file by keeping both sides' lines
 
 **React**
 
-- [0040 JSX: bindings whose `link_name` is a tag, printed as JSX in a `.jsx` file](0040-jsx.md)
+- [0040 JSX: bindings whose `link_name` is a tag, printed as JSX in a `.jsx` file](0040-jsx.md) *(extended by 0883: any closure written as its call's value)*
 - [0041 React: the `react` crate, and Vite with Fast Refresh](0041-react.md)
 - [0043 React's whole API, gated by the release that added it](0043-react-versions.md)
 - [0072 JSX syntax in the native and browser compilers](0072-jsx-syntax.md)
@@ -649,7 +649,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md)
 - [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md) *(amended by 0867: a binding that says it runs nothing, and a JS object's `Deref`, borrow nothing; 0868: what std's impls and derives run is what their bounds say; amended: a `#[repr(transparent)]` struct's `RefCell` is the struct, and a thread-local `RefCell`'s `set` is its `replace`)*
 - [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md) *(amended: `==` of two values is `===`, and its `PartialEq`'s dictionary is written only where it's reached)*
-- [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md) *(amended: a guard's `let` too, its `try` where its first statement is; an `export default` tells nothing of the code)*
+- [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md) *(amended: a guard's `let` too, its `try` where its first statement is; an `export default` tells nothing of the code; amended by 0883: before an `if` whose test has a comment, the `if`'s)*
 - [0866 A `let` only the `if let` that takes it apart reads is read there](0866-a-let-only-its-if-let-reads-is-read-there.md)
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
@@ -663,6 +663,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
 - [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md)
 - [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md) *(amended: the comments and blank line before it are before the method)*
+- [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)

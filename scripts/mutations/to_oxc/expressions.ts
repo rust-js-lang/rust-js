@@ -187,14 +187,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
-    name: "commented-arrow-expression",
-    breaks: "an arrow whose one statement has a comment is written `(x) => x`, and the comment is lost",
-    file: "src/to_oxc/expressions.rs",
-    find: "                    ] if span.is_none() || !self.commented.contains(&span.lo) =>",
-    replace: "                    ] =>",
-    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
-  },
-  {
     name: "number-as-written-unread",
     breaks: "`1e4` and `0xff` are written as JS's own digits, `10000` and `255`",
     file: "src/to_oxc/expressions.rs",

@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
+  {
+    name: "one-call-statement-unsaid",
+    breaks: "`|| { f(); }` is told as written `|| f()`, so a closure of a statement is `() => f()` (ADR 0883)",
+    file: "src/lower/jsx.rs",
+    find: "                        written = OneCall::Statement;\n",
+    replace: "",
+    tests: ["test/lowering-arrows.test.ts"],
+  },
 ];

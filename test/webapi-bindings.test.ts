@@ -136,7 +136,9 @@ pub fn framed(log: Box<dyn FnOnce(f64)>) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("queueMicrotask(() => {\n    queueMicrotask(callback);\n  });");
+  // `queueMicrotask` gives `undefined`, as WebIDL says (ADR 0883); `log`, a
+  // `dyn FnOnce`, may give anything.
+  expect(js).toContain("queueMicrotask(() => queueMicrotask(callback));");
   expect(js).toContain("return window.requestAnimationFrame((time) => {\n    log(time);\n  });");
   const { twiceLater } = await import(join(dir, "lib.js"));
   const ran: string[] = [];

@@ -238,8 +238,9 @@ pub(super) struct Found {
     /// method's, the function itself (ADR 0279).
     pub(super) forwarding: Vec<js::Span>,
     /// And where each is written of one call whose JS gives `undefined`
-    /// anyway, a handler's: `() => f()` (ADR 0040).
-    pub(super) concise: Vec<js::Span>,
+    /// anyway, and how: a handler's, or one of its value, `() => f()` (ADRs
+    /// 0040, 0883).
+    pub(super) concise: Vec<(js::Span, crate::lower::jsx::OneCall)>,
     /// Of a body lowered from its MIR, each field path it reads,
     /// `element.editable`, and whether it's a `bool` each time.
     pub(super) paths: HashMap<String, bool>,

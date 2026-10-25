@@ -74,9 +74,7 @@ function item(state, view, todo) {
   const check = create("input");
   check.type = "checkbox";
   check.checked = todo.done;
-  on(check, "change", state, view, (s) => {
-    toggle(s, id);
-  });
+  on(check, "change", state, view, (s) => toggle(s, id));
 
   const title = text("span", todo.title);
   if (todo.done) {

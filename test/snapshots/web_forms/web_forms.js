@@ -8,9 +8,7 @@ export function forms() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
   app.append(input, "!");
   const ping = new Event("ping");
-  app.addEventListener("ping", (e) => {
-    e.preventDefault();
-  });
+  app.addEventListener("ping", (e) => e.preventDefault());
   window.dispatchEvent(ping);
   return $unwrap(app.textContent) + input.value;
 }

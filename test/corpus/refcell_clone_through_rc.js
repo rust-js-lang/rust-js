@@ -21,8 +21,7 @@ function flush(queue) {
     while ((next = task(i)) != null) {
       ran = (ran + 1) >>> 0;
       if (i === 3) {
-        const borrowMut = queue;
-        borrowMut[$at(borrowMut, i)] = next;
+        queue[$at(queue, i)] = next;
         return ran;
       }
       task = next;

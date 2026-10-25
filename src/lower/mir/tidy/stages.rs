@@ -184,6 +184,10 @@ pub(super) const STAGES: &[Stage] = &[
             // written once.
             pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
             pass("declarations", |b, _| declarations(b)),
+            // A temporary of a variable those made a `const`, `const _42 =
+            // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
+            // the object: the variable, where it's read (ADR 0883).
+            pass("declared aliases", |b, _| alias_variables(b)),
             // What a `let` declared first holds now taken apart, a guard's
             // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
             // pattern's one part of what the program names, `const front =
@@ -424,8 +428,8 @@ pub(super) const STAGES: &[Stage] = &[
             pass("shown children", |b, h| {
                 js::each_expr_mut(b, &mut |e| shown_children(e, h.booleans))
             }),
-            pass("concise handlers", |b, h| {
-                js::each_expr_mut(b, &mut |e| concise_handlers(e, h.concise))
+            pass("concise arrows", |b, h| {
+                js::each_expr_mut(b, &mut |e| concise_arrows(e, h.concise))
             }),
             pass("named labels", |b, h| {
                 js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))

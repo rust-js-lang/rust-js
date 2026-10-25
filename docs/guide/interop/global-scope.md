@@ -544,11 +544,7 @@ pub fn count() -> u32 {
 ```js
 let COUNT = 0;
 const queueTask =
-  typeof queueMicrotask !== "undefined"
-    ? (callback) => {
-        queueMicrotask(callback);
-      }
-    : runNow;
+  typeof queueMicrotask !== "undefined" ? (callback) => queueMicrotask(callback) : runNow;
 
 function runNow(task) {
   task();

@@ -17,16 +17,8 @@ function useFilter() {
     const options = {
       signal: controller.signal,
     };
-    window.addEventListener(
-      "hashchange",
-      () => {
-        setCurrent(hash());
-      },
-      options,
-    );
-    return () => {
-      controller.abort();
-    };
+    window.addEventListener("hashchange", () => setCurrent(hash()), options);
+    return () => controller.abort();
   }, []);
   return Filter.fromHash(current);
 }
@@ -35,9 +27,7 @@ export function App() {
   const [todos, dispatch] = useReducer(reduce, undefined, () => load());
   const filter = useFilter();
   const [draft, setDraft] = useState("");
-  useEffect(() => {
-    save(todos);
-  }, [todos]);
+  useEffect(() => save(todos), [todos]);
   const active = todos.filter((todo) => !todo.completed).length;
   const completed = (todos.length - active) >>> 0;
   const add = (e) => {

@@ -37,9 +37,7 @@ function run(f) {
 
 function main() {
   run(once("called", false));
-  const unwound = $catchUnwind(() => {
-    run(once("unwound", true));
-  });
+  const unwound = $catchUnwind(() => run(once("unwound", true)));
   console.log(`unwound: ${unwound.TAG === "Err"}`);
   const value = once("uncalled", false);
   $dispose(value);

@@ -55,9 +55,7 @@ export function ResultFrame({ program, onOutcome }) {
         }
       }, 3000);
     }
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [run]);
   return (
     <section id="result-section" className="mt-3" hidden={!program}>

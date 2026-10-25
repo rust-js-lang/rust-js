@@ -20,9 +20,7 @@ export function useDarkMode() {
         },
         controller,
       );
-      return () => {
-        controller.abort();
-      };
+      return () => controller.abort();
     },
     () => dark.matches,
   );

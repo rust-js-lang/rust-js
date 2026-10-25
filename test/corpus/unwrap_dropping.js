@@ -127,18 +127,10 @@ function caught(name, f) {
 }
 
 function main() {
-  caught("unset", () => {
-    enqueueTask(task("unset"));
-  });
-  caught("unexpected", () => {
-    expected(task("unexpected"));
-  });
-  caught("read first", () => {
-    readFirst(task("read first"));
-  });
-  caught("once", () => {
-    once(task("once"));
-  });
+  caught("unset", () => enqueueTask(task("unset")));
+  caught("unexpected", () => expected(task("unexpected")));
+  caught("read first", () => readFirst(task("read first")));
+  caught("once", () => once(task("once")));
   enqueueTaskImpl = (task) => {
     try {
       task();
@@ -146,18 +138,10 @@ function main() {
       $dispose(task);
     }
   };
-  caught("set", () => {
-    enqueueTask(task("set"));
-  });
-  caught("expected", () => {
-    expected(task("expected"));
-  });
-  caught("read first, set", () => {
-    readFirst(task("read first, set"));
-  });
-  caught("once, set", () => {
-    once(task("once, set"));
-  });
+  caught("set", () => enqueueTask(task("set")));
+  caught("expected", () => expected(task("expected")));
+  caught("read first, set", () => readFirst(task("read first, set")));
+  caught("once, set", () => once(task("once, set")));
   const value = nested($some(undefined));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   caught("nested", () => {
