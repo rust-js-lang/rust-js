@@ -157,6 +157,23 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
   },
   {
+    name: "local-consts-none",
+    breaks: "a `const` written in a function's body is its module's, beside the function",
+    file: "src/lower/analysis/naming.rs",
+    find: "            within.then_some((def_id, (block.span, readers)))\n",
+    replace: "            (within && false).then_some((def_id, (block.span, readers)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "local-const-read-outside",
+    breaks: "a `const` written in a function's body that a method of the module's reads is the function's, which the method can't see",
+    file: "src/lower/analysis/naming.rs",
+    find: "            within.then_some((def_id, (block.span, readers)))\n",
+    replace: "            Some((def_id, (block.span, readers)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
+  },
+  {
     name: "named-expression-any-nested",
     breaks: "a function a block makes but doesn't give is put where it's called, `(function loud(text) { .. })(text)`",
     file: "src/lower/analysis/naming.rs",

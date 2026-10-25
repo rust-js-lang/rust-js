@@ -1438,7 +1438,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::This
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
-        | ExprKind::FunctionHole(_)
+        | ExprKind::ItemHole(_)
         | ExprKind::Import(_)
         | ExprKind::Regex(_) => {}
     }

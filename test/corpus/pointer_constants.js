@@ -19,9 +19,8 @@ const DANGLING = $ptrFrom(8, 8);
 const NOWHERE = null;
 
 // semver's `empty()`: the constant in the function's own body.
-const LOCAL = $ptrFrom(~0 >>> 0, 1);
-
 function head() {
+  const LOCAL = $ptrFrom(~0 >>> 0, 1);
   return LOCAL;
 }
 

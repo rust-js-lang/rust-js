@@ -1,5 +1,8 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
+mod holes;
+
+use self::holes::{Holes, fill_hole, fill_holes};
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
@@ -28,9 +31,8 @@ struct Pass {
     /// its impl (ADR 0592), and the names of the `const`s each makes.
     dictionary_consts: Vec<(LocalModId, DefId)>,
     dictionary_names: HashSet<String>,
-    /// The functions a block makes and gives, by their items' indices, for
-    /// their holes (ADR 0296).
-    holes: HashMap<u32, js::Function>,
+    /// What fills each item's hole, by its index.
+    holes: Holes,
     /// Which items each module uses from another, and which JS imports.
     references: HashSet<(LocalModId, DefId)>,
     package_uses: HashSet<(LocalModId, Export)>,
@@ -117,6 +119,7 @@ pub fn lower_crate<'tcx>(
         lazy_locals,
         named_expressions,
         local_functions,
+        local_consts,
         held,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
     // Each module's default export, which a module of the crate imports as
@@ -132,6 +135,9 @@ pub fn lower_crate<'tcx>(
 
     let foreign = super::library::Foreign::new(tcx, dependencies);
     let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
+    // Each `const` written in a function's body, its function's (ADR 0031,
+    // amended).
+    let mut local_const_holes: Vec<(DefId, js::Const)> = Vec::new();
     // The statics and constants whose initializers are lowered as code.
     let mut initialized: Vec<&Body<'tcx>> = Vec::new();
     for &def_id in consts.iter().filter(|&&d| !is_thread_local(tcx, d)) {
@@ -230,13 +236,18 @@ pub fn lower_crate<'tcx>(
             _ => value,
         };
         let info = &fns[&named.to_def_id()];
-        const_items.entry(info.module).or_default().push(js::Const {
+        let constant = js::Const {
             name: info.name.clone(),
             value,
             mutable: false,
             export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
             span: sources.item_span(tcx, named),
-        });
+        };
+        // One written in a function's body, where it's written there.
+        match local_consts.contains_key(&named.to_def_id()) {
+            true => local_const_holes.push((named.to_def_id(), constant)),
+            false => const_items.entry(info.module).or_default().push(constant),
+        }
     }
 
     let function_bodies = bodies.iter().map(|body| (body.def_id, *body)).collect();
@@ -275,7 +286,11 @@ pub fn lower_crate<'tcx>(
     let loads: HashSet<DefId> = (thread_local_inits.iter())
         .filter(|(_, key)| !lazy_locals.contains(key))
         .map(|(init, _)| init.to_def_id())
-        .chain(initialized.iter().map(|body| body.def_id))
+        .chain(
+            (initialized.iter())
+                .map(|body| body.def_id)
+                .filter(|id| !local_consts.contains_key(id)),
+        )
         .chain(
             (bodies.iter())
                 .map(|body| body.def_id)
@@ -326,6 +341,7 @@ pub fn lower_crate<'tcx>(
         lazy_locals: &lazy_locals,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
+        local_consts: &local_consts,
         loads_in_cycles: Default::default(),
     };
     // What a library's manifest says of its writers (ADR 0137).
@@ -659,7 +675,7 @@ pub fn lower_crate<'tcx>(
                     _ => value,
                 };
                 let info = &fns[&key.to_def_id()];
-                pass.local_consts.entry(info.module).or_default().push(js::Const {
+                let constant = js::Const {
                     name: info.name.clone(),
                     value,
                     mutable: false,
@@ -667,7 +683,11 @@ pub fn lower_crate<'tcx>(
                     export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
                         || called_from_elsewhere.contains(&key.to_def_id()),
                     span: sources.item_span(tcx, key),
-                });
+                };
+                match local_consts.contains_key(&key.to_def_id()) {
+                    true => local_const_holes.push((key.to_def_id(), constant)),
+                    false => pass.local_consts.entry(info.module).or_default().push(constant),
+                }
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
@@ -731,7 +751,7 @@ pub fn lower_crate<'tcx>(
                     None if local_functions.contains_key(&def_id) => {
                         let mut function = lowered.function;
                         function.export = false;
-                        pass.holes.insert(def_id.index.as_u32(), function);
+                        pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
                     None if named_expressions.contains(&def_id) => {
                         let mut function = lowered.function;
@@ -741,7 +761,7 @@ pub fn lower_crate<'tcx>(
                         });
                         function.name = super::fresh_in(&mut read, &function.name);
                         function.export = false;
-                        pass.holes.insert(def_id.index.as_u32(), function);
+                        pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
                     None => pass.functions.entry(module).or_default().push(lowered.function),
                 }
@@ -806,6 +826,13 @@ pub fn lower_crate<'tcx>(
     let holes = &mut pass.holes;
     for constant in const_items.values_mut().flatten() {
         constant.value.each_mut(&mut |e| fill_hole(e, holes));
+    }
+    // Each `const` written in a function's body, a `const` there, its own
+    // and never exported.
+    for (def_id, mut constant) in local_const_holes {
+        constant.value.each_mut(&mut |e| fill_hole(e, holes));
+        constant.export = false;
+        holes.consts.insert(def_id.index.as_u32(), constant);
     }
     let methods = pass
         .namespaces
@@ -1295,35 +1322,6 @@ fn aliases(tcx: TyCtxt<'_>, module: LocalModId, fns: &HashMap<DefId, FnInfo>) ->
             Some((alias.item, (info.name.clone(), alias.exported)))
         })
         .collect()
-}
-
-/// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
-fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut HashMap<u32, js::Function>) {
-    // A function written in a body, a declaration there, before what's left
-    // is taken for an expression (ADR 0308); `each_block_mut` goes on into
-    // its body, for those written in it.
-    js::each_block_mut(stmts, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            if let StmtKind::Expr(e) = &stmt.kind
-                && let js::ExprKind::FunctionHole(index) = e.kind
-                && let Some(function) = holes.remove(&index)
-            {
-                // Where it's written, which its comments are before.
-                stmt.span = function.span;
-                stmt.kind = StmtKind::Function(Box::new(function));
-            }
-        }
-    });
-    js::each_expr_mut(stmts, &mut |e| fill_hole(e, holes));
-}
-
-fn fill_hole(e: &mut Expr, holes: &mut HashMap<u32, js::Function>) {
-    if let js::ExprKind::FunctionHole(index) = e.kind
-        && let Some(mut function) = holes.remove(&index)
-    {
-        fill_holes(&mut function.body, holes);
-        e.kind = js::ExprKind::Function(Box::new(function));
-    }
 }
 
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.

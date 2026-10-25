@@ -42,7 +42,8 @@ use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
 use naming::{
-    exported_across_modules, js_uses, local_functions, name_imports, name_items, named_expressions, refuse_two_names,
+    exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
+    refuse_two_names,
 };
 use rc_counts::counted_rcs;
 pub(super) use rc_counts::{Counted, Head, head};
@@ -61,6 +62,10 @@ use validation::{
     in_thread_local, init_of, reject_flatten_misuse, reject_parameter_name_misuse, reject_rest_misuse,
     reject_static_references, reject_unsupported,
 };
+
+/// The `const`s written in a function's body, each a `const` there (ADR
+/// 0031, amended): by each, the block it's in and the bodies that read it.
+pub(in crate::lower) type LocalConsts = HashMap<DefId, (rustc_span::Span, HashSet<DefId>)>;
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
 /// inside what they made (its `const _: () = { .. }`): left out, since
@@ -537,6 +542,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The functions written in a function's body, each a function
     /// declaration there (ADR 0308).
     pub local_functions: HashMap<DefId, rustc_span::Span>,
+    /// The `const`s written in a function's body, each a `const` there,
+    /// by the block they're in and the bodies that read them (ADR 0031,
+    /// amended).
+    pub local_consts: LocalConsts,
     /// What each module holds of a binding, and where a path reads one
     /// through it (ADR 0633).
     pub held: bindings::Held,
@@ -928,6 +937,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A function a block makes and gives is named in itself alone (ADR 0296).
     let named_expressions = named_expressions(tcx, all_bodies.iter().copied().chain(initializers));
     let local_functions = local_functions(tcx, all_bodies.iter().copied().chain(initializers), &named_expressions);
+    // A `const` of a function's body, its function's (ADR 0031, amended).
+    let local_consts = local_consts(
+        tcx,
+        all_bodies.iter().copied().chain(initializers),
+        &consts,
+        &local_functions,
+    );
     let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls, &named_expressions);
     let failed = failed | refuse_two_names(tcx, &modules);
     let import_names = name_imports(tcx, &uses, &taken, &foreign);
@@ -1025,6 +1041,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         lazy_locals,
         named_expressions,
         local_functions,
+        local_consts,
         held,
     })
 }

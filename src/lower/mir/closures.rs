@@ -165,8 +165,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.frame.facts = outer_facts;
         self.frame.owner = outer_owner;
         let (mut params, mut stmts) = lowered?;
-        // The functions written in it, in its body (ADR 0308).
+        // The functions and `const`s written in it, in its body (ADRs
+        // 0308, 0031).
         let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
+            .chain(self.krate.local_consts.keys())
             .filter(|&&id| self.tcx.parent(id) == def_id)
             .copied()
             .collect();
@@ -272,58 +274,104 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A hole for each function of `written`, before the first statement of
     /// `out` written after it, or the `return` that ends it: a function
-    /// declaration's, which JS hoists (ADR 0308).
+    /// declaration's, which JS hoists (ADR 0308). Then one for each `const`
+    /// of it, once the functions that may read it are there: where it's
+    /// written too, or, where a statement before that reads it, before that
+    /// one, as JS's `const` is read only once it's made, which Rust's is
+    /// wherever its block is (ADR 0031, amended); one a function written
+    /// there reads first in its block, as what's before may call it.
     pub(super) fn place_written(&self, written: Vec<rustc_span::def_id::DefId>, out: &mut Vec<Stmt>) {
         let mut written: Vec<(u32, rustc_span::def_id::DefId)> = (written.into_iter())
             .map(|id| (self.js_span(self.tcx.def_span(id)).lo, id))
             .collect();
         written.sort_by_key(|&(at, _)| at);
-        for (at, id) in written {
-            let hole = Expr {
-                facts: js::Facts::NONE,
-                kind: js::ExprKind::FunctionHole(id.index.as_u32()),
-                span: js::Span::NONE,
-            };
-            let hole = StmtKind::Expr(hole).at(js::Span::NONE);
-            // In the block it's written in, a JS function declaration
-            // being its block's alone (ADR 0696): `if (construct) {
-            // function Fake() {..} .. }`; one written at its body's top is
-            // there, not in the `if` that uses it.
-            let name = &self.krate.fns[&id].name;
-            let uses = js::mentions_in(out, name);
-            let block = self.js_span(self.krate.local_functions[&id]);
-            // The lists holding them all nest, each in the one before,
-            // walked outermost first: the first of them with a statement
-            // written after it in its block is the block's.
-            let (mut index, mut written_in) = (0, None);
+        let (consts, functions): (Vec<_>, Vec<_>) = written
+            .into_iter()
+            .partition(|(_, id)| self.krate.local_consts.contains_key(id));
+        for (at, id) in functions.into_iter().chain(consts) {
+            self.place_item(id, at, out);
+        }
+    }
+
+    /// A hole for item `id`, written at `at`, in `out`, `place_written`'s.
+    fn place_item(&self, id: rustc_span::def_id::DefId, at: u32, out: &mut Vec<Stmt>) {
+        let hole = Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::ItemHole(id.index.as_u32()),
+            span: js::Span::NONE,
+        };
+        let hole = StmtKind::Expr(hole).at(js::Span::NONE);
+        let name = &self.krate.fns[&id].name;
+        let constant = self.krate.local_consts.get(&id);
+        // What reads it: its name, or, of a `const`, a hole of a function
+        // written here that reads it, filled later.
+        let readers: Vec<u32> = (constant.into_iter().flat_map(|(_, readers)| readers))
+            .map(|reader| reader.index.as_u32())
+            .collect();
+        let reads = |stmts: &[Stmt]| {
+            let mut found = js::mentions_in(stmts, name);
+            js::each_expr(stmts, &mut |e| {
+                found += usize::from(matches!(e.kind, js::ExprKind::ItemHole(index) if readers.contains(&index)));
+            });
+            found
+        };
+        let uses = reads(out);
+        // Where in a list it goes: before what's written after it, or what
+        // reads a `const` first; first, of one a function written here
+        // reads, which what's before may call.
+        let called = (constant.into_iter().flat_map(|(_, readers)| readers))
+            .any(|reader| self.krate.local_functions.contains_key(reader));
+        let before = |list: &[Stmt]| {
+            let written = written_before(list, at);
+            match constant {
+                Some(_) if called => Some(0),
+                Some(_) => {
+                    let first = list.iter().position(|s| reads(std::slice::from_ref(s)) > 0);
+                    written.zip(first).map(|(w, f)| w.min(f)).or(written).or(first)
+                }
+                None => written,
+            }
+        };
+        // In the block it's written in, a JS function declaration
+        // being its block's alone (ADR 0696): `if (construct) {
+        // function Fake() {..} .. }`; one written at its body's top is
+        // there, not in the `if` that uses it.
+        let block = self.js_span(match constant {
+            Some((block, _)) => *block,
+            None => self.krate.local_functions[&id],
+        });
+        // The lists holding them all nest, each in the one before,
+        // walked outermost first: the first of them with a statement
+        // written after it in its block is the block's.
+        let (mut index, mut written_in) = (0, None);
+        js::statement_lists(out, &mut |list| {
+            if written_in.is_none()
+                && uses > 0
+                && reads(list) == uses
+                && list
+                    .iter()
+                    .any(|s| !s.span.is_none() && s.span.lo > at && s.span.lo < block.hi)
+            {
+                written_in = Some(index);
+            }
+            index += 1;
+        });
+        if let Some(written_in) = written_in {
+            let mut index = 0;
             js::statement_lists(out, &mut |list| {
-                if written_in.is_none()
-                    && uses > 0
-                    && js::mentions_in(list, name) == uses
-                    && list
-                        .iter()
-                        .any(|s| !s.span.is_none() && s.span.lo > at && s.span.lo < block.hi)
+                if index == written_in
+                    && let Some(i) = before(list)
                 {
-                    written_in = Some(index);
+                    list.insert(i, hole.clone());
                 }
                 index += 1;
             });
-            if let Some(written_in) = written_in {
-                let mut index = 0;
-                js::statement_lists(out, &mut |list| {
-                    if index == written_in
-                        && let Some(i) = written_before(list, at)
-                    {
-                        list.insert(i, hole.clone());
-                    }
-                    index += 1;
-                });
-                continue;
-            }
-            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
-            let i = written_before(out, at).unwrap_or(out.len() - usize::from(ends));
-            out.insert(i, hole);
+            return;
         }
+        let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
+        let last = out.len() - usize::from(ends);
+        let i = before(out).map_or(last, |i| i.min(last));
+        out.insert(i, hole);
     }
 }
 

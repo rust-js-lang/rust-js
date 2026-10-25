@@ -128,6 +128,33 @@ export const DEFAULT_LANE = 0b1000;
 export const SYNC_UPDATE_LANES = SYNC_LANE | DEFAULT_LANE;
 ```
 
+- A `const` written in a function's body is a `const` there, where it's
+  written, read by the function's closures and the functions written in
+  it; before what reads it first where that's earlier, as JS reads a
+  `const` only once it's made. One something outside the function reads
+  too, a method of a type written in it, is the module's
+  ([ADR 0031](../../decisions/0031-consts.md), amended):
+
+```rust
+pub const SYNC_LANE: i32 = 0b0010;
+pub const DEFAULT_LANE: i32 = 0b1000;
+
+pub fn includes_blocking_lane(lanes: i32) -> bool {
+    const BLOCKING_LANES: i32 = SYNC_LANE | DEFAULT_LANE;
+    (lanes & BLOCKING_LANES) != 0
+}
+```
+
+```js
+export const SYNC_LANE = 0b0010;
+export const DEFAULT_LANE = 0b1000;
+
+export function includesBlockingLane(lanes) {
+  const BLOCKING_LANES = SYNC_LANE | DEFAULT_LANE;
+  return (lanes & BLOCKING_LANES) !== 0;
+}
+```
+
 Rust lets you shadow a name with a new `let`, `let input = input.trim();`.
 Where nothing reads the old one after it, the new one is the same JS
 variable, assigned, a `let` now. Where something still can, a closure made

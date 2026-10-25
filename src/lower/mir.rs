@@ -576,15 +576,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tidy::copied_params(&params, &mut out);
         }
         // The functions written in its body, each declared before what's
-        // written after it (ADR 0308); a closure's in its own, where
-        // `mir_closure` put them, unless it's lowered otherwise.
+        // written after it (ADR 0308), and its `const`s (ADR 0031,
+        // amended); a closure's in its own, where `mir_closure` put them,
+        // unless it's lowered otherwise.
         let mut placed = std::collections::HashSet::new();
         js::each_expr_mut(&mut out, &mut |e| {
-            if let js::ExprKind::FunctionHole(index) = e.kind {
+            if let js::ExprKind::ItemHole(index) = e.kind {
                 placed.insert(index);
             }
         });
         let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
+            .chain(self.krate.local_consts.keys())
             .filter(|&&id| {
                 let mut parent = self.tcx.parent(id);
                 while self.tcx.is_closure_like(parent) {

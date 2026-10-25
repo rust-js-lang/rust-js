@@ -724,6 +724,36 @@ fn constant_patterns<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<Patt
     found
 }
 
+/// The `const`s `thir` names: read, `URGENT_LANES`, and tested, a
+/// pattern's, `IMMEDIATE_PRIORITY =>`, which a test names too (ADR 0590).
+pub(super) fn consts_named(thir: &Thir<'_>) -> HashSet<DefId> {
+    let mut named: HashSet<DefId> = (thir.exprs.iter())
+        .filter_map(|e| match e.kind {
+            ExprKind::NamedConst { def_id, .. } => Some(def_id),
+            _ => None,
+        })
+        .collect();
+    let mut of = |pattern: &Pat<'_>| {
+        pattern.walk_always(|pat| named.extend(pat.extra.as_ref().and_then(|extra| extra.expanded_const)));
+    };
+    thir.arms.iter().for_each(|arm| of(&arm.pattern));
+    thir.params
+        .iter()
+        .filter_map(|param| param.pat.as_deref())
+        .for_each(&mut of);
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Let { ref pat, .. } = expr.kind {
+            of(pat);
+        }
+    }
+    for stmt in thir.stmts.iter() {
+        if let thir::StmtKind::Let { ref pattern, .. } = stmt.kind {
+            of(pattern);
+        }
+    }
+    named
+}
+
 /// Where `e` is a call of a binding that's its argument, `this`, giving an
 /// untagged enum of a `Some(..)`, `js::classify(Some(value))`: its
 /// `fn_span`. What it gives is there, never `undefined` nor `null`, so no

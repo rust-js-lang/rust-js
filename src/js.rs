@@ -745,9 +745,10 @@ pub enum ExprKind {
     /// `function Label(props) { .. }`: a function a block makes and gives,
     /// named, as an expression (ADR 0296).
     Function(Box<Function>),
-    /// Where such a function goes until the pipeline puts it there: its
-    /// item's index.
-    FunctionHole(u32),
+    /// Where an item written in a body goes until the pipeline puts it
+    /// there: such a function, one written in a function's body (ADR 0308),
+    /// or a `const` (ADR 0031, amended); its item's index.
+    ItemHole(u32),
     /// `import("./lint.js")`: the module, loaded when it's asked for (ADR 0304).
     Import(ImportFrom),
     /// A drop function given to one of the crate's functions for its type

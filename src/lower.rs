@@ -377,6 +377,10 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions written in a function's body, by the block they're
     /// in, each a function declaration there (ADR 0308).
     local_functions: &'a HashMap<DefId, rustc_span::Span>,
+    /// The `const`s written in a function's body, each a `const` there,
+    /// by the block they're in and the bodies that read them (ADR 0031,
+    /// amended).
+    local_consts: &'a analysis::LocalConsts,
     /// Each body run where its module loads, a thread-local's value, a
     /// static's or constant's initializer lowered as code, a `js::on_load!`,
     /// that reads another of the crate's modules' `const` that may load

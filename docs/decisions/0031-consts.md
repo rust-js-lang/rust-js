@@ -10,7 +10,8 @@ variant is its module's `const` too, and what a module's load makes reads
 another module's `const` as its value, as an import cycle may load it first.
 Amended (2026-10-26): a `#[repr(transparent)]` struct's constructor of a
 constant is its field, by its name. Amended (2026-10-26): an import cycle
-through a JS file of the program's own is one (below).
+through a JS file of the program's own is one (below). Amended
+(2026-10-26): one written in a function's body is the function's (below).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -70,8 +71,8 @@ export function moved(dx) {
   place does (ADR 0020). Otherwise the name is used as it is.
 - **Constants go at the top of their module's file**, before the functions,
   and are exported when they're `pub` or another module uses them (ADR 0019).
-  A `const` inside a function goes there too, next to the function. Names
-  follow the usual rules: a `const URL` in a module that uses the global
+  A `const` inside a function went there too, next to the function
+  (amended: it's the function's, below). Names follow the usual rules: a `const URL` in a module that uses the global
   `URL` becomes `URL$1`.
 - **Other crates' constants are written in place**, as values: `u32::MAX` is
   `4294967295`.
@@ -315,3 +316,63 @@ is its module's const", refused through a JS file; `to_oxc::loads`'s
 `effects-import-nothing` (`lower/pipeline.ts`), `bound-js-unread`
 (`main.ts`), `export-from-loads-nothing`, `import-loads-nothing`
 (`to_oxc/loads.ts`).
+
+## Amendment: a constant written in a function's body is the function's
+
+React's ReactFiberLane writes masks it needs once in the function that
+reads them:
+
+```js
+export function includesBlockingLane(lanes: Lanes): boolean {
+  const SyncDefaultLanes =
+    SyncHydrationLane | SyncLane | InputContinuousHydrationLane | ..;
+  return (lanes & SyncDefaultLanes) !== NoLanes;
+}
+```
+
+Its port writes each a `const` in the function, as Rust does, and they
+were the module's, beside it, the comment above one with it: the second
+`SyncDefaultLanes`, `isBlockingLane`'s, was `SyncDefaultLanes$1`.
+
+**A `const` written in a function's body is a `const` in it, where it's
+written, in the block it's written in**, of a function's or a method's,
+a closure's in the closure's, where nothing outside the function reads
+it (`analysis/naming.rs::local_consts`): the function, its closures and
+the functions written in it (ADR 0308) read it there, by its name.
+
+- **Before what reads it first, where that's earlier**: Rust's `const` is
+  read anywhere in its block, before it's written too; JS's only once
+  it's made. What reads it is its name, or a function written there that
+  reads it, which its block may call before it, so a `const` such a
+  function reads is its block's first (`place_written`, the same placing
+  as a function's, after the functions).
+- **Its name is a name of its module's, as any item's, and preparation
+  takes off a suffix nothing in its function needs**: `isBlockingLane`'s
+  is `SyncDefaultLanes` again, and a variable of its function is named
+  apart from it.
+- **One something else reads is the module's, as before**: a method of a
+  type written in the function, a static's initializer, another
+  constant's initializer, which would read it before it's made, or a
+  `const { .. }`'s. A thread-local's is its module's variable (ADR 0270),
+  and one of a trait's default is its module's, as each impl copies its
+  body into its own (ADR 0185). Its initializer runs where the function
+  does, not where its module loads: it's none of `pipeline::load_cycles`'
+  loads.
+- **One read nowhere in JS, only by rustc, `[0; N]`'s, is dropped**, as a
+  function's unread `const` is (ADR 0356): `nonzero.rs`'s `SEVEN` is no
+  module `const` any more.
+- **A hole is an item's**: `js::ExprKind::ItemHole`, which was a
+  function's alone (ADR 0296), holds a `const`'s place too, filled by
+  `pipeline/holes.rs`, which `pipeline.rs`, past its file's cap, moved
+  into.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
+same, made where the function runs; the JS is upstream's.
+
+Test: the corpus's `local_consts.rs`, beside native Rust, its JS each
+function's `const`; `pointer_constants.rs`'s `LOCAL`, `type_id_statics.rs`'s
+`F` and the `consts` snapshot's `STEP` are their functions' now.
+Mutations `local-consts-none`, `local-const-read-outside`
+(`lower/analysis/naming.ts`), `local-const-after-its-read`,
+`local-const-after-a-call` (`lower/mir/closures.ts`),
+`local-const-hole-unfilled` (`lower/pipeline/holes.ts`).

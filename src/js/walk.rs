@@ -191,7 +191,7 @@ macro_rules! walks {
                     | ExprKind::Null
                     | ExprKind::This
                     | ExprKind::Symbol(_)
-                    | ExprKind::FunctionHole(_)
+                    | ExprKind::ItemHole(_)
                     | ExprKind::Import(_)
                     | ExprKind::Regex(_) => {}
                 }

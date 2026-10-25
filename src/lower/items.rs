@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.named_expressions.contains(&def_id) {
             return Expr {
                 facts: js::Facts::NONE,
-                kind: js::ExprKind::FunctionHole(def_id.index.as_u32()),
+                kind: js::ExprKind::ItemHole(def_id.index.as_u32()),
                 span: js::Span::NONE,
             };
         }

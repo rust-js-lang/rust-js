@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "local-const-after-its-read",
+    breaks: "a `const` written in a function's body is where it's written though a closure before that reads it, which JS's `const` isn't yet",
+    file: "src/lower/mir/closures.rs",
+    find: "                    written.zip(first).map(|(w, f)| w.min(f)).or(written).or(first)\n",
+    replace: "                    written.or(first)\n",
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
+  },
+  {
+    name: "local-const-after-a-call",
+    breaks: "a `const` a function written in the body reads is where it's written, after a call of that function",
+    file: "src/lower/mir/closures.rs",
+    find: "                Some(_) if called => Some(0),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
+  },
+  {
     name: "mir-async-closure-called-body",
     breaks: "an `async` closure is an arrow that calls an async arrow, not the async arrow",
     file: "src/lower/mir/closures.rs",
@@ -158,16 +174,16 @@ export const mutations: Mutation[] = [
     name: "written-fn-in-its-body-list",
     breaks: "a function written in a block is declared in its body's own list, not the innermost block that holds each use of it",
     file: "src/lower/mir/closures.rs",
-    find: "            if let Some(written_in) = written_in {\n",
-    replace: "            if let Some(written_in) = written_in.filter(|_| false) {\n",
+    find: "        if let Some(written_in) = written_in {\n",
+    replace: "        if let Some(written_in) = written_in.filter(|_| false) {\n",
     tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
   },
   {
     name: "written-fn-in-the-block-using-it",
     breaks: "a function written at a body's top is declared in the innermost block that uses it, an `if`'s, not the block it's written in",
     file: "src/lower/mir/closures.rs",
-    find: "                if written_in.is_none()\n",
-    replace: "                if true\n",
+    find: "            if written_in.is_none()\n",
+    replace: "            if true\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a function written in a body is declared in it"],
   },
 ];

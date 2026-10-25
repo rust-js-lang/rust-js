@@ -10,8 +10,8 @@ impl Module {
     }
 
     /// What it holds that only an earlier phase makes and resolves, which
-    /// the printer is never given (`to_oxc.rs`): a symbol linking names, a
-    /// function's hole or a drop's argument the pipeline fills, a handle
+    /// the printer is never given (`to_oxc.rs`): a symbol linking names, an
+    /// item's hole or a drop's argument the pipeline fills, a handle
     /// preparation writes, an `import()` of a module the output plan gives
     /// its specifier. The first, by what it is, if any.
     pub fn unprintable(&mut self) -> Option<&'static str> {
@@ -19,7 +19,7 @@ impl Module {
         self.each_expr_mut(&mut |e| {
             let kind = match &e.kind {
                 ExprKind::Symbol(_) => "a module's symbol",
-                ExprKind::FunctionHole(_) => "a function's hole",
+                ExprKind::ItemHole(_) => "an item's hole",
                 ExprKind::DropArgument(..) => "a drop's argument",
                 ExprKind::Handle(_, _) | ExprKind::Pair(..) => "a `&mut`'s handle",
                 ExprKind::Import(ImportFrom::Module(_)) => "an `import()` of a module without its specifier",

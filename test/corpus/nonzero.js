@@ -28,8 +28,6 @@ function nonZero(n) {
   return n === 0 ? undefined : n;
 }
 
-const SEVEN = 7;
-
 function main() {
   const a = $unwrap(7);
   const b = undefined;

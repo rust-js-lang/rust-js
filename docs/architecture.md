@@ -198,7 +198,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Crate facts and validation | `analysis.rs`, `analysis/` |
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
-| Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
+| Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
@@ -277,6 +277,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic IntoIterator representation | `iterators.rs`, `recognition/iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is`, `into_iter_by_dictionary` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |
+| Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` |
 | A parameter's JS name, its body's and its declaration's | `lower.rs` | `parameter_name` |
 | Std body capture | `analysis.rs` | `collect_std_bodies` |
 | Dictionary cache names | `names.rs` | `dictionary_cache` |

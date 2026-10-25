@@ -75,7 +75,7 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::This
             | ExprKind::Symbol(_)
-            | ExprKind::FunctionHole(_)
+            | ExprKind::ItemHole(_)
             | ExprKind::Import(_)
             | ExprKind::Regex(_) => {}
         }
@@ -234,7 +234,7 @@ impl Expr {
             | ExprKind::Null
             | ExprKind::This
             | ExprKind::Symbol(_)
-            | ExprKind::FunctionHole(_)
+            | ExprKind::ItemHole(_)
             | ExprKind::Import(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
@@ -414,7 +414,7 @@ impl Expr {
         match &self.kind {
             ExprKind::Var(_)
             | ExprKind::Symbol(_)
-            | ExprKind::FunctionHole(_)
+            | ExprKind::ItemHole(_)
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_) => true,
@@ -574,7 +574,7 @@ impl Expr {
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
-            | ExprKind::FunctionHole(_)
+            | ExprKind::ItemHole(_)
             | ExprKind::Arrow(..)
             | ExprKind::AsyncArrow(..)
             | ExprKind::Function(_) => false,
