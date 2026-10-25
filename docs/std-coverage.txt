@@ -1097,13 +1097,13 @@
 + Flatten::size_hint	safe
 - Flatten::try_fold	safe
 - Flatten::try_rfold	safe
-# FlatMap 5 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# FlatMap 7 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + FlatMap::count	safe
 + FlatMap::fold	safe
 + FlatMap::last	safe
 + FlatMap::next	safe
-- FlatMap::next_back	safe
-- FlatMap::rfold	safe
++ FlatMap::next_back	safe
++ FlatMap::rfold	safe
 + FlatMap::size_hint	safe
 - FlatMap::try_fold	safe
 - FlatMap::try_rfold	safe
