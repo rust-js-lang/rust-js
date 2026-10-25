@@ -121,11 +121,8 @@ function main() {
   queueSeveralMicrotasks(
     $dropping(
       () => {
-        try {
-          console.log(`ran ${Noisy.name(noisy)}`);
-        } finally {
-          console.log(`drop ${noisy[0]}`);
-        }
+        console.log(`ran ${Noisy.name(noisy)}`);
+        console.log(`drop ${noisy[0]}`);
       },
       () => {
         console.log(`drop ${noisy[0]}`);

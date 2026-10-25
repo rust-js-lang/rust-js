@@ -564,7 +564,9 @@ pub enum Known {
     /// that only read (ADR 0900).
     Evidence,
     /// A call that throws only where what it's given does: std's print,
-    /// `console.log(text)`, whose stream never fails (ADRs 0132, 0901).
+    /// `console.log(text)`, whose stream never fails (ADRs 0132, 0901); or
+    /// a function each call of which does, one of the crate's that never
+    /// unwinds, `loudDrop_drop` (ADR 0902).
     NeverThrows,
 }
 

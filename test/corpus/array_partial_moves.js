@@ -79,31 +79,23 @@ function some(items, keep) {
     b$live = false;
   }
   console.log("end of some");
+  noisyDrop_drop(d);
   try {
-    noisyDrop_drop(d);
-  } catch (error) {
-    if (b$live) {
-      noisyDrop_drop(b);
+    try {
+      try {
+        if (b$live) {
+          noisyDrop_drop(b);
+        }
+        b$live = false;
+      } finally {
+        noisyDrop_drop(items[4]);
+      }
+    } finally {
+      noisyDrop_drop(items[2]);
     }
-    noisyDrop_drop(items[4]);
-    noisyDrop_drop(items[2]);
+  } finally {
     noisyDrop_drop(items[0]);
-    throw error;
   }
-  try {
-    if (b$live) {
-      noisyDrop_drop(b);
-    }
-  } catch (error) {
-    noisyDrop_drop(items[4]);
-    noisyDrop_drop(items[2]);
-    noisyDrop_drop(items[0]);
-    throw error;
-  }
-  b$live = false;
-  noisyDrop_drop(items[4]);
-  noisyDrop_drop(items[2]);
-  noisyDrop_drop(items[0]);
 }
 
 function split(items, keep) {
@@ -151,14 +143,7 @@ function either(items, split) {
   if (split) {
     const a = items[0];
     console.log(`first ${a[0]}`);
-    try {
-      noisyDrop_drop(a);
-    } catch (error) {
-      for (const item of items.slice(1, 3)) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    noisyDrop_drop(a);
   } else {
     items$live = false;
     consume(items);
@@ -177,27 +162,17 @@ function both(items, first) {
   let c$live = true;
   const [a, , c] = items;
   let dropped = 0;
+  if (first) {
+    a$live = false;
+    noisyDrop_drop(a);
+    dropped++;
+  } else {
+    c$live = false;
+    noisyDrop_drop(c);
+    dropped += 2;
+  }
+  console.log(`end of both ${dropped}`);
   try {
-    if (first) {
-      a$live = false;
-      try {
-        noisyDrop_drop(a);
-      } catch (error) {
-        noisyDrop_drop(c);
-        throw error;
-      }
-      dropped++;
-    } else {
-      c$live = false;
-      try {
-        noisyDrop_drop(c);
-      } catch (error) {
-        noisyDrop_drop(a);
-        throw error;
-      }
-      dropped += 2;
-    }
-    console.log(`end of both ${dropped}`);
     try {
       if (c$live) {
         noisyDrop_drop(c);

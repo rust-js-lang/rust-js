@@ -29,12 +29,7 @@ const personGreet = {
   },
   parts(self) {
     const first = [2];
-    try {
-      noisyDrop_drop([3]);
-    } catch (error) {
-      noisyDrop_drop(first);
-      throw error;
-    }
+    noisyDrop_drop([3]);
     const shown = noisyDebug_fmt(first);
     const all = [[4], [5]];
     const slice = all;

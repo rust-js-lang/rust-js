@@ -349,7 +349,7 @@ pub fn shows(n: u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  try {\n    note(n);\n    return work(n);\n  } finally {\n    depth = previous;\n  }\n}");
+  expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  note(n);\n  try {\n    return work(n);\n  } finally {\n    depth = previous;\n  }\n}");
   expect(js).not.toContain("restoreDrop_drop");
   expect(js).not.toContain("loudDrop_drop");
   // Where a name its body declares is the caller's own, its \`doubled\`,
@@ -361,7 +361,7 @@ pub fn shows(n: u32) -> u32 {
   expect(js).toContain("  } finally {\n    const bumped = (guard + 1) >>> 0;\n    console.log(`bumped ${bumped}`);\n  }");
   expect(js).toContain("  return () => {\n    const level = depth;\n    depth = n;\n    try {\n      return work(n);\n    } finally {\n      depth = level;\n    }\n  };");
   expect(js).toContain("  let more = true;\n  try {\n    more = work(n) > 3;\n  } finally {\n    console.log(`more ${more}`);\n  }");
-  expect(js).toContain('const name = "b";\n  try {\n    console.log(`drop ${name}`);\n  } finally {\n    console.log(`drop ${_a.name}`);\n  }');
+  expect(js).toContain('const name = "b";\n  console.log(`drop ${name}`);\n  console.log(`drop ${_a.name}`);');
   expect(js).not.toContain("seenDrop_drop");
   expect(js).toContain("const seen = { number: id };");
   const lib = await import(join(dir, "lib.js"));

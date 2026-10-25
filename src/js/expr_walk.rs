@@ -446,9 +446,20 @@ impl Expr {
         match &self.kind {
             ExprKind::Call(callee, args)
                 if self.facts.has(Known::NeverThrows)
+                    || callee.facts.has(Known::NeverThrows)
                     || callee.helper_name().is_some_and(crate::runtime::never_throws) =>
             {
                 args.iter().any(Expr::may_throw)
+            }
+            // Made of parts, as `has_effects` reads them: each throws where
+            // one of its parts does, `${total(x)}` where `total(x)` does (ADR
+            // 0902).
+            ExprKind::Template(_, items, _) | ExprKind::Array(items) if !self.facts.has(Known::Getter) => {
+                items.iter().any(Expr::may_throw)
+            }
+            ExprKind::Binary(_, a, b) if !self.facts.has(Known::Getter) => a.may_throw() || b.may_throw(),
+            ExprKind::Cond(a, b, c) if !self.facts.has(Known::Getter) => {
+                a.may_throw() || b.may_throw() || c.may_throw()
             }
             _ => self.has_effects(),
         }

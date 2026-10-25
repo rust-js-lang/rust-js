@@ -64,14 +64,7 @@ function main() {
     noisyDrop_drop(m.value);
     throw error;
   }
-  try {
-    noisyDrop_drop(tmp.value);
-  } catch (error) {
-    $assign(tmp.value, noisy);
-    $unborrow(tmp);
-    noisyDrop_drop(m.value);
-    throw error;
-  }
+  noisyDrop_drop(tmp.value);
   $assign(tmp.value, noisy);
   try {
     $unborrow(tmp);
@@ -91,15 +84,7 @@ function main() {
     noisyDrop_drop(m.value);
     throw error;
   }
-  try {
-    noisyDrop_drop(tmp$1.value);
-  } catch (error) {
-    $assign(tmp$1.value, value);
-    $unborrow(tmp$1);
-    noisyDrop_drop(w.value);
-    noisyDrop_drop(m.value);
-    throw error;
-  }
+  noisyDrop_drop(tmp$1.value);
   $assign(tmp$1.value, value);
   try {
     try {

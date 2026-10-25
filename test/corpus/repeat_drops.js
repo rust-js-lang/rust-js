@@ -117,18 +117,7 @@ function main() {
       }
       const item = loud;
       console.log(`got ${item[0]}`);
-      try {
-        loudDrop_drop(item);
-      } catch (error) {
-        iter.return();
-        if (first != null) {
-          loudDrop_drop(first);
-        }
-        if (it$live) {
-          it.return();
-        }
-        throw error;
-      }
+      loudDrop_drop(item);
     }
     let tmp$2;
     try {

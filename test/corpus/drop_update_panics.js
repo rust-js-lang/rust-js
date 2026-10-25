@@ -34,24 +34,17 @@ function swapY(p, fail) {
 function main() {
   const swapped = swapY({ x: [1], y: [2] }, false);
   console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
-  let failed;
   try {
-    failed = swapY({ x: [3], y: [4] }, true);
-  } catch (error) {
-    console.log(`drop ${swapped.x[0]}`);
+    try {
+      const failed = swapY({ x: [3], y: [4] }, true);
+      console.log(`never ${failed.x[0]}`);
+      console.log(`drop ${failed.x[0]}`);
+      console.log(`drop ${failed.y[0]}`);
+    } finally {
+      console.log(`drop ${swapped.x[0]}`);
+    }
+  } finally {
     console.log(`drop ${swapped.y[0]}`);
-    throw error;
   }
-  console.log(`never ${failed.x[0]}`);
-  try {
-    console.log(`drop ${failed.x[0]}`);
-    console.log(`drop ${failed.y[0]}`);
-  } catch (error) {
-    console.log(`drop ${swapped.x[0]}`);
-    console.log(`drop ${swapped.y[0]}`);
-    throw error;
-  }
-  console.log(`drop ${swapped.x[0]}`);
-  console.log(`drop ${swapped.y[0]}`);
 }
 //# sourceMappingURL=case.js.map

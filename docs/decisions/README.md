@@ -685,7 +685,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
 - [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md)
 - [0900 A dictionary's method is the program's, whatever its name](0900-a-dictionarys-method-is-the-programs.md)
-- [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md)
+- [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md) *(extended by 0902: what never unwinds is read from MIR)*
+- [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

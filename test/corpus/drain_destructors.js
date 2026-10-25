@@ -37,23 +37,9 @@ function main() {
           const n = tmp;
           console.log(`got ${n[0]}`);
           if (n[0] === 4) {
-            try {
-              console.log(`drop ${n[0]}`);
-            } catch (error) {
-              for (const item of iter) {
-                console.log(`drop ${item[0]}`);
-              }
-              throw error;
-            }
+            console.log(`drop ${n[0]}`);
           } else {
-            try {
-              console.log(`drop ${n[0]}`);
-            } catch (error) {
-              for (const item of iter) {
-                console.log(`drop ${item[0]}`);
-              }
-              throw error;
-            }
+            console.log(`drop ${n[0]}`);
             continue;
           }
         }

@@ -196,4 +196,13 @@ export const mutations: Mutation[] = [
     replace: "            true => Expr {\n                facts: js::Facts::NONE,\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
+  {
+    name: "never-unwinding-unmarked",
+    breaks: "a call of the crate's function that never unwinds is taken for one that may, so a drop after it is a `try`/`finally` again",
+    file: "src/lower/items.rs",
+    find: "            true => reference.never_throws(),\n",
+    replace: "            true => reference,\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
+  },
 ];

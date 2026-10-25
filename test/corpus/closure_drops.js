@@ -39,11 +39,8 @@ function main() {
     const kept = b;
     const held = c;
     console.log(`once ${kept[0]} ${held[0]}`);
-    try {
-      console.log(`drop ${kept[0]}`);
-    } finally {
-      console.log(`drop ${c[0]}`);
-    }
+    console.log(`drop ${kept[0]}`);
+    console.log(`drop ${c[0]}`);
     return 2;
   };
   console.log(`${once()}`);
@@ -131,12 +128,7 @@ function main() {
     console.log(`drop ${r[0]}`);
     throw error;
   }
-  try {
-    console.log(`drop ${g[0]}`);
-  } catch (error) {
-    console.log(`drop ${r[0]}`);
-    throw error;
-  }
+  console.log(`drop ${g[0]}`);
 
   for (let i = 0; i < 2; i++) {
     const h = i === 0 ? "h0" : "h1";
@@ -171,14 +163,7 @@ function main() {
     maybe$live = false;
   }
   console.log("end");
-  try {
-    console.log(`drop ${r[0]}`);
-  } catch (error) {
-    if (tick$live) {
-      console.log(`drop ${a}`);
-    }
-    throw error;
-  }
+  console.log(`drop ${r[0]}`);
   tick$live = false;
 }
 //# sourceMappingURL=case.js.map

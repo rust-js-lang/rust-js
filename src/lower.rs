@@ -323,6 +323,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The throwing functions, whose result is a throwing JS call's, each
     /// return its call's value (ADR 0644).
     throwing: &'a HashSet<DefId>,
+    /// The functions that never unwind, whose call throws only where what
+    /// it's given does (ADR 0902).
+    never_unwinding: &'a HashSet<DefId>,
     /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
     /// asks it (ADR 0419).
     keeps_capacity: bool,

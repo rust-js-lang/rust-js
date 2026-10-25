@@ -99,110 +99,62 @@ function main() {
     }
     console.log(`c ${mapped}`);
     let d = { TAG: "Err", _0: [6] };
-    const f$1 = { TAG: "Ok", _0: [7] };
+    const f = { TAG: "Ok", _0: [7] };
     let kept$1;
     if (d.TAG === "Err") {
       kept$1 = d;
     } else {
-      kept$1 = f$1;
+      kept$1 = f;
       loudDrop_drop(d._0);
     }
-    const value$2 = kept$1;
+    const value$1 = kept$1;
     if (d.TAG === "Err") {
-      if (f$1.TAG === "Ok") {
-        loudDrop_drop(f$1._0);
+      if (f.TAG === "Ok") {
+        loudDrop_drop(f._0);
       }
-      if (f$1.TAG === "Err") {
-        loudDrop_drop(f$1._0);
+      if (f.TAG === "Err") {
+        loudDrop_drop(f._0);
       }
     }
-    d = value$2;
+    d = value$1;
     console.log(`d ${d.TAG === "Err"}`);
-    let e;
     try {
-      e = pick([8], [9], loudDrop_drop, loudDrop_drop);
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
+      try {
+        const e = pick([8], [9], loudDrop_drop, loudDrop_drop);
+        const map = (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        };
+        console.log(`e ${e != null ? map(e) : 0}`);
+        const f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
+        console.log(`f ${!f}`);
+        try {
+          const value$1 = 1 == null ? undefined : 2;
+          console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const g = { TAG: "Ok", _0: [11] };
+          let kept;
+          if (g.TAG === "Err") {
+            kept = g;
+          } else {
+            kept = { TAG: "Ok", _0: 1 };
+            loudDrop_drop(g._0);
+          }
+          console.log(`g ${kept.TAG === "Ok" ? `Ok(${kept._0})` : `Err(${kept._0})`}`);
+        } finally {
+          if (f != null) {
+            loudDrop_drop(f);
+          }
+        }
+      } finally {
+        if (d.TAG === "Ok") {
+          loudDrop_drop(d._0);
+        }
       }
+    } finally {
       if (d.TAG === "Err") {
         loudDrop_drop(d._0);
       }
-      throw error;
-    }
-    const map = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    let tmp;
-    try {
-      tmp = e != null ? map(e) : 0;
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
-    console.log(`e ${tmp}`);
-    let f;
-    try {
-      f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
-    console.log(`f ${!f}`);
-    const value$1 = 1 == null ? undefined : 2;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-    const g = { TAG: "Ok", _0: [11] };
-    let kept$2;
-    try {
-      if (g.TAG === "Err") {
-        kept$2 = g;
-      } else {
-        kept$2 = { TAG: "Ok", _0: 1 };
-        loudDrop_drop(g._0);
-      }
-    } catch (error) {
-      if (f != null) {
-        loudDrop_drop(f);
-      }
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
-    console.log(`g ${kept$2.TAG === "Ok" ? `Ok(${kept$2._0})` : `Err(${kept$2._0})`}`);
-    try {
-      if (f != null) {
-        loudDrop_drop(f);
-      }
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
-    if (d.TAG === "Ok") {
-      loudDrop_drop(d._0);
-    }
-    if (d.TAG === "Err") {
-      loudDrop_drop(d._0);
     }
   } finally {
     if (b != null) {

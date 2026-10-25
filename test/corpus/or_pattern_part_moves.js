@@ -123,18 +123,15 @@ function name(shape) {
   }
   console.log(`kept ${first[0]}`);
   result = first[0];
-  try {
-    loudDrop_drop(first);
-  } finally {
-    if (shape.TAG === "Pair") {
-      if (shape$0$live) {
-        loudDrop_drop(shape._0);
-      }
-      loudDrop_drop(shape._1);
-    } else if (shape.TAG === "Triple") {
+  loudDrop_drop(first);
+  if (shape.TAG === "Pair") {
+    if (shape$0$live) {
       loudDrop_drop(shape._0);
-      loudDrop_drop(shape._1);
     }
+    loudDrop_drop(shape._1);
+  } else if (shape.TAG === "Triple") {
+    loudDrop_drop(shape._0);
+    loudDrop_drop(shape._1);
   }
   return result;
 }

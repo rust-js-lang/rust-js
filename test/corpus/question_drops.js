@@ -25,13 +25,7 @@ function climb(d) {
     throw error;
   }
   if (tmp) {
-    try {
-      dDrop_drop(d);
-    } catch (error) {
-      d = tmp;
-      dDrop_drop(d);
-      throw error;
-    }
+    dDrop_drop(d);
     d = tmp;
     let tmp$1;
     try {
@@ -41,13 +35,7 @@ function climb(d) {
       throw error;
     }
     if (tmp$1) {
-      try {
-        dDrop_drop(d);
-      } catch (error) {
-        d = tmp$1;
-        dDrop_drop(d);
-        throw error;
-      }
+      dDrop_drop(d);
       d = tmp$1;
       return d;
     }

@@ -11,11 +11,9 @@ function show(seen) {
 
 function shown(id) {
   const seen = [id];
-  try {
-    return show(seen);
-  } finally {
-    console.log(`seen ${seen[0]}`);
-  }
+  const result = show(seen);
+  console.log(`seen ${seen[0]}`);
+  return result;
 }
 
 function main() {

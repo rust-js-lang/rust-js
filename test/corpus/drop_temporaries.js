@@ -18,11 +18,8 @@ function make(name) {
 function two(a, b) {
   console.log(`two ${a[0]} ${b[0]}`);
   const result = b[0];
-  try {
-    console.log(`drop ${b[0]}`);
-  } finally {
-    console.log(`drop ${a[0]}`);
-  }
+  console.log(`drop ${b[0]}`);
+  console.log(`drop ${a[0]}`);
   return result;
 }
 
@@ -36,50 +33,24 @@ function all(items) {
 
 function main() {
   const noisy = make("a");
-  try {
-    console.log(`${Noisy.name(noisy)}`);
-  } finally {
-    console.log(`drop ${noisy[0]}`);
-  }
+  console.log(`${Noisy.name(noisy)}`);
+  console.log(`drop ${noisy[0]}`);
   const value = make("b");
   const first = value[0];
   console.log(`drop ${value[0]}`);
   const value$1 = make("c");
-  let empty;
-  try {
-    empty = !Noisy.name(value$1);
-  } finally {
-    console.log(`drop ${value$1[0]}`);
-  }
+  const empty = !Noisy.name(value$1);
+  console.log(`drop ${value$1[0]}`);
   console.log(`${first} ${empty}`);
   const kept = make("d");
   console.log(`kept ${kept[0]}`);
-  try {
-    const value = make("e");
-    const field = value[0];
-    console.log(`field ${field}`);
-    console.log(`drop ${value[0]}`);
-  } finally {
-    console.log(`drop ${kept[0]}`);
-  }
-  const value$2 = make("f");
-  let tmp;
-  try {
-    tmp = make("g");
-  } catch (error) {
-    console.log(`drop ${value$2[0]}`);
-    throw error;
-  }
-  const last = two(value$2, tmp);
-  const value$3 = make("h");
-  let tmp$1;
-  try {
-    tmp$1 = [value$3, make("i")];
-  } catch (error) {
-    console.log(`drop ${value$3[0]}`);
-    throw error;
-  }
-  console.log(`${last} ${all(tmp$1)}`);
+  const value$2 = make("e");
+  const field = value$2[0];
+  console.log(`field ${field}`);
+  console.log(`drop ${value$2[0]}`);
+  console.log(`drop ${kept[0]}`);
+  const last = two(make("f"), make("g"));
+  console.log(`${last} ${all([make("h"), make("i")])}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

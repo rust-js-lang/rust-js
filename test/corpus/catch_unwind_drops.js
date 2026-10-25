@@ -28,9 +28,9 @@ function main() {
       const _a = ["a"];
       const moved = ["moved"];
       const kept = ["kept"];
+      noisyDrop_drop(kept);
       try {
         try {
-          noisyDrop_drop(kept);
           deep(1);
         } finally {
           noisyDrop_drop(moved);

@@ -20,16 +20,8 @@ function pick(n) {
     case 1:
       return { TAG: "One", _0: make(10) };
     default: {
-      const loud = make(20);
-      let tmp;
-      try {
-        tmp = [loud, make(21)];
-      } catch (error) {
-        loudDrop_drop(loud);
-        throw error;
-      }
-      const a = tmp[0];
-      const b = tmp[1];
+      const a = make(20);
+      const b = make(21);
       return { TAG: "Both", _0: a, _1: b };
     }
   }
@@ -40,11 +32,8 @@ function someBorrowed(_1) {
   const a = _1[0];
   const b = _1[1];
   console.log(`some ${a[0]} ${b[0]}`);
-  try {
-    loudDrop_drop(a);
-  } finally {
-    loudDrop_drop(_1[1]);
-  }
+  loudDrop_drop(a);
+  loudDrop_drop(_1[1]);
 }
 
 function allBorrowed(_1) {
@@ -57,54 +46,27 @@ function allBorrowed(_1) {
 
 function allMoved([a, b]) {
   console.log(`moved ${a[0]} ${b[0]}`);
-  try {
-    loudDrop_drop(b);
-  } finally {
-    loudDrop_drop(a);
-  }
+  loudDrop_drop(b);
+  loudDrop_drop(a);
 }
 
 function main() {
   let two$0$live = false;
-  const loud = make(3);
-  let tmp;
-  try {
-    tmp = [loud, make(4)];
-  } catch (error) {
-    loudDrop_drop(loud);
-    throw error;
-  }
-  const x = tmp[0];
-  try {
-    loudDrop_drop(tmp[1]);
-  } catch (error) {
-    loudDrop_drop(x);
-    throw error;
-  }
+  const x = make(3);
+  const value = make(4);
+  loudDrop_drop(value);
   console.log(`after let ${x[0]}`);
-  let tmp$1;
-  try {
-    tmp$1 = make(30);
-  } catch (error) {
-    loudDrop_drop(x);
-    throw error;
-  }
+  const loud = make(30);
   let pair;
   try {
-    pair = { left: tmp$1, right: make(31) };
+    pair = { left: loud, right: make(31) };
   } catch (error) {
-    loudDrop_drop(tmp$1);
+    loudDrop_drop(loud);
     loudDrop_drop(x);
     throw error;
   }
   const right = pair.right;
-  try {
-    loudDrop_drop(pair.left);
-  } catch (error) {
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
+  loudDrop_drop(pair.left);
   console.log(`after pair ${right[0]}`);
 
   let two;
@@ -120,24 +82,7 @@ function main() {
     if (two.TAG === "Both") {
       two$0$live = false;
       console.log(`both ${two._0[0]}`);
-      try {
-        loudDrop_drop(two._0);
-      } catch (error) {
-        if (two.TAG === "Both") {
-          loudDrop_drop(two._1);
-        } else {
-          if (two.TAG === "Both") {
-            loudDrop_drop(two._0);
-            loudDrop_drop(two._1);
-          }
-          if (two.TAG === "One") {
-            loudDrop_drop(two._0);
-          }
-        }
-        loudDrop_drop(right);
-        loudDrop_drop(x);
-        throw error;
-      }
+      loudDrop_drop(two._0);
     } else if (two.TAG === "One") {
       console.log("one");
     } else {
@@ -167,131 +112,48 @@ function main() {
     console.log(`after match ${n}`);
   }
 
+  const y = make(5);
+  const value$1 = make(6);
+  console.log("arm");
+  loudDrop_drop(value$1);
+  console.log(`after y ${y[0]}`);
+
+  const z = make(7);
+  const value$2 = make(8);
   try {
     try {
-      const value = make(5);
-      let tmp;
       try {
-        tmp = [value, make(6)];
-      } catch (error) {
-        loudDrop_drop(value);
-        throw error;
-      }
-      const y = tmp[0];
-      console.log("arm");
-      try {
-        loudDrop_drop(tmp[1]);
-        console.log(`after y ${y[0]}`);
-        const value = make(7);
-
-        let tmp$1;
-        try {
-          tmp$1 = [value, make(8)];
-        } catch (error) {
-          if (value != null) {
-            loudDrop_drop(value);
-          }
-          throw error;
-        }
-        if (tmp$1[0]) {
-          const z = tmp$1[0];
+        if (z) {
           console.log(`if ${z[0]}`);
-          try {
-            loudDrop_drop(z);
-          } finally {
-            loudDrop_drop(tmp$1[1]);
-          }
-        } else {
-          if (tmp$1[0]) {
-            loudDrop_drop(tmp$1[0]);
-          }
-          loudDrop_drop(tmp$1[1]);
+          loudDrop_drop(z);
         }
+        loudDrop_drop(value$2);
         // `ref b` keeps the temporary for the block, less what `a` moves out.
         const before = make(1);
-        try {
-          const value = make(40);
-          let tmp;
-          try {
-            tmp = [value, make(41)];
-          } catch (error) {
-            loudDrop_drop(value);
-            throw error;
-          }
-          const a = tmp[0];
-          const b = tmp[1];
-          try {
-            try {
-              const value = make(42);
-              let tmp;
-              try {
-                tmp = [value, make(43)];
-              } catch (error) {
-                loudDrop_drop(value);
-                throw error;
-              }
-              const c = tmp[0];
-              console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
-              loudDrop_drop(tmp[0]);
-              loudDrop_drop(tmp[1]);
-            } finally {
-              loudDrop_drop(a);
-            }
-          } finally {
-            loudDrop_drop(tmp[1]);
-          }
-        } finally {
-          loudDrop_drop(before);
-        }
+        const a = make(40);
+        const b = make(41);
+        const c = make(42);
+        const value = make(43);
+        console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
+        loudDrop_drop(c);
+        loudDrop_drop(value);
+        loudDrop_drop(a);
+        loudDrop_drop(b);
+        loudDrop_drop(before);
         const kept = make(9);
         const whole = kept[0];
         loudDrop_drop(kept);
-        const value$1 = make(50);
-        let tmp$2;
-        try {
-          tmp$2 = [value$1, make(51)];
-        } catch (error) {
-          loudDrop_drop(value$1);
-          throw error;
-        }
-        someBorrowed(tmp$2);
-        const value$2 = make(52);
-        let tmp$3;
-        try {
-          tmp$3 = [value$2, make(53)];
-        } catch (error) {
-          loudDrop_drop(value$2);
-          throw error;
-        }
-        allBorrowed(tmp$3);
-        const value$3 = make(54);
-        let tmp$4;
-        try {
-          tmp$4 = [value$3, make(55)];
-        } catch (error) {
-          loudDrop_drop(value$3);
-          throw error;
-        }
-        allMoved(tmp$4);
+        someBorrowed([make(50), make(51)]);
+        allBorrowed([make(52), make(53)]);
+        allMoved([make(54), make(55)]);
         const closure = (_2) => {
           const a = _2[0];
           const b = _2[1];
           console.log(`closure ${a[0]} ${b[0]}`);
-          try {
-            loudDrop_drop(a);
-          } finally {
-            loudDrop_drop(_2[1]);
-          }
+          loudDrop_drop(a);
+          loudDrop_drop(_2[1]);
         };
-        const value$4 = make(56);
-        let tmp$5;
-        try {
-          tmp$5 = [value$4, make(57)];
-        } catch (error) {
-          loudDrop_drop(value$4);
-          throw error;
-        }
-        closure(tmp$5);
+        closure([make(56), make(57)]);
         console.log(`end ${whole}`);
       } finally {
         loudDrop_drop(y);

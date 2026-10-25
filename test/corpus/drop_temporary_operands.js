@@ -18,23 +18,14 @@ function third(fail) {
 
 function three(a, b, n) {
   console.log(`three ${a[0]} ${b[0]}`);
-  try {
-    console.log(`drop ${b[0]}`);
-  } finally {
-    console.log(`drop ${a[0]}`);
-  }
+  console.log(`drop ${b[0]}`);
+  console.log(`drop ${a[0]}`);
   return n;
 }
 
 function main() {
   const value = make("a");
-  let noisy;
-  try {
-    noisy = make("b");
-  } catch (error) {
-    console.log(`drop ${value[0]}`);
-    throw error;
-  }
+  const noisy = make("b");
   let tmp;
   try {
     tmp = third(false);
@@ -44,22 +35,16 @@ function main() {
     throw error;
   }
   console.log(`${three(value, noisy, tmp)}`);
-  const value$1 = make("c");
+  const value$2 = make("c");
+  const value$1 = make("d");
   let tmp$1;
   try {
-    tmp$1 = make("d");
+    tmp$1 = third(true);
   } catch (error) {
     console.log(`drop ${value$1[0]}`);
+    console.log(`drop ${value$2[0]}`);
     throw error;
   }
-  let tmp$2;
-  try {
-    tmp$2 = third(true);
-  } catch (error) {
-    console.log(`drop ${tmp$1[0]}`);
-    console.log(`drop ${value$1[0]}`);
-    throw error;
-  }
-  console.log(`${three(value$1, tmp$1, tmp$2)}`);
+  console.log(`${three(value$2, value$1, tmp$1)}`);
 }
 //# sourceMappingURL=case.js.map

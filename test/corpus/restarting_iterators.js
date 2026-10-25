@@ -170,21 +170,8 @@ function main() {
   // A zip isn't done with at its first end: its other side, which drops
   // what it holds, is still stepped after (#279).
   const louds = $range(20, 25).map((value) => [value]);
-  let louds$live = true;
-  let flaky;
-  try {
-    flaky = f();
-    louds$live = false;
-  } catch (error) {
-    if (louds$live) {
-      for (const item of louds) {
-        loudDrop_drop(item);
-      }
-    }
-    throw error;
-  }
   const zipped = $lazyZip(
-    $iterator(flaky, flakyIterator_next),
+    $iterator(f(), flakyIterator_next),
     $closing($iter(louds), $dropEach(loudDrop_drop)),
   );
   let first;

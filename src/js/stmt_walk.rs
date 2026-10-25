@@ -340,9 +340,11 @@ pub fn is_read_pair(props: &[Prop]) -> bool {
 }
 
 /// Whether `a` and `b` are the same JS, part by part, wherever each was
-/// written and whatever it names what it declares: the drops a panic runs
-/// and the scope's end runs, `for (const item$1 of v)` and `for (const item
-/// of v)`, say.
+/// written, whatever it names what it declares and whatever's known of its
+/// parts, the same JS doing the same: the drops a panic runs and the
+/// scope's end runs, `for (const item$1 of v)` and `for (const item of
+/// v)`, say, one of a function the analysis found never unwinds, so marked,
+/// the other not (ADR 0902).
 pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
     let canonical = |stmts: &[Stmt]| {
         let mut stmts = stmts.to_vec();
@@ -360,6 +362,7 @@ pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
         rename_binders(&mut stmts, &mut |n| rename(n));
         each_expr_mut(&mut stmts, &mut |e| {
             e.span = Span::NONE;
+            e.facts = Facts::NONE;
             match &mut e.kind {
                 ExprKind::Var(name) => rename(name),
                 ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
@@ -404,6 +407,33 @@ pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
         }
         _ => {}
     });
+}
+
+/// `change` of `stmts`, a renaming of `name`, made where `name` is the one
+/// `stmts` mean by it: each function in them that takes a parameter of the
+/// name, a closure's `(_2) => _2[0]`, reads its own there, so it's set
+/// apart while `change` runs, then given back.
+pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&mut Vec<Stmt>)) {
+    const APART: &str = "\u{0}apart";
+    each_expr_mut(stmts, &mut |e| {
+        let (params, body) = match &mut e.kind {
+            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => (params, body),
+            ExprKind::Function(function) => (&mut function.params, &mut function.body),
+            _ => return,
+        };
+        if params.iter().any(|p| p.names().contains(&name)) {
+            for param in params.iter_mut() {
+                param.each_name_mut(&mut |n| {
+                    if n == name {
+                        *n = APART.to_string();
+                    }
+                });
+            }
+            renamed(body, name, APART);
+        }
+    });
+    change(stmts);
+    renamed(stmts, APART, name);
 }
 
 /// The names `stmts` declare, in order, an arrow's in them too.

@@ -200,4 +200,12 @@ export const mutations: Mutation[] = [
     replace: "                if callee.helper_name().is_some() && !args.iter().any(Expr::may_throw))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
   },
+  {
+    name: "shadowed-temporary-renamed",
+    breaks: "a temporary renamed `value` renames a closure's own parameter of its name too, so the closure reads the outer value",
+    file: "src/js/stmt_walk.rs",
+    find: "        if params.iter().any(|p| p.names().contains(&name)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
+  },
 ];

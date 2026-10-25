@@ -135,11 +135,8 @@ function main() {
     const next = $next(zipped);
     const value = ([a, b]) => {
       const result = [a[0], b[0]];
-      try {
-        loudDrop_drop(b);
-      } finally {
-        loudDrop_drop(a);
-      }
+      loudDrop_drop(b);
+      loudDrop_drop(a);
       return result;
     };
     const value$1 = next ? value(next) : undefined;
@@ -147,11 +144,8 @@ function main() {
     const value$2 = $next(zipped);
     const value$3 = ([a, b]) => {
       const result = [a[0], b[0]];
-      try {
-        loudDrop_drop(b);
-      } finally {
-        loudDrop_drop(a);
-      }
+      loudDrop_drop(b);
+      loudDrop_drop(a);
       return result;
     };
     const value$4 = value$2 ? value$3(value$2) : undefined;
@@ -407,83 +401,11 @@ function main() {
       const i = tmp$2[0];
       const l = tmp$2[1];
       if (i !== 1) {
-        try {
-          loudDrop_drop(l);
-        } catch (error) {
-          iter.return();
-          if (fused$live) {
-            if (fused.iter != null) {
-              for (const item of fused.iter) {
-                loudDrop_drop(item);
-              }
-            }
-          }
-          if (stepped$live) {
-            stepped.return();
-          }
-          if (taking$live) {
-            taking.return();
-          }
-          if (skipping$live) {
-            skipping.return();
-          }
-          if (numbered$live) {
-            numbered.return();
-          }
-          if (kept$live) {
-            kept.return();
-          }
-          if (chained$live) {
-            chained.return();
-          }
-          if (pair$live) {
-            if (pair != null) {
-              loudDrop_drop(pair[0]);
-              loudDrop_drop(pair[1]);
-            }
-          }
-          throw error;
-        }
+        loudDrop_drop(l);
         continue;
       }
       console.log(`break at ${l[0]}`);
-      try {
-        loudDrop_drop(l);
-      } catch (error) {
-        iter.return();
-        if (fused$live) {
-          if (fused.iter != null) {
-            for (const item of fused.iter) {
-              loudDrop_drop(item);
-            }
-          }
-        }
-        if (stepped$live) {
-          stepped.return();
-        }
-        if (taking$live) {
-          taking.return();
-        }
-        if (skipping$live) {
-          skipping.return();
-        }
-        if (numbered$live) {
-          numbered.return();
-        }
-        if (kept$live) {
-          kept.return();
-        }
-        if (chained$live) {
-          chained.return();
-        }
-        if (pair$live) {
-          if (pair != null) {
-            loudDrop_drop(pair[0]);
-            loudDrop_drop(pair[1]);
-          }
-        }
-        throw error;
-      }
+      loudDrop_drop(l);
     }
     try {
       iter.return();
@@ -643,11 +565,8 @@ function main() {
     tmp$5 = $next(z);
     tmp$6 = ([a, b]) => {
       const result = [a[0], b[0]];
-      try {
-        loudDrop_drop(b);
-      } finally {
-        loudDrop_drop(a);
-      }
+      loudDrop_drop(b);
+      loudDrop_drop(a);
       return result;
     };
   } catch (error) {

@@ -59,12 +59,7 @@ function main() {
     }
     const n = tmp;
     console.log(`got ${n[0]}`);
-    try {
-      nDrop_drop(n);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
+    nDrop_drop(n);
   }
   console.log("after loop");
   const w = $range(6, 10).map((value) => [value]);
@@ -81,20 +76,10 @@ function main() {
       const n = tmp$1;
       if (n[0] === 7) {
         console.log("break");
-        try {
-          nDrop_drop(n);
-        } catch (error) {
-          iter.return();
-          throw error;
-        }
+        nDrop_drop(n);
       } else {
         console.log(`got ${n[0]}`);
-        try {
-          nDrop_drop(n);
-        } catch (error) {
-          iter.return();
-          throw error;
-        }
+        nDrop_drop(n);
         continue;
       }
     }
@@ -182,41 +167,9 @@ function main() {
         const n = tmp$1;
         console.log(`after skip ${n[0]}`);
         if (n[0] === 43) {
-          try {
-            nDrop_drop(n);
-          } catch (error) {
-            iter.return();
-            for (const item of all) {
-              nDrop_drop(item);
-            }
-            if (one$live) {
-              if (one != null) {
-                nDrop_drop(one);
-              }
-            }
-            if (t$live) {
-              t.return();
-            }
-            throw error;
-          }
+          nDrop_drop(n);
         } else {
-          try {
-            nDrop_drop(n);
-          } catch (error) {
-            iter.return();
-            for (const item of all) {
-              nDrop_drop(item);
-            }
-            if (one$live) {
-              if (one != null) {
-                nDrop_drop(one);
-              }
-            }
-            if (t$live) {
-              t.return();
-            }
-            throw error;
-          }
+          nDrop_drop(n);
           continue;
         }
       }
@@ -695,46 +648,7 @@ function main() {
       }
       const n = tmp$8;
       console.log(`lent got ${n[0]}`);
-      try {
-        nDrop_drop(n);
-      } catch (error) {
-        if (owned$live) {
-          for (const item of owned) {
-            nDrop_drop(item);
-          }
-        }
-        for (const item of first) {
-          nDrop_drop(item);
-        }
-        if (next$live) {
-          if (next != null) {
-            nDrop_drop(next);
-          }
-        }
-        if (lent$live) {
-          for (const item of lent) {
-            nDrop_drop(item);
-          }
-        }
-        for (const item of kept) {
-          nDrop_drop(item);
-        }
-        if (skipped$live) {
-          skipped.return();
-        }
-        for (const item of all) {
-          nDrop_drop(item);
-        }
-        if (one$live) {
-          if (one != null) {
-            nDrop_drop(one);
-          }
-        }
-        if (t$live) {
-          t.return();
-        }
-        throw error;
-      }
+      nDrop_drop(n);
     }
     owned$live = false;
     let tmp$9;

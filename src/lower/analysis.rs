@@ -18,6 +18,7 @@ mod only_called;
 mod plain_locals;
 mod rc_counts;
 mod throwing;
+mod unwinding;
 
 pub(super) use throwing::call_throws;
 
@@ -505,6 +506,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub failing: HashSet<DefId>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: HashSet<DefId>,
+    /// The functions that never unwind, whose call throws only where what
+    /// it's given does (ADR 0902).
+    pub never_unwinding: HashSet<DefId>,
     /// The functions that take their caller's location (ADR 0427).
     pub caller_locations: HashSet<DefId>,
     /// Whether the crate asks a `Vec` its capacity (ADR 0419).
@@ -962,6 +966,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
+    let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
@@ -1004,6 +1009,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         type_facts,
         failing,
         throwing,
+        never_unwinding,
         caller_locations,
         asks_capacity,
         generic_consts,

@@ -14,27 +14,39 @@ function check(k) {
 
 function replaced(keys) {
   let x = [0];
+  let iter;
   try {
-    const iter = $iter(keys);
-    let k;
-    while ((k = $next(iter)) != null) {
-      const x$1 = [k];
-      try {
-        check(k);
-      } catch (error) {
-        console.log(`drop ${x$1[0]}`);
-        throw error;
-      }
-      try {
-        console.log(`drop ${x[0]}`);
-      } finally {
-        x = x$1;
-      }
-    }
-    return x[0];
-  } finally {
+    iter = $iter(keys);
+  } catch (error) {
     console.log(`drop ${x[0]}`);
+    throw error;
   }
+  while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter);
+    } catch (error) {
+      console.log(`drop ${x[0]}`);
+      throw error;
+    }
+    if (tmp == null) {
+      break;
+    }
+    const k = tmp;
+    const x$1 = [k];
+    try {
+      check(k);
+    } catch (error) {
+      console.log(`drop ${x$1[0]}`);
+      throw error;
+    } finally {
+      console.log(`drop ${x[0]}`);
+    }
+    x = x$1;
+  }
+  const result = x[0];
+  console.log(`drop ${x[0]}`);
+  return result;
 }
 
 // A closure's variable it captures, set by what it makes, read after the

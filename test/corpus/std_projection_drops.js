@@ -112,15 +112,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     }
     const item = loud;
     if (item[0] === "stop") {
-      try {
-        loudDrop_drop(item);
-      } catch (error) {
-        dropIIntoIter?.(iter);
-        if (it$live) {
-          dropIIntoIter?.(it);
-        }
-        throw error;
-      }
+      loudDrop_drop(item);
       try {
         dropIIntoIter?.(iter);
       } catch (error) {

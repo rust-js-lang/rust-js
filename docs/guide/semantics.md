@@ -503,7 +503,11 @@ with no `Drop` impl has no extra JS ([0098](../decisions/0098-destructors.md)).
 What can't panic needs no `finally`: a `println!` of numbers and text,
 whose stream never fails, is followed by what's dropped after it,
 `console.log(..); $unborrow(b);`
-([0901](../decisions/0901-a-print-throws-only-where-its-text-does.md)).
+([0901](../decisions/0901-a-print-throws-only-where-its-text-does.md)), as
+is a call of the crate's function that can't panic either, one whose
+body only prints and reads, `loudDrop_drop(b); loudDrop_drop(a);`; one
+that may, by an index or a `Display` that panics, keeps its `finally`
+([0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md)).
 A `Drop` is its body where it's dropped, at each drop, its guard its
 fields, `const previous = depth; try { .. } finally { depth = previous; }`
 ([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).

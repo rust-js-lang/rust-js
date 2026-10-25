@@ -44,31 +44,14 @@ function countDoubleEndedIterator_nthBack(count, n) {
 
 function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   console.log("rfold");
-  let acc$live = true;
   let acc = init;
   let result;
   try {
     try {
-      while (true) {
-        let nextBack;
-        try {
-          nextBack = countDoubleEndedIterator_nextBack(count);
-        } catch (error) {
-          if (acc$live) {
-            dropB?.(acc);
-          }
-          throw error;
-        }
-        if (nextBack == null) {
-          break;
-        }
-        const x = nextBack;
-        acc$live = false;
-        const value = f(acc, x);
-        acc$live = true;
-        acc = value;
+      let x;
+      while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
+        acc = f(acc, x);
       }
-      acc$live = false;
       result = acc;
     } finally {
       dropF?.(f);

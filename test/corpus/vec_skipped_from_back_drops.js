@@ -50,12 +50,7 @@ function main() {
     }
     const loud = tmp;
     console.log(`got ${loud[0]}`);
-    try {
-      loudDrop_drop(loud);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
+    loudDrop_drop(loud);
   }
   const skip = $held(
     $skipping($rev($closing($iter(louds(5, 3)), $dropEach(loudDrop_drop))), 1, loudDrop_drop),
@@ -114,12 +109,7 @@ function main() {
       }
       const loud = tmp;
       console.log(`got ${loud[0]}`);
-      try {
-        loudDrop_drop(loud);
-      } catch (error) {
-        iter.return();
-        throw error;
-      }
+      loudDrop_drop(loud);
     }
     iter = $stepBy(
       $stepBy($rev($closing($iter(louds(16, 3)), $dropEach(loudDrop_drop))), 1, loudDrop_drop),
@@ -140,12 +130,7 @@ function main() {
       }
       const loud = tmp$1;
       console.log(`got ${loud[0]}`);
-      try {
-        loudDrop_drop(loud);
-      } catch (error) {
-        iter.return();
-        throw error;
-      }
+      loudDrop_drop(loud);
     }
     const deque = louds(20, 4).slice();
     const value$2 = $held($rev($closing($iter(deque), $dropEach(loudDrop_drop))));
@@ -294,17 +279,7 @@ function main() {
         }
         const loud = tmp$1;
         console.log(`got ${loud[0]}`);
-        try {
-          loudDrop_drop(loud);
-        } catch (error) {
-          iter.return();
-          if (taken$live) {
-            if (taken != null) {
-              loudDrop_drop(taken);
-            }
-          }
-          throw error;
-        }
+        loudDrop_drop(loud);
       }
       console.log("end");
       taken$live = false;

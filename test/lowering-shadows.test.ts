@@ -178,7 +178,7 @@ pub fn chained(s: &str) -> String {
   // Read and set through a handle on the old one after.
   expect(js).toContain("  const t$1 = n;\n  part.value = $asciiCase(part.value, true);\n");
   // Dropped at the scope's end, after the new one.
-  expect(js).toContain("    console.log(`drop ${g$1}`);\n  } finally {\n    console.log(`drop ${g}`);\n");
+  expect(js).toContain("  console.log(`drop ${g$1}`);\n  console.log(`drop ${g}`);\n");
   // A number where it was text.
   expect(js).toContain("  let text = `${d}1`;\n  text = $unwrapOk(");
   // The pattern's own, set.

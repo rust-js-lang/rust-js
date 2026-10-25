@@ -207,18 +207,10 @@ function consume(n) {
   );
   console.log(`set ${set.size}`);
   const value$3 = $iter(three());
-  let tmp$2;
-  try {
-    tmp$2 = limit();
-  } catch (error) {
-    for (const item of value$3) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
+  const value$4 = limit();
   const kept = Iterator.from(
     $closing(value$3, $dropEach(loudDrop_drop))
-      .take(tmp$2)
+      .take(value$4)
       .filter((item, i) => {
         if (i % 2 === 0) {
           return true;
@@ -234,18 +226,10 @@ function consume(n) {
     })
     .toArray().length;
   console.log(`kept ${kept}`);
-  const value$4 = $iter(three());
-  let tmp$3;
-  try {
-    tmp$3 = limit();
-  } catch (error) {
-    for (const item of value$4) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
+  const value$5 = $iter(three());
+  const value$6 = limit();
   const peekable = iterator_peekable(
-    $held($closing(value$4, $dropEach(loudDrop_drop)).take(tmp$3)),
+    $held($closing(value$5, $dropEach(loudDrop_drop)).take(value$6)),
     { next: $next },
     (take) => {
       take.return();
@@ -274,33 +258,25 @@ function consume(n) {
       loudDrop_drop($someValue(peekable.peeked));
     }
   }
-  const value$5 = $iter(three());
-  let tmp$4;
+  const value$7 = $iter(three());
+  const value$8 = limit();
+  const value$9 = $closing(value$7, $dropEach(loudDrop_drop)).take(value$8);
+  const value$10 = [[20]];
+  let tmp$2;
   try {
-    tmp$4 = limit();
+    tmp$2 = $iter(value$10);
   } catch (error) {
-    for (const item of value$5) {
-      loudDrop_drop(item);
-    }
+    value$9.return();
     throw error;
   }
-  const value$6 = $closing(value$5, $dropEach(loudDrop_drop)).take(tmp$4);
-  const value$7 = [[20]];
-  let tmp$5;
+  let tmp$3;
   try {
-    tmp$5 = $iter(value$7);
+    tmp$3 = $closing(tmp$2, $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$6.return();
+    value$9.return();
     throw error;
   }
-  let tmp$6;
-  try {
-    tmp$6 = $closing(tmp$5, $dropEach(loudDrop_drop)).take(0);
-  } catch (error) {
-    value$6.return();
-    throw error;
-  }
-  const chain = $held($lazyChain(value$6, tmp$6));
+  const chain = $held($lazyChain(value$9, tmp$3));
   try {
     console.log(
       `chained ${$lent(chain).every((_2) => {
@@ -357,23 +333,23 @@ function consume(n) {
     2,
   ).reduce((a, b) => (a + b) | 0, 0);
   console.log(`front ${front}`);
-  const value$8 = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
-  const value$9 = [[20]];
-  let tmp$7;
+  const value$11 = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
+  const value$12 = [[20]];
+  let tmp$4;
   try {
-    tmp$7 = $iter(value$9);
+    tmp$4 = $iter(value$12);
   } catch (error) {
-    value$8.return();
+    value$11.return();
     throw error;
   }
-  let tmp$8;
+  let tmp$5;
   try {
-    tmp$8 = $closing(tmp$7, $dropEach(loudDrop_drop)).take(0);
+    tmp$5 = $closing(tmp$4, $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
-    value$8.return();
+    value$11.return();
     throw error;
   }
-  const stepped = $held($lazyChain(value$8, tmp$8));
+  const stepped = $held($lazyChain(value$11, tmp$5));
   try {
     const next = $next(stepped);
     const value = (l) => {
@@ -389,40 +365,32 @@ function consume(n) {
       loudDrop_drop(loud);
     }
     console.log("after");
-    const stepBy = $stepBy(
-      $closing(
-        $iterator(
-          counter(3),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          countIterator_sizeHint,
-          undefined,
-          countIterator_nth,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_nthBack,
-        ),
-        (it) => {
-          console.log(`drop count ${it.of.at} ${it.of.end}`);
-        },
-      ),
-      2,
-    );
-    let count;
-    try {
-      count = counter(2);
-    } catch (error) {
-      stepBy.return();
-      throw error;
-    }
     console.log(
       `[${[
-        ...stepBy,
+        ...$stepBy(
+          $closing(
+            $iterator(
+              counter(3),
+              countIterator_next,
+              false,
+              undefined,
+              undefined,
+              countIterator_sizeHint,
+              undefined,
+              countIterator_nth,
+              undefined,
+              undefined,
+              countDoubleEndedIterator_nthBack,
+            ),
+            (it) => {
+              console.log(`drop count ${it.of.at} ${it.of.end}`);
+            },
+          ),
+          2,
+        ),
         ...$closing(
           $iterator(
-            count,
+            counter(2),
             countIterator_next,
             false,
             undefined,
@@ -538,12 +506,13 @@ function held(n) {
               }, 0)}`,
             );
           }
+          const count = counter(5);
           try {
             const stepped = $held(
               $stepBy(
                 $closing(
                   $iterator(
-                    counter(5),
+                    count,
                     countIterator_next,
                     false,
                     undefined,
@@ -583,12 +552,13 @@ function held(n) {
                     .reduce((k) => (k + 1) | 0, 0)}`,
                 );
               }
+              const value = counter(5);
               try {
                 const stepped = $held(
                   $stepBy(
                     $closing(
                       $iterator(
-                        counter(5),
+                        value,
                         countIterator_next,
                         false,
                         undefined,

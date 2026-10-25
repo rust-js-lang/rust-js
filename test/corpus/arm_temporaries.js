@@ -132,307 +132,78 @@ function main() {
     loudDrop_drop,
   );
   try {
-    console.log(`both ${Mapped.count(both)}`);
-  } catch (error) {
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
+    try {
+      console.log(`both ${Mapped.count(both)}`);
+      const one = Mapped.andThen(
+        { TAG: "Ambiguous", _0: "c", _1: "d" },
+        (n) => make(n, n === "c"),
+        loudDrop_drop,
+      );
+      try {
+        try {
+          console.log(`one ${Mapped.count(one)}`);
+          const single = Mapped.andThen(
+            { TAG: "Single", _0: "e" },
+            (n) => make(n, true),
+            loudDrop_drop,
+          );
+          try {
+            try {
+              console.log(`single ${Mapped.count(single)}`);
+              const none = Mapped.andThen(
+                { TAG: "Single", _0: "f" },
+                (n) => make(n, false),
+                loudDrop_drop,
+              );
+              try {
+                try {
+                  console.log(`none ${Mapped.count(none)}`);
+                  console.log(`first ${first("g")}`);
+                  console.log(`first ${first(undefined)}`);
+                  console.log("end");
+                } finally {
+                  if (none.TAG === "Single") {
+                    loudDrop_drop(none._0);
+                  }
+                }
+              } finally {
+                if (none.TAG === "Ambiguous") {
+                  loudDrop_drop(none._0);
+                  loudDrop_drop(none._1);
+                }
+              }
+            } finally {
+              if (single.TAG === "Single") {
+                loudDrop_drop(single._0);
+              }
+            }
+          } finally {
+            if (single.TAG === "Ambiguous") {
+              loudDrop_drop(single._0);
+              loudDrop_drop(single._1);
+            }
+          }
+        } finally {
+          if (one.TAG === "Single") {
+            loudDrop_drop(one._0);
+          }
+        }
+      } finally {
+        if (one.TAG === "Ambiguous") {
+          loudDrop_drop(one._0);
+          loudDrop_drop(one._1);
+        }
+      }
+    } finally {
+      if (both.TAG === "Single") {
+        loudDrop_drop(both._0);
+      }
     }
+  } finally {
     if (both.TAG === "Ambiguous") {
       loudDrop_drop(both._0);
       loudDrop_drop(both._1);
     }
-    throw error;
-  }
-  let one;
-  try {
-    one = Mapped.andThen(
-      { TAG: "Ambiguous", _0: "c", _1: "d" },
-      (n) => make(n, n === "c"),
-      loudDrop_drop,
-    );
-  } catch (error) {
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    console.log(`one ${Mapped.count(one)}`);
-  } catch (error) {
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  let single;
-  try {
-    single = Mapped.andThen({ TAG: "Single", _0: "e" }, (n) => make(n, true), loudDrop_drop);
-  } catch (error) {
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    console.log(`single ${Mapped.count(single)}`);
-  } catch (error) {
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  let none;
-  try {
-    none = Mapped.andThen({ TAG: "Single", _0: "f" }, (n) => make(n, false), loudDrop_drop);
-  } catch (error) {
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    console.log(`none ${Mapped.count(none)}`);
-  } catch (error) {
-    if (none.TAG === "Single") {
-      loudDrop_drop(none._0);
-    }
-    if (none.TAG === "Ambiguous") {
-      loudDrop_drop(none._0);
-      loudDrop_drop(none._1);
-    }
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    console.log(`first ${first("g")}`);
-  } catch (error) {
-    if (none.TAG === "Single") {
-      loudDrop_drop(none._0);
-    }
-    if (none.TAG === "Ambiguous") {
-      loudDrop_drop(none._0);
-      loudDrop_drop(none._1);
-    }
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    console.log(`first ${first(undefined)}`);
-  } catch (error) {
-    if (none.TAG === "Single") {
-      loudDrop_drop(none._0);
-    }
-    if (none.TAG === "Ambiguous") {
-      loudDrop_drop(none._0);
-      loudDrop_drop(none._1);
-    }
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  console.log("end");
-  try {
-    if (none.TAG === "Single") {
-      loudDrop_drop(none._0);
-    }
-    if (none.TAG === "Ambiguous") {
-      loudDrop_drop(none._0);
-      loudDrop_drop(none._1);
-    }
-  } catch (error) {
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-  } catch (error) {
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  try {
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-  } catch (error) {
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
-  if (both.TAG === "Single") {
-    loudDrop_drop(both._0);
-  }
-  if (both.TAG === "Ambiguous") {
-    loudDrop_drop(both._0);
-    loudDrop_drop(both._1);
   }
 }
 //# sourceMappingURL=case.js.map

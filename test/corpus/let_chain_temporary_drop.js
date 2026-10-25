@@ -12,14 +12,7 @@ export const D = {
 };
 export function f(b) {
   const d = [1];
-  let tmp;
-  try {
-    tmp = D.n(d) === 1;
-  } catch (error) {
-    console.log(`drop ${d[0]}`);
-    throw error;
-  }
-  if (tmp) {
+  if (D.n(d) === 1) {
     console.log(`drop ${d[0]}`);
     if (b) {
       console.log("then");

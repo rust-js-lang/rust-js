@@ -14,14 +14,7 @@ function make() {}
 
 function main() {
   const temporary = make();
-  let ready;
-  try {
-    ready = Temporary.ready(temporary);
-  } catch (error) {
-    console.log("drop");
-    throw error;
-  }
-  if (ready) {
+  if (Temporary.ready(temporary)) {
     console.log("drop");
     console.log("ready");
   } else {

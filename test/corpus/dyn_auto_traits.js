@@ -93,11 +93,8 @@ function main() {
   console.log(`drops ${drops}`);
 
   const kept = ["borrowed"];
-  try {
-    keep({ value: kept, impl: { $drop: noisyDrop_drop } });
-    console.log("end");
-  } finally {
-    noisyDrop_drop(kept);
-  }
+  keep({ value: kept, impl: { $drop: noisyDrop_drop } });
+  console.log("end");
+  noisyDrop_drop(kept);
 }
 //# sourceMappingURL=case.js.map

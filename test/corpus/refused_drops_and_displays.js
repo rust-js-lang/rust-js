@@ -137,16 +137,7 @@ function pick(n) {
 }
 function matched() {
   const w = [[3], 1];
-  let tmp;
-  try {
-    tmp = W.r(w);
-  } catch (error) {
-    if (w[0] != null) {
-      ddDrop_drop(w[0]);
-    }
-    throw error;
-  }
-  if (tmp) {
+  if (W.r(w)) {
     console.log("some");
   } else {
     console.log("none");
@@ -175,16 +166,7 @@ function matched() {
     }
     throw error;
   }
-  let tmp$1;
-  try {
-    tmp$1 = W.r(w);
-  } catch (error) {
-    if (w[0] != null) {
-      ddDrop_drop(w[0]);
-    }
-    throw error;
-  }
-  if (tmp$1) {
+  if (W.r(w)) {
     console.log("some");
   } else {
     console.log("none");

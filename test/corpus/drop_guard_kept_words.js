@@ -11,22 +11,10 @@ function main() {
   const _arguments = "arguments";
   const restore = "restore";
   console.log("body");
-  try {
-    try {
-      try {
-        try {
-          console.log(`drop ${restore}`);
-        } finally {
-          console.log(`drop ${_arguments}`);
-        }
-      } finally {
-        console.log(`drop ${_eval}`);
-      }
-    } finally {
-      console.log(`drop ${_new}`);
-    }
-  } finally {
-    console.log(`drop ${_in}`);
-  }
+  console.log(`drop ${restore}`);
+  console.log(`drop ${_arguments}`);
+  console.log(`drop ${_eval}`);
+  console.log(`drop ${_new}`);
+  console.log(`drop ${_in}`);
 }
 //# sourceMappingURL=case.js.map

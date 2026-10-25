@@ -24,17 +24,10 @@ function make(n) {
 
 function tail(n) {
   const kept = 100 + n;
-  let result;
-  try {
-    const noisy = make(n);
-    try {
-      result = Noisy.big(noisy);
-    } finally {
-      console.log(`drop ${noisy[0]}`);
-    }
-  } finally {
-    console.log(`drop ${kept}`);
-  }
+  const noisy = make(n);
+  const result = Noisy.big(noisy);
+  console.log(`drop ${noisy[0]}`);
+  console.log(`drop ${kept}`);
   return result;
 }
 
@@ -53,13 +46,7 @@ function early(stop) {
 
 function keptEarly(stop) {
   const kept = 30;
-  let noisy;
-  try {
-    noisy = make(31);
-  } catch (error) {
-    console.log(`drop ${kept}`);
-    throw error;
-  }
+  const noisy = make(31);
   let result;
   if (!stop) {
     result = {
@@ -70,24 +57,14 @@ function keptEarly(stop) {
     return result;
   }
   result = undefined;
-  try {
-    console.log(`drop ${noisy[0]}`);
-  } finally {
-    console.log(`drop ${kept}`);
-  }
+  console.log(`drop ${noisy[0]}`);
+  console.log(`drop ${kept}`);
   return result;
 }
 
 function main() {
   const value = make(1);
-  let big;
-  try {
-    big = Noisy.big(value);
-  } catch (error) {
-    console.log(`drop ${value[0]}`);
-    throw error;
-  }
-  if (big) {
+  if (Noisy.big(value)) {
     console.log(`drop ${value[0]}`);
     console.log("then");
   } else {
@@ -98,62 +75,47 @@ function main() {
   let n = 2;
   while (true) {
     const value = make(n);
-    try {
-      if (!(Noisy.big(value) === false)) {
-        break;
-      }
-    } finally {
+    if (Noisy.big(value) !== false) {
       console.log(`drop ${value[0]}`);
+
+      break;
     }
+    console.log(`drop ${value[0]}`);
     console.log(`round ${n}`);
     n = (n + 1) & 255;
   }
   const inner = 50;
-  let found;
-  try {
-    const value = make(5);
-    try {
-      found = Noisy.big(value);
-    } finally {
-      console.log(`drop ${value[0]}`);
-    }
-  } finally {
-    console.log(`drop ${inner}`);
-  }
+  const value$1 = make(5);
+  const found = Noisy.big(value$1);
+  console.log(`drop ${value$1[0]}`);
+  console.log(`drop ${inner}`);
   console.log(`found ${found}`);
 
   console.log(`tail ${tail(6)}`);
 
-  const value$1 = make(7);
-  const value$2 = [7];
+  const value$2 = make(7);
+  const value$3 = [7];
   try {
     try {
-      if (!$eq(value$1, value$2)) {
-        $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
+      if (!$eq(value$2, value$3)) {
+        $assertFailed("Eq", noisyDebug_fmt(value$2), noisyDebug_fmt(value$3));
       }
     } finally {
-      console.log(`drop ${value$2[0]}`);
+      console.log(`drop ${value$3[0]}`);
     }
   } finally {
-    console.log(`drop ${value$1[0]}`);
+    console.log(`drop ${value$2[0]}`);
   }
-  const value$3 = make(8);
-  let tmp;
-  try {
-    tmp = Noisy.big(value$3);
-  } catch (error) {
-    console.log(`drop ${value$3[0]}`);
-    throw error;
-  }
-  if (!tmp) {
-    console.log(`drop ${value$3[0]}`);
+  const value$4 = make(8);
+  if (!Noisy.big(value$4)) {
+    console.log(`drop ${value$4[0]}`);
     throw new Error("assertion failed: make(8).big()");
   }
-  console.log(`drop ${value$3[0]}`);
-  const value$4 = early(true);
-  console.log(`early ${!value$4}`);
-  if (value$4 != null) {
-    console.log(`drop ${value$4.a[0]}`);
+  console.log(`drop ${value$4[0]}`);
+  const value$5 = early(true);
+  console.log(`early ${!value$5}`);
+  if (value$5 != null) {
+    console.log(`drop ${value$5.a[0]}`);
   }
   let pair = early(false);
   let pair$0$live = true;
@@ -173,11 +135,9 @@ function main() {
   pair$0$live = false;
   const check = (n) => {
     const noisy = make(n);
-    try {
-      return Noisy.big(noisy);
-    } finally {
-      console.log(`drop ${noisy[0]}`);
-    }
+    const result = Noisy.big(noisy);
+    console.log(`drop ${noisy[0]}`);
+    return result;
   };
   console.log(`check ${check(10)}`);
   pair = (stop) => {
@@ -192,15 +152,15 @@ function main() {
       b: 2,
     };
   };
-  const value$5 = pair(true);
-  console.log(`pair ${!value$5}`);
-  if (value$5 != null) {
-    console.log(`drop ${value$5.a[0]}`);
-  }
-  const value$6 = keptEarly(true);
-  console.log(`kept ${!value$6}`);
+  const value$6 = pair(true);
+  console.log(`pair ${!value$6}`);
   if (value$6 != null) {
     console.log(`drop ${value$6.a[0]}`);
+  }
+  const value$7 = keptEarly(true);
+  console.log(`kept ${!value$7}`);
+  if (value$7 != null) {
+    console.log(`drop ${value$7.a[0]}`);
   }
   console.log("end");
 }

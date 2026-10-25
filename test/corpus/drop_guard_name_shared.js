@@ -9,21 +9,7 @@ function make(n) {
 }
 
 function main() {
-  let tmp$1;
-  const value = make(7);
-  let value$live = true;
-  let tmp;
-  try {
-    tmp = make(8);
-    value$live = false;
-    tmp$1 = [value, tmp];
-  } catch (error) {
-    if (value$live) {
-      console.log(`drop ${value[0]}`);
-    }
-    throw error;
-  }
-  const total = tmp$1
+  const total = [make(7), make(8)]
     .map((counted) => {
       const result = counted[0];
       console.log(`drop ${counted[0]}`);

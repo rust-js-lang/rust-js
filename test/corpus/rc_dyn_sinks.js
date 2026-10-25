@@ -86,11 +86,8 @@ function main() {
       }
     }
     const borrow = $borrow(counter.value, true);
-    try {
-      console.log(`${counterSink_total(borrow.value)}`);
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(`${counterSink_total(borrow.value)}`);
+    $unborrow(borrow);
   } finally {
     $rcDrop(counter);
   }

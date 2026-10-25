@@ -43,19 +43,12 @@ function firstOver(map, limit) {
     const key = tmp[0];
     const value = tmp[1];
     if (!(value[0] > limit)) {
-      try {
-        loudDrop_drop(value);
-      } catch (error) {
-        for (const item of iter) {
-          loudDrop_drop(item[1]);
-        }
-        throw error;
-      }
+      loudDrop_drop(value);
       continue;
     }
     const result = key;
+    loudDrop_drop(value);
     try {
-      loudDrop_drop(value);
     } finally {
       for (const item of iter) {
         loudDrop_drop(item[1]);

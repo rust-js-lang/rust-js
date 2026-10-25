@@ -14,28 +14,26 @@ function check(n, what) {
 
 function main() {
   const first = "first";
+  let second;
   try {
     check(1, "first live");
-  } catch (error) {
+    second = ["second"];
+    try {
+      check(2, "both live");
+    } catch (error) {
+      console.log(`drop ${second[0]}`);
+      throw error;
+    }
+  } finally {
     console.log(`drop ${first}`);
-    throw error;
-  }
-  const second = "second";
-  try {
-    check(2, "both live");
-  } catch (error) {
-    console.log(`drop ${second}`);
-    console.log(`drop ${first}`);
-    throw error;
   }
   try {
-    console.log(`drop ${first}`);
     check(1, "second live");
     const third = "third";
     console.log(`drop ${third}`);
     check(3, "second live");
   } finally {
-    console.log(`drop ${second}`);
+    console.log(`drop ${second[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

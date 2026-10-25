@@ -43,23 +43,14 @@ function main() {
   const nest = { left: pair("la", "lb", 3), right: ["r"] };
   const leftB = nest.left.b;
   console.log(`nested ${leftB[0]}`);
-  try {
-    noisyDrop_drop(leftB);
-  } catch (error) {
-    noisyDrop_drop(nest.left.a);
-    noisyDrop_drop(nest.right);
-    throw error;
-  }
+  noisyDrop_drop(leftB);
   noisyDrop_drop(nest.left.a);
   noisyDrop_drop(nest.right);
   const tuple = [["t0"], ["t1"], 3];
   const [first, , n] = tuple;
   console.log(`first ${first[0]} ${n}`);
-  try {
-    noisyDrop_drop(first);
-  } finally {
-    noisyDrop_drop(tuple[1]);
-  }
+  noisyDrop_drop(first);
+  noisyDrop_drop(tuple[1]);
   const opt = ["o"];
   let opt$0$live = true;
   if (opt) {
@@ -80,22 +71,7 @@ function main() {
   if (shape.TAG === "Two") {
     shape$a$live = false;
     console.log(`two ${shape.a[0]}`);
-    try {
-      noisyDrop_drop(shape.a);
-    } catch (error) {
-      if (shape.TAG === "Two") {
-        noisyDrop_drop(shape.b);
-      } else {
-        if (shape.TAG === "One") {
-          noisyDrop_drop(shape._0);
-        }
-        if (shape.TAG === "Two") {
-          noisyDrop_drop(shape.a);
-          noisyDrop_drop(shape.b);
-        }
-      }
-      throw error;
-    }
+    noisyDrop_drop(shape.a);
   }
   console.log("shape");
   if (shape.TAG === "Two") {
@@ -116,14 +92,12 @@ function main() {
   const again = pair("ra", "rb", 4);
   try {
     consume(again.a);
-  } catch (error) {
+    again.a = ["ra2"];
+    console.log(`again ${again.a[0]}`);
+    noisyDrop_drop(again.a);
+  } finally {
     noisyDrop_drop(again.b);
-    throw error;
   }
-  again.a = ["ra2"];
-  console.log(`again ${again.a[0]}`);
-  noisyDrop_drop(again.a);
-  noisyDrop_drop(again.b);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     name: "closure-made-throws-first",
     breaks: "a closure made before a call that unwinds elsewhere is made first, `const value = (cache) => cache; try { tmp = value(cache); }`, not `with` applied in place",
     file: "src/lower/mir/temporaries.rs",
-    find: "                    Value::Expr(e) => e.may_throw(),\n",
+    find: "                    Value::Expr(e) => e.may_throw() || (e.has_effects() && e.runs_program_code()),\n",
     replace: "                    Value::Expr(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_scopes.rs$"],
     snapshots: true,
@@ -288,5 +288,14 @@ export const mutations: Mutation[] = [
     find: "            js::ExprKind::Call(..) if e.facts.has(js::Known::LocalRead) => true,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
+  },
+  {
+    name: "program-code-pending-unflushed",
+    breaks: "a value made by the crate's function that never unwinds waits past a call whose JS runs something first",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                    Value::Expr(e) => e.may_throw() || (e.has_effects() && e.runs_program_code()),\n",
+    replace: "                    Value::Expr(e) => e.may_throw(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
+    snapshots: true,
   },
 ];

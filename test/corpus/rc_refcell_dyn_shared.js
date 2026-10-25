@@ -254,11 +254,8 @@ function main() {
           }
         }
         const value = $borrow(counter.value, true);
-        try {
-          console.log(`${counterSink_total(value.value)} ${counter.strong}`);
-        } finally {
-          $unborrow(value);
-        }
+        console.log(`${counterSink_total(value.value)} ${counter.strong}`);
+        $unborrow(value);
       } finally {
         $rcDrop(counter);
       }

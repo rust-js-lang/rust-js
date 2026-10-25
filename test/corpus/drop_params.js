@@ -23,15 +23,9 @@ function ignored(_1) {
 function both(_1, _2, b) {
   const a = _1;
   console.log(`both ${a[0]} ${b[0]}`);
-  try {
-    try {
-      console.log(`drop ${b[0]}`);
-    } finally {
-      console.log(`drop ${_2[0]}`);
-    }
-  } finally {
-    console.log(`drop ${_1[0]}`);
-  }
+  console.log(`drop ${b[0]}`);
+  console.log(`drop ${_2[0]}`);
+  console.log(`drop ${_1[0]}`);
 }
 
 function main() {
@@ -47,14 +41,8 @@ function main() {
   const keptToo = "i";
   console.log(`${kept} ${borrowed[0]}`);
   console.log("end");
-  try {
-    try {
-      console.log(`drop ${keptToo}`);
-    } finally {
-      console.log(`drop ${same[0]}`);
-    }
-  } finally {
-    console.log(`drop ${kept}`);
-  }
+  console.log(`drop ${keptToo}`);
+  console.log(`drop ${same[0]}`);
+  console.log(`drop ${kept}`);
 }
 //# sourceMappingURL=case.js.map

@@ -684,21 +684,24 @@ pub(super) fn readable_temporaries(
             .find(|name| !taken.contains(name))
             .unwrap_or_else(|| any.to_string());
         let to = crate::names::fresh_in(&mut taken, &base);
-        js::statement_lists(body, &mut |list| {
-            for stmt in list.iter_mut() {
-                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
-                    && *name == from
-                {
-                    *name = to.clone();
+        // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
+        js::outside_shadows(body, &from, |body| {
+            js::statement_lists(body, &mut |list| {
+                for stmt in list.iter_mut() {
+                    if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
+                        && *name == from
+                    {
+                        *name = to.clone();
+                    }
                 }
-            }
-        });
-        js::each_expr_mut(body, &mut |e| {
-            if let ExprKind::Var(v) = &mut e.kind
-                && *v == from
-            {
-                *v = to.clone();
-            }
+            });
+            js::each_expr_mut(body, &mut |e| {
+                if let ExprKind::Var(v) = &mut e.kind
+                    && *v == from
+                {
+                    *v = to.clone();
+                }
+            });
         });
     }
 }

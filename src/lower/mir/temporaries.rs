@@ -303,14 +303,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a temporary made and not yet used may throw, so runs before
-    /// a call that unwinds elsewhere, outside its `try`. A closure made,
-    /// `cache => cache`, can't: it's made where it's read, `with`'s applied
-    /// in place (ADR 0703).
+    /// a call that unwinds elsewhere, outside its `try`; or runs the
+    /// program's code, which one that never unwinds does too, `made(5)`,
+    /// and so runs before what that call's JS does first, an `insert`'s
+    /// drop of what it held (ADR 0902). A closure made, `cache => cache`,
+    /// can't: it's made where it's read, `with`'s applied in place (ADR
+    /// 0703).
     pub(super) fn may_throw_first(&self, state: &State<'_, 'tcx>) -> bool {
         (state.pending.iter()).any(|(_, value)| {
             !movable(state, value)
                 && match value {
-                    Value::Expr(e) => e.may_throw(),
+                    Value::Expr(e) => e.may_throw() || (e.has_effects() && e.runs_program_code()),
                     _ => true,
                 }
         })

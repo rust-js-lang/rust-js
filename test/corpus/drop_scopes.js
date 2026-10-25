@@ -25,11 +25,8 @@ function early(stop) {
   }
   const _b = ["early b"];
   result = 2;
-  try {
-    noisyDrop_drop(_b);
-  } finally {
-    noisyDrop_drop(_a);
-  }
+  noisyDrop_drop(_b);
+  noisyDrop_drop(_a);
   return result;
 }
 
@@ -70,16 +67,10 @@ function main() {
   const _x = ["x"];
   const _y = ["y"];
   const _z = ["z"];
-  try {
-    try {
-      noisyDrop_drop(_z);
-      console.log("inner done");
-    } finally {
-      noisyDrop_drop(_y);
-    }
-  } finally {
-    noisyDrop_drop(_x);
-  }
+  noisyDrop_drop(_z);
+  console.log("inner done");
+  noisyDrop_drop(_y);
+  noisyDrop_drop(_x);
   const moved = ["moved"];
   consume(moved);
   let maybe$live = true;
@@ -135,87 +126,21 @@ function main() {
   }
   let slot = ["old"];
   const noisy = ["new"];
-  try {
-    noisyDrop_drop(slot);
-  } catch (error) {
-    slot = noisy;
-    noisyDrop_drop(slot);
-    noisyDrop_drop(kept);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
+  noisyDrop_drop(slot);
   slot = noisy;
   console.log(`slot is ${slot[0]}`);
   let kept$live = false;
-  try {
-    noisyDrop_drop(kept);
-  } catch (error) {
-    noisyDrop_drop(slot);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  const value = ["statement"];
-  try {
-    noisyDrop_drop(value);
-  } catch (error) {
-    noisyDrop_drop(slot);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  const value$1 = ["ignored"];
-  try {
-    noisyDrop_drop(value$1);
-  } catch (error) {
-    noisyDrop_drop(slot);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
-  try {
-    console.log("drop unit");
-  } catch (error) {
-    noisyDrop_drop(slot);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
+  noisyDrop_drop(kept);
+  noisyDrop_drop(["statement"]);
+  noisyDrop_drop(["ignored"]);
+  console.log("drop unit");
   for (let i = 0; i < 3; i++) {
     const _each = [i === 1 ? "one" : "other"];
     if (i === 1) {
-      try {
-        noisyDrop_drop(_each);
-      } catch (error) {
-        noisyDrop_drop(slot);
-        if (kept$live) {
-          noisyDrop_drop(kept);
-        }
-        if (maybe$live) {
-          noisyDrop_drop(maybe);
-        }
-        throw error;
-      }
+      noisyDrop_drop(_each);
       break;
     }
-    try {
-      noisyDrop_drop(_each);
-    } catch (error) {
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      if (maybe$live) {
-        noisyDrop_drop(maybe);
-      }
-      throw error;
-    }
+    noisyDrop_drop(_each);
   }
   const first = ["first"];
   const second = ["second"];
@@ -261,52 +186,9 @@ function main() {
       }
       throw error;
     }
-    try {
-      noisyDrop_drop(_tuple[0]);
-      noisyDrop_drop(_tuple[2]);
-    } catch (error) {
-      noisyDrop_drop(_boxed);
-      if (_none != null) {
-        noisyDrop_drop(_none);
-      }
-      if (_some != null) {
-        noisyDrop_drop(_some);
-      }
-      for (const item of _list) {
-        noisyDrop_drop(item);
-      }
-      noisyDrop_drop(_holder.inner);
-      console.log(`drop pair of ${first[0]} and ${second[0]}`);
-      noisyDrop_drop(first);
-      noisyDrop_drop(second);
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
-    try {
-      noisyDrop_drop(_boxed);
-    } catch (error) {
-      if (_none != null) {
-        noisyDrop_drop(_none);
-      }
-      if (_some != null) {
-        noisyDrop_drop(_some);
-      }
-      for (const item of _list) {
-        noisyDrop_drop(item);
-      }
-      noisyDrop_drop(_holder.inner);
-      console.log(`drop pair of ${first[0]} and ${second[0]}`);
-      noisyDrop_drop(first);
-      noisyDrop_drop(second);
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
+    noisyDrop_drop(_tuple[0]);
+    noisyDrop_drop(_tuple[2]);
+    noisyDrop_drop(_boxed);
     try {
       if (_none != null) {
         noisyDrop_drop(_none);
@@ -361,37 +243,11 @@ function main() {
       }
       throw error;
     }
-    try {
-      noisyDrop_drop(_holder.inner);
-    } catch (error) {
-      console.log(`drop pair of ${first[0]} and ${second[0]}`);
-      noisyDrop_drop(first);
-      noisyDrop_drop(second);
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
-    try {
-      console.log(`drop pair of ${first[0]} and ${second[0]}`);
-      noisyDrop_drop(first);
-      noisyDrop_drop(second);
-    } catch (error) {
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
-    try {
-      noisyDrop_drop(slot);
-    } catch (error) {
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
+    noisyDrop_drop(_holder.inner);
+    console.log(`drop pair of ${first[0]} and ${second[0]}`);
+    noisyDrop_drop(first);
+    noisyDrop_drop(second);
+    noisyDrop_drop(slot);
     kept$live = false;
   } finally {
     if (maybe$live) {

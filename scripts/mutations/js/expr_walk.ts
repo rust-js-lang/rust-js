@@ -224,4 +224,13 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (of, args);\n                true\n            }\n            ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "a guarded loop that only reads is no try"],
   },
+  {
+    name: "template-may-throw-whole",
+    breaks: "a template is taken to throw where it calls anything, though each call in it can't, so a print of one stays in a `try`",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Template(_, items, _) | ExprKind::Array(items) if !self.facts.has(Known::Getter) => {\n",
+    replace: "            ExprKind::Template(_, items, _) | ExprKind::Array(items) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_refcell_dyn_shared.rs$"],
+    snapshots: true,
+  },
 ];

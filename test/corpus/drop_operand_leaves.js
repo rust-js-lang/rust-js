@@ -41,22 +41,14 @@ function checked(n) {
 }
 
 function divided(n, by) {
-  const noisy = ["checked"];
-  let tmp;
-  try {
-    tmp = checked(n);
-  } catch (error) {
-    console.log(`drop ${noisy[0]}`);
-    throw error;
-  }
-  const checked$1 = pair(noisy, tmp);
+  const checked$1 = pair(["checked"], checked(n));
   const halved = pair(["by two"], (n / 2) >>> 0);
-  const value = ["by a variable"];
+  const noisy = ["by a variable"];
   if (by === 0) {
-    console.log(`drop ${value[0]}`);
+    console.log(`drop ${noisy[0]}`);
     throw new Error("attempt to divide by zero");
   }
-  return (((pair(value, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
+  return (((pair(noisy, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
 }
 
 function signed(a, b) {

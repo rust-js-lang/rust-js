@@ -264,6 +264,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |
 | Which `RefCell`s are the objects they hold, a field's plain one, which are never checked, and what a library's contract says of them (ADRs 0362, 0863) | `drops/ref_cells.rs` | `ref_cells`, `is_value_cell`, `plain_ref_cell`, `quiet_ref_cell`, `holds_itself` |
 | What a call, std's code's too, and a cell's own impls may borrow (ADRs 0580, 0863) | `analysis/cell_borrows.rs` | `call_asks`, `call_runs_unseen`, `impls_ask`, `may_be_cell` |
+| Which of the crate's functions never unwind, read from their MIR, and what a JS node throws only where its parts do (ADRs 0901, 0902) | `analysis/unwinding.rs`; `js/expr_walk.rs` | `never_unwinding`; `may_throw`, `never_throws` |
 | A type equal only to itself, a JS key by itself, a library's as its contract says (ADR 0864) | `std_impls.rs`; `library.rs` | `equal_only_to_itself` |
 | Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |

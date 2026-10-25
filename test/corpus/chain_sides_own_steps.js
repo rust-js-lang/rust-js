@@ -178,12 +178,7 @@ function main() {
     }
     const loud = tmp$6;
     console.log(`got ${loud[0]}`);
-    try {
-      loudDrop_drop(loud);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
+    loudDrop_drop(loud);
   }
   const value$10 = $rev($closing($iter(louds(28, 2)), $dropEach(loudDrop_drop)));
   let tmp$7;

@@ -10,11 +10,8 @@ function loudDrop_drop(loud) {
 export const loudAdd = { add: loudAdd_add, $drop: loudDrop_drop, $dropOutput: loudDrop_drop };
 function loudAdd_add(loud, o) {
   const result = [(loud[0] + o[0]) & 255];
-  try {
-    loudDrop_drop(o);
-  } finally {
-    loudDrop_drop(loud);
-  }
+  loudDrop_drop(o);
+  loudDrop_drop(loud);
   return result;
 }
 function sumDrop(a, b, TAdd) {

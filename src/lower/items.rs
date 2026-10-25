@@ -89,12 +89,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::var(export)
         };
         // A class's constant, its prototype's (ADR 0761).
-        if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
+        let reference = if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
             Expr::member(Expr::member(reference, "prototype"), target.name.clone())
         } else if target.owner.is_some() {
             Expr::member(reference, target.name.clone())
         } else {
             reference.item()
+        };
+        // One that never unwinds, whose call throws only where what it's
+        // given does (ADR 0902).
+        match self.krate.never_unwinding.contains(&def_id) {
+            true => reference.never_throws(),
+            false => reference,
         }
     }
 

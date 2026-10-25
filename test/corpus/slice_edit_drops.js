@@ -177,14 +177,7 @@ function lend() {
       throw error;
     }
     console.log(`replaced ${old[0]}`);
-    try {
-      loudDrop_drop(old);
-    } catch (error) {
-      for (const item of d) {
-        loudDrop_drop(item);
-      }
-      throw error;
-    }
+    loudDrop_drop(old);
   }
   let splitAtMut;
   try {
