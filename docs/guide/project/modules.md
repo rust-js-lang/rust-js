@@ -595,6 +595,15 @@ leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
+A doc comment's JSDoc keeps its lines: `///` lines are `/** one */`, or
+`/**\n * a\n * b\n */` of more, and a `/** */` block is as written, so
+`/**\n * One line.\n */` stays three. A doc comment documents an item:
+before a statement or a `js::on_load!`, rustc warns that it documents
+nothing (`unused_doc_comments`), and with a blank line after it clippy
+does (`empty_line_after_doc_comments`); write a plain comment there, `//`
+or `/* */` as rustc says, which the JS keeps as written ([ADR
+0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
+
 A blank line is where your Rust has one between the code of the JS's
 lines, and nowhere else: two functions, or a `static` and the
 `js::on_load!` it's frozen in, written right below each other are right
