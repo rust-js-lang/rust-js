@@ -160,6 +160,38 @@ pub fn once() -> u32 {
   expect(call("once")).toBe("rust-js does not support a `OnceLock` whose init sets it, which deadlocks in Rust\n");
 });
 
+// A map keyed by a struct is a `$KeyMap` (ADR 0121), which JS code given one
+// reads as any `Map`: `forEach` gives each value, then its key; `keys()`
+// gives the keys, not the strings they're kept under; `get` and `has` find
+// a key by its value. No Rust program calls its `forEach`; JS's does.
+test("a map keyed by a struct reads as a Map to the JS given it", () => {
+  const dir = fixture("runtime-key-map");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub fn places() -> HashMap<Point, u32> {
+    let mut m = HashMap::new();
+    m.insert(Point { x: 1, y: 2 }, 3);
+    m.insert(Point { x: 4, y: 5 }, 6);
+    m
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const read = `const m = (await import(${JSON.stringify(out)})).places();
+const seen = [];
+m.forEach((value, key) => seen.push([key.x, key.y, value]));
+console.log(JSON.stringify(seen), JSON.stringify([...m.keys()]), JSON.stringify([...m.values()]), JSON.stringify([...m]), m.get({ x: 4, y: 5 }), m.has({ x: 1, y: 2 }), m.has({ x: 2, y: 1 }), m.size);`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", read])).toBe(
+    '[[1,2,3],[4,5,6]] [{"x":1,"y":2},{"x":4,"y":5}] [3,6] [[{"x":1,"y":2},3],[{"x":4,"y":5},6]] 6 true false 2\n',
+  );
+});
+
 // Locking a lock its thread holds deadlocks in Rust, which JS can't do:
 // rust-js says so (ADR 0328).
 test("a lock locked again while held is rust-js's error, not a deadlock", () => {

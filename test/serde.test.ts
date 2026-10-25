@@ -439,7 +439,8 @@ test("serde: numbers are written and read as serde_json does", async () => {
 }, 120_000);
 
 // serde_json's reader as a server's reads what a client sends it (ADR 0078):
-// each text, well formed or not, read as each of twenty types, gives the value
+// each text, well formed or not, read as each of 26 types, and the `Value`
+// it is read again as each, gives the value
 // serde_json gives, or its error, with its words, line and column. What's
 // malformed is where a port of the reader goes wrong unseen: its escapes,
 // surrogates, control characters, numbers at their bounds, depth, trailing
@@ -476,6 +477,7 @@ test("serde: text, well formed or not, is read and refused as serde_json reads i
     // Not `{"c":{"a":1,"b":2},"t":"F"}`: a hand-written visitor given buffered
     // content throws (#236).
     '{"t":"W","C":null}', '{"t":"W","C":[1,2]}', '{"t":"W","C":{"x":1}}', '{"t":"W","D":1}', '{"t":"W","D":[1]}', '{"t":"W","B":null}', '{"C":1}', '{"D":"x"}',
+    '{"a":1,"b":"x","c":2,"z":3}', '{"a":1,"t":"A","x":2}', '{"a":1,"t":"C"}', '{"t":"B","a":2,"b":"y"}', '{"C":[]}', '{"A":1,"k":2}',
     '{"c":[1,2],"t":"T"}', '{"c":[1,2,3],"t":"T"}', '{"c":null,"t":"T"}', '{"c":{"x":1},"t":"T"}', '{"c":1,"t":"T"}', '{"c":null,"t":"S"}', '{"c":1,"t":"S"}', '{"c":"x","t":"S"}',
   ];
   const dir = fixture("serde-malformed");
@@ -491,7 +493,11 @@ pub enum Tagged { A(u32), B, C(u8, u8), D { x: u32 } }
 pub enum Internal { A { x: u32 }, B(Loose), C }
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "t", content = "c")]
-pub enum Adjacent { A(u32), B, T(u8, u8), S { x: u32 }, F(First) }
+pub enum Adjacent { A(u32), B, T(u8, u8), S { x: u32 } }
+// Apart from Adjacent, so its Value isn't read again (#236).
+#[derive(serde::Deserialize, Debug)]
+#[serde(tag = "t", content = "c")]
+pub enum AdjacentFirst { F(First) }
 #[derive(serde::Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Either { I(Internal), N(u32), S(String), L(Vec<u32>), P(Loose), E(Tagged) }
@@ -503,7 +509,7 @@ pub struct Flat { pub a: u32, #[serde(flatten)] pub rest: std::collections::BTre
 #[serde(tag = "t")]
 pub enum Holds { W(Tagged) }
 #[derive(serde::Deserialize, Debug)]
-pub struct Beside { #[serde(flatten)] pub e: Tagged }
+pub struct Beside { #[serde(flatten)] pub e: Tagged, #[serde(flatten)] pub rest: std::collections::BTreeMap<String, serde_json::Value> }
 // A visitor that stops at a map's first entry, as one written by hand may.
 #[derive(Debug)]
 pub struct First(pub Option<(String, u32)>);
@@ -522,11 +528,31 @@ impl<'de> serde::Deserialize<'de> for First {
         d.deserialize_map(V)
     }
 }
+// Flattened beside each other, and a number flattened, which serde refuses.
+#[derive(serde::Deserialize, Debug)]
+pub struct Flats { pub z: Option<u32>, #[serde(flatten)] pub loose: Loose, #[serde(flatten)] pub rest: std::collections::BTreeMap<String, u32> }
+#[derive(serde::Deserialize, Debug)]
+pub struct FlatNumber { #[serde(flatten)] pub n: u32 }
+#[derive(serde::Deserialize, Debug)]
+pub struct FlatOption { pub z: Option<u32>, #[serde(flatten)] pub o: Option<Loose> }
+#[derive(serde::Deserialize, Debug)]
+pub struct FlatBoth { #[serde(flatten)] pub l: Loose, #[serde(flatten)] pub i: Internal }
+#[derive(serde::Deserialize, Debug)]
+pub struct FlatUntagged { #[serde(flatten)] pub l: Loose, #[serde(flatten)] pub u: Either }
 macro_rules! read {
     ($out:ident, $ty:ty, $text:expr) => {
         match serde_json::from_str::<$ty>($text) {
             Ok(v) => $out.push_str(&format!("ok {:?}\\n", v)),
             Err(e) => $out.push_str(&format!("err {}\\n", e)),
+        }
+    };
+}
+// What the text is, as a Value, read again: serde_json's from_value.
+macro_rules! again {
+    ($out:ident, $ty:ty, $value:expr) => {
+        match serde_json::from_value::<$ty>($value.clone()) {
+            Ok(v) => $out.push_str(&format!("ok {:?}\n", v)),
+            Err(e) => $out.push_str(&format!("err {}\n", e)),
         }
     };
 }
@@ -550,12 +576,45 @@ pub fn report() -> String {
         read!(out, First, text);
         read!(out, Internal, text);
         read!(out, Adjacent, text);
+        read!(out, AdjacentFirst, text);
         read!(out, Either, text);
         read!(out, Flat, text);
         read!(out, std::collections::BTreeMap<u32, u32>, text);
         read!(out, std::collections::BTreeMap<bool, u32>, text);
         read!(out, Holds, text);
         read!(out, Beside, text);
+        read!(out, Flats, text);
+        read!(out, FlatNumber, text);
+        read!(out, FlatOption, text);
+        read!(out, FlatBoth, text);
+        read!(out, FlatUntagged, text);
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(text) {
+            again!(out, serde_json::Value, value);
+            again!(out, String, value);
+            again!(out, Vec<u32>, value);
+            again!(out, i64, value);
+            again!(out, u64, value);
+            again!(out, f64, value);
+            again!(out, Loose, value);
+            again!(out, Strict, value);
+            again!(out, (u8, bool), value);
+            again!(out, Option<u32>, value);
+            again!(out, Tagged, value);
+            // Not First: a hand-written visitor given a Value throws (#236).
+            again!(out, Internal, value);
+            again!(out, Adjacent, value);
+            again!(out, Either, value);
+            again!(out, Flat, value);
+            again!(out, std::collections::BTreeMap<u32, u32>, value);
+            again!(out, std::collections::BTreeMap<bool, u32>, value);
+            again!(out, Holds, value);
+            again!(out, Beside, value);
+            again!(out, Flats, value);
+            again!(out, FlatNumber, value);
+            again!(out, FlatOption, value);
+            again!(out, FlatBoth, value);
+            again!(out, FlatUntagged, value);
+        }
     }
     out
 }

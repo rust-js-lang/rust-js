@@ -90,3 +90,21 @@ for (const [cell, kind] of cells) { .. } // the key as it was put in
   fields or `Option`s compile.
 - Each `get`, `set` and `has` of a `$KeyMap` makes the key's string: the
   cost of finding a key by its value.
+
+## Amendment: what holds a `$KeyMap`
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): what was decided,
+held; nothing a program sees changes.
+
+`$KeyMap` had no mutation (an architecture review, 2026-10-25). Five now
+are each caught: a key found and removed by its value, a map made of
+entries, and its keys given back as the keys, which no case stepped
+until `test/corpus/value_key_iteration.rs`, a map's and a set's keys,
+values, entries, `for` of a reference, `retain` and `into_iter()`, each
+sorted, as a `HashMap` iterates in insertion order in JS. A map handed to
+JS reads as any `Map` to it, `forEach` giving each value and then its key,
+which no Rust program calls: `test/runtime-package.test.ts`'s "a map keyed
+by a struct reads as a Map to the JS given it". Which of two equal keys
+`insert` keeps, and which a drop is of, isn't mutated: a key's `Eq` is
+derived, so two equal keys print and drop alike, and nothing can tell
+them apart.
