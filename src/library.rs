@@ -186,6 +186,10 @@ pub struct Library {
     /// (ADR 0863). None where it has none.
     #[serde(default, skip_serializing_if = "RefCellFacts::is_empty")]
     pub ref_cells: RefCellFacts,
+    /// The keys of its types equal only to themselves (ADR 0864): a
+    /// consumer keys a `Set` or a `Map` by each, and compares two by `===`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub identities: Vec<String>,
 }
 
 /// What a library does with its `RefCell`s (ADR 0863), each type by its
@@ -280,6 +284,8 @@ pub struct Exports {
     pub counted_rcs: Vec<RcShape>,
     /// What it does with its `RefCell`s (ADR 0863).
     pub ref_cells: RefCellFacts,
+    /// Its types equal only to themselves, by their keys (ADR 0864).
+    pub identities: HashSet<String>,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -335,6 +341,7 @@ impl Dependencies {
                 keeps_capacity: library.keeps_capacity,
                 makes_dropping_anys: library.makes_dropping_anys,
                 writers_take_options: library.writers_take_options,
+                identities: library.identities.into_iter().collect(),
                 counted_rcs: library.counted_rcs,
                 ref_cells: library.ref_cells,
                 impls: library.impls.into_iter().collect(),
@@ -414,6 +421,7 @@ impl Dependencies {
             keeps_capacity: library.keeps_capacity,
             makes_dropping_anys: library.makes_dropping_anys,
             writers_take_options: library.writers_take_options,
+            identities: library.identities.into_iter().collect(),
             counted_rcs: library.counted_rcs,
             ref_cells: library.ref_cells,
             impls: library.impls.into_iter().collect(),

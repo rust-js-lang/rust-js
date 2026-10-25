@@ -452,6 +452,21 @@ pub fn lower_crate<'tcx>(
                 tcx.type_of(id).instantiate_identity().skip_normalization(),
             )
     };
+    // Its types equal only to themselves, which its contract lists for its
+    // consumers (ADR 0864, amended).
+    let identities: Vec<DefId> = (trait_impls.iter())
+        .filter(|&&id| {
+            identity_eq(
+                id,
+                tcx.impl_trait_ref(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id,
+            )
+        })
+        .filter_map(|&id| tcx.type_of(id).instantiate_identity().skip_normalization().ty_adt_def())
+        .map(|adt| adt.did())
+        .collect();
     let derived: HashSet<DefId> = trait_impls
         .iter()
         .filter(|&&id| {
@@ -1196,6 +1211,7 @@ pub fn lower_crate<'tcx>(
                     ref_cells: ref_cell_facts(),
                     lazy_locals: &lazy_locals,
                     variables: &variables,
+                    identities: &identities,
                 },
                 (&trait_impls, &held.modules),
                 dependencies,

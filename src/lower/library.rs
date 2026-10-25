@@ -61,6 +61,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// The exported thread-locals that are their module's variables (ADR
     /// 0270, amended).
     pub(super) variables: &'a HashSet<DefId>,
+    /// Its types equal only to themselves (ADR 0864).
+    pub(super) identities: &'a [DefId],
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -119,6 +121,7 @@ pub(super) fn exports<'tcx>(
         ref_cells: _,
         lazy_locals: _,
         variables,
+        identities,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -201,6 +204,14 @@ pub(super) fn exports<'tcx>(
             shapes
         },
         ref_cells: contracts.ref_cells.clone(),
+        identities: {
+            let mut keys: Vec<String> = (identities.iter())
+                .filter(|&&id| reachable(tcx, id))
+                .map(|&id| key(tcx, id))
+                .collect();
+            keys.sort();
+            keys
+        },
     }
 }
 
@@ -496,6 +507,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 .libraries
                 .get(self.tcx.crate_name(id.krate).as_str())
                 .is_some_and(|library| library.impls.contains(&key(self.tcx, id)))
+    }
+
+    /// Is `id`, a library's type, equal only to itself, as its contract
+    /// says (ADR 0864)?
+    pub(super) fn equal_only_to_itself(&self, id: DefId) -> bool {
+        !id.is_local()
+            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
+                .is_some_and(|library| library.identities.contains(&key(self.tcx, id)))
     }
 
     /// Is `krate` a library's, one rust-js built for this crate to use, not

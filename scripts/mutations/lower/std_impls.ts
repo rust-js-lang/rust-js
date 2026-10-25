@@ -753,4 +753,12 @@ export const mutations: Mutation[] = [
     replace: "            return self.clone_value(place, source, span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^(lazy_iterator_clone).rs$"],
   },
+  {
+    name: "library-identity-unread",
+    breaks: "a library's type equal only to itself isn't, to its consumer: a `HashSet<&'static Fiber>` of the library's is refused, as React's reconciler's was",
+    file: "src/lower/std_impls.rs",
+    find: "        return recognition.foreign.equal_only_to_itself(adt.did());\n",
+    replace: "        return false;\n",
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+  },
 ];

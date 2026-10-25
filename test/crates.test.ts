@@ -251,6 +251,21 @@ console.log(a === object, b === object, dep.first([object]) === object, dep.firs
   expect(run([node ?? "node", "--input-type=module", "--eval", called])).toBe("true true\ntrue true true undefined\n");
 }, 300_000);
 
+// ADR 0864, amended: a library's type equal only to itself, as its
+// contract says, keys its consumer's `Set` by itself, and `==` of two is
+// `===`, as React's reconciler adds a fiber to its `Transition`'s
+// `_updatedFibers`; its `Eq` and `Hash` run nothing, so the borrow held
+// while the set adds one isn't checked.
+test("a library's type equal only to itself keys its consumer's Set by itself", () => {
+  const out = chain(pairs, "identity_keys", ["dep", "app"]);
+  expect(contract(out).identities).toEqual([expect.any(String)]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("function schedule(transition, fiber) {\n  if (transition.updatedFibers) {\n    transition.updatedFibers.add(fiber);\n");
+  expect(app).toContain("${a === b} ${a === a}");
+  expect(app).toContain("  const own = new Set();\n  own.add(b);\n");
+  expect(app).not.toContain("$borrow");
+}, 300_000);
+
 // ADR 0863: a library's `RefCell`s, as React's `Transition` holds its
 // types: a plain field the value it holds, an `Rc`'s `RefCell<Vec<String>>`
 // the array, an `Option`'s `RefCell<HashSet<u32>>` the `Set`, none of whose

@@ -35,7 +35,11 @@ pub(super) fn equal_only_to_itself<'tcx>(
     ty: Ty<'tcx>,
 ) -> bool {
     let ty::Adt(adt, _) = ty.kind() else { return false };
-    if !adt.is_struct() || !adt.did().is_local() {
+    // A library's, as its contract says.
+    if !adt.did().is_local() {
+        return recognition.foreign.equal_only_to_itself(adt.did());
+    }
+    if !adt.is_struct() {
         return false;
     }
     let Some((eq, hash)) = recognition.eq_and_hash(adt.did()) else {

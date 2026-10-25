@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "                variable: false,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
   },
+  {
+    name: "library-identities-unlisted",
+    breaks: "a library's contract lists none of its types equal only to themselves, and its consumer refuses a set of one",
+    file: "src/lower/library.rs",
+    find: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|&&id| reachable(tcx, id))\n",
+    replace: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+  },
 ];

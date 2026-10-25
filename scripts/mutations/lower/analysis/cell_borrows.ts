@@ -241,4 +241,20 @@ export const mutations: Mutation[] = [
     replace: "    if false\n        && (summary.drops.iter().any(typed)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_iterator_std_runs.rs$"],
   },
+  {
+    name: "library-identity-runs-code",
+    breaks: "a library's type equal only to itself is taken to run unseen code by its `Hash` and `==`, so a borrow held while a `Set` adds one is checked, `$borrowMut`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                if traits.iter().any(|&t| implemented(t) && !(identity && by_address(t))) {\n",
+    replace: "                if traits.iter().any(|&t| implemented(t)) {\n",
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+  },
+  {
+    name: "library-impl-always-there",
+    breaks: "a library's type is taken to implement every trait, its missing `Debug` too, so a `RefCell` of a set of it is checked, `$borrowMut`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                    impls.non_blanket_impls().contains_key(&own)\n",
+    replace: "                    true || impls.non_blanket_impls().contains_key(&own)\n",
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+  },
 ];

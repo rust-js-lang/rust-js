@@ -623,8 +623,28 @@ fn bound_runs<'tcx>(
                     );
                 }
             }
-            // A library's, whose impls' bodies the crate can't see.
-            ty::Adt(adt, _) if recognition.foreign.in_library(adt.did()) => given.any = true,
+            // A library's, whose impls' bodies the crate can't see: what
+            // it implements of `traits` may run anything, but what it's
+            // equal only to itself by, `==` and `Hash`, its address's, as
+            // its contract says (ADR 0864, amended). What it has no impl of,
+            // its own or a blanket one outside std's, runs nothing.
+            ty::Adt(adt, _) if recognition.foreign.in_library(adt.did()) => {
+                let identity = recognition.foreign.equal_only_to_itself(adt.did());
+                let by_address = |t: DefId| {
+                    tcx.is_lang_item(t, rustc_hir::attrs::lang_items::LangItem::PartialEq)
+                        || crate::lower::recognition::is_std_def(tcx, t, StdItem::Eq)
+                        || crate::lower::recognition::is_std_def(tcx, t, StdItem::Hash)
+                };
+                let implemented = |t: DefId| {
+                    let impls = tcx.trait_impls_of(t);
+                    let own = rustc_middle::ty::fast_reject::SimplifiedType::Adt(adt.did());
+                    impls.non_blanket_impls().contains_key(&own)
+                        || (impls.blanket_impls().iter()).any(|&imp| !recognition.in_sysroot(imp))
+                };
+                if traits.iter().any(|&t| implemented(t) && !(identity && by_address(t))) {
+                    given.any = true;
+                }
+            }
             ty::Adt(..)
             | ty::Bool
             | ty::Char

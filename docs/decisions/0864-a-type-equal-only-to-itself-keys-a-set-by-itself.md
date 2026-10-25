@@ -1,7 +1,8 @@
 # 0864. A type equal only to itself keys a JS `Set` and `Map` by itself
 
 Status: Accepted. Amended: `==` of two values of one is `===` too, and
-its `PartialEq`'s dictionary is written only where it's reached.
+its `PartialEq`'s dictionary is written only where it's reached; and a
+library's contract lists its, which its consumers key by themselves.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and
@@ -158,3 +159,61 @@ of two values, `a == b` resolved to the impl's own `eq` and called it,
   given it; corpus `identity_keys` and `refcell_identity_set`.
 - Mutations `identity-eq-impl-called` (`scripts/mutations/lower/traits/calls.ts`)
   and `identity-eq-written-unreached` (`lower/pipeline.ts`).
+
+## Amendment: a library's contract lists its types equal only to themselves
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None, as above: the
+library's own `Eq` and `Hash` say so, and its contract only carries what
+it found.
+
+React's port moved the reconciler's `Fiber` into its own crate, and the
+reconciler's functions read `react`'s `Transition`, whose
+`_updatedFibers` is a `HashSet<&'static Fiber>` of `react`'s `Fiber`.
+Each was refused, "values of type `&'static react_start_transition::Fiber`":
+the consumer can't read the library's `eq` and `hash` bodies, which
+`equal_only_to_itself` asked of the crate's own types alone. And a borrow
+of the set held while it adds one was taken to run the library's code,
+its `Hash`, which a library borrowing the set unchecked refused.
+
+**A library's contract lists its types equal only to themselves,
+`identities`, by their keys, of those its consumers can reach; a
+consumer's `equal_only_to_itself` of a library's type is its contract's
+answer.** So a consumer's set or map of one is a JS `Set` or `Map`, `==`
+of two is `===`, and the `Eq` and `Hash` std's code runs of one, by its
+address, run nothing:
+
+```rust
+fn schedule(transition: &Transition, fiber: &'static Fiber) {
+    if let Some(fibers) = &transition.updated_fibers {
+        fibers.borrow_mut().insert(fiber);
+    }
+}
+```
+
+```js
+function schedule(transition, fiber) {
+  if (transition.updatedFibers) {
+    transition.updatedFibers.add(fiber);
+  }
+}
+```
+
+- **What std's code runs of a library's type by a trait it has no impl
+  of, its own or a blanket one outside std's, is nothing**
+  (`cell_borrows.rs`'s `bound_runs`), as of the crate's own: a `Fiber`'s
+  missing `Debug`, which a `RefCell`'s own impls ask of what it holds,
+  isn't the library's code. What it does implement may still run any.
+- **A library still writes its `PartialEq` and `Hash` dictionaries**,
+  `fiberPartialEq` and `fiberHash`: a consumer's generic code given one,
+  `T: PartialEq` of a `Fiber`, imports it, as it does any impl's (ADR
+  0100). A consumer writing its own dictionary of one would let the
+  library leave them out; that's a decision of its own.
+
+`test/crates/pairs/identity_keys` runs a consumer adding a library's
+fibers to the library's `Transition` and to its own `HashSet`, and
+comparing two, against native Rust; "a library's type equal only to
+itself keys its consumer's Set by itself" holds its JS. Mutations
+`library-identity-unread` (`lower/std_impls.ts`),
+`library-identities-unlisted` (`lower/library.ts`),
+`library-identity-runs-code` and `library-impl-always-there`
+(`lower/analysis/cell_borrows.ts`).
