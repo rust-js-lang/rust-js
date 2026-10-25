@@ -28,5 +28,25 @@ function $skipping(iter, n, drop) {
   };
   skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
+  // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
+  // where it reaches it (#220).
+  if (iter.nthBack !== undefined) {
+    skipping.nthBack = (k) => {
+      const len = skipping.len();
+      if (k < len) return skipping.iter.nthBack(k);
+      if (len > 0) skipping.iter.nthBack(len - 1);
+      return { done: true, value: undefined };
+    };
+  }
+  // Its `try_rfold` and `rfold`, std's: its source's, stopped after what it
+  // gives.
+  if (iter.tryRfold !== undefined) {
+    skipping.tryRfold = (init, f, broke) => {
+      let left = skipping.len();
+      if (left === 0) return init;
+      return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a));
+    };
+    skipping.rfold = (init, f) => skipping.tryRfold(init, f, () => false);
+  }
   return skipping;
 }

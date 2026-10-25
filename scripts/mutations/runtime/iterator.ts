@@ -59,4 +59,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
 
+  {
+    name: "iterator-own-rfold-unused",
+    breaks: "the crate's own `rfold` is never called through what std routes through it (#220)",
+    file: "src/runtime/iterator.js",
+    find: "    it.rfold = (init, f) => rfold(iterator, init, f);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "iterator-own-nth-back-unused",
+    breaks: "the crate's own `nth_back` is never called through what std routes through it (#220)",
+    file: "src/runtime/iterator.js",
+    find: "  if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

@@ -750,8 +750,9 @@ React and JSX are [their own pages](README.md#react).
     `collect()` into a `Vec` doesn't ask it, where std's asks it as its
     capacity runs out, which its growth decides; its own `nth`, `fold` and
     `last` are asked as std asks them, through each adapter that passes
-    them on, and its `nth_back` and `rfold` as its `rev()` asks them, for
-    its `nth` and its `fold` (ADR 0711).
+    them on, and its `nth_back` and `rfold` as std's adapters stepped from
+    their back ask them, its `rev()`'s for its `nth` and its `fold`, but
+    not through a `fuse()`, which steps it by `next_back` (ADR 0711).
 22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
     left out (ADR 0743).

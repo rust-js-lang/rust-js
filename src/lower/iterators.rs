@@ -62,12 +62,15 @@ pub(in crate::lower) fn fewest_iterator_args(given: &mut Vec<Expr>) {
 
 /// The methods the impl of a crate's iterator writes itself that std
 /// routes other calls through, each where it writes it: what `$iterator`
-/// is given, and its dictionary (#162, #182).
+/// is given, and its dictionary (#162, #182); its `rfold` and `nth_back`,
+/// which std's adapters stepped from their back route through (#220).
 #[derive(Default)]
 pub(in crate::lower) struct OwnMethods {
     pub(in crate::lower) fold: Option<Expr>,
     pub(in crate::lower) nth: Option<Expr>,
     pub(in crate::lower) last: Option<Expr>,
+    pub(in crate::lower) rfold: Option<Expr>,
+    pub(in crate::lower) nth_back: Option<Expr>,
 }
 
 /// `stepped`'s, given `len` too, its length, one that knows it, an
@@ -85,8 +88,24 @@ pub(in crate::lower) fn stepped_ends(
     own: OwnMethods,
 ) -> Expr {
     // Each given, and each before it, `undefined` where it isn't.
-    let OwnMethods { fold, nth, last } = own;
-    let given = [boxed.then(|| Expr::bool(true)), back, len, hint, fold, nth, last];
+    let OwnMethods {
+        fold,
+        nth,
+        last,
+        rfold,
+        nth_back,
+    } = own;
+    let given = [
+        boxed.then(|| Expr::bool(true)),
+        back,
+        len,
+        hint,
+        fold,
+        nth,
+        last,
+        rfold,
+        nth_back,
+    ];
     let Some(last) = given.iter().rposition(Option::is_some) else {
         return Expr::call(Expr::helper("$iterator"), vec![value, next]);
     };

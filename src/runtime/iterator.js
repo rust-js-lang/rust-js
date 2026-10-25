@@ -6,8 +6,10 @@
 // is what it's of, which its drop drops (ADR 0421). Given its `nextBack`,
 // it knows its back, which `$nextBack` steps; given its `len`, its length,
 // an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
-// crate's impl's, std's consumers call them (#162).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last) {
+// crate's impl's, std's consumers call them (#162); and its own `rfold` and
+// `nth_back`, which std's consumers and adapters stepped from the back call
+// (#220).
+function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
@@ -29,9 +31,15 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     it.last = () => step(last(iterator));
     it.ownLast = true;
   }
+  // That `rfold` takes what it steps and drops it, as its `fold` does.
+  if (rfold !== undefined) {
+    it.rfold = (init, f) => rfold(iterator, init, f);
+    it.ownRfold = true;
+  }
+  if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }

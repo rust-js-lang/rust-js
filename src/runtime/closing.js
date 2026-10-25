@@ -31,6 +31,18 @@ function $closing(it, drop) {
     close();
     return folded;
   };
+  // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
+  // writes them, done with after its `rfold` as after its `fold` (#220).
+  if (it.nthBack !== undefined) closing.nthBack = (k) => it.nthBack(k);
+  if (it.rfold !== undefined) {
+    closing.rfold = (init, f) => {
+      const folded = it.rfold(init, f);
+      if (it.ownRfold) closed = true;
+      close();
+      return folded;
+    };
+  }
+  if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
   closing.tryFold = (init, f, broke) => {
     const folded = $lent(it).tryFold(init, f, broke);

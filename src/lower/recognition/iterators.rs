@@ -364,9 +364,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return !ty.is_ref() && self.own_iterator_method(ty, "fold").is_some();
         }
-        // A `rev()` of one, whose `fold` is its `rfold` (#217).
-        if let Some(reversed) = self.reversed_user_iterator(ty) {
-            return !reversed.is_ref() && self.own_back_method(reversed, "rfold").is_some();
+        // A `rev()`, whose `fold` is its source's `rfold` (#217, #220).
+        if let Some(reversed) = self.reversed_source(ty) {
+            return self.rfolds_its_own(reversed);
         }
         self.folded_sources(ty).any(|source| self.folds_its_own(source))
     }
@@ -393,13 +393,90 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))
     }
 
-    /// The crate's iterator, or a `&mut` of it, a `rev()` of type `ty`
-    /// steps from its back, its own `$iterator` of its `next_back`.
-    fn reversed_user_iterator(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    /// What a `rev()` of type `ty` steps from its back, its source.
+    fn reversed_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        let source = args.types().next()?;
-        (std_path(self.tcx, adt.did()) == "std::iter::Rev" && self.is_user_iterator(source.peel_refs()))
-            .then_some(source)
+        (std_path(self.tcx, adt.did()) == "std::iter::Rev").then(|| args.types().next())?
+    }
+
+    /// Whether std's `rfold` of a `ty`, a double-ended iterator, reaches the
+    /// `rfold` the impl of a crate's iterator writes, or its `nth_back`
+    /// (#220): of that iterator, not through a `&mut`, whose `rfold` is
+    /// std's; of a `rev()`, its source's `fold`; of each adapter whose
+    /// `rfold` is its source's, a `map`'s, a `filter`'s, an `enumerate`'s,
+    /// either side's of a `chain`; and of a `take`, its source's `nth_back`
+    /// past what it won't give, then its source's `rfold`.
+    pub(in crate::lower) fn rfolds_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if self.is_user_iterator(ty) {
+            return !ty.is_ref() && self.own_back_method(ty, "rfold").is_some();
+        }
+        if let Some(reversed) = self.reversed_source(ty) {
+            return self.folds_its_own(reversed);
+        }
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
+            Some("Map" | "Filter" | "Enumerate") => {
+                args.types().next().is_some_and(|source| self.rfolds_its_own(source))
+            }
+            Some("Chain") => args.types().take(2).any(|side| self.rfolds_its_own(side)),
+            Some("Take") => args
+                .types()
+                .next()
+                .is_some_and(|source| self.rfolds_its_own(source) || self.nth_backs_its_own(source)),
+            // A `skip`'s, its `try_rfold`, its source's.
+            Some("Skip") => args
+                .types()
+                .next()
+                .is_some_and(|source| self.try_rfolds_its_own(source)),
+            _ => false,
+        }
+    }
+
+    /// Whether std's `try_rfold` of a `ty` reaches what the impl of a
+    /// crate's iterator writes, which can't be its `try_rfold` (its `Try` is
+    /// unstable): a `take`'s, its source's `nth_back` past what it won't
+    /// give, and of each adapter whose `try_rfold` is its source's.
+    fn try_rfolds_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
+            Some("Take") => args
+                .types()
+                .next()
+                .is_some_and(|source| self.nth_backs_its_own(source) || self.try_rfolds_its_own(source)),
+            Some("Map" | "Filter" | "Enumerate" | "Skip") => args
+                .types()
+                .next()
+                .is_some_and(|source| self.try_rfolds_its_own(source)),
+            Some("Chain") => args.types().take(2).any(|side| self.try_rfolds_its_own(side)),
+            _ => false,
+        }
+    }
+
+    /// Whether std's `nth_back` of a `ty`, a double-ended iterator, reaches
+    /// the `nth_back` the impl of a crate's iterator writes (#220): of that
+    /// iterator, through a `&mut` of it too; of a `rev()`, its source's
+    /// `nth`; of a `skip`, a `take` and an `enumerate`, their source's; of a
+    /// `chain`, its first side's, after its second's stepped from its back.
+    pub(in crate::lower) fn nth_backs_its_own(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
+            return self.nth_backs_its_own(*inner);
+        }
+        if self.is_user_iterator(ty) {
+            return self.own_back_method(ty, "nth_back").is_some();
+        }
+        if let Some(reversed) = self.reversed_source(ty) {
+            return self.nths_its_own(reversed);
+        }
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        match std_path(self.tcx, adt.did()).strip_prefix("std::iter::") {
+            Some("Skip" | "Take" | "Enumerate" | "Chain") => {
+                args.types().next().is_some_and(|source| self.nth_backs_its_own(source))
+            }
+            _ => false,
+        }
     }
 
     /// What std's `fold` of a `ty`, a std adapter, folds by: of each whose
@@ -437,10 +514,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return self.own_iterator_method(ty, "nth").is_some();
         }
-        // A `rev()` of one, whose `nth` is its `nth_back`, through a `&mut`
-        // too (#217).
-        if let Some(reversed) = self.reversed_user_iterator(ty) {
-            return self.own_back_method(reversed, "nth_back").is_some();
+        // A `rev()`, whose `nth` is its source's `nth_back` (#217, #220).
+        if let Some(reversed) = self.reversed_source(ty) {
+            return self.nth_backs_its_own(reversed);
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         // A chain's, its second side's, which std's `Chain::nth` asks once

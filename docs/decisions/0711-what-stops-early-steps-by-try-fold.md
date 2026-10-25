@@ -185,3 +185,38 @@ is `own_methods`' too, for `$iterator` and a dictionary alike: through a
 reaches its `rfold` and `nth_back`. `rev_own_back_methods` holds them,
 with eight mutations. Through std's adapters, a `map`'s or a `take`'s
 `rfold` say, the crate's own back is still stepped by `next_back`.
+
+## Amendment: the crate's own back, through std's adapters
+
+Std's adapters stepped from their back ask the crate's own `rfold` and
+`nth_back` as their forward ones ask its `fold` and `nth`, and the JS
+stepped them by `next_back` alone: of 1,100 generated programs, 203
+asked them otherwise than std, their values the same (#220). Now
+`$iterator` is given the impl's `rfold` and `nth_back`, and each back
+form passes them on as std's does, where they reach the crate's own:
+
+- a `map`'s, a `filter`'s and an `enumerate`'s `rfold` and `try_rfold`
+  are their source's, a `chain`'s `b`'s then `a`'s; an `enumerate`'s
+  `nth_back` is its source's, a `chain`'s its first side's after its
+  second is stepped back past `n`;
+- `$rev` is a `$Steps`: its `fold`, `nth` and `try_fold` are its source's
+  `rfold`, `nth_back` and `try_rfold`, and its `advance_by` its source's
+  `advance_back_by`, std's of `next_back`;
+- a `take` (`$taking`) steps back by its source's `nth_back` past what it
+  won't give, from its back, by its `nth_back`, its `rfold` and its
+  `try_rfold`; a `skip`'s `nth_back` is its source's, its `rfold` its
+  `try_rfold`;
+- a `filter`'s `next_back` is its source's `rfind`, a `try_rfold`, where
+  that reaches the crate's own; `$foldBack`, `$nthBack` and `$findBack`
+  ask what they're given its own;
+- a source closed to drop it passes the crate's `rfold` on, done with
+  after it, as after its `fold`.
+
+`rfolds_its_own` and `nth_backs_its_own` say where a `rev()`'s fold and
+`nth` reach them, so `rev().last()` folds and `rev().nth(n)` is `$nth`.
+A `fuse()` is std's compiled code (ADR 0561), whose `nth_back` and
+`rfold` aren't compiled yet: still by `next_back`. 163 of the 203 agree
+now, the 40 left each a `fuse()`; the 2,254 of #216 still agree.
+`own_back_through_adapters` holds them, with 29 mutations. The
+readability baseline's `while (true)` share grows by 0.1 in 10,000
+lines: the case's two `rfold` impls, each a `while let`.

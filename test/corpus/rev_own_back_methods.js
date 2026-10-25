@@ -176,6 +176,9 @@ function main() {
     undefined,
     undefined,
     countIterator_nth,
+    undefined,
+    countDoubleEndedIterator_rfold,
+    countDoubleEndedIterator_nthBack,
   )
     .toArray()
     .at(-1);

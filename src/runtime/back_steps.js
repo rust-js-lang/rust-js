@@ -5,8 +5,13 @@
 // `it.nth_back(n)`: its `n`th item from the back, each before it stepped
 // past, and dropped, `drop`, where items have a destructor, or `undefined`,
 // `None`; of items that could look like `None`, its `Some`, `$some`, given
-// as `found` (ADR 0051).
+// as `found` (ADR 0051). Its own `nth_back`, where it reaches the crate's
+// (#220).
 function $nthBack(it, n, found = (item) => item, drop) {
+  if (it.nthBack !== undefined) {
+    const step = it.nthBack(n);
+    return step.done ? undefined : found(step.value);
+  }
   for (let step = it.back(); !step.done; step = it.back()) {
     if (n-- === 0) return found(step.value);
     drop?.(step.value);
@@ -14,21 +19,66 @@ function $nthBack(it, n, found = (item) => item, drop) {
   return undefined;
 }
 
-// `it.rfold(init, f)`: `f` of each item from the back, given what it gave.
+// `it.rfold(init, f)`: `f` of each item from the back, given what it gave;
+// its own `rfold`, where it reaches the crate's (#220).
 function $foldBack(it, init, f) {
+  if (it.rfold !== undefined) return it.rfold(init, f);
   let folded = init;
   for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);
   return folded;
 }
 
 // `it.rfind(p)`: the first item from the back `p` holds of, or `undefined`;
-// `found` and `drop`, of each it passes over, as `$nthBack`'s.
+// `found` and `drop`, of each it passes over, as `$nthBack`'s. Std's, its
+// `try_rfold`, where that reaches the crate's own (#220).
 function $findBack(it, p, found = (item) => item, drop) {
+  if (it.tryRfold !== undefined) {
+    let hit;
+    const hits = it.tryRfold(
+      false,
+      (_, x) => {
+        if (!p(x)) {
+          drop?.(x);
+          return false;
+        }
+        hit = x;
+        return true;
+      },
+      (hits) => hits,
+    );
+    return hits ? found(hit) : undefined;
+  }
   for (let step = it.back(); !step.done; step = it.back()) {
     if (p(step.value)) return found(step.value);
     drop?.(step.value);
   }
   return undefined;
+}
+
+// What an adapter stepped from its back asks of what it steps, as std's
+// do (#220): its own `try_rfold`, where it reaches the crate's, else
+// std's, of its `next_back`, stopped where `broke` holds of what it's made.
+function $tryRfoldOf(it, init, f, broke) {
+  if (it.tryRfold !== undefined) return it.tryRfold(init, f, broke);
+  let folded = init;
+  for (let step = it.back(); !step.done; step = it.back()) {
+    folded = f(folded, step.value);
+    if (broke(folded)) return folded;
+  }
+  return folded;
+}
+
+// And its `nth_back(k)`, a step: its own, where it reaches the crate's,
+// else std's, `k` stepped past from its back, each dropped, `drop`, then
+// the next.
+function $nthBackOf(it, k, drop) {
+  if (it.nthBack !== undefined) return it.nthBack(k);
+  for (; k > 0; k--) {
+    const step = it.back();
+    if (step.done) return step;
+    drop?.(step.value);
+  }
+  return it.back();
 }
 
 // `it` closed, `return()`, where it can be, as an adapter closed closes
@@ -50,6 +100,10 @@ function $mapEnds(it, f) {
   );
   if (it.back !== undefined) map.back = () => mapped(it.back());
   if (it.len !== undefined) map.len = () => it.len();
+  // Std's `Map::rfold` and `try_rfold`, its source's of each mapped, the
+  // crate's own where it reaches it (#220).
+  if (it.rfold !== undefined) map.rfold = (init, g) => it.rfold(init, (a, x) => g(a, f(x)));
+  if (it.tryRfold !== undefined) map.tryRfold = (init, g, broke) => it.tryRfold(init, (a, x) => g(a, f(x)), broke);
   return map;
 }
 
@@ -75,6 +129,41 @@ function $chainEnds(a, b) {
     sides.b?.return?.();
   });
   chain.back = step("b", "a", "back");
+  // Std's `Chain::rfold` and `try_rfold`, `b`'s then `a`'s, and its
+  // `nth_back`, `b` stepped back past `n`, then `a`'s own `nth_back`, where
+  // they reach the crate's own (#220).
+  if (a.rfold !== undefined || b.rfold !== undefined) {
+    chain.rfold = (init, f) => {
+      let folded = init;
+      if (sides.b !== undefined) folded = $foldBack(sides.b, folded, f);
+      if (sides.a !== undefined) folded = $foldBack(sides.a, folded, f);
+      return folded;
+    };
+  }
+  if (a.tryRfold !== undefined || b.tryRfold !== undefined) {
+    chain.tryRfold = (init, f, broke) => {
+      let folded = init;
+      if (sides.b !== undefined) {
+        folded = $tryRfoldOf(sides.b, folded, f, broke);
+        if (broke(folded)) return folded;
+        sides.b = undefined;
+      }
+      return sides.a === undefined ? folded : $tryRfoldOf(sides.a, folded, f, broke);
+    };
+  }
+  if (a.nthBack !== undefined) {
+    chain.nthBack = (n) => {
+      if (sides.b !== undefined) {
+        for (; n > 0; n--) if (sides.b.back().done) break;
+        if (n === 0) {
+          const at = sides.b.back();
+          if (!at.done) return at;
+        }
+        sides.b = undefined;
+      }
+      return sides.a === undefined ? done : sides.a.nthBack(n);
+    };
+  }
   return chain;
 }
 
@@ -160,6 +249,20 @@ function $filterEnds(it, p) {
   };
   const filter = new $Steps(kept(() => it.next()));
   if (it.back !== undefined) filter.back = kept(() => it.back());
+  // Std's `Filter::next_back`, its source's `rfind`, a `try_rfold`, where
+  // that reaches the crate's own (#220).
+  if (it.tryRfold !== undefined) {
+    filter.back = () => {
+      let hit;
+      const hits = it.tryRfold(false, (_, x) => p(x) && ((hit = x), true), (hits) => hits);
+      return hits ? { done: false, value: hit } : { done: true, value: undefined };
+    };
+  }
+  // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
+  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : a));
+  if (it.tryRfold !== undefined) {
+    filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : a), broke);
+  }
   return filter;
 }
 
@@ -194,6 +297,26 @@ function $enumerate(iter, count = 0) {
   }
   enumerated.tryFold = (init, f, broke) =>
     $lent(enumerated.iter).tryFold(init, (a, x) => f(a, [enumerated.count++, x]), broke);
+  // Std's `rfold`, `try_rfold` and `nth_back`: its source's, each counted
+  // from where it is, the crate's own where they reach it (#220).
+  if (iter.rfold !== undefined) {
+    enumerated.rfold = (init, f) => {
+      let at = enumerated.count + enumerated.iter.len();
+      return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]));
+    };
+  }
+  if (iter.tryRfold !== undefined) {
+    enumerated.tryRfold = (init, f, broke) => {
+      let at = enumerated.count + enumerated.iter.len();
+      return enumerated.iter.tryRfold(init, (a, x) => f(a, [--at, x]), broke);
+    };
+  }
+  if (iter.nthBack !== undefined) {
+    enumerated.nthBack = (k) => {
+      const step = enumerated.iter.nthBack(k);
+      return pair(step, enumerated.count + enumerated.iter.len());
+    };
+  }
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
   // it writes one (#182).
   if (iter.nth !== undefined) {

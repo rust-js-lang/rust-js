@@ -322,11 +322,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The crate's iterator `ty`'s own `fold`, `nth` and `last`, where its
     /// impl writes them: the functions what std routes through them calls,
-    /// `$iterator`'s (#162, #182). Stepped from its back, `back`, as `rev()`
-    /// steps it, its `rfold` and its `nth_back`, std's `Rev`'s `fold` and
-    /// `nth`, and std's `last`, a fold (#217). Through a `&mut`, std passes
-    /// `nth` and `nth_back` on, but its fold is the iterator's `try_fold`,
-    /// and its `last` its fold's (#216). One that takes evidence besides its
+    /// `$iterator`'s (#162, #182), and its `rfold` and `nth_back` (#220).
+    /// Stepped from its back, `back`, as `rev()` steps it, its `rfold` and
+    /// its `nth_back`, std's `Rev`'s `fold` and `nth`, and std's `last`, a
+    /// fold (#217). Through a `&mut`, std passes `nth` and `nth_back` on,
+    /// but its folds are the iterator's `try_fold` and `try_rfold`, and its
+    /// `last` its fold's (#216). One that takes evidence besides its
     /// drops, a bound's dictionary, can't be given what each caller would:
     /// refused.
     pub(in crate::lower) fn own_methods(
@@ -336,8 +337,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<crate::lower::iterators::OwnMethods> {
         let recognition = self.recognition();
-        let own = |name: &str| -> R<Option<Expr>> {
-            let written = match back {
+        // The impl's `name`, of `Iterator`, or of `DoubleEndedIterator`,
+        // `of_back`, where it writes one.
+        let own = |name: &str, of_back: bool| -> R<Option<Expr>> {
+            let written = match of_back {
                 true => recognition.own_back_method(ty, name),
                 false => recognition.own_iterator_method(ty, name),
             };
@@ -351,17 +354,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Ok(Some(self.fn_ref(written)))
         };
-        let (fold, nth, last) = match back {
-            true => ("rfold", "nth_back", None),
-            false => ("fold", "nth", Some("last")),
-        };
         let folds = !ty.is_ref();
-        Ok(crate::lower::iterators::OwnMethods {
-            fold: if folds { own(fold)? } else { None },
-            nth: own(nth)?,
-            last: match last {
-                Some(last) if folds => own(last)?,
-                _ => None,
+        let folded = |name: &str, of_back: bool| if folds { own(name, of_back) } else { Ok(None) };
+        Ok(match back {
+            true => crate::lower::iterators::OwnMethods {
+                fold: folded("rfold", true)?,
+                nth: own("nth_back", true)?,
+                ..Default::default()
+            },
+            // Its back's too, which std's adapters stepped from their back
+            // ask (#220).
+            false => crate::lower::iterators::OwnMethods {
+                fold: folded("fold", false)?,
+                nth: own("nth", false)?,
+                last: folded("last", false)?,
+                rfold: folded("rfold", true)?,
+                nth_back: own("nth_back", true)?,
             },
         })
     }

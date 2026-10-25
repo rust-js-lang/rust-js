@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_rev_drops.rs$"],
   },
+  {
+    name: "closing-rfold-unpassed",
+    breaks: "a source closed to drop it, stepped from its back by an adapter's `rfold`, doesn't pass the crate's own `rfold` on (#220)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.rfold !== undefined) {\n    closing.rfold",
+    replace: "  if (false) {\n    closing.rfold",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "closing-own-rfold-dropped-again",
+    breaks: "the crate's own `rfold`, which drops what it folds, is dropped again as it's closed (#220)",
+    file: "src/runtime/closing.js",
+    find: "      if (it.ownRfold) closed = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

@@ -159,7 +159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // And its own `fold`, `nth` and `last`, which std's consumers of it
         // call, `$foldBy`'s (#162, #182).
-        let crate::lower::iterators::OwnMethods { fold, nth, last } = self.own_methods(ty, false, span)?;
+        let crate::lower::iterators::OwnMethods { fold, nth, last, .. } = self.own_methods(ty, false, span)?;
         let iterator = std_item(self.tcx, StdItem::Iterator);
         // Of std's adapter over the crate's own, the JS iterator's, which
         // passes them on as std's does (#214).

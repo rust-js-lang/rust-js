@@ -26,4 +26,28 @@ export const mutations: Mutation[] = [
     replace: "      return taking.iter.next();\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
+  {
+    name: "taking-back-by-next",
+    breaks: "a `take`'s `next_back` steps its source back by `next_back`, not its `nth_back` past what it won't give (#220)",
+    file: "src/runtime/taking.js",
+    find: "    return $nthBackOf(taking.iter, past, drop);\n  };\n  taking.len",
+    replace: "    for (let k = 0; k < past; k++) taking.iter.back();\n    return taking.iter.back();\n  };\n  taking.len",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "taking-rfold-untrimmed",
+    breaks: "a `take`'s `rfold` folds its source untrimmed, not after its `nth_back` past what it won't give (#220)",
+    file: "src/runtime/taking.js",
+    find: "    taking.rfold = (init, f) => (taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f));\n",
+    replace: "    taking.rfold = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "taking-nth-back-unasked",
+    breaks: "a `take`'s `nth_back` steps by `next_back`, not its source's `nth_back` (#220)",
+    file: "src/runtime/taking.js",
+    find: "    taking.nthBack = (k) => {\n",
+    replace: "    taking.unused = (k) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
 ];

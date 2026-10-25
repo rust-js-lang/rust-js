@@ -234,8 +234,8 @@ export const mutations: Mutation[] = [
     name: "own-methods-back-forward",
     breaks: "`rev()` of the crate's iterator is given its forward `nth`, so `rev().nth(1)` counts from the front (#217)",
     file: "src/lower/iterators/stepping.rs",
-    find: "            true => (\"rfold\", \"nth_back\", None),\n",
-    replace: "            true => (\"fold\", \"nth\", None),\n",
+    find: "                fold: folded(\"rfold\", true)?,\n                nth: own(\"nth_back\", true)?,\n",
+    replace: "                fold: folded(\"fold\", false)?,\n                nth: own(\"nth\", false)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
 ];
