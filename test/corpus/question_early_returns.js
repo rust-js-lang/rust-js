@@ -27,10 +27,10 @@ function quarter(n) {
 }
 
 function firstDoubled(v) {
-  if (v[0] == null) {
+  const x = v[0];
+  if (x == null) {
     return;
   }
-  const x = v[0];
   return (x * 2) >>> 0;
 }
 

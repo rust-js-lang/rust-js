@@ -111,6 +111,33 @@ A call whose throw is an `Err`, its result ignored, `let _ = f();`, is
 `try { f(); } catch {}`, as a person writes it: the call, and what it
 threw dropped. It was `$try(() => f());`, the helper's result unread.
 
+## Amendment: what `?` tries is read once
+
+React's getComponentNameFromFiber, ported, writes `let return_fiber =
+fiber.r#return.borrow().clone()?;`, clippy's `question_mark` asking for
+the `?`. It printed `if (fiber.return != null) { const returnFiber =
+fiber.return; return ..; } return null;`: `?`'s `Try::branch` kept what
+it tried as it was where that reads the same each time it's read, a
+property too, so the test read it and the binding read it again. **What
+`?` tries is read once, as Rust reads it: a variable, a module's name or
+a constant where it's tested and taken; anything else, a property and an
+index too, a `const` first** (`entries.rs`'s `read_once_tried`), named
+by the `let` that takes its value, `const returnFiber = fiber.return; if
+(returnFiber == null) { return null; } return ..;`, or `value` (a
+`Result`'s `result`) where none does. Case N: the place reads the same
+either way, and is read once now, as in Rust. The guide's `initial`,
+`p.nickname.as_ref()?.chars().next()`, is `const value = p.nickname; if
+(value == null) { return; }`; `question_early_returns.rs`'s `v.first()?`
+and `slice_split_off.rs`'s `split_off(..)?` read so.
+
+Upstream's `if (fiber.return === null) { return null; } return
+getComponentNameFromFiber(fiber.return);` reads the place twice, which
+the port's Rust doesn't: not taken, as ADR 0657's amendment keeps a
+`let`'s `const` of a place too. Held by
+`test/lowering-early-exits.test.ts`, "a place a question mark tries is
+read once", run in JS, those two corpus cases against native Rust, and
+the mutation `tried-place-read-twice` (`lower/mir/entries.ts`).
+
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

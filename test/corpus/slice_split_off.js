@@ -22,10 +22,10 @@ function takeWord(input) {
   const end = $position(input.value, (b) => b === 32) ?? input.value.length;
   const split = $sliceSplitOff(input.value, end);
   input.value = split[0];
-  if (!split[1]) {
+  const word = split[1];
+  if (!word) {
     return;
   }
-  const word = split[1];
   const split$1 = $sliceSplitOffEnd(input.value, false);
   input.value = split$1[0];
   return word;

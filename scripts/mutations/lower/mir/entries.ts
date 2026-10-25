@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "        let b = match b_place.is_none() && false {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
   },
+  {
+    name: "tried-place-read-twice",
+    breaks: "`let p = s.next.borrow().clone()?;` reads `s.next` in its test and again in its binding, `if (s.next != null) { const p = s.next; .. }`, not once (ADR 0035, amended)",
+    file: "src/lower/mir/entries.rs",
+    find: "        if tried.reads_same() && !place {\n",
+    replace: "        if tried.reads_same() {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a place a question mark tries is read once"],
+  },
 ];

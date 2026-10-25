@@ -232,3 +232,43 @@ js::export_default! {
   enqueueTask(task);
   expect(ran).toEqual(["enqueued", "task"]);
 });
+
+// React's getComponentNameFromFiber, ported: `let return_fiber =
+// fiber.r#return.borrow().clone()?;`, as clippy's question_mark asks. What
+// `?` tries is read once, as Rust reads it, by its `let`'s name, `const
+// returnFiber = fiber.return; if (returnFiber == null) { return null; }`;
+// not `if (fiber.return != null) { const returnFiber = fiber.return; .. }`,
+// which reads it twice (ADR 0035, amended). A variable is tested in place.
+test("a place a question mark tries is read once", async () => {
+  const { js, lib } = await compiled("tried-read-once", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub const DEV: bool = true;
+
+pub struct Fiber {
+    pub depth: u32,
+    pub parent: RefCell<Option<Rc<Fiber>>>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn parent_depth(fiber: &Fiber) -> Option<u32> {
+    if DEV {
+        if fiber.depth > 3 {
+            return Some(3);
+        }
+        let parent = fiber.parent.borrow().clone()?;
+        return Some(parent.depth);
+    }
+    None
+}
+
+pub fn doubled(o: Option<u32>) -> Option<u32> {
+    let v = o?;
+    Some(v * 2)
+}
+`);
+  expect(js).toContain("    const parent = fiber.parent;\n    if (parent == null) {\n      return null;\n    }\n    return parent.depth;\n");
+  expect(js).toContain("  if (o == null) {\n    return;\n  }\n  return (o * 2) >>> 0;\n");
+  const root = { depth: 0, parent: null };
+  expect([lib.parentDepth({ depth: 1, parent: root } as never), lib.parentDepth({ depth: 1, parent: null } as never), lib.parentDepth({ depth: 5, parent: null } as never), lib.doubled(4 as never), lib.doubled(undefined as never)]).toEqual([0, null, 3, 8, undefined]);
+});

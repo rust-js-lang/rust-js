@@ -1828,10 +1828,11 @@ export function ageNextYear(p) {
 }
 
 export function initial(p) {
-  if (p.nickname == null) {
+  const value = p.nickname;
+  if (value == null) {
     return;
   }
-  return Array.from(p.nickname)[0];
+  return Array.from(value)[0];
 }
 
 export function isAdult(p) {
@@ -1841,7 +1842,10 @@ export function isAdult(p) {
 
 - `unwrap_or` is `??`. `map` changes the value if there is one. `?` after
   an `Option` returns `None` from the function early, as `?.` stops a
-  chain.
+  chain. What it tries is read once, as Rust reads it: a property, a
+  `const` first, by its `let`'s name, `const parent = fiber.parent; if
+  (parent == null) { return; }`, or `value` where no `let` names it
+  ([ADR 0035](../../decisions/0035-results-and-throwing-js.md), amended).
 - `if let Some(age) = p.age` is "if it's there, call it `age`". Its value
   is the conditional you wrote, `?:`, its `else { false }` too; what you
   write with `&&`, or `p.age.is_some_and(|a| a >= 18)`, is `&&`

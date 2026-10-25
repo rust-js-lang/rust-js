@@ -163,6 +163,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Value::Branch(Expr::undefined(), ty))
     }
 
+    /// What `?` tries, `tried`, of type `ty`, read once, as Rust reads it:
+    /// a variable, a module's name or a constant where it's tested and
+    /// taken; anything else, a property too, a `const` the test and the
+    /// rest read, `const next = s.next; if (next == null) { return; }`
+    /// (ADR 0035, amended).
+    pub(super) fn read_once_tried(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        tried: Expr,
+        ty: Ty<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let place = matches!(
+            tried.kind,
+            js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..) | js::ExprKind::Index(..)
+        );
+        if tried.reads_same() && !place {
+            return Ok(tried);
+        }
+        self.flush(state, out)?;
+        let name = if self.option_of(ty).is_some() {
+            "value"
+        } else {
+            "result"
+        };
+        Ok(self.spill(name, tried, out))
+    }
+
     /// `?`'s residual given back as a write's result, `output`: its error,
     /// thrown, as its `Err` is (ADRs 0187, 0462).
     pub(super) fn thrown_residual(&self, residual: Expr, output: Ty<'tcx>) -> Expr {

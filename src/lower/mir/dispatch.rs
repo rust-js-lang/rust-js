@@ -759,21 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`?` on a `{ty}`, from its MIR")));
             }
             let tried = self.value_expr(values.into_iter().next().expect("the value tried"), span)?;
-            let tried = match tried.reads_same() {
-                true => tried,
-                false => {
-                    self.flush(state, out)?;
-                    self.spill(
-                        if self.option_of(ty).is_some() {
-                            "value"
-                        } else {
-                            "result"
-                        },
-                        tried,
-                        out,
-                    )
-                }
-            };
+            let tried = self.read_once_tried(state, tried, ty, out)?;
             return Ok(Value::Branch(tried, ty));
         }
         if tcx.is_lang_item(def_id, LangItem::TryTraitFromResidual) {

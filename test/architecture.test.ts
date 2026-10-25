@@ -707,7 +707,7 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    pub(in crate::lower) fn classify(", 8],
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
-  ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
+  ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 233],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 140],
   ["src/lower/mir.rs", "    fn mir_function(", 349], // What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
