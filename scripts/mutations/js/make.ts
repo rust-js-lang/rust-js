@@ -119,6 +119,14 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
+    name: "presence-unmarked",
+    breaks: "an object's `Option` tested by its truth, `p ? p.x : undefined`, is no `p?.x`: its test isn't known as one of being set",
+    file: "src/js/make.rs",
+    find: "            Some(_) => marked,\n",
+    replace: "            Some(_) => test,\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "read in a conditional is an optional chain"],
+  },
+  {
     name: "text-joined-twice",
     breaks: "a number made text and joined to text stays `\"\" + n + \"px\"`, not `n + \"px\"`",
     file: "src/js/make.rs",

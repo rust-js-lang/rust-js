@@ -262,3 +262,34 @@ back (`std_types/option.ts`, `combinators/adapters.ts`, `jsx.ts`,
 `jsx-null-test-captured` and `negation-spilled` (`jsx.ts`);
 `not-falsy-constant-kept` (`js/make.ts`); and
 `present-value-coalesce-kept` (`mir/tidy/branches.ts`).
+
+## Amended (2026-10-25): a truth test of being set is one, so `p?.x` again
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)), as above.
+
+Once an object's `Option` was tested by its truth, React's
+`startTransition` port read `match prev { Some(prev) => prev.types, None
+=> None }` as `prev ? prev.types : undefined`, where it had been
+`prev?.types`: `js/make.rs`'s `cond` folds `x != null ? x.f : undefined`
+to `x?.f`, and of `!!x` it can't, as `!!s` of `!s.is_empty()` is no test
+of being set, and `s?.toUpperCase()` gives `""` where Rust gives `None`.
+
+**The test `present` and `absent` make of a payload never falsy says it's
+one of being set**: `Expr::presence` writes `!!o` or `!o` marked
+`Known::Presence`, and `null_test`, the one answer to what a test of being
+set is, reads it as `o != null`, or `o == null`. Each fold of a set test
+then holds of it, as it's the same answer for each value the type has: `p
+? p.x : undefined` is `p?.x`, `p?.[k]` and `p?.m(x)` too, and `if (!x) {
+x = e; }` is `x ??= e`. A `!!s` no `Option`'s presence made is no set
+test, so text's truth keeps its conditional. `x ? x : y`, of a truth test
+of `x` alone, is still `x || y` (ADR 0744), asked before `??`
+(`tidy/branches.rs::conditional`), so `state || blank` stays.
+
+Held by `test/lowering-option-truth.test.ts`, "an Option of an object read
+in a conditional is an optional chain", run with an object, `undefined`,
+and text's `""`; and the mutations `presence-unmarked` (`js/make.ts`),
+`any-truth-a-null-test` (`js/stmt_walk.ts`) and `truth-or-coalesced`
+(`mir/tidy/branches.ts`). `test/lowering-comments.test.ts`'s match arm of
+many comments read away, `prev?.types`, has them before its statement, as
+ADR 0444's amendment says, and a new arm, `((prev.types ?? 0) + 1) >>> 0`,
+keeps them before its value in the conditional.

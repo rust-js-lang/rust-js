@@ -488,6 +488,10 @@ pub enum Known {
     /// `make(context)` of `set(Some(make(context)))`. A nullable place
     /// stores it as it is (`Storage::written`, ADR 0841).
     Defined,
+    /// A test of an `Option` of a value never falsy by its truth, `!!o` or
+    /// `!o` (`Expr::presence`, ADR 0298, amended): true exactly where `o`
+    /// is set, or isn't, as `o != null` is, which `null_test` reads it as.
+    Presence,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

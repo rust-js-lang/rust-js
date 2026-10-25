@@ -200,3 +200,55 @@ pub fn Preview(is_expanded: bool, rawHeight: Option<f64>) -> JSX::Element {
   expect([shown(0), shown(1.5), shown(undefined)])
     .toEqual(['<div><b class="z-50">0</b><p></p></div>', '<div><b class="z-50">1.5</b><p></p></div>', "<div><p></p></div>"]);
 });
+
+// React's startTransition: `match prev { Some(prev) => prev.types, None =>
+// None }`, an object's `Option`, tested by its truth, `prev ? prev.types :
+// undefined`, is `prev?.types`, as it was of `prev != null`: a value never
+// falsy is set where it's truthy. Text's, which may be `""`, keeps its test,
+// `s != null ? $byteLen(s) : undefined`, as `""`'s length is `0`.
+test("an Option of an object read in a conditional is an optional chain", async () => {
+  const dir = fixture("present-chain");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Point {
+    pub x: u32,
+    pub name: String,
+}
+
+pub struct Out {
+    pub x: Option<u32>,
+    pub name: Option<String>,
+}
+
+pub fn read(p: Option<&Point>, out: &mut Out) {
+    out.x = match p {
+        Some(p) => Some(p.x),
+        None => None,
+    };
+    out.name = if let Some(p) = p { Some(p.name.clone()) } else { None };
+}
+
+pub fn text(s: Option<&str>, out: &mut Out) {
+    out.x = match s {
+        Some(s) => Some(s.len() as u32),
+        None => None,
+    };
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("out.x = p?.x;");
+  expect(js).toContain("out.name = p?.name;");
+  expect(js).toContain("out.x = s != null ?");
+  const lib = await import(join(dir, "lib.js"));
+  const read = (p: unknown) => {
+    const out = {};
+    lib.read(p, out);
+    return out;
+  };
+  expect([read({ x: 0, name: "a" }), read(undefined)]).toEqual([{ x: 0, name: "a" }, { x: undefined, name: undefined }]);
+  const text = (s: unknown) => {
+    const out: { x?: number } = {};
+    lib.text(s, out);
+    return out.x;
+  };
+  expect([text(""), text("ab"), text(undefined)]).toEqual([0, 2, undefined]);
+});

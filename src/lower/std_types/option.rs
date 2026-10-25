@@ -1,7 +1,7 @@
 //! An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062).
 
 use crate::js;
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
@@ -683,7 +683,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `filter_map`'s kept item ask.
     pub(in crate::lower) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
         match self.never_falsy(ty) {
-            true => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, option)),
+            true => Expr::presence(option, true),
             false => Expr::bin(Op::LooseNe, option, Expr::null()),
         }
     }
@@ -691,7 +691,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether it's `None`: `o == null`, or `!o`.
     pub(in crate::lower) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
         match self.never_falsy(ty) {
-            true => Expr::unary(UnaryOp::Not, option),
+            true => Expr::presence(option, false),
             false => Expr::bin(Op::LooseEq, option, Expr::null()),
         }
     }

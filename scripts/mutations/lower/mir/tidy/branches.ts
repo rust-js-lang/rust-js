@@ -510,4 +510,12 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/jsx-children.test.ts", "-t", "a prop under a child's truth test is its value there"]
   },
+  {
+    name: "truth-or-coalesced",
+    breaks: "an object's `Option` or another, tested by its truth, `!!state ? state : blank`, is `state ?? blank`, not `state || blank` as ADR 0744 reads it",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        _ if !test.has_effects() && js::same_path(&test.tested(), &yes) => return Expr::bin(Op::Or, yes, no),\n",
+    replace: "        _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
+  },
 ];

@@ -316,7 +316,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0295 A module's imports are one block, packages first](0295-import-order.md)
 - [0296 A function a block makes and gives is a named function expression](0296-named-function-expressions.md)
 - [0297 A closure a `let` names for a hook is the hook's named function](0297-named-hook-functions.md)
-- [0298 An Option of a value never falsy is tested by its truth](0298-truthy-options.md) *(amended: an `Option<bool>`'s `Some(true)` is tested by its truth, `x ?? false` as `x`; amended again, reversed: every `Option` is tested `o != null`; amended a third time: by what its payload may be, its truth where it's never falsy, `o != null` where it may be)*
+- [0298 An Option of a value never falsy is tested by its truth](0298-truthy-options.md) *(amended: an `Option<bool>`'s `Some(true)` is tested by its truth, `x ?? false` as `x`; amended again, reversed: every `Option` is tested `o != null`; amended a third time: by what its payload may be, its truth where it's never falsy, `o != null` where it may be; amended: that truth is a test of being set, `p ? p.x : undefined` is `p?.x`)*
 - [0299 A return of `undefined` is a bare `return;`](0299-bare-return.md)
 - [0300 A function takes the drops its body uses](0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it)*
 - [0301 A read that can't throw comes before a move](0301-reads-that-cannot-throw.md)
