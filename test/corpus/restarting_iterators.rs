@@ -17,6 +17,12 @@ impl Iterator for Flaky {
         }
     }
 }
+struct Loud(u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
 fn f() -> Flaky {
     Flaky { n: 0 }
 }
@@ -66,4 +72,12 @@ fn main() {
         if n % 3 == 0 || n > 8 { None } else { Some(n) }
     });
     println!("from_fn {:?}", twice(from.map(|x| x + 1)));
+    // A zip isn't done with at its first end: its other side, which drops
+    // what it holds, is still stepped after (#279).
+    let louds: Vec<Loud> = (20..25).map(Loud).collect();
+    let mut zipped = f().zip(louds);
+    let first: Vec<u32> = zipped.by_ref().map(|(x, loud)| x + loud.0).collect();
+    println!("zip first {first:?}");
+    let second: Vec<u32> = zipped.map(|(x, loud)| x + loud.0).collect();
+    println!("zip second {second:?}");
 }

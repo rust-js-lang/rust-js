@@ -2,7 +2,10 @@
 
 import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $closing,
+  $dropEach,
   $fromFn,
+  $iter,
   $iterator,
   $lazyChain,
   $lazyMapWhile,
@@ -12,6 +15,7 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
+  $range,
   $stepBy,
 } from "@rust-js/runtime";
 
@@ -28,6 +32,9 @@ function flakyIterator_next(flaky) {
     return;
   }
   return flaky.n;
+}
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
 }
 function f() {
   return { n: 0 };
@@ -160,5 +167,52 @@ function main() {
   console.log(
     `from_fn ([${value$18[0].join(", ")}], [${value$18[1].join(", ")}], [${value$18[2].join(", ")}])`,
   );
+  // A zip isn't done with at its first end: its other side, which drops
+  // what it holds, is still stepped after (#279).
+  const louds = $range(20, 25).map((value) => [value]);
+  let louds$live = true;
+  let flaky;
+  try {
+    flaky = f();
+    louds$live = false;
+  } catch (error) {
+    if (louds$live) {
+      for (const item of louds) {
+        loudDrop_drop(item);
+      }
+    }
+    throw error;
+  }
+  const zipped = $lazyZip(
+    $iterator(flaky, flakyIterator_next),
+    $closing($iter(louds), $dropEach(loudDrop_drop)),
+  );
+  let first;
+  try {
+    first = $lent(zipped)
+      .map(([x, loud]) => {
+        const result = (x + loud[0]) >>> 0;
+        loudDrop_drop(loud);
+        return result;
+      })
+      .toArray();
+  } catch (error) {
+    zipped.return();
+    throw error;
+  }
+  try {
+    console.log(`zip first [${first.join(", ")}]`);
+  } catch (error) {
+    zipped.return();
+    throw error;
+  }
+  const second = zipped
+    .map(([x, loud]) => {
+      const result = (x + loud[0]) >>> 0;
+      loudDrop_drop(loud);
+      return result;
+    })
+    .toArray();
+  console.log(`zip second [${second.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
