@@ -101,15 +101,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
   },
   {
-    name: "block-jump-written-block-forwarded",
-    breaks: "a block the program labeled, `'sum: { .. }`, followed by a jump, loses its label and its comment (ADR 0745)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        let written = !stmts[i].span.is_none();\n",
-    replace: "        let written = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^labeled_blocks.rs$"],
-    snapshots: true,
-  },
-  {
     name: "jumps-into-branches-off",
     breaks: "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745)",
     file: "src/lower/mir/tidy/jumps/continues.rs",

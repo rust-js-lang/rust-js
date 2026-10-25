@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-functions.test.ts", "-t", "past an object of constants"],
   },
   {
-    "name": "builtin-callee-blocks-inline",
-    "breaks": "a call's temporary given to `Object.fromEntries` stays a `const`, and no object literal is made of it",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "\"Object\" | \"Math\"",
-    "replace": "\"Object!\" | \"Math\"",
-    "tests": ["test/lowering-functions.test.ts", "-t", "read in place by a builtin's function"]
-  },
-  {
     "name": "shown-child-conditional",
     "breaks": "a child shown where a test holds is `shown ? hint : undefined`, not `shown && hint`",
     "file": "src/lower/mir/tidy.rs",

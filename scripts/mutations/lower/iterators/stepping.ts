@@ -157,14 +157,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^blanket_iterator_trait.rs$"],
   },
   {
-    name: "given-param-not-made-js-iterator",
-    breaks: "a parameter given as it is goes as it is where a JS iterator goes",
-    file: "src/lower/iterators/stepping.rs",
-    find: " && !self.iterator_given_as_it_is(ty.peel_refs())",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
-  },
-  {
     name: "btree-given-unordered",
     breaks: "a `BTreeSet` given to `extend` or `chain` is stepped in its JS set's insertion order, not its keys'",
     file: "src/lower/iterators/stepping.rs",

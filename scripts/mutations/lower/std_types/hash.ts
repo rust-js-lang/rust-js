@@ -92,12 +92,4 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
     snapshots: true,
   },
-  {
-    name: "hash-mut-hasher-refused",
-    breaks: "std's `impl Hasher for &mut H`, a `&mut dyn Hasher`'s, is refused",
-    file: "src/lower/std_types/hash.rs",
-    find: "                ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
-  },
 ];

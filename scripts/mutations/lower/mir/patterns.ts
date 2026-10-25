@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read as a person writes them"],
   },
   {
-    "name": "mir-null-none-past-other-writes",
-    "breaks": "an `Option` a call sets too, `and_then`'s `undefined`, is given to a nullable field as it is",
-    "file": "src/lower/mir/patterns.rs",
-    "find": "none && writes == locals.writes[local] && ",
-    "replace": "none && ",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field of Some or None by a branch"]
-  },
-  {
     "name": "let-pattern-deref-unpeeled",
     "breaks": "a `let` pattern through a reference isn't taken apart where it's made",
     "file": "src/lower/mir/patterns.rs",

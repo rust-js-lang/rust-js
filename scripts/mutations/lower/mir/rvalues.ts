@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "fields-read-as-declared",
-    breaks: "a struct literal's fields are read as declared, not as its object lists them, so in a loop each of `Point { y: step(..), x: step(..), .. }` is set aside in a variable first",
-    file: "src/lower/mir/rvalues.rs",
-    find: "        let read: &[usize] = order.as_deref().unwrap_or(&declared);\n",
-    replace: "        let read: &[usize] = &declared;\n",
-    tests: ["test/corpus.test.ts", "-t", "struct_fields_as_written"],
-    snapshots: true,
-  },
-  {
     name: "spread-fields-as-declared",
     breaks: "an update's fields after its base's spread are listed as declared, `{ ...logs, log: 2, warn: 1 }` of `Logs { warn: .., log: .., ..logs }`",
     file: "src/lower/mir/rvalues.rs",

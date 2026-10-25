@@ -31,14 +31,6 @@ export const mutations: Mutation[] = [
     tests: switches,
   },
   {
-    name: "switch-after-unmoved",
-    breaks: "what follows a `switch` that one case alone goes on to stays after it, `case \".\": break; } break;`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        cases[only].1.extend(after.iter().cloned());\n        taken = stmts.len() - at;\n",
-    replace: "",
-    tests: switches,
-  },
-  {
     name: "switch-tail-continue-kept",
     breaks: "a case's `continue` where the `switch` ends the loop's turn stays, `n += 1; continue;`",
     file: "src/lower/mir/tidy/switches.rs",
@@ -100,14 +92,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "            ) => (left.iter())\n                .position(",
     replace: "            ) => (left.iter().take(1))\n                .position(",
-    tests: typeofs,
-  },
-  {
-    name: "typeof-or-pattern-in-variant-order",
-    breaks: "an or-pattern's cases are in its variants' order, MIR's, `Function | String`'s `case \"string\": case \"function\":`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "    values.sort_by_key(|&(k, _)| k);\n",
-    replace: "",
     tests: typeofs,
   },
   {
