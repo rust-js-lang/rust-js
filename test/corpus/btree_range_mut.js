@@ -93,8 +93,7 @@ function main() {
   const next = $next(last);
   if (next) {
     const v = next[1];
-    const value = v.value.toUpperCase();
-    v.value = value;
+    v.value = v.value.toUpperCase();
   }
   const arg = last.reduce((n) => n + 1, 0);
   console.log(

@@ -208,4 +208,20 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Spread(a) => a.reads_only_vars(),\n",
     tests: ["test/corpus.test.ts", "-t", "^unread_collected_chain.rs$"],
   },
+  {
+    name: "reads-by-name-alone",
+    breaks: "a call is judged to only read by its method's name alone: the crate's own `at`, `P.at(p)`, which prints, runs for every item before the next stage",
+    file: "src/js/expr_walk.rs",
+    find: "                if self.facts.has(Known::Read)\n                    && let ExprKind::Member(of, name) = &callee.kind\n",
+    replace: "                if let ExprKind::Member(of, name) = &callee.kind\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"],
+  },
+  {
+    name: "read-call-effectful",
+    breaks: "a `str`'s `includes` of Rust's types is taken to do something, so a guard's scope round a loop that only reads is a `try`/`finally`",
+    file: "src/js/expr_walk.rs",
+    find: "                of.has_effects() || args.iter().any(Expr::has_effects)\n            }\n            ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,\n",
+    replace: "                let _ = (of, args);\n                true\n            }\n            ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a guarded loop that only reads is no try"],
+  },
 ];

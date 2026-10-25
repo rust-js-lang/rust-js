@@ -65,8 +65,7 @@ function each(held, all) {
 
 function shout(text) {
   text.value.value += "!";
-  const value = text.value.value.toUpperCase();
-  text.value.value = value;
+  text.value.value = text.value.value.toUpperCase();
 }
 
 function main() {

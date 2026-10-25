@@ -166,17 +166,8 @@ function lend() {
   if (first) {
     first[0] = 20;
   }
-  let lastMut;
-  try {
-    lastMut = d.at(-1);
-  } catch (error) {
-    for (const item of d) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
-  if (lastMut) {
-    const last = lastMut;
+  const last = d.at(-1);
+  if (last) {
     let old;
     try {
       old = $take(last, [21]);

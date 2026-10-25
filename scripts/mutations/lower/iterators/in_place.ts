@@ -10,14 +10,7 @@ export const mutations: Mutation[] = [
     replace: "js::ExprKind::Call(lent, of) if lent.helper_name() == Some(\"$lent\") && of.len() == 1 => e,",
     tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR is a guard"],
   },
-  {
-    "name": "reads-by-name-alone",
-    "breaks": "a call is judged to only read by its method's name alone: the crate's own `at`, `P.at(p)`, which prints, runs for every item before the next stage",
-    "file": "src/lower/iterators/in_place.rs",
-    "find": "js::ExprKind::Member(_, name) => part.facts.has(js::Known::Read) && READS.contains(&name.as_str()),",
-    "replace": "js::ExprKind::Member(_, name) => READS.contains(&name.as_str()),",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "named as a slice's reader"]
-  },
+
   {
     name: "does-f64-max-given-acts",
     breaks: "`$f64Max` given as it is acts, so a chain it folds stays lazy",

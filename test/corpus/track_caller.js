@@ -34,8 +34,7 @@ function gridIndexUsize_index(grid, i) {
 
 function main() {
   const at = here({ file: "test/corpus/track_caller.rs", line: 49, column: 14 });
-  const arg = at.file.endsWith("track_caller.rs");
-  console.log(`${at.line} ${at.column} ${arg}`);
+  console.log(`${at.line} ${at.column} ${at.file.endsWith("track_caller.rs")}`);
   console.log(`${through({ file: "test/corpus/track_caller.rs", line: 51, column: 20 })}`);
   console.log(`${quiet(1)}`);
   console.log(`${inClosure()}`);

@@ -97,17 +97,8 @@ function main() {
       break;
     }
     const w = tmp;
-    let uppercase;
     try {
-      uppercase = w.toUpperCase();
-    } catch (error) {
-      if (b$live) {
-        bufDrop_drop(b, 12, 4);
-      }
-      throw error;
-    }
-    try {
-      Buf.push(b, uppercase, 12, 4);
+      Buf.push(b, w.toUpperCase(), 12, 4);
     } catch (error) {
       if (b$live) {
         bufDrop_drop(b, 12, 4);

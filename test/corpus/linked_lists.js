@@ -12,8 +12,9 @@ function main() {
   list.push(3);
   list.unshift(1);
   const front = list[0];
+  const value = list.at(-1);
   console.log(
-    `[${list.join(", ")}] ${list.length} ${front == null ? "None" : `Some(${front})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.at(-1))}`,
+    `[${list.join(", ")}] ${list.length} ${front == null ? "None" : `Some(${front})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const more = [4, 5];
   $append(list, more);
@@ -21,9 +22,9 @@ function main() {
   const tail = $splitOff(list, 3);
   console.log(`[${list.join(", ")}] [${tail.join(", ")}]`);
   const popFront = list.shift();
-  const value = list.pop();
+  const value$1 = list.pop();
   console.log(
-    `${popFront == null ? "None" : `Some(${popFront})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${popFront == null ? "None" : `Some(${popFront})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
   const doubled = tail.map((x) => (x * 2) >>> 0);

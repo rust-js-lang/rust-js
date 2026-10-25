@@ -33,8 +33,7 @@ function main() {
   console.log(`${$eq(owned, { TAG: "OwnedLiteral", _0: "abc" })}`);
   const fromString = "héllo";
   const into = "into";
-  const arg$1 = into.toUpperCase();
-  console.log(`${fromString} ${$byteLen(fromString)} ${$debugStr(into)} ${arg$1}`);
+  console.log(`${fromString} ${$byteLen(fromString)} ${$debugStr(into)} ${into.toUpperCase()}`);
   const copy = fromString;
   console.log(`${copy === fromString} ${copy === "héllo"}`);
 }

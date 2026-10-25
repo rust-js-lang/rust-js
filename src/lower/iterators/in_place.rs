@@ -115,28 +115,10 @@ pub(super) fn counts(f: &Expr) -> bool {
 /// Whether calling `f` may do what can be seen, or throw: anything but an
 /// arrow whose statements only make and give back what does nothing.
 pub(in crate::lower) fn does(f: &Expr) -> bool {
-    // A `str`'s or a slice's methods that only read it, `s.startsWith(t)`,
-    // as Rust's types tell (`Expr::read`), not a crate's own `at`, `P.at(p)`:
-    // their operands', as `has_effects` says of the runtime's pure helpers,
-    // `$find(s, t)`; and such a helper given as it is.
-    const READS: &[&str] = &["startsWith", "endsWith", "includes", "toUpperCase", "toLowerCase", "at"];
+    // What `has_effects` says, the one answer: of a `str`'s or a slice's
+    // methods that only read it, `s.startsWith(t)`, their operands'
+    // (`Known::Read`), as of the runtime's pure helpers, `$find(s, t)`.
     fn acts(e: &Expr) -> bool {
-        let mut e = e.clone();
-        e.each_mut(&mut |part| {
-            if let js::ExprKind::Call(callee, args) = &part.kind {
-                let reads = match &callee.kind {
-                    js::ExprKind::Member(_, name) => part.facts.has(js::Known::Read) && READS.contains(&name.as_str()),
-                    _ => false,
-                };
-                if reads {
-                    let mut operands = args.clone();
-                    if let js::ExprKind::Member(of, _) = &callee.kind {
-                        operands.push((**of).clone());
-                    }
-                    *part = Expr::array(operands);
-                }
-            }
-        });
         e.has_effects()
     }
     fn body_does(stmts: &[Stmt]) -> bool {

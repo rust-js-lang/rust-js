@@ -3,6 +3,10 @@
 
 use super::*;
 
+/// The methods of a `str` or a slice, made by `Expr::read`, that only read
+/// it and throw nothing (`Known::Read`, ADR 0892).
+const READS: &[&str] = &["startsWith", "endsWith", "includes", "toUpperCase", "toLowerCase", "at"];
+
 impl Expr {
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name.
@@ -608,6 +612,17 @@ impl Expr {
             // their arguments do.
             ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
                 args.iter().any(Expr::has_effects)
+            }
+            // A `str`'s or a slice's method that only reads it and throws
+            // nothing, as Rust's types tell (`Known::Read`), `s.startsWith(t)`,
+            // never a crate's own `at`, `P.at(p)`: what its operands do (ADR
+            // 0892).
+            ExprKind::Call(callee, args)
+                if self.facts.has(Known::Read)
+                    && let ExprKind::Member(of, name) = &callee.kind
+                    && READS.contains(&name.as_str()) =>
+            {
+                of.has_effects() || args.iter().any(Expr::has_effects)
             }
             ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,
             // Making an element runs nothing: a component runs when React renders it.

@@ -121,10 +121,14 @@ pub fn drops() -> u32 {
     DROPS.get()
 }
 
+fn is_root(line: &str) -> bool {
+    line.contains("Root")
+}
+
 pub fn root(lines: &[&str]) -> usize {
     let _restore = Restore;
     let mut s = 0;
-    while s < lines.len() && !lines[s].contains("Root") {
+    while s < lines.len() && !is_root(lines[s]) {
         s += 1;
     }
     s
@@ -134,7 +138,7 @@ pub fn written(lines: &[&str]) -> usize {
     let _restore = Restore;
     let mut s = 0;
     while s < lines.len() {
-        if lines[s].contains("Root") {
+        if is_root(lines[s]) {
             break;
         }
         s += 1;
@@ -145,12 +149,57 @@ pub fn written(lines: &[&str]) -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('    while (s < lines.length && !lines[s].includes("Root")) {\n      s++;\n    }\n');
-  expect(js).toContain('    while (s < lines.length) {\n      if (lines[s].includes("Root")) {\n        break;\n      }\n      s++;\n    }\n');
+  expect(js).toContain('    while (s < lines.length && !isRoot(lines[s])) {\n      s++;\n    }\n');
+  expect(js).toContain('    while (s < lines.length) {\n      if (isRoot(lines[s])) {\n        break;\n      }\n      s++;\n    }\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);
   expect([lib.written(["a", "Root"]), lib.written(["a"]), lib.written([])]).toEqual([1, 1, 0]);
   expect(lib.drops()).toBe(6);
+});
+
+// ADR 0892: what can't throw, a `str`'s `includes` of Rust's types
+// (`Known::Read`), needs no `finally`, so a guard's scope round a loop that
+// only reads is no `try` at all: the loop reads as it would unguarded, its
+// drop after it.
+test("a guarded loop that only reads is no try", async () => {
+  const dir = fixture("guarded-reads");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+thread_local! {
+    static DROPS: Cell<u32> = const { Cell::new(0) };
+}
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        DROPS.set(DROPS.get() + 1);
+    }
+}
+
+pub fn drops() -> u32 {
+    DROPS.get()
+}
+
+pub fn root(lines: &[&str]) -> usize {
+    let _restore = Restore;
+    let mut s = 0;
+    while s < lines.len() && !lines[s].contains("Root") {
+        s += 1;
+    }
+    s
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
+  expect(js).not.toContain("finally");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);
+  expect(lib.drops()).toBe(3);
 });
 
 // ADR 0705 (amended): a loop that ends a labeled block MIR made, `bb9: {
