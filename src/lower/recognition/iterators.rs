@@ -387,7 +387,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     Some("Chain") => 2,
                     Some(
                         "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied"
-                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten",
+                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take",
                     ) => 1,
                     _ => 0,
                 };
@@ -1038,6 +1038,11 @@ pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
         ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Rev" => Some(args.type_at(0)),
         _ => None,
     }
+}
+
+/// Whether `ty` is std's `Take` adapter (#213).
+pub(crate) fn is_take(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::Take")
 }
 
 /// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.

@@ -639,6 +639,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !body.is_empty() {
             params.push(x.into());
         }
+        // A `Take`'s over what reaches the crate's own `nth`: std's `count`,
+        // which advances its source and asks no `nth` (#213), `$count`'s.
+        if crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))
+            && self.recognition().nths_its_own(iter_ty)
+        {
+            let mut given = vec![it];
+            if let Some(item) = item
+                && let Some(drop) = self.drop_function(item, span)?
+            {
+                given.push(drop);
+            }
+            return Ok(Expr::call_helper("$count", given));
+        }
         body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
         Ok(Expr::call(
             Expr::member(it, "reduce"),

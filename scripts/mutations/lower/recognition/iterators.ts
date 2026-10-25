@@ -655,4 +655,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
   },
+  {
+    name: "take-folds-unseen",
+    breaks: "`last()` of a `Take` isn't by its fold, so a `Skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#213)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "| \"Cloned\" | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\",\n",
+    replace: "| \"Cloned\" | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
+  },
 ];

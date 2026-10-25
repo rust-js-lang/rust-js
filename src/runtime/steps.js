@@ -52,6 +52,23 @@ class $Steps extends Iterator {
     }
     return this.next();
   }
+  // Std's `advance_by(m)`: `m` stepped past by `next`, each given to `drop`
+  // where it has one; how many of them there weren't.
+  advanceBy(m, drop) {
+    for (let i = 0; i < m; i++) {
+      const step = this.next();
+      if (step.done) return m - i;
+      drop?.(step.value);
+    }
+    return 0;
+  }
+  // Std's `count`: of its `fold`, each item given to `drop` where it has one.
+  count(drop) {
+    return this.fold(0, (n, x) => {
+      drop?.(x);
+      return n + 1;
+    });
+  }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
   // says what it gave stops it, as `?` would, which it gives back.
   tryFold(init, f, broke) {
@@ -224,6 +241,29 @@ class $Steps extends Iterator {
         (a) => full || broke(a),
       );
     };
+    // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
+    // inside asks its source's `nth(n - 1)`, then its source dropped with it
+    // (#213).
+    taken.fold = (init, g) => {
+      const folded = taken.tryFold(init, g, () => false);
+      this.return();
+      return folded;
+    };
+    // Its `advance_by(m)` and `count`, std's: its source advanced, by as
+    // many as it has left, which asks no `nth` (#213).
+    taken.advanceBy = (m, drop) => {
+      const min = Math.min(n, m);
+      const advanced = min - this.advanceBy(min, drop);
+      n -= advanced;
+      return m - advanced;
+    };
+    taken.count = (drop) => {
+      const k = n;
+      n = 0;
+      const counted = k === 0 ? 0 : k - this.advanceBy(k, drop);
+      this.return();
+      return counted;
+    };
     return taken;
   }
   // Std's `Skip`: its first step is its source's `nth(n)`, which stops at a
@@ -260,6 +300,15 @@ class $Steps extends Iterator {
       const skip = n;
       n = 0;
       return this.nth(skip + k);
+    };
+    // Its `advance_by(m)`, std's: its source advanced past what it skips
+    // and `m` more (#213).
+    skipped.advanceBy = (m, drop) => {
+      const skip = n;
+      const left = this.advanceBy(skip + m, drop);
+      const advanced = skip + m - left;
+      n = Math.max(skip - advanced, 0);
+      return m - Math.max(advanced - skip, 0);
     };
     // Std's `Skip::last`: its source's `nth(n - 1)`, then its source's `last`.
     skipped.last = () => {

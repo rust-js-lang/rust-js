@@ -123,3 +123,16 @@ rust-js folded: a `skip`'s, after its `nth(n - 1)`, a `fuse`'s, a
   `chain-last-first-unasked`, `std-iterator-nth-unhooked`,
   `std-iterator-last-not-own`, `nth-dropping-default-nth`,
   `last-dropping-own-unused` and `compiled-last-unhooked`.
+
+## Amendment: through a `Take`
+
+A `Take`'s `fold` is std's `try_fold` of its source, and its `count`
+advances its source, `advance_by`, which steps the crate's iterator by
+`next`. rust-js folded a `Take` by its `next`, so `skip(1).take(3).sum()`
+asked the crate's own `nth(1)`, where std asks `nth(0)`, and
+`skip(2).take(2).count()` asked `nth(2)`, where std asks none (#213). A
+`Take`'s `$Steps` fold is its `tryFold`, its source dropped after;
+`advanceBy` is std's of a `Take` and a `Skip`; `count()` of a `Take` over
+what reaches the crate's own `nth` is `$count(it)`, its own `count`; and
+a `Take`'s `fold` is its source's to `folded_sources`, so `last()`
+reaches it too (`skip_take_own_nth`, six mutations).

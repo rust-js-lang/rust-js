@@ -373,4 +373,12 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
+  {
+    name: "take-count-reduced",
+    breaks: "`count()` of a `Take` over the crate's own `nth` is `reduce`, its fold's, which asks `nth`, where std's asks none (#213)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
+    replace: "        if false && crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
+  },
 ];
