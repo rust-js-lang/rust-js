@@ -1291,6 +1291,19 @@ fn expr(e: &mut Expr) {
                     span: e.span,
                     ..Expr::bin(js::Op::Or, then, els)
                 };
+            // `a ? b : a` is `a && b`: `b` where `a` is truthy, else `a`, as
+            // upstream's `module && module[requireString]` is of `if
+            // js::truthy(module) { js::get(module, key) } else { module }`.
+            // Of what reads the same each time, which `&&` reads once.
+            } else if js::same_path(a, c) && a.reads_same() {
+                let (test, then) = (
+                    std::mem::replace(&mut **a, Expr::undefined()),
+                    std::mem::replace(&mut **b, Expr::undefined()),
+                );
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::bin(js::Op::And, test, then)
+                };
             }
         }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => {

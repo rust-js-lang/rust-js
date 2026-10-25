@@ -434,6 +434,12 @@ pub fn named(name: Option<&str>) -> &'static str {
 pub fn text(value: Option<&'static Unknown>) -> Option<String> {
     unsafe { js::cast(value) }
 }
+pub fn and(module: Option<&'static Unknown>, key: &str) -> Option<&'static Unknown> {
+    if js::truthy(module) { js::get(module, key) } else { module }
+}
+pub fn read_twice(o: &'static Unknown) -> Option<&'static Unknown> {
+    if js::truthy(js::get(o, "k")) { js::get(o, "j") } else { js::get(o, "k") }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -442,6 +448,10 @@ pub fn text(value: Option<&'static Unknown>) -> Option<String> {
   expect(js).toContain('export function shown(value) {\n  return value ? "yes" : "no";\n}');
   expect(js).toContain('export function named(name) {\n  return !name ? "none" : "some";\n}');
   expect(js).toContain("export function text(value) {\n  return value;\n}");
+  // `a ? b : a` is `a && b`, as React's enqueueTask has `module &&
+  // module[requireString]`; not of a read a getter may answer, read twice.
+  expect(js).toContain("export function and(module, key) {\n  return module && module[key];\n}");
+  expect(js).toContain("  return o.k ? o.j : o.k;\n");
   const lib = await import(join(dir, "lib.js"));
   const values = [undefined, null, 0, "", false, NaN, "a", 1, {}, [], -1];
   expect(values.map(lib.missing)).toEqual([true, true, true, true, true, true, false, false, false, false, false]);
@@ -449,6 +459,7 @@ pub fn text(value: Option<&'static Unknown>) -> Option<String> {
   expect(values.map(lib.shown)).toEqual(values.map((v) => (v ? "yes" : "no")));
   expect(["", "a", undefined].map(lib.named)).toEqual(["none", "some", "none"]);
   expect([lib.text("x"), lib.text(undefined)]).toEqual(["x", undefined]);
+  expect([lib.and({ a: 1 }, "a"), lib.and(0, "a"), lib.and(undefined, "a")]).toEqual([1, 0, undefined]);
 });
 
 // What's never nullish is a `js::Unknown` too, as any value is TypeScript's

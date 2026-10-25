@@ -479,7 +479,11 @@ request.url;`, and tested as that, not read again in the test
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
-JS's `try`:
+JS's `try`. Text joined to it is `+`, `"require".to_owned() +
+&js::concat_text(n)` is `"require" + n`. JS's `a && b` of a value of any
+shape is `if js::truthy(a) { b } else { a }`, and `a || b` its other
+way round, `if js::truthy(a) { a } else { b }`
+([ADR 0880](../../decisions/0880-a-test-of-truth-and-its-value-is-and.md)):
 
 ```rust
 use js::Unknown;
@@ -498,6 +502,18 @@ pub fn width(n: f64) -> String {
 
 pub fn will_coercion_throw(value: Option<&Unknown>) -> bool {
     js::concat_text(value).is_err()
+}
+
+pub fn require_string() -> String {
+    "require".to_owned() + &js::concat_text(js::math::random())
+}
+
+pub fn node_require(module: Option<&'static Unknown>, key: &str) -> Option<&'static Unknown> {
+    if js::truthy(module) {
+        js::get(module, key)
+    } else {
+        module
+    }
 }
 ```
 
@@ -521,6 +537,14 @@ export function willCoercionThrow(value) {
   } catch {
     return true;
   }
+}
+
+export function requireString() {
+  return "require" + Math.random();
+}
+
+export function nodeRequire(module, key) {
+  return module && module[key];
 }
 ```
 
@@ -744,6 +768,12 @@ export async function open(other) {
   TypeScript's `(children as any)._payload` reads; else its own name,
   `const lazy = children;`
   ([ADR 0598](../../decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md), amended).
+  `js::cast` vouches the value is what JS has of its type: one that may be
+  `undefined`, `js::get(timers, "setImmediate")`, is cast to an `Option`,
+  `unsafe { js::cast::<Option<fn(..)>>(..) }`. `Some(js::cast(v))` of an
+  `undefined` is that `Option`'s `None`, as JS holds `Some` of a function
+  as the function itself, `undefined` its `None`: no check says it isn't
+  what it was vouched to be.
 
 ### Optional parameters
 

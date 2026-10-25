@@ -407,6 +407,22 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null"]
   },
   {
+    name: "test-and-else-conditional",
+    breaks: "`module ? module[key] : module`, not `module && module[key]`",
+    file: "src/prepare.rs",
+    find: "            } else if js::same_path(a, c) && a.reads_same() {\n",
+    replace: "            } else if false && js::same_path(a, c) && a.reads_same() {\n",
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
+  },
+  {
+    name: "test-and-else-of-a-getter",
+    breaks: "`o.k ? o.j : o.k`, a getter's read twice, is `o.k && o.j`, which reads it once",
+    file: "src/prepare.rs",
+    find: "            } else if js::same_path(a, c) && a.reads_same() {\n",
+    replace: "            } else if js::same_path(a, c) {\n",
+    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
+  },
+  {
     "name": "return-undefined-written",
     "breaks": "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
     "file": "src/prepare.rs",

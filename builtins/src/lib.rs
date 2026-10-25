@@ -408,7 +408,11 @@ pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
 /// # Safety
 ///
 /// `value` must be what JS has of a `T`: a JSON object of strings is a
-/// `&Dict<String>`, a string or `undefined` an `Option<String>`.
+/// `&Dict<String>`, a string or `undefined` an `Option<String>`. A value
+/// that may be `undefined` is cast to an `Option`, never to what's in one:
+/// `Some(cast::<fn()>(v))` of an `undefined` is `undefined`, which is the
+/// `Option`'s `None`, as JS has `Some` of a function as the function
+/// itself; `cast::<Option<fn()>>(v)` says so.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 #[allow(unused_variables)]
 pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
