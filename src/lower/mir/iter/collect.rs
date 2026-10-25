@@ -182,7 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
-            match self.mapped_range(&it, iter_ty) {
+            match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,

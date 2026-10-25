@@ -51,5 +51,23 @@ pub fn report() -> String {
     both.sort();
     lines.push(format!("{both:?}"));
 
+    // Room past `isize::MAX` bytes, asked of its table, is hashbrown's
+    // panic, before the map's made; room that fits is none.
+    lines.push(room("with_capacity", || {
+        HashMap::<u32, u32>::with_capacity(usize::MAX).len()
+    }));
+    lines.push(room("with_capacity(9)", || HashMap::<u32, u32>::with_capacity(9).len()));
+    let mut few: HashSet<u8> = HashSet::from([1, 2]);
+    lines.push(room("reserve", || few.reserve(usize::MAX - 1)));
+    lines.push(room("reserve(8)", || few.reserve(8)));
+
     lines.join("\n")
+}
+
+/// What `f` does of the room it asks: `room`, or its panic's message.
+fn room<T>(what: &str, f: impl FnOnce() -> T) -> String {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(_) => format!("{what}: room"),
+        Err(payload) => format!("{what}: {:?}", payload.downcast_ref::<&str>()),
+    }
 }

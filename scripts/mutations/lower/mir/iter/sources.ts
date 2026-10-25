@@ -197,4 +197,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Ref(_, inner, Mutability::Mut) if false && self.range_kind(*inner).is_some() => *inner,",
     tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
+  {
+    name: "range-collect-room-unasked",
+    breaks: "`(0..n).map(f).collect()` past `isize::MAX` bytes maps on, no panic",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        let size = item.and_then(|item| self.room_size_of(&count, item));\n",
+    replace: "        let size = item.and_then(|item| self.room_size_of(&count, item)).filter(|_| false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+  },
 ];

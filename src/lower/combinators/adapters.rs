@@ -41,7 +41,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `v.resize(n, x)`, `list`: each new item its own, a clone, but the
     /// last, which is `x`, as std moves it; one whose copies can't be told
     /// apart, it. Of items with a destructor, what it cuts off and then `x`
-    /// dropped, as std's are (ADR 0507).
+    /// dropped, as std's are (ADR 0507); room for them asked first, where
+    /// it may not fit (ADR 0774).
     pub(super) fn resize_call(&mut self, list: Vec<Expr>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let item = (self.slice_item(ty)).ok_or_else(|| self.unsupported(span, "`resize` of this"))?;
         let clone = match self.needs_clone(item) {
@@ -49,9 +50,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         let drop = self.items_drop(ty, span)?;
+        let size = self.room_size_of(&list[1], item);
         Ok(Expr::call(
             Expr::helper("$resize"),
-            Expr::optional_args(list, vec![clone, drop]),
+            Expr::optional_args(list, vec![size, clone, drop]),
+        ))
+    }
+
+    /// `v.resize_with(n, f)`, `list`: `$resizeWith(v, n, f)`, room for `n`
+    /// items asked first, where it may not fit (ADR 0774), and what it cuts
+    /// off dropped.
+    pub(super) fn resize_with_call(&mut self, list: Vec<Expr>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let item = (self.slice_item(ty)).ok_or_else(|| self.unsupported(span, "`resize_with` of this"))?;
+        let size = self.room_size_of(&list[1], item);
+        let drop = self.items_drop(ty, span)?;
+        Ok(Expr::call(
+            Expr::helper("$resizeWith"),
+            Expr::optional_args(list, vec![size, drop]),
         ))
     }
 

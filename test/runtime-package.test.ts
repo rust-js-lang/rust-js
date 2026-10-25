@@ -351,6 +351,124 @@ pub fn bigs(n: usize) -> usize {
   }
 });
 
+// Room for a length that's asked, a `resize`'s, a range's `collect()`'s,
+// or a hash table's, ends where std's for wasm32 ends it (ADR 0774,
+// amended): a table's where native wasm32 hashbrown's `try_reserve` first
+// says `CapacityOverflow`, of an entry of each size and alignment.
+test("room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it", () => {
+  const dir = fixture("room-of-length");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+
+pub fn resized(n: usize) -> usize {
+    let mut v = vec![None::<[u8; 1 << 20]>];
+    v.resize(n, None);
+    v.len()
+}
+
+pub fn resized_with(n: usize) -> usize {
+    let mut v = Vec::new();
+    v.resize_with(n, || None::<[u8; 1 << 20]>);
+    v.len()
+}
+
+pub fn collected(n: usize) -> usize {
+    (0..n).map(|_| None::<[u8; 1 << 20]>).collect::<Vec<_>>().len()
+}
+
+// Of its length, not its end.
+pub fn collected_from_one(n: usize) -> usize {
+    (1..n).map(|_| None::<[u8; 1 << 20]>).collect::<Vec<_>>().len()
+}
+
+pub fn units(n: usize) -> usize {
+    HashMap::<(), ()>::with_capacity(n).len()
+}
+
+pub fn bytes(n: usize) -> usize {
+    HashMap::<u8, ()>::with_capacity(n).len()
+}
+
+pub fn halves(n: usize) -> usize {
+    HashMap::<u16, ()>::with_capacity(n).len()
+}
+
+pub fn pairs(n: usize) -> usize {
+    HashMap::<u32, u32>::with_capacity(n).len()
+}
+
+pub fn wide(n: usize) -> usize {
+    HashMap::<u64, u64>::with_capacity(n).len()
+}
+
+pub fn odd(n: usize) -> usize {
+    HashMap::<[u8; 3], ()>::with_capacity(n).len()
+}
+
+pub fn hundreds(n: usize) -> usize {
+    HashMap::<[u8; 100], ()>::with_capacity(n).len()
+}
+
+pub fn aligned(n: usize) -> usize {
+    HashMap::<[u64; 2], u8>::with_capacity(n).len()
+}
+
+// Of entries so big that a table's last bytes decide: of 16 buckets, 14
+// entries, and of 4, 3, its control bytes aligned after them.
+pub fn sixteen_fit(n: usize) -> usize {
+    HashMap::<[u8; 134217726], ()>::with_capacity(n).len()
+}
+
+pub fn sixteen_past(n: usize) -> usize {
+    HashMap::<[u8; 134217727], ()>::with_capacity(n).len()
+}
+
+pub fn four_fit(n: usize) -> usize {
+    HashMap::<[u8; 536870906], ()>::with_capacity(n).len()
+}
+
+pub fn four_past(n: usize) -> usize {
+    HashMap::<[u8; 536870907], ()>::with_capacity(n).len()
+}
+
+pub fn reserved(n: usize) -> usize {
+    let mut m = HashMap::from([(1u32, 2u32)]);
+    m.reserve(n);
+    m.len()
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const call = (name: string, n: number) =>
+    run([node ?? "node", "--input-type=module", "--eval", `try { console.log((await import(${JSON.stringify(out)})).${name}(${n})); } catch (e) { console.log(e.message); }`]).trim();
+  // 2,047 of 1,048,577 bytes fit, 2,048 don't.
+  for (const name of ["resized", "resizedWith", "collected"]) {
+    expect(call(name, 2047)).toBe("2047");
+    expect(call(name, 2048)).toBe("capacity overflow");
+  }
+  expect(call("collectedFromOne", 2048)).toBe("2047");
+  expect(call("collectedFromOne", 2049)).toBe("capacity overflow");
+  // The first count native wasm32 refuses, of each entry.
+  const first: [string, number][] = [
+    ["units", 536870912],
+    ["bytes", 469762049],
+    ["halves", 469762049],
+    ["pairs", 117440513],
+    ["wide", 58720257],
+    ["odd", 234881025],
+    ["hundreds", 14680065],
+    ["aligned", 58720257],
+    // One there already, of 8 bytes.
+    ["reserved", 117440512],
+  ];
+  // As native wasm32's, at the byte where each table's room ends.
+  expect([call("sixteenFit", 14), call("sixteenPast", 14)]).toEqual(["0", "Hash table capacity overflow"]);
+  expect([call("fourFit", 3), call("fourPast", 3)]).toEqual(["0", "Hash table capacity overflow"]);
+  for (const [name, n] of first) {
+    expect(call(name, n - 1)).toBe(name === "reserved" ? "1" : "0");
+    expect(call(name, n)).toBe("Hash table capacity overflow");
+  }
+});
+
 // A union's field read while it holds another reads the bytes it holds as
 // the field's type: plain data's, as wasm32 lays them out (ADR 0562); a
 // field of the same type reads the same bytes (ADR 0406); a field whose

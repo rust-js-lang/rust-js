@@ -16,11 +16,17 @@ use rustc_span::Span;
 pub(in crate::lower) enum MapOp {
     /// indexmap's, by an entry's place (ADR 0424).
     ByPlace(PlaceOp),
-    /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`.
+    /// `HashMap::new()`, `new Map()`, and `HashSet::new()`, `new Set()`;
+    /// of a capacity, `with_capacity(n)`, a hash table's room for it asked
+    /// first, `table`'s (ADR 0774, amended).
     New {
         set: bool,
         sorted: bool,
+        table: Option<Table>,
     },
+    /// A hash table's `reserve(n)`: room asked for its entries and `n`
+    /// more (ADR 0774, amended); its capacity is the engine's.
+    Reserve(Table),
     /// A map's `insert`: `m.set(k, v)`, or `$insert(m, k, v)` for the old value.
     Insert,
     /// A set's `insert`: `s.add(x)`, or `$add(s, x)` for whether it was new.
@@ -111,6 +117,15 @@ pub(in crate::lower) enum MapOp {
     Extend,
 }
 
+/// Whose room a hash map's capacity asks (ADR 0774, amended): hashbrown's
+/// table's of its entries, std's and hashbrown's own map's; or indexmap's,
+/// that table's of each entry's place, then a `Vec`'s of its entries.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(in crate::lower) enum Table {
+    Hashed,
+    Indexed,
+}
+
 /// What indexmap's `IndexMap` and `IndexSet` do by an entry's place, which
 /// std's maps haven't (ADR 0424).
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -142,6 +157,9 @@ pub(in crate::lower) struct MapOwner {
     pub(in crate::lower) std_map: bool,
     pub(in crate::lower) sorted: bool,
     pub(in crate::lower) placed: bool,
+    /// std's own hash table, a `HashMap`'s or a `HashSet`'s, whose room is
+    /// hashbrown's.
+    pub(in crate::lower) hashed: bool,
     pub(in crate::lower) entry: bool,
     pub(in crate::lower) occupied: bool,
     pub(in crate::lower) vacant: bool,
@@ -156,10 +174,16 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         std_map,
         sorted,
         placed,
+        hashed,
         entry,
         occupied,
         vacant,
     } = of;
+    let table = match (hashed, placed) {
+        (true, false) => Some(Table::Hashed),
+        (true, true) => Some(Table::Indexed),
+        (false, _) => None,
+    };
     Some(match name {
         "get_index_of" if placed => MapOp::ByPlace(PlaceOp::Of),
         "get_index" if placed => MapOp::ByPlace(PlaceOp::At),
@@ -172,7 +196,8 @@ pub(in crate::lower) fn map_method(name: &str, of: MapOwner) -> Option<MapOp> {
         "pop" if placed => MapOp::ByPlace(PlaceOp::Pop),
         "sort_keys" if placed && map => MapOp::ByPlace(PlaceOp::SortKeys),
         "sort" if placed && set => MapOp::ByPlace(PlaceOp::SortKeys),
-        "new" | "with_capacity" if map || set => MapOp::New { set, sorted },
+        "new" | "with_capacity" if map || set => MapOp::New { set, sorted, table },
+        "reserve" if let Some(table) = table => MapOp::Reserve(table),
         "insert" if map => MapOp::Insert,
         "insert" if set => MapOp::Add,
         "get" | "get_mut" if map => MapOp::Get,
@@ -338,6 +363,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// arguments have it, the map's among them, as `collect` and `From`
     /// have it, or else the first, `HashMap::<K, V>::new`'s; serde_json's
     /// `Map::new()` has none.
+    /// std's check of room for `count` entries of a hash map or set of
+    /// `generic_args`, its own, which `table` asks (ADR 0774, amended):
+    /// hashbrown's table of a map's `(K, V)`, a set's `T`; or indexmap's
+    /// of each one's place, a `usize`, then its `Vec` of entries, each a
+    /// `Bucket` of its hash, its key and its value.
+    fn table_room(
+        &mut self,
+        table: Table,
+        set: bool,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        count: Expr,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) {
+        let mut types = generic_args.types();
+        let (key, value) = match (types.next(), types.next()) {
+            (Some(key), Some(value)) if !set => (key, value),
+            (item, _) => (item.unwrap_or(self.tcx.types.unit), self.tcx.types.unit),
+        };
+        let entry = Ty::new_tup(self.tcx, &[key, value]);
+        match table {
+            Table::Hashed => self.table_room_for(count, entry, span, out),
+            Table::Indexed => {
+                let count = match count.reads_same() {
+                    true => count,
+                    false => self.spill("n", count, out),
+                };
+                let usize = self.tcx.types.usize;
+                self.table_room_for(count.clone(), usize, span, out);
+                let bucket = self.room_item_size(Ty::new_tup(self.tcx, &[usize, key, value]));
+                self.room_for((None, count), bucket, span, out);
+            }
+        }
+    }
+
     fn made(&mut self, set: bool, sorted: bool, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
         let key = match map.map(|t| t.peel_refs().kind()) {
@@ -542,13 +602,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
             }
             // What `with_capacity` is given does what it does (ADR 0315).
-            MapOp::New { set, sorted } => {
+            MapOp::New { set, sorted, table } => {
                 for value in values.by_ref() {
-                    if value.has_effects() {
+                    if let Some(table) = table {
+                        self.table_room(table, set, generic_args, value, span, out);
+                    } else if value.has_effects() {
                         out.push(StmtKind::Expr(value).at(self.js_span(span)));
                     }
                 }
                 Expr::new_(self.made(set, sorted, generic_args, span)?, Vec::new())
+            }
+            MapOp::Reserve(table) => {
+                let (m, n) = (arg(), arg());
+                let args = self.tcx.mk_args(&types.iter().map(|&t| t.into()).collect::<Vec<_>>());
+                let count = Expr::bin(Op::Add, Expr::member(m, "size"), n);
+                self.table_room(table, set, args, count, span, out);
+                Expr::undefined()
             }
             MapOp::From { set } => {
                 let items = arg();

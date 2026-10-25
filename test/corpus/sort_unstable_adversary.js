@@ -46,7 +46,7 @@ function adversary(n, select) {
     }
     return $cmp($index(v, x), $index(v, y));
   };
-  const items = $range(0, n);
+  const items = $range(0, n, 4);
   if (select != null) {
     $selectNthUnstable(items, select, (a, b) => compare(a, b) < 0, "network", true);
   } else {

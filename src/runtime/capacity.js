@@ -44,3 +44,29 @@ function $roomFor(count, size) {
 function $textRoomFor(s, additional) {
   if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);
 }
+
+// Room for `count` entries of `size` bytes each, aligned to `align`, of a
+// `HashMap` or `HashSet`, which std asks of hashbrown's table where a
+// capacity is asked (ADR 0774, amended): its buckets, at least 1/8 empty,
+// and a control byte each, and a group's more, past `isize::MAX` bytes, or
+// more than `usize::MAX` of them, a `Hash table capacity overflow` panic.
+function $tableRoomFor(count, size, align) {
+  if (count === 0) return;
+  const overflow = () => new Error("Hash table capacity overflow");
+  // A group's control bytes, wasm32's.
+  const width = 8;
+  let buckets;
+  // Of fewer than 15, 4, 8 or 16, hashbrown's; of entries of a byte or
+  // none, it takes 8 at least, which fit as surely as 4 do.
+  if (count < 15) {
+    buckets = count < 4 ? 4 : count < 8 ? 8 : 16;
+  } else {
+    if (count * 8 > 2 ** 32 - 1) throw overflow();
+    const adjusted = Math.floor((count * 8) / 7);
+    buckets = 1;
+    while (buckets < adjusted) buckets *= 2;
+  }
+  const ctrlAlign = Math.max(align, width);
+  const ctrlOffset = Math.ceil((size * buckets) / ctrlAlign) * ctrlAlign;
+  if (ctrlOffset + buckets + width > 2 ** 31 - 1 - (ctrlAlign - 1)) throw overflow();
+}

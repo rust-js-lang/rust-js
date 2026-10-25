@@ -294,8 +294,8 @@ function main() {
           console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 3, noisyDrop_drop);
           console.log(`[${ids(w).join(", ")}]`);
-          $resizeWith(w, 5, () => [30], noisyDrop_drop);
-          $resizeWith(w, 2, () => [31], noisyDrop_drop);
+          $resizeWith(w, 5, () => [30], undefined, noisyDrop_drop);
+          $resizeWith(w, 2, () => [31], undefined, noisyDrop_drop);
           console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 0, noisyDrop_drop);
           console.log(`cleared ${w.length}`);

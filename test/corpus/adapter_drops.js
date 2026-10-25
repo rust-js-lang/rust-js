@@ -99,7 +99,7 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
 }
 
 function louds(base, n) {
-  return $range(base, base + n).map((value) => [value]);
+  return $range(base, base + n, 4).map((value) => [value]);
 }
 
 function main() {

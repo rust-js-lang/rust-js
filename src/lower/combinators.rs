@@ -859,10 +859,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::SwapRemove => helper("$swapRemove", vec![subject, next()]),
             Comb::Resize => self.resize_call(vec![subject, next(), next()], subject_ty, span)?,
-            Comb::ResizeWith => helper(
-                "$resizeWith",
-                self.dropping(vec![subject, next(), next()], subject_ty, span)?,
-            ),
+            Comb::ResizeWith => self.resize_with_call(vec![subject, next(), next()], subject_ty, span)?,
             Comb::PopIf => {
                 let name = self.by_cells(subject_ty, "$popIf", "$popIfCell");
                 helper(name, vec![subject, next()])

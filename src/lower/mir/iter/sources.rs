@@ -99,8 +99,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// them all at a time, only lazily. Not filtered, which may keep few of
     /// many, `$lazyRange(a, b).filter(f)` (`range_items`). Of `a..=b`,
     /// `$range(a, b + 1)`; stepped from its end, `.rev()`, `.toReversed()`
-    /// first.
-    pub(super) fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
+    /// first. Room for its `item`s asked first, as std's `collect` asks it
+    /// of an iterator that knows its length, where it may not fit (ADR
+    /// 0774, amended).
+    pub(super) fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>, item: Option<Ty<'tcx>>) -> Option<Expr> {
         let mut maps = Vec::new();
         let mut at = it;
         while let js::ExprKind::Call(callee, args) = &at.kind
@@ -128,7 +130,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             false => range.end.clone(),
         };
-        let mut items = Expr::call_helper("$range", vec![range.start.clone(), end]);
+        let count = match (range.start.as_int(), end.as_int()) {
+            (Some(start), Some(end)) => Expr::int((end - start).max(0)),
+            _ => Expr::bin(js::Op::Sub, end.clone(), range.start.clone()),
+        };
+        let size = item.and_then(|item| self.room_size_of(&count, item));
+        let list = Expr::optional_args(vec![range.start.clone(), end], vec![size]);
+        let mut items = Expr::call_helper("$range", list);
         if range.back {
             items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
         }

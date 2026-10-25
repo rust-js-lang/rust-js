@@ -98,9 +98,9 @@ function fill() {
 function resize() {
   const v = [[1], [2], [3]];
   try {
-    $resize(v, 1, [6], (item) => [item[0]], loudDrop_drop);
+    $resize(v, 1, [6], undefined, (item) => [item[0]], loudDrop_drop);
     console.log(`shrunk [${ids(v).join(", ")}]`);
-    $resize(v, 3, [7], (item) => [item[0]], loudDrop_drop);
+    $resize(v, 3, [7], undefined, (item) => [item[0]], loudDrop_drop);
     console.log(`grown [${ids(v).join(", ")}]`);
     const value = [[8], [9], [10]];
     try {

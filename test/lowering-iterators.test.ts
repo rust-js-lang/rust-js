@@ -733,9 +733,10 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
 });
 
 // A range's items each mapped, all collected, `(0..n).map(f).collect()`,
-// are `$range(0, n).map(f)`, an array made as big as what's collected
-// anyway; one filtered or taken from stays lazy, as a big range's array
-// would be made for little.
+// are `$range(0, n, 4).map(f)`, an array made as big as what's collected
+// anyway, room for its items of 4 bytes each asked first, as std's
+// `collect` asks it (ADR 0774, amended); one filtered or taken from stays
+// lazy, as a big range's array would be made for little.
 test("a range mapped and collected is its array mapped", async () => {
   const dir = fixture("range-mapped");
   writeFileSync(join(dir, "lib.rs"), `pub fn squares(n: u32) -> Vec<u32> {
@@ -772,10 +773,10 @@ pub fn odd_to_five() -> Vec<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
-  expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
-  expect(js).toContain("return $range(0, n).toReversed();");
-  expect(js).toContain("return $range(1, n + 1);");
+  expect(js).toContain("return $range(0, n, 4).map((i) => Math.imul(i, i) >>> 0);");
+  expect(js).toContain('return $range(1, n + 1, 12)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+  expect(js).toContain("return $range(0, n, 4).toReversed();");
+  expect(js).toContain("return $range(1, n + 1, 4);");
   expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
   expect(js).toContain("return $range(1, 4).map(");
   expect(js).toContain("return $lazyRange(1, 6)\n");

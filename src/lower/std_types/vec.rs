@@ -215,9 +215,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's check of room for `len + count` items, or `count`, of `size`
     /// bytes each, wherever a capacity is asked (ADR 0774): `$roomFor(..)`,
     /// a `capacity overflow` panic past `isize::MAX` bytes or `usize::MAX`
-    /// items. Left out where it can't fail: of none more, of a count alone
-    /// of items of no size, or of one known to fit. Not asked of a string
-    /// `repeat` makes, which is JS's own: a JS string is less than
+    /// items. Left out where it can't fail, `room_fits`. Not asked of a
+    /// string `repeat` makes, which is JS's own: a JS string is less than
     /// `isize::MAX` bytes, so the engine refuses it first (ADR 0774,
     /// amended).
     pub(in crate::lower) fn room_for(
@@ -227,17 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: rustc_span::Span,
         out: &mut Vec<Stmt>,
     ) {
-        // rust-js's `isize::MAX` (ADR 0011), less than `usize::MAX` items
-        // of a size.
-        const BYTES: i128 = i32::MAX as i128;
-        let fits = match (count.as_int(), size.as_int()) {
-            // No more than it has, which fit.
-            (Some(0), _) => true,
-            (_, Some(0)) => len.is_none(),
-            (Some(n), Some(size)) => len.is_none() && n * size <= BYTES,
-            _ => false,
-        };
-        if fits {
+        if room_fits(len.as_ref(), &count, &size) {
             return;
         }
         let count = match len {
@@ -245,6 +234,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => count,
         };
         let check = Expr::call(Expr::helper("$roomFor"), vec![count, size]);
+        out.push(StmtKind::Expr(check).at(self.js_span(span)));
+    }
+
+    /// The size of each of `count` `item`s a helper makes, which it asks
+    /// std's room for first, `$resize`'s or `$range`'s (ADR 0774): none
+    /// where they surely fit, `room_fits`.
+    pub(in crate::lower) fn room_size_of(&self, count: &Expr, item: ty::Ty<'tcx>) -> Option<Expr> {
+        let size = self.room_item_size(item);
+        (!room_fits(None, count, &size)).then_some(size)
+    }
+
+    /// std's check of room for `count` entries of type `entry`, a
+    /// `HashMap`'s `(K, V)` or a `HashSet`'s `T`, where its capacity is
+    /// asked (ADR 0774, amended): `$tableRoomFor(count, size, align)`,
+    /// hashbrown's `Hash table capacity overflow` panic past `isize::MAX`
+    /// bytes of its table. Left out of a count known to fit; of an entry a
+    /// type parameter's size makes, of its count alone.
+    pub(in crate::lower) fn table_room_for(
+        &mut self,
+        count: Expr,
+        entry: ty::Ty<'tcx>,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) {
+        let (size, align) = match self.layout(entry) {
+            Some(layout) => (i128::from(layout.size.bytes()), i128::from(layout.align.abi.bytes())),
+            None => (0, 1),
+        };
+        // Of fewer than 3 times as many buckets as entries, or 16, each
+        // of its size and a control byte, its control bytes aligned to
+        // the entry's or a group's, and a group's more: a bound, past
+        // hashbrown's own, of a count whose eighths are a `usize`.
+        let fits = |n: i128| n <= i128::from(u32::MAX / 8) && (16 + 3 * n) * (size + 1) + 2 * align + 24 <= BYTES;
+        if count.as_int().is_some_and(fits) {
+            return;
+        }
+        let check = Expr::call(
+            Expr::helper("$tableRoomFor"),
+            vec![count, Expr::int(size), Expr::int(align)],
+        );
         out.push(StmtKind::Expr(check).at(self.js_span(span)));
     }
 
@@ -257,5 +286,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.push(Expr::str("out of bounds access"));
         }
         Expr::call(Expr::helper("$index"), args)
+    }
+}
+
+/// rust-js's `isize::MAX` (ADR 0011), less than `usize::MAX` items of a
+/// size.
+const BYTES: i128 = i32::MAX as i128;
+
+/// Whether room for `len + count` items, or `count`, of `size` bytes each
+/// surely fits, so std's check can't fail: of none more, of a count alone
+/// of items of no size, or of a count and size known to fit.
+fn room_fits(len: Option<&Expr>, count: &Expr, size: &Expr) -> bool {
+    match (count.as_int(), size.as_int()) {
+        // No more than it has, which fit.
+        (Some(0), _) => true,
+        (_, Some(0)) => len.is_none(),
+        (Some(n), Some(size)) => len.is_none() && n * size <= BYTES,
+        _ => false,
     }
 }

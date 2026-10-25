@@ -88,7 +88,7 @@ function main() {
   console.log(`[${grid.flat().join(", ")}]`);
   const value = [0];
   const points = Array.from({ length: 1 }, () => value.slice());
-  $resize(points, 3, [1], (item) => item.slice());
+  $resize(points, 3, [1], undefined, (item) => item.slice());
   $index(points, 1).push(2);
   console.log(`[${points.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const q = [];

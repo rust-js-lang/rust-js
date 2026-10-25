@@ -450,7 +450,7 @@ test("thread-locals are module variables", async () => {
 // ADR 0036: an iterator is a JS array, and `Ordering` a comparator's number.
 test("iterators are array methods, and sorting takes comparators", async () => {
   const js = await Bun.file(join(target, "iterators.js")).text();
-  expect(js).toContain("  return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
+  expect(js).toContain("  return $range(0, n, 4).map((i) => Math.imul(i, i) >>> 0);");
   // `|&&x|` is `x`: a reference is the value.
   expect(js).toContain("  return v.filter((x) => x % 2 === 0);");
   expect(js).toContain("  const sum = v.reduce((a, b) => (a + b) | 0, 0);");

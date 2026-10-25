@@ -6912,6 +6912,32 @@ export function $textRoomFor(s, additional) {
   if (additional > 2 ** 31 - 1 - 3 * s.length) $roomFor($byteLen(s) + additional, 1);
 }
 
+// Room for `count` entries of `size` bytes each, aligned to `align`, of a
+// `HashMap` or `HashSet`, which std asks of hashbrown's table where a
+// capacity is asked (ADR 0774, amended): its buckets, at least 1/8 empty,
+// and a control byte each, and a group's more, past `isize::MAX` bytes, or
+// more than `usize::MAX` of them, a `Hash table capacity overflow` panic.
+export function $tableRoomFor(count, size, align) {
+  if (count === 0) return;
+  const overflow = () => new Error("Hash table capacity overflow");
+  // A group's control bytes, wasm32's.
+  const width = 8;
+  let buckets;
+  // Of fewer than 15, 4, 8 or 16, hashbrown's; of entries of a byte or
+  // none, it takes 8 at least, which fit as surely as 4 do.
+  if (count < 15) {
+    buckets = count < 4 ? 4 : count < 8 ? 8 : 16;
+  } else {
+    if (count * 8 > 2 ** 32 - 1) throw overflow();
+    const adjusted = Math.floor((count * 8) / 7);
+    buckets = 1;
+    while (buckets < adjusted) buckets *= 2;
+  }
+  const ctrlAlign = Math.max(align, width);
+  const ctrlOffset = Math.ceil((size * buckets) / ctrlAlign) * ctrlAlign;
+  if (ctrlOffset + buckets + width > 2 ** 31 - 1 - (ctrlAlign - 1)) throw overflow();
+}
+
 // indexmap's `IndexMap` and `IndexSet`: a `Map` and a `Set`, which keep
 // what's added in the order it's added, as indexmap's do (ADR 0424). What
 // they do by an entry's place, `i`.
@@ -10765,24 +10791,36 @@ export function $swapRemove(v, index) {
 
 // `v.resize(length, item)`: shortened, as `truncate` drops what's past it,
 // then `item` dropped, or lengthened with clones of `item`, and `item`
-// itself last, as std's is (ADR 0507).
-export function $resize(v, length, item, clone, drop) {
+// itself last, as std's is (ADR 0507); room for `length` items of `size`
+// bytes each asked first, where it may not fit, and of none, `item`
+// dropped as it unwinds (ADR 0774).
+export function $resize(v, length, item, size, clone, drop) {
   if (length <= v.length) {
     $truncate(v, length, drop);
     drop?.(item);
     return;
+  }
+  if (size !== undefined) {
+    try {
+      $roomFor(length, size);
+    } catch (panic) {
+      drop?.(item);
+      throw panic;
+    }
   }
   for (let i = v.length + 1; i < length; i++) v.push(clone === undefined ? item : clone(item));
   v.push(item);
 }
 
 // `v.resize_with(length, make)`: shortened, as `truncate` drops what's past
-// it, or lengthened with what `make` makes.
-export function $resizeWith(v, length, make, drop) {
+// it, or lengthened with what `make` makes, room for `length` items of
+// `size` bytes each asked first, where it may not fit (ADR 0774).
+export function $resizeWith(v, length, make, size, drop) {
   if (length <= v.length) {
     $truncate(v, length, drop);
     return;
   }
+  if (size !== undefined) $roomFor(length, size);
   while (v.length < length) v.push(make());
 }
 
@@ -11461,8 +11499,13 @@ export function $unwrapOk(result, message = "called `Result::unwrap()` on an `Er
   return result._0;
 }
 
-export function $range(start, end) {
-  return Array.from({ length: Math.max(0, end - start) }, (_, i) => start + i);
+// `(start..end).collect()`, a range's numbers in an array, room for them
+// of `size` bytes each asked first, where it may not fit, as std's
+// `collect` asks it of an iterator that knows its length (ADR 0774).
+export function $range(start, end, size) {
+  const length = Math.max(0, end - start);
+  if (size !== undefined) $roomFor(length, size);
+  return Array.from({ length }, (_, i) => start + i);
 }
 
 // A comparison's `Ordering`, -1, 0 or 1, as JS's `<` orders numbers and

@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     "name": "mir-mapped-range-lazy",
     "breaks": "a range mapped and collected stays `$iterator({ start, end }, $rangeNext).map(f).toArray()`, not `$range(a, b).map(f)`",
     "file": "src/lower/mir/iter/collect.rs",
-    "find": "match self.mapped_range(&it, iter_ty) {",
+    "find": "match self.mapped_range(&it, iter_ty, item) {",
     "replace": "match None::<Expr> {",
     "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected is its array mapped"]
   },

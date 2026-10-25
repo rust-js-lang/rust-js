@@ -431,8 +431,12 @@ What's refused is in [the limitations](limitations.md).
   crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)).
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
-  items' size, and `reserve`, `vec![x; n]` and a slice's `repeat` are
-  checked too; a JS array has no capacity, so what fits is nothing more
+  items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,
+  `resize(n, x)`, `$resize(v, n, x, 4)`, and a range's `collect()`,
+  `$range(0, n, 4).map(f)`, are checked too; a JS array has no capacity,
+  so what fits is nothing more. A `HashMap`'s or a `HashSet`'s
+  `with_capacity` and `reserve` ask hashbrown's room for its table,
+  `$tableRoomFor(n, 8, 4)`, which panics `Hash table capacity overflow`
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
@@ -448,6 +452,11 @@ Differences:
 - **Room for a type parameter's items is checked by their count alone,**
   `Vec::<T>::with_capacity(n)` in generic code, as if they had no size:
   their size isn't known where the call is
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
+- **Room std's own growth asks isn't checked,** a `push` past the
+  capacity its doubling picks, nor a `collect()` whose length is a
+  collection's of smaller items, `ids.iter().map(|x| x.to_string())`:
+  they run on in JS where Rust panics past `isize::MAX` bytes
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
 
 What's refused of collections and iterators is in
@@ -790,3 +799,10 @@ React and JSX are [their own pages](README.md#react).
     functions is made as its module loads, where Rust makes each at its
     first use: what a binding's call does, or a std call's panic, happens
     then (ADR 0037, amended).
+26. Room std's own growth asks isn't checked: a `push`, `extend` or
+    `insert` past the capacity std's doubling picks, a `collect()` whose
+    length is a collection's of smaller items, `ids.iter().map(|x|
+    x.to_string())`, or a count collected through another adapter,
+    `(0..n).enumerate()`, `repeat_n(x, n)` (#246). Past `isize::MAX`
+    bytes, where std panics `capacity overflow`, JS runs on as memory
+    lets it (ADR 0774, amended).

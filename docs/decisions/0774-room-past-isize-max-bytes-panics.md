@@ -5,12 +5,15 @@ Status: Accepted. Amends [0315](0315-vec-capacity-and-edits.md), whose
 [0322](0322-text-and-slice-names.md), whose `String`'s were too; the
 capacity [0419](0419-a-vecs-capacity-kept-where-asked.md) keeps is
 checked as well (#183). Amended: a string's `repeat` is JS's own,
-unchecked, as the user decided (below).
+unchecked, as the user decided; and room for a length that's asked,
+`resize`'s, a range's `collect()`'s and a hash table's, is checked
+(#190, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's, paid for in
 output, `$roomFor(n, 4)`; but of items whose size a type parameter gives,
-and of a string's `repeat`, B, listed in the guide's differences, as the
-user decided.
+of a string's `repeat`, of growth std's own policy picks and of a
+`collect()` of a collection's smaller items, B, listed in the guide's
+differences, as the user decided.
 
 ## Context
 
@@ -70,7 +73,8 @@ the user: with_capacity makes no array in JS, so nothing runs out, and a
   room std's doubling asks, which may be more than its length, isn't
   checked, nor where a `Vec` grows by itself, `extend`, `resize`,
   `collect()`, nor a `HashMap`'s or a `HashSet`'s room; filed as their
-  own question (#190).
+  own question (#190), and amended: a length that's asked is checked
+  (below).
 - A JS string can't be as long as std's: `"-".repeat(1 << 30)`, a
   gigabyte, throws JS's `RangeError` where the engine's limit is less,
   Node's about 2²⁹ UTF-16 units; that's the engine running out, as memory
@@ -104,3 +108,73 @@ string, so nothing else would refuse them: they're checked still, as a
 makes isn't asked of it, `str::repeat` being recognized as JS's method.
 Tested by `test/lowering-strings.test.ts`, the bare `repeat` and its
 `RangeError`; `capacity_overflow.rs` no longer asks a string past it.
+
+## Amendment: room for a length that's asked, and a hash table's (#190)
+
+Where a collection grows to a length it's asked, std checks the room as
+`with_capacity` does: `resize(n)` and `resize_with(n, f)` reserve what
+`n` needs; `collect()` of an iterator that knows its length asks
+`with_capacity` of it first; a `HashMap`'s or a `HashSet`'s
+`with_capacity(n)` and `reserve(n)` ask hashbrown's table, which panics
+with its own message, `Hash table capacity overflow`. rust-js did none of
+them: `v.resize(usize::MAX, 0)` pushed until memory ran out, and
+`(0..usize::MAX).map(f).collect()` called `f` four billion times, where
+std panics before it calls `f` once. **They're checked as std checks
+them**, as the user decided (2026-10-25): case C, Rust's.
+
+| Rust | JS |
+|---|---|
+| `v.resize(n, x)` | `$resize(v, n, x, 4)`, room for `n` asked first, `x` dropped where there's none, as std's unwinding drops it |
+| `v.resize_with(n, f)` | `$resizeWith(v, n, f, 4)` |
+| `(a..b).map(f).collect()`, `(a..=b)`, `.rev()` | `$range(a, b, 4).map(f)`, room for `b - a` asked first |
+| `HashMap::<K, V>::with_capacity(n)`, a `HashSet`'s | `$tableRoomFor(n, size, align); new Map()`, of a `(K, V)`'s size and alignment, a set's `T`'s |
+| `m.reserve(n)` of a `HashMap` or a `HashSet` | `$tableRoomFor(m.size + n, size, align)` |
+| indexmap's `IndexMap::with_capacity(n)`, `reserve(n)` | `$tableRoomFor(n, 4, 4); $roomFor(n, size)`, its table of each entry's place, then its `Vec` of entries, each its hash, its key and its value |
+
+`$tableRoomFor` is hashbrown 0.17's sizing for wasm32, whose groups are 8
+control bytes: 4, 8 or 16 buckets of fewer than 15 entries, else the
+power of two past 8/7 of them, a `usize`'s eighth at most; a control byte
+each and a group's more, after the entries, aligned to the entry's
+alignment or the group's, past `isize::MAX` bytes less that alignment's
+padding a panic. Of entries of a byte or none, hashbrown takes 8 buckets
+at least where it's asked fewer than 8, which fit as surely as 4: left
+out. A size that's left out where room surely fits, as `room_for`'s: a
+`resize` or a range of a count known to fit; a table of a count whose
+bound, fewer than 3 times as many buckets and 16, fits.
+
+`room_for` stays the one check of room asked; `room_fits` is its one
+answer of what surely fits, which `room_size_of` gives the helpers that
+check it themselves, `$resize`'s and `$range`'s, and `table_room_for` is
+its hash tables' check, of the same `isize::MAX`.
+
+**What's left JS's**, listed among the guide's differences (case B), as
+the user decided (2026-10-25):
+
+- Growth std's own policy asks, which rust-js doesn't model (0419): a
+  `push`, `extend` or `insert` past the capacity std's doubling picks.
+  `Vec<Option<[u8; 1 << 20]>>`'s 1,025th `None` panics in Rust, 2,048
+  MiB, and is an `undefined` more in JS.
+- A `collect()` whose length is a collection's that holds smaller items,
+  `ids.iter().map(|x| x.to_string())`, whose `String`s are bigger than
+  its `u32`s: past `isize::MAX` bytes of them only of 179 million ids, or
+  of a few thousand items each a mebibyte made of little, such a `None`.
+  Checking it would put `$roomFor(ids.length, 12);` before each such
+  `collect()`, among the commonest code there is, for what no program
+  asks.
+
+And one left JS's for now, filed (#246), which the user's decision covers
+but this amendment doesn't reach: a count collected through another
+adapter, `(0..n).enumerate()`, `step_by`, `zip`, or a lazy chain,
+`repeat_n(x, n)`, `repeat(x).take(n)`, or a range of `u64`s. Their length
+isn't the range's, or the JS iterator that steps them doesn't know it,
+so the collect has no count to check; listed among the guide's
+differences until it's fixed.
+
+Tested by `asked_length_overflow.rs`, against native Rust, of room past
+both `isize::MAX`s and room that fits, and an item dropped as `resize`
+unwinds; by `runtime-package.test.ts`, where native wasm32's ends, a
+mebibyte item either side, and a table of each entry's size where native
+wasm32 hashbrown's `try_reserve` first says `CapacityOverflow`, and at
+the byte where a table of 4 or 16 buckets ends; and by `bound-maps`, of
+hashbrown's and indexmap's own maps. The Consequences' growth (#190) is
+this amendment's.

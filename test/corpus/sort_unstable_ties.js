@@ -26,7 +26,7 @@ function order(items) {
 
 function main() {
   for (const n of [10, 18, 21, 33, 64, 100, 300]) {
-    const base = $range(0, n).map((i) => [((i * 7919) >>> 0) % 5, i]);
+    const base = $range(0, n, 8).map((i) => [((i * 7919) >>> 0) % 5, i]);
     const byKey = base.slice();
     const key = (p) => p[0];
     $sortUnstable(byKey, (a, b) => key(a) < key(b), "network");
@@ -71,7 +71,7 @@ function main() {
     const again = byKey.slice();
     const key$3 = (p) => p[0];
     $sortUnstable(again, (a, b) => key$3(a) < key$3(b), "network");
-    const down = $range(0, n)
+    const down = $range(0, n, 8)
       .toReversed()
       .map((i) => [i, i]);
     const key$4 = (p) => p[0];

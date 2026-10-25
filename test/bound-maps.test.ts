@@ -29,6 +29,10 @@ for (const crate of ["hashbrown", "indexmap"]) {
     const js = readFileSync(join(dir, "app.js"), "utf8");
     expect(js).toContain("new Map()");
     expect(js).toContain("new Set()");
+    // indexmap's room, of its table of places and then its entries, each
+    // its hash, its key and its value, which the room native Rust's
+    // 64-bit `usize` gives can't tell apart (ADR 0774, amended).
+    if (crate === "indexmap") expect(js).toContain("$tableRoomFor(4294967295, 4, 4);\n      $roomFor(4294967295, 12);");
     expect(printed(join(dir, "app.js"))).toBe(native);
   }, 300_000);
 }

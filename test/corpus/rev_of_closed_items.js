@@ -11,7 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function louds(n) {
-  return $range(0, n).map((value) => [value]);
+  return $range(0, n, 4).map((value) => [value]);
 }
 
 function main() {

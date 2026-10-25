@@ -111,7 +111,7 @@ would refuse is made; in JavaScriptCore, whose strings are longer, a
 string of text not all ASCII past a billion units may be made where std
 panics. Results change only for a program that asks a string that long,
 which runs out either way but in that corner: the second case, listed
-among the guide's differences (`semantics.md`, 25).
+among the guide's differences (`semantics.md`, 24).
 
 ## Amendment: a thread-local of std's or a binding's calls, made as its module loads
 
@@ -124,3 +124,19 @@ lazy, `TocContext.value` read through a holder. Results change only where
 such a call does something a program sees before the thread-local's first
 use, or a std call in it panics: the second case's, listed among the
 guide's differences (`semantics.md`, 25).
+
+## Amendment: room std's growth asks, and a collect of smaller items
+
+Room for a length that's asked is checked as std checks it, `resize`'s,
+a range's `collect()`'s and a hash table's (#190,
+[0774](0774-room-past-isize-max-bytes-panics.md), amended). Room std's
+own growth asks isn't: a `push`, `extend` or `insert` past the capacity
+its doubling picks, which rust-js doesn't model; nor a `collect()` whose
+length is a collection's of smaller items, `ids.iter().map(|x|
+x.to_string())`, which the user chose (2026-10-25) over a `$roomFor`
+before each such `collect()`. Results change only past `isize::MAX`
+bytes, of hundreds of millions of items, or of items each a mebibyte
+made of little: the second case, listed among the guide's differences
+(`semantics.md`, 26), with a count collected through another adapter
+(#246) until it's checked.
+

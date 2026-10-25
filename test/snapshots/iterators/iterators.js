@@ -16,7 +16,7 @@ import {
 } from "@rust-js/runtime";
 
 export function squares(n) {
-  return $range(0, n).map((i) => Math.imul(i, i) >>> 0);
+  return $range(0, n, 4).map((i) => Math.imul(i, i) >>> 0);
 }
 
 export function evens(v) {
@@ -142,7 +142,7 @@ export function inclusive(n) {
   while ((i = $rangeInclusiveNext(iter)) != null) {
     total = (total + i) >>> 0;
   }
-  const down = $range(0, n + 1).toReversed();
+  const down = $range(0, n + 1, 4).toReversed();
   return [
     total,
     down,

@@ -32,6 +32,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             std_map: adt(StdItem::HashMap) || adt(StdItem::BTreeMap),
             sorted: self.is_sorted(owner),
             placed: matches!(owner.kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did())),
+            hashed: adt(StdItem::HashMap) || adt(StdItem::HashSet),
             entry: adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry),
             occupied: self.is_occupied_entry(owner),
             vacant: self.is_vacant_entry(owner),
@@ -122,12 +123,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "back" | "back_mut" if deque => Some(Std::SliceLast),
             "as_slices" | "as_mut_slices" if deque => Some(Std::Slice(SliceOp::DequeSlices)),
             // A JS map or string has no capacity: asking for some does nothing
-            // (ADRs 0315, 0322), but a `String`'s room is checked (ADR 0774).
-            // An array collection's is `capacity_op`'s (ADR 0419).
+            // (ADRs 0315, 0322), but a `String`'s and a hash table's room is
+            // checked (ADR 0774); an array collection's is `capacity_op`'s (0419).
             "reserve" | "reserve_exact" if string => Some(Std::Text(TextOp::Reserve)),
-            "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if of.map || of.set || string => {
-                Some(Std::Nothing)
-            }
+            "reserve" | "reserve_exact" if (of.map || of.set) && !of.hashed => Some(Std::Nothing),
+            "shrink_to" | "shrink_to_fit" if of.map || of.set || string => Some(Std::Nothing),
             "into_boxed_slice" if adt(StdItem::Vec) => Some(Std::Same),
             // A `Box<str>` is its string, and a `Box<[T]>` its array.
             "into_boxed_str" if string => Some(Std::Same),

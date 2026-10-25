@@ -267,14 +267,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
-    name: "resize-with-given-no-drop",
-    breaks: "`resize_with` of items with a destructor is given no drop",
-    file: "src/lower/combinators.rs",
-    find: "                self.dropping(vec![subject, next(), next()], subject_ty, span)?,\n",
-    replace: "                vec![subject, next(), next()],\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
-  },
-  {
     name: "made-ok-unwrap-or-else-tested",
     breaks: "`unwrap_or_else(f)` of an `Ok` just made, a lock's, tests it, where `unwrap()` of one is its value",
     file: "src/lower/combinators.rs",

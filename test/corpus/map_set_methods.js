@@ -17,6 +17,7 @@ import {
   $sort,
   $sortedEntries,
   $sortedKeys,
+  $tableRoomFor,
   $treeAppend,
   $treeEnd,
   $treeRange,
@@ -35,6 +36,7 @@ function sorted(items, TOrd, TClone) {
 
 function main() {
   const scores = new Map();
+  $tableRoomFor(scores.size + 8, 12, 4);
   $extendMap(
     scores,
     [
