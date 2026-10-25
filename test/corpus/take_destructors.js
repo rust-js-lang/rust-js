@@ -143,7 +143,7 @@ function main() {
       }
       throw error;
     }
-    const iter = skip;
+    let iter = skip;
     let tmp$1;
     while (true) {
       try {
@@ -575,9 +575,8 @@ function main() {
       throw error;
     }
     let owned$live = true;
-    let iter$1;
     try {
-      iter$1 = $lent(owned).take(2);
+      iter = $lent(owned).take(2);
     } catch (error) {
       for (const item of owned) {
         nDrop_drop(item);
@@ -604,7 +603,7 @@ function main() {
     let tmp$8;
     while (true) {
       try {
-        tmp$8 = $next(iter$1);
+        tmp$8 = $next(iter);
       } catch (error) {
         if (owned$live) {
           for (const item of owned) {

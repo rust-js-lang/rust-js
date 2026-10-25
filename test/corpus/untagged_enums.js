@@ -259,9 +259,8 @@ function main() {
             // One that's there, its payload falsy in JS, `""`, `false` or `0`:
             // there all the same.
             const firsts = [[""], [false], [0], []];
-            let iter$1;
             try {
-              iter$1 = $iter(firsts);
+              iter = $iter(firsts);
             } catch (error) {
               for (const item of held) {
                 if (Array.isArray(item)) {
@@ -293,7 +292,7 @@ function main() {
             while (true) {
               let tmp;
               try {
-                tmp = $next(iter$1);
+                tmp = $next(iter);
               } catch (error) {
                 for (const item of held) {
                   if (Array.isArray(item)) {

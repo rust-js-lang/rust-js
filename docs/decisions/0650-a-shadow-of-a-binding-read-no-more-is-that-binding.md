@@ -126,3 +126,68 @@ The old one is read no more where:
   kept apart, its own value assigned, its binding left `const` and a `for`'s
   pattern too, the binding read after, captured or set through a handle
   assigned, a loop's shadow taking a parameter, and a temporary reused.
+
+## Amendment: a `let x$1;` its `switch`'s cases set
+
+ADR 0609 was made for React's scheduler, whose port shadows its
+parameter, `let priority_level = match priority_level { IMMEDIATE_PRIORITY
+| .. | IDLE_PRIORITY => priority_level, _ => NORMAL_PRIORITY };`, and
+printed upstream's assignment, `priorityLevel = .. ? priorityLevel :
+NormalPriority`. Since `e4be2ab50` (ADR 0629: a `switch` is of three cases,
+not three arms) that `match` is a `switch`, whose value is a `let` its cases
+set, and this decision took no `let x$1;`, "`undefined` till it's set,
+where `x` isn't":
+
+```js
+let priorityLevel$1;
+switch (priorityLevel) {
+  case ImmediatePriority:
+  ..
+  case IdlePriority:
+    priorityLevel$1 = priorityLevel;
+    break;
+  default:
+    priorityLevel$1 = NormalPriority;
+}
+const restore = currentPriorityLevel;
+currentPriorityLevel = priorityLevel$1;
+```
+
+**A `let x$1;` is the binding it shadows too where, each way through what
+follows it, nothing names that binding once the shadow may be set**
+(`set_after_last_read`): its last read before the shadow's first write, as
+a case's `x$1 = x` reads `x`, then sets it; a case is entered from the test
+or from the case before that falls through to it (ADR 0905), and a branch
+that leaves goes on nowhere after it. A loop or a `try` that sets the
+shadow takes it only where nothing after names the binding. Each case of
+the shadow's own value, `x$1 = x`, is then nothing, its case's `break;`
+alone; a branch of an `if` chain of it, a range's `match`, keeps the
+shadow apart, as before, where it would leave `if (a) {} else ..`. What reads `x$1` read the shadow's value, which Rust has it hold by
+then, and reads it in `x`; nothing reads `x`'s after. So the scheduler is
+upstream's `switch` again:
+
+```js
+switch (priorityLevel) {
+  case ImmediatePriority:
+  ..
+  case IdlePriority:
+    break;
+  default:
+    priorityLevel = NormalPriority;
+}
+```
+
+Case A, as before: the same values are read where they were. A shadow
+whose old binding a closure made before reads, or a drop after it, stays
+apart, `let noisy$1;`.
+
+- `test/corpus/shadow_set_in_cases.rs`, against native Rust: the
+  scheduler's `match`, a guarded case that falls through, a case that
+  declares a binding of the name, an `if` chain of a range's, a shadow set
+  again in a loop after, one a closure made before reads the old value of,
+  and one whose old value is dropped after; `test/port-scheduler.test.ts`'s
+  snapshot. Six corpus cases' `let x$1;` a `try` sets, and std's
+  `FlattenCompat::size_hint`'s, are their bindings now.
+- Mutations `shadow-set-in-cases-kept-apart`, `-own-value-kept`,
+  `-read-after`, `-fallen-unset`, `-left-branch-goes-on`,
+  `-unnamed-rest-followed`, `shadow-set-in-branches-own-value-emptied`.

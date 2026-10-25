@@ -148,9 +148,8 @@ function main() {
     },
     loudDrop_drop,
   );
-  let nth$1;
   try {
-    nth$1 = $nthDropping($lent(fuse), id(3), loudDrop_drop, false);
+    nth = $nthDropping($lent(fuse), id(3), loudDrop_drop, false);
   } catch (error) {
     if (fuse.iter != null) {
       fuse.iter.return();
@@ -162,8 +161,8 @@ function main() {
       fuse.iter.return();
     }
   } catch (error) {
-    if (nth$1 != null) {
-      loudDrop_drop(nth$1);
+    if (nth != null) {
+      loudDrop_drop(nth);
     }
     throw error;
   }
@@ -172,7 +171,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   };
-  const value$2 = nth$1 ? map$1(nth$1) : undefined;
+  const value$2 = nth ? map$1(nth) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = iterator_fuse(
     iterator_rev(
@@ -210,9 +209,8 @@ function main() {
       loudDrop_drop,
     ),
   );
-  let nth$2;
   try {
-    nth$2 = $nthDropping($lent(value$4), id(1), loudDrop_drop, false);
+    nth = $nthDropping($lent(value$4), id(1), loudDrop_drop, false);
   } catch (error) {
     value$4.return();
     throw error;
@@ -220,8 +218,8 @@ function main() {
   try {
     value$4.return();
   } catch (error) {
-    if (nth$2 != null) {
-      loudDrop_drop(nth$2);
+    if (nth != null) {
+      loudDrop_drop(nth);
     }
     throw error;
   }
@@ -230,7 +228,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   };
-  const value$5 = nth$2 ? map$2(nth$2) : undefined;
+  const value$5 = nth ? map$2(nth) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   // And an `enumerate()`'s, its source's `nth`, counted (#277).
   const enumerate = $enumerate($rev($closing($iter(louds(40, 5)), $dropEach(loudDrop_drop))));
@@ -247,9 +245,8 @@ function main() {
       loudDrop_drop(value[1]);
     }),
   );
-  let nth$3;
   try {
-    nth$3 = $nthDropping(
+    nth = $nthDropping(
       $lent(value$6),
       id(1),
       (value) => {
@@ -264,8 +261,8 @@ function main() {
   try {
     value$6.return();
   } catch (error) {
-    if (nth$3 != null) {
-      loudDrop_drop(nth$3[1]);
+    if (nth != null) {
+      loudDrop_drop(nth[1]);
     }
     throw error;
   }
@@ -274,7 +271,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   };
-  const value$7 = nth$3 ? map$3(nth$3) : undefined;
+  const value$7 = nth ? map$3(nth) : undefined;
   console.log(`${value$7 == null ? "None" : `Some((${value$7[0]}, ${value$7[1]}))`}`);
   // A `step_by` over a `take` past its end: the item its source's `nth`
   // gives there, dropped by the drop the `take`'s `nth` is given (#289).

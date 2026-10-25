@@ -144,9 +144,8 @@ function main() {
     },
     loudDrop_drop,
   );
-  let nth$1;
   try {
-    nth$1 = $nthDropping($lent(value$3), id(2), loudDrop_drop, false);
+    nth = $nthDropping($lent(value$3), id(2), loudDrop_drop, false);
   } catch (error) {
     if (value$3.iter.iter != null) {
       value$3.iter.iter.return();
@@ -168,8 +167,8 @@ function main() {
       }
     }
   } catch (error) {
-    if (nth$1 != null) {
-      loudDrop_drop(nth$1);
+    if (nth != null) {
+      loudDrop_drop(nth);
     }
     throw error;
   }
@@ -178,7 +177,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   };
-  const value$4 = nth$1 ? map$2(nth$1) : undefined;
+  const value$4 = nth ? map$2(nth) : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 }
 //# sourceMappingURL=case.js.map

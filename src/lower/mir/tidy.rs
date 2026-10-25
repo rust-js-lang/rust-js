@@ -20,6 +20,7 @@ mod jumps;
 mod logicals;
 mod loops;
 mod moves;
+mod shadows;
 mod stages;
 mod switches;
 mod unwinds;

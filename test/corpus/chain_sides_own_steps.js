@@ -538,9 +538,8 @@ function main() {
     throw error;
   }
   const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$18), $dropEach(loudDrop_drop))));
-  let skipped$1;
   try {
-    skipped$1 = $nthDropping($lent(value$28), 2, loudDrop_drop, false);
+    skipped = $nthDropping($lent(value$28), 2, loudDrop_drop, false);
   } catch (error) {
     value$28.return();
     throw error;
@@ -548,8 +547,8 @@ function main() {
   try {
     value$28.return();
   } catch (error) {
-    if (skipped$1 != null) {
-      loudDrop_drop(skipped$1);
+    if (skipped != null) {
+      loudDrop_drop(skipped);
     }
     throw error;
   }
@@ -558,7 +557,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   };
-  const value$29 = skipped$1 ? map$10(skipped$1) : undefined;
+  const value$29 = skipped ? map$10(skipped) : undefined;
   console.log(`${value$29 == null ? "None" : `Some(${value$29})`}`);
   // A peekable's and a fuse's `count`, their source's own: a `take`'s of a
   // reversed `Vec`, which drops one slice (#293).

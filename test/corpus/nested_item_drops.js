@@ -225,7 +225,7 @@ function groupsFirstOfNext_firstOfNext(
 }
 
 function main() {
-  const groups = [[[1], [2]], [], [[3]]];
+  let groups = [[[1], [2]], [], [[3]]];
   const got = firsts(
     groups,
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
@@ -270,9 +270,8 @@ function main() {
   );
   console.log(`all ${all?.length ?? 0}`);
   const value = [[[20], [21]]];
-  let groups$1;
   try {
-    groups$1 = [$iter(value)];
+    groups = [$iter(value)];
   } catch (error) {
     if (all != null) {
       for (const item of all) {
@@ -282,7 +281,7 @@ function main() {
     throw error;
   }
   const next = {
-    value: groups$1,
+    value: groups,
     impl: groupsFirstOfNext(
       { next: $next },
       { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
@@ -303,7 +302,7 @@ function main() {
       console.log(`firsts ${next.impl.firstOfNext(next)}`);
       console.log("end");
     } finally {
-      for (const item of groups$1[0]) {
+      for (const item of groups[0]) {
         for (const item$1 of item) {
           loudDrop_drop(item$1);
         }

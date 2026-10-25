@@ -1883,16 +1883,15 @@ export function flattenCompatIUIterator_sizeHint(
   }
   const flo = tmp[0];
   const fhi = tmp[1];
-  let option$1;
   let default$$1;
   if (flattenCompat.backiter != null) {
     const x = $someValue(flattenCompat.backiter);
-    option$1 = $some(x);
+    option = $some(x);
     default$$1 = [default$[0], default$[1]];
-    const t = $someValue(option$1);
+    const t = $someValue(option);
     default$ = $sizeHint(t, UIterator);
   } else {
-    option$1 = undefined;
+    option = undefined;
     default$$1 = [default$[0], default$[1]];
   }
   const [blo, bhi] = default$;
@@ -1933,7 +1932,7 @@ export function flattenCompatIUIterator_sizeHint(
     sizeHint = [0, 0];
   }
   let lower = sizeHint[0];
-  const upper = sizeHint[1];
+  let upper = sizeHint[1];
   const [_60, b$1] = $overflowing(
     Math.imul(lower, IItemConstSize) >>> 0,
     lower * IItemConstSize,
@@ -1945,7 +1944,6 @@ export function flattenCompatIUIterator_sizeHint(
     tmp$1 = 4294967295;
   }
   lower = Math.min(tmp$1 + lo, 4294967295);
-  let upper$1;
   if (fhi != null) {
     const _0 = { TAG: "Continue", _0: fhi }._0;
     if (bhi != null) {
@@ -1974,29 +1972,29 @@ export function flattenCompatIUIterator_sizeHint(
             if (!b) {
               option$1 = (value$1 + value) >>> 0;
               const v = option$1;
-              upper$1 = { TAG: "Continue", _0: v }._0;
+              upper = { TAG: "Continue", _0: v }._0;
             } else {
               option$1 = undefined;
-              upper$1 = undefined;
+              upper = undefined;
             }
           } else {
             option = undefined;
-            upper$1 = undefined;
+            upper = undefined;
           }
         } else {
-          upper$1 = undefined;
+          upper = undefined;
         }
       } else {
         option = undefined;
-        upper$1 = undefined;
+        upper = undefined;
       }
     } else {
-      upper$1 = undefined;
+      upper = undefined;
     }
   } else {
-    upper$1 = undefined;
+    upper = undefined;
   }
-  return [lower, upper$1];
+  return [lower, upper];
 }
 
 export function flattenCompatIUIterator2_sizeHint(

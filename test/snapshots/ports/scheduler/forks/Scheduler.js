@@ -180,21 +180,19 @@ function workLoop(initialTime) {
 }
 
 export function unstable_runWithPriority(priorityLevel, eventHandler) {
-  let priorityLevel$1;
   switch (priorityLevel) {
     case ImmediatePriority:
     case UserBlockingPriority:
     case NormalPriority:
     case LowPriority:
     case IdlePriority:
-      priorityLevel$1 = priorityLevel;
       break;
     default:
-      priorityLevel$1 = NormalPriority;
+      priorityLevel = NormalPriority;
   }
 
   const restore = currentPriorityLevel;
-  currentPriorityLevel = priorityLevel$1;
+  currentPriorityLevel = priorityLevel;
 
   try {
     return eventHandler();

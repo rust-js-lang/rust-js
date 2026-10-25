@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0352](0352-reclaimed-names.md)'s reclaimed
 names. Extended by [0650](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md):
 any binding of the shadow's block, the program's own, is assigned; the
-pass is tidy's, `tidy::shadowed`, not preparation's.
+pass is tidy's, `tidy::shadowed`, not preparation's. Its amendment takes
+this decision's `match`, a `switch` since ADR 0629, whose cases set the
+parameter, `default: priorityLevel = NormalPriority;`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same values are
 read; only the name changes.

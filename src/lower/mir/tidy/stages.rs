@@ -636,7 +636,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
             pass("shadows", |b, h| {
-                bindings::shadowed(&h.params.borrow(), b, &h.named.user)
+                shadows::shadowed(&h.params.borrow(), b, &h.named.user)
             }),
             // A binding of a variable's name the variable's given last, the
             // variable given it where it's made; then a variable given what's

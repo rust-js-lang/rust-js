@@ -282,7 +282,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Std body capture | `analysis.rs` | `collect_std_bodies` |
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
-| A shadow that is the binding it shadows | `mir/tidy/bindings.rs` | `shadowed` |
+| A shadow that is the binding it shadows | `mir/tidy/shadows.rs` | `shadowed` |
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
