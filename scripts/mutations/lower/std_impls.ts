@@ -265,7 +265,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                // Its parameter named apart",
     replace: "            ty::Adt(_, args) if false => {\n                // Its parameter named apart",
-    tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],
+    snapshots: true,
   },
   {
     name: "refcell-eq-unheld",
@@ -696,6 +697,7 @@ export const mutations: Mutation[] = [
     find: "            if self.recognition().is_borrowed_cell(ty) {\n                given.push(Expr::bool(true));\n            }\n",
     replace: "            given.push(Expr::bool(true));\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_eq_through_guard.rs$"],
+    snapshots: true,
   },
   {
     name: "eq-of-cells-unborrowed",

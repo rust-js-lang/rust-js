@@ -99,7 +99,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "            pass(\"while tests\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))\n            }),\n",
     "replace": "",
-    "tests": ["test/lowering-loops.test.ts", "-t", "a while in a closure from MIR keeps its test"]
+    "tests": ["test/corpus.test.ts", "-t", "^signed_counter.rs$"],
+    "snapshots": true
   },
   {
     "name": "read-handles-off",
@@ -617,7 +618,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"declared aliases\", |b, _| alias_variables(b)),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(closures_of_their_value|branches_as_written).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
     snapshots: true,
   },
   {
