@@ -35,6 +35,8 @@ const $enumerateClone = new WeakMap();
 const $enumerateDebug = new WeakMap();
 const $mapClone = new WeakMap();
 const $mapDebug = new WeakMap();
+const $inspectClone = new WeakMap();
+const $inspectDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -773,6 +775,110 @@ export function mapDebug_fmt(map, options, IDebug, dropI, dropF) {
     : `Map { iter: ${IDebug.fmt(map.iter, options)} }`;
 }
 
+export function inspectIterator_next(inspect, IIterator, dropI, dropF, dropIItem) {
+  const elt = IIterator.next(inspect.iter);
+  if (elt != null) {
+    const a = $someValue(elt);
+    inspect.f(a);
+  }
+  return elt;
+}
+
+export function inspectIterator_sizeHint(inspect, IIterator, dropI, dropF, dropIItem) {
+  return $sizeHint(inspect.iter, IIterator);
+}
+
+export function inspectIterator_fold(
+  inspect,
+  init,
+  fold,
+  IIterator,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const { iter, f } = inspect;
+  const f$1 = $dropping(
+    (acc, item) => {
+      f(item);
+      return fold(acc, item);
+    },
+    () => {
+      dropF?.(f);
+      dropFold?.(fold);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce((a, b) => f$1(a, b), init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f$1);
+  return value;
+}
+
+export function inspectDoubleEndedIterator_nextBack(
+  inspect,
+  IDoubleEndedIterator,
+  dropI,
+  dropF,
+  dropIItem,
+) {
+  const elt = IDoubleEndedIterator.next_back(inspect.iter);
+  if (elt != null) {
+    const a = $someValue(elt);
+    inspect.f(a);
+  }
+  return elt;
+}
+
+export function inspectDoubleEndedIterator_rfold(
+  inspect,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const iter = inspect.iter;
+  const f = inspect.f;
+  const f$1 = $dropping(
+    (acc, item) => {
+      f(item);
+      return fold(acc, item);
+    },
+    () => {
+      dropF?.(f);
+      dropFold?.(fold);
+    },
+  );
+  const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f$1);
+  $dispose(f$1);
+  return value;
+}
+
+export function inspectExactSizeIterator_len(inspect, IExactSizeIterator, dropI, dropF, dropIItem) {
+  return IExactSizeIterator.len(inspect.iter);
+}
+
+export function inspectClone_clone(inspect, IClone, FClone) {
+  return $stdIterator(
+    { iter: IClone.clone(inspect.iter), f: FClone.clone(inspect.f) },
+    inspect.$steps,
+  );
+}
+
+export function inspectDebug_fmt(inspect, options, IDebug, dropI, dropF) {
+  return options?.alternate
+    ? $pretty("Inspect {", [`iter: ${IDebug.fmt(inspect.iter, options)}`], "}")
+    : `Inspect { iter: ${IDebug.fmt(inspect.iter, options)} }`;
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -843,6 +949,22 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
         mapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         mapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropF?.(iterator.f);
+      },
+    },
+  );
+}
+
+export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, f },
+    {
+      next: (iterator) =>
+        inspectIterator_next(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
+      hint: (iterator) =>
+        inspectIterator_sizeHint(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
       close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);
@@ -930,6 +1052,21 @@ export function mapDebug(IDebug, dropI, dropF) {
     fmt: (arg0, arg1) => mapDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
     $drop(map) {
       map.return();
+    },
+  }));
+}
+
+export function inspectClone(IClone, FClone) {
+  return $traitImpl($inspectClone, [IClone, FClone], () => ({
+    clone: (arg0) => inspectClone_clone(arg0, IClone, FClone),
+  }));
+}
+
+export function inspectDebug(IDebug, dropI, dropF) {
+  return $traitImpl($inspectDebug, [IDebug, dropI, dropF], () => ({
+    fmt: (arg0, arg1) => inspectDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
+    $drop(inspect) {
+      inspect.return();
     },
   }));
 }

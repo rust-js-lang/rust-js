@@ -29,9 +29,7 @@ use crate::lower::{FnCx, R, bindings};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
-    /// iterator, from MIR: `None` if it's another. What a `rev()`, an
-    /// `enumerate()` or a `map()` made in place gives, and each such it's
-    /// given, is marked so (`made_in_place`, #257).
+    /// iterator, from MIR: `None` if it's another.
     pub(in crate::lower) fn mir_iter_call(
         &mut self,
         def_id: DefId,
@@ -41,27 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let values = self.marked_in_place(values, arg_tys, span);
-        let in_place = self.adapter_in_place(def_id, span);
-        let made = self.mir_iter_made(def_id, arg_tys, values, output, span, made)?;
-        Ok(made.map(|mut made| {
-            if in_place && made.known == js::Known::Nothing {
-                made.known = js::Known::InPlace;
-            }
-            made
-        }))
-    }
-
-    /// `mir_iter_call`'s, of what it's given marked.
-    fn mir_iter_made(
-        &mut self,
-        def_id: DefId,
-        arg_tys: &[Ty<'tcx>],
-        mut values: Vec<Expr>,
-        output: Ty<'tcx>,
-        span: Span,
-        made: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
+        let mut values = self.marked_in_place(values, arg_tys, span);
         let Some(trait_id) = self.tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
@@ -261,26 +239,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `values`, of `arg_tys`, that the call at `span` takes, each a `Rev`,
-    /// an `Enumerate` or a `Map` made in place marked so (`made_in_place`):
-    /// what takes them apart past this call, `as_double_ended` of a `skip`'s
-    /// source, asks it of them, never std's compiled back (#257).
-    fn marked_in_place(&self, values: Vec<Expr>, arg_tys: &[Ty<'tcx>], span: Span) -> Vec<Expr> {
+    /// an `Enumerate` or a `Map` made in place, a variable's too, marked so
+    /// (`made_in_place`): what takes them apart past this call asks it of
+    /// them, never std's compiled back (#257). The one answer, where each
+    /// std iterator method's values are made.
+    pub(in crate::lower) fn marked_in_place(&self, values: Vec<Expr>, arg_tys: &[Ty<'tcx>], span: Span) -> Vec<Expr> {
         let in_place = |ty: Ty<'tcx>| {
             let ty = ty.peel_refs();
             crate::lower::recognition::is_held_compiled(self.tcx, ty) && !self.compiled_struct_at(ty, span)
         };
         (values.into_iter().enumerate())
-            .map(|(i, mut value)| {
-                if arg_tys.get(i).is_some_and(|&ty| in_place(ty)) && value.known == js::Known::Nothing {
-                    value.known = js::Known::InPlace;
-                }
-                value
+            .map(|(i, value)| match arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {
+                true => value.in_place(),
+                false => value,
             })
             .collect()
     }
 
     /// `value` spilled, `const iter = value;`, its mark kept on the name
-    /// that reads it (`marked_in_place`).
+    /// that reads it (`made_in_place`).
     fn spill_marked(&mut self, value: Expr, made: &mut Vec<Stmt>) -> Expr {
         let known = value.known;
         let mut held = self.spill("iter", value, made);

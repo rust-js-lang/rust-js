@@ -284,7 +284,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What a place stores of what's written, a nullable field's `None` `null`, whether a JS value may be `undefined`, and which places store so, however reached | `js/make.rs`; `representation.rs` | `Storage`, `written`, `may_be_undefined`; `nullable_cell_field`, `nullable_cell_handle` |
 | What JS is given of a `()`: `undefined`, or a list's `[]` | `representation.rs` | `unit_given`, `UnitTo` |
 | A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
-| Which `rev()`, `enumerate()` or `map()` is stepped where it's made, the recognizers', and which is held, std's compiled struct (ADR 0871) | `body_queries.rs`; `mir/iter.rs`; `iterators.rs` | `in_place_adapters`; `compiled_struct_at`; `made_in_place` |
+| Which `rev()`, `enumerate()`, `map()` or `inspect()` is stepped where it's made, the recognizers', and which is held, std's compiled struct (ADR 0871) | `body_queries.rs`; `mir/iter.rs`; `iterators.rs` | `in_place_adapters`; `compiled_struct_at`; `made_in_place` |
 | An index or a slice's range in bounds, the test a `bool` variable holds, and a `OnceCell` still empty where it's set | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`, `made_empty`; `indexes_in_bounds` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 

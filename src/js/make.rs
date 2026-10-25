@@ -891,6 +891,15 @@ impl Expr {
         )
     }
 
+    /// It, a `Rev`, an `Enumerate` or a `Map` made in place, so marked
+    /// (`Known::InPlace`), where nothing else is known of it.
+    pub fn in_place(mut self) -> Expr {
+        if self.known == Known::Nothing {
+            self.known = Known::InPlace;
+        }
+        self
+    }
+
     /// This, a reference to one of the program's functions
     /// (`Known::Item`).
     pub fn item(self) -> Expr {

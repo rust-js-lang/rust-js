@@ -415,20 +415,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|exact_size_len).rs$"],
   },
-  {
-    name: "in-place-made-unmarked",
-    breaks: "a `rev()` made in place, which a `skip` holds, is given `Rev`'s compiled back past it, which reads the crate's iterator as a `Rev`'s fields (#257)",
-    file: "src/lower/mir/iter.rs",
-    find: "            if in_place && made.known == js::Known::Nothing {\n",
-    replace: "            if false && made.known == js::Known::Nothing {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
-  },
+
   {
     name: "in-place-given-unmarked",
     breaks: "a variable's `rev()` made in place, stepped from its back past a `skip`, is given `Rev`'s compiled back, not refused",
     file: "src/lower/mir/iter.rs",
-    find: "                if arg_tys.get(i).is_some_and(|&ty| in_place(ty)) && value.known == js::Known::Nothing {\n",
-    replace: "                if false && value.known == js::Known::Nothing {\n",
+    find: "            .map(|(i, value)| match arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
+    replace: "            .map(|(i, value)| match false && arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
   },
   {

@@ -229,13 +229,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
     /// `Map<I, F>`, which drops with it, after its source, closed as it is
-    /// (ADR 0485): `map`'s, `filter`'s and `skip_while`'s.
+    /// (ADR 0485): `map`'s, `filter`'s, `skip_while`'s and `inspect`'s.
     pub(crate) fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
         matches!(
             std_path(self.tcx, adt.did()).as_str(),
-            "std::iter::Map" | "std::iter::Filter" | "std::iter::SkipWhile"
+            "std::iter::Map" | "std::iter::Filter" | "std::iter::SkipWhile" | "std::iter::Inspect"
         )
         .then(|| args.type_at(1))
     }

@@ -203,6 +203,14 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Map", Some("ExactSizeIterator"), "len"),
     ("Map", Some("Clone"), "clone"),
     ("Map", Some("Debug"), "fmt"),
+    ("Inspect", Some("Iterator"), "next"),
+    ("Inspect", Some("Iterator"), "size_hint"),
+    ("Inspect", Some("Iterator"), "fold"),
+    ("Inspect", Some("DoubleEndedIterator"), "next_back"),
+    ("Inspect", Some("DoubleEndedIterator"), "rfold"),
+    ("Inspect", Some("ExactSizeIterator"), "len"),
+    ("Inspect", Some("Clone"), "clone"),
+    ("Inspect", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -213,13 +221,19 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "rev"),
     ("Iterator", "enumerate"),
     ("Iterator", "map"),
+    ("Iterator", "inspect"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
 /// type and the `Iterator` method that makes one: one a std iterator's
 /// method steps where it's made is what the recognizers make of it,
 /// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871).
-const HELD_COMPILED: &[(&str, &str)] = &[("Rev", "rev"), ("Enumerate", "enumerate"), ("Map", "map")];
+const HELD_COMPILED: &[(&str, &str)] = &[
+    ("Rev", "rev"),
+    ("Enumerate", "enumerate"),
+    ("Map", "map"),
+    ("Inspect", "inspect"),
+];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
 /// adapters, `rev`: the one answer, of what's made in place.

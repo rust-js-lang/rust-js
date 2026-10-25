@@ -928,12 +928,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                     let lent = matches!(arg_tys[0].kind(), ty::Ref(_, _, ty::Mutability::Mut));
-                    let mut exprs = values
+                    let exprs = values
                         .map(|v| match v {
                             Value::Ref(place) => Ok(place),
                             v => this.value_expr(v, span),
                         })
                         .collect::<R<Vec<_>>>()?;
+                    let mut exprs = this.marked_in_place(exprs, arg_tys, span);
                     let receiver = exprs.remove(0);
                     let it = this.as_js_iterator(receiver, iter_ty, span)?;
                     let it = match lent {

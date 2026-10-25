@@ -584,9 +584,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a `map()` whose adapter a std iterator's method steps where it's
     /// made, `body_queries::in_place_adapters` says: what the recognizers
     /// make of it, not std's compiled one (ADR 0871).
-    pub(super) fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+    fn adapter_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
         crate::lower::recognition::makes_held_compiled(self.tcx, def_id)
             && self.frame.facts.in_place_adapters.contains(&span)
+    }
+
+    /// Whether a trait method's call of `def_id` at `span`, of
+    /// `generic_args`, is of the crate's impl or a compiled std body's: not
+    /// a `rev()`, an `enumerate()`, a `map()` or an `inspect()` made in
+    /// place, which is what the recognizers make of it (ADR 0871).
+    fn calls_rust_impl(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<bool> {
+        Ok(self.tcx.trait_of_assoc(def_id).is_some()
+            && self.resolves_to_crate(def_id, generic_args)?
+            && !self.adapter_in_place(def_id, span))
     }
 
     /// Whether a call of an iterator trait's method `def_id` at `span`, of
@@ -806,7 +821,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
         let known = self.known_trait_call(def_id, generic_args);
-        let rust_impl = tcx.trait_of_assoc(def_id).is_some() && self.resolves_to_crate(def_id, generic_args)?;
+        let rust_impl = self.calls_rust_impl(def_id, generic_args, span)?;
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));

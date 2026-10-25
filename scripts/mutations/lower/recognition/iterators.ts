@@ -772,4 +772,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(rev_of_closed_items|rev_lazy_drops|std_rev).rs$"],
   },
+  {
+    name: "inspect-holds-no-function",
+    breaks: "an `Inspect` whose closure took what has a destructor is refused, not dropped after its source as a `Map`'s is",
+    file: "src/lower/recognition/iterators.rs",
+    find: " | \"std::iter::SkipWhile\" | \"std::iter::Inspect\"\n",
+    replace: " | \"std::iter::SkipWhile\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^(std_inspect).rs$"],
+  },
 ];

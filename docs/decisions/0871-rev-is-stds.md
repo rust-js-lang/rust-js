@@ -253,10 +253,10 @@ The old runtime hid it; the compiler always wrote this.
 known, on the value** (`Known::InPlace`, the review's P2: a fact carried on
 the JS tree, not reconstructed from it):
 
-- `mir_iter_call` marks what a `rev()`, an `enumerate()` or a `map()` made
-  in place gives (`adapter_in_place`), and each such value a std iterator
-  method is given in place (`compiled_struct_at` at its own span), a
-  variable's too.
+- Each such value a std iterator method is given in place is marked where
+  its values are made (`marked_in_place`, `compiled_struct_at` at the
+  call's own span), a variable's too: the call that takes it is where its
+  form is known.
 - `made_in_place` reads the mark, not a list of JS forms.
 - **A value made in place is its own form**: `stepped_value` never peels
   it, since a reversed `$iterator(it, nextBack)` wraps the crate's
@@ -276,3 +276,36 @@ refusal of a variable's in `diagnostics.test.ts`; the corpus's 326 programs
 that map, reverse or enumerate are unchanged. `mir_iter_call`'s cap is 18,
 its body `mir_iter_made`. The readability baseline is blessed with it,
 `while (true)` 10.2 to 10.3 of the case's own `while let` in its `rfold`.
+
+## Amendment: `Inspect` is std's where it's held too
+
+P1's fourth adapter. **`Inspect` is std's struct where it's held, `{ iter,
+f }`**: `Iterator::inspect`, `next`, `size_hint`, `fold`, `next_back`,
+`rfold`, `len`, its clone and its `Debug`, which `HELD_COMPILED` gains.
+
+- **An in-place maker is the recognizers' on every route**: an `inspect()`
+  isn't one of `mir_iter_call`'s, so its call reached the trait-call route,
+  where a compiled std body counts as the crate's; `calls_rust_impl` asks
+  `adapter_in_place` too. What a std iterator method is given is marked
+  where its values are made, `mir_iter_call`'s and the combinators'
+  (`marked_in_place`), the one answer of both.
+- **An `Inspect` holds its function as a `Map` does** (ADR 0485): dropped
+  after its source, closed as it is (`held_function`), so one whose
+  closure took what has a destructor isn't refused any more.
+
+Tested by `std_inspect.rs` against native Rust, its drops of what an
+`rfold`'s closures took too; the corpus's programs that inspect, map,
+reverse or enumerate. The readability baseline is blessed with it, of
+`std_inspect.rs`'s own: `$iter` 75.7 to 75.9, its slice's iterators, and
+`return;` 9.7 to 9.8, its `Countdown`'s `next`. Inspect's coverage 3 of
+8 to 6 of 8.
+
+`Flatten` and `FlatMap` are not compiled so: std's `FlattenCompat`
+specializes its `size_hint` for inner iterators of a constant size and its
+steps for one-shot ones, `Option`'s, and a body compiled once can't pick a
+specialization, which only a use site's types decide. Compiled, an array's
+items flattened would hint `(0, None)` where std's hint is exact: a
+different result. They stay the recognizers' until specialization is
+decided where it's used, the same gap as `Fuse`'s (#244); #260, a
+`flatten()` of an `Option`'s iterator stepped from its back, is fixed in
+the recognizers.

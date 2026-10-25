@@ -1107,12 +1107,12 @@
 + FlatMap::size_hint	safe
 - FlatMap::try_fold	safe
 - FlatMap::try_rfold	safe
-# Inspect 3 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Inspect 6 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Inspect::fold	safe
-- Inspect::len	safe
++ Inspect::len	safe
 + Inspect::next	safe
-- Inspect::next_back	safe
-- Inspect::rfold	safe
++ Inspect::next_back	safe
++ Inspect::rfold	safe
 + Inspect::size_hint	safe
 - Inspect::try_fold	safe
 - Inspect::try_rfold	safe

@@ -590,4 +590,14 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$"],
   },
+  {
+    name: "in-place-maker-compiled",
+    breaks: "an `inspect()` made in place, given to `chain`, is std's compiled struct, not the recognizers' JS iterator",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            && !self.adapter_in_place(def_id, span))\n",
+    replace: ")\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_source_drops|std_inspect).rs$"],
+  },
+
 ];
