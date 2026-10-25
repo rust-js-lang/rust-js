@@ -10,7 +10,7 @@ const thrownErrors = [];
 let done = 0;
 
 function work(n) {
-  if (n === 0) {
+  if (!n) {
     throw new Error("zero");
   }
   done = (done + n) >>> 0;

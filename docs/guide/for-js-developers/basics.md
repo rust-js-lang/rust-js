@@ -356,8 +356,10 @@ export function fits(str, substr) {
   So `lanes.isolate_lowest_one()`, std's `lanes & lanes.wrapping_neg()`,
   is `lanes & -lanes`
   ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)); and a
-  test of bits against `0` is their truth, `if (lane & SYNC_LANE)`
-  ([ADR 0896](../../decisions/0896-a-test-of-bits-against-zero-is-their-truth.md)):
+  test of bits against `0` is their truth, `if (lane & SYNC_LANE)`, and
+  so is any integer's, `while (lanes)`, never `NaN`; a float's stays
+  `x !== 0`
+  ([ADR 0896](../../decisions/0896-a-test-of-bits-against-zero-is-their-truth.md), amended):
 
 ```rust
 use std::cell::Cell;
@@ -391,6 +393,15 @@ pub fn label_for_lane(lane: i32) -> Option<&'static str> {
     }
     None
 }
+
+pub fn count_lanes(mut lanes: i32) -> u32 {
+    let mut count = 0;
+    while lanes != 0 {
+        lanes &= lanes - 1;
+        count += 1;
+    }
+    count
+}
 ```
 
 ```js
@@ -417,6 +428,15 @@ export function labelForLane(lane) {
   if (lane & SYNC_LANE) {
     return "Sync";
   }
+}
+
+export function countLanes(lanes) {
+  let count = 0;
+  while (lanes) {
+    lanes &= lanes - 1;
+    count = (count + 1) >>> 0;
+  }
+  return count;
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
@@ -943,7 +963,7 @@ export function sign(n) {
   if (n < 0) {
     return "negative";
   }
-  return n === 0 ? "zero" : "positive";
+  return !n ? "zero" : "positive";
 }
 
 export function fee(member, amount) {

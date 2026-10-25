@@ -20,7 +20,7 @@ function main() {
   const v = [0, 0];
   const value$4 = value("first", 7);
   const value$3 = value("first", 4);
-  if (value$3 === 0) {
+  if (!value$3) {
     throw new Error("attempt to calculate the remainder with a divisor of zero");
   }
   const index$1 = index("first", 0);
@@ -31,7 +31,7 @@ function main() {
   console.log(`[${v.join(", ")}] ${quotient}`);
   const value$6 = value("third", 7);
   const value$5 = value("third", 0);
-  if (value$5 === 0) {
+  if (!value$5) {
     throw new Error("attempt to calculate the remainder with a divisor of zero");
   }
   const index$2 = index("third", 1);

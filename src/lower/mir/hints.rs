@@ -35,6 +35,10 @@ pub(super) struct Written {
     /// Each `match` the program wrote whose every arm tests constants, a
     /// `switch` (ADR 0629): its arms.
     pub switches: Vec<Switch>,
+    /// Where each arm's pattern of each `match` the program wrote is,
+    /// `matches!`'s too: a test of what's matched against its constant, not
+    /// of its truth (ADR 0896, amended).
+    pub patterns: Vec<js::Span>,
 }
 
 /// A block the program labeled, `'desc: { .. }`: where it's written, its
@@ -293,6 +297,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let switches = self.written_switches();
+        let patterns = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Match {
+                    ref arms,
+                    match_source: rustc_hir::MatchSource::Normal,
+                    ..
+                } => Some(arms),
+                _ => None,
+            })
+            .flatten()
+            .map(|&arm| self.js_span(self.frame.thir[arm].pattern.span))
+            .collect();
         // Each `if`'s condition alone, as written, not a desugaring's.
         let ifs = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
@@ -313,6 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             loops,
             blocks: self.labeled_blocks(),
             switches,
+            patterns,
         }
     }
 

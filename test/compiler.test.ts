@@ -756,7 +756,7 @@ test("options are the value or undefined", async () => {
   expect(js).toContain("  const h = half(n);\n  return h != null && h > 2 ? h : -1;\n");
   // an `if` inside for a `let` of a call, only made once the rest held, and
   // the `else`'s value given first, as a person writes a default;
-  expect(js).toContain("  const h = half(n);\n  let v = 0;\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    }\n  }");
+  expect(js).toContain("  const h = half(n);\n  let v = 0;\n  if (h) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    }\n  }");
   // a longer one after both, in a block the `then` leaves.
   expect(js).toContain("  const h = half(n);\n  if (h != null) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      return q;\n    }\n  }\n  calls = (calls + 10) | 0;\n  return -calls | 0;");
   expect([options.chainedLongElse(8), options.chainedLongElse(4), options.chainedLongElse(3)]).toEqual([2, -11, -10]);

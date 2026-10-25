@@ -33,7 +33,7 @@ function shuffle(v, extra, TClone) {
 /** The last item moved out, as `pop` does. */
 function takeLast(v) {
   const len = v.length;
-  if (len === 0) {
+  if (!len) {
     return;
   }
   $setLen(v, len - 1);

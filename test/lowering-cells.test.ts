@@ -498,7 +498,7 @@ pub fn last() {
   expect(js).toContain("  let seen = 0;\n  // Count each timer.\n  let t;\n  while ((t = timerQueue.pop()) != null) {\n");
   expect(js).toContain("    if (t > limit) {\n      break;\n    }\n");
   expect(js).toContain("export function last() {\n  // Drop the rest.\n  while (true) {\n");
-  expect(js).toContain("    if (t === 0) {\n      return;\n    }\n");
+  expect(js).toContain("    if (!t) {\n      return;\n    }\n");
   expect(js).not.toContain("=> {");
   const lib = await import(join(dir, "lib.js"));
   for (const n of [1, 9, 2, 3]) lib.schedule(n);

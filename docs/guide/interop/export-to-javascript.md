@@ -303,7 +303,7 @@ import { $displayF64 } from "@rust-js/runtime";
 export default function formatProdErrorMessage(code, ...args) {
   let url = `https://react.dev/errors/${$displayF64(code)}`;
   for (const [i, arg] of args.entries()) {
-    url += i === 0 ? "?args[]=" : "&args[]=";
+    url += !i ? "?args[]=" : "&args[]=";
     url += encodeURIComponent(String(arg));
   }
   return `Minified React error #${$displayF64(code)}; visit ${url} for the full message or use the non-minified dev environment for full errors and additional helpful warnings.`;

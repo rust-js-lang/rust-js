@@ -36,7 +36,7 @@ function nested(items, kind) {
   if (kind === "rows") {
     rows: while (true) {
       for (const item of items) {
-        if (item !== 0) {
+        if (item) {
           switch (item) {
             case 1:
               break rows;

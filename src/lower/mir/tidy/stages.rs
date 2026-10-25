@@ -529,8 +529,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written negations", |b, h| {
                 logicals::written_negations(b, &h.written.negations, &h.written.logicals)
             }),
-            // `(lanes & X) !== 0` of a test: `lanes & X` (ADR 0896).
-            pass("bit tests", |b, _| logicals::bit_tests(b)),
             // An `if` of `false`, a check that can't fail once what it reads
             // is in place: its `else`, if any; and an `if` of nothing either
             // way: its test, where that does anything.
@@ -556,6 +554,12 @@ pub(super) const STAGES: &[Stage] = &[
             // A block a case ends with: its `break`s the case's (ADR 0790).
             pass("blocks ending cases", |b, h| {
                 js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))
+            }),
+            // `(lanes & X) !== 0` of a test, and `lanes !== 0` of an integer's:
+            // `lanes & X`, `lanes` (ADR 0896, amended). After `switches`, whose
+            // cases are its chain's `day === 0`.
+            pass("bit tests", |b, h| {
+                logicals::bit_tests(b, h.numbers, &h.written.patterns)
             }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
             // A `continue` the program wrote, where it wrote it, which its

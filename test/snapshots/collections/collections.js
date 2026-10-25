@@ -63,7 +63,7 @@ export function mutCounter(n) {
 export function evens(n) {
   const v = [];
   for (let i = 0; i < n; i++) {
-    if (i % 2 === 0) {
+    if (!(i % 2)) {
       v.push(i);
     }
   }

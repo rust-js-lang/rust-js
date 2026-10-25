@@ -26,7 +26,7 @@ import {
 } from "@rust-js/runtime";
 
 function half(n) {
-  if (n % 2 === 0) {
+  if (!(n % 2)) {
     return (n / 2) >>> 0;
   }
 }

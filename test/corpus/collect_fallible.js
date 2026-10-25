@@ -21,7 +21,7 @@ function parseAll(v) {
 function halves(v) {
   return $collectOptions(
     v.values().map((n) => {
-      if (n % 2 === 0) {
+      if (!(n % 2)) {
         return (n / 2) >>> 0;
       }
     }),

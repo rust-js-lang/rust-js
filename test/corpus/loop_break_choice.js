@@ -27,7 +27,7 @@ function counted(limit, stop) {
     if (!(c > id(limit)) && !note(c, stop)) {
       continue;
     }
-    return c % 2 === 0 ? 10 : 20;
+    return !(c % 2) ? 10 : 20;
   }
 }
 

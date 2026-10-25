@@ -7,7 +7,7 @@ export function entry() {
 }
 
 export function Counter(step) {
-  if (step === 0) {
+  if (!step) {
     this.count = 0;
     this.step = 1;
     this.history = [];

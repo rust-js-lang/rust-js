@@ -147,7 +147,7 @@ export function conversions() {
 }
 
 function evenTryFromU32_tryFrom(n) {
-  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: `${n} is odd` };
+  return !(n % 2) ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: `${n} is odd` };
 }
 
 export function fallibleConversions(n) {

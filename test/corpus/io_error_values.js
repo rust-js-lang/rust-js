@@ -33,7 +33,7 @@ function check(n) {
   if (n > 10) {
     return { TAG: "Err", _0: new $IoError("Other", { value: "too big", impl: $stringError() }) };
   }
-  if (n === 0) {
+  if (!n) {
     return { TAG: "Err", _0: new $IoError("NotFound") };
   }
   return { TAG: "Ok", _0: n };

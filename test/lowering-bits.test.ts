@@ -156,8 +156,9 @@ pub fn lowest_of_sum(a: i32, b: i32) -> i32 {
 // ADR 0896: React's `if (lanes & SyncLane)`. A test of a bitwise
 // operator's value against 0, `(lanes & 8) !== 0`, is its truth, `lanes &
 // 8`, and `=== 0` its `!`: the value is a number, never NaN. Only where
-// its truth alone is read: a value stays a comparison, and so does a
-// variable's test, `n !== 0`.
+// its truth alone is read: a value stays a comparison. And an integer's
+// test, a variable's `n !== 0`, `n % 2 === 0` (ADR 0896, amended): never
+// NaN either; not a float's, NaN `!== 0` but falsy.
 test("a test of bits against 0 is their truth", async () => {
   const { js, lib } = await compiled("bits-tested", `pub fn label(lane: i32) -> u32 {
     if lane & 8 != 0 {
@@ -199,16 +200,32 @@ pub fn shifted(mut lanes: i32) -> u32 {
     }
     count
 }
+
+pub fn nonzero(x: f64) -> bool {
+    if x != 0.0 {
+        return true;
+    }
+    false
+}
+
+pub fn mixed(n: i32, v: &[f64]) -> u32 {
+    let own = if n != 0 { 1 } else { 0 };
+    own + v.iter().map(|&n| if n != 0.0 { 1 } else { 0 }).sum::<u32>()
+}
 `);
   expect(js).toContain("  if (lane & 8) {\n");
   expect(js).toContain("  if (!(lane & 4)) {\n");
   expect(js).toContain("  return on && flags & 0x80 ? 1 : 2;\n");
   expect(js).toContain("  return (a & b) !== 0;\n");
-  expect(js).toContain("  if (n !== 0) {\n");
-  expect(js).toContain("  if (n % 2 === 0) {\n");
+  expect(js).toContain("  if (n) {\n");
+  expect(js).toContain("  if (!(n % 2)) {\n");
+  expect(js).toContain("  if (x !== 0) {\n");
   expect(js).toContain("  while (!(lanes & 1) && count < 32) {\n");
   expect([8, 4, 2].map((n) => lib.label(n))).toEqual([1, 3, 2]);
   expect([lib.flagged(0x80, true), lib.flagged(0x7f, true), lib.flagged(0xff, false), lib.flagged(0x80000080, true)]).toEqual([1, 2, 2, 1]);
   expect([lib.includes(6, 2), lib.includes(6, 1), lib.counted(0), lib.counted(3), lib.even(-4), lib.even(3)]).toEqual([true, false, false, true, true, false]);
   expect([lib.shifted(8), lib.shifted(0), lib.shifted(-2147483648)]).toEqual([3, 32, 31]);
+  expect([lib.nonzero(NaN), lib.nonzero(0), lib.nonzero(-0), lib.nonzero(0.5)]).toEqual([true, false, false, true]);
+  // A closure's float of the name, as the walk of a conditional goes into it.
+  expect(lib.mixed(2, [NaN, 0, 1])).toBe(3);
 });

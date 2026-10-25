@@ -26,7 +26,7 @@ function firstEven(rows) {
         const i = value[0];
         const row = value[1];
         for (const x of row) {
-          if (x % 2 === 0) {
+          if (!(x % 2)) {
             found = [i, x];
             break search;
           }
@@ -77,7 +77,7 @@ function main() {
     const n = $rangeFromNext(iter);
     sum: {
       if (n != null) {
-        if (n % 2 === 0) {
+        if (!(n % 2)) {
           continue;
         }
         if (n <= 9) {

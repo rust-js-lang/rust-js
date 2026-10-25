@@ -1,7 +1,8 @@
 # 0896. A test of bits against `0` is their truth
 
 Status: Accepted. Extends tidy's `written` stage, beside `turned`'s `!(b
->= 48)`, `b < 48`.
+>= 48)`, `b < 48`. Amended (2026-10-26): any integer's test against `0`
+is its truth too, `if (lanes)`, not only a bitwise operator's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a bitwise operator's value is a number of 32 bits, never
@@ -62,10 +63,63 @@ which a number of 32 bits a bitwise operator's value always is.
   `if (// .. \n (lane & entangledLanes) | // .. \n (entanglements[index] &
   entangledLanes))`, its comments where they were, without `!== 0`.
 
+## Amendment: any integer's test against `0`
+
+React's ReactFiberLane tests lane sets by their truth where they aren't
+bits of an operator too: `if (unblockedLanesWithMatchingPriority)`,
+`while (lanes)`. Its port's `if unblocked_lanes_with_matching_priority
+!= 0` and `while lanes != 0` printed `!== 0`, which this decision left
+to a variable, as "an integer's test of a count reads as the program
+wrote it". Decided otherwise (2026-10-26, the user's): **any integer's
+test against the literal `0` is its truth**, of the Rust types JS's
+numbers hold, `i8` to `i32`, `u8` to `u32` and `usize`, and of a `u64`'s
+BigInt the same where it's tested against a number `0`, which it isn't.
+
+- **An integer's value, as tidy reads it** (`logicals.rs`'s
+  `integer_value`): a variable each of whose locals is an integer (the
+  `numbers` `turned` reads, `hints.rs`'s `typed_names`), a whole literal,
+  a wrap, `(n + m) | 0` or `(a + b) >>> 0`, a bitwise operator's, and a
+  sum, difference or product of those, or a remainder of one by a literal
+  not `0`, `n % 2`: `if (!(n % 2))`, `if ((n + m) | 0)`. A wrap's test
+  keeps its wrap: what it wraps may be `2 ** 32`, truthy where its wrap is
+  `0`.
+- **Not a float's**: an `f64` variable isn't in `numbers`, so `if (x !==
+  0)` stays, `NaN` being unequal to `0` and falsy.
+- **Not a name a closure in the body declares too**: a conditional's walk
+  goes into closures, whose `n` may be a float where the function's is an
+  integer. A closure's body is tidied as its own, with its own `numbers`,
+  so no case found reaches it; the guard keeps it so where one would.
+- **Not a `match`'s pattern's**, `match n { 0 => .., _ => .. }`'s `if (n
+  === 0)` nor `0 | 6 =>`'s `day === 0 || day === 6`: a pattern compares
+  what's matched with its constants, as a `switch`'s `case 0:` does, not
+  its truth (`Written::patterns`, each arm's pattern's span).
+- **After `switches`**: the pass runs once a `match` of constants is a
+  `switch`, whose chain's `day === 0` it reads its cases by.
+- **Not a call's or a property's**, `v.len() != 0`'s `v.length !== 0` or
+  `!is_empty()`'s `updaters.size !== 0`: tidy can't tell a JS getter's
+  value from Rust's integer by its JS. They read as before.
+
+Case N, as the decision's own: an integer is never `NaN`, so it's truthy
+exactly where it isn't `0` (and `-0` is `0` both ways).
+
+Consequences: upstream React isn't one way. ReactFiberLane has both
+`if (unblockedLanesWithMatchingPriority)` and `if (pendingSyncLanes !==
+0)`; the first now reads as upstream, the second, which read as it,
+doesn't. So do shared's `indent === 0`, `propsLength === 0` and
+formatProdErrorMessage's `i === 0 ? ..`, now `!indent`, `!propsLength`,
+`!i ? ..`, and the guide's `!n ? "zero" : "positive"`. A test of a
+`while`, `while (lanes)`, reads as upstream's everywhere it's written so.
+rust-js's own checks read so too: `if (!value$3) throw new Error("attempt
+to calculate the remainder with a divisor of zero")`.
+
 ## What holds it
 
 - `test/lowering-bits.test.ts`, "a test of bits against 0 is their
-  truth", run in JS, with a value, a variable and an arithmetic wrap left
-  as they are; `test/corpus/lane_bits.rs` against native Rust.
+  truth", run in JS, with a value left as it is, an integer variable's and
+  a remainder's test their truth, and a float's `x !== 0` kept, run with
+  `NaN`; `test/corpus/lane_bits.rs` and `test/corpus/integer_truth.rs`
+  against native Rust.
 - Mutations `bit-test-compared`, `bit-test-of-zero-kept-truthy`,
-  `bit-test-of-a-value-too`, `bit-test-of-a-wrap` (`tidy/logicals.ts`).
+  `bit-test-of-a-value-too`, `integer-test-compared`,
+  `integer-test-of-a-float` (`tidy/logicals.ts`). `bit-test-of-a-wrap`,
+  which took a wrap for bits, is gone: a wrap is an integer's value now.

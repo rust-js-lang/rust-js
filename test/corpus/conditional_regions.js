@@ -93,7 +93,7 @@ function main() {
   let total = 0;
   for (let i = 0; i < 4; i++) {
     let picked;
-    if (i % 2 === 0) {
+    if (!(i % 2)) {
       const x = { value: total };
       picked = bump(x);
       total = x.value;

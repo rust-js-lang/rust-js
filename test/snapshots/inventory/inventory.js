@@ -88,7 +88,7 @@ function classify(n) {
   }
   if (n >= 1) {
     if (n <= 9) {
-      if (n % 2 === 0) {
+      if (!(n % 2)) {
         return "small even";
       }
       return "small odd";

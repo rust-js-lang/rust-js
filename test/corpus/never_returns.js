@@ -14,7 +14,7 @@ function forever() {
 }
 
 function half(n) {
-  if (n % 2 !== 0) {
+  if (n % 2) {
     fail("odd");
   }
   return (n / 2) | 0;

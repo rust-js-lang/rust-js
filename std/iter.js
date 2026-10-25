@@ -132,7 +132,7 @@ export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
     if ($someValue(peeked) == null) {
       v = undefined;
     } else {
-      if (n === 0) {
+      if (!n) {
         return $someValue(peeked);
       }
       v = $nthDropping(

@@ -9,11 +9,11 @@ function some(n) {
 }
 
 function ok(n) {
-  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
+  return !(n % 2) ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
 }
 
 function half(n) {
-  return n % 2 === 0 ? { TAG: "Ok", _0: (n / 2) & 255 } : { TAG: "Err", _0: [n] };
+  return !(n % 2) ? { TAG: "Ok", _0: (n / 2) & 255 } : { TAG: "Err", _0: [n] };
 }
 
 function main() {

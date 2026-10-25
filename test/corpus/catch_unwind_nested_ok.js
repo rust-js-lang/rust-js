@@ -12,7 +12,7 @@ function pick(n) {
   if (n > 5) {
     throw new Error(`big ${n}`);
   }
-  if (n % 2 === 0) {
+  if (!(n % 2)) {
     return (n * 10) >>> 0;
   }
 }

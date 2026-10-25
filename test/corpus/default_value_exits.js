@@ -371,7 +371,7 @@ function guardedRows(rows) {
 }
 
 function half(n) {
-  if (n % 2 === 0) {
+  if (!(n % 2)) {
     return (n / 2) | 0;
   }
 }
@@ -380,7 +380,7 @@ function half(n) {
 function chained(n, calls) {
   const h = half(n);
   let v = 0;
-  if (h != null && h !== 0) {
+  if (h) {
     calls.value = (calls.value + 1) >>> 0;
     const q = half(h);
     if (q != null && q > 1) {

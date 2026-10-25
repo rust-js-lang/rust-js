@@ -603,7 +603,7 @@ export function mustPort(line) {
 }
 
 export function ratio(a, b) {
-  if (b === 0) {
+  if (!b) {
     throw new Error(`ratio of ${a} to nothing`);
   }
   return $div(a, b) >>> 0;

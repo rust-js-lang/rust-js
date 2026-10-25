@@ -414,7 +414,7 @@ function evenDebug_fmt(even) {
 }
 
 function evenTryFromU32_tryFrom(n) {
-  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
+  return !(n % 2) ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
 }
 
 function contactDeserialize_deserialize(json) {

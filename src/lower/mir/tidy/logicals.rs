@@ -682,33 +682,80 @@ fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
 /// writes it, `lanes & X`, and `=== 0`'s `!(lanes & X)`: a bitwise
 /// operator's value is a number, an int32's or a `u32`'s, never `NaN`,
 /// so it's truthy where it isn't `0`. A `u32`'s wrap of one, `(a & b) >>>
-/// 0`, is `0` where what it wraps is. Of a test whose truth alone is read,
+/// 0`, is `0` where what it wraps is. And of any integer's, a variable
+/// each of whose locals is one, `numbers`, or a wrap, `(n % 2) | 0`,
+/// never `NaN` either: `if (lanes)`. Of a test whose truth alone is read,
 /// an `if`'s, a `while`'s or a conditional's, and the parts of an `&&`,
-/// `||` or `!` of one (ADR 0896).
-pub(super) fn bit_tests(body: &mut Vec<Stmt>) {
+/// `||` or `!` of one (ADR 0896, amended).
+pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &HashSet<String>, patterns: &[js::Span]) {
+    // Not a name a closure in the body declares too, which may be a
+    // float's: the walk of a conditional goes into closures.
+    let mut declared = HashSet::new();
+    js::each_expr(body, &mut |e| match &e.kind {
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+            declared.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+            js::each_declared(body, &mut |name| _ = declared.insert(name.to_string()));
+        }
+        ExprKind::Function(function) => {
+            declared.extend(function.params.iter().flat_map(|p| p.names()).map(str::to_string));
+            js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
+        }
+        _ => {}
+    });
+    let integer = |name: &str| numbers.contains(name) && !declared.contains(name);
+    // Not a `match`'s pattern's, `0 | 6 =>`, which compares what's matched
+    // with its constants, as a `switch`'s `case 0:` would.
+    let matched = |span: js::Span| {
+        !span.is_none() && (patterns.iter()).any(|pattern| pattern.lo <= span.lo && span.lo < pattern.hi)
+    };
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
+            let span = stmt.span;
             if let StmtKind::If(test, ..) | StmtKind::While { cond: test, .. } = &mut stmt.kind {
-                bit_test(test);
+                bit_test(test, &integer, &matched, span);
             }
         }
     });
     js::each_expr_mut(body, &mut |e| {
+        let span = e.span;
         if let ExprKind::Cond(test, ..) = &mut e.kind {
-            bit_test(test);
+            bit_test(test, &integer, &matched, span);
         }
     });
 }
 
+/// Whether `e` is an integer's value, never `NaN`: a variable each of
+/// whose locals is one, a whole literal, a wrap, an `i32`'s `(n % 2) | 0`
+/// or a `u32`'s `(a + b) >>> 0`, a number of 32 bits, a bitwise
+/// operator's; and a sum, difference or product of those, and a remainder
+/// of one by a literal not `0`, `n % 2` (ADR 0896, amended).
+fn integer_value(e: &Expr, integer: &dyn Fn(&str) -> bool) -> bool {
+    match &e.kind {
+        ExprKind::Var(name) => integer(name),
+        ExprKind::Num(n) => n.fract() == 0.0,
+        ExprKind::Binary(Op::BitOr | Op::UShr, _, zero) if zero.as_int() == Some(0) => true,
+        _ if bits(e) => true,
+        ExprKind::Binary(Op::Add | Op::Sub | Op::Mul, a, b) => integer_value(a, integer) && integer_value(b, integer),
+        ExprKind::Binary(Op::Rem, a, b) => integer_value(a, integer) && b.as_int().is_some_and(|d| d != 0),
+        ExprKind::Unary(UnaryOp::Neg, a) => integer_value(a, integer),
+        _ => false,
+    }
+}
+
 /// `bit_tests` of one test, and of the tests it's made of.
-fn bit_test(test: &mut Expr) {
+/// `matched` says whether a test, where it's written, its own span or
+/// `around`'s, the statement's or conditional's it's of, is a `match`'s pattern's.
+fn bit_test(test: &mut Expr, integer: &dyn Fn(&str) -> bool, matched: &dyn Fn(js::Span) -> bool, around: js::Span) {
+    let at = if test.span.is_none() { around } else { test.span };
     match &mut test.kind {
         ExprKind::Binary(Op::And | Op::Or, a, b) => {
-            bit_test(a);
-            bit_test(b);
+            bit_test(a, integer, matched, at);
+            bit_test(b, integer, matched, at);
         }
-        ExprKind::Unary(UnaryOp::Not, a) => bit_test(a),
-        ExprKind::Binary(op @ (Op::Ne | Op::Eq), a, b) if b.as_int() == Some(0) && bits(a) => {
+        ExprKind::Unary(UnaryOp::Not, a) => bit_test(a, integer, matched, at),
+        ExprKind::Binary(op @ (Op::Ne | Op::Eq), a, b)
+            if b.as_int() == Some(0) && (bits(a) || (!matched(at) && integer_value(a, integer))) =>
+        {
             let ne = *op == Op::Ne;
             let bits = match std::mem::replace(&mut **a, Expr::undefined()) {
                 Expr {
