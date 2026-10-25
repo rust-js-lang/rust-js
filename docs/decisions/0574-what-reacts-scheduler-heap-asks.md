@@ -1,7 +1,8 @@
 # 0574. What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere
 
 Status: Accepted; amended by [0578](0578-a-nullable-result-where-its-written.md),
-which writes `value ?? null` where the value is written. Extends [0275](0275-nullable-writes-null.md), whose
+which writes `value ?? null` where the value is written. Amended: its
+declaration is `T | null`, never `undefined`. Extends [0275](0275-nullable-writes-null.md), whose
 `#[rust_js::nullable]` it puts on a function's result,
 [0051](0051-generic-options.md), whose box it leaves out where a bound
 says it's never needed, and [0307](0307-binding-trait-methods.md).
@@ -105,3 +106,19 @@ asked, not as the package loads.
   none of the web's APIs".
 - Mutations: the result left `undefined`, a `Some` coalesced, the bound's
   `Some` boxed, a non-`Option` result let through.
+
+## Amendment: a nullable result is declared `T | null`
+
+A nullable function's `.d.ts` was any `Option`'s, `peek(heap: Node[]):
+Node | null | undefined`, where its `None` is `null` where it's made (ADR
+0578), as React's `peek` is typed `T | null`: a TypeScript caller's
+`const first: Node | null = peek(heap)` was an error, and its `=== null`
+test didn't narrow away an `undefined` that's never there.
+
+**A `#[rust_js::nullable]` function's result is declared `T | null`**
+(`declarations.rs`, `function`), its `T` as written, an alias's name too.
+Another `Option`'s result keeps `T | null | undefined`.
+
+Held by `test/declarations.test.ts`, "a nullable function's result is
+declared T or null", which TypeScript checks, and the mutation
+`nullable-result-declared-undefined` (`lower/declarations.ts`).

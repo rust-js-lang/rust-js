@@ -994,6 +994,10 @@ released any more: `rust-js build` is the one way to build an app.
   nothing when nothing changed; a build that fails stops them, and the old
   binary isn't run. `RUST_JS_COMPILER` and `@rust-js/native` are run as
   they are.
+- **A nullable function's result is declared `T | null`** (ADR 0574,
+  amended): `#[rust_js::nullable] fn name_of(..) -> Option<String>` is
+  `nameOf(n: number): string | null`, where it was `string | null |
+  undefined`, though its `None` is `null`.
 - **A static of a module's binding imports it**: `static NOTIFY: fn() ->
   f64 = toast;` of a `sonner#toast` binding is `export const NOTIFY =
   toast;` and `import { toast } from "sonner";`, where rust-js panicked

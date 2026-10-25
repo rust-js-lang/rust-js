@@ -724,9 +724,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
             hir::FnRetTy::Return(written) => Some(written),
             hir::FnRetTy::DefaultReturn(_) => None,
         });
-        let returns = match output.is_unit() {
-            true => keyword("void"),
-            false => self.as_written(written, |out| out.ts(output)),
+        // A nullable result's `None` is `null` where it's made, never
+        // `undefined`, `string | null` (ADRs 0574, 0578).
+        let nullable = (super::bindings::nullable_result(self.tcx, def_id))
+            .then(|| self.option(output))
+            .flatten();
+        let returns = match (output.is_unit(), nullable) {
+            (true, _) => keyword("void"),
+            (false, Some(inner)) => {
+                let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
+                json!({ "kind": "union", "types": [inner, keyword("null")] })
+            }
+            (false, None) => self.as_written(written, |out| out.ts(output)),
         };
         json!({
             "kind": "function",

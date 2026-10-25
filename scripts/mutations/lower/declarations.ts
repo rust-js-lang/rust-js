@@ -604,8 +604,8 @@ export const mutations: Mutation[] = [
     name: "written-return-expanded",
     breaks: "a function's result written as an alias is what it stands for, `TocItem[][]`, where it's `Toc[]`",
     file: "src/lower/declarations.rs",
-    find: "            false => self.as_written(written, |out| out.ts(output)),",
-    replace: "            false => self.ts(output),",
+    find: "            (false, None) => self.as_written(written, |out| out.ts(output)),",
+    replace: "            (false, None) => self.ts(output),",
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },
   {
@@ -703,5 +703,13 @@ export const mutations: Mutation[] = [
     find: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),\n",
     replace: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => self.function_type(&inputs, output),\n",
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+  },
+  {
+    name: "nullable-result-declared-undefined",
+    breaks: "a nullable function's result is declared `string | null | undefined`, though its `None` is `null`, never `undefined`",
+    file: "src/lower/declarations.rs",
+    find: "            .then(|| self.option(output))\n",
+    replace: "            .then(|| self.option(output))\n            .filter(|_| false)\n",
+    tests: ["test/declarations.test.ts", "-t", "a nullable function's result is declared T or null"],
   },
 ];

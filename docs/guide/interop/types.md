@@ -623,6 +623,9 @@ export function ratio(a, b) {
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return
   last(b);` ([ADR 0638](../../decisions/0638-a-nullable-functions-call-is-null-already.md)).
+  Its `.d.ts` says so, `string | null`, never `undefined`, where another
+  `Option`'s result is `string | null | undefined`
+  ([ADR 0574](../../decisions/0574-what-reacts-scheduler-heap-asks.md), amended).
   A variable only nullable fields and parameters read is `null` where
   it's made, `let owner = None;`'s `const owner = null;`, and given as it
   is ([ADR 0781](../../decisions/0781-a-none-only-nullables-read-is-null-where-its-made.md)).

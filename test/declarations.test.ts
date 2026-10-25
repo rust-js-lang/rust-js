@@ -536,6 +536,32 @@ export const maybe = (title: string | undefined): BadgeProps => ({ title, label:
   expect([shown(null), shown(undefined), shown("a")]).toEqual(["none", "none", "a"]);
 });
 
+// A `#[rust_js::nullable]` function's `None` is `null` where it's made,
+// never `undefined` (ADRs 0574, 0578): its result is `string | null`, as
+// React's scheduler's `peek` is typed, which TypeScript takes where `string
+// | null` is asked; another `Option`'s keeps `| undefined`.
+test("a nullable function's result is declared T or null", async () => {
+  const dir = fixture("declarations-nullable-result");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn name_of(n: u32) -> Option<String> {
+    if n > 0 { Some(n.to_string()) } else { None }
+}
+
+pub fn plain(n: u32) -> Option<String> {
+    if n > 0 { Some(n.to_string()) } else { None }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function nameOf(n: number): string | null;");
+  expect(declarations).toContain("export function plain(n: number): string | null | undefined;");
+  writeFileSync(join(dir, "use.ts"), 'import { nameOf } from "./lib.js";\nexport const named: string | null = nameOf(1);\n');
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  const { nameOf } = await import(join(dir, "lib.js"));
+  expect([nameOf(1), nameOf(0)]).toEqual(["1", null]);
+});
+
 // An enum of no variants has no values: TypeScript's `never`, chrono's
 // `enum Void {}`, which was `type Void = ;`, no TypeScript at all.
 test("an enum of no variants is declared never", () => {

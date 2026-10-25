@@ -455,7 +455,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0435 Rust's world and React's: each its own names, JSX the boundary](0435-rust-and-react-two-worlds.md)
 - [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0848: a parameter's `#[rust_js::name]`)*
-- [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md)
+- [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md) *(amended: a nullable result is declared `T | null`)*
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
