@@ -439,7 +439,7 @@ test("serde: numbers are written and read as serde_json does", async () => {
 }, 120_000);
 
 // serde_json's reader as a server's reads what a client sends it (ADR 0078):
-// each text, well formed or not, read as each of 26 types, and the `Value`
+// each text, well formed or not, read as each of 34 types, and the `Value`
 // it is read again as each, gives the value
 // serde_json gives, or its error, with its words, line and column. What's
 // malformed is where a port of the reader goes wrong unseen: its escapes,
@@ -478,6 +478,7 @@ test("serde: text, well formed or not, is read and refused as serde_json reads i
     // content throws (#236).
     '{"t":"W","C":null}', '{"t":"W","C":[1,2]}', '{"t":"W","C":{"x":1}}', '{"t":"W","D":1}', '{"t":"W","D":[1]}', '{"t":"W","B":null}', '{"C":1}', '{"D":"x"}',
     '{"a":1,"b":"x","c":2,"z":3}', '{"a":1,"t":"A","x":2}', '{"a":1,"t":"C"}', '{"t":"B","a":2,"b":"y"}', '{"C":[]}', '{"A":1,"k":2}',
+    "127", "128", "-128", "-129", "255", "256", '"x"', '"xy"', '""', "{}", '{"aa":5}', '{"a":1,"aa":2}', '{"1":2,"1":3}', "[1,2,3]",
     '{"c":[1,2],"t":"T"}', '{"c":[1,2,3],"t":"T"}', '{"c":null,"t":"T"}', '{"c":{"x":1},"t":"T"}', '{"c":1,"t":"T"}', '{"c":null,"t":"S"}', '{"c":1,"t":"S"}', '{"c":"x","t":"S"}',
   ];
   const dir = fixture("serde-malformed");
@@ -533,6 +534,9 @@ impl<'de> serde::Deserialize<'de> for First {
 pub struct Flats { pub z: Option<u32>, #[serde(flatten)] pub loose: Loose, #[serde(flatten)] pub rest: std::collections::BTreeMap<String, u32> }
 #[derive(serde::Deserialize, Debug)]
 pub struct FlatNumber { #[serde(flatten)] pub n: u32 }
+#[derive(serde::Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct Defaults { #[serde(alias = "aa")] pub a: u32, pub b: bool }
 #[derive(serde::Deserialize, Debug)]
 pub struct FlatOption { pub z: Option<u32>, #[serde(flatten)] pub o: Option<Loose> }
 #[derive(serde::Deserialize, Debug)]
@@ -586,6 +590,14 @@ pub fn report() -> String {
         read!(out, Flats, text);
         read!(out, FlatNumber, text);
         read!(out, FlatOption, text);
+        read!(out, Defaults, text);
+        read!(out, i8, text);
+        read!(out, u8, text);
+        read!(out, f32, text);
+        read!(out, char, text);
+        read!(out, &str, text);
+        read!(out, [u8; 2], text);
+        read!(out, [u8; 0], text);
         read!(out, FlatBoth, text);
         read!(out, FlatUntagged, text);
         if let Ok(value) = serde_json::from_str::<serde_json::Value>(text) {
@@ -612,6 +624,13 @@ pub fn report() -> String {
             again!(out, Flats, value);
             again!(out, FlatNumber, value);
             again!(out, FlatOption, value);
+            again!(out, Defaults, value);
+            again!(out, i8, value);
+            again!(out, u8, value);
+            again!(out, f32, value);
+            again!(out, char, value);
+            again!(out, [u8; 2], value);
+            again!(out, [u8; 0], value);
             again!(out, FlatBoth, value);
             again!(out, FlatUntagged, value);
         }

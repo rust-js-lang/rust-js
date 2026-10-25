@@ -137,21 +137,24 @@ its errors (an architecture review, 2026-10-25), so a port of an escape,
 a surrogate, a bound or a position could go wrong unseen.
 
 - **`test/serde.test.ts`'s "text, well formed or not, is read and refused
-  as serde_json reads it"** reads 148 texts, and brackets 129 deep and
-  127, each as 26 types: `Value`, `String`, `Vec<u32>`, `i64`, `u64`,
-  `f64`, a struct with an optional field and one that denies unknown
-  fields, a tuple, an `Option<u32>`, an externally, an internally and an
+  as serde_json reads it"** reads 162 texts, and brackets 129 deep and
+  127, each as 34 types: `Value`, `String`, `Vec<u32>`, `i64`, `u64`,
+  `f64`, `i8`, `u8`, `f32`, `char`, a `&str`, arrays of two and of none,
+  a struct with an optional field, one that denies unknown
+  fields and one of defaults with an alias, a tuple, an `Option<u32>`, an
+  externally, an internally and an
   adjacently tagged enum, an untagged one, structs with a flattened map,
   struct, `Option`, number, internally tagged and untagged enum, maps keyed
   by numbers and booleans in quotes, enums read from what an internally
   tagged variant buffered and one flattened, and a visitor of a map's first
   entry alone, which a `Deserialize` written by hand may be. Each text that
-  is a `Value` is read again from it, `from_value`, as 24 of them. Each
+  is a `Value` is read again from it, `from_value`, as 31 of them. Each
   gives what serde_json gives natively, value or error.
 - **Its mutations, 21 of the reader's, 16 of what reads a sequence, a
   map, a key, a variant and buffered content (`json_content.js`), 11 of a
-  `Value` read as a deserializer (`json_value_reader.js`) and 7 of what's
-  flattened (`json_flat.js`)**, are each a rule, all caught: trailing text, the depth of 128, an error's
+  `Value` read as a deserializer (`json_value_reader.js`), 7 of what's
+  flattened (`json_flat.js`) and 9 of serde's own rules
+  (`json_decoder.js`)**, are each a rule, all caught: trailing text, the depth of 128, an error's
   line and column and the byte a `peek_error` is at, a leading zero, `-0`
   a float and `i64::MIN` an integer, `1.` at the end, a float past
   `f64::MAX` by its digits, control characters, `\q` and `\uZZZZ`, lone
@@ -164,7 +167,10 @@ a surrogate, a bound or a position could go wrong unseen.
   shape; a `Value`'s array with items over, its object read by key, as
   serde_json's `BTreeMap` is, its keys, variants and `null`s; and a
   flattened struct's fields taken, an `Option` of none, an enum's variant
-  taken and found, and what's left for an untagged enum.
+  taken and found, and what's left for an untagged enum; an integer
+  type's bounds and floats refused, a `&str` that can't borrow, an array's
+  length, a map's key given twice, and a struct's field given twice,
+  denied or missing with a default.
 - **What it found**: a `Deserialize` written by hand, given buffered
   content, an untagged variant's or an adjacently tagged one's whose
   content comes first, or a `Value` by `from_value`, throws a `TypeError`

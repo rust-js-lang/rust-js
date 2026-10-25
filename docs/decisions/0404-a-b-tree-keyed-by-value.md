@@ -74,3 +74,19 @@ calls a logic error whose results it doesn't specify: std's `from_iter`
 keeps two keys `cmp` finds `Equal` that `==` doesn't, and rust-js keeps
 one. Held by `test/corpus/btree_own_ord.rs` and `held_keys.rs`, each
 with native Rust.
+
+## Amendment: what holds a `$OrdMap`
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): what was decided,
+held; nothing a program sees changes.
+
+Three mutations held `$OrdMap`, each of finding and keeping a key. Four
+more are each caught (an architecture review, 2026-10-25): a key put at
+its end, not where its order puts it, by `btree_own_ord.rs`; and, by
+`test/runtime-package.test.ts`'s "a map keyed by a struct, hashed or
+ordered, reads as a Map to the JS given it", a missing key's removal
+taking its neighbour, `size`, and `forEach`'s value before its key, which
+JS calls and no Rust program does. A B-tree handed to JS iterates in key
+order only where its key has an `Ord` of its own; any other is a `Map` in
+insertion order, which Rust sorts as it steps it: #237 asks which the
+boundary should be.
