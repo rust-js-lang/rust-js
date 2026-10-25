@@ -278,3 +278,37 @@ impl of a type of its own the consumer can't name: base64's
 gives. Only the impls a consumer could reach by visibility were exported.
 Every trait impl is now, and its methods (`library::reachable`).
 `crates.test.ts` holds it.
+
+## Amendment: each type parameter is one record of what it's asked
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): the library
+contract's layout; what a call gives and what JS reads are the same.
+
+A library's item listed what it asks of its type parameters in four
+lists, each keyed by the parameter's index apart: `drops`, `no_drops`,
+`type_facts` and `stepped`, a list each fact added since; and a consumer's
+record of it, `Imported`, copied each of the item's fields by name again.
+An architecture review (2026-10-25) proposed one record per type
+parameter. The user allowed breaking the contract while nobody uses it.
+
+- **`Item.params`, one `TypeParam` of each type parameter it asks
+  anything of**, by index: whether it's given a `dropT`, whether it takes
+  no destructor, its type facts, and the traits it's stepped by, each part
+  left out where it's none: `{ "index": 0, "drop": true, "facts":
+  ["Fused"], "stepped": ["608f…"] }`. `std/manifest.json` reads each
+  parameter's in one place, and is a hundred lines shorter.
+- **What a consumer's call needs is one `Calling`**, flattened into
+  `Item` and held whole by `Imported`: its `params`, whether it may fail,
+  takes its caller's location, or takes rest arguments. A new fact is a
+  field of it, read through `library::Exports`' accessors as before.
+- **Library ABI 5**; `tooling/manifest.js`'s validator, its copy, asks a
+  `typeParam` of each record. The "a library a compiler wrote before had
+  none" defaults are gone: a library of ABI 4 is refused whole.
+- **Not done: one witness per type parameter in the JS.** Merging each
+  type parameter's drop, size and dictionaries into one object at the
+  call was measured first: of the corpus's generic functions, 145 take a
+  lone `dropT`, and ten take two facts of one parameter. The common call
+  would read worse, `f(x, { drop: dropItem })` for `f(x, dropItem)`, so
+  the JS's parameters stay as they are.
+- Held by the crate tests, `test/manifest.test.ts`'s validation of a
+  record and of what isn't one, and the library mutations, retargeted.

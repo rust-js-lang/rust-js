@@ -228,7 +228,7 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
 test("a library's RefCells are the values they hold, and its consumer agrees or is refused", () => {
   const out = chain(pairs, "ref_cells", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("  const current = {\n    seen: new Set(),\n  };\n  current.types = prev ? prev.types : undefined;\n");
+  expect(dep).toContain("  const current = {\n    seen: new Set(),\n  };\n  current.types = prev?.types;\n");
   expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.some((t) => t === ty)) {\n    types.push(ty);\n");
   expect(dep).toContain("    return a === b;\n");
   expect(dep).toContain("    const count = transition.seen.size;\n    transition.seen.clear();\n");
@@ -306,7 +306,10 @@ test("a library's generic function takes the drops its body uses", () => {
     "export function keepBy(value) {",
   ]);
   const items = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).library.items;
-  expect(Object.fromEntries(items.map((item: { export: string; drops: number[] }) => [item.export, item.drops]))).toEqual({
+  // Each type parameter a function takes a drop of, by its record in `params`.
+  type Item = { export: string; params?: { index: number; drop?: boolean }[] };
+  const dropsOf = (item: Item) => (item.params ?? []).filter((param) => param.drop).map((param) => param.index);
+  expect(Object.fromEntries(items.map((item: Item) => [item.export, dropsOf(item)]))).toEqual({
     keep: [], pick: [1], relay: [], discard: [0], apply: [], keepBy: [],
   });
   // What each call gives: only the drops its callee takes, and a function

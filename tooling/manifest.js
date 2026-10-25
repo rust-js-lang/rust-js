@@ -24,6 +24,11 @@ export function parseManifest(text) {
   // it's made of, or any type where it has no `of`.
   const rcShape = value => object(value) && (value.of === undefined || typeof value.of === "string")
     && (value.args === undefined || Array.isArray(value.args) && value.args.every(rcShape));
+  // ADR 0100, amended: what a function asks of one of its type parameters,
+  // by its index; each part absent where it asks none of it.
+  const flag = value => value === undefined || typeof value === "boolean";
+  const typeParam = value => object(value) && Number.isInteger(value.index) && flag(value.drop) && flag(value.no_drop)
+    && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped));
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
   // Where a file names another's, by the compiler's parse of it (ADR 0101):
@@ -40,7 +45,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 4 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 5 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -53,11 +58,11 @@ export function parseManifest(text) {
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")
-          && Array.isArray(item.drops) && item.drops.every(Number.isInteger)
-          // ADR 0548: the type parameters it steps, each by its index and its trait's key.
-          && Array.isArray(item.stepped) && item.stepped.every(step => Array.isArray(step) && step.length === 2
-            && Number.isInteger(step[0]) && typeof step[1] === "string"))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 4");
+          // What it asks of each type parameter it asks anything of, by its
+          // index: a drop (ADR 0098), none (ADR 0190), type facts (ADR 0145),
+          // and the traits it steps it by, each by its key (ADR 0548).
+          && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam)))) {
+      throw new Error("Invalid rust-js library contract; expected library ABI 5");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

@@ -58,6 +58,37 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) ref_cells: crate::library::RefCellFacts,
 }
 
+/// What `id` asks of each of its type parameters that it asks anything of,
+/// by index, as its contract says them: a `dropT`, no destructor, type
+/// facts, and the traits it steps one by.
+fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec<crate::library::TypeParam> {
+    use crate::library::TypeParam;
+    let mut params: std::collections::BTreeMap<u32, TypeParam> = Default::default();
+    fn param(params: &mut std::collections::BTreeMap<u32, TypeParam>, index: u32) -> &mut TypeParam {
+        params.entry(index).or_insert_with(|| TypeParam {
+            index,
+            ..Default::default()
+        })
+    }
+    for &index in contracts.drop_params.get(&id).into_iter().flatten() {
+        param(&mut params, index).drop = true;
+    }
+    for &index in contracts.no_drops.get(&id).into_iter().flatten() {
+        param(&mut params, index).no_drop = true;
+    }
+    for &(index, fact) in contracts.type_facts.get(&id).into_iter().flatten() {
+        param(&mut params, index).facts.push(fact.word().to_string());
+    }
+    for &(_, index, by) in contracts.stepped.iter().filter(|&&(of, _, _)| of == id) {
+        param(&mut params, index).stepped.push(key(tcx, by));
+    }
+    let mut params: Vec<_> = params.into_values().collect();
+    for param in &mut params {
+        param.stepped.sort();
+    }
+    params
+}
+
 /// The items another crate can reach, and the impls it calls through them;
 /// and the bindings its modules hold, which a consumer naming one through
 /// its module reads through it (ADR 0633).
@@ -69,12 +100,13 @@ pub(super) fn exports<'tcx>(
     dependencies: &Dependencies,
 ) -> Library {
     let Contracts {
-        drop_params,
+        // What each type parameter is asked, `type_params`'s.
+        drop_params: _,
+        no_drops: _,
+        type_facts: _,
+        stepped: _,
         failing,
-        no_drops,
-        type_facts,
         caller_locations,
-        stepped,
         keeps_capacity,
         writers_take_options,
         makes_dropping_anys,
@@ -95,25 +127,12 @@ pub(super) fn exports<'tcx>(
             exported_as: (info.owner.is_none())
                 .then(|| super::default_exports::exported_as(tcx, id, &info.name))
                 .filter(|exported| *exported != info.name),
-            drops: drop_params.get(&id).cloned().unwrap_or_default(),
-            fails: failing.contains(&id),
-            no_drops: no_drops
-                .get(&id)
-                .map(|params| params.iter().copied().collect())
-                .unwrap_or_default(),
-            type_facts: (type_facts.get(&id).into_iter().flatten())
-                .map(|&(index, fact)| (index, fact.word().to_string()))
-                .collect(),
-            takes_location: caller_locations.contains(&id),
-            stepped: {
-                let mut by: Vec<(u32, String)> = (stepped.iter())
-                    .filter(|&&(of, _, _)| of == id)
-                    .map(|&(_, index, by)| (index, key(tcx, by)))
-                    .collect();
-                by.sort();
-                by
+            calling: crate::library::Calling {
+                params: type_params(tcx, id, contracts),
+                fails: failing.contains(&id),
+                takes_location: caller_locations.contains(&id),
+                rest: super::bindings::takes_rest(tcx, id),
             },
-            rest: super::bindings::takes_rest(tcx, id),
         })
         .collect();
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
@@ -321,8 +340,9 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
-        (self.item(id).into_iter().flat_map(|item| &item.type_facts))
-            .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (*index, fact)))
+        (self.item(id).into_iter().flat_map(|item| &item.calling.params))
+            .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))
+            .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (index, fact)))
             .collect()
     }
 
@@ -363,7 +383,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
     pub(super) fn fails(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.fails)
+        self.item(id).is_some_and(|item| item.calling.fails)
     }
 
     /// Does a library's `id` step its type parameter `index` as it is, by
@@ -371,18 +391,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn steps(&self, id: DefId, index: u32, by: DefId) -> bool {
         let by = key(self.tcx, by);
         self.item(id)
-            .is_some_and(|item| item.stepped.iter().any(|(at, of)| *at == index && *of == by))
+            .and_then(|item| item.calling.param(index))
+            .is_some_and(|param| param.stepped.contains(&by))
     }
 
     /// Does a library's `id` take its caller's location (ADR 0427)?
     pub(super) fn takes_location(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.takes_location)
+        self.item(id).is_some_and(|item| item.calling.takes_location)
     }
 
     /// Does a library's `id` take JS's rest arguments, its last parameter
     /// `#[rust_js::rest]` (ADR 0664)?
     pub(super) fn takes_rest(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.rest)
+        self.item(id).is_some_and(|item| item.calling.rest)
     }
 
     /// Does any of the libraries make a `dyn Any` of what drops, which the
@@ -453,7 +474,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// May any of the libraries' items?
     pub(super) fn any_fails(&self) -> bool {
-        self.all().any(|item| item.fails)
+        self.all().any(|item| item.calling.fails)
     }
 
     /// Is `id` a library's trait impl, one its consumers call?

@@ -10,8 +10,9 @@ use std::path::Path;
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
 /// library and in a crate that uses one (ADR 0523). 4: each item says the
 /// type parameters it's given an `Iterator` dictionary for, or an
-/// extension's (ADR 0548).
-pub const VERSION: u32 = 4;
+/// extension's (ADR 0548). 5: what an item asks of each of its type
+/// parameters is one record of it, `params` (ADR 0100, amended).
+pub const VERSION: u32 = 5;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -31,42 +32,75 @@ pub struct Item {
     /// consumer imports it as, named after `export`: `default`, of its
     /// module's default export, `export default function noop() {}` (ADRs
     /// 0611, 0773), or the name its module's `pub use` gives it, `export {
-    /// getCurrentTime as unstable_now }` (ADR 0596, amended). A library a
-    /// compiler wrote before had none a consumer imported so.
+    /// getCurrentTime as unstable_now }` (ADR 0596, amended).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exported_as: Option<String>,
-    /// The type parameters it's given a `dropT` for (ADR 0098).
-    pub drops: Vec<u32>,
-    /// Whether it may return `Err(fmt::Error)` (ADR 0187). A library a
-    /// compiler wrote before had none, as it refused them.
-    #[serde(default)]
+    /// What a consumer's call of it gives it and checks.
+    #[serde(flatten)]
+    pub calling: Calling,
+}
+
+/// What a consumer's call of a library's function gives it beside its
+/// arguments, and checks of what it gives: rustc's metadata keeps none of
+/// it (ADR 0100).
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct Calling {
+    /// What it asks of each of its type parameters that it asks anything
+    /// of, by index, in order: what its consumers' calls give it beside
+    /// their arguments, and check of what they give.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub params: Vec<TypeParam>,
+    /// Whether it may return `Err(fmt::Error)` (ADR 0187).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub fails: bool,
-    /// The type parameters it takes no destructor of (ADR 0190), which its
-    /// consumers' calls are checked for. A library a compiler wrote before
-    /// had none, as it refused what needs one.
-    #[serde(default)]
-    pub no_drops: Vec<u32>,
-    /// What it asks of its type parameters, `Size` of the one at an index
-    /// (ADR 0145), which its consumers' calls give it. A library a compiler
-    /// wrote before had none, as it refused what asks one.
-    #[serde(default)]
-    pub type_facts: Vec<(u32, String)>,
     /// Whether it takes its caller's location, `#[track_caller]` (ADR
-    /// 0427), which its consumers' calls give it. A library a compiler wrote
-    /// before had none, as it refused what reads one.
-    #[serde(default)]
+    /// 0427), which its consumers' calls give it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub takes_location: bool,
-    /// The type parameters it steps as they are, given a dictionary of the
-    /// trait each is stepped by, `Iterator`'s or an extension's, by the
-    /// trait's key (ADRs 0411, 0548), which its consumers' calls give it.
-    #[serde(default)]
-    pub stepped: Vec<(u32, String)>,
     /// Whether its last parameter, a slice, is JS's rest parameter,
     /// `#[rust_js::rest]` (ADR 0664), which its consumers' calls spread.
-    /// rustc's metadata keeps no parameter's attributes. A library a
-    /// compiler wrote before had none, as none was one.
-    #[serde(default)]
+    /// rustc's metadata keeps no parameter's attributes.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub rest: bool,
+}
+
+impl Calling {
+    /// The type parameters it takes a `dropT` of, by index.
+    pub fn drop_params(&self) -> Vec<u32> {
+        self.params
+            .iter()
+            .filter(|param| param.drop)
+            .map(|param| param.index)
+            .collect()
+    }
+
+    /// What it asks of its type parameter `index`, if anything.
+    pub fn param(&self, index: u32) -> Option<&TypeParam> {
+        self.params.iter().find(|param| param.index == index)
+    }
+}
+
+/// What a function asks of one of its type parameters, beside a value of
+/// it: each given at its call, or checked of what's given.
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct TypeParam {
+    /// Which, by its index among the function's type parameters.
+    pub index: u32,
+    /// It's given a `dropT`, what drops a value of it (ADR 0098).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub drop: bool,
+    /// It takes no destructor, which its consumers' calls are checked for
+    /// (ADR 0190).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub no_drop: bool,
+    /// What it asks of it, `Size` and the like (ADR 0145), which its
+    /// consumers' calls give it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub facts: Vec<String>,
+    /// The traits it's stepped by as it is, each given a dictionary of, by
+    /// the trait's key: `Iterator`'s or an extension's (ADRs 0411, 0548).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stepped: Vec<String>,
 }
 
 impl Item {
@@ -208,13 +242,7 @@ pub struct Imported {
     /// Its name there, which an import of it is named after.
     pub name: String,
     pub member: Option<String>,
-    pub drops: Vec<u32>,
-    pub fails: bool,
-    pub no_drops: Vec<u32>,
-    pub type_facts: Vec<(u32, String)>,
-    pub takes_location: bool,
-    pub stepped: Vec<(u32, String)>,
-    pub rest: bool,
+    pub calling: Calling,
 }
 
 /// A binding a library's module holds as a consumer imports it: from a JS
@@ -319,13 +347,7 @@ impl Dependencies {
                     export: item.exported_as(),
                     name: item.export,
                     member: item.member,
-                    drops: item.drops,
-                    fails: item.fails,
-                    no_drops: item.no_drops,
-                    type_facts: item.type_facts,
-                    takes_location: item.takes_location,
-                    stepped: item.stepped,
-                    rest: item.rest,
+                    calling: item.calling,
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());
@@ -394,13 +416,7 @@ impl Dependencies {
                 export: item.exported_as(),
                 name: item.export,
                 member: item.member,
-                drops: item.drops,
-                fails: item.fails,
-                no_drops: item.no_drops,
-                type_facts: item.type_facts,
-                takes_location: item.takes_location,
-                stepped: item.stepped,
-                rest: item.rest,
+                calling: item.calling,
             };
             if exports.items.insert(item.key, imported).is_some() {
                 return Err("duplicate std export".into());

@@ -154,7 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One that takes only the drops it uses is given each as an argument
         // the pipeline keeps or leaves out (ADR 0300).
         let takes_used = self.krate.takes_used_drops.contains(id);
-        for &index in given {
+        for index in given {
             let ty = self.drop_slot_of(id, index, args);
             let iterated = self.iterated_slot(id, index, args, ty);
             drops.push(match takes_used {
@@ -169,10 +169,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// index: the crate's, or a library's as its manifest says (ADR 0145).
     /// The type parameters `id` takes a drop function of, by index: a
     /// library's as its manifest says, the crate's own as found (ADR 0098).
-    pub(in crate::lower) fn drops_taken(&self, id: DefId) -> &'a [u32] {
+    pub(in crate::lower) fn drops_taken(&self, id: DefId) -> Vec<u32> {
         match self.krate.foreign.item(id) {
-            Some(item) => item.drops.as_slice(),
-            None => self.krate.drop_params.get(&id).map_or(&[][..], Vec::as_slice),
+            Some(item) => item.calling.drop_params(),
+            None => self.krate.drop_params.get(&id).cloned().unwrap_or_default(),
         }
     }
 

@@ -221,7 +221,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         if let Some(item) = self.krate.foreign.item(callee) {
-            for (index, params) in given.iter().filter(|(index, _)| item.no_drops.contains(index)) {
+            for (index, params) in
+                (given.iter()).filter(|(index, _)| item.calling.param(*index).is_some_and(|param| param.no_drop))
+            {
                 let Some(params) = params else {
                     let (path, name) = (self.tcx.def_path_str(callee), param_name(self.tcx, callee, *index));
                     return Err(self.unsupported(

@@ -69,9 +69,9 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 4, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
-    items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate", drops: [], stepped: [] },
-      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, drops: [0], stepped: [[1, "9f0e"]] }],
+    version: 5, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
+      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, drop: true }, { index: 1, stepped: ["9f0e"] }] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
   };
@@ -82,8 +82,8 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
   expect(mapped.library.items).toEqual(library.items);
   const item = library.items[0];
   for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
-    { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, drops: ["T"] }] },
-    { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, stepped: [["I", 0]] }] },
+    { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, params: [{ index: "T" }] }] },
+    { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, params: [{ index: 1, stepped: [0] }] }] }, { ...library, items: [{ ...item, params: [{ index: 0, drop: 1 }] }] },
     { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] },
     { ...library, ref_cells: [] }, { ...library, ref_cells: { plain: {} } }, { ...library, ref_cells: { boxed: [{ of: 1 }] } }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");

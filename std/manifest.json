@@ -6,9 +6,9 @@
     "abi": 1
   },
   "library": {
-    "version": 4,
+    "version": 5,
     "name": "rust_js_std",
-    "crate_hash": "bfd7bb630a6e6f31a66ca382be6b2950",
+    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
     "items": [
       {
         "key": "608f92abc48d28dae88ef68b00d41a68",
@@ -17,14 +17,7 @@
           "iter"
         ],
         "export": "fuseClone",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28da2fa080d07a4764b",
@@ -33,14 +26,7 @@
           "iter"
         ],
         "export": "fuseClone_clone",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28dad7c6b45e359c3dfc",
@@ -49,14 +35,7 @@
           "iter"
         ],
         "export": "fuseDebug",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28dab18f1298f700408e",
@@ -65,14 +44,7 @@
           "iter"
         ],
         "export": "fuseDebug_fmt",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28dab3aa1f47239e2c7e",
@@ -82,26 +54,22 @@
         ],
         "export": "fuseDoubleEndedIterator_nextBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [
-          [
-            0,
-            "Fused"
-          ]
-        ],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daf89c72edcf1b7eec",
@@ -111,30 +79,23 @@
         ],
         "export": "fuseDoubleEndedIterator_nthBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [
-          [
-            0,
-            "Fused"
-          ]
-        ],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ],
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da4f480206661c12b6",
@@ -144,27 +105,28 @@
         ],
         "export": "fuseDoubleEndedIterator_rfold",
         "member": null,
-        "drops": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ],
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da76ebb43050b899ce",
@@ -174,21 +136,19 @@
         ],
         "export": "fuseExactSizeIterator_len",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da50b3843aa530f08e"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dad558a147cde0ee20",
@@ -198,23 +158,20 @@
         ],
         "export": "fuseIterator_last",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [
-          0
-        ],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "no_drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da1e0eddc5451450c4",
@@ -224,26 +181,22 @@
         ],
         "export": "fuseIterator_next",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [
-          [
-            0,
-            "Fused"
-          ]
-        ],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daf7d278225c7a98c0",
@@ -253,26 +206,22 @@
         ],
         "export": "fuseIterator_nth",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [
-          [
-            0,
-            "Fused"
-          ]
-        ],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da3e925d12815bdb08",
@@ -282,21 +231,19 @@
         ],
         "export": "fuseIterator_sizeHint",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da39a37bb37378e0ee",
@@ -306,21 +253,19 @@
         ],
         "export": "fuseFuseImplI_next",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da57eb1719f7feb9c2",
@@ -330,21 +275,19 @@
         ],
         "export": "fuseFuseImplIFusedIterator_next",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da5ccd9950fd144a16",
@@ -354,21 +297,19 @@
         ],
         "export": "fuseFuseImplIFusedIterator_nextBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daa341f1f271c7982b",
@@ -378,21 +319,19 @@
         ],
         "export": "fuseFuseImplI_nextBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da658620448efcb6e1",
@@ -402,21 +341,19 @@
         ],
         "export": "fuseFuseImplI_nth",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daf81bc16213999363",
@@ -426,21 +363,19 @@
         ],
         "export": "fuseFuseImplIFusedIterator_nth",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da158d96589811fd94",
@@ -450,25 +385,20 @@
         ],
         "export": "fuseFuseImplI_nthBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ],
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dabc50a00ff6fef20c",
@@ -478,25 +408,20 @@
         ],
         "export": "fuseFuseImplIFusedIterator_nthBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ],
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da7243376338849ce",
@@ -506,18 +431,14 @@
         ],
         "export": "peekableClone",
         "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da38cab17ab1fac150",
@@ -527,18 +448,14 @@
         ],
         "export": "peekableClone_clone",
         "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daa79dd9d70cde8ae6",
@@ -547,14 +464,7 @@
           "iter"
         ],
         "export": "peekableDebug",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28dac5a3ee4a5aa565e2",
@@ -563,14 +473,7 @@
           "iter"
         ],
         "export": "peekableDebug_fmt",
-        "member": null,
-        "drops": [],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "member": null
       },
       {
         "key": "608f92abc48d28da1d6e948359746f0c",
@@ -580,21 +483,19 @@
         ],
         "export": "peekableDoubleEndedIterator_nextBack",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daea76782e41ad439b",
@@ -604,27 +505,28 @@
         ],
         "export": "peekableDoubleEndedIterator_rfold",
         "member": null,
-        "drops": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28da5bb321f20939e045"
-          ],
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dacce619e70f8723ad",
@@ -634,23 +536,20 @@
         ],
         "export": "peekableIterator_last",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [
-          0
-        ],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "no_drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da70aa29bfeee429e4",
@@ -660,21 +559,19 @@
         ],
         "export": "peekableIterator_next",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da2d140cabef561ebf",
@@ -684,21 +581,19 @@
         ],
         "export": "peekableIterator_nth",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daef865f7868e6ce0a",
@@ -708,26 +603,22 @@
         ],
         "export": "iterator_fuse",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [
-          [
-            0,
-            "Fused"
-          ]
-        ],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dac64ab3a680f6d81c",
@@ -737,21 +628,19 @@
         ],
         "export": "iterator_peekable",
         "member": null,
-        "drops": [
-          0,
-          1
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [
-          [
-            0,
-            "608f92abc48d28daf245e2f3fcaec68a"
-          ]
-        ],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da1aaf1bcbaee06fe8",
@@ -761,17 +650,20 @@
         ],
         "export": "andThenOrClear",
         "member": null,
-        "drops": [
-          0,
-          1,
-          2
-        ],
-        "fails": false,
-        "no_drops": [],
-        "type_facts": [],
-        "takes_location": false,
-        "stepped": [],
-        "rest": false
+        "params": [
+          {
+            "index": 0,
+            "drop": true
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          }
+        ]
       }
     ],
     "impls": [

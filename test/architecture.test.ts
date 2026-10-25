@@ -609,7 +609,8 @@ test("each owner and question the architecture names is there", () => {
   expect(asked.length).toBeGreaterThan(20);
   expect(asked.filter(name => isModule(name) ? !found(name) : !new RegExp(`\\b(?:fn|struct|enum|trait)\\s+${name}\\b`).test(code))).toEqual([]);
   expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
-});
+  // It reads every module the architecture names, 1 s alone: past 5 s beside check:fast's other jobs.
+}, 30_000);
 
 // Each decision is in the index, once, and one superseded or replaced,
 // wholly or in part, says so there: 64 weren't in it, and five didn't say
