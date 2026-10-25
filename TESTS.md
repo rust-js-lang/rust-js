@@ -4,9 +4,9 @@ As of 2026-10-24, `main` at `2466f604`; times are CI's, check run 40068253808.
 
 | Suite | Size | What it proves | Time |
 |---|---|---|---|
-| `bun run test` | 2,699 tests in 126 files | Everything below except mutations, rustc and fuzz | 13 min on 2 machines (~16 min on one) |
+| `bun run test` | 2,700 tests in 143 files | Everything below except mutations, rustc and fuzz | 13 min on 2 machines (~16 min on one) |
 | ↳ corpus | 889 Rust programs (`test/corpus/*.rs`) | Each one's JS prints what native Rust prints, and matches its snapshot | about half the suite |
-| ↳ the other 125 files | ~1,800 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), docs, architecture | the rest |
+| ↳ the other 142 files | ~1,800 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), React's ported modules against their snapshots, docs, architecture | the rest |
 | `cargo test` | 48 unit tests | Tidy's passes and decisions | <1 min |
 | Mutations | ~5,100 (`scripts/mutations/`) | Each rule has a test that fails without it | a check runs only the changed ones: ~10 min on 8 machines |
 | rustc's suite | 3,762 run-pass tests, 1,493 of them out of scope | rustc's own programs run the same as JS | a check runs a sample in 1 min; all of them take ~2 h 45 min |

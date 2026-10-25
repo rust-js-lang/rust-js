@@ -389,16 +389,22 @@ export function buildNode(): string {
 const portsJs = new Map<string, string>();
 /** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
  * with the modules it uses), compiled once a run against the js, node and
- * webapi crates: the JS of each of its modules, by file. */
-export function ported(port: string): (file: string) => string {
+ * webapi crates: the directory its modules' JS and declarations are in,
+ * each by its file. */
+export function portedDir(port: string): string {
   if (!portsJs.has(port)) {
     const out = fixture(port);
     const node = buildNode();
     const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
-    run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
+    run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--declarations", "--", ...crates, "-L", node]);
     portsJs.set(port, out);
   }
-  const dir = portsJs.get(port)!;
+  return portsJs.get(port)!;
+}
+
+/** A port's JS (`portedDir`), of each of its modules, by file. */
+export function ported(port: string): (file: string) => string {
+  const dir = portedDir(port);
   return (file) => readFileSync(join(dir, file), "utf8");
 }
 
@@ -414,10 +420,12 @@ export function performanceTrack(): (name: string) => string {
   };
 }
 
-/** The generated JS files under `dir`, by their paths from there: no maps. */
-function generated(dir: string): string[] {
+/** The generated JS files under `dir`, by their paths from there, and
+ * their declarations where `declarations` holds: no maps. */
+function generated(dir: string, declarations = false): string[] {
   if (!existsSync(dir)) return [];
-  return readdirSync(dir, { recursive: true }).map(String).filter((path) => /\.jsx?$/.test(path)).sort();
+  const kept = declarations ? /\.(jsx?|d\.ts)$/ : /\.jsx?$/;
+  return readdirSync(dir, { recursive: true }).map(String).filter((path) => kept.test(path)).sort();
 }
 
 /**
@@ -426,6 +434,7 @@ function generated(dir: string): string[] {
  * write `actual` as the snapshot instead, unless `bless` is false: for a check
  * against a snapshot another compile made. `normalize` evens out what may
  * differ without meaning anything, like where the compiler saw the source.
+ * `declarations`: its `.d.ts` files too.
  */
 export function expectSnapshot(
   actual: string,
@@ -434,9 +443,10 @@ export function expectSnapshot(
     normalize = (text: string) => text,
     hint = "the generated JS changed: if that's intended, run `bun run bless` and review the diff",
     bless = true,
-  }: { normalize?: (text: string) => string; hint?: string; bless?: boolean } = {},
+    declarations = false,
+  }: { normalize?: (text: string) => string; hint?: string; bless?: boolean; declarations?: boolean } = {},
 ) {
-  const files = generated(actual);
+  const files = generated(actual, declarations);
   if (bless && process.env.BLESS) {
     rmSync(snapshot, { recursive: true, force: true });
     for (const path of files) {
@@ -445,7 +455,7 @@ export function expectSnapshot(
     }
     return;
   }
-  expect(files, hint).toEqual(generated(snapshot));
+  expect(files, hint).toEqual(generated(snapshot, declarations));
   for (const path of files) {
     const text = normalize(readFileSync(join(actual, path), "utf8"));
     expect(text, `${path}: ${hint}`).toBe(readFileSync(join(snapshot, path), "utf8"));
