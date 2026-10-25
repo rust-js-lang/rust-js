@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/inlined.rs",
     find: "    if !each || inlined == 0 || inlined != mentions {\n",
     replace: "    if inlined == 0 {\n",
-    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_kept_where_not_inlined.rs$"],
   },
   {
     name: "drop-in-closure-kept",

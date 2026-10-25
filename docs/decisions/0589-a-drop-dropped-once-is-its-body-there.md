@@ -111,3 +111,13 @@ finished: rustc's `drop/issue-23611-enum-swap-in-drop.rs` timed out
 (#229). A drop whose own body calls it stays a function, called, as
 Rust's drop glue runs it again. `test/corpus/drop_of_its_own_type.rs`
 holds it, with the mutation `drop-of-its-own-type-inlined`.
+
+## Amendment: held by a case where the function stays
+
+That a drop also named where it isn't a call, `$dropEach(loudDrop_drop)`
+given to an adapter over a `Vec` of them, keeps its function, was held
+by no test: the nightly's mutation `drop-inlined-where-not-each`
+survived (#230). `test/corpus/drop_kept_where_not_inlined.rs` holds it:
+without the rule, the function goes and the adapter's drop throws. The
+readability baseline's `$iter` share grows by 0.1 in 10,000 lines, the
+case's one `Vec` stepped.
