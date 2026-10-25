@@ -108,7 +108,7 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   its camelCase name, as React names a context it's given `Context`:
   `fn use_context(#[cfg_attr(rust_js, rust_js::name = "Context")] context:
   &Context)` is `function useContext(Context)`, its `.d.ts` too
-  ([ADR 0848](../../decisions/0848-a-parameters-rust-js-name-is-its-js-name.md)).
+  ([ADR 0855](../../decisions/0855-a-parameters-rust-js-name-is-its-js-name.md)).
   One of a pattern or of `self` is an error.
 - **A name JS reserves gets a `$`**: `delete` is `delete$`, `new` is
   `new$`. A method keeps its name, since it's a property: `Counter.new`.

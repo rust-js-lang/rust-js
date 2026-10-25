@@ -1,4 +1,4 @@
-# 0848. A parameter's `#[rust_js::name]` is its JS name
+# 0855. A parameter's `#[rust_js::name]` is its JS name
 
 Status: Accepted. Extends [0573](0573-every-rust-name-is-camel-case-in-js.md),
 whose `#[rust_js::name]`, the one way to name an item in JS, now names a

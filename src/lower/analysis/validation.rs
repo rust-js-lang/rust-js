@@ -359,7 +359,7 @@ pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
 }
 
 /// Report each parameter's `#[rust_js::name]` that names nothing it can
-/// (ADR 0848): one of a pattern, or of `self`, which has a name of its own;
+/// (ADR 0855): one of a pattern, or of `self`, which has a name of its own;
 /// not a string; not a name a JS variable may have; or the name it has
 /// anyway, a second way to write it (ADR 0573). Each says what to write.
 /// False if there was one.

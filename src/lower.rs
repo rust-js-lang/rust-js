@@ -996,7 +996,7 @@ fn camel_case(name: &str) -> String {
 }
 
 /// A parameter's name as JS writes it: its `#[rust_js::name = ".."]`,
-/// `Context` of React's `useContext` (ADR 0848); else camelCase, without
+/// `Context` of React's `useContext` (ADR 0855); else camelCase, without
 /// the leading `_` that tells Rust it's unused (ADR 0678). The one place a
 /// parameter's JS name is made, the name its declaration says too.
 fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {

@@ -21,7 +21,7 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
-- **A parameter's `#[rust_js::name]` is its JS name** (ADR 0848): React's
+- **A parameter's `#[rust_js::name]` is its JS name** (ADR 0855): React's
   `useContext(Context)` is `fn use_context(#[cfg_attr(rust_js,
   rust_js::name = "Context")] context: &ReactContext<T>)`, its body's,
   a closure's and its `.d.ts`'s name, where the attribute was ignored. One

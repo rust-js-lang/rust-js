@@ -1297,7 +1297,7 @@ pub fn names() -> Names {
   expect(refused.stderr).toContain('rust-js: `sort_index` is `sortIndex` in JS without `#[rust_js::name = "sortIndex"]`: remove it');
 });
 
-// ADR 0848: a parameter's `#[rust_js::name]` is its JS name, where it isn't
+// ADR 0855: a parameter's `#[rust_js::name]` is its JS name, where it isn't
 // the camelCase one, React's `useContext(Context)`: its body's, its
 // closure's and its declaration's, through `lower::parameter_name`. One of a
 // pattern, of `self`, not a string or not a JS name, or the name it has

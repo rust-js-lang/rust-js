@@ -932,7 +932,7 @@ pub(super) fn marked_rest<'tcx>(
 
 /// The `#[rust_js::name = ".."]` of each of `owner`'s parameters that has
 /// one, a parameter's JS name where it isn't the camelCase one, React's
-/// `useContext(Context)` (ADR 0848): read from its body, as `marked_rest`
+/// `useContext(Context)` (ADR 0855): read from its body, as `marked_rest`
 /// reads `rest`.
 pub(super) fn named_parameters<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -950,7 +950,7 @@ pub(super) fn named_parameters<'tcx>(
 }
 
 /// The JS name `#[rust_js::name = ".."]` gives `owner`'s parameter that
-/// binds `name`, if it gives one (ADR 0848).
+/// binds `name`, if it gives one (ADR 0855).
 pub(super) fn given_parameter_name(tcx: TyCtxt<'_>, owner: LocalDefId, name: &str) -> Option<String> {
     named_parameters(tcx, owner).find_map(|(param, attr)| match param.pat.kind {
         rustc_hir::PatKind::Binding(_, _, ident, None) if ident.name.as_str() == name => {
