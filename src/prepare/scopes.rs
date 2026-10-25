@@ -400,6 +400,7 @@ mod tests {
             noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
+            param_spans: Vec::new(),
         })
     }
 

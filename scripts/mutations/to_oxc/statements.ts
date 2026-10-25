@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "            Some((end, before)) if false && last && matches!(end.kind, StmtKind::Break(None)) => before,\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a default after a guarded case"],
   },
+  {
+    name: "param-mapped-nowhere",
+    breaks: "a parameter's JS maps nowhere, so a comment before it is lost and its line isn't the Rust's",
+    file: "src/to_oxc/statements.rs",
+    find: "            let at = spans.get(i).map_or(SPAN, |&s| span(s));\n",
+    replace: "            let at = spans.get(i).map_or(SPAN, |_| SPAN);\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
+  },
 ];

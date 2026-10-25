@@ -103,3 +103,25 @@ placed where it's written**, a start as any argument is: the comment is
 before it, on lines of their own. Held by `lowering-comments`'s
 "ReactFiberLane's comments in an else, an if's test and a call are where
 it writes them" and the mutation `named-const-unplaced` (`lower.ts`).
+
+## Amendment: a comment before a parameter is before it
+
+React's `createPortal` says of its third parameter, in its list:
+`containerInfo: any,\n // TODO: figure out the API for cross-renderer
+implementation.\n implementation: any,`. Its port writes the comment
+there too, and lost it: a parameter was no start, and JS's parameters
+mapped nowhere. **A function's parameter is a start a comment before it
+is before, on lines of its own, after the `(` or the `,` before it**,
+as a conditional's branch is (ADR 0658); Prettier then lays the list out
+a parameter a line, as upstream's is. Each parameter of a function whose
+JS takes them as it writes them, one each, maps where it's written
+(`js::Function::param_spans`, `to_oxc::arm_starts`, `Cx::params_at`);
+one whose JS adds or takes apart its parameters, a closure's, a method's
+dictionaries after them, has none of its own yet. Case N: comments,
+which nothing runs.
+
+Held by `test/lowering-comments.test.ts`, "a comment before a parameter
+is before it", run in JS, with its parameter's line in the source map,
+and the mutations `param-spans-unknown` (`lower/mir.ts`),
+`param-comments-unplaced`, `param-comment-first-after-a-comma`
+(`to_oxc.ts`) and `param-mapped-nowhere` (`to_oxc/statements.ts`).

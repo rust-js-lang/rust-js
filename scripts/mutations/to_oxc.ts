@@ -614,4 +614,20 @@ export const mutations: Mutation[] = [
     replace: "                .starts_with('\\u{0}')\n                && let Some(body) = before.strip_suffix('\\n')\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a method call on the line after its receiver"],
   },
+  {
+    name: "param-comments-unplaced",
+    breaks: "a comment before a function's parameter is lost, as it was (ADR 0708, amended)",
+    file: "src/to_oxc.rs",
+    find: "        let params = (f.param_spans.iter().enumerate()).filter(|(_, s)| !s.is_none());\n",
+    replace: "        let params = (f.param_spans.iter().enumerate()).filter(|_| false);\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
+  },
+  {
+    name: "param-comment-first-after-a-comma",
+    breaks: "a comment before a function's first parameter, after its `(`, is lost",
+    file: "src/to_oxc.rs",
+    find: "            let operator = if i == 0 { \"(\" } else { \",\" };\n",
+    replace: "            let operator = if i == usize::MAX { \"(\" } else { \",\" };\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
+  },
 ];

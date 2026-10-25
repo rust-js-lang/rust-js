@@ -1340,3 +1340,36 @@ pub fn whiled(n: u32, c: bool) -> u32 {
   expect([lib.looped(5 as never, true as never), lib.looped(1 as never, false as never)]).toEqual([3, 2]);
   expect([lib.whiled(5 as never, true as never), lib.whiled(5 as never, false as never), lib.whiled(2 as never, true as never)]).toEqual([3, 5, 2]);
 });
+
+// React's createPortal: `containerInfo: any,\n // TODO: figure out the API
+// for cross-renderer implementation.\n implementation: any,`. A comment
+// before a parameter is before it, Prettier then laying the list out a
+// line each, as upstream's is; the first's after the `(` (ADR 0708,
+// amended). Each parameter maps where it's written.
+test("a comment before a parameter is before it", async () => {
+  const { js, lib, map } = await compiled("comment-before-a-parameter", `pub fn create_portal(
+    children: u32,
+    container_info: u32,
+    // TODO: figure out the API for cross-renderer implementation.
+    implementation: u32,
+) -> u32 {
+    children + container_info + implementation
+}
+
+pub fn first(
+    // The first one.
+    a: u32,
+    b: u32,
+) -> u32 {
+    a * b
+}
+`);
+  expect(js).toContain(
+    "export function createPortal(\n  children,\n  containerInfo,\n  // TODO: figure out the API for cross-renderer implementation.\n  implementation,\n) {\n",
+  );
+  expect(js).toContain("export function first(\n  // The first one.\n  a,\n  b,\n) {\n");
+  expect([lib.createPortal(1 as never, 2 as never, 3 as never), lib.first(2 as never, 3 as never)]).toEqual([6, 6]);
+  // `implementation`, on its line of the JS, maps to its line of the Rust.
+  const line = js.split("\n").findIndex((l) => l === "  implementation,");
+  expect(decodeMappings(map.mappings).some((s) => s.jsLine === line && s.srcLine === 4)).toBe(true);
+});

@@ -605,6 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             noinline: false,
             span: self.js_span(span),
             name_span: js::Span::NONE,
+            param_spans: Vec::new(),
         };
         Ok((function, made))
     }

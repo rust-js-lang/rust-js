@@ -255,6 +255,9 @@ pub struct Function {
     /// The whole `fn` item, and just its name.
     pub span: Span,
     pub name_span: Span,
+    /// Where each parameter is written, one each, a comment before which
+    /// is before it (ADR 0708, amended); none where that isn't known.
+    pub param_spans: Vec<Span>,
 }
 
 /// What a parameter or declaration binds: a variable, or the parts of an
@@ -969,6 +972,7 @@ mod tests {
             noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
+            param_spans: Vec::new(),
         };
         let value = Expr::array(vec![outer, Expr::new(ExprKind::Function(Box::new(function)))]);
         let mut items = vec![Item::Const(Const {
@@ -995,6 +999,7 @@ mod tests {
             noinline: false,
             span: Span::NONE,
             name_span: Span::NONE,
+            param_spans: Vec::new(),
         };
         let mut names = HashSet::new();
         names_in(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)], &mut names);

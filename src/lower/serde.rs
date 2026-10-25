@@ -387,6 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             noinline: false,
             span: js_span,
             name_span: js_span,
+            param_spans: Vec::new(),
         })
     }
 

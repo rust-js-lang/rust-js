@@ -499,6 +499,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                  a drop or its caller's location, which JS's rest parameter can't come before",
             ));
         }
+        // Where each is written, of a body whose JS takes its parameters as
+        // it writes them, one each.
+        let param_spans: Vec<js::Span> = match body.def_id.as_local() {
+            Some(local)
+                if self
+                    .tcx
+                    .hir_maybe_body_owned_by(local)
+                    .is_some_and(|b| b.params.len() == params.len()) =>
+            {
+                let written = self.tcx.hir_body_owned_by(local).params;
+                written.iter().map(|p| self.js_span(p.span)).collect()
+            }
+            _ => Vec::new(),
+        };
         params.extend(evidence);
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
@@ -528,6 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .tcx
                     .def_ident_span(def_id)
                     .map_or(js::Span::NONE, |s| self.js_span(s)),
+                param_spans,
             },
             jsx: self.jsx,
             dependencies: self.dependencies.take(),

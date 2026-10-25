@@ -5,6 +5,17 @@ use super::*;
 
 impl<'a> Cx<'a> {
     pub(super) fn params(&self, kind: FormalParameterKind, patterns: &[js::Pattern]) -> FormalParameters<'a> {
+        self.params_at(kind, patterns, &[])
+    }
+
+    /// `params`, each mapped to where it's written, of `spans`, one each
+    /// or none: a comment before one is before it (ADR 0708, amended).
+    pub(super) fn params_at(
+        &self,
+        kind: FormalParameterKind,
+        patterns: &[js::Pattern],
+        spans: &[js::Span],
+    ) -> FormalParameters<'a> {
         let b = &self.b;
         // The last, `...args`, gathers the rest (ADR 0428).
         let (rest, patterns) = match patterns.split_last() {
@@ -24,13 +35,15 @@ impl<'a> Cx<'a> {
                 b,
             )
         });
-        let params = patterns.iter().map(|pattern| {
+        let params = patterns.iter().enumerate().map(|(i, pattern)| {
+            let at = spans.get(i).map_or(SPAN, |&s| span(s));
             // `location = { .. }`, where it's given none (ADR 0427).
             let (pattern, default) = match pattern {
                 js::Pattern::Defaulted(name, default) => (
-                    BindingPattern::new_binding_identifier(SPAN, self.name(name), b),
+                    BindingPattern::new_binding_identifier(at, self.name(name), b),
                     Some(ArenaBox::new_in(self.expr(default), b)),
                 ),
+                js::Pattern::Name(name) => (BindingPattern::new_binding_identifier(at, self.name(name), b), None),
                 pattern => (self.pattern(pattern), None),
             };
             FormalParameter::new(
@@ -108,7 +121,7 @@ impl<'a> Cx<'a> {
 
     pub(super) fn function(&self, f: &js::Function, default: bool) -> Statement<'a> {
         let b = &self.b;
-        let params = self.params(FormalParameterKind::FormalParameter, &f.params);
+        let params = self.params_at(FormalParameterKind::FormalParameter, &f.params, &f.param_spans);
         let body = self.function_body(&f.body);
         let decl = Declaration::new_function_declaration(
             span(f.span),

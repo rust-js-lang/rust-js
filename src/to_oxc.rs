@@ -1034,6 +1034,22 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
             js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
         }
     }
+    // A function's parameter, after the `(` or the `,` before it, as
+    // Prettier writes a comment before one (ADR 0708, amended).
+    for item in &module.items {
+        let js::Item::Function(f) = item else { continue };
+        let params = (f.param_spans.iter().enumerate()).filter(|(_, s)| !s.is_none());
+        starts.extend(params.map(|(i, s)| {
+            let operator = if i == 0 { "(" } else { "," };
+            let arm = Arm {
+                hi: s.hi,
+                operator,
+                operand: false,
+                opening: false,
+            };
+            (s.lo, arm)
+        }));
+    }
     starts
 }
 

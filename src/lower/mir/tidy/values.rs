@@ -724,6 +724,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>
                 noinline: false,
                 span: value.span,
                 name_span: span,
+                param_spans: Vec::new(),
             };
             let mut function = Some(function);
             js::each_expr_mut(&mut stmts[i..], &mut |e| {

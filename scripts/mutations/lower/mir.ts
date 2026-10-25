@@ -314,4 +314,12 @@ export const mutations: Mutation[] = [
     replace: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
   },
+  {
+    name: "param-spans-unknown",
+    breaks: "a function's parameters map nowhere, and a comment before one is lost (ADR 0708, amended)",
+    file: "src/lower/mir.rs",
+    find: "                    .is_some_and(|b| b.params.len() == params.len()) =>\n",
+    replace: "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
+  },
 ];
