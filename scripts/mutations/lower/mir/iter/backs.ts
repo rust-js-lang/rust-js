@@ -316,8 +316,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-held-rev-taken-out",
     breaks: "`rev().rev()` of an array's items with a destructor takes them out, `$rest(..).toReversed()`, nothing closing what's left (#205)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            return Ok(self\n                .has_a_back(iter_ty)\n",
-    replace: "            return Ok((false && self.has_a_back(iter_ty))\n",
+    find: "            return Ok(self\n                .reversed_in_order(iter_ty)\n",
+    replace: "            return Ok((false && self.reversed_in_order(iter_ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
   {

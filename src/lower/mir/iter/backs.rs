@@ -14,12 +14,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if item_drop.is_none() {
             return Ok(None);
         }
-        // Another, closed already, that knows its back, a `Rev`'s or a
-        // `filter`'s: stepped from there as it is, never its items taken
-        // out; tidy's `reversed_in_place` turns it inward (#205).
+        // A `Rev`, a `filter` or a `map` of one, closed already: stepped
+        // from its back as it is, never its items taken out; tidy's
+        // `reversed_in_place` turns it inward (#205). Not an `enumerate`'s,
+        // whose index from the back is its length's, which `$closing`
+        // doesn't know: refused as before.
         if self.array_source(iter_ty).is_none() {
             return Ok(self
-                .has_a_back(iter_ty)
+                .reversed_in_order(iter_ty)
                 .then(|| Expr::call_helper("$rev", vec![receiver])));
         }
         let it = match self.array_source(iter_ty) {
@@ -330,6 +332,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self.as_double_ended(receiver, iter_ty, span),
             None => self.as_js_iterator(receiver, iter_ty, span),
         }
+    }
+
+    /// Whether `iter_ty` is an array's items under `Rev`s, `Filter`s and
+    /// `Map`s alone: what `reversed_inward` steps from the back, each
+    /// closure called on the same items in the same order (#205).
+    fn reversed_in_order(&self, iter_ty: Ty<'tcx>) -> bool {
+        use crate::lower::recognition::{Parted, cloned_parts, filtered_source, reversed_source};
+        let mut ty = self.reveal(iter_ty);
+        while self.array_source(ty).is_none() {
+            let mapped = || match cloned_parts(self.tcx, ty) {
+                Some((Parted::Map, source, _)) => Some(source),
+                _ => None,
+            };
+            let Some(source) = reversed_source(self.tcx, ty)
+                .or_else(|| filtered_source(self.tcx, ty))
+                .or_else(mapped)
+            else {
+                return false;
+            };
+            ty = self.reveal(source);
+        }
+        true
     }
 
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
