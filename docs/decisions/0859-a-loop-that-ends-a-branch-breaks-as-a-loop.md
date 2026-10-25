@@ -124,3 +124,12 @@ if (kind === "iterable") {
   `loop-ending-branch-breaks-unnested`,
   `loop-ending-branch-inner-loops-unlabeled`,
   `loop-ending-branch-label-not-moved`.
+
+## Amendment: one call names a loop's label (#266)
+
+`named_labels` ran twice: as `written`'s `named labels` pass, and in
+`settled`'s `loops ending blocks`, after `blocks_loops_end` places what
+each loop leaves. The second names every label the first did, so the
+first changed no output and its mutation, `mir-labels-by-block`,
+survived. The `written` pass is gone, and the mutation now removes the
+`settled` call, which `lowering-loops`' nested loops hold.
