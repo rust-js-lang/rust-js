@@ -206,14 +206,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call_helper("$mapEnds", vec![it, f])
             }
             // An enumeration of one, its index from the back where it is
-            // (ADR 0528); and one a struct holds, which keeps its source and
-            // count, made of a source as capable as its type is, a range's
-            // knowing its back, a generic one's given it where it's asked
-            // (ADR 0542).
+            // (ADR 0528), made of a source as capable as its type is, a
+            // range's knowing its back, a generic one's given it where it's
+            // asked. One a struct holds is std's struct (ADR 0871).
             Some(IterMethod::Enumerate)
                 if self.knows_its_back(output)
                     || self.knows_its_length(output)
-                    || self.explicit_adapter(output)
                     || self.recognition().nths_its_own(output) =>
             {
                 // Of the crate's, what it can be made to know.

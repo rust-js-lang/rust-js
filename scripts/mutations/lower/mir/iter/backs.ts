@@ -232,14 +232,7 @@ export const mutations: Mutation[] = [
     replace: "                Err(_) => {\n                    return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n                }",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
-  {
-    name: "held-enumerate-native",
-    breaks: "an `Enumerate` a struct holds is JS's `map((x, i) => [i, x])`, which keeps no source nor count",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.explicit_adapter(output)\n                    || self.recognition().nths_its_own(output) =>",
-    replace: "                    || self.recognition().nths_its_own(output) =>",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
-  },
+
   {
     name: "held-source-range-unknowing",
     breaks: "a held adapter's exclusive range isn't made knowing its length, which its back asks",
@@ -254,7 +247,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_adapters_by_ref|held_enumerate).rs$"],
   },
   {
     name: "back-stepped-source-raw",
