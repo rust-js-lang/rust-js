@@ -635,7 +635,8 @@ mod tests {
                 "shadows",
                 "given last",
                 "filled lazily",
-                "appends"
+                "appends",
+                "nulled as they are"
             ]
         );
         assert!(names.last().is_some_and(|n| n == "finish/appends"));
