@@ -12,7 +12,9 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
+mod effects;
 mod rest_values;
+pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
@@ -866,22 +868,6 @@ pub(super) fn position(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// `require(module)`, not imported (ADR 0305).
 pub(super) fn requires(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("require")];
-    tcx.get_attrs_by_path(def_id, &path).next().is_some()
-}
-
-/// `#[rust_js::cannot_throw]`: a binding that can't throw, as reading a
-/// data property, React's `ref.current`, can't (ADR 0301).
-pub(super) fn cannot_throw(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("cannot_throw")];
-    tcx.get_attrs_by_path(def_id, &path).next().is_some()
-}
-
-/// `#[rust_js::runs_nothing]`: a binding that runs no code but its own,
-/// not even what it's given, as `new AggregateError(errors)` reads its
-/// array and not what's in it (ADR 0867): a borrow held while it runs
-/// meets no other.
-pub(super) fn runs_nothing(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("runs_nothing")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 

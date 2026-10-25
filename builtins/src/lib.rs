@@ -1525,6 +1525,7 @@ pub mod math {
     /// the nearest integer, a half up, `-2.5` to `-2`, where `x.round()`
     /// takes it away from zero, to `-3`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.round")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn round(x: f64) -> f64 {
         unreachable!()
     }
@@ -1533,6 +1534,7 @@ pub mod math {
     /// the largest, `NaN` if any is, and `0` above `-0`, where `a.max(b)`
     /// is the other number of a `NaN`. Of none, `-Infinity`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::variadic)]
     pub fn max(values: impl Rest<f64>) -> f64 {
         unreachable!()
@@ -1542,6 +1544,7 @@ pub mod math {
     /// the smallest, `NaN` if any is, and `-0` below `0`, where `a.min(b)`
     /// is the other number of a `NaN`. Of none, `Infinity`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.min")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::variadic)]
     pub fn min(values: impl Rest<f64>) -> f64 {
         unreachable!()
@@ -1551,6 +1554,7 @@ pub mod math {
     /// `1`, `-1`, or `x` itself of a zero or `NaN`, where `x.signum()` is
     /// `1` of `0`.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.sign")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn sign(x: f64) -> f64 {
         unreachable!()
     }
@@ -1558,6 +1562,7 @@ pub mod math {
     /// [`Math.random()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/random):
     /// a number from `0` up to `1`, not one to make a secret of.
     #[cfg_attr(rust_js, rust_js::link_name = "Math.random")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn random() -> f64 {
         unreachable!()
     }

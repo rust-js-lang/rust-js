@@ -950,6 +950,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
 | `#[rust_js::runs_nothing]` | it runs no code but its own, not even what it's given, as `new AggregateError(errors)` doesn't: a `RefCell` borrowed across it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)) |
+| `#[rust_js::runs_only_given]` | it runs no code but its own and what it's given, a closure it calls or a `toString` or getter of a value it reads, as `console.error(..)` and `Math.max(..)` do: given only numbers, `bool`s and text, a `RefCell` borrowed across it isn't counted. A program that replaces such a function with its own is trusted not to borrow what's held across it ([ADR 0898](../../decisions/0898-a-binding-that-runs-only-what-its-given.md)) |
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |
 | `#[rust_js::position]` | it gives a position, or `-1`, as `indexOf` does |
 | `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says; the webapi crate's say it of each operation WebIDL says gives `undefined` ([ADR 0883](../../decisions/0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)) |

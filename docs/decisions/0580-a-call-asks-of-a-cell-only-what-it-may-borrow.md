@@ -6,7 +6,9 @@ Status: Accepted. Extends [0328](0328-refcell-borrow-counts.md), whose
 Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): std's code
 a call runs runs the crate's impls its bounds name. Extended by
 [0897](0897-an-element-a-guard-reaches-is-its-place.md): an intrinsic runs
-only what it's given, so `vec![..]` runs nothing.
+only what it's given, so `vec![..]` runs nothing. Extended by
+[0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs
+only what it's given, given only numbers and text, borrows nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet. A JS getter that

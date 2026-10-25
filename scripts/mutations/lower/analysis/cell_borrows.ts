@@ -266,4 +266,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
     snapshots: true,
   },
+  {
+    name: "runs-only-given-ignored",
+    breaks: "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        && (binding_runs_nothing(tcx, def_id) || given_what_runs_nothing(recognition, def_id, args))\n",
+    replace: "        && binding_runs_nothing(tcx, def_id)\n",
+    tests: ["test/lowering-cell-borrows.test.ts"],
+  },
+  {
+    name: "given-objects-run-nothing",
+    breaks: "an object given to `console.error(..)`, whose `toString` may borrow the cell, runs nothing, so a borrow held across it isn't counted and never panics `already borrowed`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => false,\n",
+    replace: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => true,\n",
+    tests: ["test/lowering-cell-borrows.test.ts"],
+  },
 ];

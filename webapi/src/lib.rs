@@ -90440,6 +90440,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/assert)
     #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90459,6 +90460,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/debug)
     #[cfg_attr(rust_js, rust_js::link_name = "console.debug")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90469,6 +90471,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/error)
     #[cfg_attr(rust_js, rust_js::link_name = "console.error")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90479,6 +90482,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/info)
     #[cfg_attr(rust_js, rust_js::link_name = "console.info")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90489,6 +90493,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/log)
     #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90518,6 +90523,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/warn)
     #[cfg_attr(rust_js, rust_js::link_name = "console.warn")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90565,6 +90571,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/group)
     #[cfg_attr(rust_js, rust_js::link_name = "console.group")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90575,6 +90582,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupCollapsed)
     #[cfg_attr(rust_js, rust_js::link_name = "console.groupCollapsed")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -90584,6 +90592,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/groupEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "console.groupEnd")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]

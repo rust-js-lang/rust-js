@@ -441,6 +441,15 @@ const ANY = "<any>";
 // `js::StructuredClone` (ADR 0225). WebIDL doesn't say which they are.
 const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
 
+// The console's logging operations, which run no code but the host's and
+// what they're given, a value's `toString` or getter as they format it
+// (ADR 0898): never what's elsewhere, as `console.trace` may, by
+// `Error.prepareStackTrace`. WebIDL doesn't say which they are.
+const RUNS_ONLY_GIVEN = new Set([
+  "console.assert", "console.debug", "console.error", "console.group", "console.groupCollapsed",
+  "console.groupEnd", "console.info", "console.log", "console.warn",
+]);
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (at === "result" && isUnion(t)) return resultUnion(t);
@@ -1389,6 +1398,7 @@ function generic(f: Fn): string {
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
     ...(f.variadic ? ["    #[cfg_attr(rust_js, rust_js::variadic)]"] : []),
     ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
+    ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose
     // assignment's value is what it's given.

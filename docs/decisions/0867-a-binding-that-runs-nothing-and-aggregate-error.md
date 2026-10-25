@@ -4,7 +4,10 @@ Status: Accepted. Extends [0102](0102-js-and-webapi.md) (the js crate)
 and [0283](0283-js-crate-covers-typescripts-es-library.md) (its
 coverage); amends [0863](0863-a-refcell-of-an-object-is-the-object.md)
 and [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) (what
-a call may borrow).
+a call may borrow). Extended by
+[0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs only
+what it's given, `#[rust_js::runs_only_given]`, given only numbers and
+text, borrows nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. `AggregateError`
 is JS's own. A borrow left unchecked is one no other can meet: a binding

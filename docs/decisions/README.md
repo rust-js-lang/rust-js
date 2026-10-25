@@ -461,7 +461,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md)
-- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing)*
+- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing; extended by 0898: a binding that runs only what it's given, given only numbers and text)*
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
@@ -651,7 +651,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md) *(amended: `==` of two values is `===`, and its `PartialEq`'s dictionary is written only where it's reached; a library's contract lists its; an `Rc` of one is one too)*
 - [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md) *(amended: a guard's `let` too, its `try` where its first statement is; an `export default` tells nothing of the code; amended by 0883: before an `if` whose test has a comment, the `if`'s)*
 - [0866 A `let` only the `if let` that takes it apart reads is read there](0866-a-let-only-its-if-let-reads-is-read-there.md)
-- [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
+- [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md) *(extended by 0898: `#[rust_js::runs_only_given]`, `console.error` and `Math`'s)*
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
 - [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md)
@@ -682,6 +682,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
 - [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md)
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
+- [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
