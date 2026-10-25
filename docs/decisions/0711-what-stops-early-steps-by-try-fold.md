@@ -136,3 +136,20 @@ asked the crate's own `nth(1)`, where std asks `nth(0)`, and
 what reaches the crate's own `nth` is `$count(it)`, its own `count`; and
 a `Take`'s `fold` is its source's to `folded_sources`, so `last()`
 reaches it too (`skip_take_own_nth`, six mutations).
+
+## Amendment: std's defaults of an adapter, and adapters given to std's code
+
+Generated programs of adapter pairs over an iterator writing its own `nth`
+and `fold` found 172 of 1,728 asking them otherwise than std (#214).
+Four of std's answers were missing:
+- a `skip_while`'s `fold` is its first step, then its source's own fold;
+- a `$Steps`' default `nth(k)` is std's, `advance_by(k)` then `next`,
+  and `advance_by` std's default of a sized iterator, its `try_fold`, so
+  `step_by(2).map(..).nth(1)` reaches the `StepBy`'s `try_fold`, first by
+  `next`, then `nth(1)`;
+- std's adapter over the crate's iterator given to std's compiled code,
+  a `fuse()`'s source, is a dictionary of `next` and, where its chain
+  reaches the crate's own, `$foldOf`, `$nth` and `$last`, so the
+  `Fuse`'s `nth` reaches the `Skip`'s.
+`adapters_own_nth_fold` holds them, with four mutations. 40 programs
+still differ, which #214 lists.

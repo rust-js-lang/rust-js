@@ -1153,23 +1153,25 @@ export class $Steps extends Iterator {
     });
     return found ? { done: false, value } : { done: true, value: undefined };
   }
-  // Std's `nth`: `k` stepped past, a `None` among them ending it, then the next.
+  // Std's `nth`: `advance_by(k)`, a `None` among them ending it, then the
+  // next, so an adapter's reaches its source's `try_fold` (#214).
   nth(k) {
-    for (; k > 0; k--) {
-      const step = this.next();
-      if (step.done) return step;
-    }
+    if (this.advanceBy(k) > 0) return { done: true, value: undefined };
     return this.next();
   }
-  // Std's `advance_by(m)`: `m` stepped past by `next`, each given to `drop`
-  // where it has one; how many of them there weren't.
+  // Std's `advance_by(m)`, of a sized iterator: `m` stepped past by its
+  // `try_fold`, as std's default is, each given to `drop` where it has one;
+  // how many of them there weren't (#214).
   advanceBy(m, drop) {
-    for (let i = 0; i < m; i++) {
-      const step = this.next();
-      if (step.done) return m - i;
-      drop?.(step.value);
-    }
-    return 0;
+    if (m === 0) return 0;
+    return this.tryFold(
+      m,
+      (k, x) => {
+        drop?.(x);
+        return k - 1;
+      },
+      (k) => k === 0,
+    );
   }
   // Std's `count`: of its `fold`, each item given to `drop` where it has one.
   count(drop) {
@@ -1608,6 +1610,13 @@ export function $count(it, drop) {
     drop?.(x);
     return n + 1;
   }, 0);
+}
+
+// `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
+// the crate's own, as a dictionary's `fold` is called, of the value it's of
+// (#214).
+export function $foldOf(it, init, f) {
+  return it.fold(init, f);
 }
 
 // `it.nth(n)` of items with a destructor: its `n`th item, each before it
@@ -10705,7 +10714,8 @@ export function $lazyMapWhile(items, f, present) {
 // `it.skip_while(skip)`: its items from the first `skip` doesn't hold of;
 // a `None` of its source while it skips ends what's stepped now, as Rust's
 // `find` gives it. Each step is its source's `find`, a `try_fold`, as
-// std's is; its `try_fold`, its first step, then its source's.
+// std's is; its `try_fold` and its `fold`, its first step, then its
+// source's.
 export function $lazySkipWhile(items, skip) {
   const source = items[Symbol.iterator]();
   let skipping = true;
@@ -10730,6 +10740,17 @@ export function $lazySkipWhile(items, skip) {
       if (broke(folded)) return folded;
     }
     return $lent(source).tryFold(folded, f, broke);
+  };
+  // Its `fold`, std's: its first step, then its source's own fold, the
+  // crate's where it writes one (#214).
+  skipped.fold = (init, f) => {
+    let folded = init;
+    if (skipping) {
+      const step = skipped.next();
+      if (step.done) return folded;
+      folded = f(folded, step.value);
+    }
+    return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);
   };
   return skipped;
 }

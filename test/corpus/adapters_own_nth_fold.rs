@@ -1,0 +1,48 @@
+// The crate's own `nth` and `fold`, as std asks them through its adapters
+// (#214): a `skip_while`'s fold is its source's after its first item; an
+// adapter's `nth` is `advance_by` then `next`, and `advance_by` its
+// `try_fold`; a `fuse` over a `skip` passes `nth` on.
+struct Count {
+    at: i32,
+    end: i32,
+}
+
+impl Iterator for Count {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<i32> {
+        if self.at < self.end {
+            self.at += 1;
+            Some(self.at)
+        } else {
+            None
+        }
+    }
+
+    fn nth(&mut self, n: usize) -> Option<i32> {
+        println!("nth {n}");
+        self.at = self.at.saturating_add(n as i32);
+        self.next()
+    }
+
+    fn fold<B, F: FnMut(B, i32) -> B>(mut self, init: B, mut f: F) -> B {
+        println!("fold");
+        let mut acc = init;
+        while let Some(x) = self.next() {
+            acc = f(acc, x);
+        }
+        acc
+    }
+}
+
+fn counted() -> Count {
+    Count { at: 0, end: 9 }
+}
+
+fn main() {
+    println!("{}", counted().skip(2).skip_while(|&x| x < 3).sum::<i32>());
+    println!("{:?}", counted().skip(2).map(|x| x * 2).nth(1));
+    println!("{:?}", counted().step_by(2).map(|x| x * 2).nth(1));
+    println!("{:?}", counted().skip(2).fuse().nth(1));
+    println!("{:?}", counted().step_by(2).take(4).count());
+}

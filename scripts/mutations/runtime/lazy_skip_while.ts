@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "      const found = new $Steps(() => source.next()).tryFold(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "skip-while-fold-by-next",
+    breaks: "a `skip_while`'s fold steps it by `next`, not std's first step then its source's own fold (#214)",
+    file: "src/runtime/lazy_skip_while.js",
+    find: "    return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);\n",
+    replace: "    return $Steps.prototype.fold.call(skipped, folded, f);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

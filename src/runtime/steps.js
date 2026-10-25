@@ -44,23 +44,25 @@ class $Steps extends Iterator {
     });
     return found ? { done: false, value } : { done: true, value: undefined };
   }
-  // Std's `nth`: `k` stepped past, a `None` among them ending it, then the next.
+  // Std's `nth`: `advance_by(k)`, a `None` among them ending it, then the
+  // next, so an adapter's reaches its source's `try_fold` (#214).
   nth(k) {
-    for (; k > 0; k--) {
-      const step = this.next();
-      if (step.done) return step;
-    }
+    if (this.advanceBy(k) > 0) return { done: true, value: undefined };
     return this.next();
   }
-  // Std's `advance_by(m)`: `m` stepped past by `next`, each given to `drop`
-  // where it has one; how many of them there weren't.
+  // Std's `advance_by(m)`, of a sized iterator: `m` stepped past by its
+  // `try_fold`, as std's default is, each given to `drop` where it has one;
+  // how many of them there weren't (#214).
   advanceBy(m, drop) {
-    for (let i = 0; i < m; i++) {
-      const step = this.next();
-      if (step.done) return m - i;
-      drop?.(step.value);
-    }
-    return 0;
+    if (m === 0) return 0;
+    return this.tryFold(
+      m,
+      (k, x) => {
+        drop?.(x);
+        return k - 1;
+      },
+      (k) => k === 0,
+    );
   }
   // Std's `count`: of its `fold`, each item given to `drop` where it has one.
   count(drop) {

@@ -123,4 +123,12 @@ export const mutations: Mutation[] = [
     replace: "            None if self.steps_an_array(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
+  {
+    name: "adapter-dictionary-own-unpassed",
+    breaks: "std's adapter over the crate's own iterator, given to std's compiled code, is a dictionary of `next` alone, so a `fuse` over a `skip` asks `nth(2)`, not std's `nth(3)` (#214)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n            true => (fold, nth, last),\n",
+    replace: "        let (fold, nth, last) = match true {\n            true => (fold, nth, last),\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

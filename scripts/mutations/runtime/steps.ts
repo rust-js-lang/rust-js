@@ -31,8 +31,8 @@ export const mutations: Mutation[] = [
     name: "steps-drop-skips-past-none",
     breaks: "`skip(n)` of an iterator that gives `None` then more skips past the `None`",
     file: "src/runtime/steps.js",
-    find: "      const step = this.next();\n      if (step.done) return step;\n    }\n",
-    replace: "      this.next();\n    }\n",
+    find: "    if (m === 0) return 0;\n    return this.tryFold(\n",
+    replace: "    for (let i = 0; i < m; i++) this.next();\n    return 0;\n    return this.tryFold(\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
   },
   {
@@ -234,5 +234,21 @@ export const mutations: Mutation[] = [
     find: "      const left = this.advanceBy(skip + m, drop);\n",
     replace: "      const left = skip > 0 && this.nth(skip - 1).done ? skip + m : this.advanceBy(m, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
+  },
+  {
+    name: "steps-nth-by-next",
+    breaks: "an adapter's `nth` steps it by `next`, not std's `advance_by` then `next`, so `step_by(2).map(..).nth(1)` asks the crate's own `nth(0)` first (#214)",
+    file: "src/runtime/steps.js",
+    find: "    if (this.advanceBy(k) > 0) return { done: true, value: undefined };\n",
+    replace: "    for (; k > 0; k--) if (this.next().done) return { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
+  {
+    name: "steps-advance-by-next",
+    breaks: "`advance_by` steps by `next`, not std's `try_fold`, so `step_by(2).take(4).count()` asks the crate's own `nth(0)` (#214)",
+    file: "src/runtime/steps.js",
+    find: "    if (m === 0) return 0;\n    return this.tryFold(\n",
+    replace: "    for (let i = 0; i < m; i++) if (this.next().done) return m - i;\n    return 0;\n    return this.tryFold(\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
 ];
