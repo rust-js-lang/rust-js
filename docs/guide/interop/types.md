@@ -250,13 +250,42 @@ thread_local! {
         if js::is_defined(js::weak_map::new::<JsObject, String>) {
             js::weak_map::new()
         } else {
-            js::map::new()
+            js::map::new(None)
         };
 }
 ```
 
 ```js
 export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
+```
+
+- **A `js::Set` is JS's `Set` of any value**, as TypeScript's `Set<T>`
+  is, each the one `SameValueZero` says, as a `js::Map`'s key. A set of
+  what Rust hashes, the program's own types by value or by themselves, is
+  a `HashSet`, a JS `Set` too. Each is made of what it starts with,
+  `js::set::new(Some(&[frozen]))` `new Set([frozen])` and
+  `js::map::new(Some(&[(key, value)]))` `new Map([[key, value]])`, or of
+  nothing, `None`, as TypeScript's constructors take an optional array
+  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)):
+
+```rust
+use js::{Dict, Map, Set};
+
+pub fn takes_frozen_keys() -> bool {
+    let frozen = js::object::freeze(js::dict::new::<u32>());
+    let map: &Map<Dict<u32>, bool> = js::map::new(Some(&[(frozen, true)]));
+    let set: &Set<Dict<u32>> = js::set::new(Some(&[frozen]));
+    map.has(frozen) && set.has(frozen)
+}
+```
+
+```js
+export function takesFrozenKeys() {
+  const frozen = Object.freeze({});
+  const map = new Map([[frozen, true]]);
+  const set = new Set([frozen]);
+  return map.has(frozen) && set.has(frozen);
+}
 ```
 
 ## Structs

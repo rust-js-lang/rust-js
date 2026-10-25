@@ -606,6 +606,21 @@ pub fn class<T>() -> &'static Class {
     unreachable!()
 }
 
+/// [`value instanceof constructor`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/instanceof):
+/// whether `constructor.prototype` is on the prototype chain of `value`,
+/// any value, of a constructor held as a value, as TypeScript's
+/// `instanceof` takes `any` on each side (ADR 0874): React's
+/// `getPrototypeOf(Uint32Array.prototype).constructor`, or a class's,
+/// `js::class::<Component>()`. A test of one class a binding names is
+/// that binding's, `#[rust_js::link_name = "instanceof Editor"]`, as the
+/// js crate's `data_view::is` is. Of a `constructor` that's no function,
+/// JS's `TypeError`, a panic.
+#[cfg_attr(rust_js, rust_js::link_name = "instanceof")]
+#[allow(unused_variables)]
+pub fn instance_of(this: impl IntoUnknown, constructor: impl IntoUnknown) -> bool {
+    unreachable!()
+}
+
 /// `key in value`: whether an object has a property of that name, its own
 /// or its prototype's, as JS's `in` asks, of any value; of what's no
 /// object, `undefined` or `null`, a `None`, or a string, JS's `TypeError`,

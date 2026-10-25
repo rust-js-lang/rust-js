@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "instance-of-given-unknown",
+    breaks: "a binding's `link_name = \"instanceof\"`, `js::instance_of`'s, is a call of a method named so, `value.instanceof(constructor)` (ADR 0874)",
+    file: "src/lower/bindings.rs",
+    find: "        \"instanceof\" => return JsForm::InstanceOfGiven,\n",
+    replace: "",
+    tests: ["test/js-collections.test.ts", "-t", "instanceof of a constructor value"],
+  },
+  {
     name: "numbered-enum-named",
     breaks: "a `#[repr(u8)]` enum's variant is its name, `\"Empty\"`, where it's its number, `0`, as React's `EMPTY_ARRAY` is",
     file: "src/lower/bindings.rs",

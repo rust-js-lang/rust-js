@@ -135,10 +135,71 @@ impl<K: ?Sized, V: Defined> Map<K, V> {
 pub mod map {
     use super::*;
 
-    /// [`new Map()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/Map):
-    /// one of nothing.
+    /// [`new Map(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/Map):
+    /// one of each key and its value, the last of a key twice, or of
+    /// nothing, `None`, as TypeScript's `new Map(entries?)` (ADR 0875).
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
-    pub fn new<K: ?Sized, V: Defined>() -> &'static Map<K, V> {
+    pub fn new<K: ?Sized, V: Defined>(entries: Option<&[(&K, V)]>) -> &'static Map<K, V> {
+        unreachable!()
+    }
+}
+
+/// [`Set`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set)
+/// of the values it holds, each once, any JS value, as TypeScript's
+/// `Set<T>` takes any `T` (ADR 0875): a value is the one JS's
+/// `SameValueZero` says it is, an object by itself, text or a number by
+/// its value, as a [`Map`]'s key is. What a program keeps of what Rust
+/// hashes, its own types by value or by themselves (ADR 0864), is a
+/// `HashSet`, a `Set` in JS too; a `js::Set` is JS's, to share with JS or
+/// to hold what no `Hash` has, a value of any shape.
+#[cfg_attr(rust_js, rust_js::types = "Set<T>")]
+pub struct Set<T: ?Sized>(PhantomData<JsObject>, PhantomData<*const T>);
+
+impl<T: ?Sized> Set<T> {
+    /// [`set.add(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/add):
+    /// `value` held, once.
+    #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    pub fn add(&self, value: &T) {
+        unreachable!()
+    }
+
+    /// [`set.has(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/has):
+    /// whether it holds `value`.
+    #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    pub fn has(&self, value: &T) -> bool {
+        unreachable!()
+    }
+
+    /// [`set.delete(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/delete):
+    /// `value` gone; whether it held it.
+    #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    pub fn delete(&self, value: &T) -> bool {
+        unreachable!()
+    }
+
+    /// [`set.size`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/size):
+    /// how many values it holds.
+    #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    pub fn size(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [`set.clear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/clear):
+    /// each value gone.
+    #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    pub fn clear(&self) {
+        unreachable!()
+    }
+}
+
+pub mod set {
+    use super::*;
+
+    /// [`new Set(values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/Set):
+    /// one of each of `values`, once, or of nothing, `None`, as
+    /// TypeScript's `new Set(values?)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "new Set")]
+    pub fn new<T: ?Sized>(values: Option<&[&T]>) -> &'static Set<T> {
         unreachable!()
     }
 }
@@ -233,9 +294,12 @@ pub mod finalization_registry {
     use super::*;
 
     /// [`new FinalizationRegistry(cleanup)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry/FinalizationRegistry):
-    /// one whose `cleanup` is given each collected target's held value.
+    /// one whose `cleanup` is given each collected target's held value: a
+    /// callback JS calls again, a `Box<dyn Fn(T)>` (ADR 0260), so whether
+    /// the host has one is `is_defined(finalization_registry::new::<T>)`,
+    /// all its types named (ADR 0597).
     #[cfg_attr(rust_js, rust_js::link_name = "new FinalizationRegistry")]
-    pub fn new<T>(cleanup: impl Fn(T) + 'static) -> &'static FinalizationRegistry<T> {
+    pub fn new<T>(cleanup: Box<dyn Fn(T)>) -> &'static FinalizationRegistry<T> {
         unreachable!()
     }
 }

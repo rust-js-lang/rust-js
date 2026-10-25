@@ -333,6 +333,7 @@ fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | JsForm::GetIndex
                 | JsForm::In
                 | JsForm::InstanceOf(_)
+                | JsForm::InstanceOfGiven
                 | JsForm::Truthy
                 | JsForm::StrictEquals
                 | JsForm::Defined

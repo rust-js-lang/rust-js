@@ -298,6 +298,9 @@ pub(super) enum JsForm {
     Object(Vec<String>),
     /// `this instanceof Class`: a checked one, as a `bool`.
     InstanceOf(String),
+    /// `instanceof`: `this instanceof constructor`, of a constructor
+    /// given as a value, `js::instance_of`'s (ADR 0874).
+    InstanceOfGiven,
     /// `get []`: `this[key]`, a property by a name given (ADR 0225).
     GetIndex,
     /// `in []`: `key in this`, whether it has a property by a name given.
@@ -343,6 +346,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
         "===" => return JsForm::StrictEquals,
+        "instanceof" => return JsForm::InstanceOfGiven,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,
         "\"\" +" => return JsForm::Text,

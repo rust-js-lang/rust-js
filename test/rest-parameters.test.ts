@@ -397,7 +397,7 @@ pub fn cache(r#fn: &'static AnyFunction) -> impl Fn(&dyn Rest<dyn IntoUnknown>) 
                 let primitive_cache = match cache_node.p.get() {
                     Some(primitive_cache) => primitive_cache,
                     None => {
-                        let primitive_cache = map::new();
+                        let primitive_cache = map::new(None);
                         cache_node.p.set(Some(primitive_cache));
                         primitive_cache
                     }

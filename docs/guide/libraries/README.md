@@ -155,6 +155,18 @@ What it has:
   what a function of any view takes, `view: &ArrayBufferView`; and
   `array_buffer::is_view(value)` takes any value, `Option<&Unknown>`
   ([ADR 0741](../../decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)).
+  `value instanceof C` of a constructor held as a value is
+  `instance_of(value, c)`, as React tests a typed array by
+  `getPrototypeOf(Uint32Array.prototype).constructor`, each typed array's
+  `prototype()` its `X.prototype`; `data_view::is(value)` is `value
+  instanceof DataView`
+  ([ADR 0874](../../decisions/0874-instanceof-of-a-constructor-value.md)).
+  A `Set` holds any value, as a `Map` keys one; each is made of what it
+  starts with, `set::new(Some(&[a, b]))`, or `None`
+  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)). A
+  `FinalizationRegistry`'s callback is a `Box<dyn Fn(T)>`, as any JS calls
+  again, so `is_defined(finalization_registry::new::<T>)` asks whether the
+  host has one.
 - **JS's iterator protocol:** `js::Iterator<T>` is TypeScript's
   `Iterator<T>`, what an iterable's `[Symbol.iterator]()` gives, stepped
   by `next()`, whose `IteratorResult<T>` has `done`, an `Option<bool>` left

@@ -661,13 +661,15 @@ reordered, and git merges this file by keeping both sides' lines
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
 - [0873 A set's `for_each` is the set's own `forEach`](0873-a-sets-for-each-is-its-own.md)
+- [0874 `instanceof` of a constructor held as a value is `js::instance_of`](0874-instanceof-of-a-constructor-value.md)
+- [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)
 - [0851 A closure of rest arguments as a value is JS's rest parameter](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)
 - [0848 `function::apply` is `Function.prototype.apply`, and its `this` may be `null`](0848-apply-is-functions-and-its-this-may-be-null.md)
-- [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md)
+- [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md) *(extended by 0875: a `js::Set` of any value; `map::new` takes its entries)*
 - [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md)
 - [0852 Each type's `Rc`s are counted apart](0852-each-types-rcs-are-counted-apart.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)

@@ -169,6 +169,7 @@ line("pub mod data_view {");
 line("    use super::*;");
 line();
 method(`[\`new DataView(buffer, offset, length)\`](${page("DataView/DataView")}): a view of \`length\` bytes from \`offset\`, all of \`buffer\` where they aren't given.`, "new DataView", "new<B: ArrayBufferLike>(buffer: &B, offset: Option<u32>, length: Option<u32>) -> &'static DataView<B>");
+method(`[\`value instanceof DataView\`](${page("DataView")}): whether \`value\`, any value, as TypeScript's \`any\`, is a \`DataView\` (ADR 0874).`, "instanceof DataView", "is(this: Option<&Unknown>) -> bool");
 close();
 line("}");
 
@@ -235,6 +236,7 @@ for (const [name, e] of ELEMENTS) {
   line(`    /// [\`${name}.BYTES_PER_ELEMENT\`](${page("TypedArray/BYTES_PER_ELEMENT")}): how many bytes an element is.`);
   line(`    pub const BYTES_PER_ELEMENT: u32 = ${BYTES[e]};`);
   line();
+  moduleFn(`[\`${name}.prototype\`](${page(`${name}`)}): what each \`${name}\` inherits from, its methods, whose prototype in turn is every typed array's, as React's \`getPrototypeOf(Uint32Array.prototype).constructor\` reads (ADR 0874).`, `get ${name}.prototype`, `prototype() -> &'static ${name}`);
   moduleFn(`[\`new ${name}(length)\`](${page(`${name}/${name}`)}): \`length\` elements, each 0.`, `new ${name}`, `new(length: u32) -> &'static ${name}`);
   moduleFn(`[\`${name}.from(items)\`](${t("from")}): a typed array of \`items\`.`, `${name}.from`, `from(items: &[${e}]) -> &'static ${name}`);
   moduleFn(`[\`${name}.of(..items)\`](${t("of")}): a typed array of \`items\`.`, `${name}.of`, `of(items: impl Rest<${e}>) -> &'static ${name}`, true);

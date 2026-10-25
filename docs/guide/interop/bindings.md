@@ -455,6 +455,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"new X"` | `new X(..)` | a constructor |
 | `"this"` | `this` | a cast, unchecked |
 | `"instanceof X"` | `this instanceof X` | a cast's test |
+| `"instanceof"` | `this instanceof constructor`, of a constructor given | `js::instance_of` ([ADR 0874](../../decisions/0874-instanceof-of-a-constructor-value.md)) |
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"new this()"` | `new this(..)` | `js::new` |
 | `"delete []"` | `delete this[key]` | `js::delete` |

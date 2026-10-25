@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "instance-of-given-backwards",
+    breaks: "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0874)",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),\n",
+    replace: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, args.remove(0), this),\n",
+    tests: ["test/js-collections.test.ts", "-t", "instanceof of a constructor value"],
+  },
+  {
     name: "setter-write-only-makes-a-value",
     breaks: "a binding's setter, `INTERNALS.T = v`, is a write that can't throw, so in an `Ok` arm it's in `catch_unwind`'s `try`, whose `catch` takes what it throws where Rust's panic goes on",
     file: "src/lower/binding_calls.rs",

@@ -1112,7 +1112,7 @@ thread_local! {
         if js::is_defined(js::weak_map::new::<JsObject, String>) {
             js::weak_map::new()
         } else {
-            js::map::new()
+            js::map::new(None)
         };
 }
 
@@ -1125,7 +1125,7 @@ pub fn cached(f: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Option
 }
 
 pub fn strong(object: &JsObject) -> (u32, bool, u32) {
-    let map: &Map<JsObject, u32> = js::map::new();
+    let map: &Map<JsObject, u32> = js::map::new(None);
     map.set(object, 1);
     let size = map.size();
     let had = map.delete(object);
@@ -1162,7 +1162,7 @@ test("a Map takes any key, as TypeScript's does", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{Map, Unknown};
 
 pub fn first_seen(keys: &[Option<&'static Unknown>]) -> Vec<Option<u32>> {
-    let map: &Map<Option<&'static Unknown>, u32> = js::map::new();
+    let map: &Map<Option<&'static Unknown>, u32> = js::map::new(None);
     for (i, &key) in keys.iter().enumerate() {
         if !map.has(&key) {
             map.set(&key, i as u32);
@@ -1172,7 +1172,7 @@ pub fn first_seen(keys: &[Option<&'static Unknown>]) -> Vec<Option<u32>> {
 }
 
 pub fn texts() -> (Option<f64>, bool, bool, u32) {
-    let map: &Map<str, f64> = js::map::new();
+    let map: &Map<str, f64> = js::map::new(None);
     map.set("a", 1.0);
     (map.get("a"), map.delete("b"), map.delete("a"), map.size())
 }
