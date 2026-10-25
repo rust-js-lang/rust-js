@@ -58,8 +58,19 @@ mod limits {
 
     pub fn limit_plus_one() -> u32 {
         let _ = super::start::read;
+        let _ = super::around;
         LIMIT + 1
     }
+}
+
+thread_local! {
+    // Of this module, which `limits` calls back into, so it may load after
+    // it: read by its name too, as it runs once both have (#292).
+    static AROUND: u32 = limits::limit_plus_one() + limits::LIMIT;
+}
+
+fn around() -> u32 {
+    AROUND.with(|a| *a)
 }
 
 mod start {
@@ -84,6 +95,7 @@ fn main() {
     println!("{}", GUARDED.with(|g| *g));
     println!("{}", POINTED.with(|p| *p));
     println!("{}", FROM_LIMITS.with(|f| *f));
+    println!("{}", around());
 
     let first = std::panic::catch_unwind(|| FLAKY.with(|f| *f));
     println!("{}", first.is_err());
