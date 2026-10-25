@@ -20,12 +20,9 @@ function main() {
     }
     return false;
   }).toArray();
-  try {
-    console.log(`kept ${kept.length}`);
-  } finally {
-    for (const item of kept) {
-      fragmentDrop_drop(item);
-    }
+  console.log(`kept ${kept.length}`);
+  for (const item of kept) {
+    fragmentDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

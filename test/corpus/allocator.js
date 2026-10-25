@@ -114,14 +114,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
-  } catch (error) {
-    if (b$live) {
-      bufDrop_drop(b, 12, 4);
-    }
-    throw error;
-  }
+  console.log(`${b.len} ${b.cap} ${last == null ? "None" : `Some(${$debugStr(last)})`}`);
   b$live = false;
   const v = Buf.intoVec(b);
   console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);

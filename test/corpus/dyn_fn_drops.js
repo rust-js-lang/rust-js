@@ -48,12 +48,9 @@ function main() {
     const total = handlers.reduce((acc, f) => f(acc), 1);
     console.log(`total ${total}`);
     const popped = handlers.pop();
-    try {
-      console.log(`popped ${popped != null}`);
-    } finally {
-      if (popped != null) {
-        $dispose(popped);
-      }
+    console.log(`popped ${popped != null}`);
+    if (popped != null) {
+      $dispose(popped);
     }
     const named = new Map();
     try {

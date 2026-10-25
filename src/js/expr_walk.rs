@@ -444,7 +444,10 @@ impl Expr {
     /// throws only where its arguments do.
     pub fn may_throw(&self) -> bool {
         match &self.kind {
-            ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::never_throws) => {
+            ExprKind::Call(callee, args)
+                if self.facts.has(Known::NeverThrows)
+                    || callee.helper_name().is_some_and(crate::runtime::never_throws) =>
+            {
                 args.iter().any(Expr::may_throw)
             }
             _ => self.has_effects(),

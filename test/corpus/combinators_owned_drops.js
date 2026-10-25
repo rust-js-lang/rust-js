@@ -107,11 +107,8 @@ function main() {
     return result;
   };
   const noisy = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
-  try {
-    console.log(`${noisy[0]}`);
-  } finally {
-    console.log(`drop ${noisy[0]}`);
-  }
+  console.log(`${noisy[0]}`);
+  console.log(`drop ${noisy[0]}`);
   const result$4 = ok(10);
   let value;
   if (result$4.TAG === "Ok") {
@@ -198,11 +195,8 @@ function main() {
     mapped = fallback$2;
     console.log(`drop ${result$9._0[0]}`);
   }
-  try {
-    console.log(`${mapped[0]}`);
-  } finally {
-    console.log(`drop ${mapped[0]}`);
-  }
+  console.log(`${mapped[0]}`);
+  console.log(`drop ${mapped[0]}`);
   const result$10 = ok(16);
   const fallback$3 = [101];
   let mapped$1;
@@ -216,11 +210,8 @@ function main() {
     mapped$1 = fallback$3;
     console.log(`drop ${result$10._0[0]}`);
   }
-  try {
-    console.log(`${mapped$1[0]}`);
-  } finally {
-    console.log(`drop ${mapped$1[0]}`);
-  }
+  console.log(`${mapped$1[0]}`);
+  console.log(`drop ${mapped$1[0]}`);
   const result$11 = half(17);
   let holds$6;
   if (result$11.TAG === "Ok") {

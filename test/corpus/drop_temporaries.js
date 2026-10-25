@@ -16,14 +16,10 @@ function make(name) {
 }
 
 function two(a, b) {
-  let result;
+  console.log(`two ${a[0]} ${b[0]}`);
+  const result = b[0];
   try {
-    try {
-      console.log(`two ${a[0]} ${b[0]}`);
-      result = b[0];
-    } finally {
-      console.log(`drop ${b[0]}`);
-    }
+    console.log(`drop ${b[0]}`);
   } finally {
     console.log(`drop ${a[0]}`);
   }
@@ -31,12 +27,9 @@ function two(a, b) {
 }
 
 function all(items) {
-  try {
-    console.log(`all ${items[0][0]}`);
-  } finally {
-    for (const item of items) {
-      console.log(`drop ${item[0]}`);
-    }
+  console.log(`all ${items[0][0]}`);
+  for (const item of items) {
+    console.log(`drop ${item[0]}`);
   }
   return items.length;
 }
@@ -60,15 +53,12 @@ function main() {
   }
   console.log(`${first} ${empty}`);
   const kept = make("d");
+  console.log(`kept ${kept[0]}`);
   try {
-    console.log(`kept ${kept[0]}`);
     const value = make("e");
     const field = value[0];
-    try {
-      console.log(`field ${field}`);
-    } finally {
-      console.log(`drop ${value[0]}`);
-    }
+    console.log(`field ${field}`);
+    console.log(`drop ${value[0]}`);
   } finally {
     console.log(`drop ${kept[0]}`);
   }

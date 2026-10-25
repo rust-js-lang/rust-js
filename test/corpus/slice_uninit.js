@@ -46,14 +46,7 @@ function main() {
     }
     throw new Error(`index out of bounds: the len is ${length} but the index is 1`);
   }
-  try {
-    console.log(`${cloned[1][0]}`);
-  } catch (error) {
-    for (const item of src) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
+  console.log(`${cloned[1][0]}`);
   try {
     for (const item of slots) {
       noisyDrop_drop(item);

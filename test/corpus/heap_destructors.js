@@ -38,12 +38,9 @@ function main() {
       $heapAppend(h, other, (a, b) => $cmp(a[0], b[0]));
       console.log(`len ${h.length} ${other.length}`);
       const drained = h.splice(0);
-      try {
-        console.log(`drained ${drained.length}`);
-      } finally {
-        for (const item of drained) {
-          oDrop_drop(item);
-        }
+      console.log(`drained ${drained.length}`);
+      for (const item of drained) {
+        oDrop_drop(item);
       }
       const sorted = $heapSorted(
         $heapFrom([[4], [2], [6]], (a, b) => $cmp(a[0], b[0])),

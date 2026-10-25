@@ -49,19 +49,13 @@ function main() {
     borrowMut.visits = (borrowMut.visits + 1) >>> 0;
     $unborrow(borrowMut);
     const borrow = $borrow(node.value, true);
-    try {
-      console.log(`${borrow.visits}`);
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(`${borrow.visits}`);
+    $unborrow(borrow);
     const copy = $withBorrow(node.value, (value) => nodeClone_clone(value), true);
     try {
       const value = $borrow(copy, true);
-      try {
-        console.log(`${value.visits}`);
-      } finally {
-        $unborrow(value);
-      }
+      console.log(`${value.visits}`);
+      $unborrow(value);
     } finally {
       $weakDrop(copy.me);
     }

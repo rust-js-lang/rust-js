@@ -33,12 +33,9 @@ function main() {
     console.log(`filled ${fill(slot, "c")}`);
     const taken = slot.held;
     slot.held = undefined;
-    try {
-      console.log(`taken ${!!taken}`);
-    } finally {
-      if (taken != null) {
-        console.log(`drop ${taken[0]}`);
-      }
+    console.log(`taken ${!!taken}`);
+    if (taken != null) {
+      console.log(`drop ${taken[0]}`);
     }
     console.log(`empty ${!slot.held}`);
     fill(slot, "d");
@@ -48,13 +45,10 @@ function main() {
       },
       {},
     ];
-    try {
-      console.log(`slots ${slots.length}`);
-    } finally {
-      for (const item of slots) {
-        if (item.held != null) {
-          console.log(`drop ${item.held[0]}`);
-        }
+    console.log(`slots ${slots.length}`);
+    for (const item of slots) {
+      if (item.held != null) {
+        console.log(`drop ${item.held[0]}`);
       }
     }
     const shared = {
@@ -75,21 +69,7 @@ function main() {
       });
       throw error;
     }
-    try {
-      console.log(`owners ${shared.strong}`);
-    } catch (error) {
-      $rcDrop(other, (value) => {
-        if (value.held != null) {
-          console.log(`drop ${value.held[0]}`);
-        }
-      });
-      $rcDrop(shared, (value) => {
-        if (value.held != null) {
-          console.log(`drop ${value.held[0]}`);
-        }
-      });
-      throw error;
-    }
+    console.log(`owners ${shared.strong}`);
     try {
       $rcDrop(shared, (value) => {
         if (value.held != null) {

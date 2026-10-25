@@ -5,11 +5,8 @@ export function entry() {
 }
 
 function consume(n) {
-  try {
-    console.log(`consume ${n[0]}`);
-  } finally {
-    console.log(`drop ${n[0]}`);
-  }
+  console.log(`consume ${n[0]}`);
+  console.log(`drop ${n[0]}`);
 }
 
 function main() {
@@ -33,21 +30,11 @@ function main() {
       x$live = false;
       consume(x);
     }
-    try {
-      console.log(`round ${i}`);
-    } catch (error) {
-      if (x$live) {
-        console.log(`drop ${x[0]}`);
-      }
-      throw error;
-    }
+    console.log(`round ${i}`);
   }
-  try {
-    console.log("done");
-  } finally {
-    if (x$live) {
-      console.log(`drop ${x[0]}`);
-    }
+  console.log("done");
+  if (x$live) {
+    console.log(`drop ${x[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

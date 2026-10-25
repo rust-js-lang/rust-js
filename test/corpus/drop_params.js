@@ -5,39 +5,27 @@ export function entry() {
 }
 
 function byValue(n) {
-  try {
-    console.log(`by value ${n[0]}`);
-  } finally {
-    console.log(`drop ${n[0]}`);
-  }
+  console.log(`by value ${n[0]}`);
+  console.log(`drop ${n[0]}`);
 }
 
 function byRef(_1) {
   const n = _1;
-  try {
-    console.log(`by ref ${n[0]}`);
-  } finally {
-    console.log(`drop ${_1[0]}`);
-  }
+  console.log(`by ref ${n[0]}`);
+  console.log(`drop ${_1[0]}`);
 }
 
 function ignored(_1) {
-  try {
-    console.log("ignored");
-  } finally {
-    console.log(`drop ${_1[0]}`);
-  }
+  console.log("ignored");
+  console.log(`drop ${_1[0]}`);
 }
 
 function both(_1, _2, b) {
   const a = _1;
+  console.log(`both ${a[0]} ${b[0]}`);
   try {
     try {
-      try {
-        console.log(`both ${a[0]} ${b[0]}`);
-      } finally {
-        console.log(`drop ${b[0]}`);
-      }
+      console.log(`drop ${b[0]}`);
     } finally {
       console.log(`drop ${_2[0]}`);
     }
@@ -57,14 +45,11 @@ function main() {
   const borrowed = same;
   // `let _ = x` doesn't move `x`, so its scope drops it.
   const keptToo = "i";
+  console.log(`${kept} ${borrowed[0]}`);
+  console.log("end");
   try {
     try {
-      try {
-        console.log(`${kept} ${borrowed[0]}`);
-        console.log("end");
-      } finally {
-        console.log(`drop ${keptToo}`);
-      }
+      console.log(`drop ${keptToo}`);
     } finally {
       console.log(`drop ${same[0]}`);
     }

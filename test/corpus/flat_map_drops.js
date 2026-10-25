@@ -14,20 +14,17 @@ function innerLeft() {
     .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
     .take(1)
     .toArray();
+  console.log(`inner left ${first.length}`);
+  const counts = [1, 2];
   try {
-    console.log(`inner left ${first.length}`);
-    const counts = [1, 2];
     const made = counts
       .values()
       .flatMap((n) => $lazyRange(0, n).map((value) => [value]))
       .take(1)
       .toArray();
-    try {
-      console.log(`made ${made.length}`);
-    } finally {
-      for (const item of made) {
-        loudDrop_drop(item);
-      }
+    console.log(`made ${made.length}`);
+    for (const item of made) {
+      loudDrop_drop(item);
     }
   } finally {
     for (const item of first) {
@@ -59,12 +56,9 @@ function sourceLeft() {
   )
     .take(2)
     .toArray();
-  try {
-    console.log(`flat ${flat.length}`);
-  } finally {
-    for (const item of flat) {
-      loudDrop_drop(item);
-    }
+  console.log(`flat ${flat.length}`);
+  for (const item of flat) {
+    loudDrop_drop(item);
   }
 }
 function bothLeft() {
@@ -96,12 +90,9 @@ function bothLeft() {
   )
     .take(1)
     .toArray();
-  try {
-    console.log(`one of nested ${one.length}`);
-  } finally {
-    for (const item of one) {
-      loudDrop_drop(item);
-    }
+  console.log(`one of nested ${one.length}`);
+  for (const item of one) {
+    loudDrop_drop(item);
   }
 }
 function options() {

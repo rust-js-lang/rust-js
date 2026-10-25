@@ -384,12 +384,9 @@ function consume(n) {
     const value$1 = next ? value(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const loud = $next(stepped);
-    try {
-      console.log(`${!loud}`);
-    } finally {
-      if (loud != null) {
-        loudDrop_drop(loud);
-      }
+    console.log(`${!loud}`);
+    if (loud != null) {
+      loudDrop_drop(loud);
     }
     console.log("after");
     const stepBy = $stepBy(

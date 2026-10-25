@@ -84,11 +84,8 @@ function droppedTail() {
     throw error;
   }
   const first = items[0];
-  try {
-    console.log(`${first[0]}`);
-  } finally {
-    console.log(`drop ${first[0]}`);
-  }
+  console.log(`${first[0]}`);
+  console.log(`drop ${first[0]}`);
 }
 
 function main() {

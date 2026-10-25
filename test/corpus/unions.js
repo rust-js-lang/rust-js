@@ -113,19 +113,11 @@ function main() {
   const boxed = 5;
   console.log(`${(boxed + 1) | 0}`);
   const held = { noisy: ["inside"] };
-  const value$1 = $unionField(held, "noisy");
-  try {
-    console.log(`${value$1[0]}`);
-  } finally {
-    console.log("drop holder");
-  }
+  console.log(`${$unionField(held, "noisy")[0]}`);
+  console.log("drop holder");
   const counted = { count: 1 };
   $unionSet(counted, "count", ($unionField(counted, "count") + 1) & 255);
-  const value$2 = $unionField(counted, "count");
-  try {
-    console.log(`${value$2}`);
-  } finally {
-    console.log("drop holder");
-  }
+  console.log(`${$unionField(counted, "count")}`);
+  console.log("drop holder");
 }
 //# sourceMappingURL=case.js.map

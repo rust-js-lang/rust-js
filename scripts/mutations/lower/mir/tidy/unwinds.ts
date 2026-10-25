@@ -145,4 +145,12 @@ export const mutations: Mutation[] = [
     replace: "        handler = vec![StmtKind::Throw(panic).at(last.span)];\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
+  {
+    name: "declaration-taken-for-drop",
+    breaks: "a `catch` holding only a drop function's declaration is taken as a scope's drop, so its `finally` scopes the name away from the code after it",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "    (rethrown && !declares && !leaves(inner, 0)",
+    replace: "    (rethrown && !leaves(inner, 0)",
+    tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
+  },
 ];

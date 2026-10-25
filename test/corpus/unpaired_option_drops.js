@@ -19,11 +19,11 @@ function main() {
     }
   }
   const a = value;
+  console.log(`a ${!a}`);
+  const option$1 = [3];
+  const value$1 = option$1 != null ? option$1 : undefined;
   try {
-    console.log(`a ${!a}`);
-    const option = [3];
-    const value = option != null ? option : undefined;
-    const b = value;
+    const b = value$1;
     try {
       const value = b?.[0];
       console.log(`b ${value == null ? "None" : `Some(${value})`}`);
@@ -39,18 +39,18 @@ function main() {
           loudDrop_drop(option);
         }
         const d = value$1;
+        console.log(`d ${!d}`);
+        const other = [6];
+        const value$2 = undefined;
         try {
-          console.log(`d ${!d}`);
-          const other = [6];
-          const value = undefined;
           if (other != null) {
             loudDrop_drop(other);
           }
-          const e = value;
+          const e = value$2;
+          console.log(`e ${!e}`);
+          const option = [7];
+          const value = option != null && 8 != null ? [option, 8] : undefined;
           try {
-            console.log(`e ${!e}`);
-            const option = [7];
-            const value = option != null && 8 != null ? [option, 8] : undefined;
             if (option != null && 8 == null) {
               loudDrop_drop(option);
             }

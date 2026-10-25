@@ -18,14 +18,10 @@ function main() {
     }
     console.log(`${r.strong}`);
     const d = "in block";
-    let f;
-    try {
-      console.log("making");
-      const captured = d;
-      f = () => $byteLen(captured);
-    } finally {
-      console.log(`drop ${d}`);
-    }
+    console.log("making");
+    const captured = d;
+    const f = () => $byteLen(captured);
+    console.log(`drop ${d}`);
     console.log(`call ${f()}`);
     console.log("end");
   } finally {

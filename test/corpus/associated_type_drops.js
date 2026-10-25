@@ -39,8 +39,8 @@ function describe(zone, ZZone) {
       const value = ZZone.show(second.offset);
       console.log(`stamp ${second.at} ${value}`);
       const maybe = $some(ZZone.offset(zone, "maybe"));
+      console.log(`some ${maybe != null}`);
       try {
-        console.log(`some ${maybe != null}`);
         const inner = ZZone.offset(zone, "inner");
         try {
           console.log(`inner ${ZZone.show(inner)}`);
@@ -81,20 +81,17 @@ function loudSource_make(loud) {
 
 function take(source, SSource) {
   const _item = SSource.make(source);
-  try {
-    console.log("taken");
-  } finally {
-    SSource.$dropItem?.(_item);
-  }
+  console.log("taken");
+  SSource.$dropItem?.(_item);
 }
 
 function main() {
   describe(undefined, loudZone);
   describe(undefined, quietZone);
   const kept = stamp(undefined, 1n, "kept", loudZone);
+  console.log(`kept ${kept.at}`);
+  const source = { impl: loudSource };
   try {
-    console.log(`kept ${kept.at}`);
-    const source = { impl: loudSource };
     take(source, { make: (object) => object.impl.make(object.value), $dropItem: noisyDrop_drop });
     take(undefined, loudSource);
   } finally {

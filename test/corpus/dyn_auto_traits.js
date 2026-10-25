@@ -23,22 +23,16 @@ function keep(_) {}
 
 function main() {
   const _boxed = { value: ["boxed"], impl: { $drop: noisyDrop_drop } };
-  try {
-    console.log("in scope");
-  } finally {
-    _boxed.impl.$drop?.(_boxed.value);
-  }
+  console.log("in scope");
+  _boxed.impl.$drop?.(_boxed.value);
   const many = [
     { value: ["first"], impl: { $drop: noisyDrop_drop } },
     { value: 5, impl: {} },
     { value: ["second"], impl: { $drop: noisyDrop_drop } },
   ];
-  try {
-    console.log(`${many.length} held`);
-  } finally {
-    for (const item of many) {
-      item.impl.$drop?.(item.value);
-    }
+  console.log(`${many.length} held`);
+  for (const item of many) {
+    item.impl.$drop?.(item.value);
   }
 
   const one = { value: ["upcast"], impl: { $drop: noisyDrop_drop } };

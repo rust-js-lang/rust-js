@@ -21,11 +21,12 @@ function main() {
     true,
   );
   const value = $someValue(noneLast);
-  try {
-    console.log(`${noneLast != null} ${noneLast != null && !value}`);
+  console.log(`${noneLast != null} ${noneLast != null && !value}`);
 
+  const value$1 = [undefined, [2]];
+  try {
     const someLast = $lastDropping(
-      $iter([undefined, [2]]),
+      $iter(value$1),
       (option) => {
         if (option != null) {
           loudDrop_drop(option);
@@ -63,9 +64,9 @@ function main() {
         },
         true,
       );
-      try {
-        console.log(`${chained != null}`);
+      console.log(`${chained != null}`);
 
+      try {
         const empty = $lastDropping(
           $iter([]),
           (option) => {
@@ -75,13 +76,10 @@ function main() {
           },
           true,
         );
-        try {
-          console.log(`${empty == null}`);
-        } finally {
-          if (empty != null) {
-            if ($someValue(empty) != null) {
-              loudDrop_drop($someValue(empty));
-            }
+        console.log(`${empty == null}`);
+        if (empty != null) {
+          if ($someValue(empty) != null) {
+            loudDrop_drop($someValue(empty));
           }
         }
       } finally {

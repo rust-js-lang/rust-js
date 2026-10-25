@@ -32,12 +32,9 @@ function asksShared() {
 export const peekClone = { clone: peekClone_clone };
 function peekClone_clone(peek) {
   const tryBorrowMut = $tryBorrow(peek[0], true);
-  try {
-    console.log(`clone sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
-  } finally {
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
+  console.log(`clone sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
+  if (tryBorrowMut.TAG === "Ok") {
+    $unborrow(tryBorrowMut._0);
   }
   return [peek[0]];
 }
@@ -111,13 +108,9 @@ function main() {
   const value = $borrow(cell, true);
   try {
     const value$1 = $tryBorrow(cell, true);
-    const value$2 = value$1.TAG === "Err";
-    try {
-      console.log(`${value.length} ${value$2}`);
-    } finally {
-      if (value$1.TAG === "Ok") {
-        $unborrow(value$1._0);
-      }
+    console.log(`${value.length} ${value$1.TAG === "Err"}`);
+    if (value$1.TAG === "Ok") {
+      $unborrow(value$1._0);
     }
   } finally {
     $unborrow(value);
@@ -127,12 +120,9 @@ function main() {
   const n = (value$1.length + probe[1]) >>> 0;
   try {
     const tryBorrowMut = $tryBorrow(probe[0], true);
-    try {
-      console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
-    } finally {
-      if (tryBorrowMut.TAG === "Ok") {
-        $unborrow(tryBorrowMut._0);
-      }
+    console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   } finally {
     $unborrow(value$1);

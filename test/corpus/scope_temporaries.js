@@ -151,31 +151,18 @@ function main() {
   }
   console.log(`drop ${value$3[0]}`);
   const value$4 = early(true);
-  try {
-    console.log(`early ${!value$4}`);
-  } finally {
-    if (value$4 != null) {
-      console.log(`drop ${value$4.a[0]}`);
-    }
+  console.log(`early ${!value$4}`);
+  if (value$4 != null) {
+    console.log(`drop ${value$4.a[0]}`);
   }
   let pair = early(false);
   let pair$0$live = true;
   if (pair) {
     pair$0$live = false;
-    try {
-      console.log(`late ${pair.b}`);
-    } finally {
-      console.log(`drop ${pair.a[0]}`);
-    }
+    console.log(`late ${pair.b}`);
+    console.log(`drop ${pair.a[0]}`);
   } else {
-    try {
-      console.log("late none");
-    } catch (error) {
-      if (pair) {
-        console.log(`drop ${pair.a[0]}`);
-      }
-      throw error;
-    }
+    console.log("late none");
   }
   if (pair) {
     if (pair$0$live) {
@@ -206,20 +193,14 @@ function main() {
     };
   };
   const value$5 = pair(true);
-  try {
-    console.log(`pair ${!value$5}`);
-  } finally {
-    if (value$5 != null) {
-      console.log(`drop ${value$5.a[0]}`);
-    }
+  console.log(`pair ${!value$5}`);
+  if (value$5 != null) {
+    console.log(`drop ${value$5.a[0]}`);
   }
   const value$6 = keptEarly(true);
-  try {
-    console.log(`kept ${!value$6}`);
-  } finally {
-    if (value$6 != null) {
-      console.log(`drop ${value$6.a[0]}`);
-    }
+  console.log(`kept ${!value$6}`);
+  if (value$6 != null) {
+    console.log(`drop ${value$6.a[0]}`);
   }
   console.log("end");
 }

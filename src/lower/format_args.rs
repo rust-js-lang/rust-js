@@ -254,7 +254,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(line) => Expr::call(
                         Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                         vec![line],
-                    ),
+                    )
+                    .never_throws(),
                     Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
                 }
             }
@@ -355,10 +356,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A whole line is `console.log`'s, which ends it; text that may
             // not end one is written as it is (ADR 0087).
             Std::Print { error } => match without_newline(arg()) {
+                // A write never fails (ADR 0132): it throws only where its
+                // text does (ADR 0901).
                 Ok(line) => Expr::call(
                     Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                     vec![line],
-                ),
+                )
+                .never_throws(),
                 Err(text) => Expr::call(Expr::helper(if error { "$eprint" } else { "$print" }), vec![text]),
             },
             Std::FmtStr => arg(),

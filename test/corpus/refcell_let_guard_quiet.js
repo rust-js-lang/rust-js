@@ -55,10 +55,7 @@ function main() {
   bump(holder);
   const value$1 = bump(holder);
   const borrow = $borrow(holder.count, true);
-  try {
-    console.log(`${value$1} ${borrow.value}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${value$1} ${borrow.value}`);
+  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

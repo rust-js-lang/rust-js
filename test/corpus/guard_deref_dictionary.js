@@ -68,12 +68,9 @@ function main() {
   console.log(`${total([5, 6], rcStableDeref())}`);
   console.log(`${length("ada", stringStableDeref)} ${length("lovelace", rcStableDeref())}`);
   const tryBorrowMut = $tryBorrow(cell, true);
-  try {
-    console.log(`${tryBorrowMut.TAG === "Ok"}`);
-  } finally {
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
+  console.log(`${tryBorrowMut.TAG === "Ok"}`);
+  if (tryBorrowMut.TAG === "Ok") {
+    $unborrow(tryBorrowMut._0);
   }
 }
 //# sourceMappingURL=case.js.map

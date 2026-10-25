@@ -25,16 +25,10 @@ function ownIterator_next(own) {
 }
 
 function ownIterator_fold(own, init, f, dropB, dropF) {
+  console.log(`fold ${own[0]}`);
+  let folded = init;
   let result;
   try {
-    try {
-      console.log(`fold ${own[0]}`);
-    } catch (error) {
-      dropF?.(f);
-      dropB?.(init);
-      throw error;
-    }
-    let folded = init;
     try {
       while (own[1] < 3) {
         own[1] = (own[1] + 1) >>> 0;

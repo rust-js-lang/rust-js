@@ -10,15 +10,12 @@ function main() {
   const _eval = "eval";
   const _arguments = "arguments";
   const restore = "restore";
+  console.log("body");
   try {
     try {
       try {
         try {
-          try {
-            console.log("body");
-          } finally {
-            console.log(`drop ${restore}`);
-          }
+          console.log(`drop ${restore}`);
         } finally {
           console.log(`drop ${_arguments}`);
         }

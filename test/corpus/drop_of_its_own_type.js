@@ -12,23 +12,17 @@ function onceDrop_drop(once) {
   once[0] = false;
   if (old) {
     const old = $take(once, [false]);
-    try {
-      console.log(`replaced ${old[0]}`);
-    } finally {
-      onceDrop_drop(old);
-    }
+    console.log(`replaced ${old[0]}`);
+    onceDrop_drop(old);
   }
 }
 
 function main() {
   const _a = [true];
   const _b = [false];
+  console.log("end");
   try {
-    try {
-      console.log("end");
-    } finally {
-      onceDrop_drop(_b);
-    }
+    onceDrop_drop(_b);
   } finally {
     onceDrop_drop(_a);
   }

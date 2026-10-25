@@ -12,14 +12,12 @@ function guarded(limit) {
   while (true) {
     const g = "round";
     n++;
-    try {
-      if (n < limit) {
-        console.log(`round ${n}`);
-        continue;
-      }
-    } finally {
+    if (n < limit) {
+      console.log(`round ${n}`);
       console.log(`drop ${g}`);
+      continue;
     }
+    console.log(`drop ${g}`);
     break;
   }
   const after = n * 10;

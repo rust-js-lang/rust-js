@@ -88,17 +88,11 @@ function main() {
   const num = $lock(counter, true);
   num.value = (num.value + 1) | 0;
   num.value = (num.value * 10) | 0;
-  try {
-    console.log(`inside ${num.value}`);
-  } finally {
-    $unborrow(num);
-  }
+  console.log(`inside ${num.value}`);
+  $unborrow(num);
   const value$9 = $lock(counter, true);
-  try {
-    console.log(`${value$9.value}`);
-  } finally {
-    $unborrow(value$9);
-  }
+  console.log(`${value$9.value}`);
+  $unborrow(value$9);
   let cell = 1.5;
   cell++;
   let r = cell;
@@ -113,11 +107,8 @@ function main() {
   const first = $lock($index(slots, i), true);
   i++;
   first.value = (first.value + 10) | 0;
-  try {
-    console.log(`${first.value} ${i}`);
-  } finally {
-    $unborrow(first);
-  }
+  console.log(`${first.value} ${i}`);
+  $unborrow(first);
   console.log(
     `[${slots
       .map((m) => {
@@ -128,10 +119,7 @@ function main() {
       .join(", ")}]`,
   );
   r = $lockRead(text, true);
-  try {
-    console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64(cell)}`);
-  } finally {
-    $unborrow(r);
-  }
+  console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64(cell)}`);
+  $unborrow(r);
 }
 //# sourceMappingURL=case.js.map

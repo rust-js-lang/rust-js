@@ -31,15 +31,7 @@ function main() {
       it.return();
       throw error;
     }
-    try {
-      console.log(`took ${first?.[0] ?? "none"}`);
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      it.return();
-      throw error;
-    }
+    console.log(`took ${first?.[0] ?? "none"}`);
     let it$live = false;
     try {
       it.return();
@@ -49,14 +41,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log("dropped it");
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      throw error;
-    }
+    console.log("dropped it");
     let tmp;
     try {
       tmp = $repeating(["c"], undefined, loudDrop_drop);
@@ -131,19 +116,7 @@ function main() {
         break;
       }
       const item = loud;
-      try {
-        console.log(`got ${item[0]}`);
-      } catch (error) {
-        loudDrop_drop(item);
-        iter.return();
-        if (first != null) {
-          loudDrop_drop(first);
-        }
-        if (it$live) {
-          it.return();
-        }
-        throw error;
-      }
+      console.log(`got ${item[0]}`);
       try {
         loudDrop_drop(item);
       } catch (error) {
@@ -285,17 +258,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`end ${v.length}`);
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      if (it$live) {
-        it.return();
-      }
-      throw error;
-    }
+    console.log(`end ${v.length}`);
     try {
       if (first != null) {
         loudDrop_drop(first);

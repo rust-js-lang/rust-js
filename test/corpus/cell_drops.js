@@ -21,18 +21,18 @@ function main() {
       console.log(`old ${value == null ? "None" : `Some(${value})`}`);
       const taken = c;
       c = undefined;
+      console.log(`taken ${!taken}`);
+      const old$1 = c;
+      c = [3];
       try {
-        console.log(`taken ${!taken}`);
-        const old = c;
-        c = [3];
-        if (old != null) {
-          console.log(`drop ${old[0]}`);
+        if (old$1 != null) {
+          console.log(`drop ${old$1[0]}`);
         }
         let o;
+        console.log(`${!o}`);
+        o = [4];
+        const set = { TAG: "Ok" };
         try {
-          console.log(`${!o}`);
-          o = [4];
-          const set = { TAG: "Ok" };
           if (set.TAG === "Err") {
             console.log(`drop ${set._0[0]}`);
           }

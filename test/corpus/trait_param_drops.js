@@ -19,11 +19,8 @@ function sinkTakeA(dropA) {
   }));
 }
 function sinkTakeA_take(sink, a, dropA) {
-  try {
-    console.log("sink");
-  } finally {
-    dropA?.(a);
-  }
+  console.log("sink");
+  dropA?.(a);
   return 1;
 }
 function sinkTakeA_make(a, dropA) {
@@ -42,12 +39,7 @@ function relayTakeA(STakeA, dropA, dropS) {
   }));
 }
 function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
-  try {
-    console.log("relay");
-  } catch (error) {
-    dropA?.(a);
-    throw error;
-  }
+  console.log("relay");
   return (STakeA.take(relay[0], a) + 1) & 255;
 }
 function relayTakeA_make(a, STakeA, dropA, dropS) {
@@ -59,11 +51,8 @@ const $wrapTakeNoisy = new WeakMap();
 function wrapTakeNoisy(TDefault, dropT) {
   return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
     take(self, a) {
-      try {
-        console.log("default");
-      } finally {
-        noisyDrop_drop?.(a);
-      }
+      console.log("default");
+      noisyDrop_drop?.(a);
       return 0;
     },
     make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
@@ -73,8 +62,8 @@ function wrapTakeNoisy(TDefault, dropT) {
   }));
 }
 function wrapTakeNoisy_make(a, TDefault, dropT) {
+  console.log(`make ${a[0]}`);
   try {
-    console.log(`make ${a[0]}`);
     return [TDefault.default()];
   } finally {
     noisyDrop_drop(a);

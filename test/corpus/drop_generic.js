@@ -22,11 +22,8 @@ const Wrapper = {
 };
 
 function consume(value, dropT) {
-  try {
-    console.log("consume");
-  } finally {
-    dropT?.(value);
-  }
+  console.log("consume");
+  dropT?.(value);
 }
 
 function keep(value) {
@@ -36,11 +33,8 @@ function keep(value) {
 // Drops a `T` it makes, so takes nothing but its drop.
 function made(TDefault, dropT) {
   const _value = TDefault.default();
-  try {
-    console.log("made");
-  } finally {
-    dropT?.(_value);
-  }
+  console.log("made");
+  dropT?.(_value);
 }
 
 export const noisyDefault = { default: noisyDefault_default, $drop: noisyDrop_drop };

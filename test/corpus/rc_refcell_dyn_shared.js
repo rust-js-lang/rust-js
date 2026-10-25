@@ -191,18 +191,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${leaf.value.name} of ${map ?? ""}`);
-  } catch (error) {
-    $unborrow(tmp$1);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
-    });
-    throw error;
-  }
+  console.log(`${leaf.value.name} of ${map ?? ""}`);
   try {
     $unborrow(tmp$1);
   } catch (error) {

@@ -25,48 +25,12 @@ function main() {
     const tryLock = $tryLock(m, true);
     if (tryLock.TAG === "Err") {
       if (tryLock._0 === "WouldBlock") {
-        try {
-          console.log("busy");
-        } catch (error) {
-          if (tryLock.TAG === "Ok") {
-            $unborrow(tryLock._0);
-          }
-          if (tryLock.TAG === "Err") {
-            if (tryLock._0.TAG === "Poisoned") {
-              $unborrow(tryLock._0._0.data);
-            }
-          }
-          throw error;
-        }
+        console.log("busy");
       } else {
-        try {
-          console.log("poisoned");
-        } catch (error) {
-          if (tryLock.TAG === "Ok") {
-            $unborrow(tryLock._0);
-          }
-          if (tryLock.TAG === "Err") {
-            if (tryLock._0.TAG === "Poisoned") {
-              $unborrow(tryLock._0._0.data);
-            }
-          }
-          throw error;
-        }
+        console.log("poisoned");
       }
     } else {
-      try {
-        console.log("free");
-      } catch (error) {
-        if (tryLock.TAG === "Ok") {
-          $unborrow(tryLock._0);
-        }
-        if (tryLock.TAG === "Err") {
-          if (tryLock._0.TAG === "Poisoned") {
-            $unborrow(tryLock._0._0.data);
-          }
-        }
-        throw error;
-      }
+      console.log("free");
     }
     if (tryLock.TAG === "Ok") {
       $unborrow(tryLock._0);
@@ -77,19 +41,7 @@ function main() {
       }
     }
     const value = $tryLock(m, true);
-    try {
-      console.log(`${value.TAG === "Err"}`);
-    } catch (error) {
-      if (value.TAG === "Ok") {
-        $unborrow(value._0);
-      }
-      if (value.TAG === "Err") {
-        if (value._0.TAG === "Poisoned") {
-          $unborrow(value._0._0.data);
-        }
-      }
-      throw error;
-    }
+    console.log(`${value.TAG === "Err"}`);
     if (value.TAG === "Ok") {
       $unborrow(value._0);
     }
@@ -103,12 +55,9 @@ function main() {
   }
   const value = $tryLock(m, true);
   if (value.TAG === "Ok") {
+    console.log(`${value._0.value}`);
     try {
-      try {
-        console.log(`${value._0.value}`);
-      } finally {
-        $unborrow(value._0);
-      }
+      $unborrow(value._0);
     } finally {
       if (value.TAG !== "Ok") {
         if (value.TAG === "Err") {
@@ -134,20 +83,7 @@ function main() {
     );
     try {
       const tryWrite = $tryLock(l, true);
-      const value = tryWrite.TAG === "Err";
-      try {
-        console.log(`${r1.value} ${r2.value} ${value}`);
-      } catch (error) {
-        if (tryWrite.TAG === "Ok") {
-          $unborrow(tryWrite._0);
-        }
-        if (tryWrite.TAG === "Err") {
-          if (tryWrite._0.TAG === "Poisoned") {
-            $unborrow(tryWrite._0._0.data);
-          }
-        }
-        throw error;
-      }
+      console.log(`${r1.value} ${r2.value} ${tryWrite.TAG === "Err"}`);
       if (tryWrite.TAG === "Ok") {
         $unborrow(tryWrite._0);
       }
@@ -170,23 +106,17 @@ function main() {
   const w = $lock(l, true);
   try {
     const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value));
-    try {
-      console.log(
-        `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,
-      );
-    } finally {
-      if (e.TAG === "Poisoned") {
-        $unborrow(e._0.data);
-      }
+    console.log(
+      `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,
+    );
+    if (e.TAG === "Poisoned") {
+      $unborrow(e._0.data);
     }
   } finally {
     $unborrow(w);
   }
   const value$2 = $lockRead(l, true);
-  try {
-    console.log(`${value$2.value}`);
-  } finally {
-    $unborrow(value$2);
-  }
+  console.log(`${value$2.value}`);
+  $unborrow(value$2);
 }
 //# sourceMappingURL=case.js.map

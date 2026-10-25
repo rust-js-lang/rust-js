@@ -252,12 +252,9 @@ function main() {
   );
   try {
     const first = $next(loud);
-    try {
-      console.log(`took ${first?.[0] ?? "none"}`);
-    } finally {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
+    console.log(`took ${first?.[0] ?? "none"}`);
+    if (first != null) {
+      loudDrop_drop(first);
     }
   } finally {
     loud.return();

@@ -55,12 +55,9 @@ function main() {
       return false;
     },
   ).toArray();
-  try {
-    console.log(`taken ${taken.length}`);
-  } finally {
-    for (const item of taken) {
-      loudDrop_drop(item);
-    }
+  console.log(`taken ${taken.length}`);
+  for (const item of taken) {
+    loudDrop_drop(item);
   }
 
   const peeked = iterator_peekable(
@@ -116,12 +113,9 @@ function main() {
       return false;
     },
   ).toArray();
-  try {
-    console.log(`skipped to ${skipped.length}`);
-  } finally {
-    for (const item of skipped) {
-      loudDrop_drop(item);
-    }
+  console.log(`skipped to ${skipped.length}`);
+  for (const item of skipped) {
+    loudDrop_drop(item);
   }
 
   const heap = $heapFrom([[10], [11]], (a, b) => $cmp(a[0], b[0]));

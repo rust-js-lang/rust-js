@@ -563,6 +563,9 @@ pub enum Known {
     /// its methods are the program's, whatever their names, never JS's own
     /// that only read (ADR 0900).
     Evidence,
+    /// A call that throws only where what it's given does: std's print,
+    /// `console.log(text)`, whose stream never fails (ADRs 0132, 0901).
+    NeverThrows,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

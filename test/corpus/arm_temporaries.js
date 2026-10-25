@@ -102,12 +102,9 @@ function first(k) {
       l$0$live = true;
       if (l) {
         l$0$live = false;
-        try {
-          console.log(`got ${l[0]} with ${held[0]}`);
-          result = $byteLen(l[0]);
-        } finally {
-          loudDrop_drop(l);
-        }
+        console.log(`got ${l[0]} with ${held[0]}`);
+        result = $byteLen(l[0]);
+        loudDrop_drop(l);
       } else {
         result = 0;
       }
@@ -354,39 +351,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log("end");
-  } catch (error) {
-    if (none.TAG === "Single") {
-      loudDrop_drop(none._0);
-    }
-    if (none.TAG === "Ambiguous") {
-      loudDrop_drop(none._0);
-      loudDrop_drop(none._1);
-    }
-    if (single.TAG === "Single") {
-      loudDrop_drop(single._0);
-    }
-    if (single.TAG === "Ambiguous") {
-      loudDrop_drop(single._0);
-      loudDrop_drop(single._1);
-    }
-    if (one.TAG === "Single") {
-      loudDrop_drop(one._0);
-    }
-    if (one.TAG === "Ambiguous") {
-      loudDrop_drop(one._0);
-      loudDrop_drop(one._1);
-    }
-    if (both.TAG === "Single") {
-      loudDrop_drop(both._0);
-    }
-    if (both.TAG === "Ambiguous") {
-      loudDrop_drop(both._0);
-      loudDrop_drop(both._1);
-    }
-    throw error;
-  }
+  console.log("end");
   try {
     if (none.TAG === "Single") {
       loudDrop_drop(none._0);

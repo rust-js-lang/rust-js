@@ -11,11 +11,8 @@ function noisyDrop_drop(noisy) {
 }
 
 function consume(n) {
-  try {
-    console.log(`consume ${n[0]}`);
-  } finally {
-    noisyDrop_drop(n);
-  }
+  console.log(`consume ${n[0]}`);
+  noisyDrop_drop(n);
 }
 
 function early(stop) {
@@ -65,12 +62,7 @@ function find(items, wanted) {
 
 function made(name) {
   const n = [name];
-  try {
-    console.log(`made ${n[0]}`);
-  } catch (error) {
-    noisyDrop_drop(n);
-    throw error;
-  }
+  console.log(`made ${n[0]}`);
   return n;
 }
 
@@ -155,16 +147,7 @@ function main() {
     throw error;
   }
   slot = noisy;
-  try {
-    console.log(`slot is ${slot[0]}`);
-  } catch (error) {
-    noisyDrop_drop(slot);
-    noisyDrop_drop(kept);
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
-    throw error;
-  }
+  console.log(`slot is ${slot[0]}`);
   let kept$live = false;
   try {
     noisyDrop_drop(kept);
@@ -243,41 +226,8 @@ function main() {
   const _boxed = ["boxed"];
   const _tuple = [["t0"], 7, ["t1"]];
   const _shapes = ["Empty", { TAG: "One", _0: ["one"] }, { TAG: "Two", a: ["a"], b: ["b"] }];
+  console.log("end of main");
   try {
-    try {
-      console.log("end of main");
-    } catch (error) {
-      for (const item of _shapes) {
-        if (item.TAG === "One") {
-          noisyDrop_drop(item._0);
-        }
-        if (item.TAG === "Two") {
-          noisyDrop_drop(item.a);
-          noisyDrop_drop(item.b);
-        }
-      }
-      noisyDrop_drop(_tuple[0]);
-      noisyDrop_drop(_tuple[2]);
-      noisyDrop_drop(_boxed);
-      if (_none != null) {
-        noisyDrop_drop(_none);
-      }
-      if (_some != null) {
-        noisyDrop_drop(_some);
-      }
-      for (const item of _list) {
-        noisyDrop_drop(item);
-      }
-      noisyDrop_drop(_holder.inner);
-      console.log(`drop pair of ${first[0]} and ${second[0]}`);
-      noisyDrop_drop(first);
-      noisyDrop_drop(second);
-      noisyDrop_drop(slot);
-      if (kept$live) {
-        noisyDrop_drop(kept);
-      }
-      throw error;
-    }
     try {
       for (const item of _shapes) {
         if (item.TAG === "One") {

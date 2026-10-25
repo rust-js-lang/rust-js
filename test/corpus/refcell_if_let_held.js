@@ -9,19 +9,13 @@ export function entry() {
 function main() {
   const next = { value: 1 };
   const borrow = $borrow(next, true);
-  try {
-    if (borrow.value != null) {
-      console.log(`tested ${borrow.value}`);
-    }
-  } finally {
-    $unborrow(borrow);
+  if (borrow.value != null) {
+    console.log(`tested ${borrow.value}`);
   }
+  $unborrow(borrow);
   const value = $borrow(next, true);
-  try {
-    console.log(`${value.value == null ? "None" : `Some(${value.value})`}`);
-  } finally {
-    $unborrow(value);
-  }
+  console.log(`${value.value == null ? "None" : `Some(${value.value})`}`);
+  $unborrow(value);
   const value$1 = $borrow(next, true);
   try {
     if (value$1.value != null) {
@@ -33,10 +27,7 @@ function main() {
     $unborrow(value$1);
   }
   const value$2 = $borrow(next, true);
-  try {
-    console.log(`${value$2.value == null ? "None" : `Some(${value$2.value})`}`);
-  } finally {
-    $unborrow(value$2);
-  }
+  console.log(`${value$2.value == null ? "None" : `Some(${value$2.value})`}`);
+  $unborrow(value$2);
 }
 //# sourceMappingURL=case.js.map

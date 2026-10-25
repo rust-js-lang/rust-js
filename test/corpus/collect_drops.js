@@ -20,10 +20,10 @@ function main() {
     noisyDrop_drop(item);
     return false;
   });
-  try {
-    console.log(`kept ${long.length}`);
+  console.log(`kept ${long.length}`);
 
-    const w = [["x"], ["y"], ["z"]];
+  const w = [["x"], ["y"], ["z"]];
+  try {
     const value = (n) => n[0] !== "y";
     const rest = $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
       if (value(item)) {
@@ -32,12 +32,12 @@ function main() {
       }
       return false;
     }).toArray();
-    try {
-      console.log(`rest ${rest.length}`);
+    console.log(`rest ${rest.length}`);
 
-      let fragments = [["f1"], ["f2"]];
-      const old = fragments;
-      fragments = [];
+    let fragments = [["f1"], ["f2"]];
+    const old = fragments;
+    fragments = [];
+    try {
       try {
         const value = () => true;
         const none = $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
@@ -47,11 +47,11 @@ function main() {
           }
           return false;
         }).toArray();
-        const length = fragments.length;
-        try {
-          console.log(`none ${none.length} ${length}`);
+        console.log(`none ${none.length} ${fragments.length}`);
 
-          const names = [["m1"], ["m2"]].map((n) => {
+        const value$1 = [["m1"], ["m2"]];
+        try {
+          const names = value$1.map((n) => {
             const result = n[0];
             noisyDrop_drop(n);
             return result;
@@ -68,22 +68,14 @@ function main() {
               return false;
             })
             .map((n) => {
-              try {
-                console.log(`map ${n[0]}`);
-              } catch (error) {
-                noisyDrop_drop(n);
-                throw error;
-              }
+              console.log(`map ${n[0]}`);
               return n;
             })
             .toArray();
-          try {
-            console.log(`checked ${checked.length}`);
-            console.log("end");
-          } finally {
-            for (const item of checked) {
-              noisyDrop_drop(item);
-            }
+          console.log(`checked ${checked.length}`);
+          console.log("end");
+          for (const item of checked) {
+            noisyDrop_drop(item);
           }
         } finally {
           for (const item of none) {

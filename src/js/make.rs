@@ -910,6 +910,13 @@ impl Expr {
         self
     }
 
+    /// This, a call that throws only where what it's given does
+    /// (`Known::NeverThrows`), beside what else is known of it.
+    pub fn never_throws(mut self) -> Expr {
+        self.facts = self.facts.with(Known::NeverThrows);
+        self
+    }
+
     /// This, a reference to one of the program's functions
     /// (`Known::Item`).
     pub fn item(self) -> Expr {

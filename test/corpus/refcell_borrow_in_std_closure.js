@@ -17,11 +17,8 @@ function main() {
     $unborrow(value);
   }
   const borrow = $borrow(log.items, true);
-  try {
-    console.log(`${borrow.length}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.length}`);
+  $unborrow(borrow);
   const value$1 = $borrow(log.items, true);
   let found;
   try {

@@ -32,8 +32,8 @@ function main() {
     false,
     loudDrop_drop,
   );
+  console.log(`h ${h.size}`);
   try {
-    console.log(`h ${h.size}`);
     const b = $treeFrom(
       new Map(),
       [
@@ -63,8 +63,8 @@ function main() {
         $cmp,
         loudDrop_drop,
       );
+      console.log(`c ${c.size}`);
       try {
-        console.log(`c ${c.size}`);
         const s = $treeFrom(
           new $KeySet(),
           [
@@ -88,13 +88,10 @@ function main() {
               [[3, 0], [21]],
             ]);
             const km = $extendMap(new $KeyMap(), value, false, loudDrop_drop, keyDrop_drop);
-            try {
-              console.log(`${s.size} ${hs.size} ${km.size}`);
-            } finally {
-              for (const [key, value] of km) {
-                keyDrop_drop(key);
-                loudDrop_drop(value);
-              }
+            console.log(`${s.size} ${hs.size} ${km.size}`);
+            for (const [key, value] of km) {
+              keyDrop_drop(key);
+              loudDrop_drop(value);
             }
           } finally {
             for (const item of hs) {

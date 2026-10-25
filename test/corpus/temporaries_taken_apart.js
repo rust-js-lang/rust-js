@@ -39,12 +39,9 @@ function pick(n) {
 function someBorrowed(_1) {
   const a = _1[0];
   const b = _1[1];
+  console.log(`some ${a[0]} ${b[0]}`);
   try {
-    try {
-      console.log(`some ${a[0]} ${b[0]}`);
-    } finally {
-      loudDrop_drop(a);
-    }
+    loudDrop_drop(a);
   } finally {
     loudDrop_drop(_1[1]);
   }
@@ -53,24 +50,15 @@ function someBorrowed(_1) {
 function allBorrowed(_1) {
   const a = _1[0];
   const b = _1[1];
-  try {
-    console.log(`borrowed ${a[0]} ${b[0]}`);
-  } catch (error) {
-    loudDrop_drop(_1[0]);
-    loudDrop_drop(_1[1]);
-    throw error;
-  }
+  console.log(`borrowed ${a[0]} ${b[0]}`);
   loudDrop_drop(_1[0]);
   loudDrop_drop(_1[1]);
 }
 
 function allMoved([a, b]) {
+  console.log(`moved ${a[0]} ${b[0]}`);
   try {
-    try {
-      console.log(`moved ${a[0]} ${b[0]}`);
-    } finally {
-      loudDrop_drop(b);
-    }
+    loudDrop_drop(b);
   } finally {
     loudDrop_drop(a);
   }
@@ -93,12 +81,7 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
-  try {
-    console.log(`after let ${x[0]}`);
-  } catch (error) {
-    loudDrop_drop(x);
-    throw error;
-  }
+  console.log(`after let ${x[0]}`);
   let tmp$1;
   try {
     tmp$1 = make(30);
@@ -122,14 +105,8 @@ function main() {
     loudDrop_drop(x);
     throw error;
   }
+  console.log(`after pair ${right[0]}`);
 
-  try {
-    console.log(`after pair ${right[0]}`);
-  } catch (error) {
-    loudDrop_drop(right);
-    loudDrop_drop(x);
-    throw error;
-  }
   let two;
   for (let n = 0; n < 3; n++) {
     try {
@@ -142,25 +119,7 @@ function main() {
     two$0$live = true;
     if (two.TAG === "Both") {
       two$0$live = false;
-      try {
-        console.log(`both ${two._0[0]}`);
-      } catch (error) {
-        loudDrop_drop(two._0);
-        if (two.TAG === "Both") {
-          loudDrop_drop(two._1);
-        } else {
-          if (two.TAG === "Both") {
-            loudDrop_drop(two._0);
-            loudDrop_drop(two._1);
-          }
-          if (two.TAG === "One") {
-            loudDrop_drop(two._0);
-          }
-        }
-        loudDrop_drop(right);
-        loudDrop_drop(x);
-        throw error;
-      }
+      console.log(`both ${two._0[0]}`);
       try {
         loudDrop_drop(two._0);
       } catch (error) {
@@ -180,45 +139,9 @@ function main() {
         throw error;
       }
     } else if (two.TAG === "One") {
-      try {
-        console.log("one");
-      } catch (error) {
-        if (two.TAG === "Both") {
-          loudDrop_drop(two._0);
-          loudDrop_drop(two._1);
-        } else {
-          if (two.TAG === "Both") {
-            loudDrop_drop(two._0);
-            loudDrop_drop(two._1);
-          }
-          if (two.TAG === "One") {
-            loudDrop_drop(two._0);
-          }
-        }
-        loudDrop_drop(right);
-        loudDrop_drop(x);
-        throw error;
-      }
+      console.log("one");
     } else {
-      try {
-        console.log("zero");
-      } catch (error) {
-        if (two.TAG === "Both") {
-          loudDrop_drop(two._0);
-          loudDrop_drop(two._1);
-        } else {
-          if (two.TAG === "Both") {
-            loudDrop_drop(two._0);
-            loudDrop_drop(two._1);
-          }
-          if (two.TAG === "One") {
-            loudDrop_drop(two._0);
-          }
-        }
-        loudDrop_drop(right);
-        loudDrop_drop(x);
-        throw error;
-      }
+      console.log("zero");
     }
     try {
       if (two.TAG === "Both") {
@@ -241,13 +164,7 @@ function main() {
       throw error;
     }
     two$0$live = false;
-    try {
-      console.log(`after match ${n}`);
-    } catch (error) {
-      loudDrop_drop(right);
-      loudDrop_drop(x);
-      throw error;
-    }
+    console.log(`after match ${n}`);
   }
 
   try {
@@ -260,15 +177,8 @@ function main() {
         loudDrop_drop(value);
         throw error;
       }
-      const p = tmp[0];
-      try {
-        console.log("arm");
-      } catch (error) {
-        loudDrop_drop(p);
-        loudDrop_drop(tmp[1]);
-        throw error;
-      }
-      const y = p;
+      const y = tmp[0];
+      console.log("arm");
       try {
         loudDrop_drop(tmp[1]);
         console.log(`after y ${y[0]}`);
@@ -285,12 +195,9 @@ function main() {
         }
         if (tmp$1[0]) {
           const z = tmp$1[0];
+          console.log(`if ${z[0]}`);
           try {
-            try {
-              console.log(`if ${z[0]}`);
-            } finally {
-              loudDrop_drop(z);
-            }
+            loudDrop_drop(z);
           } finally {
             loudDrop_drop(tmp$1[1]);
           }
@@ -324,13 +231,7 @@ function main() {
                 throw error;
               }
               const c = tmp[0];
-              try {
-                console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
-              } catch (error) {
-                loudDrop_drop(tmp[0]);
-                loudDrop_drop(tmp[1]);
-                throw error;
-              }
+              console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
               loudDrop_drop(tmp[0]);
               loudDrop_drop(tmp[1]);
             } finally {
@@ -375,12 +276,9 @@ function main() {
         const closure = (_2) => {
           const a = _2[0];
           const b = _2[1];
+          console.log(`closure ${a[0]} ${b[0]}`);
           try {
-            try {
-              console.log(`closure ${a[0]} ${b[0]}`);
-            } finally {
-              loudDrop_drop(a);
-            }
+            loudDrop_drop(a);
           } finally {
             loudDrop_drop(_2[1]);
           }

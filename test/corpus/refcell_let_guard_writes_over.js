@@ -28,24 +28,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${v.length}`);
-  } catch (error) {
-    $unborrow(v);
-    const borrowMut = $borrowMut(p[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
-    const borrowMut$1 = $borrowMut(q[0], true);
-    try {
-      borrowMut$1.push(0);
-    } finally {
-      $unborrow(borrowMut$1);
-    }
-    throw error;
-  }
+  console.log(`${v.length}`);
   try {
     try {
       try {
@@ -64,11 +47,8 @@ function main() {
     const borrow = $borrow(cell, true);
     try {
       const value = $borrow(p[0], true);
-      try {
-        console.log(`${borrow.length} ${value.length}`);
-      } finally {
-        $unborrow(value);
-      }
+      console.log(`${borrow.length} ${value.length}`);
+      $unborrow(value);
     } finally {
       $unborrow(borrow);
     }

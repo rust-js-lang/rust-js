@@ -8,31 +8,16 @@ function main() {
   const order = [];
   let x = [order, 2];
   let y = [order, 1];
+  console.log(`${x[1]} ${y[1]}`);
   try {
-    try {
-      console.log(`${x[1]} ${y[1]}`);
-    } finally {
-      y[0].push(y[1]);
-    }
+    y[0].push(y[1]);
   } finally {
     x[0].push(x[1]);
   }
   let y$1$live = true;
   y = [order, 3];
-  let x$1$live = true;
   x = [order, 4];
-  try {
-    console.log(`${x[1]} ${y[1]}`);
-  } catch (error) {
-    if (y$1$live) {
-      y[0].push(y[1]);
-    }
-    if (x$1$live) {
-      x[0].push(x[1]);
-    }
-    throw error;
-  }
-  x$1$live = false;
+  console.log(`${x[1]} ${y[1]}`);
   try {
     x[0].push(x[1]);
   } catch (error) {

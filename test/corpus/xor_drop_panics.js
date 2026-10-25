@@ -21,33 +21,30 @@ function main() {
       }
     }
   }
+  console.log(`calm ${!calm}`);
+  const option$1 = [1, true];
+  const other$1 = [2, false];
+  const value = option$1 != null ? (other$1 == null ? option$1 : undefined) : other$1;
   try {
-    console.log(`calm ${!calm}`);
-    const option = [1, true];
-    const other = [2, false];
-    const value = option != null ? (other == null ? option : undefined) : other;
-    if (option != null && other != null) {
+    if (option$1 != null && other$1 != null) {
       try {
-        console.log(`drop ${option[0]}`);
-        if (option[1]) {
-          throw new Error(`boom ${option[0]}`);
+        console.log(`drop ${option$1[0]}`);
+        if (option$1[1]) {
+          throw new Error(`boom ${option$1[0]}`);
         }
       } finally {
-        console.log(`drop ${other[0]}`);
-        if (other[1]) {
-          throw new Error(`boom ${other[0]}`);
+        console.log(`drop ${other$1[0]}`);
+        if (other$1[1]) {
+          throw new Error(`boom ${other$1[0]}`);
         }
       }
     }
     const x = value;
-    try {
-      console.log(`unreached ${!x}`);
-    } finally {
-      if (x != null) {
-        console.log(`drop ${x[0]}`);
-        if (x[1]) {
-          throw new Error(`boom ${x[0]}`);
-        }
+    console.log(`unreached ${!x}`);
+    if (x != null) {
+      console.log(`drop ${x[0]}`);
+      if (x[1]) {
+        throw new Error(`boom ${x[0]}`);
       }
     }
   } finally {

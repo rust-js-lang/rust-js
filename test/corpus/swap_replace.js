@@ -49,17 +49,17 @@ function main() {
   let loud = ["first"];
   const first = loud;
   loud = ["second"];
+  console.log(`replaced ${first[0]}`);
+  let third = ["third"];
+  const t$3 = loud;
+  loud = third;
+  third = t$3;
+  console.log(`holding ${loud[0]} ${third[0]}`);
+
+  const spare = [7];
   try {
     try {
-      console.log(`replaced ${first[0]}`);
-      let third = ["third"];
-      const t = loud;
-      loud = third;
-      third = t;
       try {
-        console.log(`holding ${loud[0]} ${third[0]}`);
-
-        const spare = [7];
         $exchange(spare, pair.left);
         spare.push(8);
         $exchange(spare, pair.left);

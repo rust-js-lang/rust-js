@@ -210,17 +210,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${$displayF64(twice)} ${tmp$1}`);
-  } catch (error) {
-    for (const item of sorted) {
-      $rcDrop(item);
-    }
-    for (const item of shapes) {
-      $rcDrop(item);
-    }
-    throw error;
-  }
+  console.log(`${$displayF64(twice)} ${tmp$1}`);
   let byKind;
   try {
     byKind = new Map();

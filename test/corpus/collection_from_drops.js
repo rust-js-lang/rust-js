@@ -13,12 +13,12 @@ function main() {
     }
     console.log(`${d.length}`);
     const v = [[3], [4]];
+    console.log(`${v.length}`);
+    const l = [[5]];
+    console.log(`${l.length}`);
+    const s = [1, 2];
     try {
-      console.log(`${v.length}`);
-      const l = [[5]];
       try {
-        console.log(`${l.length}`);
-        const s = [1, 2];
         console.log(`[${s.join(", ")}]`);
       } finally {
         for (const item of l) {

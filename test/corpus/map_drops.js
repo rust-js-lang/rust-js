@@ -38,13 +38,9 @@ function main() {
     };
     console.log(`replaced ${(old ? map(old) : undefined) ?? "none"}`);
     const taken = $remove(sorted, 1);
-    const value$1 = !!taken;
-    try {
-      console.log(`took ${value$1} ${sorted.size}`);
-    } finally {
-      if (taken != null) {
-        console.log(`drop ${taken[0]}`);
-      }
+    console.log(`took ${!!taken} ${sorted.size}`);
+    if (taken != null) {
+      console.log(`drop ${taken[0]}`);
     }
     const n = sorted.get(3);
     if (n) {
@@ -67,10 +63,10 @@ function main() {
     $orInsertWith(entry._0[0], entry._0[1], () => ["y"]);
     console.log(`${byName.size} ${byName.has("y")}`);
     const x = $remove(byName, "x");
-    try {
-      console.log(`${!!x}`);
+    console.log(`${!!x}`);
 
-      const shared = { value: 5, strong: 1, weak: 0 };
+    const shared = { value: 5, strong: 1, weak: 0 };
+    try {
       try {
         const handles = new Map();
         try {

@@ -31,17 +31,16 @@ function main() {
   try {
     const againHits = $rcClone(hits);
     againHits.value.value = 1.5;
-    const value = hits.value.value;
+    console.log(`${$displayF64(hits.value.value)} ${hits.strong}`);
+
+    const total = 2;
+    console.log(`${total}`);
+
     try {
-      console.log(`${$displayF64(value)} ${hits.strong}`);
-
-      const total = 2;
-      console.log(`${total}`);
-
       const [a, b] = pair("text");
+      console.log(`${a.value.value} ${b.strong}`);
       try {
         try {
-          console.log(`${a.value.value} ${b.strong}`);
           const [c, d] = pair(3);
           try {
             $rcDrop(c);
@@ -57,26 +56,22 @@ function main() {
             };
             try {
               const flagAgain = again(flag);
+              console.log(`${flagAgain.value.first} ${flag.strong}`);
+              const measure = {
+                value: {
+                  first: 2.5,
+                  second: 2,
+                },
+                strong: 1,
+                weak: 0,
+              };
               try {
-                console.log(`${flagAgain.value.first} ${flag.strong}`);
-                const measure = {
-                  value: {
-                    first: 2.5,
-                    second: 2,
-                  },
-                  strong: 1,
-                  weak: 0,
-                };
                 try {
                   const measureAgain = again(measure);
-                  const second = measureAgain.value.second;
-                  try {
-                    console.log(
-                      `${$displayF64(measureAgain.value.first)} ${(second + measure.value.second) & 255}`,
-                    );
-                  } finally {
-                    $rcDrop(measureAgain);
-                  }
+                  console.log(
+                    `${$displayF64(measureAgain.value.first)} ${(measureAgain.value.second + measure.value.second) & 255}`,
+                  );
+                  $rcDrop(measureAgain);
                 } finally {
                   $rcDrop(measure);
                 }

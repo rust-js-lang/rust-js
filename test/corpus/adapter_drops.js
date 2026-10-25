@@ -446,44 +446,7 @@ function main() {
         }
         continue;
       }
-      try {
-        console.log(`break at ${l[0]}`);
-      } catch (error) {
-        loudDrop_drop(l);
-        iter.return();
-        if (fused$live) {
-          if (fused.iter != null) {
-            for (const item of fused.iter) {
-              loudDrop_drop(item);
-            }
-          }
-        }
-        if (stepped$live) {
-          stepped.return();
-        }
-        if (taking$live) {
-          taking.return();
-        }
-        if (skipping$live) {
-          skipping.return();
-        }
-        if (numbered$live) {
-          numbered.return();
-        }
-        if (kept$live) {
-          kept.return();
-        }
-        if (chained$live) {
-          chained.return();
-        }
-        if (pair$live) {
-          if (pair != null) {
-            loudDrop_drop(pair[0]);
-            loudDrop_drop(pair[1]);
-          }
-        }
-        throw error;
-      }
+      console.log(`break at ${l[0]}`);
       try {
         loudDrop_drop(l);
       } catch (error) {
@@ -760,43 +723,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`generic zip ${tmp$7 == null ? "None" : `Some((${tmp$7[0]}, ${tmp$7[1]}))`}`);
-  } catch (error) {
-    z.return();
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`generic zip ${tmp$7 == null ? "None" : `Some((${tmp$7[0]}, ${tmp$7[1]}))`}`);
   try {
     z.return();
   } catch (error) {
@@ -1029,43 +956,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`generic chain ${tmp$12 == null ? "None" : `Some(${tmp$12})`}`);
-  } catch (error) {
-    c.return();
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`generic chain ${tmp$12 == null ? "None" : `Some(${tmp$12})`}`);
   try {
     c.return();
   } catch (error) {
@@ -1267,43 +1158,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`generic chain of its own ${tmp$16 == null ? "None" : `Some(${tmp$16})`}`);
-  } catch (error) {
-    counted.return();
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`generic chain of its own ${tmp$16 == null ? "None" : `Some(${tmp$16})`}`);
   try {
     counted.return();
   } catch (error) {
@@ -1503,43 +1358,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`chain of its own ${tmp$20 == null ? "None" : `Some(${tmp$20})`}`);
-  } catch (error) {
-    own.return();
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`chain of its own ${tmp$20 == null ? "None" : `Some(${tmp$20})`}`);
   try {
     own.return();
   } catch (error) {
@@ -1732,43 +1551,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`generic take ${tmp$24 == null ? "None" : `Some(${tmp$24})`}`);
-  } catch (error) {
-    t.return();
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`generic take ${tmp$24 == null ? "None" : `Some(${tmp$24})`}`);
   try {
     t.return();
   } catch (error) {
@@ -1807,6 +1590,7 @@ function main() {
   }
   const value$7 = [1, 2, 3];
   const value$8 = [4];
+
   let plain;
   try {
     plain = zip(value$7, value$8);
@@ -2077,42 +1861,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`eq ${eq}`);
-  } catch (error) {
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`eq ${eq}`);
   let tmp$29;
   try {
     tmp$29 = louds(190, 3);
@@ -2231,42 +1980,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`eq ${tmp$31}`);
-  } catch (error) {
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`eq ${tmp$31}`);
   let tmp$32;
   try {
     tmp$32 = louds(220, 2);
@@ -2389,78 +2103,8 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`equal ${tmp$34}`);
-  } catch (error) {
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    if (fused$live) {
-      if (fused.iter != null) {
-        for (const item of fused.iter) {
-          loudDrop_drop(item);
-        }
-      }
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
+  console.log(`equal ${tmp$34}`);
+  console.log("end");
   fused$live = false;
   stepped$live = false;
   taking$live = false;

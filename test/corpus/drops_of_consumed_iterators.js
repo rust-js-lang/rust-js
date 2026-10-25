@@ -51,10 +51,11 @@ function main() {
     undefined,
     dDrop_drop,
   );
+  console.log(`err ${r.TAG === "Err"}`);
+  const value = [[3], undefined, [4]];
   try {
-    console.log(`err ${r.TAG === "Err"}`);
     const o = $collectOptions(
-      $closing($iter([[3], undefined, [4]]), (intoIter) => {
+      $closing($iter(value), (intoIter) => {
         for (const item of intoIter) {
           if (item != null) {
             dDrop_drop(item);
@@ -65,10 +66,11 @@ function main() {
       undefined,
       dDrop_drop,
     );
+    console.log(`none ${!o}`);
+    const value$1 = [{ TAG: "Ok", _0: [5] }];
     try {
-      console.log(`none ${!o}`);
       const all = $collectResults(
-        $closing($iter([{ TAG: "Ok", _0: [5] }]), (intoIter) => {
+        $closing($iter(value$1), (intoIter) => {
           for (const item of intoIter) {
             if (item.TAG === "Ok") {
               dDrop_drop(item._0);
@@ -78,13 +80,10 @@ function main() {
         undefined,
         dDrop_drop,
       );
-      try {
-        console.log(`ok ${all.TAG === "Ok"}`);
-      } finally {
-        if (all.TAG === "Ok") {
-          for (const item of all._0) {
-            dDrop_drop(item);
-          }
+      console.log(`ok ${all.TAG === "Ok"}`);
+      if (all.TAG === "Ok") {
+        for (const item of all._0) {
+          dDrop_drop(item);
         }
       }
     } finally {

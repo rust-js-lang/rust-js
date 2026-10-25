@@ -49,15 +49,7 @@ function firstLong(items) {
       }
       return result;
     }
-    try {
-      console.log(`short ${item[0]}`);
-    } catch (error) {
-      noisyDrop_drop(item);
-      for (const item of iter) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`short ${item[0]}`);
     try {
       noisyDrop_drop(item);
     } catch (error) {
@@ -105,15 +97,7 @@ function main() {
           throw error;
         }
       } else {
-        try {
-          console.log(`got ${n[0]}`);
-        } catch (error) {
-          noisyDrop_drop(n);
-          for (const item of iter) {
-            noisyDrop_drop(item);
-          }
-          throw error;
-        }
+        console.log(`got ${n[0]}`);
         try {
           noisyDrop_drop(n);
         } catch (error) {
@@ -150,15 +134,7 @@ function main() {
       break;
     }
     const n = tmp;
-    try {
-      console.log(`array ${n[0]}`);
-    } catch (error) {
-      noisyDrop_drop(n);
-      for (const item of iter) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`array ${n[0]}`);
     try {
       noisyDrop_drop(n);
     } catch (error) {
@@ -187,15 +163,7 @@ function main() {
       break;
     }
     const n = tmp$1;
-    try {
-      console.log(`option ${n[0]}`);
-    } catch (error) {
-      noisyDrop_drop(n);
-      for (const item of iter) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`option ${n[0]}`);
     try {
       noisyDrop_drop(n);
     } catch (error) {
@@ -224,15 +192,7 @@ function main() {
       break;
     }
     const n = tmp$2;
-    try {
-      console.log(`never ${n[0]}`);
-    } catch (error) {
-      noisyDrop_drop(n);
-      for (const item of iter) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`never ${n[0]}`);
     try {
       noisyDrop_drop(n);
     } catch (error) {
@@ -265,17 +225,7 @@ function main() {
       }
       break;
     }
-    try {
-      console.log("body before the drop");
-    } catch (error) {
-      if (tmp != null) {
-        noisyDrop_drop(tmp);
-      }
-      for (const item of iter) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log("body before the drop");
     try {
       if (tmp != null) {
         noisyDrop_drop(tmp);
@@ -309,15 +259,7 @@ function main() {
     }
     const i = tmp$3[0];
     const n = tmp$3[1];
-    try {
-      console.log(`pair ${i} ${n[0]}`);
-    } catch (error) {
-      noisyDrop_drop(n);
-      for (const item of iter) {
-        noisyDrop_drop(item[1]);
-      }
-      throw error;
-    }
+    console.log(`pair ${i} ${n[0]}`);
     try {
       noisyDrop_drop(n);
     } catch (error) {
@@ -358,15 +300,7 @@ function main() {
         throw error;
       }
       n = value;
-      try {
-        console.log(`kept ${n[0]}`);
-      } catch (error) {
-        noisyDrop_drop(n);
-        for (const item of iter) {
-          noisyDrop_drop(item);
-        }
-        throw error;
-      }
+      console.log(`kept ${n[0]}`);
       try {
         noisyDrop_drop(n);
       } catch (error) {
@@ -384,14 +318,7 @@ function main() {
         }
         throw error;
       }
-      try {
-        console.log("moved");
-      } catch (error) {
-        for (const item of iter) {
-          noisyDrop_drop(item);
-        }
-        throw error;
-      }
+      console.log("moved");
     }
   }
 
@@ -490,19 +417,7 @@ function main() {
           }
           break;
         }
-        try {
-          console.log(`cell ${row[0]} ${cell[0]}`);
-        } catch (error) {
-          noisyDrop_drop(cell);
-          for (const item of iter$1) {
-            noisyDrop_drop(item);
-          }
-          noisyDrop_drop(row);
-          for (const item of iter) {
-            noisyDrop_drop(item);
-          }
-          throw error;
-        }
+        console.log(`cell ${row[0]} ${cell[0]}`);
         try {
           noisyDrop_drop(cell);
         } catch (error) {
@@ -530,11 +445,8 @@ function main() {
       if (n[0] === "c1") {
         noisyDrop_drop(n);
       } else {
-        try {
-          console.log(`count ${n[0]}`);
-        } finally {
-          noisyDrop_drop(n);
-        }
+        console.log(`count ${n[0]}`);
+        noisyDrop_drop(n);
         continue;
       }
     }

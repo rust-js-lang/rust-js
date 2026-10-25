@@ -48,11 +48,8 @@ function main() {
   try {
     let d;
     while ((d = $next(it))) {
-      try {
-        console.log(`got ${d[0]}`);
-      } finally {
-        dDrop_drop(d);
-      }
+      console.log(`got ${d[0]}`);
+      dDrop_drop(d);
     }
     console.log("after take_while");
   } finally {
@@ -62,11 +59,8 @@ function main() {
   try {
     let d;
     while ((d = $next(it))) {
-      try {
-        console.log(`got ${d[0]}`);
-      } finally {
-        dDrop_drop(d);
-      }
+      console.log(`got ${d[0]}`);
+      dDrop_drop(d);
     }
     console.log("after take");
   } finally {
@@ -157,12 +151,7 @@ function main() {
       some.return();
       throw error;
     }
-    try {
-      console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
-    } catch (error) {
-      some.return();
-      throw error;
-    }
+    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     if (total > 0) {
       some$live = false;
       const rest = some

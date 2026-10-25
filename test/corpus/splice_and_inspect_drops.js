@@ -117,12 +117,9 @@ function main() {
       };
       inspected(r._0);
     }
-    try {
-      console.log(`${r.TAG === "Ok"}`);
-    } finally {
-      if (r.TAG === "Ok") {
-        console.log(`drop ${r._0[0]}`);
-      }
+    console.log(`${r.TAG === "Ok"}`);
+    if (r.TAG === "Ok") {
+      console.log(`drop ${r._0[0]}`);
     }
   } finally {
     for (const item of v) {

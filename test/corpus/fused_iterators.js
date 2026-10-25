@@ -168,40 +168,9 @@ function main() {
       break;
     }
     const n = tmp;
-    try {
-      console.log(`looped ${n}`);
-    } catch (error) {
-      if (iter.iter != null) {
-        loudDrop_drop(iter.iter);
-      }
-      if (steady$live) {
-        if (steady.iter != null) {
-          steadyDrop_drop(steady.iter);
-        }
-      }
-      if (loud$live) {
-        if (loud.iter != null) {
-          loudDrop_drop(loud.iter);
-        }
-      }
-      throw error;
-    }
+    console.log(`looped ${n}`);
   }
-  try {
-    console.log("after loop");
-  } catch (error) {
-    if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
-    }
-    if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
-    }
-    throw error;
-  }
+  console.log("after loop");
   let fuse;
   let tmp;
   try {
@@ -256,36 +225,8 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`summed ${total}`);
-  } catch (error) {
-    if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
-    }
-    if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
-    }
-    if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
-    }
-    throw error;
-  }
+  console.log(`summed ${total}`);
+  console.log("end");
   steady$live = false;
   loud$live = false;
 }

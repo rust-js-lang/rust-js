@@ -19,12 +19,9 @@ const personGreet = {
   greet(self) {
     const noisy = [1];
     if (noisy) {
-      try {
-        console.log("hello");
-      } finally {
-        if (noisy != null) {
-          noisyDrop_drop(noisy);
-        }
+      console.log("hello");
+      if (noisy != null) {
+        noisyDrop_drop(noisy);
       }
     } else if (noisy != null) {
       noisyDrop_drop(noisy);

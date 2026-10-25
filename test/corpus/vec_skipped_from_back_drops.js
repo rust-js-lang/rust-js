@@ -49,13 +49,7 @@ function main() {
       break;
     }
     const loud = tmp;
-    try {
-      console.log(`got ${loud[0]}`);
-    } catch (error) {
-      loudDrop_drop(loud);
-      iter.return();
-      throw error;
-    }
+    console.log(`got ${loud[0]}`);
     try {
       loudDrop_drop(loud);
     } catch (error) {
@@ -119,13 +113,7 @@ function main() {
         break;
       }
       const loud = tmp;
-      try {
-        console.log(`got ${loud[0]}`);
-      } catch (error) {
-        loudDrop_drop(loud);
-        iter.return();
-        throw error;
-      }
+      console.log(`got ${loud[0]}`);
       try {
         loudDrop_drop(loud);
       } catch (error) {
@@ -151,13 +139,7 @@ function main() {
         break;
       }
       const loud = tmp$1;
-      try {
-        console.log(`got ${loud[0]}`);
-      } catch (error) {
-        loudDrop_drop(loud);
-        iter.return();
-        throw error;
-      }
+      console.log(`got ${loud[0]}`);
       try {
         loudDrop_drop(loud);
       } catch (error) {
@@ -311,18 +293,7 @@ function main() {
           break;
         }
         const loud = tmp$1;
-        try {
-          console.log(`got ${loud[0]}`);
-        } catch (error) {
-          loudDrop_drop(loud);
-          iter.return();
-          if (taken$live) {
-            if (taken != null) {
-              loudDrop_drop(taken);
-            }
-          }
-          throw error;
-        }
+        console.log(`got ${loud[0]}`);
         try {
           loudDrop_drop(loud);
         } catch (error) {
@@ -335,16 +306,7 @@ function main() {
           throw error;
         }
       }
-      try {
-        console.log("end");
-      } catch (error) {
-        if (taken$live) {
-          if (taken != null) {
-            loudDrop_drop(taken);
-          }
-        }
-        throw error;
-      }
+      console.log("end");
       taken$live = false;
     } finally {
       for (const item of drained) {

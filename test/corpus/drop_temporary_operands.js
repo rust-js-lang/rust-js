@@ -17,12 +17,9 @@ function third(fail) {
 }
 
 function three(a, b, n) {
+  console.log(`three ${a[0]} ${b[0]}`);
   try {
-    try {
-      console.log(`three ${a[0]} ${b[0]}`);
-    } finally {
-      console.log(`drop ${b[0]}`);
-    }
+    console.log(`drop ${b[0]}`);
   } finally {
     console.log(`drop ${a[0]}`);
   }

@@ -7,21 +7,13 @@ export function entry() {
 }
 
 function callOnce(f, dropF) {
-  try {
-    console.log("calling");
-  } catch (error) {
-    dropF?.(f);
-    throw error;
-  }
+  console.log("calling");
   return f();
 }
 
 function keep(f, dropF) {
-  try {
-    console.log("not called");
-  } finally {
-    dropF?.(f);
-  }
+  console.log("not called");
+  dropF?.(f);
 }
 
 function run(f) {
@@ -32,19 +24,11 @@ function main() {
   let maybe$live = false;
   const a = "a";
   const tick = () => {
-    try {
-      console.log(`tick ${a}`);
-    } finally {
-      console.log(`drop ${a}`);
-    }
+    console.log(`tick ${a}`);
+    console.log(`drop ${a}`);
     return 1;
   };
-  try {
-    console.log("before");
-  } catch (error) {
-    console.log(`drop ${a}`);
-    throw error;
-  }
+  console.log("before");
   let tick$live = false;
   console.log(`${tick()}`);
   console.log("after");
@@ -54,12 +38,9 @@ function main() {
   const once = () => {
     const kept = b;
     const held = c;
+    console.log(`once ${kept[0]} ${held[0]}`);
     try {
-      try {
-        console.log(`once ${kept[0]} ${held[0]}`);
-      } finally {
-        console.log(`drop ${kept[0]}`);
-      }
+      console.log(`drop ${kept[0]}`);
     } finally {
       console.log(`drop ${c[0]}`);
     }
@@ -68,13 +49,7 @@ function main() {
   console.log(`${once()}`);
   const d = "d";
   const d2 = ["d2"];
-  try {
-    console.log("made");
-  } catch (error) {
-    console.log(`drop ${d}`);
-    console.log(`drop ${d2[0]}`);
-    throw error;
-  }
+  console.log("made");
   console.log(`drop ${d}`);
   console.log(`drop ${d2[0]}`);
 
@@ -83,13 +58,7 @@ function main() {
   run(() => {
     const x = p;
     const y = q;
-    try {
-      console.log(`both ${x[0]} ${y[0]}`);
-    } catch (error) {
-      console.log(`drop ${p[0]}`);
-      console.log(`drop ${q[0]}`);
-      throw error;
-    }
+    console.log(`both ${x[0]} ${y[0]}`);
     console.log(`drop ${p[0]}`);
     console.log(`drop ${q[0]}`);
   });
@@ -100,19 +69,14 @@ function main() {
     console.log(`drop ${captured[0]}`);
   };
   r = ["r2"];
-
   try {
     take();
   } catch (error) {
     console.log(`drop ${r[0]}`);
     throw error;
   }
-  try {
-    console.log(`${r[0]}`);
-  } catch (error) {
-    console.log(`drop ${r[0]}`);
-    throw error;
-  }
+  console.log(`${r[0]}`);
+
   const e = ["e"];
   let tmp;
   try {
@@ -131,12 +95,7 @@ function main() {
     console.log(`drop ${r[0]}`);
     throw error;
   }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    console.log(`drop ${r[0]}`);
-    throw error;
-  }
+  console.log(`${tmp}`);
   const f = "f";
   try {
     keep(
@@ -197,18 +156,7 @@ function main() {
         throw error;
       }
     }
-    try {
-      console.log(`loop ${i}`);
-    } catch (error) {
-      if (maybe$live) {
-        console.log(`drop ${h}`);
-      }
-      console.log(`drop ${r[0]}`);
-      if (tick$live) {
-        console.log(`drop ${a}`);
-      }
-      throw error;
-    }
+    console.log(`loop ${i}`);
     try {
       if (maybe$live) {
         console.log(`drop ${h}`);
@@ -222,15 +170,7 @@ function main() {
     }
     maybe$live = false;
   }
-  try {
-    console.log("end");
-  } catch (error) {
-    console.log(`drop ${r[0]}`);
-    if (tick$live) {
-      console.log(`drop ${a}`);
-    }
-    throw error;
-  }
+  console.log("end");
   try {
     console.log(`drop ${r[0]}`);
   } catch (error) {

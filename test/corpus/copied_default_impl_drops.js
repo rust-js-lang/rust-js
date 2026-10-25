@@ -60,11 +60,8 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
       const dropSelf = (holder) => {
         dropI?.(holder[0]);
       };
-      try {
-        console.log("eaten");
-      } finally {
-        dropSelf?.(self);
-      }
+      console.log("eaten");
+      dropSelf?.(self);
     },
     eatAfterOne(self) {
       const dropSelf = (holder) => {
@@ -120,12 +117,7 @@ function main() {
     tagDrop_drop(g[0][1]);
     throw error;
   }
-  try {
-    console.log("two skipped");
-  } catch (error) {
-    tagDrop_drop(g[0][1]);
-    throw error;
-  }
+  console.log("two skipped");
   const h = [[2, [2]]];
   const d = {
     value: h,

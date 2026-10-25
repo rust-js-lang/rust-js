@@ -22,12 +22,9 @@ function main() {
     );
   } finally {
     const tryBorrowMut = $tryBorrow(log, true);
-    try {
-      console.log(`free as it unwinds: ${tryBorrowMut.TAG === "Ok"}`);
-    } finally {
-      if (tryBorrowMut.TAG === "Ok") {
-        $unborrow(tryBorrowMut._0);
-      }
+    console.log(`free as it unwinds: ${tryBorrowMut.TAG === "Ok"}`);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   }
 }

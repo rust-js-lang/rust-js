@@ -419,8 +419,9 @@ const PURE: &[&str] = &[
 ];
 
 /// The helpers that change what they're given but never throw: a range's
-/// step, `$rangeNext(range)`, of a range a `Range` is.
-const NEVER_THROW: &[&str] = &["$rangeNext", "$rangeNextBack"];
+/// step, `$rangeNext(range)`, of a range a `Range` is; and a write to a
+/// standard stream, which never fails (ADRs 0132, 0901).
+const NEVER_THROW: &[&str] = &["$rangeNext", "$rangeNextBack", "$print", "$eprint"];
 
 /// Whether `name` is a helper whose call throws only where its arguments
 /// do: the pure ones, and those that change what they're given but never

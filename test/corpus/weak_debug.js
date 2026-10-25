@@ -50,12 +50,9 @@ function main() {
       const value$1 = $downgrade(value);
       try {
         const upgrade = $upgrade(value$1);
-        try {
-          console.log(`(Weak) ${upgrade == null ? "None" : `Some(${upgrade.value})`}`);
-        } finally {
-          if (upgrade != null) {
-            $rcDrop(upgrade);
-          }
+        console.log(`(Weak) ${upgrade == null ? "None" : `Some(${upgrade.value})`}`);
+        if (upgrade != null) {
+          $rcDrop(upgrade);
         }
       } finally {
         $weakDrop(value$1);
@@ -65,20 +62,14 @@ function main() {
     }
     // Of a counted `Rc`'s, two to nothing are one (ADR 0843).
     const none = $weakNone;
+    console.log(`${none === $weakNone}`);
     try {
-      try {
-        console.log(`${none === $weakNone}`);
-      } finally {
-        $weakDrop($weakNone);
-      }
+      $weakDrop($weakNone);
       const s = { value: 3, strong: 1, weak: 0 };
       try {
         const value = $downgrade(s);
-        try {
-          console.log("(Weak)");
-        } finally {
-          $weakDrop(value);
-        }
+        console.log("(Weak)");
+        $weakDrop(value);
       } finally {
         $rcDrop(s);
       }

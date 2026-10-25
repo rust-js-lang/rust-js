@@ -143,12 +143,9 @@ function main() {
     $unborrow(value$5);
   }
   const again = $tryBorrow($index(shapes, 1), true);
-  try {
-    console.log(`${again.TAG === "Ok"}`);
-  } finally {
-    if (again.TAG === "Ok") {
-      $unborrow(again._0);
-    }
+  console.log(`${again.TAG === "Ok"}`);
+  if (again.TAG === "Ok") {
+    $unborrow(again._0);
   }
 }
 //# sourceMappingURL=case.js.map

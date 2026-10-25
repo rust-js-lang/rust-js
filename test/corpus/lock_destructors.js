@@ -12,11 +12,8 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   let m;
-  try {
-    console.log("made");
-  } finally {
-    console.log("drop guard");
-  }
+  console.log("made");
+  console.log("drop guard");
   console.log("dropped");
   const shared = { value: { value: ["shared"] }, strong: 1, weak: 0 };
   let other;
@@ -47,22 +44,16 @@ function main() {
       $unborrow(value);
     }
     const value$1 = $lockRead(l, true);
-    try {
-      console.log(`${value$1.value.length} held`);
-    } finally {
-      $unborrow(value$1);
-    }
+    console.log(`${value$1.value.length} held`);
+    $unborrow(value$1);
   } finally {
     for (const item of l.value) {
       noisyDrop_drop(item);
     }
   }
   const h = { name: "holder", lock: { value: ["in holder"] } };
-  try {
-    console.log(`${h.name}`);
-  } finally {
-    noisyDrop_drop(h.lock.value);
-  }
+  console.log(`${h.name}`);
+  noisyDrop_drop(h.lock.value);
   m = { value: ["old"] };
   const noisy = ["new"];
   let tmp;
@@ -88,12 +79,7 @@ function main() {
     noisyDrop_drop(m.value);
     throw error;
   }
-  try {
-    console.log("replaced");
-  } catch (error) {
-    noisyDrop_drop(m.value);
-    throw error;
-  }
+  console.log("replaced");
   const w = { value: ["before"] };
   const value = ["after"];
   let tmp$1;
@@ -127,11 +113,8 @@ function main() {
   }
   m = ["taken"];
   const inner = m;
-  try {
-    console.log(`took ${inner[0]}`);
-  } finally {
-    noisyDrop_drop(inner);
-  }
+  console.log(`took ${inner[0]}`);
+  noisyDrop_drop(inner);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

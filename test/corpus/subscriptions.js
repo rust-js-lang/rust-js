@@ -161,45 +161,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`${b.name} has ${b.subs.length}`);
-    } catch (error) {
-      for (const item of b.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
-            try {
-              borrowMut.handlers.delete(item.id);
-            } finally {
-              $unborrow(borrowMut);
-            }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
-          }
-        }
-        $weakDrop(item.bus);
-      }
-      for (const item of a.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
-            try {
-              borrowMut.handlers.delete(item.id);
-            } finally {
-              $unborrow(borrowMut);
-            }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
-          }
-        }
-        $weakDrop(item.bus);
-      }
-      throw error;
-    }
+    console.log(`${b.name} has ${b.subs.length}`);
     try {
       for (const item of b.subs) {
         const bus = $upgrade(item.bus);
@@ -287,11 +249,8 @@ function main() {
       );
       publish(bus, "empty");
       const borrow = $borrow(bus.value, true);
-      try {
-        console.log(`left ${borrow.handlers.size}`);
-      } finally {
-        $unborrow(borrow);
-      }
+      console.log(`left ${borrow.handlers.size}`);
+      $unborrow(borrow);
     } finally {
       for (const item of comps) {
         for (const item$1 of item.subs) {

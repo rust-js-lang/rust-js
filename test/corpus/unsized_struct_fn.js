@@ -22,10 +22,7 @@ function main() {
     }
   }
   const borrow = $borrow(total, true);
-  try {
-    console.log(`${borrow.value}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.value}`);
+  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

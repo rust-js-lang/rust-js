@@ -176,15 +176,7 @@ function lend() {
       }
       throw error;
     }
-    try {
-      console.log(`replaced ${old[0]}`);
-    } catch (error) {
-      loudDrop_drop(old);
-      for (const item of d) {
-        loudDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`replaced ${old[0]}`);
     try {
       loudDrop_drop(old);
     } catch (error) {

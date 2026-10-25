@@ -64,19 +64,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${d?.[0] ?? 0}`);
-  } catch (error) {
-    for (const item of p.iter) {
-      dDrop_drop(item);
-    }
-    if (p.peeked != null) {
-      if ($someValue(p.peeked) != null) {
-        dDrop_drop($someValue(p.peeked));
-      }
-    }
-    throw error;
-  }
+  console.log(`${d?.[0] ?? 0}`);
   let next;
   let tmp;
   try {
@@ -111,32 +99,8 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${map ?? 0}`);
-  } catch (error) {
-    for (const item of p.iter) {
-      dDrop_drop(item);
-    }
-    if (p.peeked != null) {
-      if ($someValue(p.peeked) != null) {
-        dDrop_drop($someValue(p.peeked));
-      }
-    }
-    throw error;
-  }
-  try {
-    console.log("end");
-  } catch (error) {
-    for (const item of p.iter) {
-      dDrop_drop(item);
-    }
-    if (p.peeked != null) {
-      if ($someValue(p.peeked) != null) {
-        dDrop_drop($someValue(p.peeked));
-      }
-    }
-    throw error;
-  }
+  console.log(`${map ?? 0}`);
+  console.log("end");
   for (const item of p.iter) {
     dDrop_drop(item);
   }

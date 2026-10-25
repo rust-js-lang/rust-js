@@ -12,29 +12,10 @@ function loudDrop_drop(loud) {
 
 function main() {
   const shared = { value: 5, impl: { typeId: () => "u8" }, strong: 1, weak: 0 };
-  try {
-    console.log(`${shared.strong}`);
-  } catch (error) {
-    $rcDrop(shared, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
+  console.log(`${shared.strong}`);
   const downcast =
     shared.impl.typeId() === "u8" ? { TAG: "Ok", _0: shared } : { TAG: "Err", _0: shared };
-  try {
-    console.log(`${downcast.TAG === "Ok"}`);
-  } catch (error) {
-    if (downcast.TAG === "Ok") {
-      $rcDrop(downcast._0);
-    }
-    if (downcast.TAG === "Err") {
-      $rcDrop(downcast._0, (value) => {
-        value.impl.$drop?.(value.value);
-      });
-    }
-    throw error;
-  }
+  console.log(`${downcast.TAG === "Ok"}`);
   if (downcast.TAG === "Ok") {
     $rcDrop(downcast._0);
   }
@@ -101,11 +82,8 @@ function main() {
         });
       }
       const found = $unwrap(value$1);
-      try {
-        console.log(`${found.value[0]} ${found.strong}`);
-      } finally {
-        $rcDrop(found, loudDrop_drop);
-      }
+      console.log(`${found.value[0]} ${found.strong}`);
+      $rcDrop(found, loudDrop_drop);
       console.log(`${other.strong}`);
       other$live = false;
     } finally {

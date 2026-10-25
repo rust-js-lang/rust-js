@@ -318,20 +318,10 @@ function main() {
               throw error;
             }
             const map = front?.[0];
-            try {
-              const value = second?.[0];
-              console.log(
-                `${map == null ? "None" : `Some(${map})`} ${value == null ? "None" : `Some(${value})`}`,
-              );
-            } catch (error) {
-              if (second != null) {
-                noisyDrop_drop(second);
-              }
-              if (front != null) {
-                noisyDrop_drop(front);
-              }
-              throw error;
-            }
+            const value = second?.[0];
+            console.log(
+              `${map == null ? "None" : `Some(${map})`} ${value == null ? "None" : `Some(${value})`}`,
+            );
             try {
               if (front != null) {
                 noisyDrop_drop(front);
@@ -345,12 +335,7 @@ function main() {
               const items = $range(50, 53).map((value) => [value]);
               const last = $lastDropping(
                 $closing($iter(items), $dropEach(noisyDrop_drop)).map((n) => {
-                  try {
-                    console.log(`pass ${n[0]}`);
-                  } catch (error) {
-                    noisyDrop_drop(n);
-                    throw error;
-                  }
+                  console.log(`pass ${n[0]}`);
                   return n;
                 }),
                 noisyDrop_drop,

@@ -41,18 +41,13 @@ function main() {
         noisyDrop_drop(_a);
       }
     });
-    try {
-      console.log(`caught: ${result.TAG === "Err"}`);
+    console.log(`caught: ${result.TAG === "Err"}`);
 
-      const held = ["captured"];
-      const result$1 = $catchUnwind(() => {
+    const held = ["captured"];
+    try {
+      const result = $catchUnwind(() => {
         const taken = held;
-        try {
-          console.log(`holding ${taken[0]}`);
-        } catch (error) {
-          noisyDrop_drop(taken);
-          throw error;
-        }
+        console.log(`holding ${taken[0]}`);
         try {
           throw new Error("again");
         } catch (error) {
@@ -60,26 +55,23 @@ function main() {
           throw error;
         }
       });
-      try {
-        console.log(`caught again: ${result$1.TAG === "Err"}`);
+      console.log(`caught again: ${result.TAG === "Err"}`);
 
+      try {
         const result = $catchUnwind(() => {
           throw $unwinding({
             value: ["payload"],
             impl: { typeId: () => "lib::Noisy", $drop: noisyDrop_drop },
           });
         });
-        try {
-          console.log(`payload caught: ${result.TAG === "Err"}`);
-        } finally {
-          if (result.TAG === "Err") {
-            result._0.impl.$drop?.(result._0.value);
-          }
+        console.log(`payload caught: ${result.TAG === "Err"}`);
+        if (result.TAG === "Err") {
+          result._0.impl.$drop?.(result._0.value);
         }
         console.log("end");
       } finally {
-        if (result$1.TAG === "Err") {
-          result$1._0.impl.$drop?.(result$1._0.value);
+        if (result.TAG === "Err") {
+          result._0.impl.$drop?.(result._0.value);
         }
       }
     } finally {

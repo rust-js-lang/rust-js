@@ -10,9 +10,9 @@ function main() {
   const cell = [1];
   const v = $borrow(cell, true);
   const n = v.length;
+  console.log(`${n}`);
+  const p = cell;
   try {
-    console.log(`${n}`);
-    const p = cell;
     const borrowMut = $borrowMut(p, true);
     try {
       borrowMut.push(0);
@@ -23,10 +23,7 @@ function main() {
     $unborrow(v);
   }
   const borrow = $borrow(cell, true);
-  try {
-    console.log(`${borrow.length}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.length}`);
+  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

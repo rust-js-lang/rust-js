@@ -63,52 +63,19 @@ function main() {
       loudDrop_drop(f$1);
     }
   }
+  console.log(`b ${!b}`);
+  const c = { TAG: "Ok", _0: [4] };
+  const f$2 = { TAG: "Ok", _0: [5] };
   try {
-    console.log(`b ${!b}`);
-    let c = { TAG: "Ok", _0: [4] };
-    const f$1 = { TAG: "Ok", _0: [5] };
     let kept;
     if (c.TAG === "Err") {
       kept = c;
     } else {
-      kept = f$1;
+      kept = f$2;
       loudDrop_drop(c._0);
     }
     const value = kept;
     if (c.TAG === "Err") {
-      if (f$1.TAG === "Ok") {
-        loudDrop_drop(f$1._0);
-      }
-      if (f$1.TAG === "Err") {
-        loudDrop_drop(f$1._0);
-      }
-    }
-    c = value;
-    const fallback = 0;
-    let mapped;
-    if (c.TAG === "Ok") {
-      const map = (l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      };
-      mapped = map(c._0);
-    } else {
-      mapped = fallback;
-      loudDrop_drop(c._0);
-    }
-    console.log(`c ${mapped}`);
-    let d = { TAG: "Err", _0: [6] };
-    const f$2 = { TAG: "Ok", _0: [7] };
-    let kept$1;
-    if (d.TAG === "Err") {
-      kept$1 = d;
-    } else {
-      kept$1 = f$2;
-      loudDrop_drop(d._0);
-    }
-    const value$1 = kept$1;
-    if (d.TAG === "Err") {
       if (f$2.TAG === "Ok") {
         loudDrop_drop(f$2._0);
       }
@@ -116,18 +83,41 @@ function main() {
         loudDrop_drop(f$2._0);
       }
     }
-    d = value$1;
-    try {
-      console.log(`d ${d.TAG === "Err"}`);
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
+    const c$1 = value;
+    const fallback = 0;
+    let mapped;
+    if (c$1.TAG === "Ok") {
+      const map = (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      };
+      mapped = map(c$1._0);
+    } else {
+      mapped = fallback;
+      loudDrop_drop(c$1._0);
     }
+    console.log(`c ${mapped}`);
+    let d = { TAG: "Err", _0: [6] };
+    const f$1 = { TAG: "Ok", _0: [7] };
+    let kept$1;
+    if (d.TAG === "Err") {
+      kept$1 = d;
+    } else {
+      kept$1 = f$1;
+      loudDrop_drop(d._0);
+    }
+    const value$2 = kept$1;
+    if (d.TAG === "Err") {
+      if (f$1.TAG === "Ok") {
+        loudDrop_drop(f$1._0);
+      }
+      if (f$1.TAG === "Err") {
+        loudDrop_drop(f$1._0);
+      }
+    }
+    d = value$2;
+    console.log(`d ${d.TAG === "Err"}`);
     let e;
     try {
       e = pick([8], [9], loudDrop_drop, loudDrop_drop);
@@ -157,17 +147,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`e ${tmp}`);
-    } catch (error) {
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
+    console.log(`e ${tmp}`);
     let f;
     try {
       f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
@@ -180,35 +160,9 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`f ${!f}`);
-    } catch (error) {
-      if (f != null) {
-        loudDrop_drop(f);
-      }
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
-    try {
-      const value$1 = 1 == null ? undefined : 2;
-      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-    } catch (error) {
-      if (f != null) {
-        loudDrop_drop(f);
-      }
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
+    console.log(`f ${!f}`);
+    const value$1 = 1 == null ? undefined : 2;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const g = { TAG: "Ok", _0: [11] };
     let kept$2;
     try {
@@ -230,20 +184,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`g ${kept$2.TAG === "Ok" ? `Ok(${kept$2._0})` : `Err(${kept$2._0})`}`);
-    } catch (error) {
-      if (f != null) {
-        loudDrop_drop(f);
-      }
-      if (d.TAG === "Ok") {
-        loudDrop_drop(d._0);
-      }
-      if (d.TAG === "Err") {
-        loudDrop_drop(d._0);
-      }
-      throw error;
-    }
+    console.log(`g ${kept$2.TAG === "Ok" ? `Ok(${kept$2._0})` : `Err(${kept$2._0})`}`);
     try {
       if (f != null) {
         loudDrop_drop(f);

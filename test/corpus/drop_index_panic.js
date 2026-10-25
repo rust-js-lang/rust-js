@@ -11,11 +11,8 @@ function nth(items, at) {
     throw new Error(`index out of bounds: the len is ${items.length} but the index is ${at}`);
   }
   const read = items[at];
-  try {
-    console.log(`read ${read}`);
-  } finally {
-    console.log(`drop ${held}`);
-  }
+  console.log(`read ${read}`);
+  console.log(`drop ${held}`);
   return read;
 }
 

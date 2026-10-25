@@ -28,14 +28,7 @@ function main() {
     $rcDrop(a);
     throw error;
   }
-  const strong = a.strong;
-  try {
-    console.log(`${f} ${strong} ${b.strong}`);
-  } catch (error) {
-    $rcDrop(b);
-    $rcDrop(a);
-    throw error;
-  }
+  console.log(`${f} ${a.strong} ${b.strong}`);
   try {
     $rcDrop(a);
     console.log(`${b.strong}`);

@@ -34,13 +34,9 @@ function main() {
     try {
       const value = $index(b, 0);
       const tryBorrowMut = $tryBorrow(cell, true);
-      const value$1 = tryBorrowMut.TAG === "Err";
-      try {
-        console.log(`${a.length} ${value} ${value$1}`);
-      } finally {
-        if (tryBorrowMut.TAG === "Ok") {
-          $unborrow(tryBorrowMut._0);
-        }
+      console.log(`${a.length} ${value} ${tryBorrowMut.TAG === "Err"}`);
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
       }
     } finally {
       $unborrow(b);
@@ -58,13 +54,9 @@ function main() {
   let writing$live;
   try {
     const tryBorrow = $tryBorrow(cell);
-    const isErr = tryBorrow.TAG === "Err";
-    try {
-      console.log(`${isErr} ${writing.length}`);
-    } finally {
-      if (tryBorrow.TAG === "Ok") {
-        $unborrow(tryBorrow._0);
-      }
+    console.log(`${tryBorrow.TAG === "Err"} ${writing.length}`);
+    if (tryBorrow.TAG === "Ok") {
+      $unborrow(tryBorrow._0);
     }
     writing$live = false;
   } finally {
@@ -157,17 +149,7 @@ function main() {
     }
     throw error;
   }
-  const value$7 = $byteLen(tmp$1.value);
-  try {
-    console.log(`${tmp.value} ${value$7}`);
-  } catch (error) {
-    $unborrow(tmp$1);
-    $unborrow(tmp);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  console.log(`${tmp.value} ${$byteLen(tmp$1.value)}`);
   try {
     $unborrow(tmp$1);
   } catch (error) {
@@ -257,14 +239,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${$debugStr(replace)} ${tmp$3[1]} ${tmp$3[2]}`);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  console.log(`${$debugStr(replace)} ${tmp$3[1]} ${tmp$3[2]}`);
   let reading;
   try {
     reading = $borrow(copy, true);
@@ -284,10 +259,10 @@ function main() {
     }
     throw error;
   }
-  const value$8 = tmp$4.TAG === "Err";
+  const value$7 = tmp$4.TAG === "Err";
   try {
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${value$8}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${value$7}`,
     );
   } catch (error) {
     if (tmp$4.TAG === "Ok") {

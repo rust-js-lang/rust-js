@@ -75,53 +75,25 @@ const Mapped = {
 };
 
 function middle(shape) {
-  let shape$1$live = true;
   let shape$1$live$1 = true;
   let result;
   if (shape.TAG === "Pair") {
     shape$1$live$1 = false;
-  } else {
-    if (shape.TAG !== "Triple") {
-      try {
-        console.log("none");
-        result = undefined;
-      } finally {
-        if (shape.TAG === "Pair") {
-          loudDrop_drop(shape._0);
-          loudDrop_drop(shape._1);
-        } else if (shape.TAG === "Triple") {
-          loudDrop_drop(shape._0);
-          loudDrop_drop(shape._1);
-          loudDrop_drop(shape._2);
-        }
-      }
-      return result;
-    }
-    shape$1$live = false;
-  }
-  let m$live = true;
-  const m = shape._1;
-  try {
-    console.log(`got ${m[0]}`);
-  } catch (error) {
-    if (m$live) {
-      loudDrop_drop(m);
-    }
+  } else if (shape.TAG !== "Triple") {
+    console.log("none");
+    result = undefined;
     if (shape.TAG === "Pair") {
       loudDrop_drop(shape._0);
-      if (shape$1$live$1) {
-        loudDrop_drop(shape._1);
-      }
+      loudDrop_drop(shape._1);
     } else if (shape.TAG === "Triple") {
       loudDrop_drop(shape._0);
-      if (shape$1$live) {
-        loudDrop_drop(shape._1);
-      }
+      loudDrop_drop(shape._1);
       loudDrop_drop(shape._2);
     }
-    throw error;
+    return result;
   }
-  m$live = false;
+  const m = shape._1;
+  console.log(`got ${m[0]}`);
   result = m;
   if (shape.TAG === "Pair") {
     loudDrop_drop(shape._0);
@@ -149,13 +121,10 @@ function name(shape) {
     }
     first = shape._2;
   }
+  console.log(`kept ${first[0]}`);
+  result = first[0];
   try {
-    try {
-      console.log(`kept ${first[0]}`);
-      result = first[0];
-    } finally {
-      loudDrop_drop(first);
-    }
+    loudDrop_drop(first);
   } finally {
     if (shape.TAG === "Pair") {
       if (shape$0$live) {
@@ -172,33 +141,30 @@ function name(shape) {
 
 function main() {
   const a = Mapped.earliest({ TAG: "Ambiguous", _0: ["a1"], _1: ["a2"] }, loudDrop_drop);
+  console.log(`earliest ${a?.[0] ?? "none"}`);
   try {
-    console.log(`earliest ${a?.[0] ?? "none"}`);
     const b = Mapped.latest({ TAG: "Ambiguous", _0: ["b1"], _1: ["b2"] }, loudDrop_drop);
+    console.log(`latest ${b?.[0] ?? "none"}`);
     try {
-      console.log(`latest ${b?.[0] ?? "none"}`);
       const c = Mapped.earliest({ TAG: "Single", _0: ["c"] }, loudDrop_drop);
+      console.log(`single ${c?.[0] ?? "none"}`);
       try {
-        console.log(`single ${c?.[0] ?? "none"}`);
         const n = Mapped.latest("None", loudDrop_drop);
+        console.log(`none ${!n}`);
         try {
-          console.log(`none ${!n}`);
           const numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
           console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
 
           const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
+          console.log(`middle ${m?.[0] ?? "none"}`);
           try {
-            console.log(`middle ${m?.[0] ?? "none"}`);
             const p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
+            console.log(`middle ${p?.[0] ?? "none"}`);
             try {
-              console.log(`middle ${p?.[0] ?? "none"}`);
               const loud = middle("Empty");
-              try {
-                console.log(`middle none ${!loud}`);
-              } finally {
-                if (loud != null) {
-                  loudDrop_drop(loud);
-                }
+              console.log(`middle none ${!loud}`);
+              if (loud != null) {
+                loudDrop_drop(loud);
               }
 
               console.log(`name ${name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] })}`);

@@ -26,11 +26,8 @@ function main() {
       $unwrapOk($send(tx, ["b"]), undefined, (e) => "SendError { .. }");
       $unwrapOk($send(tx, ["c"]), undefined, (e) => "SendError { .. }");
       const first = $unwrapOk($recv(rx), undefined, (e) => "RecvError");
-      try {
-        console.log(`got ${first[0]}`);
-      } finally {
-        loudDrop_drop(first);
-      }
+      console.log(`got ${first[0]}`);
+      loudDrop_drop(first);
     } finally {
       $dropReceiver(rx, loudDrop_drop);
     }
@@ -39,11 +36,8 @@ function main() {
     if (send.TAG === "Ok") {
       console.log("sent");
     } else {
-      try {
-        console.log(`back ${send._0[0][0]}`);
-      } finally {
-        loudDrop_drop(send._0[0]);
-      }
+      console.log(`back ${send._0[0][0]}`);
+      loudDrop_drop(send._0[0]);
     }
 
     const [outerTx, outerRx] = $channel();

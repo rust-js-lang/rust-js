@@ -11,17 +11,17 @@ function main() {
   try {
     const other = $rcClone(shared);
     const text = shared.value;
+    console.log(`${text} ${other.value} ${shared.strong}`);
+    const n = 5;
+    const c = { value: n, strong: 1, weak: 0 };
     try {
-      console.log(`${text} ${other.value} ${shared.strong}`);
-      const n = 5;
-      const c = { value: n, strong: 1, weak: 0 };
       try {
         const d = $rcClone(c);
+        console.log(`${c.value} ${d.value} ${c.strong}`);
+        const r = other.value;
+        const plain = [1, 2];
+        const v = plain;
         try {
-          console.log(`${c.value} ${d.value} ${c.strong}`);
-          const r = other.value;
-          const plain = [1, 2];
-          const v = plain;
           console.log(`${r} [${v.join(", ")}]`);
         } finally {
           $rcDrop(d);

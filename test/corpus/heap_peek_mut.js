@@ -66,11 +66,8 @@ function main() {
   console.log("read");
   top = $peekMut(loud, loudOrd_cmp);
   if (top) {
-    try {
-      console.log(`top ${top.heap[0][0]}`);
-    } finally {
-      $peekMutDrop(top);
-    }
+    console.log(`top ${top.heap[0][0]}`);
+    $peekMutDrop(top);
   }
   console.log("write");
   top = $peekMut(loud, loudOrd_cmp);

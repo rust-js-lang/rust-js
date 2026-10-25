@@ -17,11 +17,8 @@ function main() {
   const borrow = $borrow(cell, true);
   try {
     const value = $borrow(other, true);
-    try {
-      console.log(`${borrow.value} ${value.value}`);
-    } finally {
-      $unborrow(value);
-    }
+    console.log(`${borrow.value} ${value.value}`);
+    $unborrow(value);
   } finally {
     $unborrow(borrow);
   }

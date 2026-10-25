@@ -51,12 +51,7 @@ function main() {
       break;
     }
     const x = tmp;
-    try {
-      console.log(`for ${x}`);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
+    console.log(`for ${x}`);
   }
   const map = $closing($iterator({ n: 1, name: "first" }, counterIterator_next), (it) => {
     console.log(`drop ${it.of.name}`);

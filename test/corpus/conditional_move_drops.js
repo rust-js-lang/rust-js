@@ -5,11 +5,8 @@ export function entry() {
 }
 
 function take(n) {
-  try {
-    console.log(`took ${n[0]}`);
-  } finally {
-    console.log(`drop ${n[0]}`);
-  }
+  console.log(`took ${n[0]}`);
+  console.log(`drop ${n[0]}`);
 }
 
 function main() {
@@ -22,12 +19,9 @@ function main() {
       n$live = false;
       take(n);
     }
-    try {
-      console.log(`end of ${give}`);
-    } finally {
-      if (n$live) {
-        console.log(`drop ${n[0]}`);
-      }
+    console.log(`end of ${give}`);
+    if (n$live) {
+      console.log(`drop ${n[0]}`);
     }
     n$live = false;
   }

@@ -142,10 +142,7 @@ function main() {
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);
   const borrow = $borrow(name, true);
-  try {
-    console.log(`${previous} ${borrow.value}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${previous} ${borrow.value}`);
+  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

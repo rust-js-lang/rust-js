@@ -2,12 +2,12 @@
 
 import {
   $byteLen,
-  $catchUnwind,
   $panicMessage,
   $repeat,
   $repeatItems,
   $roomFor,
   $textRoomFor,
+  $unwound,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -39,11 +39,11 @@ function message(payload) {
 }
 
 function check(what, f) {
-  const value = $catchUnwind(f);
-  if (value.TAG === "Ok") {
+  try {
+    f();
     console.log(`${what}: room`);
-  } else {
-    const payload = value._0;
+  } catch (thrown) {
+    const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
   }

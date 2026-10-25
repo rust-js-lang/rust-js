@@ -14,11 +14,8 @@ function main() {
   const rc = { value: 5, strong: 1, weak: 0 };
   try {
     const other = again(rc);
-    try {
-      console.log(`${rc.strong} ${other.value}`);
-    } finally {
-      $rcDrop(other);
-    }
+    console.log(`${rc.strong} ${other.value}`);
+    $rcDrop(other);
     console.log(`${rc.strong}`);
   } finally {
     $rcDrop(rc);

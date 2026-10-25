@@ -82,14 +82,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${n} ${arg}`);
-  } catch (error) {
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
+  console.log(`${n} ${arg}`);
   let last;
   try {
     last = takeLast(v);
@@ -99,17 +92,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`took ${last?.[0] ?? "none"}`);
-  } catch (error) {
-    if (last != null) {
-      loudDrop_drop(last);
-    }
-    for (const item of v) {
-      loudDrop_drop(item);
-    }
-    throw error;
-  }
+  console.log(`took ${last?.[0] ?? "none"}`);
   const w = [v];
   try {
     try {

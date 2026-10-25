@@ -58,13 +58,10 @@ function main() {
     }
     return result;
   });
-  try {
-    console.log(`loudest ${loudest?.[0] ?? 0}`);
-    console.log("end");
-  } finally {
-    if (loudest != null) {
-      console.log(`drop ${loudest[0]}`);
-    }
+  console.log(`loudest ${loudest?.[0] ?? 0}`);
+  console.log("end");
+  if (loudest != null) {
+    console.log(`drop ${loudest[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

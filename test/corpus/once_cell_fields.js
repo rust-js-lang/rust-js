@@ -181,19 +181,14 @@ function drops() {
       held.loud = value;
     }
     const again = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
-    const value$1 = again.TAG === "Err";
-    const name = held.name;
+    console.log(`${held.name} ${again.TAG === "Err"}`);
+    const empty = {
+      name: "empty",
+    };
+    console.log(`${empty.name}`);
     try {
-      console.log(`${name} ${value$1}`);
-      const empty = {
-        name: "empty",
-      };
-      try {
-        console.log(`${empty.name}`);
-      } finally {
-        if (empty.loud != null) {
-          console.log(`drop ${empty.loud[0]}`);
-        }
+      if (empty.loud != null) {
+        console.log(`drop ${empty.loud[0]}`);
       }
     } finally {
       if (again.TAG === "Err") {

@@ -157,62 +157,13 @@ function main() {
 
   const lone = ["b"];
   if (typeof lone === "number") {
-    try {
-      console.log(`quiet ${lone}`);
-    } catch (error) {
-      if (Array.isArray(lone)) {
-        noisyDrop_drop(lone);
-      }
-      if (typeof lone === "object" && !Array.isArray(lone)) {
-        noisyDrop_drop(lone.first);
-        noisyDrop_drop(lone.second);
-      }
-      throw error;
-    }
+    console.log(`quiet ${lone}`);
   }
   const pair = { held: ["p"], other: ["q"] };
   other = pair.other;
-  try {
-    console.log(`moved ${other[0]}`);
-  } catch (error) {
-    noisyDrop_drop(other);
-    if (Array.isArray(pair.held)) {
-      noisyDrop_drop(pair.held);
-    }
-    if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-      noisyDrop_drop(pair.held.first);
-      noisyDrop_drop(pair.held.second);
-    }
-    if (Array.isArray(lone)) {
-      noisyDrop_drop(lone);
-    }
-    if (typeof lone === "object" && !Array.isArray(lone)) {
-      noisyDrop_drop(lone.first);
-      noisyDrop_drop(lone.second);
-    }
-    throw error;
-  }
+  console.log(`moved ${other[0]}`);
   if (typeof pair.held === "number") {
-    try {
-      console.log(`quiet ${pair.held}`);
-    } catch (error) {
-      noisyDrop_drop(other);
-      if (Array.isArray(pair.held)) {
-        noisyDrop_drop(pair.held);
-      }
-      if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-        noisyDrop_drop(pair.held.first);
-        noisyDrop_drop(pair.held.second);
-      }
-      if (Array.isArray(lone)) {
-        noisyDrop_drop(lone);
-      }
-      if (typeof lone === "object" && !Array.isArray(lone)) {
-        noisyDrop_drop(lone.first);
-        noisyDrop_drop(lone.second);
-      }
-      throw error;
-    }
+    console.log(`quiet ${pair.held}`);
   }
   // Its payload's part moved out: the rest is dropped as the variant's.
   const first$1 = ["f"];
@@ -222,38 +173,7 @@ function main() {
   const both = { first: first$1, second };
   if (typeof both === "object" && !Array.isArray(both)) {
     both$0$first$live = false;
-    try {
-      console.log(`took ${both.first[0]}`);
-    } catch (error) {
-      noisyDrop_drop(both.first);
-      if (typeof both === "object" && !Array.isArray(both)) {
-        noisyDrop_drop(both.second);
-      } else {
-        if (Array.isArray(both)) {
-          noisyDrop_drop(both);
-        }
-        if (typeof both === "object" && !Array.isArray(both)) {
-          noisyDrop_drop(both.first);
-          noisyDrop_drop(both.second);
-        }
-      }
-      noisyDrop_drop(other);
-      if (Array.isArray(pair.held)) {
-        noisyDrop_drop(pair.held);
-      }
-      if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-        noisyDrop_drop(pair.held.first);
-        noisyDrop_drop(pair.held.second);
-      }
-      if (Array.isArray(lone)) {
-        noisyDrop_drop(lone);
-      }
-      if (typeof lone === "object" && !Array.isArray(lone)) {
-        noisyDrop_drop(lone.first);
-        noisyDrop_drop(lone.second);
-      }
-      throw error;
-    }
+    console.log(`took ${both.first[0]}`);
     try {
       noisyDrop_drop(both.first);
     } catch (error) {
@@ -383,143 +303,11 @@ function main() {
     }
     const h = tmp;
     if (typeof h === "number") {
-      try {
-        console.log(`quiet ${h}`);
-      } catch (error) {
-        for (const item of held) {
-          if (Array.isArray(item)) {
-            noisyDrop_drop(item);
-          }
-          if (typeof item === "object" && !Array.isArray(item)) {
-            noisyDrop_drop(item.first);
-            noisyDrop_drop(item.second);
-          }
-        }
-        if (typeof both === "object" && !Array.isArray(both)) {
-          if (both$0$first$live) {
-            noisyDrop_drop(both.first);
-          }
-          if (both$0$live) {
-            noisyDrop_drop(both.second);
-          }
-        } else {
-          if (Array.isArray(both)) {
-            noisyDrop_drop(both);
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            noisyDrop_drop(both.first);
-            noisyDrop_drop(both.second);
-          }
-        }
-        noisyDrop_drop(other);
-        if (Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held);
-        }
-        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held.first);
-          noisyDrop_drop(pair.held.second);
-        }
-        if (Array.isArray(lone)) {
-          noisyDrop_drop(lone);
-        }
-        if (typeof lone === "object" && !Array.isArray(lone)) {
-          noisyDrop_drop(lone.first);
-          noisyDrop_drop(lone.second);
-        }
-        throw error;
-      }
+      console.log(`quiet ${h}`);
     } else if (Array.isArray(h)) {
-      try {
-        console.log(`loud ${h[0]}`);
-      } catch (error) {
-        for (const item of held) {
-          if (Array.isArray(item)) {
-            noisyDrop_drop(item);
-          }
-          if (typeof item === "object" && !Array.isArray(item)) {
-            noisyDrop_drop(item.first);
-            noisyDrop_drop(item.second);
-          }
-        }
-        if (typeof both === "object" && !Array.isArray(both)) {
-          if (both$0$first$live) {
-            noisyDrop_drop(both.first);
-          }
-          if (both$0$live) {
-            noisyDrop_drop(both.second);
-          }
-        } else {
-          if (Array.isArray(both)) {
-            noisyDrop_drop(both);
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            noisyDrop_drop(both.first);
-            noisyDrop_drop(both.second);
-          }
-        }
-        noisyDrop_drop(other);
-        if (Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held);
-        }
-        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held.first);
-          noisyDrop_drop(pair.held.second);
-        }
-        if (Array.isArray(lone)) {
-          noisyDrop_drop(lone);
-        }
-        if (typeof lone === "object" && !Array.isArray(lone)) {
-          noisyDrop_drop(lone.first);
-          noisyDrop_drop(lone.second);
-        }
-        throw error;
-      }
+      console.log(`loud ${h[0]}`);
     } else {
-      try {
-        console.log(`both ${h.first[0]} ${h.second[0]}`);
-      } catch (error) {
-        for (const item of held) {
-          if (Array.isArray(item)) {
-            noisyDrop_drop(item);
-          }
-          if (typeof item === "object" && !Array.isArray(item)) {
-            noisyDrop_drop(item.first);
-            noisyDrop_drop(item.second);
-          }
-        }
-        if (typeof both === "object" && !Array.isArray(both)) {
-          if (both$0$first$live) {
-            noisyDrop_drop(both.first);
-          }
-          if (both$0$live) {
-            noisyDrop_drop(both.second);
-          }
-        } else {
-          if (Array.isArray(both)) {
-            noisyDrop_drop(both);
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            noisyDrop_drop(both.first);
-            noisyDrop_drop(both.second);
-          }
-        }
-        noisyDrop_drop(other);
-        if (Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held);
-        }
-        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held.first);
-          noisyDrop_drop(pair.held.second);
-        }
-        if (Array.isArray(lone)) {
-          noisyDrop_drop(lone);
-        }
-        if (typeof lone === "object" && !Array.isArray(lone)) {
-          noisyDrop_drop(lone.first);
-          noisyDrop_drop(lone.second);
-        }
-        throw error;
-      }
+      console.log(`both ${h.first[0]} ${h.second[0]}`);
     }
   }
 
@@ -625,51 +413,7 @@ function main() {
     const values = tmp;
     const first = values[0];
     if (first == null || first === 1) {
-      try {
-        console.log("none");
-      } catch (error) {
-        for (const item of held) {
-          if (Array.isArray(item)) {
-            noisyDrop_drop(item);
-          }
-          if (typeof item === "object" && !Array.isArray(item)) {
-            noisyDrop_drop(item.first);
-            noisyDrop_drop(item.second);
-          }
-        }
-        if (typeof both === "object" && !Array.isArray(both)) {
-          if (both$0$first$live) {
-            noisyDrop_drop(both.first);
-          }
-          if (both$0$live) {
-            noisyDrop_drop(both.second);
-          }
-        } else {
-          if (Array.isArray(both)) {
-            noisyDrop_drop(both);
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            noisyDrop_drop(both.first);
-            noisyDrop_drop(both.second);
-          }
-        }
-        noisyDrop_drop(other);
-        if (Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held);
-        }
-        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-          noisyDrop_drop(pair.held.first);
-          noisyDrop_drop(pair.held.second);
-        }
-        if (Array.isArray(lone)) {
-          noisyDrop_drop(lone);
-        }
-        if (typeof lone === "object" && !Array.isArray(lone)) {
-          noisyDrop_drop(lone.first);
-          noisyDrop_drop(lone.second);
-        }
-        throw error;
-      }
+      console.log("none");
       continue;
     }
     try {

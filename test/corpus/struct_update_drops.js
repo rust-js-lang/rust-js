@@ -36,12 +36,10 @@ function swapY(p) {
 }
 
 function keep(n) {
-  try {
-    console.log(`keep ${n[0]}`);
-    return [(n[0] + 10) & 255];
-  } finally {
-    noisyDrop_drop(n);
-  }
+  console.log(`keep ${n[0]}`);
+  const result = [(n[0] + 10) & 255];
+  noisyDrop_drop(n);
+  return result;
 }
 
 function rebuild(p, stop) {
@@ -63,14 +61,8 @@ function rebuild(p, stop) {
 function main() {
   const p = { x: [1], y: [2], n: 1 };
   const q = { ...p, y: [3] };
+  console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
   try {
-    try {
-      console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
-    } catch (error) {
-      noisyDrop_drop(q.x);
-      noisyDrop_drop(q.y);
-      throw error;
-    }
     noisyDrop_drop(q.x);
     noisyDrop_drop(q.y);
   } finally {
@@ -79,14 +71,8 @@ function main() {
   console.log("after p");
 
   const swapped = swapY({ x: [4], y: [5], n: 2 });
+  console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
 
-  try {
-    console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
-  } catch (error) {
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
-    throw error;
-  }
   const partial = { x: [7], y: [8], n: 3 };
   const fromTemp = { y: [6], x: partial.x, n: partial.n };
   try {
@@ -98,16 +84,8 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
+  console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
 
-  try {
-    console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
-  } catch (error) {
-    noisyDrop_drop(fromTemp.x);
-    noisyDrop_drop(fromTemp.y);
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
-    throw error;
-  }
   const noisy = [22];
   let tmp;
   try {
@@ -132,18 +110,8 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
+  console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
 
-  try {
-    console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
-  } catch (error) {
-    noisyDrop_drop(defaults.x);
-    noisyDrop_drop(defaults.y);
-    noisyDrop_drop(fromTemp.x);
-    noisyDrop_drop(fromTemp.y);
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
-    throw error;
-  }
   let tmp$1;
   try {
     tmp$1 = rebuild({ x: [10], y: [11], n: 4 }, true);
@@ -156,21 +124,7 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  try {
-    console.log(`stopped ${!tmp$1}`);
-  } catch (error) {
-    if (tmp$1 != null) {
-      noisyDrop_drop(tmp$1.x);
-      noisyDrop_drop(tmp$1.y);
-    }
-    noisyDrop_drop(defaults.x);
-    noisyDrop_drop(defaults.y);
-    noisyDrop_drop(fromTemp.x);
-    noisyDrop_drop(fromTemp.y);
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
-    throw error;
-  }
+  console.log(`stopped ${!tmp$1}`);
   try {
     if (tmp$1 != null) {
       noisyDrop_drop(tmp$1.x);
@@ -201,19 +155,7 @@ function main() {
   if (tmp$2) {
     tmp$0$live = false;
     const built = tmp$2;
-    try {
-      console.log(`built ${built.x[0]} ${built.y[0]}`);
-    } catch (error) {
-      noisyDrop_drop(built.x);
-      noisyDrop_drop(built.y);
-      noisyDrop_drop(defaults.x);
-      noisyDrop_drop(defaults.y);
-      noisyDrop_drop(fromTemp.x);
-      noisyDrop_drop(fromTemp.y);
-      noisyDrop_drop(swapped.x);
-      noisyDrop_drop(swapped.y);
-      throw error;
-    }
+    console.log(`built ${built.x[0]} ${built.y[0]}`);
     try {
       noisyDrop_drop(built.x);
       noisyDrop_drop(built.y);
@@ -227,21 +169,7 @@ function main() {
       throw error;
     }
   } else {
-    try {
-      console.log("none");
-    } catch (error) {
-      if (tmp$2) {
-        noisyDrop_drop(tmp$2.x);
-        noisyDrop_drop(tmp$2.y);
-      }
-      noisyDrop_drop(defaults.x);
-      noisyDrop_drop(defaults.y);
-      noisyDrop_drop(fromTemp.x);
-      noisyDrop_drop(fromTemp.y);
-      noisyDrop_drop(swapped.x);
-      noisyDrop_drop(swapped.y);
-      throw error;
-    }
+    console.log("none");
   }
   try {
     if (tmp$2) {
@@ -260,17 +188,7 @@ function main() {
     throw error;
   }
   tmp$0$live = false;
-  try {
-    console.log("end");
-  } catch (error) {
-    noisyDrop_drop(defaults.x);
-    noisyDrop_drop(defaults.y);
-    noisyDrop_drop(fromTemp.x);
-    noisyDrop_drop(fromTemp.y);
-    noisyDrop_drop(swapped.x);
-    noisyDrop_drop(swapped.y);
-    throw error;
-  }
+  console.log("end");
   try {
     noisyDrop_drop(defaults.x);
     noisyDrop_drop(defaults.y);

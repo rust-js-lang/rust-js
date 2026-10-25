@@ -104,16 +104,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`${tmp$1}`);
-    } catch (error) {
-      if (all$live) {
-        for (const item of all) {
-          item.impl.$drop?.(item.value);
-        }
-      }
-      throw error;
-    }
+    console.log(`${tmp$1}`);
   }
   all$live = false;
   for (const item of all) {
@@ -130,19 +121,14 @@ function main() {
     noisyDrop_drop(lent);
     throw error;
   }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    noisyDrop_drop(lent);
-    throw error;
-  }
+  console.log(`${tmp}`);
   const loud = [3];
   const shown = loudDebug_fmt(loud);
+  console.log(`${shown}`);
+
+  const holder = { shape: { value: ["held"], impl: noisyShape } };
   try {
     try {
-      console.log(`${shown}`);
-
-      const holder = { shape: { value: ["held"], impl: noisyShape } };
       try {
         console.log(`${holder.shape.impl.name(holder.shape.value)}`);
         console.log(`${consume({ value: ["given"], impl: noisyShape })}`);
@@ -155,9 +141,9 @@ function main() {
         let boxed = ["boxed"];
         console.log(`${noisyShape_name(boxed)}`);
         const unboxed = boxed;
+        console.log(`moved ${unboxed[0]}`);
+        boxed = ["refilled"];
         try {
-          console.log(`moved ${unboxed[0]}`);
-          boxed = ["refilled"];
           console.log(`${noisyShape_name(boxed)}`);
           console.log("end");
         } finally {

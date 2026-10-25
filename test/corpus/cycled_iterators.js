@@ -115,12 +115,9 @@ function main() {
     .toArray();
   console.log(`[${tags.join(", ")}]`);
   const held = firsts([0], 3, { next: genIterator_next }, { clone: (value) => [value[0]] });
-  try {
-    console.log(`held ${held.length}`);
-  } finally {
-    for (const item of held) {
-      loudDrop_drop(item);
-    }
+  console.log(`held ${held.length}`);
+  for (const item of held) {
+    loudDrop_drop(item);
   }
 
   const counted = $cycleOf(
@@ -149,11 +146,8 @@ function main() {
       loudDrop_drop(counter.tag);
     },
   );
-  try {
-    console.log("made");
-  } finally {
-    unstepped.return();
-  }
+  console.log("made");
+  unstepped.return();
   console.log(
     `[${two($iterator({ n: 5, tag: [4] }, counterIterator_next), (it) => {
       loudDrop_drop(it.of.tag);

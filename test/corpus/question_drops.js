@@ -169,20 +169,10 @@ function main() {
     d$0$live = true;
     if (d) {
       d$0$live = false;
-      try {
-        console.log(`climbed to ${d[0]}`);
-      } finally {
-        dDrop_drop(d);
-      }
+      console.log(`climbed to ${d[0]}`);
+      dDrop_drop(d);
     } else {
-      try {
-        console.log("stopped");
-      } catch (error) {
-        if (d) {
-          dDrop_drop(d);
-        }
-        throw error;
-      }
+      console.log("stopped");
     }
     if (d && d$0$live) {
       dDrop_drop(d);
@@ -205,11 +195,8 @@ function main() {
     if (value.TAG === "Ok") {
       console.log(`ok ${value._0}`);
     } else {
-      try {
-        console.log(`err ${value._0[0]}`);
-      } finally {
-        dDrop_drop(value._0);
-      }
+      console.log(`err ${value._0[0]}`);
+      dDrop_drop(value._0);
     }
   }
   for (const start of [1, 3]) {
@@ -217,20 +204,10 @@ function main() {
     d$0$live$1 = true;
     if (d) {
       d$0$live$1 = false;
-      try {
-        console.log(`doubled to ${d[0]}`);
-      } finally {
-        dDrop_drop(d);
-      }
+      console.log(`doubled to ${d[0]}`);
+      dDrop_drop(d);
     } else {
-      try {
-        console.log("too big");
-      } catch (error) {
-        if (d) {
-          dDrop_drop(d);
-        }
-        throw error;
-      }
+      console.log("too big");
     }
     if (d && d$0$live$1) {
       dDrop_drop(d);

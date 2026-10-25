@@ -50,15 +50,9 @@ function main() {
     $rcDrop(again, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`one left: ${again.strong}`);
-  } catch (error) {
-    $rcDrop(again, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`one left: ${again.strong}`);
   const converted = { value: "shared", strong: 1, weak: 0 };
   let other;
-
   try {
     other = $rcClone(converted);
   } catch (error) {
@@ -66,14 +60,7 @@ function main() {
     $rcDrop(again, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`converted ${converted.strong} ${other.value}`);
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(converted);
-    $rcDrop(again, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`converted ${converted.strong} ${other.value}`);
   try {
     $rcDrop(again, noisyDrop_drop);
   } catch (error) {
@@ -81,13 +68,8 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log("none left");
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log("none left");
+
   const doc = {
     title: { value: "rust", strong: 1, weak: 0 },
     pages: { value: [1, 2], strong: 1, weak: 0 },
@@ -164,21 +146,7 @@ function main() {
     throw error;
   }
   const value = { value: 1, strong: 1, weak: 0 };
-  try {
-    console.log(`${tmp$2} ${tmp$3.value === value.value}`);
-  } catch (error) {
-    $rcDrop(value);
-    $rcDrop(tmp$3);
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${tmp$2} ${tmp$3.value === value.value}`);
   try {
     $rcDrop(value);
   } catch (error) {
@@ -386,7 +354,6 @@ function main() {
     }
   }
   let arg;
-
   try {
     arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
   } catch (error) {
@@ -403,22 +370,8 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log(`${total} ${arg}`);
-  } catch (error) {
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${total} ${arg}`);
+
   const shared = { value: [1], strong: 1, weak: 0 };
   let other$1;
   try {
@@ -589,53 +542,30 @@ function main() {
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
   const me = upgrade;
+  console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
+  try {
+    $rcDrop(me, (value) => {
+      $weakDrop(value.me);
+    });
+  } catch (error) {
+    $rcDrop(owner, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw error;
+  }
   const strong = owner.strong;
-  try {
-    console.log(`${me.value.name} ${strong} ${owner.weak}`);
-  } catch (error) {
-    $rcDrop(me, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(me, (value) => {
-      $weakDrop(value.me);
-    });
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  const value$4 = owner.strong;
   let tmp$7;
   try {
     tmp$7 = $upgrade(owner.value.me);
@@ -675,29 +605,7 @@ function main() {
     $rcDrop(converted);
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
-  try {
-    console.log(`${value$4} ${owner === tmp$7}`);
-  } catch (error) {
-    $rcDrop(tmp$7, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${strong} ${owner === tmp$7}`);
   try {
     $rcDrop(tmp$7, (value) => {
       $weakDrop(value.me);
@@ -721,12 +629,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$5 = { value: 5, strong: 1, weak: 0 };
+  const value$4 = { value: 5, strong: 1, weak: 0 };
   let arg$2;
   try {
-    arg$2 = $cmp(value$5.value, defaulted.value) > 0;
+    arg$2 = $cmp(value$4.value, defaulted.value) > 0;
   } catch (error) {
-    $rcDrop(value$5);
+    $rcDrop(value$4);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -745,30 +653,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
+  console.log(`${defaulted.value} ${arg$2}`);
   try {
-    console.log(`${defaulted.value} ${arg$2}`);
-  } catch (error) {
-    $rcDrop(value$5);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(value$5);
+    $rcDrop(value$4);
   } catch (error) {
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
@@ -810,28 +697,7 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log(`${defaulted.weak}`);
-  } catch (error) {
-    $weakDrop(w);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${defaulted.weak}`);
   try {
     $weakDrop(w);
   } catch (error) {
@@ -853,27 +719,7 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log(`${defaulted.weak}`);
-  } catch (error) {
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${defaulted.weak}`);
   const two = { value: 2, strong: 1, weak: 0 };
   let also;
   try {
@@ -921,31 +767,7 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log(`${tmp$8.TAG === "Ok" ? `Ok(${tmp$8._0})` : `Err(${tmp$8._0.value})`}`);
-  } catch (error) {
-    if (tmp$8.TAG === "Err") {
-      $rcDrop(tmp$8._0);
-    }
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${tmp$8.TAG === "Ok" ? `Ok(${tmp$8._0})` : `Err(${tmp$8._0.value})`}`);
   try {
     if (tmp$8.TAG === "Err") {
       $rcDrop(tmp$8._0);
@@ -970,52 +792,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    console.log(`${also.strong}`);
-  } catch (error) {
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${also.strong}`);
   const counter = { value: { value: 0 }, strong: 1, weak: 0 };
-  try {
-    console.log(`${counter.strong}`);
-  } catch (error) {
-    $rcDrop(counter);
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${counter.strong}`);
   const cell = { value: { value: 1 }, strong: 1, weak: 0 };
   let alias;
   try {
@@ -1043,31 +822,7 @@ function main() {
     throw error;
   }
   alias.value.value = 5;
-  try {
-    console.log(`${cell.value.value}`);
-  } catch (error) {
-    $rcDrop(alias);
-    $rcDrop(cell);
-    $rcDrop(counter);
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  console.log(`${cell.value.value}`);
   try {
     $rcDrop(alias);
   } catch (error) {

@@ -134,4 +134,13 @@ export const mutations: Mutation[] = [
     replace: "    Some(placed)\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
   },
+  {
+    name: "print-may-throw",
+    breaks: "a `println!` while a value with a destructor is live may throw, so its drop is a `try`/`finally` round a print whose stream never fails",
+    file: "src/lower/format_args.rs",
+    find: "                    vec![line],\n                )\n                .never_throws(),\n",
+    replace: "                    vec![line],\n                ),\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_params.rs$"],
+    snapshots: true,
+  },
 ];

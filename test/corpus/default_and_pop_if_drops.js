@@ -38,11 +38,8 @@ function mapped() {
 function defaults() {
   const o = undefined;
   const loud = o ?? loudDefault_default();
-  try {
-    console.log(`option ${loud[0]}`);
-  } finally {
-    loudDrop_drop(loud);
-  }
+  console.log(`option ${loud[0]}`);
+  loudDrop_drop(loud);
   const r = { TAG: "Err", _0: [5] };
   let kept;
   if (r.TAG === "Ok") {
@@ -51,18 +48,12 @@ function defaults() {
     kept = loudDefault_default();
     loudDrop_drop(r._0);
   }
-  try {
-    console.log(`err ${kept[0]}`);
-  } finally {
-    loudDrop_drop(kept);
-  }
+  console.log(`err ${kept[0]}`);
+  loudDrop_drop(kept);
   const k = { TAG: "Ok", _0: [6] };
   const kept$1 = k._0;
-  try {
-    console.log(`ok ${kept$1[0]}`);
-  } finally {
-    loudDrop_drop(kept$1);
-  }
+  console.log(`ok ${kept$1[0]}`);
+  loudDrop_drop(kept$1);
   const n = { TAG: "Err", _0: [7] };
   let holds;
   if (n.TAG === "Ok") {
@@ -86,9 +77,9 @@ function popped() {
     const value = popped ? map(popped) : undefined;
     console.log(`popped ${value == null ? "None" : `Some(${value})`}`);
     const none = $popIf(v, (l) => l[0] === 0);
+    console.log(`none ${!none}`);
+    const q = [[9], [10]];
     try {
-      console.log(`none ${!none}`);
-      const q = [[9], [10]];
       try {
         const front = $popFrontIf(q, (l) => l[0] === 9, false);
         try {

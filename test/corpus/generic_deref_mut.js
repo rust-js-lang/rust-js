@@ -110,11 +110,8 @@ function main() {
     $unborrow(borrowMut);
   }
   const borrow = $borrow(cell, true);
-  try {
-    console.log(`${borrow.value}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.value}`);
+  $unborrow(borrow);
 
   let s = "hi";
   const p$5 = { value: s };

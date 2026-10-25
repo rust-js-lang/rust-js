@@ -78,14 +78,7 @@ function main() {
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
   const kept = value ? [value] : undefined;
-  try {
-    console.log(`kept ${kept?.[0][0] ?? 0}`);
-  } catch (error) {
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-    throw error;
-  }
+  console.log(`kept ${kept?.[0][0] ?? 0}`);
   let tmp;
   try {
     tmp = make(0);
@@ -96,17 +89,7 @@ function main() {
     throw error;
   }
   const none = tmp ? [tmp] : undefined;
-  try {
-    console.log(`none ${!none}`);
-  } catch (error) {
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-    throw error;
-  }
+  console.log(`none ${!none}`);
   let tmp$1;
   try {
     tmp$1 = make(3);
@@ -131,45 +114,26 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`generic ${generic?.[0][0] ?? 0}`);
-  } catch (error) {
-    if (generic != null) {
-      dDrop_drop(generic[0]);
-    }
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-    if (kept != null) {
-      dDrop_drop(kept[0]);
-    }
-    throw error;
-  }
+  console.log(`generic ${generic?.[0][0] ?? 0}`);
   try {
     try {
       if (kept != null) {
         dDrop_drop(kept[0]);
       }
       const value = keepIf(make(4), false, dDrop_drop);
-      try {
-        console.log(`${!value}`);
-      } finally {
-        if (value != null) {
-          dDrop_drop(value);
-        }
+      console.log(`${!value}`);
+      if (value != null) {
+        dDrop_drop(value);
       }
       const value$1 = keepIf($some(make(5)), false, (option) => {
         if (option != null) {
           dDrop_drop(option);
         }
       });
-      try {
-        console.log(`${value$1 == null}`);
-      } finally {
-        if (value$1 != null) {
-          if ($someValue(value$1) != null) {
-            dDrop_drop($someValue(value$1));
-          }
+      console.log(`${value$1 == null}`);
+      if (value$1 != null) {
+        if ($someValue(value$1) != null) {
+          dDrop_drop($someValue(value$1));
         }
       }
       const value$2 = keepIf($some(make(0)), false, (option) => {
@@ -177,13 +141,10 @@ function main() {
           dDrop_drop(option);
         }
       });
-      try {
-        console.log(`${value$2 == null}`);
-      } finally {
-        if (value$2 != null) {
-          if ($someValue(value$2) != null) {
-            dDrop_drop($someValue(value$2));
-          }
+      console.log(`${value$2 == null}`);
+      if (value$2 != null) {
+        if ($someValue(value$2) != null) {
+          dDrop_drop($someValue(value$2));
         }
       }
       const nested = keepIf($some(make(6)), true, (option) => {
@@ -191,31 +152,21 @@ function main() {
           dDrop_drop(option);
         }
       });
+      console.log(`${nested != null}`);
       try {
-        console.log(`${nested != null}`);
         const value = checked(1);
         const ok = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
+        console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
         try {
-          console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
           const value = checked(12);
           const value$1 = value.TAG === "Ok" ? { TAG: "Ok", _0: [value._0] } : value;
           let value$0$live = true;
           if (value$1.TAG === "Ok") {
             value$0$live = false;
-            try {
-              console.log(`ok ${value$1._0[0][0]}`);
-            } finally {
-              dDrop_drop(value$1._0[0]);
-            }
+            console.log(`ok ${value$1._0[0][0]}`);
+            dDrop_drop(value$1._0[0]);
           } else {
-            try {
-              console.log(`err ${value$1._0}`);
-            } catch (error) {
-              if (value$1.TAG === "Ok") {
-                dDrop_drop(value$1._0[0]);
-              }
-              throw error;
-            }
+            console.log(`err ${value$1._0}`);
           }
           if (value$1.TAG === "Ok") {
             if (value$0$live) {
@@ -224,8 +175,8 @@ function main() {
           }
           value$0$live = false;
           const generic = wrappedResult(checked(2));
+          console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
           try {
-            console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
             console.log(
               `${discardResult(checked(3), false, dDrop_drop)} ${discardResult(checked(4), true, dDrop_drop)}`,
             );

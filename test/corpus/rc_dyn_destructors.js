@@ -42,17 +42,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${area} ${a.strong}`);
-  } catch (error) {
-    $rcDrop(b, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    $rcDrop(a, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
+  console.log(`${area} ${a.strong}`);
   try {
     $rcDrop(a, (value) => {
       value.impl.$drop?.(value.value);

@@ -100,19 +100,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log("peeked");
-  } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
+  console.log("peeked");
   for (const item of it.iter) {
     loudDrop_drop(item);
   }
@@ -141,22 +129,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`next_if ${!none}`);
-  } catch (error) {
-    if (none != null) {
-      loudDrop_drop(none);
-    }
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
+  console.log(`next_if ${!none}`);
   try {
     for (const item of it.iter) {
       loudDrop_drop(item);
@@ -245,19 +218,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
+    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
     let loud;
     let tmp$2;
     try {
@@ -297,19 +258,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
+    console.log(`${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
     let tmp$4;
     let tmp$5;
     try {
@@ -349,19 +298,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log(`${tmp$6 == null ? "None" : `Some(${tmp$6})`}`);
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
+    console.log(`${tmp$6 == null ? "None" : `Some(${tmp$6})`}`);
     try {
       more();
     } catch (error) {
@@ -375,19 +312,7 @@ function main() {
       }
       throw error;
     }
-    try {
-      console.log("end");
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
+    console.log("end");
     for (const item of back.iter) {
       loudDrop_drop(item);
     }

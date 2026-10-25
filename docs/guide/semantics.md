@@ -500,6 +500,10 @@ What's refused of collections and iterators is in
 value moved away, on reassignment, at the end of a temporary, on an early
 `return`, and while a panic unwinds, each through a `try`/`finally`. Code
 with no `Drop` impl has no extra JS ([0098](../decisions/0098-destructors.md)).
+What can't panic needs no `finally`: a `println!` of numbers and text,
+whose stream never fails, is followed by what's dropped after it,
+`console.log(..); $unborrow(b);`
+([0901](../decisions/0901-a-print-throws-only-where-its-text-does.md)).
 A `Drop` is its body where it's dropped, at each drop, its guard its
 fields, `const previous = depth; try { .. } finally { depth = previous; }`
 ([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).

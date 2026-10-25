@@ -21,18 +21,7 @@ function main() {
     }
     throw error;
   }
-  try {
-    console.log(`${v.length}`);
-  } catch (error) {
-    $unborrow(v);
-    const borrowMut = $borrowMut(p[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
-    throw error;
-  }
+  console.log(`${v.length}`);
   const _q = p;
   try {
     const borrowMut = $borrowMut(_q[0], true);
@@ -45,10 +34,7 @@ function main() {
     $unborrow(v);
   }
   const borrow = $borrow(cell, true);
-  try {
-    console.log(`${borrow.length}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.length}`);
+  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

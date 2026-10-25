@@ -150,7 +150,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0129 A range is a value: `{ start, end }`, iterated as its items](0129-range-values.md)
 - [0130 An `if let` is a value anywhere, and trait and std functions are values](0130-if-let-values-and-fn-items.md)
 - [0131 A temporary taken apart owns what its pattern leaves](0131-temporaries-taken-apart.md)
-- [0132 A `Box` from its value, `Default` of a `&str`, `type_name`, and standard streams](0132-std-odds.md)
+- [0132 A `Box` from its value, `Default` of a `&str`, `type_name`, and standard streams](0132-std-odds.md) *(extended by 0901: a print throws only where its text does)*
 - [0133 Impls whose names would be the same are named by their arguments](0133-impl-names-apart.md)
 - [0134 A `let` of a pattern without a value declares each of its variables](0134-let-patterns-without-values.md)
 - [0135 A trait's const parameter is its impl's, and a trait method's is given](0135-const-generic-traits.md)
@@ -685,6 +685,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
 - [0899 A `Flatten` held is std's, and an associated type's `IntoIterator` is held as it is](0899-a-flatten-held-is-stds.md)
 - [0900 A dictionary's method is the program's, whatever its name](0900-a-dictionarys-method-is-the-programs.md)
+- [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

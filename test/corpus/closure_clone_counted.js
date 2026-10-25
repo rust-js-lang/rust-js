@@ -54,7 +54,6 @@ function main() {
       },
     );
   const read = make(shared$1);
-
   let read2;
   try {
     read2 = $clone(read);
@@ -81,14 +80,7 @@ function main() {
     $rcDrop(shared, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`${tmp} ${tmp$1} count ${shared.strong}`);
-  } catch (error) {
-    $dispose(read2);
-    $dispose(read);
-    $rcDrop(shared, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`${tmp} ${tmp$1} count ${shared.strong}`);
   try {
     $dispose(read);
   } catch (error) {
@@ -96,13 +88,8 @@ function main() {
     $rcDrop(shared, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`count ${shared.strong}`);
-  } catch (error) {
-    $dispose(read2);
-    $rcDrop(shared, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`count ${shared.strong}`);
+
   const n = 0;
   let n$1 = n;
   const make$1 = (n) =>
@@ -184,14 +171,7 @@ function main() {
       $dispose(read2);
       throw error;
     }
-    try {
-      console.log(`${tmp$1} count ${shared.strong}`);
-    } catch (error) {
-      $dispose(b);
-      $dispose(a);
-      $dispose(read2);
-      throw error;
-    }
+    console.log(`${tmp$1} count ${shared.strong}`);
     const value = [a, b];
     try {
       $dispose(value[0]);

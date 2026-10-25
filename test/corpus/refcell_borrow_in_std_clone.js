@@ -22,11 +22,8 @@ function main() {
   const peeks = [[cell]];
   const cloned = peeks.map((item) => peekClone_clone(item));
   const borrow = $borrow(cell, true);
-  try {
-    console.log(`${cloned.length} ${borrow.length}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${cloned.length} ${borrow.length}`);
+  $unborrow(borrow);
   const holders = [{ peek: [cell] }];
   const value = $borrow(cell, true);
   let n;

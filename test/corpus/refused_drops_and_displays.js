@@ -52,14 +52,7 @@ function extended() {
     }
     throw error;
   }
-  try {
-    console.log(`${v.length}`);
-  } catch (error) {
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
+  console.log(`${v.length}`);
   try {
     $extend(
       v,
@@ -102,17 +95,7 @@ function extended() {
     }
     throw error;
   }
-  try {
-    console.log(`${w.length}`);
-  } catch (error) {
-    for (const item of w) {
-      console.log(`drop ${item[0]}`);
-    }
-    for (const item of v) {
-      console.log(`drop ${item[0]}`);
-    }
-    throw error;
-  }
+  console.log(`${w.length}`);
   try {
     for (const item of v) {
       console.log(`drop ${item[0]}`);
@@ -164,23 +147,9 @@ function matched() {
     throw error;
   }
   if (tmp) {
-    try {
-      console.log("some");
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("some");
   } else {
-    try {
-      console.log("none");
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("none");
   }
   let take;
   try {
@@ -192,29 +161,9 @@ function matched() {
     throw error;
   }
   if (take) {
-    try {
-      console.log("took");
-    } catch (error) {
-      if (take != null) {
-        ddDrop_drop(take);
-      }
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("took");
   } else {
-    try {
-      console.log("empty");
-    } catch (error) {
-      if (take != null) {
-        ddDrop_drop(take);
-      }
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("empty");
   }
   try {
     if (take != null) {
@@ -236,23 +185,9 @@ function matched() {
     throw error;
   }
   if (tmp$1) {
-    try {
-      console.log("some");
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("some");
   } else {
-    try {
-      console.log("none");
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
-    }
+    console.log("none");
   }
   for (let n = 0; n < 3; n++) {
     let e;
@@ -265,41 +200,11 @@ function matched() {
       throw error;
     }
     if (e.TAG === "A") {
-      try {
-        console.log("a");
-      } catch (error) {
-        if (e.TAG === "A") {
-          ddDrop_drop(e._0);
-        }
-        if (w[0] != null) {
-          ddDrop_drop(w[0]);
-        }
-        throw error;
-      }
+      console.log("a");
     } else if (e === "B") {
-      try {
-        console.log("b");
-      } catch (error) {
-        if (e.TAG === "A") {
-          ddDrop_drop(e._0);
-        }
-        if (w[0] != null) {
-          ddDrop_drop(w[0]);
-        }
-        throw error;
-      }
+      console.log("b");
     } else {
-      try {
-        console.log("c");
-      } catch (error) {
-        if (e.TAG === "A") {
-          ddDrop_drop(e._0);
-        }
-        if (w[0] != null) {
-          ddDrop_drop(w[0]);
-        }
-        throw error;
-      }
+      console.log("c");
     }
     try {
       if (e.TAG === "A") {

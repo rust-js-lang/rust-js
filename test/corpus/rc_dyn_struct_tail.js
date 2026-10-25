@@ -20,7 +20,6 @@ function main() {
   $dynCell(rc.value, { fmt: String });
   const shared = rc;
   let again;
-
   try {
     again = $rcClone(shared);
   } catch (error) {
@@ -41,21 +40,11 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${tmp} ${again.strong}`);
-  } catch (error) {
-    $rcDrop(again, (value) => {
-      value.impl.$drop?.(value.label);
-    });
-    $rcDrop(shared, (value) => {
-      value.impl.$drop?.(value.label);
-    });
-    throw error;
-  }
+  console.log(`${tmp} ${again.strong}`);
+
   const rc$1 = { value: { id: 2, label: "two" }, strong: 1, weak: 0 };
   $dynCell(rc$1.value, { fmt: (value) => value });
   const one = rc$1;
-
   let tmp$1;
   try {
     tmp$1 = line(one.value);
@@ -71,20 +60,8 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${tmp$1}`);
-  } catch (error) {
-    $rcDrop(one, (value) => {
-      value.impl.$drop?.(value.label);
-    });
-    $rcDrop(again, (value) => {
-      value.impl.$drop?.(value.label);
-    });
-    $rcDrop(shared, (value) => {
-      value.impl.$drop?.(value.label);
-    });
-    throw error;
-  }
+  console.log(`${tmp$1}`);
+
   const rc$2 = { value: { id: 3, label: "c" }, strong: 1, weak: 0 };
   $dynCell(rc$2.value, { fmt: (value) => value });
   const sent = rc$2;

@@ -20,11 +20,8 @@ function main() {
   const { n: lent } = wrap;
   bump(lent);
   const borrow = $borrow(wrap.n, true);
-  try {
-    console.log(`${borrow.value}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.value}`);
+  $unborrow(borrow);
   const held = $borrow(lent, true);
   try {
     const value = $borrowMut(wrap.n, true);

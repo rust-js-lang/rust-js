@@ -31,12 +31,9 @@ function main() {
       loudDrop_drop,
     ),
   ).toArray();
-  try {
-    console.log(`odd ${odd.length}`);
-  } finally {
-    for (const item of odd) {
-      loudDrop_drop(item);
-    }
+  console.log(`odd ${odd.length}`);
+  for (const item of odd) {
+    loudDrop_drop(item);
   }
 
   const back = $rev(
@@ -53,15 +50,7 @@ function main() {
     back.return();
     throw error;
   }
-  try {
-    console.log(`last odd ${lastOdd?.[0] ?? 0}`);
-  } catch (error) {
-    if (lastOdd != null) {
-      loudDrop_drop(lastOdd);
-    }
-    back.return();
-    throw error;
-  }
+  console.log(`last odd ${lastOdd?.[0] ?? 0}`);
   try {
     back.return();
   } finally {

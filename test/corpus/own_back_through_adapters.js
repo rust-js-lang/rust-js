@@ -62,13 +62,7 @@ function countDoubleEndedIterator_nthBack(count, n) {
 }
 
 function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
-  try {
-    console.log("rfold");
-  } catch (error) {
-    dropF?.(f);
-    dropB?.(init);
-    throw error;
-  }
+  console.log("rfold");
   let acc$live = true;
   let acc = init;
   try {
@@ -119,17 +113,11 @@ function loudDoubleEndedIterator_nextBack(loud) {
 }
 
 function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
+  console.log("loud rfold");
+  let acc$live = true;
+  let acc = init;
   let result;
   try {
-    try {
-      console.log("loud rfold");
-    } catch (error) {
-      dropF?.(f);
-      dropB?.(init);
-      throw error;
-    }
-    let acc$live = true;
-    let acc = init;
     try {
       while (true) {
         let nextBack;

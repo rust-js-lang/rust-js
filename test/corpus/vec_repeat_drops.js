@@ -13,26 +13,21 @@ function main() {
   const r = { value: 5, strong: 1, weak: 0 };
   try {
     const v = $repeat($rcClone(r), 3, 4, (item) => $rcClone(item), $rcDrop);
-    const length = v.length;
-    try {
-      console.log(`${length} ${r.strong}`);
-    } finally {
-      for (const item of v) {
-        $rcDrop(item);
-      }
+    console.log(`${v.length} ${r.strong}`);
+    for (const item of v) {
+      $rcDrop(item);
     }
     console.log(`${r.strong}`);
     const none = $repeat($rcClone(r), 0, 4, (item) => $rcClone(item), $rcDrop);
-    const value = none.length;
+    console.log(`${none.length} ${r.strong}`);
     try {
-      console.log(`${value} ${r.strong}`);
       const ds = $repeat([7], 2, 1, (item) => item, dDrop_drop);
+      console.log(`made ${ds.length}`);
       try {
-        console.log(`made ${ds.length}`);
         const zero = $repeat([9], 0, 1, (item) => item, dDrop_drop);
+        console.log(`zero ${zero.length}`);
+        const n = 3;
         try {
-          console.log(`zero ${zero.length}`);
-          const n = 3;
           const grid = $repeat(
             $repeat([1], 1, 1, (item) => item, dDrop_drop),
             n,
@@ -40,13 +35,10 @@ function main() {
             (item) => item,
             $dropEach(dDrop_drop),
           );
-          try {
-            console.log(`grid ${grid.length}`);
-          } finally {
-            for (const item of grid) {
-              for (const item$1 of item) {
-                dDrop_drop(item$1);
-              }
+          console.log(`grid ${grid.length}`);
+          for (const item of grid) {
+            for (const item$1 of item) {
+              dDrop_drop(item$1);
             }
           }
         } finally {

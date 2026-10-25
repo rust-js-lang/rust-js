@@ -20,14 +20,11 @@ function repeated() {
   const s = $repeatingN("ab", 2).toArray().join("");
   console.log(`[${v.join(", ")}] ${s}`);
   const all = $repeatingN([1], 2, (value) => loudClone_clone(value), loudDrop_drop).toArray();
+  console.log(`all ${all.length}`);
   try {
-    console.log(`all ${all.length}`);
     const none = $repeatingN([2], 0, (value) => loudClone_clone(value), loudDrop_drop);
-    try {
-      console.log("none made");
-    } finally {
-      none.return();
-    }
+    console.log("none made");
+    none.return();
     const some = $repeatingN([3], 3, (value) => loudClone_clone(value), loudDrop_drop);
     let first;
     try {
@@ -36,16 +33,8 @@ function repeated() {
       some.return();
       throw error;
     }
-    try {
-      const value = first?.[0];
-      console.log(`first ${value == null ? "None" : `Some(${value})`}`);
-    } catch (error) {
-      if (first != null) {
-        loudDrop_drop(first);
-      }
-      some.return();
-      throw error;
-    }
+    const value = first?.[0];
+    console.log(`first ${value == null ? "None" : `Some(${value})`}`);
     try {
       some.return();
       console.log("dropped");

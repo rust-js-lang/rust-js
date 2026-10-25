@@ -43,8 +43,8 @@ function main() {
       { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
       { value: 5, impl: { typeId: () => "u8" } },
     ];
+    console.log(`${items.length}`);
     try {
-      console.log(`${items.length}`);
       const value = fail(4);
       let value$0$live = true;
       if (value.TAG === "Err") {
@@ -57,14 +57,7 @@ function main() {
         }
       } else {
         const n = value._0;
-        try {
-          console.log(`${n}`);
-        } catch (error) {
-          if (value.TAG === "Err") {
-            value._0.impl.$drop?.(value._0.value);
-          }
-          throw error;
-        }
+        console.log(`${n}`);
       }
       if (value.TAG === "Err") {
         if (value$0$live) {

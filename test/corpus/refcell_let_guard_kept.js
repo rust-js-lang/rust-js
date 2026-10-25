@@ -9,14 +9,11 @@ export function entry() {
 function main() {
   const cell = [1];
   const kept = $borrowMut(cell, true);
+  console.log(`${kept.length}`);
   try {
-    console.log(`${kept.length}`);
     const borrow = $borrow(cell, true);
-    try {
-      console.log(`${borrow.length}`);
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(`${borrow.length}`);
+    $unborrow(borrow);
   } finally {
     $unborrow(kept);
   }

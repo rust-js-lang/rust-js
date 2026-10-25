@@ -102,13 +102,9 @@ function main() {
           noisyDrop_drop(value);
         }
         const taken = $drainAll(drained).slice();
-        const size = drained.size;
-        try {
-          console.log(`taken ${taken.length} left ${size}`);
-        } finally {
-          for (const item of taken) {
-            noisyDrop_drop(item[1]);
-          }
+        console.log(`taken ${taken.length} left ${drained.size}`);
+        for (const item of taken) {
+          noisyDrop_drop(item[1]);
         }
         const value$1 = $insert(drained, 2, [6]);
         if (value$1 != null) {

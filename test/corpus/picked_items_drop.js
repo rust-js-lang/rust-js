@@ -39,20 +39,19 @@ function main() {
   const it = $iter(v);
   try {
     const x = $nthDropping($lent(it), 1, noisyDrop_drop, false);
-    try {
-      console.log(`got ${x?.[0] ?? "none"}`);
-    } finally {
-      if (x != null) {
-        noisyDrop_drop(x);
-      }
+    console.log(`got ${x?.[0] ?? "none"}`);
+    if (x != null) {
+      noisyDrop_drop(x);
     }
     const y = third($iter([["p"], ["q"], ["r"]]), $dropEach(noisyDrop_drop));
+    console.log(`got ${y?.[0] ?? "none"}`);
+    const value = [["s"]];
     try {
-      console.log(`got ${y?.[0] ?? "none"}`);
-      const z = third($iter([["s"]]), $dropEach(noisyDrop_drop));
+      const z = third($iter(value), $dropEach(noisyDrop_drop));
+      console.log(`none ${!z}`);
+      const value$1 = [["e"], ["f"], ["g"]];
       try {
-        console.log(`none ${!z}`);
-        const value = $iter([["e"], ["f"], ["g"]]);
+        const value = $iter(value$1);
         let f;
         try {
           f = $findDropping($lent(value), (n) => n[0] === "f", noisyDrop_drop, false);
@@ -68,17 +67,15 @@ function main() {
           }
           console.log(`found ${f?.[0] ?? "none"}`);
           const g = named($iter([["h"], ["i"]]), "i", $dropEach(noisyDrop_drop));
+          console.log(`found ${g?.[0] ?? "none"}`);
+          const value$1 = [["j"], ["kk"], ["l"]];
           try {
-            console.log(`found ${g?.[0] ?? "none"}`);
-            const [kept, rest] = $partition([["j"], ["kk"], ["l"]], (n) => $byteLen(n[0]) === 1);
+            const [kept, rest] = $partition(value$1, (n) => $byteLen(n[0]) === 1);
+            console.log(`${kept.length} ${rest.length}`);
+            console.log("end");
             try {
-              try {
-                console.log(`${kept.length} ${rest.length}`);
-                console.log("end");
-              } finally {
-                for (const item of rest) {
-                  noisyDrop_drop(item);
-                }
+              for (const item of rest) {
+                noisyDrop_drop(item);
               }
             } finally {
               for (const item of kept) {

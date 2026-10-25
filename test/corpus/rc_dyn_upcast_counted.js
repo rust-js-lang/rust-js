@@ -126,20 +126,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${id} ${tmp$3[1]} ${tmp$3[2]}`);
-  } catch (error) {
-    $rcDrop(b, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    $rcDrop(n1, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    $rcDrop(a, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
+  console.log(`${id} ${tmp$3[1]} ${tmp$3[2]}`);
   let w;
   try {
     w = $downgrade(n1);
@@ -198,21 +185,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${weak} ${map ?? ""}`);
-  } catch (error) {
-    $weakDrop(w);
-    $rcDrop(b, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    $rcDrop(n1, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    $rcDrop(a, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
+  console.log(`${weak} ${map ?? ""}`);
   try {
     $rcDrop(n1, (value) => {
       value.impl.$drop?.(value.value);
@@ -238,15 +211,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    console.log(`${a.strong}`);
-  } catch (error) {
-    $weakDrop(w);
-    $rcDrop(a, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    throw error;
-  }
+  console.log(`${a.strong}`);
   try {
     $rcDrop(a, (value) => {
       value.impl.$drop?.(value.value);
@@ -262,17 +227,7 @@ function main() {
     $weakDrop(w);
     throw error;
   }
-  try {
-    console.log(`${!tmp$5}`);
-  } catch (error) {
-    if (tmp$5 != null) {
-      $rcDrop(tmp$5, (value) => {
-        value.impl.$drop?.(value.value);
-      });
-    }
-    $weakDrop(w);
-    throw error;
-  }
+  console.log(`${!tmp$5}`);
   try {
     if (tmp$5 != null) {
       $rcDrop(tmp$5, (value) => {

@@ -7,11 +7,8 @@ export function entry() {
 }
 
 function pair(a, b) {
-  try {
-    console.log(`pair ${a[0]} ${b}`);
-  } finally {
-    console.log(`drop ${a[0]}`);
-  }
+  console.log(`pair ${a[0]} ${b}`);
+  console.log(`drop ${a[0]}`);
   return b;
 }
 
@@ -63,11 +60,8 @@ function divided(n, by) {
 }
 
 function signed(a, b) {
-  try {
-    console.log(`signed ${a[0]} ${b}`);
-  } finally {
-    console.log(`drop ${a[0]}`);
-  }
+  console.log(`signed ${a[0]} ${b}`);
+  console.log(`drop ${a[0]}`);
   return b;
 }
 

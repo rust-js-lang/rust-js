@@ -35,15 +35,7 @@ function main() {
         }
         if (tmp) {
           const n = tmp;
-          try {
-            console.log(`got ${n[0]}`);
-          } catch (error) {
-            console.log(`drop ${n[0]}`);
-            for (const item of iter) {
-              console.log(`drop ${item[0]}`);
-            }
-            throw error;
-          }
+          console.log(`got ${n[0]}`);
           if (n[0] === 4) {
             try {
               console.log(`drop ${n[0]}`);
@@ -83,18 +75,8 @@ function main() {
           }
           throw error;
         }
-        try {
-          const value = first?.[0];
-          console.log(`first ${value == null ? "None" : `Some(${value})`}`);
-        } catch (error) {
-          if (first != null) {
-            console.log(`drop ${first[0]}`);
-          }
-          for (const item of d) {
-            console.log(`drop ${item[0]}`);
-          }
-          throw error;
-        }
+        const value = first?.[0];
+        console.log(`first ${value == null ? "None" : `Some(${value})`}`);
         try {
           for (const item of d) {
             console.log(`drop ${item[0]}`);

@@ -176,13 +176,7 @@ function main() {
       break;
     }
     const loud = tmp$6;
-    try {
-      console.log(`got ${loud[0]}`);
-    } catch (error) {
-      loudDrop_drop(loud);
-      iter.return();
-      throw error;
-    }
+    console.log(`got ${loud[0]}`);
     try {
       loudDrop_drop(loud);
     } catch (error) {

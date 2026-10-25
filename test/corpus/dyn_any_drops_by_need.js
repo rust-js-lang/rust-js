@@ -48,12 +48,9 @@ function main() {
       const resumed = $catchUnwind(() => {
         throw $unwinding(boxed(["payload"], { typeId: () => "lib::Noisy", $drop: noisyDrop_drop }));
       });
-      try {
-        console.log(`resumed: ${resumed.TAG === "Err"}`);
-      } finally {
-        if (resumed.TAG === "Err") {
-          resumed._0.impl.$drop?.(resumed._0.value);
-        }
+      console.log(`resumed: ${resumed.TAG === "Err"}`);
+      if (resumed.TAG === "Err") {
+        resumed._0.impl.$drop?.(resumed._0.value);
       }
       console.log("end");
     } finally {

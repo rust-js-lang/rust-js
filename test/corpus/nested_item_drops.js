@@ -246,12 +246,9 @@ function main() {
     loudDrop_drop,
     $dropEach(loudDrop_drop),
   );
-  try {
-    console.log(`got ${got.length}`);
-  } finally {
-    for (const item of got) {
-      loudDrop_drop(item);
-    }
+  console.log(`got ${got.length}`);
+  for (const item of got) {
+    loudDrop_drop(item);
   }
   const all = concat(
     [[[10]], [[11], [12]]],
@@ -271,16 +268,7 @@ function main() {
     },
     $dropEach(loudDrop_drop),
   );
-  try {
-    console.log(`all ${all?.length ?? 0}`);
-  } catch (error) {
-    if (all != null) {
-      for (const item of all) {
-        loudDrop_drop(item);
-      }
-    }
-    throw error;
-  }
+  console.log(`all ${all?.length ?? 0}`);
   const value = [[[20], [21]]];
   let groups$1;
   try {

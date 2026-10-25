@@ -59,20 +59,14 @@ function main() {
   payThrough(h, accAccount);
   payGiven(h, accAccount);
   const borrow = $borrow(h, true);
-  try {
-    console.log(`${borrow.value.b}`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${borrow.value.b}`);
+  $unborrow(borrow);
   const n = { value: 1 };
   pay(n, u32Account);
   payThrough(n, u32Account);
   payGiven(n, u32Account);
   const value = $borrow(n, true);
-  try {
-    console.log(`${value.value}`);
-  } finally {
-    $unborrow(value);
-  }
+  console.log(`${value.value}`);
+  $unborrow(value);
 }
 //# sourceMappingURL=case.js.map

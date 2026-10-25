@@ -184,10 +184,7 @@ function main() {
   skipping.impl.skip(skipping);
   console.log("dyn skipped");
   const loud = [9];
-  try {
-    console.log(`${loud[0]}`);
-  } finally {
-    loudDrop_drop(loud);
-  }
+  console.log(`${loud[0]}`);
+  loudDrop_drop(loud);
 }
 //# sourceMappingURL=case.js.map

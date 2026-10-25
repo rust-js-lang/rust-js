@@ -61,18 +61,7 @@ function pick([a, b, c, d], i) {
 
 function middle(items) {
   const m = items[2];
-  try {
-    console.log(`took ${m[0]}`);
-  } catch (error) {
-    noisyDrop_drop(m);
-    for (const item of items.slice(3, 6)) {
-      noisyDrop_drop(item);
-    }
-    for (const item of items.slice(0, 2)) {
-      noisyDrop_drop(item);
-    }
-    throw error;
-  }
+  console.log(`took ${m[0]}`);
   for (const item of items.slice(3, 6)) {
     noisyDrop_drop(item);
   }
@@ -86,30 +75,10 @@ function some(items, keep) {
   let b$live = true;
   const [, b, , d] = items;
   if (keep) {
-    try {
-      console.log(`kept ${b[0]} ${d[0]}`);
-    } catch (error) {
-      noisyDrop_drop(d);
-      noisyDrop_drop(b);
-      noisyDrop_drop(items[4]);
-      noisyDrop_drop(items[2]);
-      noisyDrop_drop(items[0]);
-      throw error;
-    }
+    console.log(`kept ${b[0]} ${d[0]}`);
     b$live = false;
   }
-  try {
-    console.log("end of some");
-  } catch (error) {
-    noisyDrop_drop(d);
-    if (b$live) {
-      noisyDrop_drop(b);
-    }
-    noisyDrop_drop(items[4]);
-    noisyDrop_drop(items[2]);
-    noisyDrop_drop(items[0]);
-    throw error;
-  }
+  console.log("end of some");
   try {
     noisyDrop_drop(d);
   } catch (error) {
@@ -141,15 +110,7 @@ function split(items, keep) {
   let a$live = true;
   const a = items[0];
   const rest = items.slice(1, 4);
-  try {
-    console.log(`rest of ${rest.length}`);
-  } catch (error) {
-    for (const item of rest) {
-      noisyDrop_drop(item);
-    }
-    noisyDrop_drop(a);
-    throw error;
-  }
+  console.log(`rest of ${rest.length}`);
   let result;
   if (keep) {
     a$live = false;
@@ -179,12 +140,9 @@ function tail(items) {
 }
 
 function consume(items) {
-  try {
-    console.log(`consumed ${items.length}`);
-  } finally {
-    for (const item of items) {
-      noisyDrop_drop(item);
-    }
+  console.log(`consumed ${items.length}`);
+  for (const item of items) {
+    noisyDrop_drop(item);
   }
 }
 
@@ -192,15 +150,7 @@ function either(items, split) {
   let items$live = true;
   if (split) {
     const a = items[0];
-    try {
-      console.log(`first ${a[0]}`);
-    } catch (error) {
-      noisyDrop_drop(a);
-      for (const item of items.slice(1, 3)) {
-        noisyDrop_drop(item);
-      }
-      throw error;
-    }
+    console.log(`first ${a[0]}`);
     try {
       noisyDrop_drop(a);
     } catch (error) {
@@ -213,13 +163,10 @@ function either(items, split) {
     items$live = false;
     consume(items);
   }
-  try {
-    console.log("end of either");
-  } finally {
-    if (items$live) {
-      for (const item of items.slice(1, 3)) {
-        noisyDrop_drop(item);
-      }
+  console.log("end of either");
+  if (items$live) {
+    for (const item of items.slice(1, 3)) {
+      noisyDrop_drop(item);
     }
   }
   items$live = false;
@@ -250,13 +197,10 @@ function both(items, first) {
       }
       dropped += 2;
     }
+    console.log(`end of both ${dropped}`);
     try {
-      try {
-        console.log(`end of both ${dropped}`);
-      } finally {
-        if (c$live) {
-          noisyDrop_drop(c);
-        }
+      if (c$live) {
+        noisyDrop_drop(c);
       }
       c$live = false;
     } finally {
@@ -272,21 +216,21 @@ function both(items, first) {
 
 function main() {
   const x = pick([["a"], ["b"], ["c"], ["d"]], 1);
+  console.log(`picked ${x[0]}`);
   try {
-    console.log(`picked ${x[0]}`);
     const m = middle([["1"], ["2"], ["3"], ["4"], ["5"], ["6"]]);
+    console.log(`middle ${m[0]}`);
     try {
-      console.log(`middle ${m[0]}`);
       some([["p"], ["q"], ["r"], ["s"], ["t"]], true);
       some([["v"], ["w"], ["x"], ["y"], ["z"]], false);
       const a = split([["e"], ["f"], ["g"], ["h"]], true);
       try {
         const new$ = split([["i"], ["j"], ["k"], ["l"]], false);
+        console.log(`split ${a[0]} ${new$[0]}`);
         try {
-          console.log(`split ${a[0]} ${new$[0]}`);
           const t = tail([["m"], ["n"], ["o"], ["u"]]);
+          console.log(`tail ${t.length}`);
           try {
-            console.log(`tail ${t.length}`);
             either([["E1"], ["E2"], ["E3"]], true);
             either([["F1"], ["F2"], ["F3"]], false);
             both([["G1"], ["G2"], ["G3"]], true);

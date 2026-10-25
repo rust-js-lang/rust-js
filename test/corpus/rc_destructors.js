@@ -19,13 +19,7 @@ function shared(name) {
     $rcDrop(made, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`made ${kept.value[0]}`);
-  } catch (error) {
-    $rcDrop(kept, noisyDrop_drop);
-    $rcDrop(made, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`made ${kept.value[0]}`);
   $rcDrop(kept, noisyDrop_drop);
   return made;
 }
@@ -39,25 +33,14 @@ function main() {
     $rcDrop(a, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`${b.value[0]}`);
-  } catch (error) {
-    $rcDrop(b, noisyDrop_drop);
-    $rcDrop(a, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`${b.value[0]}`);
   try {
     $rcDrop(b, noisyDrop_drop);
   } catch (error) {
     $rcDrop(a, noisyDrop_drop);
     throw error;
   }
-  try {
-    console.log(`a still ${a.value[0]}`);
-  } catch (error) {
-    $rcDrop(a, noisyDrop_drop);
-    throw error;
-  }
+  console.log(`a still ${a.value[0]}`);
   let c;
   try {
     c = $rcClone(a);
@@ -182,11 +165,8 @@ function main() {
       }
     });
     const borrow = $borrow(other.value, true);
-    try {
-      console.log(`${borrow.length}`);
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(`${borrow.length}`);
+    $unborrow(borrow);
     const value = $borrowMut(other.value, true);
     let last;
     try {
@@ -233,11 +213,8 @@ function main() {
   }
 
   const s = shared("s");
-  try {
-    console.log(`got ${s.value[0]}`);
-    console.log("end");
-  } finally {
-    $rcDrop(s, noisyDrop_drop);
-  }
+  console.log(`got ${s.value[0]}`);
+  console.log("end");
+  $rcDrop(s, noisyDrop_drop);
 }
 //# sourceMappingURL=case.js.map

@@ -100,11 +100,8 @@ function fromMaps() {
     while ((value = $next(iter))) {
       const k = value[0];
       const l = value[1];
-      try {
-        console.log(`map took ${k} ${l[0]}`);
-      } finally {
-        loudDrop_drop(l);
-      }
+      console.log(`map took ${k} ${l[0]}`);
+      loudDrop_drop(l);
     }
     const h = $extendMap(new Map(), [[1, [40]]], false, loudDrop_drop);
     try {

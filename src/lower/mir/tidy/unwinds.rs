@@ -414,9 +414,15 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
         return None;
     };
     let rethrown = matches!(&thrown.kind, StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }) if v == error);
+    // Not a declaration, a drop function's whose call a tidy pass found
+    // never runs, `const dropMany = ..`: it does nothing, and in a
+    // `finally` its name would be the `finally`'s alone, where what's after
+    // calls the one the scope's end declares (ADR 0901).
+    let declares = matches!(drop.kind, StmtKind::Const(..) | StmtKind::Let(..));
     // One that leaves another way already dropped what it leaves; lowering
     // wraps no `return` in a `try`, but a `finally` would drop it again.
-    (rethrown && !leaves(inner, 0) && js::mentions_in(std::slice::from_ref(drop), error) == 0).then_some(drop)
+    (rethrown && !declares && !leaves(inner, 0) && js::mentions_in(std::slice::from_ref(drop), error) == 0)
+        .then_some(drop)
 }
 
 /// A `catch` that only throws on what it caught.

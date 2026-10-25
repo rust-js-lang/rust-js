@@ -9,11 +9,8 @@ function noisyDrop_drop(noisy) {
 }
 
 function consume(n) {
-  try {
-    console.log(`consume ${n[0]}`);
-  } finally {
-    noisyDrop_drop(n);
-  }
+  console.log(`consume ${n[0]}`);
+  noisyDrop_drop(n);
 }
 
 function pair(a, b, n) {
@@ -30,39 +27,22 @@ function main() {
   }
   const maybe = pair("ma", "mb", 2);
   let maybe$b$live = true;
-  if (maybe.n === 2) {
-    maybe$b$live = false;
-    try {
-      consume(maybe.b);
-    } catch (error) {
-      noisyDrop_drop(maybe.a);
-      throw error;
-    }
-  }
   try {
-    console.log(`maybe ${maybe.n}`);
-  } catch (error) {
-    noisyDrop_drop(maybe.a);
-    if (maybe$b$live) {
-      noisyDrop_drop(maybe.b);
+    if (maybe.n === 2) {
+      maybe$b$live = false;
+      consume(maybe.b);
     }
-    throw error;
+    console.log(`maybe ${maybe.n}`);
+  } finally {
+    noisyDrop_drop(maybe.a);
   }
-  noisyDrop_drop(maybe.a);
   if (maybe$b$live) {
     noisyDrop_drop(maybe.b);
   }
   maybe$b$live = false;
   const nest = { left: pair("la", "lb", 3), right: ["r"] };
   const leftB = nest.left.b;
-  try {
-    console.log(`nested ${leftB[0]}`);
-  } catch (error) {
-    noisyDrop_drop(leftB);
-    noisyDrop_drop(nest.left.a);
-    noisyDrop_drop(nest.right);
-    throw error;
-  }
+  console.log(`nested ${leftB[0]}`);
   try {
     noisyDrop_drop(leftB);
   } catch (error) {
@@ -74,12 +54,9 @@ function main() {
   noisyDrop_drop(nest.right);
   const tuple = [["t0"], ["t1"], 3];
   const [first, , n] = tuple;
+  console.log(`first ${first[0]} ${n}`);
   try {
-    try {
-      console.log(`first ${first[0]} ${n}`);
-    } finally {
-      noisyDrop_drop(first);
-    }
+    noisyDrop_drop(first);
   } finally {
     noisyDrop_drop(tuple[1]);
   }
@@ -89,13 +66,10 @@ function main() {
     opt$0$live = false;
     consume(opt);
   }
-  try {
-    console.log("matched");
-  } finally {
-    if (opt) {
-      if (opt$0$live) {
-        noisyDrop_drop(opt);
-      }
+  console.log("matched");
+  if (opt) {
+    if (opt$0$live) {
+      noisyDrop_drop(opt);
     }
   }
   opt$0$live = false;
@@ -105,23 +79,7 @@ function main() {
   const shape = { TAG: "Two", a: noisy, b: value };
   if (shape.TAG === "Two") {
     shape$a$live = false;
-    try {
-      console.log(`two ${shape.a[0]}`);
-    } catch (error) {
-      noisyDrop_drop(shape.a);
-      if (shape.TAG === "Two") {
-        noisyDrop_drop(shape.b);
-      } else {
-        if (shape.TAG === "One") {
-          noisyDrop_drop(shape._0);
-        }
-        if (shape.TAG === "Two") {
-          noisyDrop_drop(shape.a);
-          noisyDrop_drop(shape.b);
-        }
-      }
-      throw error;
-    }
+    console.log(`two ${shape.a[0]}`);
     try {
       noisyDrop_drop(shape.a);
     } catch (error) {
@@ -139,22 +97,19 @@ function main() {
       throw error;
     }
   }
-  try {
-    console.log("shape");
-  } finally {
+  console.log("shape");
+  if (shape.TAG === "Two") {
+    if (shape$a$live) {
+      noisyDrop_drop(shape.a);
+    }
+    noisyDrop_drop(shape.b);
+  } else {
+    if (shape.TAG === "One") {
+      noisyDrop_drop(shape._0);
+    }
     if (shape.TAG === "Two") {
-      if (shape$a$live) {
-        noisyDrop_drop(shape.a);
-      }
+      noisyDrop_drop(shape.a);
       noisyDrop_drop(shape.b);
-    } else {
-      if (shape.TAG === "One") {
-        noisyDrop_drop(shape._0);
-      }
-      if (shape.TAG === "Two") {
-        noisyDrop_drop(shape.a);
-        noisyDrop_drop(shape.b);
-      }
     }
   }
   shape$a$live = false;
@@ -166,13 +121,7 @@ function main() {
     throw error;
   }
   again.a = ["ra2"];
-  try {
-    console.log(`again ${again.a[0]}`);
-  } catch (error) {
-    noisyDrop_drop(again.a);
-    noisyDrop_drop(again.b);
-    throw error;
-  }
+  console.log(`again ${again.a[0]}`);
   noisyDrop_drop(again.a);
   noisyDrop_drop(again.b);
   console.log("end");

@@ -64,12 +64,9 @@ function main() {
   const item$1 = held();
   const old$1 = item$1.value;
   item$1.value = undefined;
-  try {
-    console.log(`${!old$1}`);
-  } finally {
-    if (old$1 != null) {
-      console.log(`drop ${old$1[0]}`);
-    }
+  console.log(`${!old$1}`);
+  if (old$1 != null) {
+    console.log(`drop ${old$1[0]}`);
   }
 
   // What's given made by more than one statement, `vec!`'s.

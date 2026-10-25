@@ -162,23 +162,15 @@ function dropped(early) {
       console.log(`drop ${guard}`);
       throw error;
     }
-    try {
-      console.log(`len ${len}`);
-    } catch (error) {
-      console.log(`drop ${guard}`);
-      throw error;
-    }
+    console.log(`len ${len}`);
     if (early) {
       result = 0;
       console.log(`drop ${guard}`);
       return result;
     }
-    try {
-      console.log("late");
-      result = len;
-    } finally {
-      console.log(`drop ${guard}`);
-    }
+    console.log("late");
+    result = len;
+    console.log(`drop ${guard}`);
   } finally {
     console.log(`drop ${outer}`);
   }

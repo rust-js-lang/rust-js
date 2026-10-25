@@ -584,11 +584,8 @@ export function open(id) {
 }
 
 export function close(connection) {
-  try {
-    console.log(`closing ${connection.id}`);
-  } finally {
-    console.log(`closed ${connection.id}`);
-  }
+  console.log(`closing ${connection.id}`);
+  console.log(`closed ${connection.id}`);
 }
 ```
 

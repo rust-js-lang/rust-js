@@ -62,15 +62,8 @@ function main() {
   }
   const sent = $dynCell({ size: 3, inner: [30] }, { $drop: noisyDrop_drop });
   const plain = $dynCell({ size: 4, inner: 5 }, {});
+  console.log(`${sent.size} ${plain.size}`);
 
-  try {
-    console.log(`${sent.size} ${plain.size}`);
-  } catch (error) {
-    plain.impl.$drop?.(plain.inner);
-    sent.impl.$drop?.(sent.inner);
-    fat.impl.$drop?.(fat.inner);
-    throw error;
-  }
   let x = 0;
   const wrapper = [
     {
@@ -95,14 +88,7 @@ function main() {
     fat.impl.$drop?.(fat.inner);
     throw error;
   }
-  try {
-    console.log(`${x}`);
-  } catch (error) {
-    plain.impl.$drop?.(plain.inner);
-    sent.impl.$drop?.(sent.inner);
-    fat.impl.$drop?.(fat.inner);
-    throw error;
-  }
+  console.log(`${x}`);
   const held = $dynCell(
     [
       {

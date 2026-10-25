@@ -66,31 +66,7 @@ function main() {
     throw error;
   }
   const _two = [undefined, tmp];
-  try {
-    console.log("two made");
-  } catch (error) {
-    const dropMany = (many) => {
-      noisyDrop_drop(many.a);
-      noisyDrop_drop(many.b);
-      noisyDrop_drop(many.c);
-      noisyDrop_drop(many.d);
-      noisyDrop_drop(many.e);
-      noisyDrop_drop(many.f);
-      noisyDrop_drop(many.g);
-      noisyDrop_drop(many.h);
-      noisyDrop_drop(many.i);
-    };
-    const dropTwo = (two) => {
-      if (two[0] != null) {
-        dropMany(two[0]);
-      }
-      if (two[1] != null) {
-        dropMany(two[1]);
-      }
-    };
-    dropTwo(_two);
-    throw error;
-  }
+  console.log("two made");
   const dropMany = (many) => {
     noisyDrop_drop(many.a);
     noisyDrop_drop(many.b);
@@ -145,18 +121,7 @@ function main() {
     dropList(_list);
     throw error;
   }
-  try {
-    console.log("end");
-  } catch (error) {
-    const dropList = (list) => {
-      if (list.TAG === "Cons") {
-        noisyDrop_drop(list._0);
-        dropList(list._1);
-      }
-    };
-    dropList(_list);
-    throw error;
-  }
+  console.log("end");
   const dropList = (list) => {
     if (list.TAG === "Cons") {
       noisyDrop_drop(list._0);

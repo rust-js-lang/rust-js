@@ -72,9 +72,9 @@ function main() {
           $weakDrop(probe.me);
         },
       );
+      console.log(`${second.strong}`);
+      let lone = { value: [1], strong: 1, weak: 0 };
       try {
-        console.log(`${second.strong}`);
-        let lone = { value: [1], strong: 1, weak: 0 };
         try {
           $withBorrowMut(
             kept,
@@ -113,11 +113,8 @@ function main() {
             throw error;
           }
           const owned = $unwrapOrClone(shared, (value) => loneClone_clone(value), loneDrop_drop);
-          try {
-            console.log(`owned ${owned[0]}`);
-          } finally {
-            loneDrop_drop(owned);
-          }
+          console.log(`owned ${owned[0]}`);
+          loneDrop_drop(owned);
         } finally {
           $rcDrop(lone, loneDrop_drop);
         }

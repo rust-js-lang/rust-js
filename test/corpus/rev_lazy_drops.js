@@ -14,12 +14,9 @@ function main() {
   const same = $rev($mapEnds($closing($iter([[1], [2], [3]]), $dropEach(loudDrop_drop)), (l) => l));
   try {
     const last = $next(same);
-    try {
-      console.log(`same ${last?.[0] ?? 0}`);
-    } finally {
-      if (last != null) {
-        loudDrop_drop(last);
-      }
+    console.log(`same ${last?.[0] ?? 0}`);
+    if (last != null) {
+      loudDrop_drop(last);
     }
   } finally {
     same.return();
@@ -38,11 +35,8 @@ function main() {
   try {
     const l = $next(scaled);
     if (l) {
-      try {
-        console.log(`scaled ${l[0]}`);
-      } finally {
-        loudDrop_drop(l);
-      }
+      console.log(`scaled ${l[0]}`);
+      loudDrop_drop(l);
     }
     console.log("--");
 
