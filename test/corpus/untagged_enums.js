@@ -100,9 +100,9 @@ function main() {
   for (const value of values) {
     console.log(`${describe(value)} | ${valueDebug_fmt(value)}`);
   }
-  const items = $index(values, 8);
 
   // The payload is the value, so writing it writes the enum's.
+  const items = $index(values, 8);
   if (Array.isArray(items)) {
     items.push(3);
   }

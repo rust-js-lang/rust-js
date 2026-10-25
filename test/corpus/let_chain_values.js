@@ -15,11 +15,11 @@ const offset$1 = DEBUG ? $find("x40", "4") : undefined;
 const offset = offset$1 != null ? (x) => (x + offset$1) >>> 0 : (x) => x;
 const limit$1 = DEBUG ? $find("limit", "m") : undefined;
 const LIMIT = limit$1 ?? 9;
-const limit = DEBUG ? $find("lim", "i") : undefined;
 // Of a name another's made the module's already.
+const limit = DEBUG ? $find("lim", "i") : undefined;
 const LOWER = limit ?? 8;
-const console$ = DEBUG ? $find("log", "g") : undefined;
 // Of a global's name, which the module's other code reads.
+const console$ = DEBUG ? $find("log", "g") : undefined;
 const LOGGED = console$ ?? 0;
 // A test of what's no `Option`, `Ok`'s, which `undefined` can't be
 // asked: the chain's two `if`s.

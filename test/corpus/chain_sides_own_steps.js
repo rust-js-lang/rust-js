@@ -560,12 +560,12 @@ function main() {
   };
   const value$29 = skipped$1 ? map$10(skipped$1) : undefined;
   console.log(`${value$29 == null ? "None" : `Some(${value$29})`}`);
+  // A peekable's and a fuse's `count`, their source's own: a `take`'s of a
+  // reversed `Vec`, which drops one slice (#293).
   const iter$1 = iterator_peekable(
     $rev($closing($iter(louds(73, 2)), $dropEach(loudDrop_drop))).take(2),
     { next: $next },
     (take) => {
-      // A peekable's and a fuse's `count`, their source's own: a `take`'s of a
-      // reversed `Vec`, which drops one slice (#293).
       take.return();
     },
     loudDrop_drop,

@@ -38,12 +38,13 @@ function main() {
     count().value = 6;
   }
   console.log(`${count().value}`);
-  const otherValue = made(9);
 
+  const otherValue = made(9);
   const item = other();
   const old = item.value;
   item.value = otherValue;
   console.log(`${old} ${other().value}`);
+
   const heldValue = ["second"];
   if (!held.initWith({ value: heldValue })) {
     const cell = held();

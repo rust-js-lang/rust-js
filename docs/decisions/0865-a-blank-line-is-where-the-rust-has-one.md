@@ -7,7 +7,7 @@ lines between top-level statements were rust-js's, and its "part" of an
 object, which had none. Amended: an `if let` chain made of a labeled
 block is where its first `if` is. Amended (2026-10-25): a guard's `let` too, whose
 `try` starts where its first statement does, and what's after the code,
-an `export default`, tells nothing of it. Amended by [0883](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md): before an `if` whose test has comments after its keyword, the blank line is looked for before the `if`.
+an `export default`, tells nothing of it. Amended by [0883](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md): before an `if` whose test has comments after its keyword, the blank line is looked for before the `if`. Amended (2026-10-26): what's before a line is before the first JS printed of what's written on it.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): blank lines, which
 nothing runs.
@@ -161,3 +161,37 @@ mutations `guard-try-at-drop`, `guard-try-first-unwritten` and
 `temporaries_taken_apart` sets its `try` apart where the
 Rust's `let` is), `default-export-told-untold` and
 `aliases-told-untold` (`to_oxc.ts`).
+
+## Amended (2026-10-26): before the first JS printed of what's written on the line
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, blank lines and
+comments alone.
+
+React's markRootFinished sets `const hiddenUpdatesForLane =
+hiddenUpdates[index];` apart from the lanes it clears above it, as its
+port sets apart `if let Some(hidden_updates_for_lane) =
+hidden_updates[index].take() {`. The `take()`'s statements, `const old =
+slots[index]; slots[index] = undefined;`, are printed before the `if`,
+but written after its pattern, where the `if`'s span is: what's before
+the Rust statement was before the first JS printed of its own span
+(`printed_first`), the `if`, so the blank line was between the
+`take()`'s statements and the `if`, and so was a comment above the line.
+
+**What's before a Rust statement is before the first JS printed of what's
+written from where it starts to its line's end**, its span's or not:
+before `$index(hiddenUpdates, index)`, `const old = ..`, as a person
+writes the take first. A line's code printed after what's below it isn't
+reached: that's of another start. The corpus's `catch_unwind_chained`,
+`chain_sides_own_steps`, whose comment was in a drop's callback,
+`let_chain_values`, `mut_ref_temporary`, `or_bindings`,
+`refcell_quiet_borrows`, `slice_disjoint`, `slice_views`,
+`thread_local_set_before_use` and `untagged_enums`, and the playground's
+`result_frame`, have the blank line or the comment before what their
+line's Rust makes first, `const shape = $index(shapes, 4);` after `// In
+an if let`, a static's `if let`'s `const limit = ..` after its comment;
+`thread_local_set_before_use`'s `HELD.set(..)` gains the blank line it
+had before nothing printed first.
+
+Held by `test/lowering-comments.test.ts`, "a blank line before an if let
+is before what its test's take() prints first", run, and the mutation
+`printed-first-of-its-span-alone` (`to_oxc.ts`).

@@ -26,11 +26,11 @@ function root(n) {
     step(n);
   } catch (thrown) {
     let sample = $unwound(thrown);
+    // Its message and what was set.
     sample =
       sample.impl.typeId() === "alloc::string::String" || sample.impl === $panicMessage
         ? sample.value
         : undefined;
-    // Its message and what was set.
     if (sample != null && control != null) {
       return [sample, control];
     }

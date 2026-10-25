@@ -38,8 +38,8 @@ function main() {
   console.log(
     `${opt == null ? "None" : `Some(${opt})`} ${words == null ? "None" : `Some(${$debugStr(words)})`}`,
   );
-  let tmp$3 = 3;
 
+  let tmp$3 = 3;
   if (tmp$3 != null) {
     tmp$3 = (tmp$3 + 1) | 0;
     console.log(`${tmp$3}`);

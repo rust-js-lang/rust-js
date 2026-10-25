@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "printed-first-of-its-span-alone",
+    breaks: "a blank line and a comment before an `if let`'s line are before its `if`, past what its test's `take()` prints first",
+    file: "src/to_oxc.rs",
+    find: "            .unwrap_or(start)\n            .max(line_end);\n",
+    replace: "            .unwrap_or(start)\n            .max(line_end.min(start));\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "what its test's take"],
+  },
+  {
     name: "method-field-comment-inside",
     breaks: "a comment before a field that's a method, ReactNoopUpdateQueue's `// Forces an update.`, is in the method's body, and the blank line before it lost",
     file: "src/to_oxc.rs",

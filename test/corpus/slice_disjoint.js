@@ -51,11 +51,11 @@ function main() {
     (e) => `[${e.map((item) => String(item.value)).join(", ")}]`,
   );
   console.log(`${error === "OverlappingIndices"}`);
+
   const value$2 = $getDisjointMut(v, [
     { start: 0, end: 2 },
     { start: 3, end: 6 },
   ]);
-
   if (value$2.TAG === "Ok") {
     const left = value$2._0[0];
     const right = value$2._0[1];

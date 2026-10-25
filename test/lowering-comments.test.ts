@@ -1042,6 +1042,36 @@ js::export_default!(STATE);
   expect([internals.lib.default, internals.lib.sum()]).toEqual([{ a: 1, b: 2 }, 3]);
 });
 
+// ADR 0865, amended: React's markRootFinished sets `const
+// hiddenUpdatesForLane = hiddenUpdates[index];` apart from what's above
+// it, as its port's `if let Some(..) = hidden_updates[index].take()` is.
+// The `take()`'s statements, printed before the `if`, are written after
+// its pattern on its line: the blank line and the comment before the line
+// are before them, not between them and the `if`.
+test("a blank line before an if let is before what its test's take() prints first", async () => {
+  const { js, lib } = await compiled("blank-before-a-take", `pub fn finished(slots: &mut [Option<Vec<u32>>], index: usize, out: &mut Vec<u32>) {
+    out.push(index as u32);
+
+    if let Some(values) = slots[index].take() {
+        out.extend(values);
+    }
+
+    // Then the rest.
+    if let Some(rest) = slots[index + 1].take() {
+        out.extend(rest);
+    }
+}
+`);
+  expect(js).toContain("  out.push(index);\n\n  const length = slots.length;\n");
+  expect(js).toContain("  slots[index] = undefined;\n  if (values) {\n");
+  expect(js).toMatch(/\n  }\n\n  \/\/ Then the rest\.\n  const \w+ = \(index \+ 1\)/);
+  expect(js).not.toMatch(/undefined;\n\n  (\/\/ Then the rest\.\n  )?if/);
+  const slots: (number[] | undefined)[] = [[1, 2], [3]];
+  const out: number[] = [];
+  lib.finished(slots as never, 0 as never, out as never);
+  expect([out, slots]).toEqual([[0, 1, 2, 3], [undefined, undefined]]);
+});
+
 // React's ReactTypeOfMode and ReactFiberFlags: `export const NoMode = /*
 // .. */ 0b0000000;`, a comment between the `=` and the value that lines the
 // values up. It's before the value's JS, after its `=`, its spaces kept, not

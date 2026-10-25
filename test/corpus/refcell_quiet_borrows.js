@@ -42,8 +42,8 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`} ${shared}`,
   );
-  const seen = inner.seen;
 
+  const seen = inner.seen;
   if (seen) {
     seen.add(3);
     seen.add(3);

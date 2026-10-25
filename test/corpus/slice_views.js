@@ -84,8 +84,8 @@ function main() {
     a[$at(a, 0)] = value | 0;
   }
   console.log(`[${v.join(", ")}]`);
-  const splitFirstMut = $splitEndMut(v, false, true);
 
+  const splitFirstMut = $splitEndMut(v, false, true);
   if (splitFirstMut) {
     const first = splitFirstMut[0];
     const rest = splitFirstMut[1];
@@ -145,8 +145,8 @@ function main() {
     part.fill(2);
   }
   console.log(`[${words.join(", ")}]`);
-  part = $viewGet(words, 1, 3);
 
+  part = $viewGet(words, 1, 3);
   if (part) {
     part.fill(5);
   }
@@ -155,8 +155,8 @@ function main() {
   const getUncheckedMut = $mutAt(words, 2);
   getUncheckedMut.value = (getUncheckedMut.value + 1) | 0;
   console.log(`[${words.join(", ")}]`);
-  let head = words.length >= 2 ? $view(words, 0, 2) : undefined;
 
+  let head = words.length >= 2 ? $view(words, 0, 2) : undefined;
   if (head) {
     head[1] = 0;
   }
@@ -191,8 +191,8 @@ function main() {
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
-  head = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
 
+  head = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
   if (head) {
     $assign(head, [7, 8]);
   }

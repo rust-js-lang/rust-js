@@ -406,13 +406,20 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
     // statement printed of it, a temporary rust-js made first, `const value
-    // = ..` of `let v = V { patch: .. }`: the first of its spans.
+    // = ..` of `let v = V { patch: .. }`: the first of its spans; or of
+    // what's written after it on its line, an `if let`'s `take()` after its
+    // pattern, `const old = slots[i]; slots[i] = undefined;` (ADR 0865,
+    // amended).
     let printed_first = |start: u32| {
+        let line_end = (sources.text.get(start as usize..))
+            .and_then(|rest| rest.find('\n'))
+            .map_or(start, |end| start + end as u32);
         let end = (spans.iter())
             .filter(|&&(lo, _)| lo == start)
             .map(|&(_, hi)| hi)
             .max()
-            .unwrap_or(start);
+            .unwrap_or(start)
+            .max(line_end);
         (spans.iter())
             .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))
             .map_or(start, |&(lo, _)| lo)
