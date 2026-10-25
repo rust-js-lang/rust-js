@@ -6,7 +6,7 @@
 import { $eq, $unwrap } from "@rust-js/runtime";
 
 export function half(n) {
-  if (!(n % 2)) {
+  if (n % 2 === 0) {
     return (n / 2) | 0;
   }
 }
@@ -34,8 +34,11 @@ export function halfOrZero(n) {
 /** `while let`. */
 export function halvings(n) {
   let count = 0;
-  let h;
-  while ((h = half(n))) {
+  while (true) {
+    const h = half(n);
+    if (h == null || h === 0) {
+      break;
+    }
     n = h;
     count = (count + 1) >>> 0;
   }
@@ -190,8 +193,11 @@ export function chainedStatement(n) {
 /** `while let` with a chain. */
 export function chainedLoop(n) {
   let count = 0;
-  let h;
-  while ((h = half(n))) {
+  while (true) {
+    const h = half(n);
+    if (h == null || h === 0) {
+      break;
+    }
     n = h;
     count = (count + 1) >>> 0;
   }

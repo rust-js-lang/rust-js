@@ -80,8 +80,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
 - [0030 `Option`: `Some(x)` is `x`, `None` is `undefined`](0030-option.md)
-- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended: one written of other constants is as it's written; amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value; amended: another module's constant is read by its name where its module loads first)*
-- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended: one written of other constants is as it's written; amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value; amended: a transparent struct's of a constant is its field, and another module's read where a module loads stays its value, of a cycle through a binding's JS)*
+- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended: one written of other constants is as it's written; amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value; amended: another module's constant is read by its name where its module loads first; amended: a transparent struct's of a constant is its field)*
 - [0038 Variables have JS's names and shapes: `const [count, setCount] = ..`](0038-js-names-and-destructuring.md)
 - [0039 Generic bindings: `#[rust_js::link_name]` on an ordinary function](0039-generic-bindings.md)
 - [0046 `#![rust_js::camel_case]`: a crate's own names, the JS way](0046-camel-case-crates.md) *(superseded by 0435)*
@@ -511,8 +510,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
 - [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next)*
-- [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value)*
-- [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`)*
 - [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value, on a line of its own too)*
 - [0631 A step of one is `++`](0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
@@ -578,8 +575,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](0699-a-map-of-objects-is-a-weak-map.md) *(amended by 0849: a `js::Map` of any key)*
 - [0700 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](0700-typescripts-function-gives-any-value.md)
 - [0701 A signed index tested not negative is a JS index as it is](0701-a-signed-index-tested-not-negative-is-a-js-index.md) *(extended by 0709: a signed counter below a length, past its loop and its `as`)*
-- [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md) *(amended: an exit that goes on with the loop stays in it)*
-- [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md) *(amended: a `while` that ends an `if`'s branch with code after it)*
+- [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md) *(amended: an exit that goes on with the loop stays in it; amended: a `while` that ends an `if`'s branch with code after it)*
 - [0703 A closure made before a call a guard unwinds is made where it's read](0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
 - [0705 A guard's scope reads as any body, its fields the variables it was made of](0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop; extended by 0859: each of its `break`s, a `loop` ending a branch)*
@@ -696,9 +692,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md)
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md)
-- [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md)
-- [0899 A fn pointer runs what the crate made it of](0899-a-fn-pointer-runs-what-the-crate-made-it-of.md)
-- [0904 A fn pointer runs what the crate made it of](0904-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*

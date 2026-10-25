@@ -49,7 +49,7 @@ function lastHalf(it) {
   return $nextBack(
     $filterEnds(
       $mapEnds(Iterator.from(it), (x) => {
-        if (!(x % 2)) {
+        if (x % 2 === 0) {
           return (x / 2) | 0;
         }
       }),
@@ -64,7 +64,7 @@ function nested(it) {
       $filterEnds(
         $mapEnds(Iterator.from(it), (x) => {
           if (x > 2) {
-            return $some(!(x % 2) ? x : undefined);
+            return $some(x % 2 === 0 ? x : undefined);
           }
         }),
         (item) => item != null,

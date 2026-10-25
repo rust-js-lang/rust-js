@@ -359,7 +359,7 @@ function main() {
         countIterator_nth,
       )
         .drop(2)
-        .map((x) => (!(x % 2) ? x : undefined))
+        .map((x) => (x % 2 === 0 ? x : undefined))
         .filter((item) => item != null),
     ).some((x) => x > 5)}`,
   );

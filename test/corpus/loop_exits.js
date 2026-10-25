@@ -59,7 +59,7 @@ function once(v) {
   let n = 0;
   let x;
   while ((x = v.pop()) != null) {
-    if (!x) {
+    if (x === 0) {
       continue;
     }
     if (x > 5) {

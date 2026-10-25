@@ -54,7 +54,7 @@ function take2(it) {
 function untilZero(it) {
   let sum = 0;
   for (const x of it) {
-    if (!x) {
+    if (x === 0) {
       break;
     }
     sum = (sum + x) >>> 0;

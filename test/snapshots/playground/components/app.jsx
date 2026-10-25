@@ -36,7 +36,7 @@ function appended(rows, label, value) {
 function testsSummary(passed, failed, ignored) {
   const total = (passed + failed) >>> 0;
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
-  if (!total) {
+  if (total === 0) {
     return say("No tests.", "Good");
   }
   const tone = failed > 0 ? "Bad" : "Good";

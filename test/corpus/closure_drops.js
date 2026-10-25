@@ -131,7 +131,7 @@ function main() {
   console.log(`drop ${g[0]}`);
 
   for (let i = 0; i < 2; i++) {
-    const h = !i ? "h0" : "h1";
+    const h = i === 0 ? "h0" : "h1";
     maybe$live = true;
     const maybe = () => {
       console.log(`drop ${h}`);

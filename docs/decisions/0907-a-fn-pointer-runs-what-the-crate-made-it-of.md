@@ -152,6 +152,12 @@ export function entangledLanes(root, lanes) {
 
 - No corpus case's JS changes but the new ones. React's ReactFiberLane
   has no `$borrow`, `$borrowMut`, `$unborrow`, `$iter` or `$next` left.
+- `docs/readability.txt` is blessed with its counts as they were: the
+  corpus cases this change and its branch's add (`fn_pointer_*`,
+  `integer_truth`, `index_compound_assign`), 280 lines with none of its
+  shapes, make each shape's share of 10,000 lines smaller, `$iter` 87.8
+  to 87.6, `renamed x$1` 734.8 to 732.9. `$iter`'s count, 919, is
+  `main`'s, grown from 903 by its own FlatMap and `for` changes.
 - A fn pointer of a type JS or a library may give, of an exported
   function's parameter say, is anything: a borrow held across a call of
   one is counted, of every `RefCell` of its type.

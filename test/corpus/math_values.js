@@ -23,7 +23,7 @@ const WRITTEN = 0.6931471805599453;
 
 function clz32Fallback(x) {
   const asUint = x;
-  if (!asUint) {
+  if (asUint === 0) {
     return 32;
   }
   return (31 - $f64ToInt(LOG(asUint) / LN2, 0, 4294967295)) >>> 0;

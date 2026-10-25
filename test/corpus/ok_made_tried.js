@@ -12,7 +12,7 @@ function made() {
 }
 
 function checked(n) {
-  const value = !(n % 2) ? { TAG: "Ok", _0: (n / 2) >>> 0 } : { TAG: "Err", _0: `${n} is odd` };
+  const value = n % 2 === 0 ? { TAG: "Ok", _0: (n / 2) >>> 0 } : { TAG: "Err", _0: `${n} is odd` };
   if (value.TAG === "Err") {
     return value;
   }

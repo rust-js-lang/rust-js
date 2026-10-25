@@ -57,7 +57,7 @@ export function same(a, b) {
 }
 
 function build(depth) {
-  return !depth
+  return depth === 0
     ? { TAG: "Leaf", _0: 1 }
     : { TAG: "Node", _0: build(depth - 1), _1: { TAG: "Leaf", _0: depth | 0 } };
 }
@@ -75,7 +75,9 @@ export function treeSum(depth) {
 
 /** `Result` is an enum like any other: `{ TAG: "Ok", _0: v }`, as in ReScript. */
 export function checkedDiv(a, b) {
-  return !b ? { TAG: "Err", _0: "divide by zero" } : { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
+  return b === 0
+    ? { TAG: "Err", _0: "divide by zero" }
+    : { TAG: "Ok", _0: $div(a, b, -2147483648) | 0 };
 }
 
 export function divOr(a, b, fallback) {

@@ -135,7 +135,7 @@ SnapshotStatic | MaySuspendCommit;`.
 past other comments, is an `=` (not `==`, `<=` or `+=`), and whose code
 after it is the value on a line after it, is before the value**, placed as
 one on the value's line right before its first code is, after the `=` of
-the JS (`to_oxc.rs`'s `own_line_before_value`), and not before a
+the JS (`to_oxc/trailing.rs`'s `own_line_before_value`), and not before a
 statement too. rust-js prints it on one line, `export const
 ViewTransitionNamedStatic = /*    */ SnapshotStatic | MaySuspendCommit;`;
 an app's Prettier, React's, breaks it after the `=`, as upstream's is. A

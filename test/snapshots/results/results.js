@@ -49,7 +49,7 @@ export function halves(n) {
 }
 
 function half(n) {
-  if (!(n % 2)) {
+  if (n % 2 === 0) {
     return (n / 2) >>> 0;
   }
 }

@@ -12,7 +12,7 @@ function flush(items) {
     flushing = true;
     try {
       for (const item of items) {
-        if (!item) {
+        if (item === 0) {
           throw new Error("zero");
         }
         total = (total + item) >>> 0;

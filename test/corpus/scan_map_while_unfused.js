@@ -9,7 +9,7 @@ export function entry() {
 function main() {
   const v = [1, 2, 0, 3, 4];
   const sums = $lazyScan($iter(v), 0, (sum, x) => {
-    if (!x) {
+    if (x === 0) {
       return;
     }
     sum.value = (sum.value + x) | 0;

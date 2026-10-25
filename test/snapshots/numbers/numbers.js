@@ -100,7 +100,7 @@ export function floats(x) {
 }
 
 export function gcd(a, b) {
-  return !b ? a : gcd(b, $rem(a, b) >>> 0);
+  return b === 0 ? a : gcd(b, $rem(a, b) >>> 0);
 }
 
 function cell2Debug_fmt(cell2) {

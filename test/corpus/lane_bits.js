@@ -71,7 +71,7 @@ function lowerEventPriority(a, b) {
 const DISABLE_LEGACY_MODE = false;
 
 function upgraded(lanes, tag, disabled) {
-  if (lanes & 2 && !(DISABLE_LEGACY_MODE && !tag) && !(disabled || tag === 7)) {
+  if (lanes & 2 && !(DISABLE_LEGACY_MODE && tag === 0) && !(disabled || tag === 7)) {
     return true;
   }
   return false;

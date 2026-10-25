@@ -10,7 +10,7 @@ function inner(n) {
   if (n > 2) {
     throw new Error(`big ${n}`);
   }
-  if (!n) {
+  if (n === 0) {
     throw $unwinding({ value: 7, impl: { typeId: () => "i32" } });
   }
   return n;

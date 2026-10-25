@@ -40,7 +40,7 @@ function classify(input) {
 
 function firstEven(items) {
   for (const item of items) {
-    if (item != null && !((item % 2) | 0)) {
+    if (item != null && ((item % 2) | 0) === 0) {
       return item;
     }
   }

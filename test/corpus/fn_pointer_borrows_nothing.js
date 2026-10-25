@@ -13,7 +13,7 @@ function chosen(native) {
 }
 
 function clz32Fallback(x) {
-  if (!x) {
+  if (x === 0) {
     return 32;
   }
   return (31 - $ilog(x, 2)) >>> 0;

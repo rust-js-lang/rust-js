@@ -63,7 +63,7 @@ function skipping(keys) {
   for (const k of keys) {
     const node$1 = createNode();
     node$1.v = k;
-    if (!(k % 2)) {
+    if (k % 2 === 0) {
       continue;
     }
     node = node$1;
