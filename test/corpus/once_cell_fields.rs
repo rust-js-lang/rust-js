@@ -106,6 +106,37 @@ fn main() {
     println!("{} {:?}", relabel(&owned), owned.label.get());
     *owned.seen.get_mut().unwrap() += 1;
     println!("{:?}", owned.seen.into_inner());
+    drops();
+}
+
+struct Loud(&'static str);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+// What it holds is dropped with the struct, once it's set; a refused `set`
+// gives its value back to drop.
+struct Holder {
+    name: &'static str,
+    loud: OnceCell<Loud>,
+}
+
+fn drops() {
+    let held = Holder {
+        name: "held",
+        loud: OnceCell::new(),
+    };
+    let _ = held.loud.set(Loud("first"));
+    let again = held.loud.set(Loud("second"));
+    println!("{} {}", held.name, again.is_err());
+    let empty = Holder {
+        name: "empty",
+        loud: OnceCell::new(),
+    };
+    println!("{}", empty.name);
 }
 
 // Taken apart where it's given: each a handle on its field.

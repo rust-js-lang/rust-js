@@ -135,6 +135,10 @@ const set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
 
 - A local `OnceCell` set where it's known empty, `let local =
   OnceCell::new(); local.set(1)`, is a `let` set once, `let local = 1;`.
+- A `set` whose `Result` is read holds its test, `const unset = ..`, so a
+  function of several reads `unset$1`, `unset$2`: `docs/readability.txt`'s
+  `renamed x$1` share grew from 745.5 to 748.8 in 10,000 lines, blessed
+  here, mostly of the two corpus cases that set one cell after another.
 - `get_or_init` of a field gives `$getOrInit` a handle on it, `{ get
   value() { .. }, set value(v) { .. } }`: correct, but not what a person
   writes; its reentrant init (ADR 0317) is what keeps it a helper.

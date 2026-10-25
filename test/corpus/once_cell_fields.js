@@ -162,6 +162,49 @@ function main() {
   const value$4 = $unwrap(cell.value == null ? undefined : cell);
   value$4.value = (value$4.value + 1) & 255;
   console.log(`${owned.seen == null ? "None" : `Some(${owned.seen})`}`);
+  drops();
+}
+
+function drops() {
+  const held = {
+    name: "held",
+  };
+  held.loud = ["first"];
+  const set = { TAG: "Ok" };
+  try {
+    if (set.TAG === "Err") {
+      console.log(`drop ${set._0[0]}`);
+    }
+    const value = ["second"];
+    const unset = held.loud === undefined;
+    if (unset) {
+      held.loud = value;
+    }
+    const again = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
+    const value$1 = again.TAG === "Err";
+    const name = held.name;
+    try {
+      console.log(`${name} ${value$1}`);
+      const empty = {
+        name: "empty",
+      };
+      try {
+        console.log(`${empty.name}`);
+      } finally {
+        if (empty.loud != null) {
+          console.log(`drop ${empty.loud[0]}`);
+        }
+      }
+    } finally {
+      if (again.TAG === "Err") {
+        console.log(`drop ${again._0[0]}`);
+      }
+    }
+  } finally {
+    if (held.loud != null) {
+      console.log(`drop ${held.loud[0]}`);
+    }
+  }
 }
 
 // Taken apart where it's given: each a handle on its field.
