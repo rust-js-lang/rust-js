@@ -509,6 +509,51 @@ export { getTime };
 - **Only of Rust's closures**, which take no more than their parameters.
   A thread-local holding a JS function stays called by its function.
 
+One of a value where a test holds and `None` where it doesn't is assigned
+only where it's something, `let componentFrameCache; if (__DEV__) {
+componentFrameCache = ..; }`, as React's is
+([ADR 0704](../../decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md));
+exported, which no `let` the `if` assigns is, it's the conditional, as
+`__DEV__.then_some(f)` is and React's ReactJSX writes it
+([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md), amended):
+
+```rust
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+pub fn jsx_dev_checked(tag: &str) -> String {
+    tag.to_string()
+}
+
+thread_local! {
+    pub static JSX_DEV: Option<fn(&str) -> String> =
+        if __DEV__ { Some(jsx_dev_checked) } else { None };
+    static CHECK_TAG: Option<fn(&str) -> String> =
+        if __DEV__ { Some(jsx_dev_checked) } else { None };
+}
+
+pub fn checked(tag: &str) -> Option<String> {
+    CHECK_TAG.with(|check_tag| check_tag.map(|check| check(tag)))
+}
+```
+
+```js
+export function jsxDevChecked(tag) {
+  return tag;
+}
+
+export const jsxDev = __DEV__ ? jsxDevChecked : undefined;
+let checkTag;
+if (__DEV__) {
+  checkTag = jsxDevChecked;
+}
+
+export function checked(tag) {
+  return checkTag ? checkTag(tag) : undefined;
+}
+```
+
 A let chain of one value each, React's `if __DEV__ && let
 Some(create_task) = console::create_task()`, reads what it binds first,
 once, where the tests before it hold, and is then a conditional of it,

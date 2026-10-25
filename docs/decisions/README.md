@@ -659,6 +659,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
 - [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
+- [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

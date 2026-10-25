@@ -1328,6 +1328,30 @@ pub fn cached(key: &JsObject) -> Option<String> {
   );
 });
 
+// ADR 0870, amended: an exported thread-local an `if` makes `None` of,
+// which no `let` assigned under the `if` can be, is its value, as React's
+// ReactJSX exports `const jsxDEV = __DEV__ ? _jsxDEV : undefined;` and as
+// `__DEV__.then_some(f)` is: not a closure called where it's made.
+test("an exported thread-local an if makes None of is a conditional", async () => {
+  const dir = fixture("exported-some-or-none");
+  writeFileSync(join(dir, "lib.rs"), `pub fn area(x: f64) -> f64 {
+    x * x
+}
+
+thread_local! {
+    pub static AREA: Option<fn(f64) -> f64> = if js::math::random() < 2.0 { Some(area) } else { None };
+    pub static NONE_FIRST: Option<u32> = if js::math::random() > 2.0 { None } else { Some(1) };
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const AREA = Math.random() < 2 ? area : undefined;\n");
+  expect(js).toContain("export const noneFirst = Math.random() > 2 ? undefined : 1;\n");
+  expect(js).not.toContain("(() =>");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.AREA(3), lib.noneFirst]).toEqual([9, 1]);
+});
+
 // ADR 0703: a thread-local's `.with(|c| *c)` is its variable (ADR 0270)
 // where something's there to drop as a panic unwinds too, React's
 // `COMPONENT_FRAME_CACHE.with(|cache| *cache)` under its `finally`'s guard:

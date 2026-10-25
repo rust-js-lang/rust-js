@@ -74,6 +74,10 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
 /// module's top-level `const` would otherwise be what another item reads
 /// of a global; and from what the closure names, so each of its names,
 /// deeper ones too, given the new name, reads what it read.
+///
+/// An exported one of nothing but its value is that value, of a test too,
+/// `if (t) { return a; }`, `t ? a : undefined` (`valued`), as no `let`
+/// assigned under the `if` is exported (ADR 0870, amended).
 pub(super) fn declared_at_top(module: &mut js::Module) {
     let mut i = 0;
     while i < module.items.len() {
@@ -82,7 +86,7 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
             continue;
         };
         let body = match &constant.value.kind {
-            ExprKind::Call(callee, args) if args.is_empty() && !constant.export => match &callee.kind {
+            ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
                 ExprKind::Arrow(params, body) if params.is_empty() => body,
                 _ => {
                     i += 1;
@@ -94,14 +98,29 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
                 continue;
             }
         };
-        let [consts @ .., last] = body.as_slice() else {
+        // An exported one's value of a test, which no `let` the test
+        // assigns can be (`assigned_in_place`), a conditional.
+        let Some((consts, value)) = valued(body, constant.export) else {
             i += 1;
             continue;
         };
-        let (StmtKind::Return(Some(value)), false) = (&last.kind, consts.is_empty()) else {
+        // Of nothing before its value, the value itself, `export const
+        // jsxDEV = __DEV__ ? _jsxDev : undefined;`, as `then_some`'s is.
+        if consts.is_empty() {
+            let js::Item::Const(constant) = &mut module.items[i] else {
+                unreachable!("matched")
+            };
+            constant.value = Expr {
+                span: constant.value.span,
+                ..value
+            };
             i += 1;
             continue;
-        };
+        }
+        if constant.export {
+            i += 1;
+            continue;
+        }
         let Some(names) = (consts.iter())
             .map(|s| match &s.kind {
                 StmtKind::Const(name, _) => Some(name.clone()),
@@ -115,7 +134,7 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
         let mut item = js::Item::Statements(body.clone());
         let mut named = Vec::new();
         reclaim::names_mut(&mut item, true, &mut |name| named.push(name.clone()));
-        let (name, span, mutable, value) = (constant.name.clone(), constant.span, constant.mutable, value.clone());
+        let (name, span, mutable) = (constant.name.clone(), constant.span, constant.mutable);
         let consts = consts.to_vec();
         // What the module names, but in this closure.
         let own = std::mem::replace(&mut module.items[i], js::Item::Statements(Vec::new()));
@@ -162,6 +181,39 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
         let n = made.len();
         module.items.splice(i..=i, made);
         i += n;
+    }
+}
+
+/// What a closure's `body` gives, of `const`s and then one value: the
+/// value it returns at its end; or, `guarded`, of one test, `if (t) {
+/// return a; }`, and the value after it, `return b;`, or `undefined` where
+/// it ends with nothing, `t ? a : b`, which runs `t` and then the one
+/// branch, as the `if` did (ADR 0870, amended): `if __DEV__ { Some(f) }
+/// else { None }`'s, as `__DEV__.then_some(f)` is. With the `const`s
+/// before it.
+fn valued(body: &[Stmt], guarded: bool) -> Option<(&[Stmt], Expr)> {
+    let returned = |stmts: &[Stmt]| match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                ..
+            },
+        ] => Some(value.clone()),
+        _ => None,
+    };
+    let guard = |stmt: &Stmt| match &stmt.kind {
+        StmtKind::If(test, then, None) if guarded => Some((test.clone(), returned(then)?)),
+        _ => None,
+    };
+    match body {
+        [before @ .., last] if let Some(no) = returned(std::slice::from_ref(last)) => match before {
+            [consts @ .., test] if let Some((test, yes)) = guard(test) => Some((consts, Expr::cond(test, yes, no))),
+            _ => Some((before, no)),
+        },
+        [consts @ .., last] if let Some((test, yes)) = guard(last) => {
+            Some((consts, Expr::cond(test, yes, Expr::undefined())))
+        }
+        _ => None,
     }
 }
 

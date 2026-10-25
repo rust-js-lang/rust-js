@@ -175,3 +175,51 @@ that name reads: a name given apart, as a shadow is
   `truth-implies-nothing` (`lower/mir/tidy/branches.ts`),
   `declared-at-top-off` (`prepare.ts`) and `declared-at-top-not-apart`
   (`prepare/initializers.ts`).
+
+## Amendment: an exported one's value of a test is a conditional
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above: `t ? a :
+undefined` runs `t`, then `a` only where it holds, as the `if` did.
+
+React's ReactJSX exports
+
+```js
+const jsxDEV: any = __DEV__ ? _jsxDEV : undefined;
+```
+
+and its port's thread-local is `pub static JSX_DEV: Option<..> = if
+__DEV__ { Some(..) } else { None };`. Not exported, it's ADR 0704's `let
+x; if (__DEV__) { x = ..; }`, upstream's componentFrameCache; exported, no
+`let` the `if` assigns was written (`assigned_in_place` takes no export),
+and it stayed the closure:
+
+```js
+export const jsxDEV = (() => {
+  if (__DEV__) {
+    return _jsxDev;
+  }
+})();
+```
+
+**An exported thread-local whose closure is one value, its own `return v`
+or one test's `if (t) { return a; }` and the value after it, `undefined`
+where it ends with nothing, is that value, `t ? a : undefined`**
+(`initializers::valued`, asked by `declared_at_top`):
+
+```js
+export const jsxDEV = __DEV__ ? _jsxDev : undefined;
+```
+
+It's what `__DEV__.then_some(f)` gives, the one JS of a value where a
+test holds. One not exported is still 0704's `let` and `if`, as
+upstream's componentFrameCache is; an exported one with `const`s before
+its value stays the closure, as before.
+
+### What holds it
+
+- `test/lowering-cells.test.ts`, "an exported thread-local an if makes
+  None of is a conditional", run; and 0704's tests, unchanged.
+- The guide's "One chosen when the module loads" (global-scope.md),
+  `jsxDev` beside a `let` of the same `if`.
+- Mutations `valued-guard-unseen`, `valued-guard-unexported` and
+  `valued-alone-kept` (`prepare/initializers.ts`).
