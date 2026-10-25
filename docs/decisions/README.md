@@ -80,7 +80,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
 - [0030 `Option`: `Some(x)` is `x`, `None` is `undefined`](0030-option.md)
-- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value)*
+- [0031 A `const` is the value rustc computed, under its own name](0031-consts.md) *(amended: one written of other constants is as it's written; amended by 0770: a library's is imported by its name; extended by 0722: a numbered enum's variant is one too, and a module's load reads another module's as its value)*
 - [0038 Variables have JS's names and shapes: `const [count, setCount] = ..`](0038-js-names-and-destructuring.md)
 - [0039 Generic bindings: `#[rust_js::link_name]` on an ordinary function](0039-generic-bindings.md)
 - [0046 `#![rust_js::camel_case]`: a crate's own names, the JS way](0046-camel-case-crates.md) *(superseded by 0435)*

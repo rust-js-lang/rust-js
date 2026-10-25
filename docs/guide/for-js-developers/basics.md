@@ -102,6 +102,25 @@ export function banner(count) {
   two modules may import each other, and the one loaded first runs before
   the other has made its `const`s. A function reads it by its name
   ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)).
+- A `const` of literals is the value rustc computed, `4 * 1024` is
+  `4096`. One written of other constants, the crate's or a library's, is
+  as it's written, each read by its name, after what it reads; one that
+  calls the crate's functions is rustc's value still
+  ([ADR 0031](../../decisions/0031-consts.md), amended):
+
+```rust
+pub const SIZE: u32 = 4 * 1024;
+pub const SYNC_LANE: i32 = 0b0010;
+pub const DEFAULT_LANE: i32 = 0b1000;
+pub const SYNC_UPDATE_LANES: i32 = SYNC_LANE | DEFAULT_LANE;
+```
+
+```js
+export const SIZE = 4096;
+export const SYNC_LANE = 0b0010;
+export const DEFAULT_LANE = 0b1000;
+export const SYNC_UPDATE_LANES = SYNC_LANE | DEFAULT_LANE;
+```
 
 Rust lets you shadow a name with a new `let`, `let input = input.trim();`.
 Where nothing reads the old one after it, the new one is the same JS

@@ -1,7 +1,8 @@
 # 0031. A `const` is the value rustc computed, under its own name
 
 Status: Accepted. Amended: a constant whose value rustc can't say is its
-initializer's, each use a copy where it may change (below). Amended by
+initializer's, each use a copy where it may change (below); and so is
+one written of other constants, as it's written (below). Amended by
 [0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's is
 imported by its name. Extended by
 [0722](0722-a-repr-enums-variant-is-its-number.md): a numbered enum's
@@ -132,3 +133,59 @@ that isn't `Copy` is the one there is, which Rust allows of any value.
 The corpus's `const_block_vec.rs`, which was a compile-fail case of the
 refusal, and rustc's `consts/const-blocks/const-repeat.rs` and
 `array-slice-vec/issue-18425.rs`, pass.
+
+## Amendment: a constant written of other constants is as it's written
+
+React's ReactFiberLane and ReactFiberFlags write their masks of their
+lanes and flags, and some of `shared`'s feature flags:
+
+```js
+export const SyncUpdateLanes: Lane = SyncLane | InputContinuousLane | DefaultLane;
+export const SomeTransitionLane: Lane = TransitionLane1;
+export const Hydrate = enableCreateEventHandleAPI ? .. : ..;
+let nextTransitionUpdateLane: Lane = TransitionLane1;
+```
+
+Their port's constants were rustc's values, `SyncUpdateLanes = 42`,
+`nextTransitionUpdateLane = 256`, `EventPriority(NO_LANE)`'s `[0]`: the
+names were lost, and a flag's answer was baked in, where React's build
+swaps a fork of `shared`'s flags in.
+
+**A constant whose initializer names other constants read by their
+names, the crate's or a library's (ADR 0770), and calls none of the
+crate's functions, is its initializer, lowered as code, as a constant
+rustc can't say is (above)**: `SyncLane | InputContinuousLane |
+DefaultLane`, `[SyncLane]`, a `const { Cell::new(TransitionLane1) }`
+thread-local's `TransitionLane1`, each read by its name.
+
+- **Its order is ADR 0306's**: what it reads is made before it, in its
+  module; a library's is made before the crate loads. Where a module's
+  load reads another of the crate's modules' constant, it reads its value
+  still (ADR 0722), as an import cycle may load it first.
+- **A constant of literals is rustc's value, as before**: `4 * 1024` is
+  `4096`, as a person writes it, where its expression would be
+  `Math.imul(4, 1024) >>> 0`. Decided so (2026-10-26): the gap was names
+  lost, and a literal keeps its text as it is (ADR 0627).
+- **One that calls the crate's functions is rustc's value, as before**,
+  `doubled(SIZE)`'s `8192`: what's worked out at compile time isn't run
+  where the module loads. Decided so too (2026-10-26), the natural
+  reading of a `const fn`'s call; a std function's call is no such run,
+  `from_raw_parts(DANGLING, 0)`.
+- **A static is too, where its initializer may be one** (ADR 0096): one
+  of a type no one JS value can be every use's is refused, as before.
+- **Where rustc needs the value, a pattern or an array's length**, it's
+  rustc's still: `case SyncUpdateLanes:`, `[0, 0].length`.
+- **Not yet**: another of the crate's modules' constant read where a
+  module loads is its value, not its name, where no import cycle would
+  load this module first.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
+same either way, rustc having worked it out, and a library's flag is
+read from the library the crate was built with, unless a bundler swaps
+it, as React's build means to.
+
+Test: `lowering-constants`'s "a const written of other consts is as it's
+written", run; `cross-crate-items`'s "a const written of a library's
+consts imports them by name", run. Mutations `const-of-consts-folded`,
+`const-of-library-consts-folded` (`lower/pipeline.ts`),
+`const-calling-crate-code-as-code` (`lower/body_queries.ts`).

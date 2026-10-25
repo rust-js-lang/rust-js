@@ -20,7 +20,7 @@ const Handle = {
 
 const EMPTY = $ptr($ptrFrom(1, 0, []).value, 0);
 const DANGLING = $ptrFrom(1, 1);
-const EMPTY_REF = [];
+const EMPTY_REF = $ptrSlice(DANGLING, 0);
 
 function main() {
   const handle = {

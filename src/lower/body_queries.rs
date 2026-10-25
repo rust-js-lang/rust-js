@@ -342,6 +342,22 @@ pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::Generic
     (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()
 }
 
+/// Is `thir`, a constant's initializer, written of other constants that
+/// are read by their names (`by_name`), `A | B` or `EventPriority(NO_LANE)`,
+/// and of no call of a function `by_name` says is compiled, whose body would
+/// run where its module loads: so its JS is as it's written, not rustc's
+/// value (ADR 0031, amended).
+pub(super) fn written_of_constants(thir: &Thir<'_>, by_name: &dyn Fn(DefId) -> bool) -> bool {
+    let calls_compiled = thir.exprs.iter().any(|e| match e.kind {
+        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),
+        ExprKind::Closure(_) => true,
+        _ => false,
+    });
+    let names_constant =
+        (thir.exprs.iter()).any(|e| matches!(e.kind, ExprKind::NamedConst { def_id, .. } if by_name(def_id)));
+    names_constant && !calls_compiled
+}
+
 /// Does `thir` read a static of `module`, or a `thread_local!`'s, whose
 /// value, made where its module loads, may not be there yet where another's
 /// initializer is (ADR 0096)? Another module's is an import, which JS makes

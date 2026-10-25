@@ -405,3 +405,42 @@ pub fn run() -> u32 {
   const { run } = await import(join(dir, "app", "lib.js"));
   expect(run()).toBe(7);
 });
+
+// React's ReactFiberFlags: `Hydrate = enableCreateEventHandleAPI ? .. :
+// ..`, a feature flag of `shared`'s, which React's build swaps a fork of
+// in: a const written of a library's is as it's written, the flag imported
+// by its name, not rustc's value of it, which would bake one fork's answer
+// in (ADR 0031, amended).
+test("a const written of a library's consts imports them by name", async () => {
+  const dir = fixture("cross-crate-flag");
+  const { app } = compiled(dir, `pub const ENABLE_CREATE_EVENT_HANDLE_API: bool = false;
+pub const SHARED_LANE: i32 = 0b0100;
+`, `use dep::{ENABLE_CREATE_EVENT_HANDLE_API, SHARED_LANE};
+
+#[cfg_attr(rust_js, rust_js::name = "Snapshot")]
+pub const SNAPSHOT: i32 = 0b0001;
+#[cfg_attr(rust_js, rust_js::name = "Update")]
+pub const UPDATE: i32 = 0b0010;
+#[cfg_attr(rust_js, rust_js::name = "BeforeMutationMask")]
+pub const BEFORE_MUTATION_MASK: i32 = UPDATE
+    | if ENABLE_CREATE_EVENT_HANDLE_API {
+        SNAPSHOT
+    } else {
+        0
+    };
+#[cfg_attr(rust_js, rust_js::name = "Shared")]
+pub const SHARED: i32 = SHARED_LANE | UPDATE;
+#[cfg_attr(rust_js, rust_js::name = "Flagged")]
+pub const FLAGGED: i32 = if ENABLE_CREATE_EVENT_HANDLE_API {
+    SHARED_LANE
+} else {
+    0
+};
+`);
+  expect(app).toContain('import { ENABLE_CREATE_EVENT_HANDLE_API, SHARED_LANE } from "../dep/lib.js";\n');
+  expect(app).toContain("export const Shared = SHARED_LANE | Update;\n");
+  expect(app).toContain("export const Flagged = ENABLE_CREATE_EVENT_HANDLE_API ? SHARED_LANE : 0;\n");
+  expect(app).toMatch(/export const BeforeMutationMask = Update \| \(ENABLE_CREATE_EVENT_HANDLE_API \? Snapshot : 0\);\n/);
+  const { BeforeMutationMask, Shared } = await import(join(dir, "app", "lib.js"));
+  expect([BeforeMutationMask, Shared]).toEqual([2, 6]);
+});

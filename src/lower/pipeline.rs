@@ -126,6 +126,7 @@ pub fn lower_crate<'tcx>(
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
 
+    let foreign = super::library::Foreign::new(tcx, dependencies);
     let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
     // The statics and constants whose initializers are lowered as code.
     let mut initialized: Vec<&Body<'tcx>> = Vec::new();
@@ -133,6 +134,42 @@ pub fn lower_crate<'tcx>(
         let span = tcx.def_span(def_id);
         let typing_env = ty::TypingEnv::fully_monomorphized();
         let args = ty::GenericArgs::identity_for_item(tcx, def_id);
+        let initializer = initializers.iter().find(|body| body.def_id == def_id.to_def_id());
+        // A `const { .. }` block's type is its value's.
+        let ty = match (tcx.def_kind(def_id), initializer) {
+            (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,
+            _ => tcx.type_of(def_id).instantiate_identity().skip_normalization(),
+        };
+        // Its initializer, lowered as code, where one JS value can be every
+        // use's, and it reads no static, whose value may not be made yet.
+        // A `OnceLock`, only ever made empty, or a `LazyLock`, which
+        // makes its value when it's used, is one JS cell too (ADRs 0317, 0318),
+        // and so is a `static mut`, its value's `{ value }` (ADR 0096).
+        let mutable = matches!(tcx.def_kind(def_id), DefKind::Static { mutability, .. } if mutability.is_mut());
+        let once = matches!(tcx.def_kind(def_id), DefKind::Static { .. })
+            && matches!(ty.kind(), ty::Adt(adt, _)
+            if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
+                .into_iter()
+                .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
+        // A constant's each use is a value of its own, copied where it may
+        // change (`named_const`), so its one JS value needn't be shareable:
+        // `const EMPTY: Vec<i32> = Vec::new()`'s `[]` (ADR 0031).
+        let constant = !matches!(tcx.def_kind(def_id), DefKind::Static { .. });
+        let as_code = initializer.filter(|body| {
+            (mutable || constant || super::copies::shareable(tcx, ty) || once)
+                && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
+        });
+        // One written of other constants read by their names, `A | B`, is
+        // its initializer's, as it's written, not rustc's value of it, which
+        // would lose the names, and what a library's flag says where it's
+        // swapped for another (ADR 0031, amended).
+        let by_name = |id: DefId| fns.contains_key(&id) || foreign.item(id).is_some();
+        if let Some(body) = as_code
+            && super::body_queries::written_of_constants(&body.thir, &by_name)
+        {
+            initialized.push(body);
+            continue;
+        }
         // A `static mut` is its value's `{ value }` (ADR 0096), which any
         // module can write.
         let (value, what) = match tcx.def_kind(def_id) {
@@ -149,7 +186,7 @@ pub fn lower_crate<'tcx>(
             ),
             // One written as `Math`'s constant is its, `Math.LN2` (ADR 0887).
             _ => (
-                (initializers.iter().find(|body| body.def_id == def_id.to_def_id()))
+                initializer
                     .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))
                     .or_else(|| {
                         super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
@@ -160,33 +197,9 @@ pub fn lower_crate<'tcx>(
             ),
         };
         let Some(value) = value else {
-            let initializer = initializers.iter().find(|body| body.def_id == def_id.to_def_id());
-            // A `const { .. }` block's type is its value's.
-            let ty = match (tcx.def_kind(def_id), initializer) {
-                (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,
-                _ => tcx.type_of(def_id).instantiate_identity().skip_normalization(),
-            };
             // A value rustc's can't say, a function's, a `dyn`'s or one too
-            // large for a value tree, is its initializer's, where one JS value
-            // can be every use's, and it reads no static, whose value may not
-            // be made yet.
-            // A `OnceLock`, only ever made empty, or a `LazyLock`, which
-            // makes its value when it's used, is one JS cell too (ADRs 0317, 0318),
-            // and so is a `static mut`, its value's `{ value }` (ADR 0096).
-            let mutable = matches!(tcx.def_kind(def_id), DefKind::Static { mutability, .. } if mutability.is_mut());
-            let once = matches!(tcx.def_kind(def_id), DefKind::Static { .. })
-                && matches!(ty.kind(), ty::Adt(adt, _)
-                if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
-                    .into_iter()
-                    .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
-            // A constant's each use is a value of its own, copied where it may
-            // change (`named_const`), so its one JS value needn't be shareable:
-            // `const EMPTY: Vec<i32> = Vec::new()`'s `[]` (ADR 0031).
-            let constant = !matches!(tcx.def_kind(def_id), DefKind::Static { .. });
-            if (mutable || constant || super::copies::shareable(tcx, ty) || once)
-                && let Some(body) = initializer
-                && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
-            {
+            // large for a value tree, is its initializer's.
+            if let Some(body) = as_code {
                 initialized.push(body);
                 continue;
             }
@@ -222,7 +235,6 @@ pub fn lower_crate<'tcx>(
     // Lower each body once. Cross-module references have symbolic names until
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items: Vec<(DefId, super::LoweredFn)> = Vec::new();
-    let foreign = super::library::Foreign::new(tcx, dependencies);
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
     let keeps_capacity = asks_capacity || foreign.keeps_capacity();

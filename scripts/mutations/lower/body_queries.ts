@@ -295,4 +295,12 @@ export const mutations: Mutation[] = [
     replace: "        given.insert(rustc_span::def_id::CRATE_DEF_ID.to_def_id());\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods where order"],
   },
+  {
+    name: "const-calling-crate-code-as-code",
+    breaks: "a const calling the crate's const fn, `doubled(SIZE)`, is that call where its module loads, not rustc's value of it",
+    file: "src/lower/body_queries.rs",
+    find: "        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),\n",
+    replace: "",
+    tests: ["test/lowering-constants.test.ts", "-t", "a const written of other consts is as it's written"],
+  },
 ];
