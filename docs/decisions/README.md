@@ -578,7 +578,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md)
 - [0703 A closure made before a call a guard unwinds is made where it's read](0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
-- [0705 A guard's scope reads as any body, its fields the variables it was made of](0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop)*
+- [0705 A guard's scope reads as any body, its fields the variables it was made of](0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop; extended by 0855: each of its `break`s, a `loop` ending a branch)*
 - [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`; amended by 0830: a `let Err(x)`'s `catch` holds what reads `x` or what that declares)*
 - [0708 A comment before an argument, or a field, is before it](0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](0709-a-signed-counter-below-a-length-stays-below-it.md) *(extended by 0746: a length held in a variable, and a `push`)*
@@ -639,6 +639,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
+- [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

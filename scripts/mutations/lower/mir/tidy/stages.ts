@@ -302,8 +302,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-late-labels-kept",
     breaks: "a loop's label that an inner loop's way out, its `break` now, no longer names stays: `bb3: for (..)`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| innermost_jumps(s))\n            }),\n            pass(\"settle jumps\", |b, _| settle_jumps(b)),\n",
-    replace: "                js::statement_lists(b, &mut |s| innermost_jumps(s))\n            }),\n",
+    find: "                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))\n            }),\n            pass(\"settle jumps\", |b, _| settle_jumps(b)),\n",
+    replace: "                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))\n            }),\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they're written"],
   },
   {

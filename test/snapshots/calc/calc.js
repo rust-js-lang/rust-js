@@ -70,31 +70,29 @@ export function toRpn(tokens) {
   const out = [];
   const stack = [];
   for (const t of tokens) {
-    bb49: {
-      if (t.TAG === "Num") {
-        out.push(t);
-      } else if (t.TAG === "Op") {
-        while (true) {
-          const last = stack.at(-1);
-          if (last == null || last.TAG !== "Op" || !(prec(last._0) >= prec(t._0))) {
-            break;
-          }
-          out.push($unwrap(stack.pop()));
+    if (t.TAG === "Num") {
+      out.push(t);
+    } else if (t.TAG === "Op") {
+      while (true) {
+        const last = stack.at(-1);
+        if (last == null || last.TAG !== "Op" || !(prec(last._0) >= prec(t._0))) {
+          break;
         }
-        stack.push(t);
-      } else if (t === "LParen") {
-        stack.push("LParen");
-      } else {
-        while (true) {
-          const top = stack.pop();
-          if (top == null) {
-            break bb49;
-          }
-          if (top === "LParen") {
-            break bb49;
-          }
-          out.push(top);
+        out.push($unwrap(stack.pop()));
+      }
+      stack.push(t);
+    } else if (t === "LParen") {
+      stack.push("LParen");
+    } else {
+      while (true) {
+        const top = stack.pop();
+        if (top == null) {
+          break;
         }
+        if (top === "LParen") {
+          break;
+        }
+        out.push(top);
       }
     }
   }

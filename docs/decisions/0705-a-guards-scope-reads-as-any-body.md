@@ -6,7 +6,9 @@ apart, and whose guard stayed an object where a field's name was taken;
 and [0589](0589-a-drop-dropped-once-is-its-body-there.md), whose guard
 was its fields only where no name of the function was a field's. Amended
 below: a `while`'s test the scope held apart joins the loop's, and a loop
-that ends a block MIR made breaks as a loop.
+that ends a block MIR made breaks as a loop. Extended by
+[0855](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md): each of the
+loop's `break`s of the block, as a `loop` that ends an `if`'s branch has.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same drops in the
 same order, and what's read the same value; only how the JS reads changes.

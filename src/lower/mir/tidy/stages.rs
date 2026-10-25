@@ -318,7 +318,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A block's `break` a loop that ends it ends with, where `exits
             // after` put the loop: the loop's own.
             pass("blocks loops end", |b, _| {
-                js::statement_lists(b, &mut |s| blocks_loops_end(s))
+                js::statement_lists(b, &mut |s| blocks_loops_end(s, false))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             // What those leave of each block MIR made: its `break`s
@@ -467,6 +467,15 @@ pub(super) const STAGES: &[Stage] = &[
             // Their jumps then, of the loop they're now in, unnamed.
             pass("innermost jumps", |b, _| {
                 js::statement_lists(b, &mut |s| innermost_jumps(s))
+            }),
+            // Each `break` a loop that ends a block MIR made leaves it by,
+            // once what's after each loop is placed: the loop's own, a
+            // `loop` that ends an `if`'s branch, its `else` after it, as
+            // written, with no label (ADR 0855); one a loop inside it
+            // leaves, its `break 'rows`, the loop's, by the program's name.
+            pass("loops ending blocks", |b, h| {
+                js::statement_lists(b, &mut |s| blocks_loops_end(s, true));
+                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`.
