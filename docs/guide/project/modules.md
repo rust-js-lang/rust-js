@@ -714,7 +714,9 @@ ellipsis` of a conditional ([ADR
 0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md)),
 one inside an expression after the code right before it, `37 /* "%" */`,
 or right after an `=` before the value, as written, `export const NoMode =
-/*   */ 0b0000000;` of `pub const NO_MODE: u32 = /*   */ 0b0000000;`
+/*   */ 0b0000000;` of `pub const NO_MODE: u32 = /*   */ 0b0000000;`, a
+block comment on a line of its own between them, as rustfmt writes a
+long one, too
 ([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md), amended),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
 comment lines before a `match` arm is one, the arm's; a comment before a

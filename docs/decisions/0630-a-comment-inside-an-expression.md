@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose rule 2 was of a comment at its line's end. Amended below: one after
-an `=` is before the value.
+an `=` is before the value; amended again: and one on a line of its own
+between an `=` and its value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -105,3 +106,43 @@ the map's columns after a comment. Mutations
 `value-comment-equals-only-before` (`to_oxc/trailing.ts`): where a comment
 after code on its line goes, which this made `to_oxc.rs` too long to
 hold, is `src/to_oxc/trailing.rs`'s.
+
+## Amendment: one on a line of its own between an `=` and the value
+
+ReactFiberFlags.js writes one mask's comment where Prettier breaks its
+line:
+
+```js
+export const ViewTransitionNamedStatic =
+  /*    */ SnapshotStatic | MaySuspendCommit;
+```
+
+rustfmt writes the port's `= /*    */ SNAPSHOT_STATIC | ..` too long for
+its line with the comment on a line of its own:
+
+```rust
+pub const VIEW_TRANSITION_NAMED_STATIC: Flags =
+    /*    */
+    SNAPSHOT_STATIC | MAY_SUSPEND_COMMIT;
+```
+
+A comment on its own line is before the statement after it (ADR 0444),
+but this one is inside a module's item, whose `const` no statement
+starts, so it was lost: `export const ViewTransitionNamedStatic =
+SnapshotStatic | MaySuspendCommit;`.
+
+**A block comment of one line, alone on its line, whose code before it,
+past other comments, is an `=` (not `==`, `<=` or `+=`), and whose code
+after it is the value on a line after it, is before the value**, placed as
+one on the value's line right before its first code is, after the `=` of
+the JS (`to_oxc.rs`'s `own_line_before_value`), and not before a
+statement too. rust-js prints it on one line, `export const
+ViewTransitionNamedStatic = /*    */ SnapshotStatic | MaySuspendCommit;`;
+an app's Prettier, React's, breaks it after the `=`, as upstream's is. A
+line comment there, `==\n // the other\n other`, is as before, before the
+statement or in its expression where oxc puts it.
+
+Test: `lowering-comments`'s "a comment on its own line between an = and
+its value is before the value", a module's `const` and a `let`, run.
+Mutations `own-line-value-comment-unplaced`,
+`own-line-value-comment-also-before-statement` (`to_oxc.ts`).

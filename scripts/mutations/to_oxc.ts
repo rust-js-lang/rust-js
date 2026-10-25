@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "trailing-comment-leading",
     breaks: "a comment after code on its line is also written before the next statement",
     file: "src/to_oxc.rs",
-    find: "            .filter(|c| c.lo >= past && !after_code(c))",
-    replace: "            .filter(|c| c.lo >= past)",
+    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c))\n",
+    replace: "            .filter(|c| c.lo >= past && !before_value(c))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
@@ -581,5 +581,21 @@ export const mutations: Mutation[] = [
     find: "    (before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     replace: "    (false && before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
+  },
+  {
+    name: "own-line-value-comment-unplaced",
+    breaks: "a comment on its own line between an `=` and its value, ReactFiberFlags' `/*    */`, is lost (ADR 0630, amended)",
+    file: "src/to_oxc.rs",
+    find: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {\n",
+    replace: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c).filter(|_| false) {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
+  },
+  {
+    name: "own-line-value-comment-also-before-statement",
+    breaks: "a comment on its own line between an `=` and its value is before the value and before its statement too, twice",
+    file: "src/to_oxc.rs",
+    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
+    replace: "            .filter(|c| c.lo >= past && !after_code(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
   },
 ];

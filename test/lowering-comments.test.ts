@@ -1111,6 +1111,37 @@ pub fn flags() -> u32 {
   expect(mapped("0b0000001")).toEqual(place(rust, "0b0000001"));
 });
 
+// React's ReactFiberFlags: `ViewTransitionNamedStatic =\n /*    */
+// SnapshotStatic | MaySuspendCommit`, too long for one line, which rustfmt
+// writes with its comment on a line of its own between the `=` and the
+// value: before the value still (ADR 0630, amended).
+test("a comment on its own line between an = and its value is before the value", async () => {
+  const { js, lib } = await compiled("comment-own-line-before-a-value", `#[cfg_attr(rust_js, rust_js::name = "SnapshotStatic")]
+pub const SNAPSHOT_STATIC: i32 = /*                    */ 0b0000000000000000000000000000001;
+#[cfg_attr(rust_js, rust_js::name = "MaySuspendCommit")]
+pub const MAY_SUSPEND_COMMIT: i32 = /*                 */ 0b0000000000000000000000000000010;
+#[cfg_attr(rust_js, rust_js::name = "ViewTransitionNamedStatic")]
+pub const VIEW_TRANSITION_NAMED_STATIC: i32 =
+    /*    */
+    SNAPSHOT_STATIC | MAY_SUSPEND_COMMIT;
+
+pub fn masked(given: i32, other: i32) -> bool {
+    let mode =
+        /* given */
+        given | 4;
+    mode ==
+        // the other
+        other
+}
+`);
+  // On one line, the comment before the value; an app's Prettier breaks it after
+  // the `=`, as upstream's is.
+  expect(js).toContain("\nexport const ViewTransitionNamedStatic = /*    */ SnapshotStatic | MaySuspendCommit;\n");
+  expect(js).toContain("  const mode = /* given */ given | 4;\n");
+  expect(js).not.toContain("  /* given */\n");
+  expect([lib.ViewTransitionNamedStatic, lib.masked(1 as never, 5 as never), lib.masked(2 as never, 5 as never)]).toEqual([3, true, false]);
+});
+
 // React's ReactFiberLane, its comments as upstream has them: one an `else`'s
 // block starts with before its only `if`, `// Nothing has been pinged.`,
 // keeps the block; one between an `||`'s operands before a parenthesized
