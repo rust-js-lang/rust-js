@@ -716,9 +716,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.push(x.into());
         }
         // A `Take`'s over what reaches the crate's own `nth`: std's `count`,
-        // which advances its source and asks no `nth` (#213), `$count`'s.
-        if crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))
-            && self.recognition().nths_its_own(iter_ty)
+        // which advances its source and asks no `nth` (#213), `$count`'s; and
+        // a `Take`'s or a `Skip`'s whose `nth` drops a reversed `Vec`'s as one
+        // slice, as their `count`s do (#261).
+        if (crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))
+            && self.recognition().nths_its_own(iter_ty))
+            || (self.recognition().nths_a_slice(iter_ty)
+                && self.recognition().reversed(iter_ty).is_none()
+                && crate::lower::recognition::stepped_by_source(self.tcx, self.reveal(iter_ty)).is_none())
         {
             let mut given = vec![it];
             if let Some(item) = item

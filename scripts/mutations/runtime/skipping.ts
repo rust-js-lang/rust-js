@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "        drop?.(step.value);\n      }\n      return skipping.iter.next();\n",
     replace: "      }\n      return skipping.iter.next();\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
     name: "skip-dropping-unclosed",
@@ -80,6 +80,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "    skipping.tryFold = (init, f, broke) => {",
     replace: "    skipping.tryFoldUnused = (init, f, broke) => {",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "skipping-count-by-fold",
+    breaks: "`rev().take(3).skip(1).count()` of a `Vec` counts by its fold, one at a time from the back, not std's `Skip::count`, its source's `count` after `nth(n - 1)` (#261)",
+    file: "src/runtime/skipping.js",
+    find: "    skipping.count = (dropItem) => {",
+    replace: "    skipping.countUnused = (dropItem) => {",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
 ];

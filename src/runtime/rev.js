@@ -31,6 +31,7 @@ function $rev(it) {
   // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
   // either end (#234, #250).
   if (it.ownNthBack) rev.ownNth = true;
+  if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
   if (it.ownNth) {
     rev.nthBack = (k) => it.nth(k);
     rev.advanceBackBy = (m) => it.advanceBy(m);

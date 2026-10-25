@@ -37,5 +37,13 @@ fn main() {
     println!("{:?}", drained.drain(..).nth_back(2).map(|l| l.0));
     println!("{}", louds(32, 4).into_iter().rev().skip(2).fold(0, |n, _| n + 1));
     println!("{}", louds(36, 4).into_iter().rev().skip(2).any(|l| l.0 > 99));
+    println!("{}", louds(40, 3).into_iter().rev().take(2).count());
+    println!("{}", louds(43, 4).into_iter().rev().take(3).skip(1).count());
+    let taken = louds(47, 2).into_iter().rev().take(2).chain(louds(49, 1)).nth(2);
+    println!("{:?}", taken.map(|l| l.0));
+    println!("{:?}", louds(50, 3).into_iter().rev().take(2).nth(4).map(|l| l.0));
+    for loud in louds(54, 3).into_iter().filter(|l| l.0 > 0).skip(2) {
+        println!("got {}", loud.0);
+    }
     println!("end");
 }

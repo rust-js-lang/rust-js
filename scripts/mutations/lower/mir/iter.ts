@@ -369,8 +369,8 @@ export const mutations: Mutation[] = [
     name: "take-count-reduced",
     breaks: "`count()` of a `Take` over the crate's own `nth` is `reduce`, its fold's, which asks `nth`, where std's asks none (#213)",
     file: "src/lower/mir/iter.rs",
-    find: "        if crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
-    replace: "        if false && crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
+    find: "        if (crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
+    replace: "        if (false && crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
   },
   {
@@ -430,5 +430,13 @@ export const mutations: Mutation[] = [
     find: "                if arg_tys.get(i).is_some_and(|&ty| in_place(ty)) && value.known == js::Known::Nothing {\n",
     replace: "                if false && value.known == js::Known::Nothing {\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
+  },
+  {
+    name: "slice-count-folded",
+    breaks: "`rev().take(2).count()` of a `Vec` is a `reduce`, dropping what it counts one at a time from the back, not std's `Take::count`, its source's `advance_by`, one slice (#261)",
+    file: "src/lower/mir/iter.rs",
+    find: "            || (self.recognition().nths_a_slice(iter_ty)\n",
+    replace: "            || (false && self.recognition().nths_a_slice(iter_ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
 ];

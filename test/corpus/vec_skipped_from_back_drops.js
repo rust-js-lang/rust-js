@@ -2,10 +2,12 @@
 
 import {
   $closing,
+  $count,
   $drain,
   $dropEach,
   $held,
   $iter,
+  $lazyChain,
   $lent,
   $next,
   $nthBack,
@@ -216,7 +218,132 @@ function main() {
       } finally {
         value$1.return();
       }
-      console.log("end");
+      console.log(
+        `${$count($rev($closing($iter(louds(40, 3)), $dropEach(loudDrop_drop))).take(2), loudDrop_drop)}`,
+      );
+      console.log(
+        `${$count($skipping($rev($closing($iter(louds(43, 4)), $dropEach(loudDrop_drop))).take(3), 1, loudDrop_drop), loudDrop_drop)}`,
+      );
+      const take = $rev($closing($iter(louds(47, 2)), $dropEach(loudDrop_drop))).take(2);
+      let tmp;
+      try {
+        tmp = louds(49, 1);
+      } catch (error) {
+        take.return();
+        throw error;
+      }
+      const chain = $held($lazyChain(take, $closing($iter(tmp), $dropEach(loudDrop_drop))));
+      let taken;
+      try {
+        taken = $nthDropping($lent(chain), 2, loudDrop_drop, false);
+      } catch (error) {
+        chain.return();
+        throw error;
+      }
+      try {
+        chain.return();
+      } catch (error) {
+        if (taken != null) {
+          loudDrop_drop(taken);
+        }
+        throw error;
+      }
+      let taken$live = false;
+      const map = (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      };
+      const value$2 = taken ? map(taken) : undefined;
+      console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+      const value$3 = $held($rev($closing($iter(louds(50, 3)), $dropEach(loudDrop_drop))).take(2));
+      try {
+        const value = $nthDropping($lent(value$3), 4, loudDrop_drop, false);
+        const value$1 = (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        };
+        const value$2 = value ? value$1(value) : undefined;
+        console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+      } finally {
+        value$3.return();
+      }
+      const value$4 = (l) => l[0] > 0;
+      const keep = (item) => value$4(item);
+      const iter = $skipping(
+        $closing($iter(louds(54, 3)), $dropEach(loudDrop_drop)).filter((item) => {
+          if (keep(item)) {
+            return true;
+          }
+          loudDrop_drop(item);
+          return false;
+        }),
+        2,
+        loudDrop_drop,
+      );
+      let tmp$1;
+      while (true) {
+        try {
+          tmp$1 = $next(iter);
+        } catch (error) {
+          iter.return();
+          if (taken$live) {
+            if (taken != null) {
+              loudDrop_drop(taken);
+            }
+          }
+          throw error;
+        }
+        if (!tmp$1) {
+          try {
+            iter.return();
+          } catch (error) {
+            if (taken$live) {
+              if (taken != null) {
+                loudDrop_drop(taken);
+              }
+            }
+            throw error;
+          }
+          break;
+        }
+        const loud = tmp$1;
+        try {
+          console.log(`got ${loud[0]}`);
+        } catch (error) {
+          loudDrop_drop(loud);
+          iter.return();
+          if (taken$live) {
+            if (taken != null) {
+              loudDrop_drop(taken);
+            }
+          }
+          throw error;
+        }
+        try {
+          loudDrop_drop(loud);
+        } catch (error) {
+          iter.return();
+          if (taken$live) {
+            if (taken != null) {
+              loudDrop_drop(taken);
+            }
+          }
+          throw error;
+        }
+      }
+      try {
+        console.log("end");
+      } catch (error) {
+        if (taken$live) {
+          if (taken != null) {
+            loudDrop_drop(taken);
+          }
+        }
+        throw error;
+      }
+      taken$live = false;
     } finally {
       for (const item of drained) {
         loudDrop_drop(item);

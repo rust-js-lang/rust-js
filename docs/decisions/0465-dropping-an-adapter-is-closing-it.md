@@ -187,3 +187,24 @@ passes itself. Held by `vec_skipped_from_back_drops.rs`'s fold and
 `skipping-try-fold-by-next`. The readability baseline's `$iter` and
 renamed `x$1` shares each grow by 0.2 in 10,000 lines, from the two new
 lines' `Vec`s, each made in a `try` that drops what came before.
+
+## Amendment: a `take` and a `skip` pass a reversed `Vec`'s slice on (#261)
+
+std's `Take::count` is its source's `advance_by(n)`, and `Skip::count`
+is `nth(n - 1)` and then its source's `count`. Of a reversed `Vec`, each
+drops what it passes as one slice, so `rev().take(2).count()` of `[1, 2,
+3]` drops 2, 3, then 1. Such a `count` is `$count`, which asks each
+adapter's own, where the iterator is a `Take` or a `Skip` whose `nth`
+drops a slice (`nths_a_slice`, which now also passes through `Take`).
+`$skipping` gains std's `count`. A source that drops what it passes
+says each item's drop too (`dropItem`), so a `take` of it is `ownNth`.
+Past its end, a `take`'s `nth` drops the item its source's `nth(n - 1)`
+gives, as std's `Take::nth` does. Fuzz seeds 45520 and 46382 agree.
+`Fuse` and `Peekable`, compiled from std, don't pass `nth` on yet
+(46168, 46397, 45792; #261 stays open). Held by
+`vec_skipped_from_back_drops.rs` and four mutations. That case's
+`filter(..).skip(2)` now holds `skip-dropping-keeps-skipped`, whose old
+case no longer steps by `next`. The readability baseline's `$iter` and
+renamed `x$1` shares each grow by 0.5 in 10,000 lines, both from that
+case's five new lines: their `Vec`s, and the temporaries made in each
+`try`.

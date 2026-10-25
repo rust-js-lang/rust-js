@@ -1401,6 +1401,12 @@ export class $Steps extends Iterator {
       () => this.return(),
     );
     taken.from = [this];
+    // Its `nth` drops what it passes over itself where its source's does, a
+    // reversed `Vec`'s, as one slice, and it knows each item's drop (#261).
+    if (this.ownNth && this.dropItem !== undefined) {
+      taken.ownNth = true;
+      taken.dropItem = this.dropItem;
+    }
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
     taken.nth = (k) => {
@@ -1408,7 +1414,12 @@ export class $Steps extends Iterator {
         n -= k + 1;
         return this.nth(k);
       }
-      if (n > 0) this.nth(n - 1);
+      // Past its end, its source's `nth(n - 1)`, whose item std's `Take::nth`
+      // drops, where its source says how (#261).
+      if (n > 0) {
+        const step = this.nth(n - 1);
+        if (!step.done) taken.dropItem?.(step.value);
+      }
       n = 0;
       // Past its end, what it steps done with, unless it's held, whose
       // owner drops it (#242).
@@ -1851,6 +1862,8 @@ export function $closing(it, drop, slices = true) {
     };
     closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
+    // Each item's own drop, which what it gives on is dropped by (#261).
+    closing.dropItem = drop.each;
   }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
@@ -1925,6 +1938,25 @@ export function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // Each item's drop, which a `take` of it drops what it gives on by (#261).
+  if (iter.ownNth) skipping.dropItem = drop;
+  // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
+  // its source drops what it passes over itself (#261).
+  if (iter.ownNth) {
+    skipping.count = (dropItem) => {
+      if (skipping.n > 0) {
+        const k = skipping.n;
+        skipping.n = 0;
+        const step = skipping.iter.nth(k - 1);
+        if (step.done) {
+          skipping.return();
+          return 0;
+        }
+        dropItem?.(step.value);
+      }
+      return $count(skipping.iter, dropItem);
+    };
+  }
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
   // consuming it, closed at its end (#250).
@@ -11279,6 +11311,7 @@ export function $rev(it) {
   // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
   // either end (#234, #250).
   if (it.ownNthBack) rev.ownNth = true;
+  if (it.dropItem !== undefined) rev.dropItem = it.dropItem;
   if (it.ownNth) {
     rev.nthBack = (k) => it.nth(k);
     rev.advanceBackBy = (m) => it.advanceBy(m);

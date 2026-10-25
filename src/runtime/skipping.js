@@ -29,6 +29,25 @@ function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // Each item's drop, which a `take` of it drops what it gives on by (#261).
+  if (iter.ownNth) skipping.dropItem = drop;
+  // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
+  // its source drops what it passes over itself (#261).
+  if (iter.ownNth) {
+    skipping.count = (dropItem) => {
+      if (skipping.n > 0) {
+        const k = skipping.n;
+        skipping.n = 0;
+        const step = skipping.iter.nth(k - 1);
+        if (step.done) {
+          skipping.return();
+          return 0;
+        }
+        dropItem?.(step.value);
+      }
+      return $count(skipping.iter, dropItem);
+    };
+  }
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
   // consuming it, closed at its end (#250).

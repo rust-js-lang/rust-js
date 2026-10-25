@@ -49,6 +49,8 @@ function $closing(it, drop, slices = true) {
     };
     closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
+    // Each item's own drop, which what it gives on is dropped by (#261).
+    closing.dropItem = drop.each;
   }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
