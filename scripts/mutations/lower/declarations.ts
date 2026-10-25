@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "declaration-erased-of-the-last-item",
+    breaks: "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
+    file: "src/lower/declarations.rs",
+    find: "        let outer = std::mem::take(&mut self.erased);\n",
+    replace: "        let outer = self.erased.clone();\n",
+    tests: ["test/declarations-impl-fn.test.ts"],
+  },
+  {
     name: "map-declared-any",
     breaks: "a `HashMap<String, u32>` is declared `any`, not the `Map<string, number>` its JS is (ADR 0876)",
     file: "src/lower/declarations.rs",

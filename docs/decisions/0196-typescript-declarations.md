@@ -148,3 +148,18 @@ export default Tag;
 ## Amended by
 
 - [0236](0236-jsx-element.md): What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`
+
+## Amendment: an `impl Fn` parameter is of its own item's parameters
+
+React's scheduler, ported, declares `unstable_next<T>(eventHandler: impl
+FnOnce() -> T)`, then `unstable_wrapCallback<A, T>(callback: impl Fn(A)
+-> T + 'static)`. Its declaration read `callback: (a: A) => () => T`: an
+item's erased parameters, by index, were worked out while the item before
+it's were still the ones read, and `wrap`'s `T` is its parameter 1, which
+`unstable_next`'s `impl FnOnce() -> T` was, `() => T`. A type TypeScript
+checks a caller against was wrong.
+
+**An item's erased parameters are worked out of its own alone**
+(`Declarations::erased`): `(a: A) => T`. Case N: nothing runs a
+declaration. Held by `test/declarations-impl-fn.test.ts` and the scheduler
+port's snapshot; mutation `declaration-erased-of-the-last-item`.

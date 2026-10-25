@@ -35,7 +35,7 @@ export function unstable_runWithPriority<T>(priorityLevel: PriorityLevel, eventH
 
 export function unstable_next<T>(eventHandler: () => T): T;
 
-export function unstable_wrapCallback<A, T>(callback: (a: A) => () => T): (a: A) => T;
+export function unstable_wrapCallback<A, T>(callback: (a: A) => T): (a: A) => T;
 
 export function unstable_scheduleCallback(priorityLevel: PriorityLevel, callback: Callback, options?: Options | null | undefined): Task;
 

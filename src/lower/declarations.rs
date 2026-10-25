@@ -354,6 +354,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// as the trait each is bound by says (`#[rust_js::types]`): `C: ReactNode`
     /// is a `ReactNode`, as a person writes `children: ReactNode`.
     fn erased(&mut self, def_id: DefId) -> HashMap<u32, Value> {
+        // Of its own parameters alone, not the item before's by their index.
+        let outer = std::mem::take(&mut self.erased);
         let mut erased = HashMap::new();
         for (index, bound) in erasures(self.tcx, def_id) {
             if !erased.contains_key(&index)
@@ -397,6 +399,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let function = self.function_type(inputs.as_slice(), output);
             erased.insert(param.index, function);
         }
+        self.erased = outer;
         erased
     }
 
