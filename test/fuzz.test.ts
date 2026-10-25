@@ -12,7 +12,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { generate, print, reduce, size, type Program } from "./generate";
+import { generate, print, type Program } from "./generate";
+import { reduce, size } from "./reduce";
 import { same } from "./oracle";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, contentDirectory, fixture, root, target, writeWhole } from "./support";

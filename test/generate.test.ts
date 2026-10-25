@@ -2,7 +2,8 @@
 
 import { expect, test } from "bun:test";
 
-import { generate, print, random, reduce, size, type Program } from "./generate";
+import { generate, print, random, type Program } from "./generate";
+import { reduce, size } from "./reduce";
 
 test("a seed is the same program, and another seed another", () => {
   expect(print(generate(7))).toBe(print(generate(7)));
