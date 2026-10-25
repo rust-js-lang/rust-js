@@ -680,6 +680,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0888 `rust-js clippy` lints the app as rust-js reads it](0888-rust-js-clippy.md)
 - [0890 A bitwise operator's assignment is its compound](0890-a-bitwise-assignment-is-its-compound.md)
 - [0891 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
+- [0892 A test of bits against `0` is their truth](0892-a-test-of-bits-against-zero-is-their-truth.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

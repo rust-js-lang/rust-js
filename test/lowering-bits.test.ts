@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
 
 /** `rust` compiled in a fixture of `name`: its JS, and its module. */
-async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: (number | object)[]) => unknown> }> {
+async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: (number | boolean | object)[]) => unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
@@ -151,4 +151,64 @@ pub fn lowest_of_sum(a: i32, b: i32) -> i32 {
   expect([0, 6, -1, min, 2147483647].map((n) => lib.highestBit(n))).toEqual([0, 4, min, min, 1 << 30]);
   expect([0, 6, 0xffffffff].map((n) => lib.highestBitU32(n))).toEqual([0, 4, 2147483648]);
   expect(lib.lowestOfSum(2147483647, 1)).toBe(min);
+});
+
+// ADR 0892: React's `if (lanes & SyncLane)`. A test of a bitwise
+// operator's value against 0, `(lanes & 8) !== 0`, is its truth, `lanes &
+// 8`, and `=== 0` its `!`: the value is a number, never NaN. Only where
+// its truth alone is read: a value stays a comparison, and so does a
+// variable's test, `n !== 0`.
+test("a test of bits against 0 is their truth", async () => {
+  const { js, lib } = await compiled("bits-tested", `pub fn label(lane: i32) -> u32 {
+    if lane & 8 != 0 {
+        return 1;
+    }
+    if lane & 4 == 0 {
+        return 2;
+    }
+    3
+}
+
+pub fn flagged(flags: u32, on: bool) -> u32 {
+    if on && flags & 0x80 != 0 { 1 } else { 2 }
+}
+
+pub fn includes(a: i32, b: i32) -> bool {
+    a & b != 0
+}
+
+pub fn counted(n: u32) -> bool {
+    if n != 0 {
+        return true;
+    }
+    false
+}
+
+pub fn even(n: i32) -> bool {
+    if n % 2 == 0 {
+        return true;
+    }
+    false
+}
+
+pub fn shifted(mut lanes: i32) -> u32 {
+    let mut count = 0;
+    while lanes & 1 == 0 && count < 32 {
+        lanes >>= 1;
+        count += 1;
+    }
+    count
+}
+`);
+  expect(js).toContain("  if (lane & 8) {\n");
+  expect(js).toContain("  if (!(lane & 4)) {\n");
+  expect(js).toContain("  return on && flags & 0x80 ? 1 : 2;\n");
+  expect(js).toContain("  return (a & b) !== 0;\n");
+  expect(js).toContain("  if (n !== 0) {\n");
+  expect(js).toContain("  if (n % 2 === 0) {\n");
+  expect(js).toContain("  while (!(lanes & 1) && count < 32) {\n");
+  expect([8, 4, 2].map((n) => lib.label(n))).toEqual([1, 3, 2]);
+  expect([lib.flagged(0x80, true), lib.flagged(0x7f, true), lib.flagged(0xff, false), lib.flagged(0x80000080, true)]).toEqual([1, 2, 2, 1]);
+  expect([lib.includes(6, 2), lib.includes(6, 1), lib.counted(0), lib.counted(3), lib.even(-4), lib.even(3)]).toEqual([true, false, false, true, true, false]);
+  expect([lib.shifted(8), lib.shifted(0), lib.shifted(-2147483648)]).toEqual([3, 32, 31]);
 });

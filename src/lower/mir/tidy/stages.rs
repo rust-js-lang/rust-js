@@ -525,6 +525,8 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`.
             pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
+            // `(lanes & X) !== 0` of a test: `lanes & X` (ADR 0892).
+            pass("bit tests", |b, _| logicals::bit_tests(b)),
             // An `if` of `false`, a check that can't fail once what it reads
             // is in place: its `else`, if any; and an `if` of nothing either
             // way: its test, where that does anything.

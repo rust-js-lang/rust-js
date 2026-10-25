@@ -473,12 +473,12 @@ pub fn as_written(a: u32, b: u32) -> bool {
     false
 }
 `);
-  expect(js).toContain("  if ((lanes & 2) !== 0 && !(DISABLE_LEGACY_MODE && root.tag === 0)) {\n");
+  expect(js).toContain("  if (lanes & 2 && !(DISABLE_LEGACY_MODE && root.tag === 0)) {\n");
   expect(js).toContain("  return !(a === 1 || b === 0) ? a : b;\n");
   expect(js).toContain("  while (!(n >= limit || n === 7)) {\n");
   expect(js).toContain("  if (a !== 1 || b !== 0) {\n");
   // MIR joins the negation's parts into the chain around it, `.. && !disabled && tag !== 7`.
-  expect(js).toContain("  if ((lanes & 2) !== 0 && !(disabled || tag === 7)) {\n");
+  expect(js).toContain("  if (lanes & 2 && !(disabled || tag === 7)) {\n");
   expect([lib.joined(2 as never, 1 as never, false as never), lib.joined(2 as never, 7 as never, false as never)]).toEqual([true, false]);
   expect([lib.upgraded({ tag: 0 } as never, 2 as never), lib.upgraded({ tag: 1 } as never, 4 as never)]).toEqual([true, false]);
   expect([lib.neither(2 as never, 3 as never), lib.neither(1 as never, 3 as never), lib.neither(2 as never, 0 as never)]).toEqual([2, 3, 0]);

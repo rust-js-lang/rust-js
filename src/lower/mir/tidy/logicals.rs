@@ -677,3 +677,67 @@ fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
         _ => false,
     }
 }
+
+/// A test of a bit set's bits against `0`, `(lanes & X) !== 0`, as JS
+/// writes it, `lanes & X`, and `=== 0`'s `!(lanes & X)`: a bitwise
+/// operator's value is a number, an int32's or a `u32`'s, never `NaN`,
+/// so it's truthy where it isn't `0`. A `u32`'s wrap of one, `(a & b) >>>
+/// 0`, is `0` where what it wraps is. Of a test whose truth alone is read,
+/// an `if`'s, a `while`'s or a conditional's, and the parts of an `&&`,
+/// `||` or `!` of one (ADR 0892).
+pub(super) fn bit_tests(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::If(test, ..) | StmtKind::While { cond: test, .. } = &mut stmt.kind {
+                bit_test(test);
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Cond(test, ..) = &mut e.kind {
+            bit_test(test);
+        }
+    });
+}
+
+/// `bit_tests` of one test, and of the tests it's made of.
+fn bit_test(test: &mut Expr) {
+    match &mut test.kind {
+        ExprKind::Binary(Op::And | Op::Or, a, b) => {
+            bit_test(a);
+            bit_test(b);
+        }
+        ExprKind::Unary(UnaryOp::Not, a) => bit_test(a),
+        ExprKind::Binary(op @ (Op::Ne | Op::Eq), a, b) if b.as_int() == Some(0) && bits(a) => {
+            let ne = *op == Op::Ne;
+            let bits = match std::mem::replace(&mut **a, Expr::undefined()) {
+                Expr {
+                    kind: ExprKind::Binary(Op::UShr, x, zero),
+                    ..
+                } if zero.as_int() == Some(0) && bits(&x) => *x,
+                bits => bits,
+            };
+            let span = test.span;
+            *test = match ne {
+                true => bits,
+                false => Expr::unary(UnaryOp::Not, bits),
+            };
+            if !span.is_none() {
+                test.span = span;
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Whether `e` is a bitwise operator's value, a number of 32 bits; not an
+/// `i32`'s wrap, `(n % 2) | 0`, which is the arithmetic's.
+fn bits(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Binary(Op::BitOr, _, zero) if zero.as_int() == Some(0) => false,
+        ExprKind::Binary(Op::UShr, x, zero) if zero.as_int() == Some(0) => bits(x),
+        ExprKind::Binary(Op::BitAnd | Op::BitOr | Op::BitXor | Op::Shl | Op::Shr | Op::UShr, ..) => true,
+        ExprKind::Unary(UnaryOp::BitNot, _) => true,
+        _ => false,
+    }
+}

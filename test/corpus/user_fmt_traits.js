@@ -58,7 +58,7 @@ function flagsDisplay_fmt(flags, options) {
   while ((value = $next(iter))) {
     const bit = value[0];
     const name = value[1];
-    if ((flags[0] & bit) !== 0) {
+    if (flags[0] & bit) {
       if (!first) {
         f += " | ";
       }

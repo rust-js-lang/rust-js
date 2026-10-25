@@ -353,7 +353,9 @@ export function fits(str, substr) {
   ([ADR 0891](../../decisions/0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)).
   So `lanes.isolate_lowest_one()`, std's `lanes & lanes.wrapping_neg()`,
   is `lanes & -lanes`
-  ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)):
+  ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)); and a
+  test of bits against `0` is their truth, `if (lane & SYNC_LANE)`
+  ([ADR 0892](../../decisions/0892-a-test-of-bits-against-zero-is-their-truth.md)):
 
 ```rust
 use std::cell::Cell;
@@ -378,6 +380,15 @@ pub fn lane_of(index: u32) -> i32 {
 pub fn highest_priority_lane(lanes: i32) -> i32 {
     lanes.isolate_lowest_one()
 }
+
+pub const SYNC_LANE: i32 = 0b10;
+
+pub fn label_for_lane(lane: i32) -> Option<&'static str> {
+    if lane & SYNC_LANE != 0 {
+        return Some("Sync");
+    }
+    None
+}
 ```
 
 ```js
@@ -396,6 +407,14 @@ export function laneOf(index) {
 
 export function highestPriorityLane(lanes) {
   return lanes & -lanes;
+}
+
+export const SYNC_LANE = 0b10;
+
+export function labelForLane(lane) {
+  if (lane & SYNC_LANE) {
+    return "Sync";
+  }
 }
 ```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
