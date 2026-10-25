@@ -294,6 +294,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
                 self.flush(state, &mut out)?;
+                // Of a `fn` a macro wrote around its block, `js::export_default!
+                // { fn .. }`'s, where its block ends, as one written alone's.
+                let span = match span.from_expansion() {
+                    true => (state.body.source.def_id().as_local())
+                        .and_then(|local| self.tcx.hir_maybe_body_owned_by(local))
+                        .map(|body| body.value.span)
+                        .filter(|block| !block.from_expansion())
+                        .map_or(span, |block| block.shrink_to_hi()),
+                    false => span,
+                };
                 out.push(StmtKind::Return(value).at(self.js_span(span)));
             }
             TerminatorKind::Unreachable => {

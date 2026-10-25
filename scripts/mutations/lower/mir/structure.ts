@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^format_argument_unwinds.rs$"],
   },
+  {
+    name: "macro-fn-return-at-the-macro",
+    breaks: "a `fn` in `js::export_default!`'s last `return` is placed at the macro, and the blank line before it is lost (ADR 0444, amended)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        .filter(|block| !block.from_expansion())\n",
+    replace: "                        .filter(|_| false)\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a function's last value in export_default! stays"],
+  },
 ];

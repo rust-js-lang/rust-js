@@ -445,3 +445,18 @@ before it**, as many lines back as the chain goes.
 Test: `lowering-comments`'s "a blank line before a method call on the
 line after its receiver is kept", run. Mutation
 `blank-before-chain-at-its-call` (`to_oxc.ts`).
+
+## Amendment: a `fn` a macro writes returns where its block ends
+
+React's getComponentNameFromFiber is in `js::export_default! { fn .. }`,
+its last value after a blank line, `}\n\n None`; its JS lost the blank
+line, `}\n return null;`, which the same function written alone keeps.
+MIR's `return` is where the `fn` ends, which in the macro is its
+`macro_rules!`'s `$vis fn $($function)*`, so the statement was placed at
+the whole invocation, no blank line before it. **A `fn` a macro wrote
+around a block the program wrote returns where that block ends**, as one
+written alone does (`structure.rs`'s `Return`): the blank line before it
+is kept, and its map points there. Case N: where a statement is mapped,
+which nothing runs. Held by `test/lowering-comments.test.ts`, "a blank
+line before a function's last value in export_default! stays", and the
+mutation `macro-fn-return-at-the-macro` (`lower/mir/structure.ts`).

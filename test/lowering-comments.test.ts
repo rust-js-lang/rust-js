@@ -1373,3 +1373,33 @@ pub fn first(
   const line = js.split("\n").findIndex((l) => l === "  implementation,");
   expect(decodeMappings(map.mappings).some((s) => s.jsLine === line && s.srcLine === 4)).toBe(true);
 });
+
+// React's getComponentNameFromFiber, in `js::export_default! { fn .. }`:
+// `}\n\n  return null;`, the blank line before the function's last value
+// kept, as of one written alone; its `return` was placed at the macro,
+// where its `fn` is written (ADR 0444, amended).
+test("a blank line before a function's last value in export_default! stays", async () => {
+  const { js, lib } = await compiled("export-default-blank-line", `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn alone(tag: u32) -> Option<u32> {
+    if tag == 0 {
+        return Some(1);
+    }
+
+    None
+}
+
+js::export_default! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub fn named(tag: u32) -> Option<u32> {
+        if tag == 0 {
+            return Some(1);
+        }
+
+        None
+    }
+}
+`);
+  expect(js).toContain("export function alone(tag) {\n  if (tag === 0) {\n    return 1;\n  }\n\n  return null;\n}");
+  expect(js).toContain("export default function named(tag) {\n  if (tag === 0) {\n    return 1;\n  }\n\n  return null;\n}");
+  expect([lib.alone(0 as never), lib.default(1 as never)]).toEqual([1, null]);
+});
