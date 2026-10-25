@@ -569,6 +569,14 @@ pub fn capped(limit: f64) -> f64 {
 pub fn read() -> f64 {
     INTERNALS.with(|internals| internals.count.get())
 }
+
+pub fn deferred(key: &'static str) -> impl Fn() {
+    move || {
+        if !key.is_empty() {
+            DID_WARN.with(|&did_warn| js::dict::set(did_warn, key, true));
+        }
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -579,11 +587,15 @@ pub fn read() -> f64 {
   expect(js).toContain("  const before = Internals.count;\n  Internals.count = before + 1;\n  const n = before;\n  return n * 2;\n");
   expect(js).toContain("export function capped(limit) {\n  return ((internals) => {\n");
   expect(js).toContain("export function read() {\n  return Internals.count;\n}");
+  // In a closure's body too, a \`|&f|\` pattern's (ADR 0840, amended).
+  expect(js).toContain("  return () => {\n    if (key) {\n      didWarn[key] = true;\n    }\n  };\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.read()).toBe(2);
   expect([lib.counted(), lib.read()]).toEqual([4, 3]);
   expect([lib.capped(1), lib.capped(5)]).toEqual([1, 3]);
   expect([lib.warn("a"), lib.warn("a"), lib.warn("b")]).toEqual([0, 1, 0]);
+  lib.deferred("c")();
+  expect(lib.warn("c")).toBe(1);
 });
 
 // ADR 0582: `Rc::ptr_eq` of an `Rc` of a struct with fields, a JS object,

@@ -348,7 +348,7 @@ borrow throws as Rust's panics
 So is one handed out by `with(|cell| ..)`, or read by another module.
 
 **A thread-local's `with(|x| ..)` is its closure's body where it's
-called**, `x` the thread-local itself: as a statement, in a function or
+called**, `x` the thread-local itself: as a statement, in a function, a closure or
 in what `js::on_load!` runs, `if (enableGestureTransition) {
 ReactSharedInternals.G = null; }`; and as what a statement evaluates
 first, an `if`'s test, a `let`'s value or what's returned, its body

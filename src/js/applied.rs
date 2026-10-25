@@ -16,8 +16,20 @@ use std::collections::HashSet;
 /// of the function is the same. And one that's what a statement evaluates
 /// first, `if (((d) => { .. return v; })(warned))` of a thread-local's
 /// `with(|d| ..)`, that returns only at its end: its body before the
-/// statement, and `v` in the call's place (`value_of`, ADR 0840).
+/// statement, and `v` in the call's place (`value_of`, ADR 0840). In each
+/// closure `body` makes too, whose body a `return;` ends, as `REPORT.with(|&f|
+/// ..)` in a `catch_unwind`'s closure is (ADR 0840, amended).
 pub fn applied_blocks(body: &mut Vec<Stmt>, ends_function: bool) {
+    applied_in(body, ends_function);
+    each_expr_mut(body, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => applied_in(inner, true),
+        ExprKind::Function(function) => applied_in(&mut function.body, true),
+        _ => {}
+    });
+}
+
+/// `applied_blocks`' of `body` itself, not the closures it makes.
+fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
     loop {
         let whole = body.clone();
         if ends_function

@@ -1,6 +1,6 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
-Status: Accepted. Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+Status: Accepted; amended (in a closure's body too). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -151,3 +151,28 @@ as the module loads (#201). `plain_statics` asks the module's statements
 too, what they set and what they bind of its name: `let seen = 0;`.
 `test/modules.test.ts`'s order of a module's items holds it, with
 `statics-loaded-set-unseen`.
+
+## Amendment: in a closure's body too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above.
+
+React's `startTransition` reports an async scope's rejection through
+`REPORT_GLOBAL_ERROR.with(|&report_global_error| return_value.then(|_|
+noop(), report_global_error))`, in its `catch_unwind`'s closure. It was
+`((reportGlobalError) => { returnValue.then(.., reportGlobalError);
+})(reportGlobalError);`, where the same call in a function's body is its
+body: `js::applied_blocks` walked the statements of a function and of
+what a module runs, not of the closures they make, and the `try` that
+`catch_unwind`'s closure became took its body as it was.
+
+**`js::applied_blocks` takes each closure a body makes as a body of its
+own, whose end a `return;` is**: an arrow's, an async arrow's and a
+function expression's, each in place as a function's is. A `|&f|`
+pattern parameter is a closure of one name already, as rustc's MIR binds
+it. Upstream's `returnValue.then(noop, reportGlobalError);` needs `|_|
+noop()` written `noop` too, a function given where a closure goes.
+
+Held by `test/lowering-cells.test.ts`, "a thread-local's with is its
+closure's body where it's called", whose `deferred` closure sets a
+thread-local's dictionary through `with(|&did_warn| ..)`, run; and the
+mutation `applied-closures-skipped`.

@@ -19,6 +19,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
+    name: "applied-closures-skipped",
+    breaks: "a thread-local's `with(|&f| ..)` in a closure's body stays `((f) => { .. })(f)`, where in a function's it's its body",
+    file: "src/js/applied.rs",
+    find: "        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => applied_in(inner, true),\n",
+    replace: "",
+    tests: ["test/lowering-cells.test.ts", "-t", "closure's body where it's called"],
+  },
+  {
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
     file: "src/js/applied.rs",
