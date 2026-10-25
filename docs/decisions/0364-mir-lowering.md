@@ -13,7 +13,8 @@ a guarded arm's guard reads isn't written in the arm. Amended by
 [0800](0800-a-drop-of-nothing-never-unwinds.md): a drop of what JS drops
 nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 Amended: a value a block gives last is given first only where nothing can
-tell (issue #219, below).
+tell (issue #219, below); an `|` of two values' tests is a chain of its
+arms.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -225,8 +226,29 @@ variable through a closure; and a `let`'s value still given first.
 React's shape is upstream's `switch (children.$$typeof) { case
 REACT_ELEMENT_TYPE: case REACT_PORTAL_TYPE: invokeCallback = true; break;
 case REACT_LAZY_TYPE: .. }` (`test/lowering-switches.test.ts`). A mutation
-of each condition is caught.
-The case's `(1, _) | (_, 1)`, an `|` of two values' tests, keeps the
-labeled blocks MIR made of it, which `docs/readability.txt` counts: a
-`match` tree tidy doesn't yet make a chain of, the default no longer
-hiding one of its blocks.
+of each condition is caught, by a match of symbols too, whose tree tidy
+can't chain (`test/lowering-switches.test.ts`, each against what native
+Rust gives of the same program of `Option<u32>`s).
+
+## Amendment: an `|` of two values' tests is a chain of its arms
+
+That case's `(1, _) | (_, 1)` kept the labeled blocks MIR made of it, `bb15:
+{ if (a !== 1) { if (b === 1) { break bb15; } .. } } hit = true;`, which
+the wrong default had hidden. The chain of a match's arms (`decisions`)
+is made of it now, `if (a === 1 || b === 1) { .. } else if (a === 2 && b
+=== 2) { .. }`: the chain was longer than the tree, which it stayed, and
+two rules make it no longer, each changing no meaning:
+
+- **A path's test of a value a later one says more of**, `a !== 1` before
+  `a === 2`, is that one, in its place: each test is still read only where
+  it was.
+- **An alternative of one test**, `a === 1`, is tried before those ahead
+  of it that each test its value first, where one of them says it fails;
+  and what its failing says is left out of each after it: `a === 1 || b
+  === 1`, not `a === 1 || (a !== 1 && b === 1)`.
+
+Case: none (ADR 0262): the tests are pure, so the chain gives what the
+tree did. `test/corpus/default_value_exits.rs` runs it against native
+Rust, `NaN` and three values' `|` too; of a slice's patterns, which these
+don't make a chain of, the blocks stay (issue #221). A mutation of each
+rule is caught.

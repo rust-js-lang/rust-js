@@ -4,7 +4,9 @@
 // loop, the closure or the `catch_unwind` around it, where the variable is
 // read; nor where a call before reads it, through a closure. React's
 // `mapIntoArray` set `invokeCallback = true` before testing `$$typeof`,
-// so every object called back (issue #219).
+// so every object called back (issue #219). Of two values' tests, `(1, _)
+// | (_, 1)`, each `match` is the chain of its arms; of a slice's, `[1, ..]
+// | [.., 1]`, MIR's blocks, which the default reached.
 use std::panic::{self, AssertUnwindSafe};
 
 // Some arms set the flag, one returns, the rest do nothing.
@@ -146,6 +148,142 @@ fn guarded(pairs: &[(u32, u32)]) -> Vec<u32> {
     seen
 }
 
+fn odd(n: u32) -> bool {
+    println!("odd {n}");
+    n % 2 == 1
+}
+
+// An `|` whose alternatives a guard that calls tests each.
+fn odd_ones(pairs: &[(u32, u32)]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &(a, b) in pairs {
+        let level = match (a, b) {
+            (1, x) | (x, 1) if odd(x) => 1,
+            (2, 2) => 2,
+            (3, _) | (_, 3) => 3,
+            _ => 5,
+        };
+        seen.push(level);
+    }
+    seen
+}
+
+// Of numbers, `NaN` among them, and of three values.
+fn floats(pairs: &[(f64, f64)]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &(a, b) in pairs {
+        let mut level = 0;
+        match (a, b) {
+            (1.0, _) | (_, 1.0) => level = 1,
+            (2.0, 2.0) => level = 2,
+            _ => {}
+        }
+        seen.push(level);
+    }
+    seen
+}
+
+fn triple(rows: &[(u8, u8, u8)]) -> Vec<&'static str> {
+    rows.iter()
+        .map(|&row| match row {
+            (b'a', _, _) | (_, b'a', _) | (_, _, b'a') => "a",
+            (b'0'..=b'9', b'0'..=b'9', _) => "digits",
+            (x, y, z) if x == y && y == z => "same",
+            _ => "other",
+        })
+        .collect()
+}
+
+// The same of a slice's patterns: the next turn reads the flag.
+fn continued_rows(rows: &[&[u32]]) -> Vec<bool> {
+    let mut seen = Vec::new();
+    let mut hit = false;
+    for row in rows {
+        seen.push(hit);
+        match row {
+            [1, ..] | [.., 1] => hit = true,
+            [2, 2] => continue,
+            _ => hit = false,
+        }
+    }
+    seen.push(hit);
+    seen
+}
+
+// A closure's `return`, and what the closure captures.
+fn returned_rows(rows: &[&[u32]]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for row in rows {
+        let mut step = || {
+            match row {
+                [1, ..] | [.., 1] => hit = true,
+                [2, 2] => return,
+                _ => hit = false,
+            }
+            println!("stepped {row:?}");
+        };
+        step();
+        seen.push(hit);
+    }
+    seen
+}
+
+// A panic `catch_unwind` takes, and what its closure captures.
+fn unwound_rows(rows: &[&[u32]]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for row in rows {
+        let caught = panic::catch_unwind(AssertUnwindSafe(|| {
+            match row {
+                [1, ..] | [.., 1] => hit = true,
+                [2, 2] => panic!("two twos"),
+                _ => hit = false,
+            }
+            println!("matched {row:?}");
+        }));
+        seen.push(hit && caught.is_ok());
+        seen.push(hit);
+    }
+    seen
+}
+
+// A call before the value is given reads it, through a closure.
+fn observed_rows(rows: &[&[u32]]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for row in rows {
+        let mut level = 0;
+        let look = || level * 10;
+        match row {
+            [1, ..] | [.., 1] => level = 1,
+            [2, 2] => level = 2,
+            _ => {
+                seen.push(look());
+                level = 3;
+            }
+        }
+        seen.push(level);
+    }
+    seen
+}
+
+// A guard's call before the value is given reads it, through a closure.
+fn guarded_rows(rows: &[&[u32]]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for row in rows {
+        let mut level = 4;
+        let below = |n: u32| n < level;
+        match row {
+            [1, ..] | [.., 1] => level = 1,
+            [2, 2] => level = 2,
+            [n, ..] if below(*n) => level = 3,
+            _ => level = 5,
+        }
+        seen.push(level);
+    }
+    seen
+}
+
 fn half(n: i32) -> Option<i32> {
     if n % 2 == 0 { Some(n / 2) } else { None }
 }
@@ -189,6 +327,30 @@ fn main() {
     println!("{:?}", unwound(&[(3, 3), (2, 2), (1, 0), (2, 2)]));
     println!("{:?}", observed(&pairs));
     println!("{:?}", guarded(&[(1, 0), (2, 2), (3, 3), (5, 5), (0, 7)]));
+    println!(
+        "{:?}",
+        odd_ones(&[(1, 3), (1, 2), (3, 1), (4, 1), (2, 2), (3, 0), (0, 3), (1, 1), (9, 9)])
+    );
+    let nan = f64::NAN;
+    println!(
+        "{:?}",
+        floats(&[(1.0, 0.0), (nan, 1.0), (2.0, 2.0), (nan, nan), (2.0, 3.0)])
+    );
+    let triples = [
+        (b'a', 0, 0),
+        (1, b'a', 1),
+        (5, 5, b'a'),
+        (b'1', b'2', 0),
+        (7, 7, 7),
+        (1, 2, 3),
+    ];
+    println!("{:?}", triple(&triples));
+    let rows: [&[u32]; 7] = [&[3, 3], &[0, 1], &[1], &[2, 2], &[5], &[], &[2, 2]];
+    println!("{:?}", continued_rows(&rows));
+    println!("{:?}", returned_rows(&rows));
+    println!("{:?}", unwound_rows(&[&[3, 3], &[2, 2], &[1, 0], &[2, 2]]));
+    println!("{:?}", observed_rows(&rows));
+    println!("{:?}", guarded_rows(&rows));
     let mut calls = 0;
     let made: Vec<i32> = [12, 4, 3, 0, 8].iter().map(|&n| chained(n, &mut calls)).collect();
     println!("{made:?} {calls}");

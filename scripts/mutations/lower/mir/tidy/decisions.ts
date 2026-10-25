@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {\n",
     replace: "                    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-past-another-jump",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !self.local && !inside.holds(label.as_deref(), is_continue) {\n",
     replace: "                    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-past-a-return",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                StmtKind::Return(_) | StmtKind::Throw(_) if !self.local => return None,\n",
     replace: "                StmtKind::Return(_) | StmtKind::Throw(_) => 0,\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-over-a-call",
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                _ if self.local || stmt.only_makes_values() => 0,\n",
     replace: "                _ => 0,\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-over-a-guard",
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        let quiet = |e: &Expr| self.local || !e.may_throw();\n",
     replace: "        let quiet = |_: &Expr| true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-local-anywhere",
@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)\n",
     replace: "        .is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-never-local",
@@ -147,5 +147,32 @@ export const mutations: Mutation[] = [
     find: "                local: declared_unread(&stmts[..i], x),\n",
     replace: "                local: false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+  },
+  {
+    name: "decisions-alternative-not-first",
+    breaks: "`(1, _) | (_, 1)` is tried as `(a !== 1 && b === 1) || a === 1`, longer than the tree, which stays",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        if paths[i..j].iter().any(|p| says(p)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "decisions-alternative-not-absorbed",
+    breaks: "`(1, _) | (_, 1)` is `a === 1 || (a !== 1 && b === 1)`, longer than the tree, which stays",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            tests.retain(|t| !said(t));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "decisions-stronger-test-not-first",
+    breaks: "`(2, 2)`'s path is `a !== 1 && b === 2 && a === 2`, longer than the tree, which stays",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            Some(j) => out[i] = out.remove(j),\n",
+    replace: "            Some(_) => i += 1,\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    snapshots: true,
   },
 ];

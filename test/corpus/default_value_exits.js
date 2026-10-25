@@ -18,16 +18,11 @@ function kind(value) {
         invoke = true;
         break;
       case "object":
-        if (a !== 1) {
-          if (b === 1) {
-          } else {
-            if (b === 2 && a === 2) {
-              return 2;
-            }
-            break;
-          }
+        if (a === 1 || b === 1) {
+          invoke = true;
+        } else if (a === 2 && b === 2) {
+          return 2;
         }
-        invoke = true;
     }
   }
   if (invoke) {
@@ -41,17 +36,10 @@ function found(pairs) {
   const all = [];
   for (const [a, b] of pairs) {
     let seen;
-    bb17: {
-      if (a !== 1) {
-        if (b === 1) {
-        } else {
-          if (b === 2 && a === 2) {
-            break;
-          }
-          break bb17;
-        }
-      }
+    if (a === 1 || b === 1) {
       seen = 7;
+    } else if (a === 2 && b === 2) {
+      break;
     }
     all.push(seen);
   }
@@ -62,19 +50,13 @@ function found(pairs) {
 function broken(pairs) {
   let hit = false;
   for (const [a, b] of pairs) {
-    bb13: {
-      if (a !== 1) {
-        if (b === 1) {
-          break bb13;
-        }
-        if (b === 2 && a === 2) {
-          break;
-        }
-        hit = true;
-        continue;
-      }
+    if (a === 1 || b === 1) {
+      hit = false;
+    } else if (a === 2 && b === 2) {
+      break;
+    } else {
+      hit = true;
     }
-    hit = false;
   }
   return hit;
 }
@@ -85,19 +67,13 @@ function continued(pairs) {
   let hit = false;
   for (const [a, b] of pairs) {
     seen.push(hit);
-    bb15: {
-      if (a !== 1) {
-        if (b === 1) {
-          break bb15;
-        }
-        if (b === 2 && a === 2) {
-          continue;
-        }
-        hit = false;
-        continue;
-      }
+    if (a === 1 || b === 1) {
+      hit = true;
+    } else if (a === 2 && b === 2) {
+      continue;
+    } else {
+      hit = false;
     }
-    hit = true;
   }
   seen.push(hit);
   return seen;
@@ -109,20 +85,12 @@ function returned(pairs) {
   const seen = [];
   for (const [a, b] of pairs) {
     const step = () => {
-      bb8: {
-        bb5: {
-          if (a !== 1) {
-            if (b === 1) {
-              break bb5;
-            }
-            if (b === 2 && a === 2) {
-              return;
-            }
-            hit = false;
-            break bb8;
-          }
-        }
+      if (a === 1 || b === 1) {
         hit = true;
+      } else if (a === 2 && b === 2) {
+        return;
+      } else {
+        hit = false;
       }
       console.log(`stepped ${a} ${b}`);
     };
@@ -138,20 +106,12 @@ function unwound(pairs) {
   const seen = [];
   for (const [a, b] of pairs) {
     const caught = $catchUnwind(() => {
-      bb9: {
-        bb5: {
-          if (a !== 1) {
-            if (b === 1) {
-              break bb5;
-            }
-            if (b === 2 && a === 2) {
-              throw new Error("two twos");
-            }
-            hit = false;
-            break bb9;
-          }
-        }
+      if (a === 1 || b === 1) {
         hit = true;
+      } else if (a === 2 && b === 2) {
+        throw new Error("two twos");
+      } else {
+        hit = false;
       }
       console.log(`matched ${a} ${b}`);
     });
@@ -167,22 +127,13 @@ function observed(pairs) {
   for (const [a, b] of pairs) {
     let level = 0;
     const look = () => (level * 10) >>> 0;
-    bb19: {
-      bb14: {
-        if (a !== 1) {
-          if (b === 1) {
-            break bb14;
-          }
-          if (b === 2 && a === 2) {
-            level = 2;
-            break bb19;
-          }
-          seen.push(look());
-          level = 3;
-          break bb19;
-        }
-      }
+    if (a === 1 || b === 1) {
       level = 1;
+    } else if (a === 2 && b === 2) {
+      level = 2;
+    } else {
+      seen.push(look());
+      level = 3;
     }
     seen.push(level);
   }
@@ -195,26 +146,224 @@ function guarded(pairs) {
   for (const [a, b] of pairs) {
     let level = 4;
     const below = (n) => n < level;
-    bb22: {
-      bb15: {
-        if (a !== 1) {
-          if (b === 1) {
-            break bb15;
-          }
-          if (b === 2 && a === 2) {
-            level = 2;
-            break bb22;
-          }
-          const n = a;
-          if (below(n)) {
-            level = 3;
-            break bb22;
-          }
-          level = 5;
-          break bb22;
+    if (a === 1 || b === 1) {
+      level = 1;
+    } else if (a === 2 && b === 2) {
+      level = 2;
+    } else {
+      const n = a;
+      level = below(n) ? 3 : 5;
+    }
+    seen.push(level);
+  }
+  return seen;
+}
+
+function odd(n) {
+  console.log(`odd ${n}`);
+  return n % 2 === 1;
+}
+
+// An `|` whose alternatives a guard that calls tests each.
+function oddOnes(pairs) {
+  const seen = [];
+  for (const [a, b] of pairs) {
+    let level = 1;
+    bb30: {
+      let x;
+      if (a === 1) {
+        x = b;
+        if (odd(x)) {
+          break bb30;
         }
       }
+      if (b === 1) {
+        x = a;
+        if (odd(x)) {
+          break bb30;
+        }
+      } else if (b === 2 && a === 2) {
+        level = 2;
+        break bb30;
+      }
+      if (a !== 3 && b !== 3) {
+        level = 5;
+      } else {
+        level = 3;
+      }
+    }
+    seen.push(level);
+  }
+  return seen;
+}
+
+// Of numbers, `NaN` among them, and of three values.
+function floats(pairs) {
+  const seen = [];
+  for (const [a, b] of pairs) {
+    let level = 0;
+    if (1 === a || 1 === b) {
       level = 1;
+    } else if (2 === a && 2 === b) {
+      level = 2;
+    }
+    seen.push(level);
+  }
+  return seen;
+}
+
+function triple(rows) {
+  return rows.map((row) => {
+    if (row[0] !== 97 && row[1] !== 97 && row[2] !== 97) {
+      if (row[0] >= 48 && row[0] <= 57 && row[1] >= 48 && row[1] <= 57) {
+        return "digits";
+      }
+      const [x, y, z] = row;
+      if (x === y) {
+        if (y === z) {
+          return "same";
+        }
+      }
+      return "other";
+    }
+    return "a";
+  });
+}
+
+// The same of a slice's patterns: the next turn reads the flag.
+function continuedRows(rows) {
+  const seen = [];
+  let hit = false;
+  for (const row of rows) {
+    seen.push(hit);
+    if (row.length >= 1) {
+      if (row[0] === 1 || row[row.length - 1] === 1) {
+        hit = true;
+        continue;
+      }
+      if (row.length === 2) {
+        if (row[0] === 2) {
+          if (row[1] === 2) {
+            continue;
+          }
+        }
+      }
+    }
+    hit = false;
+  }
+  seen.push(hit);
+  return seen;
+}
+
+// A closure's `return`, and what the closure captures.
+function returnedRows(rows) {
+  let hit = false;
+  const seen = [];
+  for (const row of rows) {
+    const step = () => {
+      bb11: {
+        if (row.length >= 1) {
+          if (row[0] === 1 || row[row.length - 1] === 1) {
+            hit = true;
+            break bb11;
+          }
+          if (row.length === 2) {
+            if (row[0] === 2 && row[1] === 2) {
+              return;
+            }
+          }
+        }
+        hit = false;
+      }
+      console.log(`stepped [${row.join(", ")}]`);
+    };
+    step();
+    seen.push(hit);
+  }
+  return seen;
+}
+
+// A panic `catch_unwind` takes, and what its closure captures.
+function unwoundRows(rows) {
+  let hit = false;
+  const seen = [];
+  for (const row of rows) {
+    const caught = $catchUnwind(() => {
+      bb12: {
+        if (row.length >= 1) {
+          if (row[0] === 1 || row[row.length - 1] === 1) {
+            hit = true;
+            break bb12;
+          }
+          if (row.length === 2) {
+            if (row[0] === 2 && row[1] === 2) {
+              throw new Error("two twos");
+            }
+          }
+        }
+        hit = false;
+      }
+      console.log(`matched [${row.join(", ")}]`);
+    });
+    seen.push(hit && caught.TAG === "Ok");
+    seen.push(hit);
+  }
+  return seen;
+}
+
+// A call before the value is given reads it, through a closure.
+function observedRows(rows) {
+  const seen = [];
+  for (const row of rows) {
+    let level = 0;
+    const look = () => (level * 10) >>> 0;
+    bb22: {
+      if (row.length >= 1) {
+        if (row[0] === 1 || row[row.length - 1] === 1) {
+          level = 1;
+          break bb22;
+        }
+        if (row.length === 2) {
+          if (row[0] === 2) {
+            if (row[1] === 2) {
+              level = 2;
+              break bb22;
+            }
+          }
+        }
+      }
+      seen.push(look());
+      level = 3;
+    }
+    seen.push(level);
+  }
+  return seen;
+}
+
+// A guard's call before the value is given reads it, through a closure.
+function guardedRows(rows) {
+  const seen = [];
+  for (const row of rows) {
+    let level = 4;
+    const below = (n) => n < level;
+    bb25: {
+      if (row.length >= 1) {
+        if (row[0] === 1 || row[row.length - 1] === 1) {
+          level = 1;
+          break bb25;
+        }
+        if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+          level = 2;
+          break bb25;
+        }
+        const n = row[0];
+        if (!below(n)) {
+        } else {
+          level = 3;
+          break bb25;
+        }
+      }
+      level = 5;
     }
     seen.push(level);
   }
@@ -303,6 +452,55 @@ function main() {
       [0, 7],
     ]).join(", ")}]`,
   );
+  console.log(
+    `[${oddOnes([
+      [1, 3],
+      [1, 2],
+      [3, 1],
+      [4, 1],
+      [2, 2],
+      [3, 0],
+      [0, 3],
+      [1, 1],
+      [9, 9],
+    ]).join(", ")}]`,
+  );
+  const nan = NaN;
+  console.log(
+    `[${floats([
+      [1, 0],
+      [nan, 1],
+      [2, 2],
+      [nan, nan],
+      [2, 3],
+    ]).join(", ")}]`,
+  );
+  const triples = [
+    [97, 0, 0],
+    [1, 97, 1],
+    [5, 5, 97],
+    [49, 50, 0],
+    [7, 7, 7],
+    [1, 2, 3],
+  ];
+  console.log(
+    `[${triple(triples)
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  const rows = [[3, 3], [0, 1], [1], [2, 2], [5], [], [2, 2]];
+  console.log(`[${continuedRows(rows).join(", ")}]`);
+  console.log(`[${returnedRows(rows).join(", ")}]`);
+  console.log(
+    `[${unwoundRows([
+      [3, 3],
+      [2, 2],
+      [1, 0],
+      [2, 2],
+    ]).join(", ")}]`,
+  );
+  console.log(`[${observedRows(rows).join(", ")}]`);
+  console.log(`[${guardedRows(rows).join(", ")}]`);
   let calls = 0;
   const made = [12, 4, 3, 0, 8].map((n) => {
     const calls$1 = { value: calls };

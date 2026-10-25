@@ -159,6 +159,7 @@ fn chain(label: &str, body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)
             let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
             (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
         });
+        alternatives(&mut paths);
         let test = any(paths.into_iter().map(all).collect());
         tests_made += atoms(&test);
         let then = std::mem::take(&mut bodies[i]);
@@ -173,6 +174,55 @@ fn chain(label: &str, body: &[Stmt], after: &[Stmt]) -> Option<(Vec<Stmt>, bool)
     let mut stmts: Vec<Stmt> = decls.to_vec();
     stmts.extend(chain.unwrap_or_default());
     Some((stmts, takes_rest))
+}
+
+/// An arm's `paths`, the tests of each, tried one after another: of one
+/// whose single test those before it fail, what that failing says left
+/// out of each after it, `(1, _) | (_, 1)`'s `a === 1 || b === 1`, not `a
+/// === 1 || (a !== 1 && b === 1)`. Tried first, where those before it each
+/// first test its value, and one of them says it fails: the value is read
+/// first then as before, and each test after only where it was.
+fn alternatives(paths: &mut Vec<Vec<Expr>>) {
+    for j in 0..paths.len() {
+        let [only] = paths[j].as_slice() else { continue };
+        let Some((subject, set)) = atom(only) else { continue };
+        let fails = set.complement();
+        let tests_first = |tests: &[Expr]| {
+            tests
+                .first()
+                .and_then(atom)
+                .is_some_and(|(s, _)| same_subject(&s, &subject))
+        };
+        let says = |tests: &[Expr]| {
+            (tests.iter()).any(|t| atom(t).is_some_and(|(s, set)| same_subject(&s, &subject) && fails.within(&set)))
+        };
+        let mut i = j;
+        while i > 0 && tests_first(&paths[i - 1]) {
+            i -= 1;
+        }
+        if paths[i..j].iter().any(|p| says(p)) {
+            let path = paths.remove(j);
+            paths.insert(i, path);
+        }
+    }
+    let mut failed: Vec<(Expr, Set)> = Vec::new();
+    for tests in paths {
+        let said = |t: &Expr| {
+            atom(t).is_some_and(|(s, set)| {
+                failed
+                    .iter()
+                    .any(|(f, fails)| same_subject(f, &s) && fails.within(&set))
+            })
+        };
+        if tests.iter().any(|t| !said(t)) {
+            tests.retain(|t| !said(t));
+        }
+        if let [only] = tests.as_slice()
+            && let Some((s, set)) = atom(only)
+        {
+            failed.push((s, set.complement()));
+        }
+    }
 }
 
 /// Leaves that do one thing, and the tests of each path to them.
@@ -462,6 +512,20 @@ fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
         }
         i = j;
     }
+    // A test of a value a later one of it says more than, `a !== 1` before
+    // `a === 2`: that one, in its place, so each test is still read only
+    // where it was, and the path's tests read `a === 2 && b === 2`.
+    let mut i = 0;
+    while i < out.len() {
+        let stronger = atom(&out[i]).and_then(|(subject, set)| {
+            (i + 1..out.len())
+                .find(|&j| atom(&out[j]).is_some_and(|(s, later)| same_subject(&s, &subject) && later.within(&set)))
+        });
+        match stronger {
+            Some(j) => out[i] = out.remove(j),
+            None => i += 1,
+        }
+    }
     Some(out)
 }
 
@@ -747,6 +811,11 @@ impl Set {
 
     fn is_empty(&self) -> bool {
         self.pieces.is_empty() && !self.nan
+    }
+
+    /// Whether each value it passes `other` passes too.
+    fn within(&self, other: &Set) -> bool {
+        self.kind == other.kind && self.intersect(other) == *self
     }
 
     fn intersect(&self, other: &Set) -> Set {

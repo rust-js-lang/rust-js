@@ -980,3 +980,165 @@ pub fn kind(children: Option<&'static Unknown>) -> u32 {
   expect(values.map((v) => lib.kind(v))).toEqual([1, 1, 1, 1, 1, 1, 1, 2]);
   expect([{}, of("react.memo"), [], true, () => {}].map((v) => lib.kind(v))).toEqual([0, 0, 0, 0, 0]);
 });
+
+// ADR 0364, amended: each way out of a match of symbols, whose tree tidy
+// can't chain, that could tell a value some arms give was given first.
+// The arm that does nothing; a loop's `break` and `continue`; a closure's
+// `return`; a panic `catch_unwind` takes; a call, and a guard's, reading
+// the variable through a closure. Each is what native Rust gives of the
+// same program of `Option<u32>`s.
+test("a value some arms of a match of symbols give is given where they give it", () => {
+  const dir = fixture("default-value-symbols");
+  writeFileSync(join(dir, "lib.rs"), `use std::panic::{self, AssertUnwindSafe};
+
+use js::{SymbolFor, Unknown};
+
+pub const A: SymbolFor = SymbolFor("a");
+pub const B: SymbolFor = SymbolFor("b");
+pub const C: SymbolFor = SymbolFor("c");
+
+fn tag(value: &'static Unknown) -> Option<SymbolFor<'static>> {
+    SymbolFor::from_value(Some(value))
+}
+
+pub fn kept(values: &[&'static Unknown]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for &value in values {
+        match tag(value) {
+            Some(A | B) => hit = true,
+            Some(C) => {}
+            _ => hit = false,
+        }
+        seen.push(hit);
+    }
+    seen
+}
+
+pub fn continued(values: &[&'static Unknown]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for &value in values {
+        match tag(value) {
+            Some(A | B) => hit = true,
+            Some(C) => continue,
+            _ => hit = false,
+        }
+        seen.push(hit);
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn broken(values: &[&'static Unknown]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for &value in values {
+        match tag(value) {
+            Some(A | B) => hit = true,
+            Some(C) => break,
+            _ => hit = false,
+        }
+        seen.push(hit);
+    }
+    seen.push(hit);
+    seen
+}
+
+pub fn returned(values: &[&'static Unknown]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for &value in values {
+        let mut step = || {
+            match tag(value) {
+                Some(A | B) => hit = true,
+                Some(C) => return,
+                _ => hit = false,
+            }
+            seen.push(hit);
+        };
+        step();
+        seen.push(hit);
+    }
+    seen
+}
+
+pub fn unwound(values: &[&'static Unknown]) -> Vec<bool> {
+    let mut hit = false;
+    let mut seen = Vec::new();
+    for &value in values {
+        let caught = panic::catch_unwind(AssertUnwindSafe(|| {
+            match tag(value) {
+                Some(A | B) => hit = true,
+                Some(C) => panic!("a c"),
+                _ => hit = false,
+            }
+            seen.push(hit);
+        }));
+        seen.push(caught.is_ok());
+        seen.push(hit);
+    }
+    seen
+}
+
+pub fn observed(values: &[&'static Unknown]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &value in values {
+        let mut level = 0;
+        let look = || level * 10;
+        match tag(value) {
+            Some(A | B) => level = 1,
+            Some(C) => level = 2,
+            _ => {
+                seen.push(look());
+                level = 3;
+            }
+        }
+        seen.push(level);
+    }
+    seen
+}
+
+pub fn guarded(values: &[&'static Unknown], limit: u32) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &value in values {
+        let mut level = limit;
+        let below = |n: u32| n < level;
+        match tag(value) {
+            Some(A | B) => level = 1,
+            Some(C) if below(3) => level = 3,
+            _ => level = 5,
+        }
+        seen.push(level);
+    }
+    seen
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  installRuntime(dir);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const [a, b, c, x] = ["a", "b", "c", "x"].map((name) => Symbol.for(name));
+const values = [a, c, x, a, {}, x, b, c];
+console.log(JSON.stringify([
+  lib.kept(values),
+  lib.continued(values),
+  lib.broken(values),
+  lib.returned(values),
+  lib.unwound(values),
+  lib.observed(values),
+  [lib.guarded(values, 9), lib.guarded(values, 2)],
+]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  // Native Rust's, of `Some(1)`, `Some(2)`, `Some(3)` and `Some(9)` for `a`,
+  // `b`, `c` and `x`, and `None` for `{}`.
+  expect(JSON.parse(ran.stdout)).toEqual([
+    [true, true, false, true, false, false, true, true],
+    [true, false, true, false, false, true, true],
+    [true, true],
+    [true, true, true, false, false, true, true, false, false, false, false, true, true, true],
+    [true, true, true, false, true, false, true, false, true, true, true, false, true, false, false, true, false, true, true, true, false, true],
+    [1, 2, 0, 3, 1, 0, 3, 0, 3, 1, 2],
+    [[1, 3, 5, 1, 5, 5, 1, 3], [1, 5, 5, 1, 5, 5, 1, 5]],
+  ]);
+});
