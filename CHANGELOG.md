@@ -780,6 +780,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A `None` field a comment is written on keeps its key** (ADR 0280,
+  amended): React's `createCacheNode` is `v: undefined, // value, ..`,
+  where the field and its comment were left out; and **a comment before an
+  `unsafe` block is its code's** (ADR 0444, amended), `// Will result in a
+  null access error .. return dispatcher;`, where it was lost.
 - **An `Option` of an object or a function is tested `o != null`**, as
   every `Option` is, not by its truth (ADR 0298, amended): React's
   `useEffect` is `if (__DEV__ && create == null)`, where `create.is_none()`

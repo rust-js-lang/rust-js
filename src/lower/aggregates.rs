@@ -28,6 +28,7 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
     let after = code.find('{').map_or("", |brace| &code[brace + 1..]);
     js::ObjectLayout {
         lines: after[..after.len() - after.trim_start().len()].contains('\n'),
+        commented: Vec::new(),
     }
 }
 
@@ -107,6 +108,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Two at one place, of a macro, may be written two ways.
             _ => declared,
         }
+    }
+
+    /// The fields of the struct literal made at `span`, by their declared
+    /// index, a comment is written on: after its value on its line, `v:
+    /// Cell::new(None), // why`, in it, or on lines of their own right
+    /// before it. A `None`'s keeps its key there, the comment's place (ADR
+    /// 0280, amended).
+    fn commented_fields(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
+        use rustc_lexer::TokenKind;
+        let Some(made) = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
+            thir::ExprKind::Adt(made)
+                if e.span == span && made.adt_def == *adt && made.variant_index == variant_index =>
+            {
+                Some(made)
+            }
+            _ => None,
+        }) else {
+            return Vec::new();
+        };
+        if adt.variant(variant_index).ctor_kind().is_some() || span.from_expansion() {
+            return Vec::new();
+        }
+        let Ok(text) = self.tcx.sess.source_map().span_to_snippet(span) else {
+            return Vec::new();
+        };
+        let at = |s: Span| (s.lo().0 - span.lo().0) as usize..(s.hi().0 - span.lo().0) as usize;
+        let mut fields: Vec<_> = (made.fields.iter())
+            .map(|f| (f.name, self.frame.thir[f.expr].span))
+            .filter(|&(_, s)| !s.from_expansion() && span.contains(s))
+            .map(|(name, s)| (name, at(s)))
+            .collect();
+        fields.sort_by_key(|(_, range)| range.start);
+        let commented = |piece: &str| {
+            rustc_lexer::tokenize(piece, rustc_lexer::FrontmatterAllowed::No)
+                .any(|t| matches!(t.kind, TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }))
+        };
+        // Its `{`, before its first field's value, and its `}`.
+        let open = (fields.first())
+            .and_then(|(_, first)| text[..first.start].rfind('{'))
+            .map_or(0, |brace| brace + 1);
+        let close = text.rfind('}').unwrap_or(text.len());
+        (0..fields.len())
+            .filter(|&k| {
+                let value = &fields[k].1;
+                // From the line after what's before it, to its line's end.
+                let before = if k == 0 { open } else { fields[k - 1].1.end };
+                let next = fields.get(k + 1).map_or(close, |(_, next)| next.start);
+                let (Some(lead), Some(tail)) = (text.get(before..value.start), text.get(value.end..next)) else {
+                    return false;
+                };
+                let start = lead.find('\n').map_or(value.start, |n| before + n);
+                let end = tail.find('\n').map_or(next, |n| value.end + n);
+                text.get(start..end).is_some_and(commented)
+            })
+            .map(|k| fields[k].0.as_usize())
+            .collect()
     }
 
     /// How the struct or variant literal made at `span` is written, which
@@ -230,9 +287,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => Shape::Object(self.variant_fields(variant, args)),
             None => self.shape(ty),
         };
+        // The keys a comment is written on, whose `undefined`, a `None`'s,
+        // is kept: the comment's place (ADR 0280, amended).
+        let mut commented = Vec::new();
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
+                commented = (self.commented_fields(&adt_def, variant_index, span).into_iter())
+                    .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
+                    .collect();
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(fields))
                     .map(|(&(_, field_ty), value)| Some(self.holding(value, field_ty)))
                     .collect();
@@ -249,7 +312,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut made = assembled(shape, tag, items);
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
-            *layout = self.object_layout(&adt_def, variant_index, span);
+            *layout = js::ObjectLayout {
+                commented,
+                ..self.object_layout(&adt_def, variant_index, span)
+            };
         }
         Ok(made)
     }

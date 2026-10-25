@@ -7,6 +7,7 @@ export function entry() {
 }
 
 function main() {
+  // SAFETY: none of these overflow.
   const a = 255;
   const b = -10;
   const c = 9000000000n;

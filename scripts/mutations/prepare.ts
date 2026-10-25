@@ -600,4 +600,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "a closure's loop variable shadowed by its own value"],
   },
+  {
+    name: "commented-none-left-out",
+    breaks: "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
+    file: "src/prepare.rs",
+    find: " && !layout.commented.contains(key))",
+    replace: ")",
+    tests: ["test/lowering-comments.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+  },
 ];

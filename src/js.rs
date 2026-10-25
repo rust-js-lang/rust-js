@@ -528,9 +528,13 @@ impl TemplateLayout {
 /// one, which its JS keeps on lines of its own, as Prettier keeps an
 /// object a person wrote so; or on one line, which its JS is on where it
 /// fits (ADR 0835). One no source writes, a representation's, is on one.
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct ObjectLayout {
     pub lines: bool,
+    /// The keys a comment is written on in its literal, `v: Cell::new(None),
+    /// // why`, whose `undefined` is kept, `v: undefined, // why`: the
+    /// comment's place (ADR 0280, amended).
+    pub commented: Vec<String>,
 }
 
 /// Where a template's source breaks it into its next piece: in a text, by

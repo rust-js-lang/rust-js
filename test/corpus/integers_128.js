@@ -112,6 +112,7 @@ function main() {
   console.log(
     `${Number(BigInt.asUintN(8, BigInt.asUintN(128, big + 300n)))} ${BigInt.asUintN(128, BigInt(7) + x)}`,
   );
+  // SAFETY: each is in its target's range, as num-traits checks first.
   const small = $f64ToInt(Math.fround(3.9), 0, 255);
   const wide = $f64ToBig(
     -750000000000000000000,

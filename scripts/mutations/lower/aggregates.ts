@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "        let written = true\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
+  {
+    name: "commented-field-trailing-unread",
+    breaks: "a comment after a field's value on its line, `v: Cell::new(None), // why`, isn't the field's, so its `None` is left out with it",
+    file: "src/lower/aggregates.rs",
+    find: "                let end = tail.find('\\n').map_or(next, |n| value.end + n);\n",
+    replace: "                let end = value.end;\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+  },
+  {
+    name: "commented-field-leading-unread",
+    breaks: "a comment on lines of its own before a field isn't the field's, so its `None` is left out and the comment is the next field's",
+    file: "src/lower/aggregates.rs",
+    find: "                let start = lead.find('\\n').map_or(value.start, |n| before + n);\n",
+    replace: "                let start = value.start;\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+  },
 ];

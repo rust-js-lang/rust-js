@@ -207,8 +207,8 @@ export const mutations: Mutation[] = [
     name: "comment-across-closure-lost",
     breaks: "a comment before a closure whose body is in its place is lost, as its opening's `{` is between them",
     file: "src/to_oxc.rs",
-    find: ".all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));",
-    replace: ".all(|(i, _)| macro_opening(&between[..=i]));",
+    find: "head.ends_with('|') || macro_opening(&between[..=i]) || unsafe_opening(head)",
+    replace: "macro_opening(&between[..=i]) || unsafe_opening(head)",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "item-macro-comment-lost",
     breaks: "a comment before `thread_local! {` is lost, as its opening's `{` is between it and the first item",
     file: "src/to_oxc.rs",
-    find: ".all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));",
-    replace: ".all(|(i, _)| between[..i].trim_end().ends_with('|'));",
+    find: "head.ends_with('|') || macro_opening(&between[..=i]) || unsafe_opening(head)",
+    replace: "head.ends_with('|') || unsafe_opening(head)",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
   {
@@ -339,5 +339,13 @@ export const mutations: Mutation[] = [
     find: "                if comment_ends.contains(&at) {\n",
     replace: "                if false && comment_ends.contains(&at) {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
+  },
+  {
+    name: "unsafe-opening-code",
+    breaks: "a comment before an `unsafe` block that's its function's value is lost, the block's `{` taken for code between",
+    file: "src/to_oxc.rs",
+    find: " || unsafe_opening(head)\n",
+    replace: "\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an unsafe block is its code's"],
   },
 ];

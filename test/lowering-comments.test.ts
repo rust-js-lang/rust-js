@@ -97,3 +97,64 @@ test("a branch of only comments keeps them", async () => {
   };
   expect([ran(4, 5), ran(1, 5), ran(1, 1), ran(1, undefined)]).toEqual([["end"], ["5", "end"], ["end"], ["none", "end"]]);
 });
+
+// React's createCacheNode: `v: undefined, // value, either the cached
+// result or an error, depending on s`. A `None` field is no key (ADR 0280),
+// but one a comment is written on keeps it, `undefined`, the comment's
+// place, after it or before it (amended); one without stays out.
+test("a None field a comment is written on keeps its key and its comment", async () => {
+  const { js, lib } = await compiled("commented-none-field", `use std::cell::Cell;
+
+pub struct CacheNode {
+    pub s: Cell<u32>,
+    pub v: Cell<Option<u32>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub o: Cell<Option<u32>>,
+    pub p: Cell<Option<u32>>,
+}
+
+pub fn create_cache_node() -> CacheNode {
+    CacheNode {
+        s: Cell::new(0), // status
+        v: Cell::new(None), // value, either the cached result or an error, depending on s
+        o: Cell::new(None), // object cache
+        p: Cell::new(None),
+    }
+}
+
+pub fn led() -> CacheNode {
+    CacheNode {
+        s: Cell::new(0),
+        // a value, before it
+        v: Cell::new(None),
+        o: Cell::new(None),
+        p: Cell::new(None),
+    }
+}
+`);
+  expect(js).toContain(`  return {
+    s: 0, // status
+    v: undefined, // value, either the cached result or an error, depending on s
+    o: null, // object cache
+  };`);
+  expect(js).toContain(`  return {
+    s: 0,
+    // a value, before it
+    v: undefined,
+    o: null,
+  };`);
+  expect([Object.keys(lib.createCacheNode() as object), Object.keys(lib.led() as object)]).toEqual([["s", "v", "o"], ["s", "v", "o"]]);
+});
+
+// React's resolveDispatcher: a comment before an `unsafe` block that's its
+// function's value, `unsafe { dispatcher.unwrap_unchecked() }`, is before
+// the `return` its code is, as one inside the block would be.
+test("a comment before an unsafe block is its code's", async () => {
+  const { js, lib } = await compiled("comment-before-unsafe", `pub fn resolved(dispatcher: Option<u32>) -> u32 {
+    // Will result in a null access error if accessed outside render phase.
+    unsafe { dispatcher.unwrap_unchecked() }
+}
+`);
+  expect(js).toContain("export function resolved(dispatcher) {\n  // Will result in a null access error if accessed outside render phase.\n  return dispatcher;\n}");
+  expect(lib.resolved(3 as never)).toBe(3);
+});

@@ -153,7 +153,7 @@ impl Expr {
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
-            ExprKind::Object(fields, layout) => ExprKind::Object(props(fields)?, *layout),
+            ExprKind::Object(fields, layout) => ExprKind::Object(props(fields)?, layout.clone()),
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
             ExprKind::Binary(op, a, b) => ExprKind::Binary(*op, one(a)?, one(b)?),
             ExprKind::Cond(a, b, c) => ExprKind::Cond(one(a)?, one(b)?, one(c)?),

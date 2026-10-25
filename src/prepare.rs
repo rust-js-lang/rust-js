@@ -1280,12 +1280,16 @@ fn expr(e: &mut Expr) {
             }
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
-        ExprKind::Object(props, ..) => {
+        ExprKind::Object(props, layout) => {
             // A field that's `undefined`, a `None` say, is no key, `{ code }`,
             // as JS leaves it out: what reads it reads `undefined` either way
-            // (ADR 0280). Not after a spread, whose field it would then be.
+            // (ADR 0280). Not after a spread, whose field it would then be,
+            // nor one a comment is written on, the comment's place (amended).
             if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {
-                props.retain(|p| !matches!(p, Prop::Field(_, value) if matches!(value.kind, ExprKind::Undefined)));
+                props.retain(|p| {
+                    !matches!(p, Prop::Field(key, value)
+                        if matches!(value.kind, ExprKind::Undefined) && !layout.commented.contains(key))
+                });
             }
             for prop in props {
                 let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) =

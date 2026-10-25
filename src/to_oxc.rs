@@ -524,9 +524,12 @@ fn comments_of(
                         // A closure's opening, `with_borrow_mut(|queue| {`,
                         // whose body is in its place (ADR 0581), is a start;
                         // and a macro's on its own line, `thread_local! {`,
-                        // whose code is (ADR 0621).
-                        let opens = (between.match_indices('{'))
-                            .all(|(i, _)| between[..i].trim_end().ends_with('|') || macro_opening(&between[..=i]));
+                        // whose code is (ADR 0621); and an `unsafe` block's,
+                        // which has no JS but its code's (ADR 0444, amended).
+                        let opens = (between.match_indices('{')).all(|(i, _)| {
+                            let head = between[..i].trim_end();
+                            head.ends_with('|') || macro_opening(&between[..=i]) || unsafe_opening(head)
+                        });
                         // `let`s with no JS of their own, a variable read in
                         // place, `let timer = Rc::clone(timer);` (ADR 0603).
                         let unprinted_lets = between.trim_end().ends_with(';')
@@ -757,6 +760,13 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
         }
     }
     starts
+}
+
+/// Whether `head`, the code before a `{`, ends in `unsafe`, the keyword,
+/// whose block is its code alone in JS.
+fn unsafe_opening(head: &str) -> bool {
+    head.strip_suffix("unsafe")
+        .is_some_and(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
 }
 
 /// Whether `line`, to its end, opens a macro's body on a line of its own,

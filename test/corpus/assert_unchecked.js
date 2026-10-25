@@ -10,6 +10,7 @@ function loud(n) {
 }
 
 function inRange(value) {
+  // SAFETY: every caller gives a value up to 9.
   loud(value) <= 9;
   return value * 2;
 }

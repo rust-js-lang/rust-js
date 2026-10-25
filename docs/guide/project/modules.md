@@ -574,6 +574,50 @@ leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
+A comment written on a struct literal's field is the field's, after its
+value on its line or on lines of their own before it, and a field that's
+`None`, which JS leaves out, keeps its key for it, `v: undefined, // why`
+([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
+One before an `unsafe` block is its code's
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+use std::cell::Cell;
+
+pub struct CacheNode {
+    pub status: Cell<u32>,
+    pub value: Cell<Option<f64>>,
+    pub next: Cell<Option<f64>>,
+}
+
+pub fn create_cache_node() -> CacheNode {
+    CacheNode {
+        status: Cell::new(0), // whether it returned or threw
+        value: Cell::new(None), // what it returned, or threw
+        next: Cell::new(None),
+    }
+}
+
+pub fn first(values: &[f64]) -> f64 {
+    // Every caller gives one.
+    unsafe { *values.get_unchecked(0) }
+}
+```
+
+```js
+export function createCacheNode() {
+  return {
+    status: 0, // whether it returned or threw
+    value: undefined, // what it returned, or threw
+  };
+}
+
+export function first(values) {
+  // Every caller gives one.
+  return values[0];
+}
+```
+
 A comment before a macro's opening, `thread_local! {`, is its code's,
 its first item's, as one in it before the `fn` it writes, `js::export_default! {
 // .. fn f() {} }`, is ([ADR

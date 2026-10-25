@@ -13,6 +13,9 @@ argument and an object literal's field are starts too.
 Extended by [0753](0753-a-branch-of-only-comments-keeps-them.md): a block
 of only comments keeps them, where it ends; an `else` of only comments is
 one.
+Amended: an `unsafe` block's opening is no code between a comment and
+what it's before, and a `None` field a comment is written on keeps its key
+([0280](0280-undefined-fields-left-out.md), amended).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.
@@ -132,3 +135,25 @@ arrow's block is kept (7). Tidying folds no branch of a comment
 (`branches::commented`), which it's told of by the body's comment spans,
 `hints::Written::comments`, from where the `if` starts to where its last
 branch's code ends.
+
+## Amendment: across an `unsafe` block's opening
+
+React's `resolveDispatcher` ends in its comment's code:
+
+```rust
+    // Will result in a null access error if accessed outside render phase. We
+    // intentionally don't throw our own error because this is in a hot path.
+    // Also helps ensure this is inlined.
+    unsafe { dispatcher.unwrap_unchecked() }
+```
+
+The `{` of `unsafe {` was code between the comment and the `return` its
+body is, so the comment was nobody's and lost; written inside the block,
+it was kept. **An `unsafe` block's opening is a start, as a closure's
+`|queue| {` is (ADR 0581)**: the block has no JS but its code's, so a
+comment before it is before that code, `// Will result .. return
+dispatcher;`. The corpus's `// SAFETY:` comments before an `unsafe` block,
+lost before, are kept too.
+
+Held by `test/lowering-comments.test.ts`, "a comment before an unsafe block
+is its code's", and the mutation `unsafe-opening-code` (`to_oxc.ts`).
