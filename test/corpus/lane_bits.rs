@@ -63,15 +63,20 @@ fn is_higher_event_priority(a: EventPriority, b: EventPriority) -> bool {
     a.0 != 0 && a < b
 }
 
+fn lower_event_priority(a: EventPriority, b: EventPriority) -> EventPriority {
+    if a.0 == 0 || a > b { a } else { b }
+}
+
 fn priorities() {
     let all = [EventPriority(0), EventPriority(2), EventPriority(8), EventPriority(i32::MIN)];
     for a in all {
         for b in all {
             println!(
-                "{a:?} {b:?}: {} {} {} {} {:?}",
+                "{a:?} {b:?}: {} {} {} {:?} {} {:?}",
                 a < b,
                 a >= b,
                 is_higher_event_priority(a, b),
+                lower_event_priority(a, b),
                 a.max(b) == b,
                 a.cmp(&b),
             );

@@ -400,3 +400,30 @@ pub fn gesture(provider: Option<u32>) -> u32 {
   expect(js).toContain("  let gesture = 0;\n  // $FlowFixMe[constant-condition]\n  if (ENABLED) {\n    gesture = provider ?? 1;\n  }\n");
   expect([lib.gesture(5 as never), lib.gesture(undefined as never)]).toEqual([5, 1]);
 });
+
+// React's ReactEventPriorities: `if a == 0 || a > b { a } else { b }` is
+// upstream's `a === 0 || a > b ? a : b`. MIR's branches give `b` where
+// both tests fail, so the function returned `b` first, of the negated
+// chain, `a !== 0 && !(a > b) ? b : a`: its value is as written, the
+// test and its branches (ADR 0879, amended).
+test("a returned value of an if of an || keeps its test and its branches' order", async () => {
+  const { js, lib } = await compiled("written-or-value", `pub fn lower_event_priority(a: i32, b: i32) -> i32 {
+    if a == 0 || a > b { a } else { b }
+}
+
+pub fn higher_event_priority(a: i32, b: i32) -> i32 {
+    if a != 0 && a < b { a } else { b }
+}
+
+pub fn unless_greater(a: i32, b: i32) -> i32 {
+    if !(a > b) { a } else { b }
+}
+`);
+  expect(js).toContain("  return a === 0 || a > b ? a : b;\n");
+  expect(js).toContain("  return a !== 0 && a < b ? a : b;\n");
+  expect(js).toContain("  return a <= b ? a : b;\n");
+  const pairs = [[0, 2], [2, 0], [2, 8], [8, 2], [3, 3]];
+  expect(pairs.map(([a, b]) => lib.lowerEventPriority(a as never, b as never))).toEqual([0, 2, 8, 8, 3]);
+  expect(pairs.map(([a, b]) => lib.higherEventPriority(a as never, b as never))).toEqual([2, 0, 2, 2, 3]);
+  expect(pairs.map(([a, b]) => lib.unlessGreater(a as never, b as never))).toEqual([0, 0, 2, 2, 3]);
+});

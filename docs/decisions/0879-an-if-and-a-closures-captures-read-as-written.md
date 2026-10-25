@@ -139,3 +139,21 @@ the chain's branches (`mir-tidy-and-chain-turned`) survived, since the
 `written` stage put them back. The chain now leaves the order to that
 stage. `test/lowering-written-branches.test.ts`'s `&&` of loops and
 `writer_callables.rs`, which reach it, read as before.
+
+## Amendment: a returned value of turned branches
+
+React's ReactEventPriorities writes `return a === 0 || a > b ? a : b;`;
+its port, `if a == 0 || a > b { a } else { b }`, printed `a !== 0 &&
+!(a > b) ? b : a`. MIR jumps to `b` where both of the `||`'s tests fail,
+so the body is `if (a !== 0 && !(a > b)) { return b; } return a;`, a
+jump alone each way, which `written_elses` leaves as it is, and
+`returned_values` folded it in that order. **A returned value whose
+branches MIR turned is the conditional as written**: where `written_order`
+finds the `return` first in the `else` and the rest in the `then`, the
+test is negated, `a === 0 || a > b`, and the branches swapped. Case N:
+the negated test holds where the other doesn't, each branch where it was
+taken. `written_branches` is `written_order`'s answer, either way round.
+Held by `test/lowering-written-branches.test.ts`, "a returned value of an
+if of an || keeps its test and its branches' order", `lane_bits.rs`
+against native Rust, and the mutation
+`written-turned-value-returned-as-mir-has-it` (`tidy/jumps/tails.ts`).

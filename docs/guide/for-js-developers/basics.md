@@ -968,7 +968,8 @@ export function total(member, code, amount) {
 An `if` statement is the one you wrote: its test as written and its
 branches in their order, `if !queue.is_empty() { .. } else { .. }`'s
 `queue.length !== 0` first; an `else { break }` after a branch that goes
-on stays an `else`
+on stays an `else`; and so is an `if`'s value, `if a == 0 || a > b { a }
+else { b }` being `a === 0 || a > b ? a : b`
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 A branch that returns needs no `else` after it,
 as ESLint's `no-else-return` has it, but an `else if` after an arm that

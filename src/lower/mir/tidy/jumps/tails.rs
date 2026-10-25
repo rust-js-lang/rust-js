@@ -560,6 +560,18 @@ pub(in crate::lower::mir::tidy) fn written_branches(
     b: &[Stmt],
     elses: &[(js::Span, js::Span, js::Span)],
 ) -> bool {
+    written_order(span, a, b, elses).is_some()
+}
+
+/// `written_branches`, and which way round: `Some(false)` where `a` is
+/// written in the `then` and `b` in the `else`, `Some(true)` where MIR
+/// turned them, `a` the `else`'s.
+pub(in crate::lower::mir::tidy) fn written_order(
+    span: js::Span,
+    a: &[Stmt],
+    b: &[Stmt],
+    elses: &[(js::Span, js::Span, js::Span)],
+) -> Option<bool> {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     // Where it's written: a `return` MIR made of a branch's value, where
     // the function ends, where its value is.
@@ -569,10 +581,15 @@ pub(in crate::lower::mir::tidy) fn written_branches(
     let of = |branch: &js::Span, stmts: &[Stmt]| {
         stmts.iter().any(|s| at(branch, s)) && stmts.iter().all(|s| s.span.is_none() || at(branch, s))
     };
-    elses.iter().any(|(cond, then, otherwise)| {
-        otherwise.lo >= then.hi
-            && within(cond, span)
-            && ((of(then, a) && of(otherwise, b)) || (of(then, b) && of(otherwise, a)))
+    elses.iter().find_map(|(cond, then, otherwise)| {
+        if otherwise.lo < then.hi || !within(cond, span) {
+            return None;
+        }
+        match (of(then, a) && of(otherwise, b), of(then, b) && of(otherwise, a)) {
+            (true, _) => Some(false),
+            (_, true) => Some(true),
+            _ => None,
+        }
     })
 }
 
@@ -699,8 +716,13 @@ pub(in crate::lower::mir::tidy) fn returned_values(
         && folds_into_return(&yes, &no)
         && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
     {
-        let written_if = written_branches(if_stmt.span, then, last, elses);
-        let folded = conditional(test.clone(), yes, no, booleans, written_if);
+        // Its branches as written: the test negated where MIR turned them,
+        // `if a == 0 || a > b { a } else { b }`'s `a !== 0 && !(a > b)` of
+        // `return b` (ADR 0879, amended).
+        let folded = match written_order(if_stmt.span, then, last, elses) {
+            Some(true) => conditional(test.clone().negated_test(), no, yes, booleans, true),
+            order => conditional(test.clone(), yes, no, booleans, order.is_some()),
+        };
         let span = if_stmt.span;
         stmts.truncate(at);
         stmts.push(StmtKind::Return(Some(folded)).at(span));
