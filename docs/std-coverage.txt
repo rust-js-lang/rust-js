@@ -968,7 +968,7 @@
 + Peekable::size_hint	memory
 - Peekable::try_fold	spec
 - Peekable::try_rfold	spec
-# Fuse 10 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
+# Fuse 11 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
 + Fuse::count	safe
 + Fuse::find	spec
 + Fuse::fold	safe
@@ -977,7 +977,7 @@
 + Fuse::next	spec
 + Fuse::next_back	spec
 + Fuse::nth	spec
-- Fuse::nth_back	spec
++ Fuse::nth_back	spec
 - Fuse::rfind	spec
 + Fuse::rfold	safe
 + Fuse::size_hint	safe
