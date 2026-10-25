@@ -70,6 +70,8 @@ pub struct LoweredModule {
 pub struct Reexport {
     pub from: js::ImportFrom,
     pub named: Vec<(String, String)>,
+    /// The `pub use` it's of, which its comments are before.
+    pub span: js::Span,
 }
 
 pub struct LoweredImport {

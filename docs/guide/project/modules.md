@@ -175,7 +175,11 @@ export function welcome(name: string): string;
 
 A `pub use` of another module's function or constant is `export { .. }
 from` it, in the JS and the `.d.ts`. `pub use .. as` renames it, camelCase
-as any name is, or by its `#[rust_js::name]`. One of the module's own
+as any name is, or by its `#[rust_js::name]`. Each `pub use` is written
+where it is, in the order written, with the comments before it; a run of
+them from one module with no comment or blank line between, their
+attributes aside, is one `export { .. } from`
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)). One of the module's own
 functions or constants by another name is exported by that name alone:
 it's declared without `export`, and one `export { .. as .. }` after the
 module's code lists each such name, in the order the `pub use`s are
@@ -244,6 +248,84 @@ export { hello } from "./greet.js";
 declare function greetAll(names: string[]): string[];
 
 export { greetAll as unstable_greet };
+```
+
+What a `pub use` names is re-exported from the module its path names,
+which may re-export it itself, by the name it has there; a library's
+item, its default or a binding a module of it holds, from the library's
+file; a class, by its constructor; a module, its namespace, `export * as
+ns from`, as is a JS module's, `#*`. A private `use .. as`'s
+`#[rust_js::name]` is its import's name. One that has JS but can't be
+re-exported yet, `pub use m::*;`, or std's function, is refused, never
+left out
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)):
+
+```rust
+// src/lib.rs
+mod cache;
+mod hooks;
+pub mod runtime;
+mod server;
+
+// Hooks
+pub use hooks::use_id;
+#[cfg_attr(rust_js, rust_js::name = "unstable_useCacheRefresh")]
+pub use hooks::use_cache_refresh as unstable_use_cache_refresh;
+#[cfg_attr(rust_js, rust_js::name = "__COMPILER_RUNTIME")]
+pub use crate::runtime as __COMPILER_RUNTIME;
+// DEV-only
+pub use server::cache;
+
+#[cfg_attr(rust_js, rust_js::name = "_jsxDEV")]
+use runtime::jsx_dev as _jsx_dev;
+
+pub fn element() -> u32 {
+    _jsx_dev(1)
+}
+```
+
+```rust
+// src/cache.rs
+pub fn cache(n: u32) -> u32 {
+    n
+}
+```
+
+```rust
+// src/hooks.rs
+pub fn use_id() -> u32 {
+    1
+}
+
+pub fn use_cache_refresh() -> u32 {
+    2
+}
+```
+
+```rust
+// src/runtime.rs
+pub fn jsx_dev(n: u32) -> u32 {
+    n + 1
+}
+```
+
+```rust
+// src/server.rs
+pub use crate::cache::cache;
+```
+
+```js
+import { jsxDev as _jsxDEV } from "./runtime.js";
+
+// Hooks
+export { useId, useCacheRefresh as unstable_useCacheRefresh } from "./hooks.js";
+export * as __COMPILER_RUNTIME from "./runtime.js";
+// DEV-only
+export { cache } from "./server.js";
+
+export function element() {
+  return _jsxDEV(1);
+}
 ```
 
 A module of only `pub use`s is a file of them, as an `index.js` is. A

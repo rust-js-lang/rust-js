@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "reexport-unprinted",
     breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
     file: "src/to_oxc.rs",
-    find: "        for reexport in &module.reexports {",
-    replace: "        for reexport in module.reexports.iter().take(0) {",
+    find: "    body.extend(module.reexports.iter().map(|reexport| cx.reexport(reexport)));\n",
+    replace: "    body.extend(module.reexports.iter().take(0).map(|reexport| cx.reexport(reexport)));\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {
@@ -475,5 +475,13 @@ export const mutations: Mutation[] = [
     find: "                if let StmtKind::Function(f) = &stmt.kind {\n                    note(f);\n",
     replace: "                if let StmtKind::Function(f) = &stmt.kind {\n                    let _ = f;\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
+  },
+  {
+    name: "reexport-comments-unplaced",
+    breaks: "a `pub use`'s comments, `// Concurrent Mode`, are lost, as its re-export is no statement they're before (ADR 0240, amended)",
+    file: "src/to_oxc.rs",
+    find: "    for reexport in &module.reexports {\n        if !reexport.span.is_none() {\n",
+    replace: "    for reexport in module.reexports.iter().take(0) {\n        if !reexport.span.is_none() {\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
 ];

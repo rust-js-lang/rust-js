@@ -840,7 +840,7 @@ test("a module's default of another module's function is re-exported", async () 
   writeFileSync(join(dir, "only.rs"), "js::export_default!(super::page::page);\n");
   writeFileSync(join(dir, "page.rs"), "pub fn page() -> u32 {\n    1\n}\n\npub fn props() -> u32 {\n    2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { page as default, props } from "./page.js";');
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { props } from "./page.js";\n\nexport { page as default } from "./page.js";');
   expect(readFileSync(join(dir, "only.js"), "utf8")).toContain('export { page as default } from "./page.js";');
   const index = await import(join(dir, "index.js"));
   expect([index.default(), index.props()]).toEqual([1, 2]);
@@ -983,4 +983,95 @@ import { local } from "./local";
 import "./app.css";
 import { $index } from "@rust-js/runtime";
 `);
+});
+
+// React's ReactClient lists what it re-exports once, in its order, with
+// its comments, `// Concurrent Mode`: each `pub use` is an `export { .. }
+// from` where it's written, its comments before it, a run of them from one
+// module one statement; of a class, its constructor; of a module, its
+// namespace, `export * as __COMPILER_RUNTIME from`; of a JS module's
+// namespace too; and of what a module re-exports itself, from that module,
+// as the path names it, by the name it has there (ADR 0240, amended). A
+// private `use`'s `#[rust_js::name]` is its import's name, `_jsxDEV`.
+test("a module's pub uses are re-exported as written, with their comments", async () => {
+  const dir = fixture("reexports-as-written");
+  writeFileSync(join(dir, "lib.rs"), `mod cache_impl;
+mod cache_server;
+mod index;
+pub mod runtime;
+mod shapes;
+
+pub use shapes::area;
+// A class, by its constructor.
+pub use shapes::Circle;
+// Concurrent Mode
+#[cfg_attr(rust_js, rust_js::name = "__COMPILER_RUNTIME")]
+pub use crate::runtime as __COMPILER_RUNTIME;
+pub use cache_server::{cache, unstable_cache};
+pub use runtime::half;
+#[cfg_attr(rust_js, rust_js::name = "unstable_double")]
+pub use runtime::double as unstable_double;
+
+mod bound {
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#*")]
+    pub fn math() -> f64 {
+        unreachable!()
+    }
+}
+
+// DEV-only
+pub use bound::math;
+
+#[cfg_attr(rust_js, rust_js::name = "_areaDEV")]
+use shapes::area as _area_dev;
+
+pub fn twice(circle: &shapes::Circle) -> f64 {
+    _area_dev(circle) * 2.0
+}
+`);
+  writeFileSync(join(dir, "cache_impl.rs"), "pub fn cache(n: f64) -> f64 {\n    n + 1.0\n}\n");
+  writeFileSync(join(dir, "cache_server.rs"), `#[cfg_attr(rust_js, rust_js::name = "unstable_cache")]
+pub use crate::cache_impl::cache as unstable_cache;
+pub use crate::cache_impl::cache;
+`);
+  writeFileSync(join(dir, "runtime.rs"), "pub fn double(n: f64) -> f64 {\n    n * 2.0\n}\n\npub fn half(n: f64) -> f64 {\n    n / 2.0\n}\n");
+  writeFileSync(join(dir, "shapes.rs"), `#[cfg_attr(rust_js, rust_js::class)]
+pub struct Circle {
+    pub radius: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Circle {
+    pub fn new(radius: f64) -> Self {
+        Circle { radius }
+    }
+}
+
+pub fn area(circle: &Circle) -> f64 {
+    circle.radius * circle.radius
+}
+`);
+  writeFileSync(join(dir, "math.js"), "export const pi = 3;\n");
+  writeFileSync(join(dir, "index.rs"), "pub use crate::runtime as rt;\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { area as _areaDEV } from "./shapes.js";\n');
+  expect(js).toContain(`export { area } from "./shapes.js";
+// A class, by its constructor.
+export { Circle } from "./shapes.js";
+// Concurrent Mode
+export * as __COMPILER_RUNTIME from "./runtime.js";
+export { cache, unstable_cache } from "./cache_server.js";
+export { half, double as unstable_double } from "./runtime.js";
+`);
+  expect(js).toContain('// DEV-only\nexport * as math from "./math.js";\n');
+  // A module of only a namespace's re-export is a file of it.
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export * as rt from "./runtime.js";\n');
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain('export * as __COMPILER_RUNTIME from "./runtime.js";');
+  expect(dts).toContain('export { cache, unstable_cache } from "./cache_server.js";');
+  const lib = await import(join(dir, "lib.js"));
+  const circle = new lib.Circle(3);
+  expect([lib.area(circle), lib.twice(circle), lib.__COMPILER_RUNTIME.double(2), lib.cache(1), lib.unstable_cache(2)]).toEqual([9, 18, 4, 2, 3]);
+  expect([lib.unstable_double(3), lib.half(3), lib.math.pi]).toEqual([6, 1.5, 3]);
 });

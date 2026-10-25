@@ -14,6 +14,9 @@ import * as f from "typescript/ast/factory";
 /**
  * @typedef {{ declarations: Declaration[], header?: string }} Module
  *
+ * An `export` from a module whose one name is `["*", ns]` is `export * as
+ * ns from`, its namespace by a name.
+ *
  * @typedef {{ kind: "import", from: string, names: string[], typeOnly: boolean }
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
  *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
@@ -218,6 +221,11 @@ function readStatements(statements, text) {
       }
       case SyntaxKind.ExportDeclaration: {
         const named = node.exportClause;
+        // `export * as ns from "./m.js"`, a module's namespace by a name.
+        if (named?.kind === SyntaxKind.NamespaceExport && node.moduleSpecifier && !node.isTypeOnly) {
+          out.push({ kind: "export", from: node.moduleSpecifier.text, names: [["*", named.name.text]] });
+          break;
+        }
         // A list that's types, or names one, is text: the model has no type-only name.
         if (named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly || named.elements.some((e) => e.isTypeOnly)) {
           out.push({ kind: "other", text: sourceOf(node, text) });
@@ -502,6 +510,9 @@ function statement(declaration) {
     case "export-default":
       return f.createExportAssignment(undefined, false, undefined, id(declaration.name));
     case "export":
+      if (declaration.from !== undefined && declaration.names.length === 1 && declaration.names[0][0] === "*") {
+        return f.createExportDeclaration(undefined, false, f.createNamespaceExport(id(declaration.names[0][1])), string(declaration.from));
+      }
       return f.createExportDeclaration(
         undefined,
         false,

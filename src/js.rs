@@ -89,9 +89,9 @@ pub struct Module {
     pub packages: Vec<Package>,
     /// Named imports, one declaration per Rust module this one uses.
     pub imports: Vec<Import>,
-    /// What it exports of another module of the crate's, `export { a } from
-    /// "./b.js"`, its `pub use` (ADR 0240).
-    pub reexports: Vec<Import>,
+    /// What it exports of another module, `export { a } from "./b.js"`, its
+    /// `pub use`s, in the order they're written (ADR 0240, amended).
+    pub reexports: Vec<Reexport>,
     /// What it imports of `@rust-js/runtime`, sorted: the helpers its
     /// prepared tree reads (ADR 0103), chosen before it's printed.
     pub helpers: Vec<&'static str>,
@@ -213,6 +213,15 @@ pub struct Import {
     pub named: Vec<(String, String)>,
     /// A relative specifier, like `./math.js` or `../lib.js`.
     pub from: String,
+}
+
+/// One `pub use` statement's `export { a, b as c } from "./m.js";` (ADR
+/// 0240), where it's written, so its comments are before it: each `(export,
+/// alias)`, `*` the module's namespace, `export * as ns from`.
+pub struct Reexport {
+    pub named: Vec<(String, String)>,
+    pub from: String,
+    pub span: Span,
 }
 
 /// Where a dynamic `import()` loads from (ADR 0304): a specifier, or a

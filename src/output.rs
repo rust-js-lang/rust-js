@@ -94,9 +94,10 @@ impl OutputPlan {
                 js::ImportFrom::Specifier(specifier) => located(specifier),
             };
             let reexports = (module.reexports.iter())
-                .map(|reexport| js::Import {
+                .map(|reexport| js::Reexport {
                     named: reexport.named.clone(),
                     from: from_here(&reexport.from),
+                    span: reexport.span,
                 })
                 .collect::<Vec<_>>();
             let packages = module

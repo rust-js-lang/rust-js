@@ -29,8 +29,10 @@ for (const [name, source, message, crate] of [
   ["a pointer to a constant", "const C: &u8 = &1;\npub fn f() -> bool { let p = C as *const u8; p.is_null() }", "does not support addressable memory yet: a pointer into what JS may hold a copy of"],
   ["a pointer through a &mut", "pub fn f(r: &mut u32) -> *mut u32 { r }", "does not support addressable memory yet: a raw pointer to what a `&mut` refers to"],
   ["a pointer to a value a box holds", "pub fn f(b: Box<u32>) -> bool { let p: *const u32 = &*b; p.is_null() }", "does not support addressable memory yet: a raw pointer to this place"],
-  // A JS module's namespace, which an `export { .. } from` can't name (ADR 0240).
-  ["a pub use of a JS module's namespace", 'mod bound {\n    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#*")]\n    pub fn math() -> f64 { unreachable!() }\n}\npub use bound::math;\npub fn f() -> u32 { 1 }', "does not support a `pub use` of a JS module's namespace yet: it'd be `export * as ns from`; re-export each of its exports by name"],
+  // A `pub use` of what has JS but no module of rust-js's to be re-exported
+  // from, and of a module's every name, refused, not left out (ADR 0240, amended).
+  ["a pub use of std's function", "pub use std::cmp::max;\npub fn f() -> u32 { 1 }", "does not support a `pub use` of `std::cmp::max` yet"],
+  ["a pub use of every name of a module", "mod m {\n    pub fn g() -> u32 { 1 }\n}\npub use m::*;\npub fn f() -> u32 { m::g() }", "does not support a `pub use` of every name of a module yet: `pub use` each by its name"],
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],

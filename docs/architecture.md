@@ -190,7 +190,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Crate facts and validation | `analysis.rs`, `analysis/` |
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
-| Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `sources.rs`, `library.rs` |
+| Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `reexports.rs`, `sources.rs`, `library.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `copies.rs`, `support.rs`, `refusal.rs` |
@@ -240,6 +240,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Function and binding references | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Bindings held by modules | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
 | A module's default export, its `pub use`s of its own items by other names (ADR 0596), and what a module exports an item of its own as, which every importer imports it by | `default_exports.rs` | `default_exports`, `default_declared`, `own_default`, `own_aliases`, `alias_named`, `exported_as` |
+| What a module's `pub use`s re-export, from where, by what name, in what order, and which are refused (ADRs 0240, 0874); which a module's file has | `reexports.rs`; `analysis.rs` | `reexports`; `is_reexport` |
 | Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |

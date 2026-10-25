@@ -4,9 +4,8 @@ use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in}
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
-use crate::program::{ImportRequest, LoweredModule, Reexport, Unlinked, UnlinkedModule};
-use rustc_hir as hir;
-use rustc_hir::def::{DefKind, Res};
+use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
+use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
@@ -882,7 +881,7 @@ pub fn lower_crate<'tcx>(
                         default_declared = super::default_exports::default_declared(tcx, function);
                     }
                     Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
-                        default_from = Some(function);
+                        default_from = Some((function, span));
                     }
                     // A binding, its `const` (ADRs 0622, 0633), or one it names
                     // through another module that holds it, re-exported.
@@ -901,7 +900,14 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
-            let reexports = reexports(tcx, module, &fns, &paths, (default_from, module_held));
+            let reexports = super::reexports::reexports(
+                tcx,
+                module,
+                (&fns, &foreign),
+                &paths,
+                (default_from, module_held),
+                &sources,
+            );
             let aliased_items = aliases(tcx, module, &fns);
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
@@ -1139,106 +1145,6 @@ pub fn lower_crate<'tcx>(
         modules: lowered,
         tests,
     })
-}
-
-/// What `module` re-exports, its public `pub use` of another module's
-/// function, by that module's path, or of a binding of a JS module's
-/// export, by its specifier: each `(export, alias)`, the function's JS name
-/// or the export, and the name the `use` gives it (ADR 0240); and
-/// `default`, another module's function its `js::export_default!` names.
-/// The crate's modules first, then JS modules, each in its order.
-fn reexports(
-    tcx: TyCtxt<'_>,
-    module: LocalModId,
-    fns: &HashMap<DefId, FnInfo>,
-    paths: &HashMap<LocalModId, Vec<String>>,
-    (default_from, held): (Option<DefId>, &[super::bindings::HeldBinding]),
-) -> Vec<Reexport> {
-    let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
-    let mut specified: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
-    // A binding it names through another module that holds it, that
-    // module's export, by its name and as its default (ADR 0633).
-    for held in held {
-        if let Some(super::bindings::HeldRead {
-            holder: super::bindings::Holder::Module(holder),
-            import,
-            ..
-        }) = &held.through
-            && let Some(from) = paths.get(holder)
-        {
-            let named = grouped.entry(from.clone()).or_default();
-            if held.export {
-                named.push((import.clone(), held.name.clone()));
-            }
-            if held.default {
-                named.push((import.clone(), "default".to_string()));
-            }
-        }
-    }
-    // Each function of another module as that module exports it, its
-    // default where it's that one's (`default_exports::exported_as`).
-    let exported = |function: DefId, info: &FnInfo| super::default_exports::exported_as(tcx, function, &info.name);
-    if let Some(function) = default_from
-        && let Some(info) = fns.get(&function)
-        && let Some(from) = paths.get(&info.module)
-    {
-        grouped
-            .entry(from.clone())
-            .or_default()
-            .push((exported(function, info), "default".to_string()));
-    }
-    for id in tcx.hir_module_items(module).free_items() {
-        let item = tcx.hir_item(id);
-        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {
-            continue;
-        };
-        let Some(Res::Def(_, def_id)) = path.res.value_ns else {
-            continue;
-        };
-        if !super::analysis::is_reexport(tcx, item) {
-            continue;
-        }
-        // A binding of a JS module's export, itself, not a path in it.
-        if super::bindings::is_binding(tcx, def_id)
-            && let Some(written) = super::bindings::js_path(tcx, def_id)
-            && let Some(((from, export), "")) = super::bindings::js_import(&written)
-        {
-            if export == "*" {
-                let why = "it'd be `export * as ns from`; re-export each of its exports by name";
-                let what = "a `pub use` of a JS module's namespace";
-                super::refusal::refuse(tcx, item.span, super::refusal::Refused::Because(what, why));
-                continue;
-            }
-            specified.entry(from).or_default().push((export, ident.to_string()));
-            continue;
-        }
-        let Some(info) = fns.get(&def_id) else { continue };
-        if info.owner.is_some() {
-            continue;
-        }
-        // Its own item by another name is `aliases`'s.
-        if info.module == module {
-            continue;
-        }
-        let alias = match ident.name == tcx.item_name(def_id) {
-            true => info.name.clone(),
-            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
-        };
-        let Some(from) = paths.get(&info.module) else { continue };
-        grouped
-            .entry(from.clone())
-            .or_default()
-            .push((exported(def_id, info), alias));
-    }
-    let modules = (grouped.into_iter()).map(|(path, named)| Reexport {
-        from: js::ImportFrom::Module(path),
-        named,
-    });
-    let specifiers = (specified.into_iter()).map(|(from, named)| Reexport {
-        from: js::ImportFrom::Specifier(from),
-        named,
-    });
-    modules.chain(specifiers).collect()
 }
 
 /// `module`'s own items it exports by other names, `export { getCurrentTime

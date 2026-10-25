@@ -202,9 +202,9 @@ export const mutations: Mutation[] = [
     name: "reexport-private-use",
     breaks: "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
     file: "src/lower/analysis.rs",
-    find: "    tcx.visibility(item.owner_id).is_public()\n        && match path.res.value_ns {\n",
-    replace: "    true\n        && match path.res.value_ns {\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
+    find: "    tcx.visibility(item.owner_id).is_public()\n        && (match path.res.value_ns {\n",
+    replace: "    true\n        && (match path.res.value_ns {\n",
+    tests: ["test/modules.test.ts", "-t", "a use that renames another module's function imports it as that"],
   },
   {
     name: "drop-runs-asked-crate-wide",

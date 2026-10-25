@@ -1095,16 +1095,22 @@ fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
 }
 
 /// Whether `item` is a `pub use` its module's JS re-exports (ADR 0240): of
-/// a function, the crate's or a binding's, or of a binding's `static`.
+/// a function, the crate's, a library's or a binding's, or of a binding's
+/// `static`; and of the crate's module, its namespace, or a class (ADR 0240,
+/// amended).
 pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
     let rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = item.kind else {
         return false;
     };
     tcx.visibility(item.owner_id).is_public()
-        && match path.res.value_ns {
+        && (match path.res.value_ns {
             // A function's, and a constant's, its module's `const` (ADR 0596).
             Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. }, _)) => true,
             Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),
             _ => false,
-        }
+        } || match path.res.type_ns {
+            Some(rustc_hir::def::Res::Def(DefKind::Mod, id)) => id.is_local(),
+            Some(rustc_hir::def::Res::Def(DefKind::Struct, id)) => crate::lower::classes::is_class(tcx, id),
+            _ => false,
+        })
 }

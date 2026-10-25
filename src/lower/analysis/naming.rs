@@ -255,13 +255,17 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
             let item = tcx.hir_item(id);
             match item.kind {
                 ItemKind::Use(path, UseKind::Single(ident)) if !super::is_reexport(tcx, item) => {
-                    match path.res.value_ns {
-                        Some(Res::Def(_, def_id)) if ident.name != tcx.item_name(def_id) => {
-                            let alias = crate::lower::default_exports::alias_named(tcx, def_id, ident.name);
-                            Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))
-                        }
-                        _ => None,
+                    let Some(Res::Def(_, def_id)) = path.res.value_ns else {
+                        return None;
+                    };
+                    // Its `#[rust_js::name]`, the import's local name as
+                    // written, `_jsxDEV` (ADR 0596, amended).
+                    let given = bindings::given_name(tcx, item.owner_id.to_def_id());
+                    if given.is_none() && ident.name == tcx.item_name(def_id) {
+                        return None;
                     }
+                    let alias = given.or_else(|| crate::lower::default_exports::alias_named(tcx, def_id, ident.name));
+                    Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))
                 }
                 _ => None,
             }

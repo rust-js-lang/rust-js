@@ -75,6 +75,37 @@ impl<'a> Cx<'a> {
 
     /// `function f() {}`, `export` of one exported, or `export default` of
     /// one exported as its module's default alone, `default`.
+    /// A `pub use`'s `export { a, b as c } from "./m.js";`, or of a module
+    /// by a name, `export * as ns from "./m.js";` (ADR 0240, amended).
+    pub(super) fn reexport(&self, reexport: &js::Reexport) -> Statement<'a> {
+        let b = &self.b;
+        let sp = span(reexport.span);
+        let source = StringLiteral::new(SPAN, self.allocator.alloc_str(&reexport.from), None, b);
+        let name = |name: &str| ModuleExportName::new_identifier_name(SPAN, self.allocator.alloc_str(name), b);
+        if let [(namespace, alias)] = reexport.named.as_slice()
+            && namespace == "*"
+        {
+            return Statement::new_export_all_declaration(
+                sp,
+                Some(name(alias)),
+                source,
+                None,
+                ImportOrExportKind::Value,
+                b,
+            );
+        }
+        let specifiers = (reexport.named.iter())
+            .map(|(export, alias)| ExportSpecifier::new(SPAN, name(export), name(alias), ImportOrExportKind::Value, b));
+        Statement::new_export_from_declaration(
+            sp,
+            ArenaVec::from_iter_in(specifiers, b),
+            source,
+            ImportOrExportKind::Value,
+            None,
+            b,
+        )
+    }
+
     pub(super) fn function(&self, f: &js::Function, default: bool) -> Statement<'a> {
         let b = &self.b;
         let params = self.params(FormalParameterKind::FormalParameter, &f.params);

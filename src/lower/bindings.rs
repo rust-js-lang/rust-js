@@ -650,10 +650,12 @@ fn held_of<'tcx>(
             continue;
         }
         let through = named_through(tcx, foreign, module, path.segments, binding, modules);
-        // A library's, as a `pub use` of its function, writes nothing.
-        if through
-            .as_ref()
-            .is_some_and(|read| matches!(read.holder, Holder::Library(_)))
+        // A library's, which a private `use` reads through it; a `pub use`
+        // re-exports it from the library's file (ADR 0240, amended).
+        if !export
+            && through
+                .as_ref()
+                .is_some_and(|read| matches!(read.holder, Holder::Library(_)))
         {
             continue;
         }
@@ -712,8 +714,9 @@ pub(super) fn alias_name(tcx: TyCtxt<'_>, use_item: DefId, alias: Symbol) -> Str
     given_name(tcx, use_item).unwrap_or_else(|| super::camel_case(alias.as_str()))
 }
 
-/// `#[rust_js::name = ".."]`: what an item is in JS, as written.
-fn given_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+/// `#[rust_js::name = ".."]`: what an item is in JS, as written; of a
+/// `use`, the name it imports or exports its item by.
+pub(in crate::lower) fn given_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     let attr = tcx
         .get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::name])
         .next()?;

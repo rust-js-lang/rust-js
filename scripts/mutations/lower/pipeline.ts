@@ -179,14 +179,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
-    name: "reexport-alias-unread",
-    breaks: "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
-    file: "src/lower/pipeline.rs",
-    find: "            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),",
-    replace: "            false => info.name.clone(),",
-    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
-  },
-  {
     name: "default-exported-by-name-too",
     breaks: "a module's default export another imports is exported by its name too, `export const Memoized`",
     file: "src/lower/pipeline.rs",
@@ -240,14 +232,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
     replace: "                    Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
-    tests: ["test/modules.test.ts", "-t", "default of another module"],
-  },
-  {
-    name: "default-of-another-unexported",
-    breaks: "another module's function named the default isn't re-exported as it",
-    file: "src/lower/pipeline.rs",
-    find: "            .push((exported(function, info), \"default\".to_string()));\n",
-    replace: "            .truncate(0);\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
   {
@@ -416,22 +400,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "tracked trait method without a default"],
   },
   {
-    name: "binding-reexport-unwritten",
-    breaks: "a `pub use` of a JS module's binding writes no `export { .. } from` it",
-    file: "src/lower/pipeline.rs",
-    find: "        if super::bindings::is_binding(tcx, def_id)\n",
-    replace: "        if false && super::bindings::is_binding(tcx, def_id)\n",
-    tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
-  },
-  {
-    name: "namespace-reexport-unrefused",
-    breaks: "a `pub use` of a JS module's namespace is `export { * as ns }`, which isn't JS",
-    file: "src/lower/pipeline.rs",
-    find: "            if export == \"*\" {\n",
-    replace: "            if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub use of a JS module's namespace"],
-  },
-  {
     name: "identity-eq-written-unreached",
     breaks: "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
     file: "src/lower/pipeline.rs",
@@ -550,14 +518,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: " && (read_at_home.contains(&held) || aliased(held))",
     replace: " && read_at_home.contains(&held)",
-    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
-  },
-  {
-    name: "reexported-default-by-name",
-    breaks: "a `pub use` of another module's default re-exports it by its name, which that module doesn't export",
-    file: "src/lower/pipeline.rs",
-    find: "            .push((exported(def_id, info), alias));\n",
-    replace: "            .push((info.name.clone(), alias));\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {

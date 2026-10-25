@@ -770,7 +770,9 @@ export function firstWord(text) {
 ```
 
 A `pub use` of a type re-exports nothing yet: JS imports a type's methods
-from the module that defines it.
+from the module that defines it. A class's is its constructor's, and a
+module's its namespace, `export * as ns from`
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
 
 ## The default export
 

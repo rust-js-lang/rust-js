@@ -1,7 +1,9 @@
 # 0596. A `pub use` of a module's own item exports it by that name
 
 Status: Accepted; amended (an item its own module renames is exported by
-that name alone, below). Extends [0240](0240-reexports.md)'s re-exports
+that name alone, below); amended by
+[0874](0874-a-modules-pub-uses-are-re-exported-as-written.md) (a private
+`use .. as`'s `#[rust_js::name]` is its import's name). Extends [0240](0240-reexports.md)'s re-exports
 and [0573](0573-every-rust-name-is-camel-case-in-js.md)'s names.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A.

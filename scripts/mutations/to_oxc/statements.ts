@@ -210,4 +210,12 @@ export const mutations: Mutation[] = [
     replace: "                    ] if false => (inner, Some(self.catch_clause(error.as_deref(), handler))),\n",
     tests: ["test/lowering.test.ts", "-t", "guard dropped around catch_unwind"],
   },
+  {
+    name: "namespace-reexport-as-a-name",
+    breaks: "a `pub use` of a module's namespace is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
+    file: "src/to_oxc/statements.rs",
+    find: "            && namespace == \"*\"\n",
+    replace: "            && namespace == \"\"\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+  },
 ];

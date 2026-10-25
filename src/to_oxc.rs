@@ -31,13 +31,13 @@ use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, AssignmentTargetMaybeDefault,
     BindingIdentifier, BindingPattern, BindingProperty, BindingRestElement, BlockStatement, CallExpression,
     CatchClause, CatchParameter, ChainElement, ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration,
-    Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameterRest,
-    FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem,
-    JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
-    JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
-    ObjectExpression, ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement,
-    StaticMemberExpression, StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, TemplateLiteral,
-    VariableDeclarationKind, VariableDeclarator,
+    ExportSpecifier, Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind,
+    FormalParameterRest, FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration,
+    ImportOrExportKind, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement,
+    JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement,
+    JSXOpeningFragment, LabelIdentifier, ModuleExportName, ObjectExpression, ObjectPropertyKind, Program, PropertyKey,
+    PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, SwitchCase,
+    TemplateElement, TemplateElementValue, TemplateLiteral, VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;
@@ -107,6 +107,9 @@ pub fn emit(
     let b = &cx.b;
 
     let mut body = ArenaVec::new_in(b);
+    // What it re-exports, its `pub use`s, first, after what it imports, each
+    // where it's written, its comments before it (ADR 0240, amended).
+    body.extend(module.reexports.iter().map(|reexport| cx.reexport(reexport)));
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
         match item {
@@ -1110,6 +1113,12 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
         }
     }
     let mut starts: Found = (Vec::new(), Default::default());
+    // A `pub use`'s re-export, which its comments are before.
+    for reexport in &module.reexports {
+        if !reexport.span.is_none() {
+            starts.0.push((reexport.span.lo, reexport.span.hi));
+        }
+    }
     let function = |f: &js::Function, starts: &mut Found| {
         if !f.span.is_none() {
             starts.0.push((f.span.lo, f.span.hi));
@@ -1225,23 +1234,6 @@ fn header(module: &Module) -> String {
     if !lines.is_empty() {
         code.push('\n');
         code.push_str(&lines.concat());
-    }
-    // What it re-exports, its `pub use` (ADR 0240), after what it imports.
-    if !module.reexports.is_empty() {
-        code.push('\n');
-        for reexport in &module.reexports {
-            let named: Vec<_> = (reexport.named.iter())
-                .map(|(export, alias)| match export == alias {
-                    true => export.clone(),
-                    false => format!("{export} as {alias}"),
-                })
-                .collect();
-            code.push_str(&format!(
-                "export {{ {} }} from {:?};\n",
-                named.join(", "),
-                reexport.from
-            ));
-        }
     }
     code.push('\n');
     code

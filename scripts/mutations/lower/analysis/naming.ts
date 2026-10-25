@@ -208,8 +208,16 @@ export const mutations: Mutation[] = [
     name: "own-alias-use-camel-case",
     breaks: "`use scheduler::unstable_now;` imports it as `unstableNow`, not by the name it's exported as (ADR 0596, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "                            let alias = crate::lower::default_exports::alias_named(tcx, def_id, ident.name);\n",
-    replace: "                            let alias: Option<String> = None;\n",
+    find: "                    let alias = given.or_else(|| crate::lower::default_exports::alias_named(tcx, def_id, ident.name));\n",
+    replace: "                    let alias = given;\n",
     tests: ["test/modules.test.ts", "-t", "a module's own item a pub use renames is imported by that name"],
+  },
+  {
+    name: "use-name-attribute-ignored",
+    breaks: "a private `use .. as`'s `#[rust_js::name]` is ignored, `_areaDev` where it says `_areaDEV` (ADR 0596, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                    let given = bindings::given_name(tcx, item.owner_id.to_def_id());\n",
+    replace: "                    let given: Option<String> = None;\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
 ];

@@ -1,6 +1,8 @@
 # 0240. A `pub use` of another module's function is re-exported from it
 
-Status: Accepted.
+Status: Accepted; amended by [0874](0874-a-modules-pub-uses-are-re-exported-as-written.md)
+(every `pub use` of what has JS, in the order written, a run of one
+module's one statement, or refused; a JS module's namespace too).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

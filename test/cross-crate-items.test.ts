@@ -318,3 +318,57 @@ pub fn local() -> f64 {
   const { called } = await import(join(dir, "app", "lib.js"));
   expect(called()).toBe(112);
 });
+
+// React's ReactClient re-exports what `shared` declares, `export
+// {REACT_FRAGMENT_TYPE as Fragment, ReactVersion as version, ..}`: a `pub
+// use` of a library's constant, function, default and class is `export {
+// .. } from` the library's file, by what that file exports it as, a
+// binding a module of its holds too, never nothing (ADR 0240, amended).
+test("a pub use of a library's item re-exports it from the library's file", async () => {
+  const dir = fixture("cross-crate-reexports");
+  compiled(dir, `pub const LIMIT: u32 = 9;
+
+pub fn helper() -> u32 {
+    LIMIT
+}
+
+pub mod version {
+    js::export_default! {
+        pub const REACT_VERSION: &str = "19.3.0";
+    }
+}
+
+pub mod shapes {
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Circle {
+        pub radius: f64,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Circle {
+        pub fn new(radius: f64) -> Self {
+            Circle { radius }
+        }
+    }
+}
+
+pub mod assign {
+    pub use js::object::assign;
+
+    js::export_default!(assign);
+}
+`, `pub use dep::LIMIT;
+pub use dep::helper as renamed;
+#[cfg_attr(rust_js, rust_js::name = "version")]
+pub use dep::version::REACT_VERSION as VERSION;
+pub use dep::shapes::Circle;
+pub use dep::assign::assign;
+`);
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).toContain('export { LIMIT, helper as renamed } from "../dep/lib.js";\n');
+  expect(app).toContain('export { default as version } from "../dep/version.js";\n');
+  expect(app).toContain('export { Circle } from "../dep/shapes.js";\nexport { default as assign } from "../dep/assign.js";\n');
+  const module = await import(join(dir, "app", "lib.js"));
+  expect([module.LIMIT, module.renamed(), module.version, new module.Circle(2).radius]).toEqual([9, 9, "19.3.0", 2]);
+  expect(module.assign).toBe(Object.assign);
+});

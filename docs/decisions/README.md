@@ -258,7 +258,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say)*
 - [0238 A value kept for good is the value; children are kept as JS values](0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](0239-local-components.md)
-- [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md)
+- [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused)*
 - [0241 Text right before text is in braces](0241-adjacent-text.md)
 - [0242 A `dyn ReactNode` is the node itself](0242-dyn-react-node.md)
 - [0243 A RegExp of a pattern as it's written is a literal](0243-regex-literals.md)
@@ -477,7 +477,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](0593-a-lazy-argument-is-its-value.md)
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md)
-- [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports)*
+- [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports; amended by 0874: a private `use`'s `#[rust_js::name]` is its import's name)*
 - [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property)*
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md) *(amended: a `let` of a name alone is its own statement, and a cast's is the variable)*
 - [0599 A result its branches make before it's coerced is returned where made](0599-a-coerced-result-is-returned-where-made.md)
@@ -658,6 +658,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md)
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)
+- [0874 A module's `pub use`s are re-exported as written, or refused](0874-a-modules-pub-uses-are-re-exported-as-written.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
