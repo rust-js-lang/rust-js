@@ -259,6 +259,11 @@ checked:
 - **See the rebase finish before checking**: `git status` says `rebasing`
   while it waits on a conflict, and checks run then test a half-applied
   branch, which passes or fails for no reason of its own.
+- **See the push land before cleaning up**: `git push` is refused when
+  `main` moved meanwhile, and a quiet `-q` push says so in one line that's
+  easy to miss. Compare `git rev-parse HEAD` with `origin/main` after a
+  `git fetch` before removing the worktree that made the change; its
+  branch stays, but the next step starts from the wrong place.
 - **Regenerate what's generated on a conflict**, never merge it by hand:
   `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`,
   corpus snapshots with `bun run bless`; the decision index merges by
@@ -278,6 +283,7 @@ checked:
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
 | `check:fast`'s bindings job while other worktrees build | Failed once at 35 s and passed alone, 75 of 75 | Find what it races on |
+| macOS's `xprotectd` scanning freshly built binaries and fixtures | Load near 20; every corpus case and suite timed out at about 270 s against 30–50 s, passing once it settled | The scan off for the apps that build ([The Mac, with the scan off](#the-mac-with-the-scan-off)); check `ps` for `xprotectd` before believing timeouts |
 | A sweep of generated programs against native Rust, by hand | 4–5 min for 1,100–2,100 programs, again after each fix, each a `rustc`, a rust-js compile and a run | A checked-in runner: native outputs kept by source, only rust-js's compile and run again, verdicts said against the last sweep (fixed, regressed) |
 | `test/architecture.test.ts`'s "a binding's optional argument is an Option of its one function" under load | Times out at bun's 5 s in some loaded `check:fast` runs (5.2 s), a re-run each time | A timeout that fits its compile |
 | A mutation that makes the compiler never finish, `drop-of-its-own-type-inlined` | Caught only by its corpus case's timeout: about a minute where its change's `check:fast` runs it, and in the nightly | A compile timeout of its own for a corpus case that says it, a few seconds |
