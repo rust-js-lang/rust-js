@@ -2382,10 +2382,14 @@ export function $stepByEnds(it, step) {
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each
-// as it's reached (ADR 0526). Closing it closes its source (ADR 0465, #225).
-export function $filterEnds(it, p) {
+// as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
+// items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
+export function $filterEnds(it, p, drop) {
   const kept = (step) => () => {
-    for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
+    for (let at = step(); !at.done; at = step()) {
+      if (p(at.value)) return at;
+      drop?.(at.value);
+    }
     return { done: true, value: undefined };
   };
   const filter = new $Steps(
@@ -2398,14 +2402,14 @@ export function $filterEnds(it, p) {
   if (it.tryRfold !== undefined) {
     filter.back = () => {
       let hit;
-      const hits = it.tryRfold(false, (_, x) => p(x) && ((hit = x), true), (hits) => hits);
+      const hits = it.tryRfold(false, (_, x) => (p(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
       return hits ? { done: false, value: hit } : { done: true, value: undefined };
     };
   }
   // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
-  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : a));
+  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)));
   if (it.tryRfold !== undefined) {
-    filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : a), broke);
+    filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)), broke);
   }
   filter.from = [it];
   return filter;
@@ -9604,13 +9608,22 @@ export function $nextIfSome(peekable, f) {
 // length a use site gives, of its compiled `next_back` and `len` with that
 // use's dictionaries, `$knowing`'s. It's a `$Steps` (ADR 0669), whose fold,
 // a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
-// closing it closes nothing, as before.
+// closing it closes nothing, but of a kind dropped by closing, a `Rev`'s,
+// whose `steps.close` drops what it holds.
 export function $stdIterator(struct, steps) {
   const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
   it.$steps = steps;
   it.next = () => step(steps.next(it));
-  it.return = () => ({ done: true, value: undefined });
+  // Closed, of a kind dropped by closing, `Rev`'s: what it holds dropped,
+  // once, `steps.close`'s (ADR 0871); another's closes nothing.
+  it.return = () => {
+    if (steps.close !== undefined && !it.$closed) {
+      it.$closed = true;
+      steps.close(it);
+    }
+    return { done: true, value: undefined };
+  };
   if (steps.fold !== undefined) {
     it.fold = (init, f) => steps.fold(it, init, f);
   }

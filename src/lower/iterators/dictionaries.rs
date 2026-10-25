@@ -97,9 +97,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => self.own_methods(ty, false, span)?.rfold,
                 false => self.recognition().rfolds_its_own(ty).then(|| Expr::helper("$foldBack")),
             };
-            let nth_back = match self.is_user_iterator(ty) {
-                true => self.own_methods(ty, false, span)?.nth_back,
-                false => None,
+            // A range's of numbers, of its bounds, std's own (#163), so what
+            // steps it from its back by `nth_back`, a held `Rev`'s `nth`
+            // (ADR 0871), never steps each number.
+            let numbers = self.range_index(ty).and_then(Num::of).is_some();
+            let nth_back = match (self.is_user_iterator(ty), self.range_kind(ty)) {
+                (true, _) => self.own_methods(ty, false, span)?.nth_back,
+                (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper("$rangeNthBack")),
+                (false, Some(RangeKind::Inclusive)) if numbers => Some(Expr::helper("$rangeInclusiveNthBack")),
+                (false, _) => None,
             };
             for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
                 if let Some(own) = own {

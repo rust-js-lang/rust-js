@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "            && callee.helper_name() == Some(\"$stepByNot\")\n            && let [source_value, step] = args.as_slice()\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
+  {
+    name: "compiled-rev-closes-nothing",
+    breaks: "a held `Rev` closed, or dropped, drops nothing it holds",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            if !body.is_empty() {\n                props.push(crate::js::Prop::Field(\n",
+    replace: "            if false {\n                props.push(crate::js::Prop::Field(\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
 ];

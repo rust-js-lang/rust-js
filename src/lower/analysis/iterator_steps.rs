@@ -87,6 +87,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
 ) -> HashSet<(DefId, u32, DefId)> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let next = trait_method(tcx, iterator, "next");
+    let size_hint = trait_method(tcx, iterator, "size_hint");
     let mut stepped: HashSet<(DefId, u32, DefId)> = HashSet::new();
     // A caller's parameter given on as a callee's, which steps it if that does.
     let mut passed: Vec<(Param, Param)> = Vec::new();
@@ -139,13 +140,20 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         };
         // A parameter a body read from its MIR holds in a struct, `Peekable {
         // iter: self, .. }` of std's `peekable` (ADR 0561):
-        // stepped as the struct's impl steps it, its `next`'s.
+        // stepped as the struct's impl steps it, its `next`'s and its
+        // `size_hint`'s, which a compiled std iterator is made knowing: a
+        // `Rev<I>`'s steps `I` by `DoubleEndedIterator` and hints by
+        // `Iterator`.
         for held in body_aggregates(tcx, body) {
-            if let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, next, tcx.mk_args(&[held.into()])) {
-                if fns.contains_key(&instance.def_id()) {
-                    pass_on(&mut passed, instance.def_id(), instance.args);
-                } else if foreign.item(instance.def_id()).is_some() {
-                    steps_through(&mut stepped, instance.def_id(), instance.args);
+            for method in [next, size_hint] {
+                if let Ok(Some(instance)) =
+                    ty::Instance::try_resolve(tcx, typing_env, method, tcx.mk_args(&[held.into()]))
+                {
+                    if fns.contains_key(&instance.def_id()) {
+                        pass_on(&mut passed, instance.def_id(), instance.args);
+                    } else if foreign.item(instance.def_id()).is_some() {
+                        steps_through(&mut stepped, instance.def_id(), instance.args);
+                    }
                 }
             }
         }

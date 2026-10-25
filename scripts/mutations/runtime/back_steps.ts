@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "filter-ends-keeps-all",
     breaks: "a filter stepped from either end keeps every item, its test asked of none",
     file: "src/runtime/back_steps.js",
-    find: "    for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;\n",
-    replace: "    for (let at = step(); !at.done; at = step()) return at;\n",
+    find: "      if (p(at.value)) return at;\n      drop?.(at.value);\n",
+    replace: "      return at;\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "filter-ends-rfold-by-next",
     breaks: "a `filter`'s `rfold` steps its source by `next_back`, not the crate's own `rfold` (#220)",
     file: "src/runtime/back_steps.js",
-    find: "  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : a));\n",
+    find: "  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
@@ -313,5 +313,13 @@ export const mutations: Mutation[] = [
     find: "    if (by === \"back\" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "filter-ends-keeps-dropped",
+    breaks: "a filter stepped from either end drops none it doesn't keep, of items with a destructor",
+    file: "src/runtime/back_steps.js",
+    find: "      if (p(at.value)) return at;\n      drop?.(at.value);\n",
+    replace: "      if (p(at.value)) return at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
 ];

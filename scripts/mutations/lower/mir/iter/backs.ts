@@ -195,8 +195,8 @@ export const mutations: Mutation[] = [
     name: "filter-ends-not-made",
     breaks: "generic code's filter of what knows its back is a JS helper, which doesn't",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(IterMethod::Filter)\n                if self.knows_its_back(output)\n",
-    replace: "            Some(IterMethod::Filter)\n                if false && self.knows_its_back(output)\n",
+    find: "            Some(IterMethod::Filter) if self.knows_its_back(output) => {\n",
+    replace: "            Some(IterMethod::Filter) if false && self.knows_its_back(output) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
@@ -425,5 +425,13 @@ export const mutations: Mutation[] = [
     replace: "    if false && crate::lower::iterators::is_stepped_items(e) {\n        let items = crate::lower::iterators::iterated(e.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^(fused_iterator|rev_of_closed_items|rev_drops).rs$"],
     snapshots: true,
+  },
+  {
+    name: "back-filter-keeps-dropped",
+    breaks: "a filter stepped from its back, of items with a destructor, drops none it doesn't keep",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                let mut given = vec![it, p];\n                if let Some(item) = self.iterator_item(output) {\n",
+    replace: "                let mut given = vec![it, p];\n                if let Some(item) = self.iterator_item(output).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
 ];

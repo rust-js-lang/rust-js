@@ -20,6 +20,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $sizeHint,
 } from "@rust-js/runtime";
@@ -214,7 +215,7 @@ function main() {
   const value$4 = ends(
     { start: 1, end: 4 },
     { next: $rangeNext },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { len: $rangeLen },
     { clone: (value) => ({ start: value.start, end: value.end }) },
     true,

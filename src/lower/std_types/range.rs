@@ -111,7 +111,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `a..=b`, or of one reversed, `(a..b).rev()`, `values` it and `n`: of
     /// its bounds, without stepping each number, as std's are (#163),
     /// `$rangeNth`, `$rangeInclusiveNthBack`, of a reversed one's
-    /// `$iterator`'s bounds, `.of`. `None` of another
+    /// `$iterator`'s bounds, `.of`, or of a held one, std's `Rev`'s,
+    /// `.iter`, as the call's `span` says (ADR 0871). `None` of another
     /// method, or of a range of `char`s, which steps by code point, or a
     /// count of BigInts, which isn't a `usize`.
     pub(in crate::lower) fn range_own_step(
@@ -119,6 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: Option<IterMethod>,
         range: Ty<'tcx>,
         values: &[Expr],
+        span: rustc_span::Span,
     ) -> Option<Expr> {
         let reversed = self.recognition().reversed(range);
         let kind = self.range_kind(reversed.unwrap_or(range))?;
@@ -137,11 +139,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return None,
         };
         let mut values = values.to_vec();
-        // A reversed one's bounds, its `$iterator`'s: those it was made of,
-        // where it's made here, once `reversed_step` reads them.
+        // A reversed one's bounds: of one made here, its `$iterator`'s, those
+        // it was made of, once `reversed_step` reads them; of one held,
+        // std's `Rev`, what it holds, `iter` (ADR 0871).
         if reversed.is_some() {
             let first = values.first_mut()?;
-            *first = Expr::member(first.clone(), "of");
+            let bounds = match self.frame.facts.in_place_rev_steps.contains(&span) {
+                true => "of",
+                false => "iter",
+            };
+            *first = Expr::member(first.clone(), bounds);
         }
         Some(Expr::call_helper(name, values))
     }

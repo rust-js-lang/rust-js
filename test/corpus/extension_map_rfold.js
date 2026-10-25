@@ -10,6 +10,7 @@ import {
   $nextBack,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -50,7 +51,7 @@ function main() {
         return v;
       },
       { next: $rangeNext },
-      { next_back: $rangeNextBack },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
     console.log(
       `[${tags.map((item) => `(${tagDebug_fmt(item[0], { fmt: (value) => String(value) })}, ${$debugStr(item[1])})`).join(", ")}]`,
@@ -66,7 +67,7 @@ function main() {
     const value$1 = Ends.heldBack(
       { inner: { start: 5, end: 8 } },
       { next: $rangeNext },
-      { next_back: $rangeNextBack },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
     console.log(
       `${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, { fmt: (value) => String(value) })})`}`,

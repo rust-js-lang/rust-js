@@ -155,4 +155,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "range-back-dictionary-nth-back-unknown",
+    breaks: "a range's `DoubleEndedIterator` dictionary has no `nth_back`, which a held `Rev`'s `nth` then steps number by number",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper(\"$rangeNthBack\")),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
+  },
 ];

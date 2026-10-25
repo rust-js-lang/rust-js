@@ -217,4 +217,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(spec) = crate::lower::recognition::fused_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "held-struct-hint-unstepped",
+    breaks: "what a compiled std struct's `size_hint` steps isn't seen, so std's `rev()` can't be compiled, its `Self` stepped by `Iterator` for its hint",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "            for method in [next, size_hint] {\n",
+    replace: "            for method in [next] {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
 ];

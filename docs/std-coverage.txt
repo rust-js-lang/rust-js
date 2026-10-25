@@ -995,16 +995,16 @@
 + Enumerate::size_hint	safe
 - Enumerate::try_fold	safe
 - Enumerate::try_rfold	safe
-# Rev 5 of 12; bodies: 12 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Rev 10 of 12; bodies: 12 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Rev::find	safe
 + Rev::fold	safe
-- Rev::len	safe
++ Rev::len	safe
 + Rev::next	safe
-- Rev::next_back	safe
++ Rev::next_back	safe
 + Rev::nth	safe
-- Rev::nth_back	safe
-- Rev::rfind	safe
-- Rev::rfold	safe
++ Rev::nth_back	safe
++ Rev::rfind	safe
++ Rev::rfold	safe
 + Rev::size_hint	safe
 - Rev::try_fold	safe
 - Rev::try_rfold	safe

@@ -14,6 +14,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -132,7 +133,7 @@ function main() {
     { start: 10, end: 12 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   console.log(
     `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}, ${value$6[2]})`,
@@ -162,7 +163,7 @@ function main() {
     { start: 0, end: 3 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { len: $rangeLen },
   );
   console.log(
@@ -179,7 +180,7 @@ function main() {
     { start: 5, end: 7 },
     { next: $rangeNext },
     { clone: (value) => ({ start: value.start, end: value.end }) },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   console.log(
     `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
@@ -194,7 +195,7 @@ function main() {
       { start: 5, end: 7 },
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
-      { next_back: $rangeNextBack },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     ).join(", ")}]`,
   );
   console.log(

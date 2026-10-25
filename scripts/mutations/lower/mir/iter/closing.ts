@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "compiled-std-source-unclosed",
     breaks: "a `map` of a `peekable()` of an iterator with a destructor never drops it",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty);\n",
+    find: "                let compiled = self.compiled_struct_at(ty, span);\n",
     replace: "                let compiled = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },

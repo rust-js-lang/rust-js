@@ -222,4 +222,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
+  {
+    name: "held-rev-range-bounds-of",
+    breaks: "a held reversed range's bounds are read as one made in place's, `.of`",
+    file: "src/lower/std_types/range.rs",
+    find: "                true => \"of\",\n                false => \"iter\",",
+    replace: "                true => \"of\",\n                false => \"of\",",
+    tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
+  },
 ];

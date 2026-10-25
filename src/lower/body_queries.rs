@@ -135,6 +135,10 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) held_guards: HashSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
     pub(super) present_calls: HashSet<Span>,
+    /// Where each `rev()` is whose `Rev` a std iterator's method steps
+    /// where it's made, and where each such method is, `in_place_revs`'s.
+    pub(super) in_place_revs: HashSet<Span>,
+    pub(super) in_place_rev_steps: HashSet<Span>,
     /// Each value the body's patterns test and the `const` they name it by,
     /// `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: HashMap<PatternValue<'tcx>, Option<DefId>>,
@@ -150,6 +154,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
+        let (in_place_revs, in_place_rev_steps) = in_place_revs(tcx, thir);
         Self {
             kept_casts: whole_casts(tcx, thir),
             named_callbacks: named_callbacks(tcx, thir),
@@ -157,6 +162,8 @@ impl<'tcx> BodyFacts<'tcx> {
             registered_equalities: registered_equalities(tcx, thir),
             held_guards: held_guards(tcx, thir),
             present_calls: present_calls(tcx, thir),
+            in_place_revs,
+            in_place_rev_steps,
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,
@@ -718,6 +725,69 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| given_present(tcx, thir, e))
         .collect()
+}
+
+/// Each `rev()` whose `Rev` is given, as what's called or an argument,
+/// where it's stepped as a JS iterator: to a std function or method not
+/// compiled, `v.iter().rev().map(f)`'s `map`, a `for` loop's `into_iter`,
+/// `zip(a, v.iter().rev())`, or to a type parameter of the crate's
+/// function given a JS iterator, not as it is (ADR 0061): its `fn_span`,
+/// and that call's. No one else holds it, so it's what the recognizers
+/// make of it, `v.toReversed()`; one held, by a `let`, a field, a
+/// parameter of its own type or one given as it is, or given to a compiled
+/// std body, `fuse()`'s, is std's struct, `{ iter }` (ADR 0871).
+fn in_place_revs<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, HashSet<Span>) {
+    let Some(rev) = super::recognition::compiled_provided_method(tcx, "Iterator", "rev") else {
+        return Default::default();
+    };
+    let (mut found, mut steps) = (HashSet::new(), HashSet::new());
+    for e in thir.exprs.indices() {
+        let ExprKind::Call {
+            fun,
+            ref args,
+            fn_span: at,
+            ..
+        } = thir[e].kind
+        else {
+            continue;
+        };
+        let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+            continue;
+        };
+        let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
+        // A trait's method called on it, but `Iterator`'s or
+        // `IntoIterator`'s, which step it as a JS iterator: `next_back()`,
+        // `len()` or `clone()`, `Rev`'s own compiled impl's, of its struct.
+        use super::recognition::{StdItem, std_item};
+        let on_it_by_its_impl = tcx
+            .trait_of_assoc(callee)
+            .is_some_and(|tr| ![std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)].contains(&tr));
+        let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        for (index, &arg) in args.iter().enumerate() {
+            // Or borrowed for it, `rev().nth(n)`'s `&mut`, which it steps
+            // there too.
+            let arg = match thir[strip(thir, arg)].kind {
+                ExprKind::Borrow { arg, .. } => strip(thir, arg),
+                _ => strip(thir, arg),
+            };
+            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {
+                continue;
+            };
+            if !matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if id == rev) {
+                continue;
+            }
+            let given_js = callee.is_local()
+                && matches!(inputs.get(index).map(|input| input.peel_refs().kind()), Some(ty::Param(param))
+                    if !super::iterators::given_as_it_is(tcx, callee, *param));
+            let its_self = matches!(inputs.get(index).map(|input| input.peel_refs().kind()),
+                Some(ty::Param(param)) if param.name == rustc_span::symbol::kw::SelfUpper);
+            if std && !(its_self && on_it_by_its_impl) || given_js {
+                found.insert(fn_span);
+                steps.insert(at);
+            }
+        }
+    }
+    (found, steps)
 }
 
 /// Each guard `if let Some(v) = value` of an arm of `match

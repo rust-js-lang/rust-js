@@ -9,13 +9,22 @@
 // length a use site gives, of its compiled `next_back` and `len` with that
 // use's dictionaries, `$knowing`'s. It's a `$Steps` (ADR 0669), whose fold,
 // a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
-// closing it closes nothing, as before.
+// closing it closes nothing, but of a kind dropped by closing, a `Rev`'s,
+// whose `steps.close` drops what it holds.
 function $stdIterator(struct, steps) {
   const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
   it.$steps = steps;
   it.next = () => step(steps.next(it));
-  it.return = () => ({ done: true, value: undefined });
+  // Closed, of a kind dropped by closing, `Rev`'s: what it holds dropped,
+  // once, `steps.close`'s (ADR 0871); another's closes nothing.
+  it.return = () => {
+    if (steps.close !== undefined && !it.$closed) {
+      it.$closed = true;
+      steps.close(it);
+    }
+    return { done: true, value: undefined };
+  };
   if (steps.fold !== undefined) {
     it.fold = (init, f) => steps.fold(it, init, f);
   }

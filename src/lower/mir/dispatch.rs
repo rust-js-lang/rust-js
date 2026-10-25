@@ -583,6 +583,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `def_id` is std's, as it's called with `generic_args`: not
     /// the crate's, a binding, a call of a function value, nor a trait's
     /// that resolves to the crate's impl.
+    /// Whether a call of `def_id` at `span` is a `rev()` whose `Rev` a std
+    /// iterator's method steps where it's made, `body_queries::in_place_revs`
+    /// says: what the recognizers make of it, not std's compiled `rev()`
+    /// (ADR 0871).
+    fn rev_in_place(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+        crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "rev") == Some(def_id)
+            && self.frame.facts.in_place_revs.contains(&span)
+    }
+
+    /// Whether a trait method's call of `def_id` at `span` is a std
+    /// iterator's, a JS iterator's method: not one the crate's impl has,
+    /// in a copied default as its impl calls it (ADR 0492), nor a compiled
+    /// std body's, but a `rev()` stepped where it's made (ADR 0871).
+    fn std_iterator_call(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<bool> {
+        Ok(!self.resolves_to_crate(def_id, generic_args)? || self.rev_in_place(def_id, span))
+    }
+
     fn is_std_call(&self, def_id: rustc_span::def_id::DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<bool> {
         let tcx = self.tcx;
         if self.is_rust_fn(def_id) || bindings::is_binding(tcx, def_id) {
@@ -733,7 +755,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // to one is it, an object its helpers step in place. Not one the
         // crate's impl has, in a copied default as its impl calls it (ADR
         // 0492).
-        if tcx.trait_of_assoc(def_id).is_some() && !self.resolves_to_crate(def_id, generic_args)? {
+        if tcx.trait_of_assoc(def_id).is_some() && self.std_iterator_call(def_id, generic_args, span)? {
             let mut exprs = (values.clone().into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;

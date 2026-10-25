@@ -417,6 +417,14 @@ What's refused is in [the limitations](limitations.md).
   `PartialEq` of the rest ([0336](../decisions/0336-slice-prefixes-by-eq.md)).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](../decisions/0061-generic-iterators.md)).
+- **A `Peekable`, a `Fuse` and a held `Rev` are std's own structs,**
+  compiled from std's bodies into `@rust-js/std`: `let mut r =
+  v.iter().rev()` is `iterator_rev($iter(v), { next: $next }, { next_back:
+  $nextBack })`, and its `next_back()`, `len()`, clone and `Debug` std's.
+  A `rev()` stepped where it's made reads as a JS chain,
+  `v.iter().rev().map(f).collect()` being `v.toReversed().map(f)`
+  ([0561](../decisions/0561-std-bodies.md),
+  [0871](../decisions/0871-rev-is-stds.md)).
 - **A clone of std's iterator over an array is what's left of the array,**
   its owned items copied where they need it
   ([0181](../decisions/0181-iterator-clones.md)).

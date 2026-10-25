@@ -11,6 +11,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $some,
   $someValue,
 } from "@rust-js/runtime";
@@ -61,9 +62,17 @@ function secondLast(iter, IIterator, IDoubleEndedIterator, IClone) {
 
 function main() {
   const range = { inner: { start: 0, end: 4 } };
-  const pop = Ends.pop(range, { next_back: $rangeNextBack }, { len: $rangeLen });
+  const pop = Ends.pop(
+    range,
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    { len: $rangeLen },
+  );
   const shift = Ends.shift(range, { next: $rangeNext });
-  const value = Ends.pop(range, { next_back: $rangeNextBack }, { len: $rangeLen });
+  const value = Ends.pop(
+    range,
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    { len: $rangeLen },
+  );
   console.log(
     `${pop == null ? "None" : `Some((${pop[0]}, ${pop[1]}))`} ${shift == null ? "None" : `Some(${shift})`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
   );
@@ -101,7 +110,7 @@ function main() {
   const value$8 = outer(
     { start: 5, end: 8 },
     { next: $rangeNext },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
   console.log(
@@ -120,7 +129,7 @@ function main() {
   const value$10 = secondLast(
     { start: 5, end: 9 },
     { next: $rangeNext },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
   const value$11 = secondLast(

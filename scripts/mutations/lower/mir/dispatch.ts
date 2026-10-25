@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "crate-impl-iterator-route",
     breaks: "a copied default's `self.next()` of the crate's iterator is stepped as a JS iterator",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if tcx.trait_of_assoc(def_id).is_some() && !self.resolves_to_crate(def_id, generic_args)? {\n",
-    replace: "        if tcx.trait_of_assoc(def_id).is_some() {\n",
+    find: "        Ok(!self.resolves_to_crate(def_id, generic_args)? || self.rev_in_place(def_id, span))\n",
+    replace: "        Ok(true || self.rev_in_place(def_id, span))\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
@@ -572,5 +572,14 @@ export const mutations: Mutation[] = [
     find: "        (known == Std::Same && matches!(output.kind(), ty::Ref(_, _, ty::Mutability::Mut)))\n            .then(|| Value::Expr(place.clone()))\n",
     replace: "        None\n",
     tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
+  },
+  {
+    name: "rev-in-place-compiled",
+    breaks: "a `rev()` stepped where it's made is std's compiled `rev()`, not the recognizers'",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        crate::lower::recognition::compiled_provided_method(self.tcx, \"Iterator\", \"rev\") == Some(def_id)\n            && self.frame.facts.in_place_revs.contains(&span)",
+    replace: "        crate::lower::recognition::compiled_provided_method(self.tcx, \"Iterator\", \"rev\") == Some(def_id)\n            && self.frame.facts.in_place_revs.contains(&span)\n            && false",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
 ];

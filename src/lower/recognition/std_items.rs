@@ -172,11 +172,23 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Fuse", Some("FuseImpl"), "nth_back"),
     ("Fuse", Some("Clone"), "clone"),
     ("Fuse", Some("Debug"), "fmt"),
+    ("Rev", Some("Iterator"), "next"),
+    ("Rev", Some("Iterator"), "size_hint"),
+    ("Rev", Some("Iterator"), "nth"),
+    ("Rev", Some("Iterator"), "find"),
+    ("Rev", Some("Iterator"), "fold"),
+    ("Rev", Some("DoubleEndedIterator"), "next_back"),
+    ("Rev", Some("DoubleEndedIterator"), "nth_back"),
+    ("Rev", Some("DoubleEndedIterator"), "rfold"),
+    ("Rev", Some("DoubleEndedIterator"), "rfind"),
+    ("Rev", Some("ExactSizeIterator"), "len"),
+    ("Rev", Some("Clone"), "clone"),
+    ("Rev", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
 /// its name: a function over `Self`, given its dictionary (ADR 0185).
-const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable"), ("Iterator", "fuse")];
+const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[("Iterator", "peekable"), ("Iterator", "fuse"), ("Iterator", "rev")];
 
 thread_local! {
     /// `compiled_std`'s answer, found once for the session's rustc.

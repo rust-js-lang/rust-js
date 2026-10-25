@@ -607,6 +607,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             props.push(crate::js::Prop::Field("fold".into(), fold));
             props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
         }
+        // Of a kind dropped by closing, `Rev`'s, which an adapter over it
+        // closes as it's closed: closing it drops what it holds, each field
+        // by its drop, as Rust drops the struct (ADR 0871).
+        if self.dropped_by_closing(ty)
+            && let ty::Adt(adt, args) = ty.peel_refs().kind()
+        {
+            let mut body = Vec::new();
+            for field in adt.all_fields() {
+                let field_ty = self
+                    .tcx
+                    .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
+                let value = Expr::member(Expr::var("iterator"), field.name.as_str());
+                self.drop_value(value, field_ty, span, &mut body)?;
+            }
+            if !body.is_empty() {
+                props.push(crate::js::Prop::Field(
+                    "close".into(),
+                    Expr::arrow(vec!["iterator".into()], body),
+                ));
+            }
+        }
         Ok(Expr::object(props))
     }
 
@@ -727,7 +748,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` of another, or where this use has neither.
     pub(in crate::lower) fn knowing_held(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let ty = ty.peel_refs();
-        if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
+        if self.compiled_struct_at(ty, span) {
             let traits = [
                 (self.recognition().double_ended_iterator(), "next_back"),
                 (self.recognition().exact_size_iterator(), "len"),

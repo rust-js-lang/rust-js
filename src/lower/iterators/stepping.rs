@@ -218,6 +218,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
+            if std::env::var("RJ_DEBUG").is_ok() && crate::lower::recognition::is_compiled_std(self.tcx, callee) {
+                eprintln!(
+                    "given {callee:?} input={input:?} given={given:?} as_it_is={:?} back={} value={}",
+                    match input.kind() {
+                        ty::Param(p) => Some(crate::lower::iterators::given_as_it_is(self.tcx, callee, *p)),
+                        _ => None,
+                    },
+                    self.steps_back_by_dictionary(callee, input),
+                    matches!(value.kind, js::ExprKind::Var(_))
+                );
+            }
             let (input, given) = match *input.kind() {
                 ty::Ref(_, inner, _) => (inner, given.peel_refs()),
                 _ => (input, given),
@@ -233,6 +244,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else if self.double_ended_param(callee, input) {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_double_ended(held, given, span)?;
+            // One given as it is to a std body compiled, `rev()`'s `self`,
+            // that steps it from its back by its dictionary: of std's
+            // adapter, a JS iterator, whose `next_back` is `$nextBack`,
+            // made knowing its back where it's given (ADR 0871).
+            } else if crate::lower::recognition::is_compiled_std(self.tcx, callee)
+                && matches!(input.kind(), ty::Param(param) if crate::lower::iterators::given_as_it_is(self.tcx, callee, *param))
+                && self.steps_back_by_dictionary(callee, input)
+                && !crate::lower::recognition::known_by_bounds(given)
+                && !self.is_user_iterator(given)
+                && self.range_kind(given).is_none()
+            {
+                let held = std::mem::replace(value, Expr::undefined());
+                *value = self.as_double_ended(held, given, span)?;
             } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_js_iterator(held, given, span)?;
@@ -245,6 +269,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(())
+    }
+
+    /// Whether `callee` bounds its type parameter `input` by
+    /// `DoubleEndedIterator`, which it's given as it is, by its dictionary.
+    fn steps_back_by_dictionary(&self, callee: DefId, input: ty::Ty<'tcx>) -> bool {
+        let env = ty::TypingEnv::post_analysis(self.tcx, callee);
+        (self.declared_bounds(input, env.param_env).into_iter())
+            .any(|bound| crate::lower::recognition::is_double_ended(self.tcx, bound))
     }
 
     /// Whether what `callee` holds for its drop `index`, of the type `ty`

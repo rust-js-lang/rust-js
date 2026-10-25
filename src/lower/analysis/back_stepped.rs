@@ -12,9 +12,9 @@ use crate::lower::recognition::{
     is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
-use rustc_middle::thir::ExprKind;
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Each such type `all_bodies` step from its back, regions erased.
 pub(super) fn back_stepped<'tcx>(
@@ -24,11 +24,23 @@ pub(super) fn back_stepped<'tcx>(
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> HashSet<Ty<'tcx>> {
     let mut stepped = HashSet::new();
+    let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     for body in all_bodies {
-        for expr in body.thir.exprs.iter() {
+        // A `rev()` held, std's compiled `Rev`, which steps what it's given
+        // by its dictionary, not one a std iterator's method steps where
+        // it's made, which the recognizers reverse (ADR 0871).
+        let in_place = &body.facts.in_place_revs;
+        let called: HashMap<ExprId, rustc_span::Span> = (body.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                ExprKind::Call { fun, fn_span, .. } => Some((fun, fn_span)),
+                _ => None,
+            })
+            .collect();
+        for (at, expr) in body.thir.exprs.iter_enumerated() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            let held_rev = Some(callee) == rev && called.get(&at).is_none_or(|span| !in_place.contains(span));
             // What it asks to be double-ended holds such a type, as an
             // `Either` of filters does, stepped from its back by the impl
             // that asks it of what it holds; the type asked itself is its
@@ -54,8 +66,10 @@ pub(super) fn back_stepped<'tcx>(
                         // The type asked itself too where it's of an array's
                         // items with a destructor, which `rev()` can't step
                         // from its back once it's held in a variable.
-                        if held != asked || given || dropping_items(recognition, held, &drops) {
-                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given, &drops));
+                        // A held `Rev`'s, of an array's items too, which no
+                        // form of the caller's reverses once it's held.
+                        if held != asked || given || held_rev || dropping_items(recognition, held, &drops) {
+                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given || held_rev, &drops));
                         }
                         // Given behind an `impl`, each it holds too, made
                         // where it's made, which no call of the caller's

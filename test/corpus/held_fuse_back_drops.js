@@ -15,6 +15,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -123,7 +124,7 @@ function main() {
     (iterator) =>
       padDoubleEndedIterator_nextBack(
         iterator,
-        { next_back: $rangeNextBack },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
         { len: $rangeLen },
         true,
       ),

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "std-iterator-close-unrun",
+    breaks: "closing a compiled `Rev` drops nothing it holds",
+    file: "src/runtime/std_iterator.js",
+    find: "      steps.close(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
+  },
 ];

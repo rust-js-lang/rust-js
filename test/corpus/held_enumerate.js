@@ -17,6 +17,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $sizeHint,
   $traitImpl,
@@ -242,7 +243,11 @@ function main() {
   );
   // Of a range, stepped as it is by its dictionaries.
   const counted = { inner: { start: 1, end: 4 } };
-  const value$7 = Wrap.lastTripled(counted, { next: $rangeNext }, { next_back: $rangeNextBack });
+  const value$7 = Wrap.lastTripled(
+    counted,
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  );
   const value$8 = $rangeNext(counted.inner);
   console.log(
     `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
@@ -252,7 +257,7 @@ function main() {
   const value$9 = positionsIterator_next(big);
   const value$10 = positionsDoubleEndedIterator_nextBack(
     big,
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { len: $rangeLen },
   );
   const value$11 = positionsIterator_next(big);

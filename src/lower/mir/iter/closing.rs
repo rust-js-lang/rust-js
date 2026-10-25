@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let owns = match self.recognition().owned_into_items(ty) {
             Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
             None => {
-                let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty);
+                let compiled = self.compiled_struct_at(ty, span);
                 self.given_drop(ty).is_some()
                     || (self.is_user_iterator(ty) || compiled) && self.drops(ty) != crate::lower::drops::Drops::Nothing
             }
@@ -108,9 +108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.held_drop_function(ty, stepped, span),
                     // A compiled std iterator's struct is the JS iterator
                     // `$closing` closes, `it`, as `it.of` is of one stepped.
-                    false if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) => {
-                        self.drop_function_of(ty, Some("it"), span)
-                    }
+                    false if self.compiled_struct_at(ty, span) => self.drop_function_of(ty, Some("it"), span),
                     false => self.held_drop_function(ty, stepped, span),
                 }
             }

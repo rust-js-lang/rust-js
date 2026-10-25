@@ -397,4 +397,13 @@ export const mutations: Mutation[] = [
     replace: "        let pointee = item.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
+  {
+    name: "in-place-rev-a-struct",
+    breaks: "a `Rev` stepped where it's made is taken as std's struct, closed after it's consumed",
+    file: "src/lower/mir/iter.rs",
+    find: "            && !(self.recognition().reversed(ty).is_some() && self.frame.facts.in_place_rev_steps.contains(&span))",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
 ];

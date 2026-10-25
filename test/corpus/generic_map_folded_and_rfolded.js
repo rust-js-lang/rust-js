@@ -9,6 +9,7 @@ import {
   $nextBackSome,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $repeating,
   $someValue,
 } from "@rust-js/runtime";
@@ -79,7 +80,7 @@ function main() {
       return all;
     },
     { next: $rangeNext },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   // One that steps forward only, which has no back to give.
   const words = wrapIterator_fold({ inner: $repeating("a").take(3) }, "", (all, [w]) => all + w, {
@@ -87,7 +88,10 @@ function main() {
   });
   console.log(`[${forward.join(", ")}] [${backward.join(", ")}] ${words}`);
   const each = { inner: { start: 4, end: 6 } };
-  const nextBack = wrapDoubleEndedIterator_nextBack(each, { next_back: $rangeNextBack });
+  const nextBack = wrapDoubleEndedIterator_nextBack(each, {
+    next_back: $rangeNextBack,
+    nthBack: $rangeNthBack,
+  });
   const next = wrapIterator_next(each, { next: $rangeNext });
   const value = wrapIterator_next(each, { next: $rangeNext });
   console.log(
@@ -97,7 +101,7 @@ function main() {
   const arg = Wrap.lastKept(
     { inner: { start: 6, end: 8 } },
     { next: $rangeNext },
-    { next_back: $rangeNextBack },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
   console.log(`${counted} ${arg == null ? "None" : `Some(${arg})`}`);
 }

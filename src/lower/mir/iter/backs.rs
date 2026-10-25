@@ -251,14 +251,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::call_helper(helper, args)
             }
-            // A filter of one, of items with nothing to drop as it passes
-            // them (ADR 0526).
-            Some(IterMethod::Filter)
-                if self.knows_its_back(output)
-                    && self
-                        .iterator_item(output)
-                        .is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing) =>
-            {
+            // A filter of one (ADR 0526), given its items' drop, of items with
+            // a destructor, which drops each it doesn't keep as it passes it
+            // (ADR 0098), as a compiled `Rev` steps it from its back (ADR
+            // 0871).
+            Some(IterMethod::Filter) if self.knows_its_back(output) => {
                 let it = match self.given_stepped(receiver.clone(), iter_ty, true, false) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
@@ -272,7 +269,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = self.closing(it, held, span)?;
                 let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
                 let p = self.unary_callback(values.next().expect("the test"), own);
-                Expr::call_helper("$filterEnds", vec![it, p])
+                let mut given = vec![it, p];
+                if let Some(item) = self.iterator_item(output) {
+                    given.extend(self.std_drop_function(item, span)?);
+                }
+                Expr::call_helper("$filterEnds", given)
             }
             _ => return Ok(None),
         }))

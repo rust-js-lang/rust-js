@@ -238,6 +238,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// Whether a value of `ty` the call at `span` takes is std's compiled
+    /// struct, a compiled std iterator's (ADR 0561): not a `Rev` it steps
+    /// where it's made, which is what the recognizers make of it, a JS
+    /// iterator that closes as it ends (ADR 0871).
+    pub(in crate::lower) fn compiled_struct_at(&self, ty: Ty<'tcx>, span: Span) -> bool {
+        crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+            && !(self.recognition().reversed(ty).is_some() && self.frame.facts.in_place_rev_steps.contains(&span))
+    }
+
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
     /// `receiver` with something to drop, is dropped after its method, as
     /// the method's end drops it and JS doesn't: consumed, `collect()`, then
@@ -283,7 +292,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A compiled std iterator's struct, `Peekable`'s, is dropped as a
         // struct is, by its fields' drops, given where it holds only type
         // parameters' values (ADR 0561).
-        let compiled = crate::lower::recognition::is_compiled_std_iterator(self.tcx, receiver);
+        let compiled = self.compiled_struct_at(receiver, span);
         let dropped = match params_only {
             true => {
                 self.given_drop(receiver).is_some()
@@ -354,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.value_into_iter(value, receiver_ty, output));
         }
         // A range's own `nth`, `last` and `count`, of its bounds (#163).
-        if let Some(stepped) = self.range_own_step(std_method, iter_ty, &values) {
+        if let Some(stepped) = self.range_own_step(std_method, iter_ty, &values, span) {
             return Ok(Some(stepped));
         }
         // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).
