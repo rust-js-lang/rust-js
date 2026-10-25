@@ -13,6 +13,7 @@ import {
   $range,
   $rev,
   $skipping,
+  $stepBy,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -214,6 +215,43 @@ function main() {
       .toArray()
       .join(", ")}]`,
   );
+  const value$11 = $rev($closing($iter(louds(34, 4)), $dropEach(loudDrop_drop)));
+  let tmp$9;
+  try {
+    tmp$9 = louds(38, 1);
+  } catch (error) {
+    value$11.return();
+    throw error;
+  }
+  const stepBy = $held(
+    $stepBy(
+      $lazyChain(value$11, $closing($iter(tmp$9), $dropEach(loudDrop_drop))),
+      3,
+      loudDrop_drop,
+    ),
+  );
+  let stepped;
+  try {
+    stepped = $nthDropping($lent(stepBy), 1, loudDrop_drop, false);
+  } catch (error) {
+    stepBy.return();
+    throw error;
+  }
+  try {
+    stepBy.return();
+  } catch (error) {
+    if (stepped != null) {
+      loudDrop_drop(stepped);
+    }
+    throw error;
+  }
+  const map$4 = (l) => {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  };
+  const value$12 = stepped ? map$4(stepped) : undefined;
+  console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

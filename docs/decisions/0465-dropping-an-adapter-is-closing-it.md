@@ -208,3 +208,10 @@ case no longer steps by `next`. The readability baseline's `$iter` and
 renamed `x$1` shares each grow by 0.5 in 10,000 lines, both from that
 case's five new lines: their `Vec`s, and the temporaries made in each
 `try`.
+
+A `Chain` with such a side is `nths_a_slice` too, so its `step_by` is
+`$stepBy`, which asks the chain's `nth`, std's `advance_by` of each side
+(fuzz seed 46975). Held by `chain_sides_own_steps.rs`'s `step_by(3)` and
+the mutation `chain-nths-no-slice`. That line's two `Vec`s grow the
+readability baseline's `$iter` share by 0.2 in 10,000 lines and its
+renamed `x$1` share by 0.5, each made in a `try` that drops the other.

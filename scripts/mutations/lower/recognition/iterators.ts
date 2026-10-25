@@ -780,4 +780,12 @@ export const mutations: Mutation[] = [
     replace: " | \"std::iter::SkipWhile\"\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_inspect).rs$"],
   },
+  {
+    name: "chain-nths-no-slice",
+    breaks: "`rev().chain(..).step_by(2)` of a `Vec` is a filter dropping what it steps over from the back one at a time, not `$stepBy` asking the chain's `nth`, one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                self.nths_a_slice(args.type_at(0)) || self.nths_a_slice(args.type_at(1))\n",
+    replace: "                false\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
 ];
