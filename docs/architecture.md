@@ -239,7 +239,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
-| Which `Rc`s are counted, by the type each points at and what may be it (ADR 0848) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
+| Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |

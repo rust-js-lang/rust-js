@@ -212,7 +212,7 @@ pub fn chained(s: &str) -> String {
 // React's `cache`: a closure's loop variable shadowed by its cast, `let
 // arg: &JsObject = unsafe { js::cast(arg) };`, is that variable, as a
 // function's is: nothing outside the closure sets what it declares (ADR
-// 0849). Its JS had `const arg$1 = arg;`.
+// 0853). Its JS had `const arg$1 = arg;`.
 test("a closure's loop variable shadowed by its own value is that variable", () => {
   const dir = fixture("shadowed-closure-loop-variable");
   const node = buildNode();

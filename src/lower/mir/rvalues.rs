@@ -6,7 +6,7 @@ use super::*;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `terminator` calls a `Cell`'s `get`, `set`, `replace` or
     /// `take` of `made`, a reference to it, which keeps nothing of `made`
-    /// once it returns (ADR 0849).
+    /// once it returns (ADR 0853).
     fn keeps_no_cell(&self, terminator: &mir::Terminator<'tcx>, made: Local) -> bool {
         let TerminatorKind::Call { func, args, .. } = &terminator.kind else {
             return false;
@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // of what `error` is now, held, as a `&mut`'s above. Not where
                 // the handle's read by its `Cell`'s `get` or `set` before
                 // `error` is set again, `error.title.get()`: the place it
-                // reads then is the one it was (ADR 0849).
+                // reads then is the one it was (ADR 0853).
                 if matches!(kind, BorrowKind::Shared)
                     && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))
                     && place.projection.first() == Some(&PlaceElem::Deref)

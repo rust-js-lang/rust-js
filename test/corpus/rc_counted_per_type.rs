@@ -1,4 +1,4 @@
-// Each type's `Rc`s are counted apart (ADR 0848): an `Rc<Cell<f64>>` whose
+// Each type's `Rc`s are counted apart (ADR 0852): an `Rc<Cell<f64>>` whose
 // count is read is `{ value, strong, weak }`, an `Rc<Cell<u32>>` beside it
 // the value itself; and a generic function's `Rc<Slot<T>>` is every
 // `Rc<Slot<_>>`, counted with the ones whose counts are read. Generic code's

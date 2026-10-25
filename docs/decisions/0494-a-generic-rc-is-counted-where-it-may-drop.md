@@ -4,7 +4,7 @@ Status: Accepted. Extends [0320](0320-counted-rcs.md). Amended by
 [0844](0844-a-library-that-reads-no-count-counts-no-rc.md): of a parameter
 that may have a destructor, not a `T: Copy`, where a body holds it, through
 the fields of what it holds. Amended by
-[0848](0848-each-types-rcs-are-counted-apart.md): it counts the `Rc`s
+[0852](0852-each-types-rcs-are-counted-apart.md): it counts the `Rc`s
 of what it may be, not every one, and only where a body owns it, not
 behind a reference or a `Weak`.
 

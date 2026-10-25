@@ -65,7 +65,7 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 
 // A library's contract (ADR 0100): each item another crate can reach, by
 // rustc's key for it, with its JS name and the drops it's given; and the
-// types whose `Rc`s it counts (ADR 0848).
+// types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
     version: 4, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],

@@ -1,4 +1,4 @@
-# 0849. A variable set again is read, and given what's made, where it is
+# 0853. A variable set again is read, and given what's made, where it is
 
 Status: Accepted. Narrows the handle held for a `Cell` reached through a
 reference written again (MIR's lowering, ADR 0364); extends

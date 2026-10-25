@@ -531,7 +531,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](0647-type-name-as-react-writes-it.md)
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound; 0686: the hook's type is named)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](0649-inline-never-is-noinline.md)
-- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0849: a binding the variable it shadows is given last)*
+- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0853: a binding the variable it shadows is given last)*
 - [0651 A `let`, then its fallback where it's falsy, is `||`](0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](0652-consecutive-appends-are-one.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*
@@ -637,7 +637,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
-- [0849 A variable set again is read, and given what's made, where it is](0849-a-variable-set-again-is-read-and-given-where-it-is.md)
+- [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -647,10 +647,10 @@ reordered, and git merges this file by keeping both sides' lines
 - [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md)
 - [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(amended by 0847: each type's `Rc`s counted apart, and its contract lists them)*
-- [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(amended by 0848: each type's `Rc`s counted apart, and its contract lists them)*
+- [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)
-- [0848 Each type's `Rc`s are counted apart](0848-each-types-rcs-are-counted-apart.md)
+- [0852 Each type's `Rc`s are counted apart](0852-each-types-rcs-are-counted-apart.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
@@ -713,7 +713,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0491 `cycle()` keeps a clone of its iterator](0491-cycle-clones-its-iterator.md)
 - [0492 A kept default steps its impl's iterator as the impl does](0492-a-kept-default-steps-its-impls-iterator.md)
 - [0493 A zip of arrays' iterators steps from its back](0493-a-zip-steps-from-its-back.md)
-- [0494 An `Rc` of a type parameter's value is counted where it may drop](0494-a-generic-rc-is-counted-where-it-may-drop.md) *(amended by 0844: of a parameter that may have a destructor where a body holds it; by 0848: what it may be, where a body owns it)*
+- [0494 An `Rc` of a type parameter's value is counted where it may drop](0494-a-generic-rc-is-counted-where-it-may-drop.md) *(amended by 0844: of a parameter that may have a destructor where a body holds it; by 0852: what it may be, where a body owns it)*
 - [0495 A copied default asks its impl's drops in its impl's terms](0495-a-copied-default-asks-its-impls-drops-in-its-impls-terms.md)
 - [0496 `and` drops what it gives up](0496-and-drops-what-it-gives-up.md)
 - [0497 A std trait's dictionary drops its associated type](0497-a-std-traits-dictionary-drops-its-associated-type.md)
@@ -742,7 +742,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0520 A counted `Rc<dyn T>` is its pair](0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
 - [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md)
 - [0522 A closure cloned apart is made again](0522-a-closure-cloned-apart-is-made-again.md)
-- [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none; by 0848: the types each counts, which its contract lists)*
+- [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none; by 0852: the types each counts, which its contract lists)*
 - [0524 A library's `dyn` in its consumer](0524-a-librarys-dyn-in-its-consumer.md)
 - [0525 A cloned `map` or `filter` is made again](0525-a-cloned-map-is-made-again.md)
 - [0526 A `filter` steps from its back](0526-a-filter-steps-from-its-back.md)

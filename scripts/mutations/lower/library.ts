@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "uncounted-library-rcs-unseen",
-    breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0848)",
+    breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
     file: "src/lower/library.rs",
     find: "                false => reached\n                    .uncounted_rcs\n                    .push((pointee, tcx.crate_name(of.krate).to_string())),\n",
     replace: "                false => {}\n",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-shape-any",
-    breaks: "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0848)",
+    breaks: "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0852)",
     file: "src/lower/library.rs",
     find: "            *of == head_key(tcx, &head)\n",
     replace: "            true\n",

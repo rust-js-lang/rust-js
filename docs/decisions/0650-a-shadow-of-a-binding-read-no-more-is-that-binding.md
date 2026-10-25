@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0609](0609-a-shadowed-parameter-is-assigned.md),
 whose parameter at a function's top is now any binding of the shadow's
 block; 0609's pass in preparation is gone, this one is tidy's. Extended by
-[0849](0849-a-variable-set-again-is-read-and-given-where-it-is.md): a
+[0853](0853-a-variable-set-again-is-read-and-given-where-it-is.md): a
 binding the variable it shadows is given last, the variable given it
 where it's made.
 

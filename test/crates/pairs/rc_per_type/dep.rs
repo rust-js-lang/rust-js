@@ -1,5 +1,5 @@
 //! A library that counts the `Rc`s of one type and not another's (ADR
-//! 0848): React's context, read by a generic function of any `T`, which
+//! 0852): React's context, read by a generic function of any `T`, which
 //! drops nothing of it, is the value itself; a generic `Slot<T>` its code
 //! owns, whose last `Rc` may drop a consumer's value with a destructor, is
 //! counted, and so is every `Rc<Slot<_>>`; a shelf of `Rc<Item<T>>`s it

@@ -374,7 +374,7 @@ fn prepared(function: &mut js::Function) {
     function_body(&mut function.params, &mut function.body);
     shadows(&mut function.body, None);
     // A closure's own parameter, shadowed in it, or a variable it declares,
-    // `for (const arg of args)`'s: nothing outside it sets one (ADR 0849).
+    // `for (const arg of args)`'s: nothing outside it sets one (ADR 0853).
     js::each_expr_mut(&mut function.body, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
             let mut own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();

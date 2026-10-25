@@ -414,7 +414,7 @@ pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local)
 /// Whether what the statement at `at` makes, a temporary MIR reads once, a
 /// `&(*node).v` through `local`, a reference written again, is read by
 /// `takes`, a call of what keeps nothing of it, before `local` is written,
-/// every way from `at` (ADR 0849): its place, read there, is the one it
+/// every way from `at` (ADR 0853): its place, read there, is the one it
 /// was, so nothing need hold what `local` is meanwhile. What's written
 /// there is MIR's assignment of `local`: borrowck lets no `&mut` to `local`,
 /// a closure's capture of it, write it between, as `local` is read before.

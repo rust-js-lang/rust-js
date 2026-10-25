@@ -4,7 +4,7 @@
 // old one, and what's made, as Rust does, not the new one alone. A `Cell`
 // read through a reference set again before the read, `node.v.set({ node
 // = b; .. })`, or given to what keeps it, `hold(&node.v)` or a method of
-// its own, `node.v.keep()`, is of the node it was made of (ADR 0849).
+// its own, `node.v.keep()`, is of the node it was made of (ADR 0853).
 use std::cell::Cell;
 use std::panic;
 

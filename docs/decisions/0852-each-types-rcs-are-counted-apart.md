@@ -1,4 +1,4 @@
-# 0848. Each type's `Rc`s are counted apart
+# 0852. Each type's `Rc`s are counted apart
 
 Status: Accepted. Amends [0844](0844-a-library-that-reads-no-count-counts-no-rc.md),
 whose library counted every `Rc` or none, and whose contract said which,

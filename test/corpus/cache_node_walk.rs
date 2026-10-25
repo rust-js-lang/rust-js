@@ -6,7 +6,7 @@
 // `let cache = match node.o.get() { None => { ..; cache } Some(cache) =>
 // cache }`, one variable; `node = match .. { None => { let node = ..; ..;
 // node } .. }`, the node given `node` where it's made; and a closure's
-// loop variable shadowed by its own value, that variable (ADR 0849).
+// loop variable shadowed by its own value, that variable (ADR 0853).
 use std::cell::Cell;
 
 #[derive(Clone, Copy, PartialEq, Debug)]

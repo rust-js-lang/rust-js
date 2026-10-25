@@ -1216,7 +1216,7 @@ fn set_binding(stmt: &mut Stmt) {
 /// given after it, where nothing between names the variable: the variable
 /// given it where it's made, `node = createNode(); cache.set(key, node);`,
 /// as `node = match .. { None => { let node = make(); ..; node } .. }`
-/// reads (ADR 0849). Only of a variable the body declares, or a parameter
+/// reads (ADR 0853). Only of a variable the body declares, or a parameter
 /// of it: one a closure captures may be read after what's between throws,
 /// as it was, by what called the closure. Not where a `break` or a
 /// `continue` between may leave before the variable's given it, nor in a
@@ -1375,7 +1375,7 @@ fn jumps(stmts: &[Stmt]) -> bool {
 /// given what's read, `let cache = node.o; if (!cache) { cache = new
 /// WeakMap(); node.o = cache; }`, as a cache filled the first time it's
 /// read, `match node.o.get() { None => { ..; cache } Some(cache) => cache
-/// }`, reads (ADR 0849). What's read is named as the variable is, given
+/// }`, reads (ADR 0853). What's read is named as the variable is, given
 /// apart, and nowhere else. The other way reads the variable only once
 /// it's given its value, as Rust reads none before, so it's never read as
 /// what's read.

@@ -1,7 +1,7 @@
 // Three crates share one `Rc`: cloned in one, counted in another, its last
 // owner dropped in each, and its `Weak` upgraded before and after (ADR
 // 0523); and one `dep` counts none of, an `Rc<String>`, the value itself
-// in each (ADR 0848).
+// in each (ADR 0852).
 use std::rc::Rc;
 
 pub fn main() {
