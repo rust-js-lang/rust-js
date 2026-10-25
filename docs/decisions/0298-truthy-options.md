@@ -293,3 +293,15 @@ and text's `""`; and the mutations `presence-unmarked` (`js/make.ts`),
 many comments read away, `prev?.types`, has them before its statement, as
 ADR 0444's amendment says, and a new arm, `((prev.types ?? 0) + 1) >>> 0`,
 keeps them before its value in the conditional.
+
+## Amendment: `Expr::cond` alone reads a presence test as a chain (#241)
+
+The `Option`'s `map` turned its `!!o` into `o != null` before
+`Expr::cond`, so the conditional would chain `o?.m(x)`. That was a second
+reader of one rule: `Expr::presence` marks the `!!o` it makes
+`Known::Presence`, and `Expr::cond` reads that mark through `null_test`
+since the amendment above. The `map`'s copy changed nothing, and the
+nightly's `truthy-option-map-unchained` survived. It is gone, along with
+that mutation. A `filter`'s truth test, `!!s` of text, carries no mark,
+so it keeps its conditional. `filter-truth-map-chained` now marks it and
+is caught.

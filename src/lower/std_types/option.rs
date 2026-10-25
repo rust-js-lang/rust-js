@@ -214,8 +214,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // A `filter`'s test is what it keeps, never its presence alone:
                 // `!!s` fails an empty string.
-                let (option, present, presence) = match fused {
-                    Some((kept, value)) => (value, kept, false),
+                let (option, present) = match fused {
+                    Some((kept, value)) => (value, kept),
                     None => {
                         // A property of what's in it, `o.map(|e| e.id)`, is `o?.id`,
                         // which reads `o` once, as a `const` of it would.
@@ -236,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             _ => self.spill(&base, option, out),
                         };
                         let present = self.present(option.clone(), generic_args.type_at(0));
-                        (option, present, true)
+                        (option, present)
                     }
                 };
                 // Of a generic `T`, the closure gets what's inside (ADR 0051).
@@ -280,11 +280,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     value.defined()
                 };
-                // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
-                // (ADR 0298); else its test as it is.
-                let tested = (js::presence_of(&present).filter(|_| presence))
-                    .map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));
-                match Expr::cond(tested.unwrap_or_else(|| present.clone()), value, Expr::undefined()) {
+                // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`,
+                // which `Expr::cond` reads (`null_test`, ADR 0298).
+                match Expr::cond(present.clone(), value, Expr::undefined()) {
                     Expr {
                         kind: js::ExprKind::Cond(_, value, none),
                         span,

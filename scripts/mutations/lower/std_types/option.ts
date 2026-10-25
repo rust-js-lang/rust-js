@@ -56,8 +56,8 @@ export const mutations: Mutation[] = [
     name: "filter-truth-map-chained",
     breaks: "`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`'s presence, which gives `\"\"` of an empty string",
     file: "src/lower/std_types/option.rs",
-    find: "                let tested = (js::presence_of(&present).filter(|_| presence))\n",
-    replace: "                let tested = (js::presence_of(&present).filter(|_| presence || true))\n",
+    find: "                    Some((kept, value)) => (value, kept),\n",
+    replace: "                    Some((kept, value)) => (value, js::Expr { known: js::Known::Presence, ..kept }),\n",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
@@ -211,15 +211,6 @@ export const mutations: Mutation[] = [
     find: "            let (option, _) = self.through_refs(option, option_ref);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","option_result_mut"],
-  },
-  {
-    "name": "truthy-option-map-unchained",
-    "breaks": "`map` of an `Option` never falsy, a pair's, to its first is `option ? option[0] : undefined`, not `option?.[0]`",
-    "file": "src/lower/std_types/option.rs",
-    "find": "                let tested = (js::presence_of(&present).filter(|_| presence))\n                    .map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));\n",
-    "replace": "                let tested: Option<Expr> = None;\n",
-    "tests": ["test/snapshots.test.ts", "-t", "^strings"],
-    "snapshots": true
   },
   {
     "name": "never-falsy-untagged",
