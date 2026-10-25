@@ -32,7 +32,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   // `Option::map` to an element: the element, or nothing.
   expect(js).toContain('{t && <p className="latest">{t.text}</p>}');
   // `()` as an effect's dependencies is `[]`, and its cleanup is a function it returns.
-  expect(js).toContain("useEffect(() => {\n    setTicks((t) => (t + 10) | 0);\n    return () => {\n      setTicks(-1);\n    };\n  }, []);");
+  expect(js).toContain("useEffect(() => {\n    setTicks((t) => (t + 10) | 0);\n    return () => setTicks(-1);\n  }, []);");
   // Components by name, as JSX tags.
   expect(js).toContain("<Todos />\n      <Clock />\n      <Themed />");
   // A context and memoized components, made once, as `const`s of the module
