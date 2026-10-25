@@ -14,6 +14,8 @@ import {
   $lastDropping,
   $lent,
   $mapFold,
+  $nextBackSome,
+  $nextSome,
   $nthBack,
   $nthDropping,
   $overflowing,
@@ -1160,6 +1162,327 @@ export function flattenDoubleEndedIterator_rfold(
       );
 }
 
+export function flatMapIterator_next(
+  flatMap,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_next(
+        flatMap.inner,
+        { next: $nextSome },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_next(
+        flatMap.inner,
+        { next: $nextSome },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_sizeHint(
+  flatMap,
+  UIntoIterator,
+  UConstSize,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_sizeHint(
+        flatMap.inner,
+        { next: $nextSome },
+        UIntoIterator,
+        UConstSize,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_sizeHint(
+        flatMap.inner,
+        { next: $nextSome },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        UConstSize,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_fold(
+  flatMap,
+  init,
+  fold,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_fold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome },
+        UIntoIterator,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_fold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapDoubleEndedIterator_nextBack(
+  flatMap,
+  IIterator,
+  IDoubleEndedIterator,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUDoubleEndedIterator2_nextBack(
+        flatMap.inner,
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              undefined,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_nextBack(
+        flatMap.inner,
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              undefined,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        { next_back: $nextBackSome },
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapDoubleEndedIterator_rfold(
+  flatMap,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  UIntoIterator,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUDoubleEndedIterator2_rfold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome },
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              undefined,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_rfold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome },
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              undefined,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        { next_back: $nextBackSome },
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropU,
+        dropUItem,
+      );
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -1309,6 +1632,123 @@ export function iterator_flatten(
         }
         if (iterator.inner.backiter != null) {
           dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+        }
+      },
+    },
+  );
+}
+
+export function iterator_flatMap(
+  self,
+  f,
+  SelfIterator,
+  UIntoIterator,
+  UConstSize,
+  UIntoIterOneShot,
+  dropSelf,
+  dropU,
+  dropF,
+  dropSelfItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  const iter = iterator_map(self, f, SelfIterator, dropSelf, dropU, dropF, dropSelfItem);
+  return $stdIterator(
+    {
+      inner: {
+        iter: $stdIterator(
+          { iter },
+          {
+            next: (iterator) =>
+              fuseIterator_next(
+                iterator,
+                { next: $nextSome },
+                false,
+                (map) => {
+                  map.return();
+                },
+                dropU,
+              ),
+            hint: (iterator) =>
+              fuseIterator_sizeHint(
+                iterator,
+                { next: $nextSome },
+                (map) => {
+                  map.return();
+                },
+                dropU,
+              ),
+            nth: (iterator, n) =>
+              fuseIterator_nth(
+                iterator,
+                n,
+                { next: $nextSome },
+                false,
+                (map) => {
+                  map.return();
+                },
+                dropU,
+              ),
+            last: (iterator) =>
+              fuseIterator_last(
+                iterator,
+                { next: $nextSome },
+                (map) => {
+                  map.return();
+                },
+                dropU,
+              ),
+            fold: (it, init, f) =>
+              $fuseFold(it, init, f, undefined, (map) => {
+                map.return();
+              }),
+            tryFold: (it, init, f, broke) =>
+              $fuseTryFold(it, init, f, broke, undefined, (map) => {
+                map.return();
+              }),
+            advanceBy: (it, m, drop) =>
+              $fuseAdvanceBy(it, m, drop, undefined, (map) => {
+                map.return();
+              }),
+          },
+        ),
+      },
+    },
+    {
+      next: (iterator) =>
+        flatMapIterator_next(
+          iterator,
+          UIntoIterator,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        ),
+      hint: (iterator) =>
+        flatMapIterator_sizeHint(
+          iterator,
+          UIntoIterator,
+          UConstSize,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        ),
+      close(iterator) {
+        if (iterator.inner.iter.iter != null) {
+          iterator.inner.iter.iter.return();
+        }
+        if (iterator.inner.frontiter != null) {
+          dropUIntoIter?.($someValue(iterator.inner.frontiter));
+        }
+        if (iterator.inner.backiter != null) {
+          dropUIntoIter?.($someValue(iterator.inner.backiter));
         }
       },
     },

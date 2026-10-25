@@ -8,7 +8,7 @@
   "library": {
     "version": 5,
     "name": "rust_js_std",
-    "crate_hash": "b98183f3d617c7384120f1fb9cdefc8c",
+    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
     "items": [
       {
         "key": "608f92abc48d28da832aed8d16346cb9",
@@ -262,6 +262,223 @@
           {
             "index": 1,
             "drop": true
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da49ed279af0b32ac6",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da22aab3e5b5c1aed0",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDoubleEndedIterator_rfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true
+          },
+          {
+            "index": 6,
+            "drop": true
+          },
+          {
+            "index": 7,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dab9de2b0e11025159",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true
+          },
+          {
+            "index": 6,
+            "drop": true
+          },
+          {
+            "index": 7,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da385e7a9c6792532b",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true
+          },
+          {
+            "index": 1,
+            "drop": true
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dab60416fb30c30ca9",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true
+          },
+          {
+            "index": 1,
+            "drop": true,
+            "facts": [
+              "ConstSize"
+            ]
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
           }
         ]
       },
@@ -2220,6 +2437,53 @@
         ]
       },
       {
+        "key": "608f92abc48d28daa8ff57df63fccbd",
+        "rust_path": "rust_js_std::core::iter::Iterator::flat_map",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_flatMap",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "drop": true,
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "drop": true,
+            "facts": [
+              "ConstSize"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "drop": true
+          },
+          {
+            "index": 3,
+            "drop": true
+          },
+          {
+            "index": 4,
+            "drop": true
+          },
+          {
+            "index": 5,
+            "drop": true,
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daaa6715351163e716",
         "rust_path": "rust_js_std::core::iter::Iterator::flatten",
         "module": [
@@ -2509,6 +2773,7 @@
       }
     ],
     "impls": [
+      "608f92abc48d28da100921a6c7079e11",
       "608f92abc48d28da10ae78768806acd4",
       "608f92abc48d28da2b3a75d574f34954",
       "608f92abc48d28da308ed4aa16f54459",
@@ -2543,6 +2808,7 @@
       "608f92abc48d28dade3ef2f184fe8452",
       "608f92abc48d28dae88ef68b00d41a68",
       "608f92abc48d28daeb8dedd4e1e2a616",
+      "608f92abc48d28daecf15647b7c4ef10",
       "608f92abc48d28daed4d080659d3503e",
       "608f92abc48d28daf43de839feed6bbb",
       "608f92abc48d28daf58b2d9f4f4328c5"
@@ -2644,6 +2910,11 @@
         "flattenIterator_fold",
         "flattenDoubleEndedIterator_nextBack",
         "flattenDoubleEndedIterator_rfold",
+        "flatMapIterator_next",
+        "flatMapIterator_sizeHint",
+        "flatMapIterator_fold",
+        "flatMapDoubleEndedIterator_nextBack",
+        "flatMapDoubleEndedIterator_rfold",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -2651,6 +2922,7 @@
         "iterator_map",
         "iterator_inspect",
         "iterator_flatten",
+        "iterator_flatMap",
         "andThenOrClear",
         "flattenCompatIUIterator_next",
         "flattenCompatIUIterator2_next",
@@ -2683,7 +2955,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "a6e78aff61116990"
+      "hash": "9f1f10d4d3aa5759"
     },
     {
       "file": "iter.js.map",

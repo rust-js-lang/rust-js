@@ -1,10 +1,10 @@
 # shape	count	per 10,000 lines
-files	1054
-lines	104063
+files	1055
+lines	104258
 temporaries	1	0.1
 labeled blocks	15	1.4
 while (true)	106	10.2
-$iter	903	86.8
-Iterator.from	160	15.4
+$iter	918	88.1
+Iterator.from	161	15.4
 return;	106	10.2
-renamed x$1	7649	735
+renamed x$1	7661	734.8

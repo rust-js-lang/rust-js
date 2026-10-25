@@ -199,4 +199,13 @@ export const mutations: Mutation[] = [
       "^std_flatten.rs$"
     ]
   },
+  {
+    name: "flat-map-not-held",
+    breaks: "a `flat_map()` a variable holds is the recognizers' JS iterator, sized `(0, None)` where std's counts",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"FlatMap\", \"flat_map\", false),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_flat_map.rs$"],
+    snapshots: true,
+  },
 ];

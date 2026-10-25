@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
       "test/std-package.test.ts"
     ]
   },
+  {
+    name: "adapter-field-not-held",
+    breaks: "what a compiled std struct's field holds as it is, `FlatMap`'s `U::IntoIter`, isn't, so std's `FlatMap` is refused its `U: IntoIterator`'s dictionary",
+    file: "src/lower/iterators.rs",
+    find: "                    || (super::recognition::is_compiled_std_type(tcx, adt.did())\n",
+    replace: "                    || (false\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

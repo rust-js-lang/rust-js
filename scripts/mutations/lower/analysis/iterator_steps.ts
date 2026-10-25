@@ -233,4 +233,12 @@ export const mutations: Mutation[] = [
     replace: "                                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_enumerate).rs$"],
   },
+  {
+    name: "held-adapter-bounds-unasked",
+    breaks: "what a std adapter given to a picked impl asks of its source, `Map<I, F>`'s `I: DoubleEndedIterator` in `FlatMap`'s back, isn't asked, and std's compile refuses stepping `I`",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        if matches!(held.kind(), ty::Adt(..)) && is_iterator_extension(tcx, bound.def_id()) {\n",
+    replace: "                        if false {\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

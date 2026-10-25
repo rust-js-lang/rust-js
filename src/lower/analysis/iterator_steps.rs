@@ -202,6 +202,24 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     } else if foreign.item(method).is_some() {
                         steps_through(&mut stepped, method, impl_args);
                     }
+                    // A std adapter of the caller's parameter it's given,
+                    // `FlatMap`'s `Map<I, F>` that `FlattenCompat`'s back
+                    // asks a `DoubleEndedIterator` of: what that adapter's
+                    // impl asks of it, `I`'s (ADR 0903).
+                    let Some(imp) = tcx.impl_of_assoc(method) else { continue };
+                    for (clause, _) in tcx.clauses_of(imp).instantiate(tcx, impl_args) {
+                        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                            continue;
+                        };
+                        let held = bound.self_ty().skip_binder();
+                        if matches!(held.kind(), ty::Adt(..)) && is_iterator_extension(tcx, bound.def_id()) {
+                            // And `Iterator`, which each extends.
+                            let asked = impl_asks(tcx, typing_env, bound.def_id(), held).unwrap_or_default();
+                            for (param, by) in asked {
+                                stepped.extend([(caller, param, by), (caller, param, iterator)]);
+                            }
+                        }
+                    }
                 }
                 continue;
             }

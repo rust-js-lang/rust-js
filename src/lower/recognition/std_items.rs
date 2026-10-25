@@ -216,6 +216,11 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Flatten", Some("Iterator"), "fold"),
     ("Flatten", Some("DoubleEndedIterator"), "next_back"),
     ("Flatten", Some("DoubleEndedIterator"), "rfold"),
+    ("FlatMap", Some("Iterator"), "next"),
+    ("FlatMap", Some("Iterator"), "size_hint"),
+    ("FlatMap", Some("Iterator"), "fold"),
+    ("FlatMap", Some("DoubleEndedIterator"), "next_back"),
+    ("FlatMap", Some("DoubleEndedIterator"), "rfold"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -228,6 +233,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "map"),
     ("Iterator", "inspect"),
     ("Iterator", "flatten"),
+    ("Iterator", "flat_map"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
@@ -242,6 +248,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Map", "map", true),
     ("Inspect", "inspect", true),
     ("Flatten", "flatten", false),
+    ("FlatMap", "flat_map", false),
 ];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
