@@ -201,6 +201,8 @@ export const mutations: Mutation[] = [
     find: "        FunctionBody::new(commented_end(&stmts), directives, self.stmts(&stmts), b)\n",
     replace: "        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
+  },
+  {
     name: "try-catch-finally-nested",
     breaks: "a guard's `finally` whose `try` holds a `catch_unwind`'s `try` and `catch` alone is `try { try { .. } catch { .. } } finally { .. }`, where JS writes one `try`, `catch` and `finally`",
     file: "src/to_oxc/statements.rs",
