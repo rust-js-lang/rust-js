@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $count,
   $dropEach,
   $held,
   $iter,
@@ -283,6 +284,21 @@ function main() {
   };
   const value$14 = skipped ? map$5(skipped) : undefined;
   console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
+  // `Chain::count`: each side's own, a `Take`'s advancing a reversed
+  // `Vec`, which drops what it passes as one slice (#283).
+  const take = $rev($closing($iter(louds(45, 2)), $dropEach(loudDrop_drop))).take(2);
+  let tmp$11;
+  try {
+    tmp$11 = louds(47, 2);
+  } catch (error) {
+    take.return();
+    throw error;
+  }
+  const counted = $count(
+    $lazyChain(take, $closing($iter(tmp$11), $dropEach(loudDrop_drop))),
+    loudDrop_drop,
+  );
+  console.log(`${counted}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

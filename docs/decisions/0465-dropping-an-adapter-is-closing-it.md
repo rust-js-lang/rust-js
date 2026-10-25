@@ -252,3 +252,17 @@ with a destructor, collected twice, which holds `zip-closed-at-end`: a
 zip closes its sides only as it's closed. Readability: the `Vec`'s
 `$iter` adds to that share (77.5 to 77.6 in 10,000 lines), as each such
 case does.
+
+## Amendment: a chain's `count` is each side's own (#283)
+
+`$lazyChain` had no `count`, so `$count` stepped each item. std's
+`Chain::count` is `a.count() + b.count()`, and `Take::count` advances its
+source: a reversed `Vec`'s `advance_back_by`, which drops what it passes
+as one slice, front to back. Following ADR 0262's "results change" case,
+Rust's order is kept: the chain's `count` is each side's `$count`, `a`'s
+then `b`'s (fuzz seed 53335). `chain_sides_own_steps` counts a reversed
+`Vec`'s `take(2)` chained to another, against native Rust. The mutation
+`chain-count-stepped` is caught.
+Readability: its `Vec`s of values with a destructor add `$iter` (77.6 to
+77.8 in 10,000 lines) and renamed temporaries (714.4 to 714.6), as each
+such case does.

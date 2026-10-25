@@ -75,6 +75,16 @@ function $lazyChain(a, b) {
     if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
+  // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
+  // advancing its source, which drops what it passes as one slice (#283).
+  chained.count = (drop) => {
+    let counted = 0;
+    if (first !== undefined) {
+      counted = $count(first, drop);
+      first = undefined;
+    }
+    return counted + $count(second, drop);
+  };
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250).
   const advanced = (it, m, drop = it.dropItem) =>

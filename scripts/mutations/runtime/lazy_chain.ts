@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "chain-count-stepped",
+    breaks: "a chain's `count` steps each item, so a reversed `Vec`'s `take(2)` on its first side drops back to front, not as `Take::count`'s one slice (#283)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  chained.count = (drop) => {\n",
+    replace: "  chained.uncounted = (drop) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "chain-second-unclosed",
     breaks: "`chain`'s second side isn't closed with it, so none of it is dropped",
     file: "src/runtime/lazy_chain.js",

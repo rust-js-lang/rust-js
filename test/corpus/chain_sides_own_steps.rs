@@ -18,9 +18,23 @@ fn louds(from: u32, n: u32) -> Vec<Loud> {
 fn main() {
     println!("{:?}", louds(1, 2).into_iter().chain(louds(3, 2)).last().map(|l| l.0));
     println!("{:?}", louds(5, 2).into_iter().chain(Vec::new()).last().map(|l| l.0));
-    println!("{:?}", louds(7, 2).into_iter().chain(louds(9, 1)).chain(louds(10, 2)).last().map(|l| l.0));
-    println!("{:?}", louds(12, 3).into_iter().chain(louds(15, 3)).skip(2).last().map(|l| l.0));
-    println!("{:?}", louds(18, 2).into_iter().rev().chain(louds(20, 3)).nth(2).map(|l| l.0));
+    println!(
+        "{:?}",
+        louds(7, 2)
+            .into_iter()
+            .chain(louds(9, 1))
+            .chain(louds(10, 2))
+            .last()
+            .map(|l| l.0)
+    );
+    println!(
+        "{:?}",
+        louds(12, 3).into_iter().chain(louds(15, 3)).skip(2).last().map(|l| l.0)
+    );
+    println!(
+        "{:?}",
+        louds(18, 2).into_iter().rev().chain(louds(20, 3)).nth(2).map(|l| l.0)
+    );
     for loud in louds(23, 2).into_iter().rev().chain(louds(25, 3)).skip(3) {
         println!("got {}", loud.0);
     }
@@ -30,5 +44,9 @@ fn main() {
     println!("{:?}", stepped.map(|l| l.0));
     let skipped = louds(39, 4).into_iter().skip(1).chain(louds(43, 2)).nth(2);
     println!("{:?}", skipped.map(|l| l.0));
+    // `Chain::count`: each side's own, a `Take`'s advancing a reversed
+    // `Vec`, which drops what it passes as one slice (#283).
+    let counted = louds(45, 2).into_iter().rev().take(2).chain(louds(47, 2)).count();
+    println!("{counted}");
     println!("end");
 }
