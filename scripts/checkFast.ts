@@ -35,6 +35,22 @@ const build = Bun.spawnSync(["cargo", "build", "--quiet"], { cwd: root, stdout: 
 if (build.exitCode !== 0) process.exit(1);
 console.log(timed("cargo build", (Date.now() - building) / 1000));
 
+// And the node bindings the bindings and lowering tests compile against,
+// once, before the jobs that ask for them: built by the first test to ask
+// under the others' load, it outran bun's 5 s test timeout, was killed, and
+// failed every test waiting on it (#227). support.ts's `buildNode`, whose
+// stamp skips it where nothing changed.
+const compiled = join(root, "target", "debug", "rust-js");
+const binding = Date.now();
+const node = Bun.spawnSync(["bun", "-e", "import { buildNode } from './test/support.ts'; buildNode();"], {
+  cwd: root,
+  env: { ...process.env, RUST_JS_COMPILER: compiled },
+  stdout: "inherit",
+  stderr: "inherit",
+});
+if (node.exitCode !== 0) process.exit(1);
+console.log(timed("node bindings build", (Date.now() - binding) / 1000));
+
 // Each part of a file of cases, a process of its own (test/support.ts):
 // one for each two cores. A case is a compile, then its runs, one core at a
 // time, so the cores a part leaves are the other jobs'. On 12 cores, 3
@@ -63,7 +79,12 @@ const jobs: [string, string[], Record<string, string>][] = [
     ] as const
   ).map(([name, files]): [string, string[], Record<string, string>] => [name, ["bun", "test", ...files], {}]),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx"], {}] as [string, string[], Record<string, string>]] : []),
-  // What pins the JS written, the names it gives and what it refuses.
+  // What pins the JS written, the names it gives and what it refuses; and
+  // the guide's examples compiled, std's package and the readability ratchet,
+  // each of which a lowering change has turned `main` red with (#212, #222).
+  ...(shared
+    ? [["guide, std package, readability", ["bun", "test", "test/docs.test.ts", "test/std-package.test.ts", "test/readability.test.ts"], {}] as [string, string[], Record<string, string>]]
+    : []),
   ...(shared
     ? ["snapshots", "diagnostics"].map(
         (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
@@ -77,7 +98,7 @@ const jobs: [string, string[], Record<string, string>][] = [
 
 // Each job is given the compiler just built: one that builds its own, as
 // each test file and fmt does, links it again, and races the others.
-const compiler = join(root, "target", "debug", "rust-js");
+const compiler = compiled;
 const results = await Promise.all(
   jobs.map(async ([name, cmd, env]) => {
     const start = Date.now();

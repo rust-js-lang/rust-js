@@ -154,7 +154,7 @@ pub fn borrowed(dirs: &[String]) -> Vec<Promise<Vec<String>>> {
   const check = runSync(["cargo", "check", "--offline", "--message-format=short", "--manifest-path", join(dir, "Cargo.toml"), "--target-dir", join(dir, "target")], dir, 300_000, { RUSTC_BOOTSTRAP: undefined });
   expect(check.stderr.split("\n").filter(line => /\b(?:warning|error)\b/.test(line) && !/generated \d+ warnings?/.test(line))).toEqual([]);
   expect(check.code).toBe(0);
-});
+}, 60_000);
 
 // ADR 0272: `path`, each of @types/node's: its functions, its constants,
 // and a platform's own, `win32.join`, as Node's `path` has them.
@@ -886,7 +886,7 @@ node = { package = "rust-js-node", path = ${JSON.stringify(join(root, "node"))} 
   const clippy = runSync(["cargo", "clippy", "--offline", "--message-format=short", "--manifest-path", join(dir, "Cargo.toml"), "--target-dir", join(dir, "target"), "--", "-D", "warnings"], dir, 300_000, { RUSTC_BOOTSTRAP: undefined });
   const said = clippy.stderr.split("\n").filter((line) => /\b(?:warning|error)\b/.test(line));
   expect([clippy.code, said]).toEqual([0, []]);
-});
+}, 60_000);
 
 // ADRs 0657 and 0658: React's reportGlobalError as its port writes it, the
 // host's reportError or a polyfill: a const of a conditional, each branch's

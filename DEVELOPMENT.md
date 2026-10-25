@@ -174,10 +174,17 @@ What keeps them there:
   test/support.ts): one after another they took four minutes. The corpus,
   lowering, compiler and bindings tests always run; the JSX tests where the
   change touches JSX, the snapshot and diagnostic tests where it touches
-  `src/` or the runtime; the mutations, those the change adds or changes;
-  CI runs the rest. Each job
+  `src/` or the runtime, and with them the guide's examples, std's package
+  and the readability ratchet, which a lowering change turned `main` red
+  with when only CI ran them; the mutations, those the change adds or
+  changes; CI runs the rest. Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
+- **The node bindings are built before the jobs**, by support.ts's
+  `buildNode`, whose stamp skips it where nothing changed: built by the
+  first test that asked, under the corpus's load, it outran bun's 5 s
+  test timeout, was killed, and failed every test waiting on it, nearly
+  every run. Tests that run `cargo` themselves declare a timeout that fits.
 - **`bun run port measure`** fails when the port's compile does: a module
   that fails keeps its JS from before, which reads as no difference.
 
@@ -262,6 +269,8 @@ checked:
 | `test/snapshots.test.ts`'s `inbox` case under load | Times out at 5 s nearly every loaded run; a re-run each time | A timeout that fits its compile, or a smaller program |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
+| A sweep of generated programs against native Rust, by hand | 4–5 min for 1,100–2,100 programs, again after each fix, each a `rustc`, a rust-js compile and a run | A checked-in runner: native outputs kept by source, only rust-js's compile and run again, verdicts said against the last sweep (fixed, regressed) |
+| `check:fast`'s guide, std package and readability job | The guide's examples take every core for ~20 s, and the other jobs slow (architecture's 6 s to 13 s) | The guide's examples kept by what they compiled, as the corpus's runs are |
 
 ## Working on `main`
 
