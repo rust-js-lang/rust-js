@@ -53,7 +53,8 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 pub(super) use validation::is_thread_local;
 use validation::{
-    in_thread_local, init_of, reject_flatten_misuse, reject_rest_misuse, reject_static_references, reject_unsupported,
+    in_thread_local, init_of, reject_flatten_misuse, reject_parameter_name_misuse, reject_rest_misuse,
+    reject_static_references, reject_unsupported,
 };
 
 /// Made by serde's `#[derive(Serialize)]` or `#[derive(Deserialize)]`, or
@@ -570,6 +571,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         || !reject_static_references(tcx, &all_bodies)
         || !reject_flatten_misuse(tcx, &all_bodies)
         || !reject_rest_misuse(tcx)
+        || !reject_parameter_name_misuse(tcx)
         || !super::classes::reject_misuse(tcx, &all_bodies)
     {
         return None;

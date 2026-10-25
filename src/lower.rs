@@ -995,13 +995,23 @@ fn camel_case(name: &str) -> String {
     words_joined(name, |word| word.to_string())
 }
 
-/// A parameter's name as JS writes it (ADR 0678): camelCase, without the
-/// leading `_` that tells Rust it's unused, `_ref`'s `ref`; but as Rust
+/// A parameter's name as JS writes it: its `#[rust_js::name = ".."]`,
+/// `Context` of React's `useContext` (ADR 0848); else camelCase, without
+/// the leading `_` that tells Rust it's unused (ADR 0678). The one place a
+/// parameter's JS name is made, the name its declaration says too.
+fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
+    let given = function
+        .as_local()
+        .and_then(|local| bindings::given_parameter_name(tcx, local, name));
+    given.unwrap_or_else(|| default_parameter_name(tcx, function, name))
+}
+
+/// A parameter's name where it says none (ADR 0678): camelCase, without
+/// the leading `_` that tells Rust it's unused, `_ref`'s `ref`; but as Rust
 /// writes it where what's left is a word JS keeps, `_new`, or another
 /// binding's of its function, of a closure in it or around it too, `_x`
-/// beside an `x`. The one place a parameter's JS name is made, the name
-/// its declaration says too.
-fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
+/// beside an `x`.
+fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
     let named = camel_case(name);
     let Some(unmarked) = named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) else {
         return named;

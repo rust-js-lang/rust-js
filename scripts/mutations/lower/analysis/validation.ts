@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "            } else if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: a pattern"],
   },
+  {
+    name: "parameter-name-repeat-allowed",
+    breaks: "a parameter's `#[rust_js::name]` that repeats its camelCase name, a second way to write it, is no error",
+    file: "src/lower/analysis/validation.rs",
+    find: "            } else if given.as_str() == default {\n",
+    replace: "            } else if false {\n",
+    tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
+  },
+  {
+    name: "parameter-name-any-text",
+    breaks: "a parameter's `#[rust_js::name = \"my-name\"]`, no JS name, is written as it is, a syntax error",
+    file: "src/lower/analysis/validation.rs",
+    find: "            if !crate::names::is_identifier(given.as_str()) || crate::names::kept_word(given.as_str()) {\n",
+    replace: "            if false {\n",
+    tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
+  },
 ];

@@ -1297,6 +1297,48 @@ pub fn names() -> Names {
   expect(refused.stderr).toContain('rust-js: `sort_index` is `sortIndex` in JS without `#[rust_js::name = "sortIndex"]`: remove it');
 });
 
+// ADR 0848: a parameter's `#[rust_js::name]` is its JS name, where it isn't
+// the camelCase one, React's `useContext(Context)`: its body's, its
+// closure's and its declaration's, through `lower::parameter_name`. One of a
+// pattern, of `self`, not a string or not a JS name, or the name it has
+// anyway, is an error saying what to write.
+test("a parameter's rust_js::name is its JS name", async () => {
+  const dir = fixture("parameter-name");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Context {
+    pub value: u32,
+}
+
+pub fn use_context(#[cfg_attr(rust_js, rust_js::name = "Context")] context: &Context) -> u32 {
+    let read = |#[cfg_attr(rust_js, rust_js::name = "Given")] given: u32| given + context.value;
+    read(1)
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function useContext(Context) {\n  const read = (Given) => (Given + Context.value) >>> 0;");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function useContext(Context: Context): number;");
+  expect((await import(join(dir, "lib.js"))).useContext({ value: 2 })).toBe(3);
+  writeFileSync(join(dir, "lib.rs"), `pub fn same(#[cfg_attr(rust_js, rust_js::name = "value")] value: u32) -> u32 {
+    value
+}
+pub fn pair(#[cfg_attr(rust_js, rust_js::name = "Pair")] (x, y): (u32, u32)) -> u32 {
+    x + y
+}
+pub fn bare(#[cfg_attr(rust_js, rust_js::name)] given: u32) -> u32 {
+    given
+}
+pub fn dashed(#[cfg_attr(rust_js, rust_js::name = "my-name")] given: u32) -> u32 {
+    given
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain('rust-js: `value` is `value` in JS without `#[rust_js::name = "value"]`: remove it');
+  expect(refused.stderr).toContain("rust-js: `#[rust_js::name]` names a parameter that's a name, `context: T`, not a pattern or `self`");
+  expect(refused.stderr).toContain('rust-js: write a parameter\'s JS name as a string, `#[cfg_attr(rust_js, rust_js::name = "Context")]`');
+  expect(refused.stderr).toContain("rust-js: a parameter's JS name is a name JS lets a variable have, not `my-name`");
+});
+
 // A function's `#[rust_js::nullable]`, alone, is of its result: its `None`
 // is `null`, as a JS caller tests `!== null`, React's scheduler's
 // `peek(taskQueue)`; one made `None` is `null`, `Some(x)` its value, and

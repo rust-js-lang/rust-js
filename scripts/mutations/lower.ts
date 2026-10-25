@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(classes::Member::Constructor)\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
+  {
+    name: "parameter-name-ignored",
+    breaks: "a parameter's `#[rust_js::name = \"Context\"]` is silently ignored, `useContext(context)`",
+    file: "src/lower.rs",
+    find: "    given.unwrap_or_else(|| default_parameter_name(tcx, function, name))\n",
+    replace: "    let _ = given;\n    default_parameter_name(tcx, function, name)\n",
+    tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
+  },
 ];

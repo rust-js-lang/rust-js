@@ -930,6 +930,36 @@ pub(super) fn marked_rest<'tcx>(
         .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))
 }
 
+/// The `#[rust_js::name = ".."]` of each of `owner`'s parameters that has
+/// one, a parameter's JS name where it isn't the camelCase one, React's
+/// `useContext(Context)` (ADR 0848): read from its body, as `marked_rest`
+/// reads `rest`.
+pub(super) fn named_parameters<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    owner: LocalDefId,
+) -> impl Iterator<Item = (&'tcx rustc_hir::Param<'tcx>, &'tcx rustc_hir::Attribute)> {
+    let path = [Symbol::intern("rust_js"), sym::name];
+    let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
+    params.iter().filter_map(move |param| {
+        let attr = tcx
+            .hir_attrs(param.hir_id)
+            .iter()
+            .find(|attr| attr.path_matches(&path))?;
+        Some((param, attr))
+    })
+}
+
+/// The JS name `#[rust_js::name = ".."]` gives `owner`'s parameter that
+/// binds `name`, if it gives one (ADR 0848).
+pub(super) fn given_parameter_name(tcx: TyCtxt<'_>, owner: LocalDefId, name: &str) -> Option<String> {
+    named_parameters(tcx, owner).find_map(|(param, attr)| match param.pat.kind {
+        rustc_hir::PatKind::Binding(_, _, ident, None) if ident.name.as_str() == name => {
+            attr.value_str().map(|given| given.to_string())
+        }
+        _ => None,
+    })
+}
+
 /// Whether the crate's function `def_id` takes JS's rest arguments, its last
 /// parameter, a slice, marked `#[rust_js::rest]` (ADR 0664), which
 /// analysis allows nowhere else. A library's says so in its manifest.

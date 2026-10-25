@@ -357,3 +357,54 @@ pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
     }
     valid
 }
+
+/// Report each parameter's `#[rust_js::name]` that names nothing it can
+/// (ADR 0848): one of a pattern, or of `self`, which has a name of its own;
+/// not a string; not a name a JS variable may have; or the name it has
+/// anyway, a second way to write it (ADR 0573). Each says what to write.
+/// False if there was one.
+pub(super) fn reject_parameter_name_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for owner in tcx.hir_body_owners() {
+        for (param, attr) in bindings::named_parameters(tcx, owner) {
+            let ident = match param.pat.kind {
+                rustc_hir::PatKind::Binding(_, _, ident, None) if ident.name != rustc_span::symbol::kw::SelfLower => {
+                    ident
+                }
+                _ => {
+                    tcx.dcx().span_err(
+                        attr.span(),
+                        "rust-js: `#[rust_js::name]` names a parameter that's a name, `context: T`, not a pattern or `self`",
+                    );
+                    valid = false;
+                    continue;
+                }
+            };
+            let Some(given) = attr.value_str() else {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    "rust-js: write a parameter's JS name as a string, `#[cfg_attr(rust_js, rust_js::name = \"Context\")]`",
+                );
+                valid = false;
+                continue;
+            };
+            let default = crate::lower::default_parameter_name(tcx, owner.to_def_id(), ident.name.as_str());
+            if !crate::names::is_identifier(given.as_str()) || crate::names::kept_word(given.as_str()) {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    format!("rust-js: a parameter's JS name is a name JS lets a variable have, not `{given}`"),
+                );
+                valid = false;
+            } else if given.as_str() == default {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    format!(
+                        "rust-js: `{ident}` is `{given}` in JS without `#[rust_js::name = \"{given}\"]`: remove it"
+                    ),
+                );
+                valid = false;
+            }
+        }
+    }
+    valid
+}

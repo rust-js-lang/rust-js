@@ -454,7 +454,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0433 What's written after a loop is after it](0433-whats-written-after-a-loop-is-after-it.md)
 - [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md)
 - [0435 Rust's world and React's: each its own names, JSX the boundary](0435-rust-and-react-two-worlds.md)
-- [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name)*
+- [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0848: a parameter's `#[rust_js::name]`)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md)
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty)*
@@ -638,6 +638,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
+- [0848 A parameter's `#[rust_js::name]` is its JS name](0848-a-parameters-rust-js-name-is-its-js-name.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

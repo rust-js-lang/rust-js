@@ -1,6 +1,7 @@
 # 0573. Every Rust name is camelCase in JS
 
-Status: Accepted; amended by [0678](0678-a-parameters-underscore-isnt-its-js-name.md),
+Status: Accepted; extended by [0848](0848-a-parameters-rust-js-name-is-its-js-name.md),
+whose parameter's `#[rust_js::name]` is its JS name; amended by [0678](0678-a-parameters-underscore-isnt-its-js-name.md),
 whose parameter is without the `_` that marks it unused, and by [0579](0579-a-thread-local-is-named-as-a-variable.md),
 which names a thread-local as its module's variable. Amends [0435](0435-rust-and-react-two-worlds.md), whose
 "what's Rust's own keeps Rust's" it replaces; supersedes
