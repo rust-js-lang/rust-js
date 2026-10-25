@@ -160,3 +160,13 @@ which `nths_its_own` says a chain reaches; and `step_by` of a fused
 source whose `nth` reaches the crate's own is `$stepBy`, not a filter of
 indices. All 1,728 programs agree; `adapters_own_nth_fold` holds them,
 with eleven mutations.
+
+## Amendment: a `scan`, a `map_while`, and through a `&mut`
+
+A `scan`'s and a `map_while`'s `fold` are their `try_fold`, their source
+dropped after, and `last()` folds through them; through a `&mut` of the
+crate's iterator, std passes `nth` on, but its fold is the iterator's
+`try_fold` and its `last` its fold's, so its dictionary gives its own
+`nth` alone (#216). 2,254 more generated programs, of `filter_map`,
+`scan`, `map_while`, `flat_map`, `zip`, `by_ref()` and the consumers that
+stop early, agree.

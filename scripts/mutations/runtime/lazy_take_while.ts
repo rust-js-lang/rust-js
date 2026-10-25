@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    return $Steps.prototype.fold.call(taking, init, f);\n  };\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "map-while-fold-by-next",
+    breaks: "a `map_while`'s fold steps it by `next`, not std's `try_fold` (#216)",
+    file: "src/runtime/lazy_take_while.js",
+    find: "    const folded = mapping.tryFold(init, g, () => false);\n",
+    replace: "    const folded = $Steps.prototype.fold.call(mapping, init, g);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

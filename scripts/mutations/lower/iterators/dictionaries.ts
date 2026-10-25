@@ -127,8 +127,16 @@ export const mutations: Mutation[] = [
     name: "adapter-dictionary-own-unpassed",
     breaks: "std's adapter over the crate's own iterator, given to std's compiled code, is a dictionary of `next` alone, so a `fuse` over a `skip` asks `nth(2)`, not std's `nth(3)` (#214)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n            true => (fold, nth, last),\n",
-    replace: "        let (fold, nth, last) = match true {\n            true => (fold, nth, last),\n",
+    find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n",
+    replace: "        let (fold, nth, last) = match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
+  {
+    name: "mut-ref-dictionary-own-fold",
+    breaks: "the dictionary of a `&mut` of the crate's iterator gives its own `fold`, which std's `&mut I` doesn't reach (#216)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            true if ty.is_ref() => (None, nth, None),\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
 ];

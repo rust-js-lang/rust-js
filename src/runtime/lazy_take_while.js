@@ -65,5 +65,12 @@ function $lazyMapWhile(items, f, present) {
     if (stopped) source.return?.();
     return folded;
   };
+  // Its `fold`, std's: its `try_fold`, then dropped with what it steps
+  // (#214).
+  mapping.fold = (init, g) => {
+    const folded = mapping.tryFold(init, g, () => false);
+    mapping.return();
+    return folded;
+  };
   return mapping;
 }

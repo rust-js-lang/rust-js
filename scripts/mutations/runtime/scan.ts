@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  scanning.tryFoldUnused = (init, g, broke) => {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "scan-fold-by-next",
+    breaks: "a `scan`'s fold steps it by `next`, not std's `try_fold`, so a `skip` inside asks the crate's own `nth(n)` (#216)",
+    file: "src/runtime/scan.js",
+    find: "    const folded = scanning.tryFold(init, g, () => false);\n",
+    replace: "    const folded = $Steps.prototype.fold.call(scanning, init, g);\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

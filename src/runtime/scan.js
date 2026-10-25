@@ -33,5 +33,12 @@ function $lazyScan(items, init, f, handle = true) {
     if (stopped) source.return?.();
     return folded;
   };
+  // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
+  // dropped with what it steps (#214).
+  scanning.fold = (init, g) => {
+    const folded = scanning.tryFold(init, g, () => false);
+    scanning.return();
+    return folded;
+  };
   return scanning;
 }

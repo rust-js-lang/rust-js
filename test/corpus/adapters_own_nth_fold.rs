@@ -4,7 +4,9 @@
 // `try_fold`; a `fuse` over a `skip` passes `nth` on; a `take_while`'s
 // fold is its `try_fold`, a `step_by`'s inside first by `next`; a
 // compiled `fuse()`'s `try_fold` is its source's; a `step_by` of what
-// reaches the crate's own `nth` asks it, a `chain`'s of its second side.
+// reaches the crate's own `nth` asks it, a `chain`'s of its second side;
+// a `scan`'s and a `map_while`'s fold are their `try_fold`; through a
+// `&mut`, `nth` is passed on, but not `fold`.
 struct Count {
     at: i32,
     end: i32,
@@ -54,4 +56,8 @@ fn main() {
     println!("{:?}", counted().chain(counted()).step_by(2).count());
     println!("{:?}", counted().fuse().chain(counted().fuse()).step_by(3).count());
     println!("{:?}", counted().skip(2).take_while(|&x| x < 7).last());
+    println!("{:?}", counted().skip(2).scan(0, |s, x| { *s += x; Some(*s) }).count());
+    println!("{:?}", counted().step_by(2).map_while(|x| if x < 7 { Some(x) } else { None }).last());
+    let mut base = counted();
+    println!("{:?} {:?}", base.by_ref().fuse().count(), base.next());
 }

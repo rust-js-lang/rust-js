@@ -7,6 +7,8 @@ import {
   $folded,
   $iterator,
   $lazyChain,
+  $lazyMapWhile,
+  $lazyScan,
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
@@ -185,5 +187,57 @@ function main() {
     .toArray()
     .at(-1);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+  console.log(
+    `${$lazyScan(
+      $iterator(
+        counted(),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        countIterator_fold,
+        countIterator_nth,
+      ).drop(2),
+      0,
+      (s, x) => {
+        s.value = (s.value + x) | 0;
+        return s.value;
+      },
+    ).reduce((n) => n + 1, 0)}`,
+  );
+  const value$4 = $folded(
+    $lazyMapWhile(
+      $stepBy(
+        $iterator(
+          counted(),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          countIterator_fold,
+          countIterator_nth,
+        ),
+        2,
+      ),
+      (x) => {
+        if (x < 7) {
+          return x;
+        }
+      },
+      (item) => item != null,
+    ),
+  )
+    .toArray()
+    .at(-1);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
+  const base = counted();
+  console.log(
+    `${iterator_fuse(base, { next: countIterator_next, nth: countIterator_nth }, false).reduce(
+      (n) => n + 1,
+      0,
+    )} ${((value) => (value == null ? "None" : `Some(${value})`))(countIterator_next(base))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

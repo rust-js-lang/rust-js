@@ -387,7 +387,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     Some("Chain") => 2,
                     Some(
                         "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied"
-                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile",
+                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile" | "Scan"
+                        | "MapWhile",
                     ) => 1,
                     _ => 0,
                 };

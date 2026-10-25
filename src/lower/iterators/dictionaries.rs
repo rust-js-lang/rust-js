@@ -164,6 +164,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of std's adapter over the crate's own, the JS iterator's, which
         // passes them on as std's does (#214).
         let (fold, nth, last) = match self.is_user_iterator(ty) {
+            // Through a `&mut`, std passes `nth` on, but its fold is the
+            // iterator's `try_fold`, and its `last` its fold's (#216).
+            true if ty.is_ref() => (None, nth, None),
             true => (fold, nth, last),
             false => {
                 let recognition = self.recognition();
