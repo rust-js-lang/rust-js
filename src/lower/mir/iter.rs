@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Parted::Map | Parted::Filter => ["it", "f"],
             Parted::Chain | Parted::Zip => ["a", "b"],
         };
-        let own = self.is_crate_fn_item(other_ty);
+        let own = self.is_called_as_written(other_ty);
         let adapter = self.cloned_apart_adapter(
             (name.as_str(), parts, names),
             ([receiver_ty, other_ty], output),
@@ -564,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         // A function of the crate given as the callback, `filter(is_rule)`:
         // itself, which takes no more than it's given (ADR 0279).
-        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match std_method {
             // By what gives each as it is, `map(StaticPath::Params)`: no step,

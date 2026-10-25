@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
   },
+  {
+    name: "made-closure-undropped",
+    breaks: "a closure a function gives, `impl FnMut`, folded, is never dropped, nor what it took (#259)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "            let ty = self.reveal(ty);\n            let Some(when) = self.handled_argument(known, at, ty) else {\n",
+    replace: "            let Some(when) = self.handled_argument(known, at, ty) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
+  },
 ];

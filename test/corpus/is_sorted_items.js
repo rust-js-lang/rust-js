@@ -42,7 +42,7 @@ function main() {
   console.log(
     `${$isSortedBy(
       $lazyRange(1, 10)
-        .map((item) => t(item))
+        .map(t)
         .map((x) => (x === 3 ? 0 : x)),
       (a, b) => a <= b,
     )}`,

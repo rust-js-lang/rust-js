@@ -32,23 +32,11 @@ function main() {
   console.log(`[${v.slice(2).toReversed().join(", ")}]`);
   console.log(`[${v.slice(0, 4).toReversed().join(", ")}]`);
   console.log(
-    `[${$rev(
-      $skipping(
-        $mapEnds($iter(v), (item) => t(item)),
-        3,
-      ),
-    )
+    `[${$rev($skipping($mapEnds($iter(v), t), 3))
       .toArray()
       .join(", ")}]`,
   );
-  const value = $next(
-    $rev(
-      $taking(
-        $mapEnds($iter(v), (item) => t(item)),
-        2,
-      ),
-    ),
-  );
+  const value = $next($rev($taking($mapEnds($iter(v), t), 2)));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `[${$rev(

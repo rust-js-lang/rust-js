@@ -52,7 +52,7 @@ function main() {
     throw error;
   }
   const f = (x) => x < Loud.get(a$1);
-  const all = $lent(tmp).every((item) => f(item));
+  const all = $lent(tmp).every(f);
   console.log(`drop ${a$1[0]}`);
   console.log(`all ${all}`);
   const a$2 = [3];
@@ -77,7 +77,7 @@ function main() {
     throw error;
   }
   const f$1 = (sum, x) => (((sum + x) >>> 0) + Loud.get(a$3)) >>> 0;
-  const total = tmp$1.reduce((a, b) => f$1(a, b), 0);
+  const total = tmp$1.reduce(f$1, 0);
   console.log(`drop ${a$3[0]}`);
   console.log(`fold ${total}`);
   const a$4 = [5];

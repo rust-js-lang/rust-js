@@ -24,10 +24,7 @@ export function entry() {
 function cycles() {
   const a = [1, 2];
   const makeMap = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap($iter(it.items.slice(it.at, it.end)), f),
-    );
+    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${$cycleOf(
       makeMap($iter(a), (x) => {
@@ -42,9 +39,8 @@ function cycles() {
       .join(", ")}]`,
   );
   const makeFilter = (it, f) =>
-    $cloning(
-      $iterator(it, $rangeNext).filter((item) => f(item)),
-      () => makeFilter({ start: it.start, end: it.end }, f),
+    $cloning($iterator(it, $rangeNext).filter(f), () =>
+      makeFilter({ start: it.start, end: it.end }, f),
     );
   console.log(
     `[${$cycleOf(
@@ -57,9 +53,8 @@ function cycles() {
       .join(", ")}]`,
   );
   const makeMap$1 = (it, f) =>
-    $cloning(
-      $iterator(it, $rangeNext).map((item) => f(item)),
-      () => makeMap$1({ start: it.start, end: it.end }, f),
+    $cloning($iterator(it, $rangeNext).map(f), () =>
+      makeMap$1({ start: it.start, end: it.end }, f),
     );
   const value = $next(
     $cycleOf(
@@ -70,9 +65,8 @@ function cycles() {
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const makeMap$2 = (it, f) =>
-    $cloning(
-      $iterator(it, $rangeNext).map((item) => f(item)),
-      () => makeMap$2({ start: it.start, end: it.end }, f),
+    $cloning($iterator(it, $rangeNext).map(f), () =>
+      makeMap$2({ start: it.start, end: it.end }, f),
     );
   const it = $cycleOf(
     makeMap$2({ start: 1, end: 4 }, (x) => (x * 2) | 0),
@@ -82,10 +76,7 @@ function cycles() {
   $next(it);
   console.log(`[${it.take(4).toArray().join(", ")}]`);
   const makeMap$3 = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap$3($iter(it.items.slice(it.at, it.end)), f),
-    );
+    $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${$cycleOf(
       makeMap$3($iter(["a", "b"]), (s) => s.toUpperCase()),
@@ -98,10 +89,7 @@ function cycles() {
       .join(", ")}]`,
   );
   const makeMap$4 = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap$4($iter(it.items.slice(it.at, it.end)), f),
-    );
+    $cloning(it.map(f), () => makeMap$4($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${$cycleOf(
       makeMap$4($iter([1, undefined]), (o) => o),
@@ -177,9 +165,8 @@ function clones() {
   );
   console.log(`[${m.toArray().join(", ")}] ${m2.reduce((a, b) => (a + b) | 0, 0)}`);
   const makeFilter = (it, f) =>
-    $cloning(
-      $iterator(it, $rangeNext).filter((item) => f(item)),
-      () => makeFilter({ start: it.start, end: it.end }, f),
+    $cloning($iterator(it, $rangeNext).filter(f), () =>
+      makeFilter({ start: it.start, end: it.end }, f),
     );
   console.log(
     `[${$cycleOf(

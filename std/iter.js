@@ -580,7 +580,7 @@ export function enumerateIterator_fold(
       dropFold?.(fold);
     },
   );
-  const value = $given(iter, IIterator, true).reduce((a, b) => f(a, b), init);
+  const value = $given(iter, IIterator, true).reduce(f, init);
   if (IIterator.fold === undefined) {
     dropI?.(iter);
   }
@@ -709,7 +709,7 @@ export function mapIterator_fold(
       dropF?.(f);
     },
   );
-  const value = $given(iter, IIterator, true).reduce((a, b) => f$1(a, b), init);
+  const value = $given(iter, IIterator, true).reduce(f$1, init);
   if (IIterator.fold === undefined) {
     dropI?.(iter);
   }
@@ -810,7 +810,7 @@ export function inspectIterator_fold(
       dropFold?.(fold);
     },
   );
-  const value = $given(iter, IIterator, true).reduce((a, b) => f$1(a, b), init);
+  const value = $given(iter, IIterator, true).reduce(f$1, init);
   if (IIterator.fold === undefined) {
     dropI?.(iter);
   }

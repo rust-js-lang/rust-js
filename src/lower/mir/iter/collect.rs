@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (init, f): (Option<Expr>, Expr),
         (arg_tys, item): (&[Ty<'tcx>], Option<Ty<'tcx>>),
     ) -> Expr {
-        let own = arg_tys.last().is_some_and(|ty| self.is_crate_fn_item(*ty));
+        let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));
         let callback = self.binary_callback(f, own);
         let Some(init) = init else {
             // `reduce(f)`: from its first item, `None` of none (ADR 0479).

@@ -20,13 +20,7 @@ function main() {
   );
   console.log(
     `${
-      ["Less", "Equal", "Greater"][
-        $iterCmp(
-          $lazyRange(1, 5).map((item) => t(item)),
-          $iter([1, 2, 0, 9]),
-          $cmp,
-        ) + 1
-      ]
+      ["Less", "Equal", "Greater"][$iterCmp($lazyRange(1, 5).map(t), $iter([1, 2, 0, 9]), $cmp) + 1]
     }`,
   );
   const partialCmp = $iterCmp($iter([1, NaN]), $iter([1, 2]), $partialCmp);

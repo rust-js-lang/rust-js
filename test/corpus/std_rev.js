@@ -137,24 +137,20 @@ function main() {
   console.log(`[${inPlace.join(", ")}] [${arg.join(", ")}]`);
   // A map held before it's reversed where it's stepped, of items with a
   // destructor: made knowing its back where it's made.
-  const value$6 = (l) => l;
-  const mapped = $mapEnds($closing($iter([[4], [5]]), $dropEach(loudDrop_drop)), (item) =>
-    value$6(item),
-  );
-  const value$7 = (l) => {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  };
+  const mapped = $mapEnds($closing($iter([[4], [5]]), $dropEach(loudDrop_drop)), (l) => l);
   console.log(
-    `[${$mapEnds($rev(mapped), (item) => value$7(item))
+    `[${$mapEnds($rev(mapped), (l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    })
       .toArray()
       .join(", ")}]`,
   );
   // Its own impl's, of what it's made into where it's made.
-  const value$8 = $nextBack($iter(v.toReversed()));
+  const value$6 = $nextBack($iter(v.toReversed()));
   console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -39,11 +39,10 @@ function main() {
     }
   }
 
-  const value = (l) => l[0] % 2 === 1;
   const back = $rev(
     $filterEnds(
       $closing($iter(louds(5)), $dropEach(loudDrop_drop)),
-      (item) => value(item),
+      (l) => l[0] % 2 === 1,
       loudDrop_drop,
     ),
   );
@@ -94,13 +93,12 @@ function main() {
   };
   console.log(`first ${first != null ? map(first) : 9}`);
 
-  const value$1 = (l) => {
-    const result = (l[0] * 2) >>> 0;
-    loudDrop_drop(l);
-    return result;
-  };
   const doubled = $rev(
-    $mapEnds($closing($iter(louds(3)), $dropEach(loudDrop_drop)), (item) => value$1(item)),
+    $mapEnds($closing($iter(louds(3)), $dropEach(loudDrop_drop)), (l) => {
+      const result = (l[0] * 2) >>> 0;
+      loudDrop_drop(l);
+      return result;
+    }),
   ).toArray();
   console.log(`[${doubled.join(", ")}]`);
 }

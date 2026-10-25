@@ -195,7 +195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,
-            js::ExprKind::Var(_) if own => f,
+            _ if own => f,
             _ => {
                 let x = self.fresh("item");
                 let call = Expr::call(f, vec![Expr::var(&x)]);
@@ -205,14 +205,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Is `ty` a function item of the crate's own, not a JS binding's or a
-    /// trait's method, whose JS is called with what Rust gives it alone?
-    pub(super) fn is_crate_fn_item(&self, ty: Ty<'tcx>) -> bool {
-        match *ty.kind() {
+    /// trait's method, or a closure, whose JS is called with what Rust gives
+    /// it alone, so a JS helper's extra arguments, an index, never reach
+    /// it? One is given as it is, evaluated once: a closure a call makes,
+    /// `fold(init, joined(f, g))`'s, never made again for each item (#259).
+    pub(super) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
+        match *self.reveal(ty).kind() {
             ty::FnDef(def_id, _) => {
                 def_id.is_local()
                     && self.tcx.trait_of_assoc(def_id).is_none()
                     && !bindings::is_binding(self.tcx, def_id)
             }
+            ty::Closure(..) => true,
             _ => false,
         }
     }
@@ -242,7 +246,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,
-            js::ExprKind::Var(_) if own => f,
+            _ if own => f,
             _ if matches!(f.helper_name(), Some("$f64Max" | "$f64Min")) => f,
             _ => {
                 let (a, b) = (self.fresh("a"), self.fresh("b"));

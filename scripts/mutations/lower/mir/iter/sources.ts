@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     "name": "mir-crate-fn-item-callback-wrapped",
     "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule`",
     "file": "src/lower/mir/iter/sources.rs",
-    "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            js::ExprKind::Var(_) if own => f,\n",
+    "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            _ if own => f,\n",
     "replace": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n",
     "tests": ["test/lowering-functions.test.ts", "-t", "a crate function given as a callback is passed as itself"]
   },
@@ -212,5 +212,13 @@ export const mutations: Mutation[] = [
     find: "        if crate::lower::recognition::known_by_bounds(source) || self.dropped_by_closing(iter_ty) {\n",
     replace: "        if crate::lower::recognition::known_by_bounds(source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "made-closure-made-again",
+    breaks: "a closure a call makes, given to `fold`, is made again for each item, losing what it changes of its own (#259)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,\n            _ if own => f,\n",
+    replace: "            js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,\n            js::ExprKind::Var(_) if own => f,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
   },
 ];

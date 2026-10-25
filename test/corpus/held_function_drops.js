@@ -23,13 +23,10 @@ function scaled(v) {
     const f = factor;
     return ((Math.imul(x, factor[0]) >>> 0) + f[0]) >>> 0;
   };
-  const iter = $closing(
-    tmp.map((item) => f(item)),
-    (it) => {
-      it.return();
-      console.log(`drop ${factor[0]}`);
-    },
-  );
+  const iter = $closing(tmp.map(f), (it) => {
+    it.return();
+    console.log(`drop ${factor[0]}`);
+  });
   const result = iter.toArray();
   iter.return();
   return result;
@@ -48,13 +45,10 @@ function kept(f, v, dropF) {
     throw error;
   }
   const f$1 = (x) => f(x);
-  const iter = $closing(
-    tmp.map((item) => f$1(item)),
-    (it) => {
-      it.return();
-      dropF?.(f);
-    },
-  );
+  const iter = $closing(tmp.map(f$1), (it) => {
+    it.return();
+    dropF?.(f);
+  });
   const result = iter.toArray();
   iter.return();
   return result;
@@ -92,13 +86,10 @@ function main() {
     const s = shared;
     return (x + s[0]) >>> 0;
   };
-  const iter = $closing(
-    tmp.map((item) => f(item)),
-    (it) => {
-      it.return();
-      console.log(`drop ${shared[0]}`);
-    },
-  );
+  const iter = $closing(tmp.map(f), (it) => {
+    it.return();
+    console.log(`drop ${shared[0]}`);
+  });
   const total = iter.reduce((a, b) => (a + b) >>> 0, 0);
   iter.return();
   console.log(`total ${total}`);
@@ -131,13 +122,10 @@ function main() {
     const t = tag;
     return x % 2 === t[0] % 2;
   };
-  const filtered = $closing(
-    tmp$1.filter((item) => f$1(item)),
-    (it) => {
-      it.return();
-      console.log(`drop ${tag[0]}`);
-    },
-  );
+  const filtered = $closing(tmp$1.filter(f$1), (it) => {
+    it.return();
+    console.log(`drop ${tag[0]}`);
+  });
   try {
     const value = $next(filtered);
     console.log(`${value == null ? "None" : `Some(${value})`}`);

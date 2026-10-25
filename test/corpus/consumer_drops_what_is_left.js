@@ -457,21 +457,20 @@ function held(n) {
   if (n > 0) {
     taken$live = false;
     const skip = (l) => l[0] < 99;
-    const value = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
-    const value$1 = $max(
+    const value = $max(
       $lazySkipWhile(taken, (item) => {
         if (skip(item)) {
           loudDrop_drop(item);
           return true;
         }
         return false;
-      }).map((item) => value(item)),
+      }).map((l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      }),
     );
-    console.log(`held max ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    console.log(`held max ${value == null ? "None" : `Some(${value})`}`);
   }
   try {
     const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
@@ -479,13 +478,7 @@ function held(n) {
     if (n > 0) {
       taken$1$live = false;
       const keep = (l) => l[0] > 99;
-      const value = (l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      };
-      const value$1 = (a, b) => (a + b) >>> 0;
-      const value$2 = $reduce(
+      const value = $reduce(
         taken
           .filter((item) => {
             if (keep(item)) {
@@ -494,23 +487,26 @@ function held(n) {
             loudDrop_drop(item);
             return false;
           })
-          .map((item) => value(item)),
-        (a, b) => value$1(a, b),
+          .map((l) => {
+            const result = l[0];
+            loudDrop_drop(l);
+            return result;
+          }),
+        (a, b) => (a + b) >>> 0,
       );
-      console.log(`held sum ${value$2 == null ? "None" : `Some(${value$2})`}`);
+      console.log(`held sum ${value == null ? "None" : `Some(${value})`}`);
     }
     try {
       const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
       let taken$2$live = true;
       if (n > 0) {
         taken$2$live = false;
-        const value = (k, _3) => {
-          const result = (k + 1) | 0;
-          loudDrop_drop(_3);
-          return result;
-        };
         console.log(
-          `held skipped ${$skipping(taken, 3, loudDrop_drop).reduce((a, b) => value(a, b), 0)}`,
+          `held skipped ${$skipping(taken, 3, loudDrop_drop).reduce((k, _3) => {
+            const result = (k + 1) | 0;
+            loudDrop_drop(_3);
+            return result;
+          }, 0)}`,
         );
       }
       try {
@@ -579,7 +575,6 @@ function held(n) {
               let taken$5$live = true;
               if (n > 0) {
                 taken$5$live = false;
-                const value = (k) => (k + 1) | 0;
                 console.log(
                   `held mapped ${taken
                     .map((l) => {
@@ -588,7 +583,7 @@ function held(n) {
                       return result;
                     })
                     .drop(3)
-                    .reduce((a, b) => value(a, b), 0)}`,
+                    .reduce((k) => (k + 1) | 0, 0)}`,
                 );
               }
               try {

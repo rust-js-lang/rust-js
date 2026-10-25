@@ -126,14 +126,13 @@ function main() {
     console.log(
       `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} ${c == null ? "None" : `Some(${c})`} after restart`,
     );
-    const value = (d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    };
     const total = $closing($iter(ds(40)), $dropEach(dDrop_drop))
       .take(1)
-      .map((item) => value(item))
+      .map((d) => {
+        const result = d[0];
+        dDrop_drop(d);
+        return result;
+      })
       .reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`${total}`);
     const some = $held($closing($iter(ds(50)), $dropEach(dDrop_drop)).take(2));
@@ -178,42 +177,38 @@ function main() {
     // Collected by JS's own `new Set(..)`, which closes nothing at its end:
     // each source closed as it's done, or as an adapter over it ends.
     try {
-      const value = (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      };
       const firsts = new Set(
         $closing($iter(ds(60)), $dropEach(dDrop_drop))
           .take(1)
-          .map((item) => value(item)),
+          .map((d) => {
+            const result = d[0];
+            dDrop_drop(d);
+            return result;
+          }),
       );
-      const value$1 = (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      };
       const backs = new Set(
-        $rev($closing($iter(ds(70)), $dropEach(dDrop_drop))).map((item) => value$1(item)),
+        $rev($closing($iter(ds(70)), $dropEach(dDrop_drop))).map((d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        }),
       );
-      const value$2 = (d) => d[0] > 0;
-      const keep = (item) => value$2(item);
-      const value$3 = (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      };
+      const value = (d) => d[0] > 0;
       const kept = new Set(
         $closing($iter(ds(100)), $dropEach(dDrop_drop))
           .take(2)
           .filter((item) => {
-            if (keep(item)) {
+            if (value(item)) {
               return true;
             }
             dDrop_drop(item);
             return false;
           })
-          .map((item) => value$3(item)),
+          .map((d) => {
+            const result = d[0];
+            dDrop_drop(d);
+            return result;
+          }),
       );
       const scanned = new Set(
         $lazyScan($closing($iter(ds(110)), $dropEach(dDrop_drop)), 0, (_, d) => {

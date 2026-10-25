@@ -141,7 +141,7 @@ import { area } from "./shapes.js";
 export { area } from "./shapes.js";
 
 export function totalArea(radii) {
-  return radii.map((item) => area(item)).reduce((a, b) => a + b, -0);
+  return radii.map(area).reduce((a, b) => a + b, -0);
 }
 ```
 

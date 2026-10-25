@@ -39,10 +39,7 @@ function main() {
   console.log(`[${copy.toArray().join(", ")}]`);
 
   const makeFilter = (it, f) =>
-    $cloning(
-      it.filter((item) => f(item)),
-      () => makeFilter($iter(it.items.slice(it.at, it.end)), f),
-    );
+    $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
   const evens = iterator_map(
     makeFilter($iter([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0),
     (x) => (x * 3) | 0,
@@ -64,10 +61,7 @@ function main() {
       () => make$1(seen),
     );
   const makeFilter$1 = (it, f) =>
-    $cloning(
-      it.filter((item) => f(item)),
-      () => makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)),
-    );
+    $cloning(it.filter(f), () => makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)));
   const odd = makeFilter$1(copied, make$1(seen$1));
   const value$1 = both(odd, { next: $next }, { clone: (value) => $clone(value) });
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
@@ -75,15 +69,8 @@ function main() {
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
   // copies' (ADR 0480).
   const makeMap = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap($iter(it.items.slice(it.at, it.end)), f),
-    );
-  const makeFilter$2 = (it, f) =>
-    $cloning(
-      it.filter((item) => f(item)),
-      () => makeFilter$2($clone(it), f),
-    );
+    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
+  const makeFilter$2 = (it, f) => $cloning(it.filter(f), () => makeFilter$2($clone(it), f));
   const doubled = makeFilter$2(
     makeMap($iter([1, 2, 3, 4]), (x) => x),
     (x) => x % 2 === 0,

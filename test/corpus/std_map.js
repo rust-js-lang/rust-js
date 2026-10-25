@@ -164,15 +164,8 @@ function main() {
 
   // Made in place: part of a filter cloned apart, and cycled.
   const makeMap = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap($iter(it.items.slice(it.at, it.end)), f),
-    );
-  const makeFilter = (it, f) =>
-    $cloning(
-      it.filter((item) => f(item)),
-      () => makeFilter($clone(it), f),
-    );
+    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
+  const makeFilter = (it, f) => $cloning(it.filter(f), () => makeFilter($clone(it), f));
   const evens = makeFilter(
     makeMap($iter([1, 2, 3, 4, 5, 6]), (x) => (x * 3) | 0),
     (x) => x % 2 === 0,
@@ -181,9 +174,8 @@ function main() {
   $next(first);
   console.log(`[${first.toArray().join(", ")}] [${evens.toArray().join(", ")}]`);
   const makeMap$1 = (it, f) =>
-    $cloning(
-      $iterator(it, $rangeNext).map((item) => f(item)),
-      () => makeMap$1({ start: it.start, end: it.end }, f),
+    $cloning($iterator(it, $rangeNext).map(f), () =>
+      makeMap$1({ start: it.start, end: it.end }, f),
     );
   console.log(
     `[${$cycleOf(

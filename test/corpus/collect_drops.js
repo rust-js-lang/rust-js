@@ -51,34 +51,31 @@ function main() {
         try {
           console.log(`none ${none.length} ${length}`);
 
-          const value = (n) => {
+          const names = [["m1"], ["m2"]].map((n) => {
             const result = n[0];
             noisyDrop_drop(n);
             return result;
-          };
-          const names = [["m1"], ["m2"]].map((item) => value(item));
+          });
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
-          const value$1 = (n) => n[0] !== "p2";
-          const keep = (item) => value$1(item);
-          const value$2 = (n) => {
-            try {
-              console.log(`map ${n[0]}`);
-            } catch (error) {
-              noisyDrop_drop(n);
-              throw error;
-            }
-            return n;
-          };
+          const value = (n) => n[0] !== "p2";
           const checked = $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
             .filter((item) => {
-              if (keep(item)) {
+              if (value(item)) {
                 return true;
               }
               noisyDrop_drop(item);
               return false;
             })
-            .map((item) => value$2(item))
+            .map((n) => {
+              try {
+                console.log(`map ${n[0]}`);
+              } catch (error) {
+                noisyDrop_drop(n);
+                throw error;
+              }
+              return n;
+            })
             .toArray();
           try {
             console.log(`checked ${checked.length}`);

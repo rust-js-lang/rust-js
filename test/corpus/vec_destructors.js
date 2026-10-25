@@ -343,17 +343,16 @@ function main() {
 
               // `last()`: each item before it dropped as the next comes.
               const items = $range(50, 53).map((value) => [value]);
-              const value = (n) => {
-                try {
-                  console.log(`pass ${n[0]}`);
-                } catch (error) {
-                  noisyDrop_drop(n);
-                  throw error;
-                }
-                return n;
-              };
               const last = $lastDropping(
-                $closing($iter(items), $dropEach(noisyDrop_drop)).map((item) => value(item)),
+                $closing($iter(items), $dropEach(noisyDrop_drop)).map((n) => {
+                  try {
+                    console.log(`pass ${n[0]}`);
+                  } catch (error) {
+                    noisyDrop_drop(n);
+                    throw error;
+                  }
+                  return n;
+                }),
                 noisyDrop_drop,
               );
               try {

@@ -16,6 +16,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Vec<(usize, Option<Unused>)>> {
         let mut given = Vec::new();
         for (at, &ty) in tys.iter().enumerate() {
+            // What an `impl FnMut` a function gives is, its closure, which
+            // carries its drop (#259).
+            let ty = self.reveal(ty);
             let Some(when) = self.handled_argument(known, at, ty) else {
                 continue;
             };

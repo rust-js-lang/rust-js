@@ -196,27 +196,30 @@ function main() {
           loudDrop_drop(item);
         }
       }
-      const value = (n, _3) => {
-        const result = (n + 1) | 0;
-        loudDrop_drop(_3);
-        return result;
-      };
       console.log(
-        `${$skipping($rev($closing($iter(louds(32, 4)), $dropEach(loudDrop_drop))), 2, loudDrop_drop).reduce((a, b) => value(a, b), 0)}`,
+        `${$skipping(
+          $rev($closing($iter(louds(32, 4)), $dropEach(loudDrop_drop))),
+          2,
+          loudDrop_drop,
+        ).reduce((n, _3) => {
+          const result = (n + 1) | 0;
+          loudDrop_drop(_3);
+          return result;
+        }, 0)}`,
       );
-      const value$1 = $held(
+      const value = $held(
         $skipping($rev($closing($iter(louds(36, 4)), $dropEach(loudDrop_drop))), 2, loudDrop_drop),
       );
       try {
         console.log(
-          `${$lent(value$1).some((l) => {
+          `${$lent(value).some((l) => {
             const result = l[0] > 99;
             loudDrop_drop(l);
             return result;
           })}`,
         );
       } finally {
-        value$1.return();
+        value.return();
       }
       console.log(
         `${$count($rev($closing($iter(louds(40, 3)), $dropEach(loudDrop_drop))).take(2), loudDrop_drop)}`,
@@ -254,26 +257,25 @@ function main() {
         loudDrop_drop(l);
         return result;
       };
-      const value$2 = taken ? map(taken) : undefined;
-      console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-      const value$3 = $held($rev($closing($iter(louds(50, 3)), $dropEach(loudDrop_drop))).take(2));
+      const value$1 = taken ? map(taken) : undefined;
+      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const value$2 = $held($rev($closing($iter(louds(50, 3)), $dropEach(loudDrop_drop))).take(2));
       try {
-        const value = $nthDropping($lent(value$3), 4, loudDrop_drop, false);
+        const value = $nthDropping($lent(value$2), 4, loudDrop_drop, false);
         const value$1 = (l) => {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         };
-        const value$2 = value ? value$1(value) : undefined;
-        console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+        const value$3 = value ? value$1(value) : undefined;
+        console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
       } finally {
-        value$3.return();
+        value$2.return();
       }
-      const value$4 = (l) => l[0] > 0;
-      const keep = (item) => value$4(item);
+      const value$3 = (l) => l[0] > 0;
       const iter = $skipping(
         $closing($iter(louds(54, 3)), $dropEach(loudDrop_drop)).filter((item) => {
-          if (keep(item)) {
+          if (value$3(item)) {
             return true;
           }
           loudDrop_drop(item);

@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "mir-fold-own-of-init",
     breaks: "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
-    replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
+    find: "        let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
+    replace: "        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));\n        let callback = self.binary_callback(f, own);\n        let Some(init) = init else {\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a fold given a function of the crate's"],
   },
   {

@@ -201,7 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // An owning source of items with a destructor, closed to drop
                 // what it hasn't given, as a map's is (ADR 0465).
                 let it = self.closing(it, iter_ty, span)?;
-                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+                let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
                 let f = self.unary_callback(values.next().expect("the function"), own);
                 Expr::call_helper("$mapEnds", vec![it, f])
             }
@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Closed to drop what it holds, as a map's is, the crate's
                 // iterator or a compiled `fuse()` of it (#225).
                 let it = self.closing(it, held, span)?;
-                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
+                let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
                 let p = self.unary_callback(values.next().expect("the test"), own);
                 let mut given = vec![it, p];
                 if let Some(item) = self.iterator_item(output) {

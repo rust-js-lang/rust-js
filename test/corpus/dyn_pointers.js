@@ -77,7 +77,7 @@ function main() {
     { shape: { value: square, impl: squareShape } },
     { shape: { value: rect, impl: rectShape } },
   ];
-  const areas = slots.map((item) => Slot.area(item));
+  const areas = slots.map(Slot.area);
   console.log(`[${areas.join(", ")}]`);
 }
 

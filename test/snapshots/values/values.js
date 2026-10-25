@@ -50,7 +50,7 @@ export const Value = {
           ($max(
             $sortedEntries(value._0, $cmp)
               .map((entry) => entry[1])
-              .map((item) => Value.depth(item)),
+              .map(Value.depth),
           ) ?? 0)) >>>
         0
       );

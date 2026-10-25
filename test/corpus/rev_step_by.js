@@ -49,12 +49,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $stepByEnds(
-        $mapEnds($iter(v), (item) => t(item)),
-        5,
-      ),
-    )
+    `[${$rev($stepByEnds($mapEnds($iter(v), t), 5))
       .toArray()
       .join(", ")}]`,
   );

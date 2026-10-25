@@ -226,7 +226,7 @@ function main() {
       if (it.iter != null) {
         loudDrop_drop(it.iter);
       }
-    }).map((item) => tmp(item));
+    }).map(tmp);
   } catch (error) {
     if (steady$live) {
       if (steady.iter != null) {

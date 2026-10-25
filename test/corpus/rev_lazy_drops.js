@@ -26,14 +26,13 @@ function main() {
   }
   console.log("--");
 
-  const value = (l) => {
-    const result = [(l[0] * 10) >>> 0];
-    loudDrop_drop(l);
-    return result;
-  };
   const scaled = $held(
     $rev(
-      $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(loudDrop_drop)), (item) => value(item)),
+      $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(loudDrop_drop)), (l) => {
+        const result = [(l[0] * 10) >>> 0];
+        loudDrop_drop(l);
+        return result;
+      }),
     ),
   );
   try {
@@ -47,13 +46,12 @@ function main() {
     }
     console.log("--");
 
-    const value = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
     const kept = $rev($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)))
-      .map((item) => value(item))
+      .map((l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      })
       .toArray();
     console.log(`[${kept.join(", ")}]`);
   } finally {

@@ -25,13 +25,12 @@ function main() {
     r.return();
   }
   const w = [[4], [5], [6]];
-  const value = (l) => {
-    const result = l[0];
-    loudDrop_drop(l);
-    return result;
-  };
   const all = $rev($closing($iter(w), $dropEach(loudDrop_drop)))
-    .map((item) => value(item))
+    .map((l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    })
     .toArray();
   console.log(`[${all.join(", ")}]`);
   const x = [[7], [8], [9]];

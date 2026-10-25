@@ -30,12 +30,8 @@ function main() {
   console.log(
     `[${$rev(
       $chainEnds(
-        $mapEnds($iterator({ start: 1, end: 3 }, $rangeNext, false, $rangeNextBack), (item) =>
-          t(item),
-        ),
-        $mapEnds($iterator({ start: 10, end: 12 }, $rangeNext, false, $rangeNextBack), (item) =>
-          t(item),
-        ),
+        $mapEnds($iterator({ start: 1, end: 3 }, $rangeNext, false, $rangeNextBack), t),
+        $mapEnds($iterator({ start: 10, end: 12 }, $rangeNext, false, $rangeNextBack), t),
       ),
     )
       .take(3)
