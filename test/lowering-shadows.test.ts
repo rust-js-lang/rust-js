@@ -208,3 +208,33 @@ pub fn chained(s: &str) -> String {
     5,
   ]);
 });
+
+// React's `cache`: a closure's loop variable shadowed by its cast, `let
+// arg: &JsObject = unsafe { js::cast(arg) };`, is that variable, as a
+// function's is: nothing outside the closure sets what it declares (ADR
+// 0849). Its JS had `const arg$1 = arg;`.
+test("a closure's loop variable shadowed by its own value is that variable", () => {
+  const dir = fixture("shadowed-closure-loop-variable");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, Kind, Unknown, WeakMap};
+
+pub fn keyed(map: &'static WeakMap<JsObject, f64>) -> impl Fn(&[Option<&'static Unknown>]) -> f64 {
+    move |arguments: &[Option<&'static Unknown>]| {
+        let mut total = 0.0;
+        for &arg in arguments {
+            if let Kind::Function(_) | Kind::Object(_) | Kind::Array(_) = js::classify(arg) {
+                let arg: &JsObject = unsafe { js::cast(arg) };
+                total += map.get(arg).unwrap_or(1.0);
+            }
+        }
+        total
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`      if (typeof arg === "function" || (typeof arg === "object" && arg !== null)) {
+        total += map.get(arg) ?? 1;
+      }`);
+  expect(js).not.toContain("arg$1");
+}, 300_000);

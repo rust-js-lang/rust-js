@@ -592,4 +592,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "js::shown is shown as a template"],
   },
+  {
+    name: "closure-declared-shadow-kept",
+    breaks: "a closure's loop variable shadowed by its cast, `let arg: &JsObject = unsafe { js::cast(arg) };`, is `const arg$1 = arg;`, not `arg`",
+    file: "src/prepare.rs",
+    find: "                            own.extend(pattern.names().into_iter().map(str::to_string));\n",
+    replace: "",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a closure's loop variable shadowed by its own value"],
+  },
 ];

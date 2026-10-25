@@ -1210,3 +1210,230 @@ fn set_binding(stmt: &mut Stmt) {
         _ => {}
     }
 }
+
+/// `const node$1 = createNode(); cache.set(key, node$1); node = node$1;`, a
+/// binding of a variable's own name, given apart, that the variable is
+/// given after it, where nothing between names the variable: the variable
+/// given it where it's made, `node = createNode(); cache.set(key, node);`,
+/// as `node = match .. { None => { let node = make(); ..; node } .. }`
+/// reads (ADR 0849). Only of a variable the body declares, or a parameter
+/// of it: one a closure captures may be read after what's between throws,
+/// as it was, by what called the closure. Not where a `break` or a
+/// `continue` between may leave before the variable's given it, nor in a
+/// `try`, whose `catch` or `finally` may read the variable as it was, nor
+/// of what a closure or a `&mut`'s handle reads, which may run between.
+pub(super) fn given_last(params: &[js::Pattern], body: &mut Vec<Stmt>) {
+    let captured = captured(body);
+    let mut declared: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    declared_in(body, &mut declared);
+    given_last_in(body, false, (&captured, &declared));
+}
+
+/// What `stmts` declare, in their blocks too: not their closures', which
+/// are their own bodies.
+fn declared_in(stmts: &[Stmt], declared: &mut HashSet<String>) {
+    for stmt in stmts {
+        match &stmt.kind {
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
+                declared.insert(name.clone());
+            }
+            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(str::to_string)),
+            _ => {}
+        }
+        match &stmt.kind {
+            StmtKind::If(_, a, b) => {
+                declared_in(a, declared);
+                if let Some(b) = b {
+                    declared_in(b, declared);
+                }
+            }
+            StmtKind::ForOf { pattern, body, .. } => {
+                declared.extend(pattern.names().into_iter().map(str::to_string));
+                declared_in(body, declared);
+            }
+            StmtKind::While { body, .. } | StmtKind::For { body, .. } | StmtKind::Labeled(_, body) => {
+                declared_in(body, declared);
+            }
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists(cases, default).for_each(|body| declared_in(body, declared));
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                declared_in(a, declared);
+                declared_in(b, declared);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// `given_last` of `stmts`, and of each block in them: in a `try`'s, none.
+fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, names: (&HashSet<String>, &HashSet<String>)) {
+    if !in_try {
+        given_first(stmts, names);
+    }
+    for stmt in stmts.iter_mut() {
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                given_last_in(a, in_try, names);
+                if let Some(b) = b {
+                    given_last_in(b, in_try, names);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::Labeled(_, body) => given_last_in(body, in_try, names),
+            StmtKind::Switch { cases, default, .. } => {
+                for body in js::case_lists_mut(cases, default) {
+                    given_last_in(body, in_try, names);
+                }
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                given_last_in(a, true, names);
+                given_last_in(b, true, names);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// `given_last` of the block `stmts` itself: each variable given a binding
+/// made before it in the block, the binding named nowhere after.
+fn given_first(stmts: &mut Vec<Stmt>, (captured, declared): (&HashSet<String>, &HashSet<String>)) {
+    let mut given = 0;
+    while given < stmts.len() {
+        let Some((at, x, y)) = given_from(stmts, given, (captured, declared)) else {
+            given += 1;
+            continue;
+        };
+        let StmtKind::Const(_, made) = &mut stmts[at].kind else {
+            unreachable!("`given_from`'s `const`")
+        };
+        let made = std::mem::replace(made, Expr::undefined());
+        stmts[at].kind = StmtKind::Assign(Expr::var(&x), made);
+        stmts.remove(given);
+        js::each_expr_mut(&mut stmts[at + 1..given], &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(v) if *v == y) {
+                *e = Expr::var(&x).or_at(e.span);
+            }
+        });
+    }
+}
+
+/// Of `stmts[given]`, `x = y;`, `given_first`'s: where `y` is made, `x`
+/// and `y`.
+fn given_from(
+    stmts: &[Stmt],
+    given: usize,
+    (captured, declared): (&HashSet<String>, &HashSet<String>),
+) -> Option<(usize, String, String)> {
+    let StmtKind::Assign(target, value) = &stmts[given].kind else {
+        return None;
+    };
+    let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
+        return None;
+    };
+    if !kin(x, y) || !declared.contains(x) || captured.contains(x) || captured.contains(y) {
+        return None;
+    }
+    let at = (stmts[..given].iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == y))?;
+    let StmtKind::Const(_, made) = &stmts[at].kind else {
+        return None;
+    };
+    let between = &stmts[at + 1..given];
+    let kept = made.mentions_var(x)
+        || js::mentions_in(between, x) > 0
+        || jumps(between)
+        || js::mentions_in(&stmts[given + 1..], y) > 0;
+    (!kept).then(|| (at, x.clone(), y.clone()))
+}
+
+/// Whether `apart` is `name` given apart, `node$1` of `node` or of `node$2`.
+fn kin(name: &str, apart: &str) -> bool {
+    let base = crate::names::apart(name).map_or(name, |(base, _)| base);
+    crate::names::apart(apart).is_some_and(|(of, _)| of == base)
+}
+
+/// Whether a `break` or a `continue` is anywhere in `stmts`.
+fn jumps(stmts: &[Stmt]) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        StmtKind::If(_, a, b) => jumps(a) || b.as_deref().is_some_and(jumps),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => jumps(body),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| jumps(body)),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => jumps(a) || jumps(b),
+        _ => false,
+    })
+}
+
+/// `const cache$1 = node.o; let cache; if (!cache$1) { cache = new
+/// WeakMap(); node.o = cache; } else { cache = cache$1; }`, a variable
+/// given what's read before, the other way given its own: the variable
+/// given what's read, `let cache = node.o; if (!cache) { cache = new
+/// WeakMap(); node.o = cache; }`, as a cache filled the first time it's
+/// read, `match node.o.get() { None => { ..; cache } Some(cache) => cache
+/// }`, reads (ADR 0849). What's read is named as the variable is, given
+/// apart, and nowhere else. The other way reads the variable only once
+/// it's given its value, as Rust reads none before, so it's never read as
+/// what's read.
+pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        if let Some((read, var)) = lazily_filled(stmts, i) {
+            let at = match &stmts[i].kind {
+                StmtKind::Const(..) => i,
+                _ => i + 1,
+            };
+            let StmtKind::Const(_, made) = &stmts[at].kind else {
+                unreachable!("a `const` of what's read")
+            };
+            let declared = StmtKind::Let(var.clone(), Some(made.clone())).at(stmts[at].span);
+            let StmtKind::If(test, then, Some(otherwise)) =
+                std::mem::replace(&mut stmts[i + 2].kind, StmtKind::Comments)
+            else {
+                unreachable!("the `if` `lazily_filled` matched")
+            };
+            let test = (test.substitute(&|v| (v == read).then(|| Expr::var(&var)))).unwrap_or(test);
+            stmts[i + 2].kind = match gives_read(&otherwise, &var, &read) {
+                true => StmtKind::If(test, then, None),
+                false => StmtKind::If(test.negated_test(), otherwise, None),
+            };
+            stmts.splice(i..i + 2, [declared]);
+        }
+        i += 1;
+    }
+}
+
+/// Of `stmts[i..]`, `filled_lazily`'s: what's read and the variable.
+fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
+    let (read, var) = match (&stmts[i].kind, &stmts[i + 1].kind) {
+        (StmtKind::Const(read, _), StmtKind::Let(var, None)) | (StmtKind::Let(var, None), StmtKind::Const(read, _)) => {
+            (read, var)
+        }
+        _ => return None,
+    };
+    let StmtKind::If(test, then, Some(otherwise)) = &stmts[i + 2].kind else {
+        return None;
+    };
+    let other = match (gives_read(then, var, read), gives_read(otherwise, var, read)) {
+        (false, true) => then.as_slice(),
+        (true, false) => otherwise.as_slice(),
+        _ => return None,
+    };
+    // What's read named as the variable is, given apart: not a binding of
+    // the program's own name, `fnNode`, which stays.
+    let kept = !kin(var, read)
+        || test.mentions_var(var)
+        || js::mentions_in(other, read) > 0
+        || js::mentions_in(&stmts[i + 3..], read) > 0;
+    (!kept).then(|| (read.clone(), var.clone()))
+}
+
+/// Whether `branch` is `var = read;` alone.
+fn gives_read(branch: &[Stmt], var: &str, read: &str) -> bool {
+    matches!(branch, [s] if matches!(&s.kind, StmtKind::Assign(t, v)
+        if matches!(&t.kind, ExprKind::Var(n) if n == var) && matches!(&v.kind, ExprKind::Var(n) if n == read)))
+}

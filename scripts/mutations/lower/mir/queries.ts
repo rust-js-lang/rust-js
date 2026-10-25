@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "        }) => false,\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
+  {
+    name: "read-before-written-past-a-write",
+    breaks: "`node.v.set({ node = b; .. })` sets `b`'s, not the node `node` was where the `Cell` was reached",
+    file: "src/lower/mir/queries.rs",
+    find: "                && a.0.local == local\n                && a.0.projection.is_empty()\n            {\n                return false;\n",
+    replace: "                && a.0.local == local\n                && a.0.projection.is_empty()\n            {\n                continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
+  },
 ];

@@ -2,7 +2,10 @@
 
 Status: Accepted. Extends [0609](0609-a-shadowed-parameter-is-assigned.md),
 whose parameter at a function's top is now any binding of the shadow's
-block; 0609's pass in preparation is gone, this one is tidy's.
+block; 0609's pass in preparation is gone, this one is tidy's. Extended by
+[0849](0849-a-variable-set-again-is-read-and-given-where-it-is.md): a
+binding the variable it shadows is given last, the variable given it
+where it's made.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same values are
 read where they were; only names change.

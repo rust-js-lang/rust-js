@@ -451,4 +451,21 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_reached_through_a_call.rs$"],
   },
+  {
+    name: "cell-read-before-written-held",
+    breaks: "a `Cell` read by `get` through a reference set again after, `node.s.get()` in a loop that moves `node` on, is `const node$1 = node; node$1.s`, not `node.s`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    && !(self.is_std_type(pointee, StdItem::Cell)\n",
+    replace: "                    && !(false\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "cell-kept-by-any-call",
+    breaks: "a `Cell` given to a function that keeps it, `hold(&node.v)`, then `node = a`, reads `a`'s, not the node it was made of",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            && matches!(\n                self.recognition().classify(def_id, generic_args),\n",
+    replace: "            && !matches!(\n                self.recognition().classify(def_id, generic_args),\n",
+    tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
+  },
 ];

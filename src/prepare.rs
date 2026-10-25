@@ -373,10 +373,22 @@ fn compound(module: &mut js::Module) {
 fn prepared(function: &mut js::Function) {
     function_body(&mut function.params, &mut function.body);
     shadows(&mut function.body, None);
-    // A closure's own parameter, shadowed in it: nothing outside it sets one.
+    // A closure's own parameter, shadowed in it, or a variable it declares,
+    // `for (const arg of args)`'s: nothing outside it sets one (ADR 0849).
     js::each_expr_mut(&mut function.body, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
-            let own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+            let mut own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+            js::each_block_mut(body, &mut |stmts| {
+                for stmt in stmts.iter() {
+                    match &stmt.kind {
+                        StmtKind::Const(name, _) | StmtKind::Let(name, _) => _ = own.insert(name.clone()),
+                        StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                            own.extend(pattern.names().into_iter().map(str::to_string));
+                        }
+                        _ => {}
+                    }
+                }
+            });
             shadows(body, Some(&own));
         }
     });

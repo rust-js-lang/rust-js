@@ -593,7 +593,14 @@ mod tests {
                 .iter()
                 .filter_map(|n| n.strip_prefix("finish/"))
                 .collect::<Vec<_>>(),
-            ["temporaries named", "flags named", "shadows", "appends"]
+            [
+                "temporaries named",
+                "flags named",
+                "shadows",
+                "given last",
+                "filled lazily",
+                "appends"
+            ]
         );
         assert!(names.last().is_some_and(|n| n == "finish/appends"));
     }

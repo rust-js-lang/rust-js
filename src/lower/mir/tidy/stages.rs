@@ -532,6 +532,13 @@ pub(super) const STAGES: &[Stage] = &[
             pass("shadows", |b, h| {
                 bindings::shadowed(&h.params.borrow(), b, &h.named.user)
             }),
+            // A binding of a variable's name the variable's given last, the
+            // variable given it where it's made; then a variable given what's
+            // read before one way, given it first (ADR 0849).
+            pass("given last", |b, h| bindings::given_last(&h.params.borrow(), b)),
+            pass("filled lazily", |b, _| {
+                js::statement_lists(b, &mut bindings::filled_lazily)
+            }),
             pass("appends", |b, h| {
                 crate::lower::std_types::text::appended(b, &h.named.text)
             }),

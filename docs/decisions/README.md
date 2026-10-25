@@ -531,7 +531,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](0647-type-name-as-react-writes-it.md)
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound; 0686: the hook's type is named)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](0649-inline-never-is-noinline.md)
-- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)
+- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0849: a binding the variable it shadows is given last)*
 - [0651 A `let`, then its fallback where it's falsy, is `||`](0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](0652-consecutive-appends-are-one.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*
@@ -637,6 +637,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md)
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
+- [0849 A variable set again is read, and given what's made, where it is](0849-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -411,6 +411,96 @@ pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local)
     false
 }
 
+/// Whether what the statement at `at` makes, a temporary MIR reads once, a
+/// `&(*node).v` through `local`, a reference written again, is read by
+/// `takes`, a call of what keeps nothing of it, before `local` is written,
+/// every way from `at` (ADR 0849): its place, read there, is the one it
+/// was, so nothing need hold what `local` is meanwhile. What's written
+/// there is MIR's assignment of `local`: borrowck lets no `&mut` to `local`,
+/// a closure's capture of it, write it between, as `local` is read before.
+pub(super) fn read_before_written<'tcx>(
+    state: &State<'_, 'tcx>,
+    (at, rvalue): (mir::Location, &Rvalue<'tcx>),
+    local: Local,
+    takes: impl Fn(&mir::Terminator<'tcx>, Local) -> bool,
+) -> bool {
+    /// Whether a statement or terminator names `local`.
+    struct Names {
+        local: Local,
+        found: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Names {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            self.found |= local == self.local && !matches!(context, PlaceContext::NonUse(_));
+        }
+    }
+    let body = state.body;
+    let Some(StatementKind::Assign(assign)) = (body.basic_blocks[at.block].statements)
+        .get(at.statement_index)
+        .map(|s| &s.kind)
+    else {
+        return false;
+    };
+    let made = assign.0;
+    // Of the statement being lowered: not a cleanup's, say, lowered apart.
+    if !std::ptr::addr_eq(&assign.1, rvalue)
+        || !made.projection.is_empty()
+        || state.locals.user[made.local]
+        || state.locals.reads[made.local] != 1
+    {
+        return false;
+    }
+    let names = |visit: &dyn Fn(&mut Names)| {
+        let mut names = Names {
+            local: made.local,
+            found: false,
+        };
+        visit(&mut names);
+        names.found
+    };
+    let mut seen = HashSet::new();
+    let mut next = vec![(at.block, at.statement_index + 1)];
+    while let Some((block, from)) = next.pop() {
+        if !seen.insert((block, from)) {
+            continue;
+        }
+        let data = &body.basic_blocks[block];
+        for (index, statement) in data.statements.iter().enumerate().skip(from) {
+            let here = mir::Location {
+                block,
+                statement_index: index,
+            };
+            if names(&|n| n.visit_statement(statement, here)) {
+                return false;
+            }
+            if let StatementKind::Assign(a) = &statement.kind
+                && a.0.local == local
+                && a.0.projection.is_empty()
+            {
+                return false;
+            }
+        }
+        let terminator = data.terminator();
+        let here = mir::Location {
+            block,
+            statement_index: data.statements.len(),
+        };
+        if names(&|n| n.visit_terminator(terminator, here)) {
+            if takes(terminator, made.local) {
+                continue;
+            }
+            return false;
+        }
+        if let TerminatorKind::Call { destination, .. } = &terminator.kind
+            && destination.local == local
+        {
+            return false;
+        }
+        next.extend(terminator.successors().map(|b| (b, 0)));
+    }
+    true
+}
+
 /// Where the program wrote what `block` does first: a macro's, where it
 /// called it.
 pub(super) fn written_at(body: &mir::Body<'_>, block: BasicBlock) -> Option<rustc_span::BytePos> {

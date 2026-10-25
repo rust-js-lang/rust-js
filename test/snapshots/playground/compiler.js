@@ -163,14 +163,13 @@ function directoryOf(sources) {
     let name;
     if (rsplitOnce) {
       const folders = rsplitOnce[0];
-      const name$1 = rsplitOnce[1];
+      name = rsplitOnce[1];
       for (const part of folders.split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
         folder = $unwrap(folder.get(part), "no entry found for key").contents;
       }
-      name = name$1;
     } else {
       name = path;
     }

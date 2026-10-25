@@ -217,8 +217,7 @@ export function App() {
         const rsplitOnce = $rsplitOnce(path, "/");
         let file;
         if (rsplitOnce) {
-          const file$1 = rsplitOnce[1];
-          file = file$1;
+          file = rsplitOnce[1];
         } else {
           file = path;
         }

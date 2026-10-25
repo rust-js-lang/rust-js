@@ -551,4 +551,22 @@ export const mutations: Mutation[] = [
     replace: "                let _ = b;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
+  {
+    name: "given-last-unasked",
+    breaks: "`node = match .. { None => { let node = make(); ..; node } .. }` is `const node$1 = make(); ..; node = node$1;`",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"given last\", |b, h| bindings::given_last(&h.params.borrow(), b)),\n",
+    replace: "            pass(\"given last\", |_, _| {}),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "filled-lazily-unasked",
+    breaks: "a cache filled the first time it's read is `const cache$1 = node.o; let cache; if (!cache$1) { .. } else { cache = cache$1; }`, two bindings",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut bindings::filled_lazily)\n",
+    replace: "                _ = b;\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    snapshots: true,
+  },
 ];

@@ -4,6 +4,23 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `terminator` calls a `Cell`'s `get`, `set`, `replace` or
+    /// `take` of `made`, a reference to it, which keeps nothing of `made`
+    /// once it returns (ADR 0849).
+    fn keeps_no_cell(&self, terminator: &mir::Terminator<'tcx>, made: Local) -> bool {
+        let TerminatorKind::Call { func, args, .. } = &terminator.kind else {
+            return false;
+        };
+        let Some((def_id, generic_args)) = func.const_fn_def() else {
+            return false;
+        };
+        matches!(args.first().map(|a| &a.node), Some(Operand::Move(p) | Operand::Copy(p)) if p.as_local() == Some(made))
+            && matches!(
+                self.recognition().classify(def_id, generic_args),
+                Some(Std::CellGet | Std::CellSet | Std::CellReplace | Std::CellTake)
+            )
+    }
+
     pub(super) fn mir_rvalue(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -129,13 +146,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // `&error.title` of a `Cell` a field holds, a handle on it,
                 // through a reference written again, `error = other` after:
-                // of what `error` is now, held, as a `&mut`'s above.
+                // of what `error` is now, held, as a `&mut`'s above. Not where
+                // the handle's read by its `Cell`'s `get` or `set` before
+                // `error` is set again, `error.title.get()`: the place it
+                // reads then is the one it was (ADR 0849).
                 if matches!(kind, BorrowKind::Shared)
                     && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))
                     && place.projection.first() == Some(&PlaceElem::Deref)
                     && written_again(state, place.local)
                     && state.body.local_decls[place.local].ty.is_ref()
                     && !state.locals.names[place.local].is_empty()
+                    && !(self.is_std_type(pointee, StdItem::Cell)
+                        && read_before_written(state, (state.location(), rvalue), place.local, |t, made| {
+                            self.keeps_no_cell(t, made)
+                        }))
                 {
                     let target = self.mir_place(state, *place, span, out)?;
                     let name = state.locals.names[place.local].clone();

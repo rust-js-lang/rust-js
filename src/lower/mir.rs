@@ -467,6 +467,14 @@ struct State<'m, 'tcx> {
 }
 
 impl<'tcx> State<'_, 'tcx> {
+    /// Where the statement being lowered is, `at`'s `statement`.
+    fn location(&self) -> mir::Location {
+        mir::Location {
+            block: self.at,
+            statement_index: self.statement,
+        }
+    }
+
     /// The `let` of each value settled before a drop (`settle_reads`),
     /// first in the function's body.
     fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
