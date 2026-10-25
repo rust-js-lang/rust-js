@@ -141,3 +141,15 @@ MIR has it. Case N: what runs is Rust's.
   `while (true)`, count one more of `docs/readability.txt`'s labeled
   blocks and `while (true)`s, blessed: the JS that runs as Rust does. No
   other corpus case's or snapshot's JS changed.
+
+## Amendment: no `break` after what leaves itself (#290)
+
+`while_tests` makes `while (t) { rest }` of a loop its function ends
+with, and appends the loop's `break` to `rest`, leaving it for
+`unreachable` to drop. When `rest` already ends with what leaves, such
+as a panic's `throw`, the `break` stayed: the `chains` stage runs no
+`unreachable` after it, so tidy's contract "nothing after a jump" broke
+and the compiler panicked (fuzz seed 61706). Now `broken_after` appends
+no `break` after a `break`, `continue`, `return` or `throw`.
+`while_test_ends_in_throw` compiles such a loop and runs it against
+native Rust, and `broken-after-a-throw` is caught.

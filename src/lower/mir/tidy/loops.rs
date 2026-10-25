@@ -526,8 +526,20 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
 /// loop's body and no loop in it, is the loop's own.
 fn broken_after(body: &mut Vec<Stmt>) {
     let goes_on = |s: &Stmt| matches!(s.kind, StmtKind::Continue(None));
-    // What follows a branch that leaves anyway is `unreachable`'s to drop.
-    let leaves = |stmts: &mut Vec<Stmt>| stmts.push(StmtKind::Break(None).at(js::Span::NONE));
+    // What follows a branch that leaves anyway is `unreachable`'s to drop;
+    // none after what leaves itself, a `throw`, where no `unreachable`
+    // follows (#290).
+    let leaves = |stmts: &mut Vec<Stmt>| {
+        let left = stmts.last().is_some_and(|s| {
+            matches!(
+                s.kind,
+                StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_)
+            )
+        });
+        if !left {
+            stmts.push(StmtKind::Break(None).at(js::Span::NONE));
+        }
+    };
     if let Some(Stmt {
         kind: StmtKind::If(_, then, Some(otherwise)),
         ..
