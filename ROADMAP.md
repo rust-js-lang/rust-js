@@ -547,14 +547,14 @@ proposed P1–P6. Landed: P1's adapters, each compiled from std's bodies where i
 held (Rev, Enumerate, Map, Inspect, Flatten, FlatMap: ADRs 0871, 0899, 0903); P2's
 facts set on every JS node (ADR 0889) and the facts it replaced JS-shape guesses
 with (ADRs 0890, 0892, 0900, 0901, 0902); P3's `LocalFacts` and `NamingFacts`
-(ADR 0872); P4's one evidence order (ADR 0886); P5's generator work. Still open,
+(ADR 0872); P4's one evidence order (ADR 0886) and its facts as sets (ADR 0906); P5's generator work. Still open,
 each its own decision:
 
 | Item | What's left | Why it waits |
 | --- | --- | --- |
 | P2: places read and written | A fact of which places a node reads and writes, from MIR, for tidy's moves past calls; `reads_same` and `only_makes_values` still answer from JS shapes, sound for what they ask. | A per-node analysis and an audit of the ~150 passes that ask; each pass changed should come with the fact it needs. |
 | P2: scopes inside a run | `Run::covers` taking a `try`/`finally` in, so a scope a loop's drop makes first doesn't stop the function's (`given_last_unwinds.js`, ADR 0902). | Stripping the outer drop from a `catch` that drops it before an inner `finally` would reorder them; it needs a rule for which drops cross. |
-| P4: witness objects and a manifest facts map | Declined for now (ADR 0893): they nest every call site, and the ABI stability they buy matters little before there are users. | A later decision if a library's ABI must stay stable. |
+| P4: witness objects | Declined for now (ADR 0893): they nest every call site, and the ABI stability they buy matters little before there are users. The manifest's facts map is done, as typed sets of named facts (ADR 0906). | A later decision if a library's ABI must stay stable. |
 | P4: the whole-program link | A release build that links every crate's serialized `Unlinked` trees, deciding across crates what each crate decides alone now (ADR 0100). | An IR format and its versioning; an optimization, which nothing wrong waits on. |
 
 ## Public playground track
