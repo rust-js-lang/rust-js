@@ -56,6 +56,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
     /// What it does with its `RefCell`s (ADR 0863).
     pub(super) ref_cells: crate::library::RefCellFacts,
+    /// What it says of its structs' fields (ADRs 0863, amended, 0906).
+    pub(super) fields: Vec<crate::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
     pub(super) lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
     /// The exported thread-locals that are their module's variables (ADR
@@ -119,6 +121,7 @@ pub(super) fn exports<'tcx>(
         makes_dropping_anys,
         counted,
         ref_cells: _,
+        fields: _,
         lazy_locals: _,
         variables,
         identities,
@@ -211,6 +214,7 @@ pub(super) fn exports<'tcx>(
             shapes
         },
         ref_cells: contracts.ref_cells.clone(),
+        fields: contracts.fields.clone(),
         identities: {
             let mut keys: Vec<String> = (identities.iter())
                 .filter(|&&id| reachable(tcx, id))
@@ -223,17 +227,26 @@ pub(super) fn exports<'tcx>(
 }
 
 /// What a library and its consumers both call `id`, an item or a field
-/// (`key`): a struct's `RefCell` field its contract names (ADR 0863,
-/// amended).
+/// (`key`): a struct's field its contract names (ADR 0906).
 pub(in crate::lower) fn item_key(tcx: TyCtxt<'_>, id: DefId) -> String {
     key(tcx, id)
 }
 
-/// What a library's contract calls each of `ids`, sorted (`item_key`).
-pub(super) fn item_keys(tcx: TyCtxt<'_>, ids: impl IntoIterator<Item = DefId>) -> Vec<String> {
-    let mut keys: Vec<String> = ids.into_iter().map(|id| key(tcx, id)).collect();
-    keys.sort();
-    keys
+/// What a library's contract says of each of `ids`, its structs' fields,
+/// each of `facts`, sorted by key (ADR 0906).
+pub(super) fn fields(
+    tcx: TyCtxt<'_>,
+    ids: impl IntoIterator<Item = DefId>,
+    facts: &[crate::library::FieldFact],
+) -> Vec<crate::library::Field> {
+    let mut fields: Vec<crate::library::Field> = (ids.into_iter())
+        .map(|id| crate::library::Field {
+            key: key(tcx, id),
+            facts: facts.iter().copied().collect(),
+        })
+        .collect();
+    fields.sort_by(|a, b| a.key.cmp(&b.key));
+    fields
 }
 
 /// What a library's contract calls each of `tys`, sorted, each once (ADR
@@ -500,6 +513,18 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// What each library does with its `RefCell`s (ADR 0863), by its name.
+    /// Each field of a library's struct its contract says is `fact`, by its
+    /// key, and the library that says so (ADR 0906).
+    pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> HashMap<String, String> {
+        (self.dependencies.libraries.iter())
+            .flat_map(|(name, library)| {
+                (library.fields.iter())
+                    .filter(move |(_, facts)| facts.contains(&fact))
+                    .map(move |(key, _)| (key.clone(), name.clone()))
+            })
+            .collect()
+    }
+
     pub(super) fn ref_cell_facts(&self) -> Vec<(String, crate::library::RefCellFacts)> {
         let mut facts: Vec<_> = (self.dependencies.libraries.iter())
             .filter(|(_, library)| !library.ref_cells.is_empty())

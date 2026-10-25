@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "library-location-unread",
     breaks: "a consumer reads no library function as taking its caller's location, and gives it none",
     file: "src/lower/library.rs",
-    find: "        self.item(id).is_some_and(|item| item.calling.has(ItemFact::TakesLocation))\n",
-    replace: "        self.item(id).is_some_and(|item| false && item.calling.has(ItemFact::TakesLocation))\n",
+    find: "        self.item(id)\n            .is_some_and(|item| item.calling.has(ItemFact::TakesLocation))\n",
+    replace: "        self.item(id)\n            .is_some_and(|item| false && item.calling.has(ItemFact::TakesLocation))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
   },
   {

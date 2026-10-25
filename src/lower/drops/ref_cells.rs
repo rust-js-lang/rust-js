@@ -21,6 +21,9 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// or moved, and whose every borrow is held only where nothing that may
     /// borrow it runs: none of its borrows can meet another.
     quiet_fields: HashSet<DefId>,
+    /// Each a library's contract says is quiet, by its key, and the
+    /// library that says so (ADR 0906).
+    library_quiet: HashMap<String, String>,
     counted: HashSet<Ty<'tcx>>,
     /// Each the crate's bodies borrow.
     borrowed: HashSet<Ty<'tcx>>,
@@ -63,10 +66,7 @@ impl<'tcx> RefCells<'tcx> {
     pub(in crate::lower) fn quiet_field(&self, tcx: TyCtxt<'tcx>, field: DefId) -> bool {
         match field.as_local() {
             Some(_) => self.quiet_fields.contains(&field),
-            None => {
-                let key = crate::lower::library::item_key(tcx, field);
-                (self.libraries.iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))
-            }
+            None => (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),
         }
     }
 
@@ -110,9 +110,18 @@ impl<'tcx> RefCells<'tcx> {
             },
             counted: shapes(&self.counted),
             unchecked: shapes(&unchecked),
-            quiet_fields: crate::lower::library::item_keys(tcx, self.quiet_fields.iter().copied()),
             handed: shapes(&self.handed),
         }
+    }
+
+    /// What its contract says of its structs' fields (ADRs 0863, amended,
+    /// 0906): each quiet one.
+    pub(in crate::lower) fn fields(&self, tcx: TyCtxt<'tcx>) -> Vec<crate::library::Field> {
+        crate::lower::library::fields(
+            tcx,
+            self.quiet_fields.iter().copied(),
+            &[crate::library::FieldFact::Quiet],
+        )
     }
 
     /// Whether a `RefCell` of type `ty` is the object it holds, not a
@@ -414,12 +423,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Whether a struct's field may be one some borrow of which meets
         // another: not one no body lends, binds, moves or holds a borrow of,
         // nor a library's its contract says is quiet.
+        let library_quiet = self.krate.foreign.fields_saying(crate::library::FieldFact::Quiet);
         let loud = |field: DefId| match field.as_local() {
             Some(_) => lent.contains_key(&field) || counted_fields.contains_key(&field) || derived.contains_key(&field),
-            None => {
-                let key = crate::lower::library::item_key(tcx, field);
-                !(self.krate.foreign.ref_cell_facts().iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))
-            }
+            None => !library_quiet.contains_key(&crate::lower::library::item_key(tcx, field)),
         };
         let (boxed_all, boxed, seen) = self.boxed_ref_cells(&loud);
         let mut found = RefCells {
@@ -427,6 +434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             borrowed,
             handed: self.handed_ref_cells(),
             libraries: self.krate.foreign.ref_cell_facts(),
+            library_quiet,
             boxed_all,
             boxed,
             ..RefCells::default()
@@ -456,9 +464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // borrow it runs (ADR 0863, amended).
         for (&field, &span) in lent.iter().chain(&counted_fields) {
             if !field.is_local()
-                && let key = crate::lower::library::item_key(tcx, field)
-                && let Some((library, _)) =
-                    (found.libraries.iter()).find(|(_, facts)| facts.quiet_fields.contains(&key))
+                && let Some(library) = found.library_quiet.get(&crate::lower::library::item_key(tcx, field))
             {
                 tcx.dcx().span_err(
                     span,

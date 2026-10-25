@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "library-plain-unread",
     breaks: "a library's field none of whose borrows it checks, `types`, is lent by its consumer unrefused (ADR 0863, amended)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                (self.libraries.iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))\n",
-    replace: "                false && (self.libraries.iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))\n",
+    find: "            None => (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
+    replace: "            None => false && (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
@@ -238,10 +238,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-quiet-fields-unlisted",
-    breaks: "a library's contract lists none of its quiet fields, so a consumer lends one unrefused (ADR 0863, amended)",
+    breaks: "a library's contract says none of its fields is quiet, `fields` empty, so a consumer lends one unrefused (ADRs 0863, amended, 0906)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "            quiet_fields: crate::lower::library::item_keys(tcx, self.quiet_fields.iter().copied()),\n",
-    replace: "            quiet_fields: Vec::new(),\n",
+    find: "            self.quiet_fields.iter().copied(),\n",
+    replace: "            self.quiet_fields.iter().copied().filter(|_| false),\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
 ];

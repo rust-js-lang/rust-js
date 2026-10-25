@@ -46,7 +46,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 6 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 7 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -54,7 +54,7 @@ export function parseManifest(text) {
         || !(library.counted_rcs === undefined || Array.isArray(library.counted_rcs) && library.counted_rcs.every(rcShape))
         // ADR 0863: what it does with its `RefCell`s, each a list of shapes.
         || !(library.ref_cells === undefined || object(library.ref_cells)
-          && ["boxed", "counted", "unchecked", "plain", "handed"].every(kind => library.ref_cells[kind] === undefined
+          && ["boxed", "counted", "unchecked", "handed"].every(kind => library.ref_cells[kind] === undefined
             || Array.isArray(library.ref_cells[kind]) && library.ref_cells[kind].every(rcShape)))
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
@@ -64,8 +64,12 @@ export function parseManifest(text) {
           // and the traits it steps it by, each by its key (ADR 0548).
           && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam))
           // What else its calls give it or read of it (ADR 0906).
-          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"]))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 6");
+          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"]))
+        // What it says of each of its structs' fields, by key (ADRs 0863,
+        // amended, 0906).
+        || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
+          && typeof field.key === "string" && facts(field.facts, ["quiet"])))) {
+      throw new Error("Invalid rust-js library contract; expected library ABI 7");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

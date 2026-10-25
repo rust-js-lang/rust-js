@@ -4,7 +4,9 @@ Status: Accepted, under the user's goal of 2026-10-25 ("implement until
 done all the suggested improvements"); open to their review. The review's
 P4, its facts map. Supersedes that part of
 [0893](0893-a-type-parameters-evidence-stays-its-own-parameters.md), which
-had kept typed fields. Library ABI 6.
+had kept typed fields. Library ABI 6. Extended by
+[0863](0863-a-refcell-of-an-object-is-the-object.md), amended: a struct's
+field's facts are a set too, `fields` of `FieldFact`s, library ABI 7.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; this is the
 manifest's shape, not what any program does.
@@ -50,3 +52,18 @@ rustc's checking of each field.
   `library-location-unexported`, `library-location-unread`,
   `library-rest-unlisted`, `contract-variable-unsaid`,
   `library-variable-read-as-cell`. Each is caught.
+
+## Extension: a struct's field's facts (ADR 0863, amended)
+
+A library tells its consumers which of its structs' `RefCell` fields none
+of whose borrows it checks (ADR 0863, amended). That's a yes-or-no fact
+of a field, so it's one of a set, as an item's are: `Library::fields`, each
+`Field { key, facts: BTreeSet<FieldFact> }` (`Quiet`), serialized `"fields":
+[{ "key": .., "facts": ["quiet"] }]` and absent where none is told; the
+consumer reads it by the fact (`Foreign::fields_saying`). It replaces a
+list of keys that branch had in `ref_cells`, a parallel shape. The
+manifest's shape changed, so library ABI 7; `tooling/manifest.js` checks
+the names this ABI knows, `test/manifest.test.ts` holds it, and std's
+manifest is regenerated. Mutations `library-quiet-fields-unlisted` and
+`library-plain-unread` (`drops/ref_cells.rs`).
+

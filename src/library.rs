@@ -11,8 +11,11 @@ use std::path::Path;
 /// library and in a crate that uses one (ADR 0523). 4: each item says the
 /// type parameters it's given an `Iterator` dictionary for, or an
 /// extension's (ADR 0548). 5: what an item asks of each of its type
-/// parameters is one record of it, `params` (ADR 0100, amended).
-pub const VERSION: u32 = 6;
+/// parameters is one record of it, `params` (ADR 0100, amended). 6: each
+/// yes-or-no fact of an item is one of a set (ADR 0906). 7: each of its
+/// structs' fields its consumers read a fact of is one of `fields`, its
+/// facts a set too (ADRs 0863, amended, 0906).
+pub const VERSION: u32 = 7;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -218,6 +221,31 @@ pub struct Library {
     /// consumer keys a `Set` or a `Map` by each, and compares two by `===`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub identities: Vec<String>,
+    /// Each of its structs' fields its consumers read a fact of, by key,
+    /// and its facts (ADRs 0863, amended, 0906).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<Field>,
+}
+
+/// One of a library's structs' fields, by rustc's key for it, and what
+/// its consumers read of it, each a fact of a set, by its name (ADR 0906).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Field {
+    pub key: String,
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub facts: BTreeSet<FieldFact>,
+}
+
+/// A fact of a library's struct's field its consumers read (ADR 0906), one
+/// of a set, as an item's `ItemFact`s are.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FieldFact {
+    /// A `RefCell` none of whose borrows its code checks, as it only ever
+    /// borrows it for a moment (ADR 0863, amended): a consumer lends none,
+    /// and holds no borrow of one while code that may borrow it runs. What
+    /// it holds, the value or the object, both read of its declaration.
+    Quiet,
 }
 
 /// What a library does with its `RefCell`s (ADR 0863), each type by its
@@ -237,13 +265,6 @@ pub struct RefCellFacts {
     /// a consumer holds no borrow of one while the library's code runs.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub unchecked: Vec<RcShape>,
-    /// Its structs' `RefCell` fields, by key, none of whose borrows its
-    /// code checks, as it only ever borrows each for a moment (ADR 0863,
-    /// amended): a consumer lends none, and holds no borrow of one while
-    /// code that may borrow it runs. What each holds, the value or the
-    /// object, both read of its declaration.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub quiet_fields: Vec<String>,
     /// Those its types' fields hold, and its exported functions take and
     /// give, which a consumer shares with it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -316,6 +337,8 @@ pub struct Exports {
     pub ref_cells: RefCellFacts,
     /// Its types equal only to themselves, by their keys (ADR 0864).
     pub identities: HashSet<String>,
+    /// What it says of each of its structs' fields, by key (ADR 0906).
+    pub fields: HashMap<String, BTreeSet<FieldFact>>,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -372,6 +395,11 @@ impl Dependencies {
                 makes_dropping_anys: library.makes_dropping_anys,
                 writers_take_options: library.writers_take_options,
                 identities: library.identities.into_iter().collect(),
+                fields: library
+                    .fields
+                    .into_iter()
+                    .map(|field| (field.key, field.facts))
+                    .collect(),
                 counted_rcs: library.counted_rcs,
                 ref_cells: library.ref_cells,
                 impls: library.impls.into_iter().collect(),
@@ -452,6 +480,11 @@ impl Dependencies {
             makes_dropping_anys: library.makes_dropping_anys,
             writers_take_options: library.writers_take_options,
             identities: library.identities.into_iter().collect(),
+            fields: library
+                .fields
+                .into_iter()
+                .map(|field| (field.key, field.facts))
+                .collect(),
             counted_rcs: library.counted_rcs,
             ref_cells: library.ref_cells,
             impls: library.impls.into_iter().collect(),

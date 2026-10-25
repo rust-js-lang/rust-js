@@ -1244,6 +1244,7 @@ pub fn lower_crate<'tcx>(
                     makes_dropping_anys: closure_facts.any_dyns_drop,
                     counted: &counted,
                     ref_cells: ref_cell_facts(),
+                    fields: ref_cells.get().map(|found| found.fields(tcx)).unwrap_or_default(),
                     lazy_locals: &lazy_locals,
                     variables: &variables,
                     identities: &identities,

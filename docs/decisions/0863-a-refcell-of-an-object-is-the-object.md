@@ -427,8 +427,9 @@ or, `#[rust_js::nullable]`, refused.
   moved, and never borrowed while code that may borrow it runs, is never
   checked, whatever its type's borrows elsewhere: its borrows are the
   property, `times[..]`, its guards release nothing (`quiet_field`, MIR's
-  `QuietCells`). A library lists its own in its contract, `quiet_fields`;
-  a consumer that lends one, or holds a borrow of one while code that may
+  `QuietCells`). A library says each of its own in its contract, as a
+  fact of a set (ADR 0906): `fields: [{ key, facts: ["quiet"] }]`, read
+  by `FieldFact::Quiet`, library ABI 7; a consumer that lends one, or holds a borrow of one while code that may
   borrow it runs, is refused, naming it. A derive rust-js writes itself,
   `Clone`, `PartialEq`, `Debug`, reads each `RefCell` field through the
   `RefCell`'s own impl, which holds a borrow while what it holds runs its
@@ -528,7 +529,7 @@ guard's drop asks of its type.
 - `test/lowering-nullable.test.ts`, "a nullable RefCell field's None is
   null where it's written": one lent is `$fieldCell(slot, "held", true)`.
 - `test/crates.test.ts`, "a library's RefCells are the values they hold,
-  and its consumer agrees or is refused": its `quiet_fields`, one read as
+  and its consumer agrees or is refused": its quiet `fields`, one read as
   the property by a consumer that counts borrows of its type, and a lend
   of one refused naming `dep::Transition::types`.
 - Mutations in `scripts/mutations/lower/drops/ref_cells.ts`,
