@@ -665,7 +665,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
         self.seen = match expr.kind {
             ExprKind::Call { fun, .. } => match fn_def(self.thir[fun].ty) {
                 Some((id, args)) => !self.borrows.call_runs_unseen(self.recognition, (id, args)),
-                // A fn pointer's, of what it may be (ADR 0899).
+                // A fn pointer's, of what it may be (ADR 0903).
                 None => !self
                     .borrows
                     .pointer_call_runs_unseen(self.recognition, self.thir[fun].ty),
@@ -716,7 +716,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                         self.borrows
                             .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, drops)
                     }
-                    // A fn pointer's, of what it may be (ADR 0899).
+                    // A fn pointer's, of what it may be (ADR 0903).
                     None => self
                         .borrows
                         .pointer_call_asks(&self.cx.recognition, self.thir[fun].ty, self.cell, drops),

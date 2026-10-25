@@ -1,7 +1,7 @@
 //@ run-fail: RefCell already borrowed
 // A function pointer that may be a function, or a closure, that borrows a
 // cell held while it's called: the borrow is counted, and the second one
-// panics, as std's does (ADR 0899).
+// panics, as std's does (ADR 0903).
 
 use std::cell::RefCell;
 

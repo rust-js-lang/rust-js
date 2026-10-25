@@ -274,7 +274,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be
   anything
-  ([0899](../decisions/0899-a-fn-pointer-runs-what-the-crate-made-it-of.md)):
+  ([0903](../decisions/0903-a-fn-pointer-runs-what-the-crate-made-it-of.md)):
 
 ```rust
 # use std::cell::RefCell;
