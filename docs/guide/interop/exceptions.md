@@ -517,7 +517,10 @@ whatever JS throws through your Rust: a panic, or what a getter, a
 binding or a callback threw ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md)).
 Where its `Result` is matched, its `unwrap_or` returned, or an `if let
 Ok(v)` returns `v`, it's JS's `try`, the closure's body in it; the last's
-`catch` does nothing, what follows running where it threw:
+`catch` does nothing, what follows running where it threw. An `Ok` arm
+is in the `try` where it can't throw, one that tests what it holds too,
+`Ok(Some(f)) => return f`; one that may, a binding's setter's among it,
+runs after the `try`, as what it throws isn't the `catch`'s:
 
 ```rust
 use js::{JsError, Kind, Unknown};

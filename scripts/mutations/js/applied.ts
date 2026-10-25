@@ -27,6 +27,15 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "closure's body where it's called"],
   },
   {
+    name: "tried-const-called",
+    breaks: "`catch_unwind(|| { .. })`'s body whose value an `Ok` arm reads stays a closure called in the `try`, `const value = (() => { .. })();`",
+    file: "src/js/applied.rs",
+    find: "        Some(StmtKind::Const(name, value)) => match body_of(value) {\n",
+    replace: "        Some(StmtKind::Const(name, value)) => match body_of(value).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
+    snapshots: true,
+  },
+  {
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
     file: "src/js/applied.rs",

@@ -473,6 +473,11 @@ pub enum Known {
     /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
     /// anything, and may give another value read again (ADRs 0672, 0750).
     Getter,
+    /// A binding's write of a property, `set x` or `set X.y`, the target
+    /// of its assignment: a setter may answer it, which may do anything,
+    /// throw too, so the write never only makes a value (ADR 0660,
+    /// amended).
+    Setter,
     /// A slice's items in a range the body's ranges show in bounds,
     /// `items.slice(a, b)`: an array made here, which nothing else holds,
     /// as `$slice(..)` is (ADR 0806).

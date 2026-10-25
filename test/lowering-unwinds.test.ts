@@ -548,6 +548,64 @@ pub fn lazy(kind: u32, payload: u32) -> String {
   expect([lib.lazy(3, 2), lib.lazy(3, 0), lib.lazy(1, 2)]).toEqual(["<2>", "", ""]);
 });
 
+// A binding's setter may throw, as any JS may: an `Ok` arm that sets one
+// runs after the `try`, where what it throws goes on, as Rust's panic out
+// of the arm does, never into the `catch` (ADR 0660, amended). React's
+// `startGestureTransition`'s `Ok(Some(finish)) => return finish`, which
+// can't throw, is in the `try`.
+test("an Ok arm that sets a binding's property runs after catch_unwind's try", async () => {
+  const { js, dir } = compiled("unwind-ok-setter", `use std::marker::PhantomData;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub struct Shared(PhantomData<js::JsObject>);
+
+unsafe extern "Rust" {
+    #[link_name = "./internals.js#default"]
+    safe static INTERNALS: &'static Shared;
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set T")]
+fn set_t(this: &Shared, transition: f64) {
+    let _ = (this, transition);
+    unreachable!()
+}
+
+pub fn run(scope: impl FnOnce() -> f64) -> f64 {
+    match catch_unwind(AssertUnwindSafe(scope)) {
+        Ok(v) => {
+            set_t(INTERNALS, v);
+            v
+        }
+        Err(_) => 0.0,
+    }
+}
+
+pub fn finish(scope: impl FnOnce() -> Option<f64>) -> f64 {
+    match catch_unwind(AssertUnwindSafe(scope)) {
+        Ok(Some(done)) => return done,
+        Ok(None) => {}
+        Err(_) => set_t(INTERNALS, -1.0),
+    }
+    7.0
+}
+`);
+  writeFileSync(join(dir, "internals.js"), `export default {
+  set T(value) {
+    if (value > 5) throw new Error("too big");
+    this.t = value;
+  },
+};
+`);
+  expect(js).toContain("  let v;\n  try {\n    v = scope();\n  } catch {\n    return 0;\n  }\n  INTERNALS.T = v;\n");
+  expect(js).toContain("  try {\n    const catchUnwind = scope();\n    if (catchUnwind != null) {\n");
+  expect(js).not.toContain("TAG");
+  const lib = await import(join(dir, "lib.js"));
+  const internals = (await import(join(dir, "internals.js"))).default;
+  expect([lib.run(() => 2), internals.t, lib.run(() => { throw new Error("no"); })]).toEqual([2, 2, 0]);
+  expect(() => lib.run(() => 9)).toThrow("too big");
+  expect([lib.finish(() => 3), lib.finish(() => undefined), lib.finish(() => { throw new Error("no"); }), internals.t]).toEqual([3, 7, 7, -1]);
+});
+
 // React's describeNativeComponentFrame restores what it changed in one
 // `finally`; its port's guard, whose `Drop` restores it, is that `finally`
 // (ADR 0693): its scope's `if`, loop and `return` from inside them in the

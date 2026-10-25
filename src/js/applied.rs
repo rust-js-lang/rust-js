@@ -280,6 +280,26 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
             }
             _ => tried,
         },
+        // Its value the `try` keeps, `const value = (() => { ..; return v;
+        // })();`, of a body that returns only at its end: its body, then
+        // `const value = v;`, as what follows reads it, what the body
+        // declares named apart from the rest as above (ADR 0660, amended).
+        Some(StmtKind::Const(name, value)) => match body_of(value) {
+            Some(mut body)
+                if body.split_last().is_some_and(|(last, before)| {
+                    !returns(before).0 && matches!(last.kind, StmtKind::Return(Some(_)))
+                }) =>
+            {
+                let last = body.pop().expect("a last statement");
+                let StmtKind::Return(Some(value)) = last.kind else {
+                    unreachable!("matched above")
+                };
+                body.push(StmtKind::Const(name.clone(), value).at(tried[0].span));
+                tried.splice(0..1, body);
+                tried
+            }
+            _ => tried,
+        },
         _ => tried,
     }
 }

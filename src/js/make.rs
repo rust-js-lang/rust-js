@@ -38,6 +38,15 @@ impl Expr {
         }
     }
 
+    /// This, the property a binding's write assigns, which a setter may
+    /// answer (`Known::Setter`).
+    pub fn answered_by_a_setter(self) -> Expr {
+        Expr {
+            known: Known::Setter,
+            ..self
+        }
+    }
+
     /// This, a binding's read of a property, which a getter may answer
     /// (`Known::Getter`).
     pub fn answered_by_a_getter(self) -> Expr {

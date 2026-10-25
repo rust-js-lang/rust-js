@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "setter-write-only-makes-a-value",
+    breaks: "a binding's setter, `INTERNALS.T = v`, is a write that can't throw, so in an `Ok` arm it's in `catch_unwind`'s `try`, whose `catch` takes what it throws where Rust's panic goes on",
+    file: "src/lower/binding_calls.rs",
+    find: "                let property = Expr::member(this, name).answered_by_a_setter();\n",
+    replace: "                let property = Expr::member(this, name);\n",
+    tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
+  },
+  {
     name: "js-class-of-the-constructor-call",
     breaks: "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
     file: "src/lower/binding_calls.rs",

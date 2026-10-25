@@ -94,9 +94,9 @@ function item(state, view, todo) {
 
 function render(state, view) {
   const s = $borrow(state, true);
-  view.list.textContent = "";
-  let left = 0;
   try {
+    view.list.textContent = "";
+    let left = 0;
     const iter = $iter(s.value.todos);
     let todo;
     while ((todo = $next(iter)) != null) {

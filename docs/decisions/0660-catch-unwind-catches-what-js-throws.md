@@ -21,7 +21,9 @@ what a `catch` reads of what it caught is what was thrown, where it is,
 `throw payload` of a payload resumed.
 Amended by [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
 the `catch` of a `let Err(x)` of a closure that never returns holds what
-follows that reads `x`, or what that declares.
+follows that reads `x`, or what that declares. Amended below: an `Ok`
+arm that tests what it holds is in the `try`, and a binding's setter is a
+write that may throw.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops
@@ -239,3 +241,59 @@ dropped `kept` (#196). `function_kind` answers for it as for the closure it
 holds, so the call drops it as it returns, as std's does
 (`catch_unwind_assert_drops`, `assert-unwind-safe-uncalled`). One called
 by `FnOnce` alone drops what it took as its body ends, as before.
+
+## Amendment: an `Ok` arm that tests what it holds, and a setter's write
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N for the first, the
+same code run in the same order; R for the second, a wrong answer fixed.
+
+React's `startGestureTransition` returns what the renderer gives, where
+it gives one, and reports what its scope threw:
+
+```rust
+match panic::catch_unwind(AssertUnwindSafe(|| {
+    ..
+    g(REACT_SHARED_INTERNALS).map(|finish| finish(&current_transition, provider, options))
+})) {
+    Ok(Some(finish)) => return finish,
+    Ok(None) => {}
+    Err(error) => REPORT_GLOBAL_ERROR.with(|report_global_error| report_global_error(..)),
+}
+```
+
+It was `const value = $catchUnwind(() => { .. }); if (value.TAG ===
+"Ok") { if (value._0) { .. return finish; } } else { .. }`, where upstream
+is a `try` that returns inside and a `catch`. The `Ok` arm had no binding
+of its own, `const v = result._0;`, as a pattern inside it tests the value
+first, so the `try` wasn't made.
+
+**An `Ok` arm that reads its value only as `result._0` is the value's, by
+the result's own name**: `try { ..; const value = finish ? finish() :
+undefined; if (value) { const finish = value; return finish; } } catch
+(error) { .. }`, the closure's body in the `try` and its value the
+`const` (`js::applied_tried`), what it declares named apart from the arm's
+as lowering names each. The arm is in the `try` only where it can't throw,
+as before, an `if` of a test that can't, of what can't, among it.
+
+**A binding's setter is a write that may throw** (`Known::Getter` on its
+property, as a getter's read is, ADR 0672): `INTERNALS.T = v` runs what
+JS defines, which may throw. It was a write that only makes a value, so
+an `Ok` arm that set one, `Ok(v) => { set_t(INTERNALS, v); v }`, was in
+the `try`, `try { const v = scope(); INTERNALS.T = v; return v; } catch
+{ return 0; }`, and its throw was caught, where Rust's panic out of the
+arm goes on. Now the arm runs after the `try`, `let v; try { v = scope();
+} catch { return 0; } INTERNALS.T = v; return v;`.
+The same write in a scope that drops something, a borrow's or a guard's,
+is in the `try` whose `catch` drops it, as any statement that may throw
+is: `view.list.textContent = ""` of the todo example's render, which ran
+before its `try`, so a throw from it left its `RefCell` borrowed.
+
+Held by `test/corpus/catch_unwind_nested_ok.rs`, against native Rust (a
+guard's drop after an `Ok(Some(..))` that returns, through a panic too;
+an arm with a guard; one that panics itself, which nothing there catches);
+`test/lowering-unwinds.test.ts`, "an Ok arm that sets a binding's property
+runs after catch_unwind's try", whose setter throws; and the mutations
+`ok-value-read-in-place-unseen`, `ok-value-reads-counted-as-results`,
+`cannot-throw-if-arms-unread`, `cannot-throw-if-refused`
+(`prepare/catches.ts`), `tried-const-called` (`js/applied.ts`) and
+`setter-write-only-makes-a-value` (`lower/binding_calls.ts`).

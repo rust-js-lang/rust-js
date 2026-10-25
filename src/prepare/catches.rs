@@ -264,6 +264,24 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     };
     let ok = &ok[usize::from(value_name.is_some())..];
     let err = &err[usize::from(error.is_some())..];
+    // An `Ok` arm that reads its value only as `result._0`, where a pattern
+    // inside it tests and binds it, `Ok(Some(f)) => return f`'s `if
+    // (result._0) { const f = result._0; return f; }`: the value is the
+    // `try`'s, by the result's own name, which nothing else reads.
+    let read_in_place;
+    let (value_name, ok) = match value_name {
+        None if held_reads(ok, result) > 0 && held_reads(ok, result) == js::mentions_in(ok, result) => {
+            let mut ok = ok.to_vec();
+            js::each_expr_mut(&mut ok, &mut |e| {
+                if js::result::reads_held(e, result) {
+                    *e = Expr::var(result).or_at(e.span);
+                }
+            });
+            read_in_place = ok;
+            (Some(result.clone()), read_in_place.as_slice())
+        }
+        value_name => (value_name, ok),
+    };
     // The `Ok`'s value kept as it is, `return result._0;` or `x =
     // result._0;`, or its binding's: the call's.
     let kept = |stmt: &Stmt| -> Option<StmtKind> {
@@ -283,8 +301,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         [stmt] => kept(stmt).map(|kind| kind.at(stmt.span)),
         _ => None,
     };
-    // Nothing else reads the `Result`.
-    let reads = js::mentions_in(ok, result) + js::mentions_in(err, result) + js::mentions_in(after, result);
+    // Nothing else reads the `Result`: the `Ok` arm reads its value, where
+    // that's by the result's name.
+    let ok_reads = match value_name.as_deref() == Some(result.as_str()) {
+        true => 0,
+        false => js::mentions_in(ok, result),
+    };
+    let reads = ok_reads + js::mentions_in(err, result) + js::mentions_in(after, result);
     if reads != usize::from(held.is_some() && value_name.is_none()) {
         return None;
     }
@@ -318,12 +341,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };
     let alone = StmtKind::Expr(call.clone()).at(span);
-    // What can't throw: what makes values, and what leaves with one.
-    let cannot_throw = |stmt: &Stmt| match &stmt.kind {
-        StmtKind::Return(value) => value.as_ref().is_none_or(|v| !v.may_throw()),
-        StmtKind::Break(_) | StmtKind::Continue(_) => true,
-        _ => stmt.only_makes_values(),
-    };
+    let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
     if let Some(held) = held {
         return Some((vec![caught(vec![held])], taken));
     }
@@ -354,6 +372,26 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     out.push(caught(vec![tried]));
     out.extend(ok.iter().cloned());
     Some((out, taken))
+}
+
+/// Whether `stmt` can't throw: what makes values, what leaves with one,
+/// and an `if` of a test that can't, of each.
+fn cannot_throw(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Return(value) => value.as_ref().is_none_or(|v| !v.may_throw()),
+        StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        StmtKind::If(test, then, otherwise) => {
+            !test.may_throw() && then.iter().all(cannot_throw) && otherwise.iter().flatten().all(cannot_throw)
+        }
+        _ => stmt.only_makes_values(),
+    }
+}
+
+/// How often `stmts` read `result._0`, the value a `Result` holds.
+fn held_reads(stmts: &[Stmt], result: &str) -> usize {
+    let mut reads = 0;
+    js::each_expr(stmts, &mut |e| reads += usize::from(js::result::reads_held(e, result)));
+    reads
 }
 
 /// `const { _0: x } = $catchUnwind(f);` of an `f` that never returns, `let

@@ -132,7 +132,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
             (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
                 let value = args.remove(0);
-                out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));
+                // A setter may answer it, which may do anything, throw
+                // too: never a write that only makes a value (ADR 0660,
+                // amended).
+                let property = Expr::member(this, name).answered_by_a_setter();
+                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));
                 Expr::undefined()
             }
             // A property, written, of a global or an import: `process.exitCode
@@ -142,7 +146,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>
             {
                 let value = args.remove(0);
-                out.push(StmtKind::Assign(self.js_ref(&name).or_at(fun_span), value).at(self.js_span(span)));
+                let property = self.js_ref(&name).or_at(fun_span).answered_by_a_setter();
+                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));
                 Expr::undefined()
             }
             (JsForm::This, Some(this)) if args.is_empty() => this,

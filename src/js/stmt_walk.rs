@@ -298,7 +298,10 @@ impl Stmt {
     pub fn only_makes_values(&self) -> bool {
         match &self.kind {
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => !value.may_throw(),
-            StmtKind::Assign(target, value) => !target.may_throw() && !value.may_throw(),
+            // Not of a setter's property, which may throw (`Known::Setter`).
+            StmtKind::Assign(target, value) => {
+                target.known != Known::Setter && !target.may_throw() && !value.may_throw()
+            }
             StmtKind::Let(_, None) => true,
             _ => false,
         }
