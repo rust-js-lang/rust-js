@@ -293,7 +293,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0272 Node's modules are a crate of their own, typed as @types/node](0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](0273-path-modules.md)
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](0274-next-data-fetching.md)
-- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set)*
+- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0857: a function's own parameter)*
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md)
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
@@ -641,6 +641,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
 - [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
 - [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
+- [0857 A function's own nullable parameter is `null` where it's given or set `None`](0857-a-functions-own-nullable-parameter-is-set-null.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

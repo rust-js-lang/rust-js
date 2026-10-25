@@ -615,10 +615,15 @@ export function ratio(a, b) {
   out of the object. Reading one, rust-js tests `== null`, so a JS caller
   may pass `null` too ([ADR 0030](../../decisions/0030-option.md)).
 - **`#[rust_js::nullable]` makes a `None` `null`**: on a field, on a
-  function for its result, or on a binding for a parameter it names,
-  `#[rust_js::nullable(range)]`
+  function for its result, or on a function for a parameter it names,
+  `#[rust_js::nullable(range)]`, a binding's or the crate's own
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md),
   [ADR 0578](../../decisions/0578-a-nullable-result-where-its-written.md)).
+  The crate's function's parameter is `null` where a call gives it `None`
+  and where its body sets it so, `children = None`'s `children = null`,
+  and what a call gives it otherwise is as it is, its body reading either
+  as `None`; its `.d.ts` is `T | null | undefined`
+  ([ADR 0857](../../decisions/0857-a-functions-own-nullable-parameter-is-set-null.md)).
   A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return

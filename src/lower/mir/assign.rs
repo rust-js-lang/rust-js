@@ -182,17 +182,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
         // `Some(..)`, or what's `null` or a value already, as it is. MIR
         // assigns what it makes through a temporary, which `nulled` follows.
-        let value = match self.place_field(state, *place) {
-            Some(field) if bindings::is_nullable(self.tcx, field) => {
+        // So is a parameter its function names `#[rust_js::nullable(..)]`,
+        // set, `children = None`, as React's `mapIntoArray` writes it (ADR
+        // 0857).
+        let nullable = match self.place_field(state, *place) {
+            Some(field) => bindings::is_nullable(self.tcx, field),
+            None => self.own_nullable_param(state, *place),
+        };
+        let value = match nullable {
+            true => {
                 let nulled = match rvalue {
                     Rvalue::Use(operand, _) => self.nulled(state, operand),
                     _ => false,
                 };
                 Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
             }
-            _ => value,
+            false => value,
         };
         self.mir_store(state, *place, value, span, out)
+    }
+
+    /// Whether `place` is a parameter of the function whose body this is
+    /// that it names `#[rust_js::nullable(..)]`, TypeScript's `T | null`
+    /// (ADRs 0275, 0857).
+    fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let def_id = state.body.source.def_id();
+        let arg = place.local.as_usize();
+        place.projection.is_empty()
+            && (1..=state.body.arg_count).contains(&arg)
+            && matches!(
+                self.tcx.def_kind(def_id),
+                rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+            )
+            && (self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
+                .is_some_and(|ident| bindings::nullable_params(self.tcx, def_id).contains(&ident.name))
     }
 
     /// What's written to a `#[rust_js::nullable]` function's result, where

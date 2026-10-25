@@ -550,3 +550,60 @@ pub fn lazy(n: Option<f64>) -> Lazy {
   expect(lib.lazy(1)._debugTask).toBe(task);
   (console as any).createTask = original;
 });
+
+// ADR 0857: a function's own parameter it names `#[rust_js::nullable(..)]`
+// is `T | null`, a `None` given it or set in its body `null`, as React's
+// `mapIntoArray` sets `children = null` and calls the callback with it,
+// whose test says `toHaveBeenCalledWith(null, 5)`. What's given it is as
+// it is, the body reading `null` and `undefined` alike.
+test("a function's own nullable parameter set to None is null", async () => {
+  const dir = fixture("nullable-own-param");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::nullable(children))]
+fn walk(mut children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'static Unknown>)) {
+    let r#type = js::type_of(children);
+    if r#type == "undefined" || r#type == "boolean" {
+        // All of the above are perceived as null.
+        children = None;
+    }
+    callback(children);
+}
+
+fn untouched(mut children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'static Unknown>)) {
+    if js::type_of(children) == "boolean" {
+        children = None;
+    }
+    callback(children);
+}
+
+fn given(children: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if js::type_of(children) == "number" { children } else { None }
+}
+
+pub fn each(children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'static Unknown>)) {
+    walk(children, callback);
+    walk(None, callback);
+    untouched(children, callback);
+    walk(given(children), callback);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    // All of the above are perceived as null.\n    children = null;\n");
+  expect(js).toContain("  walk(children, callback);\n  walk(null, callback);\n");
+  // A call's \`Option\` as it is, which the body reads either way.
+  expect(js).toContain("  walk(given(children), callback);\n");
+  // A parameter not marked keeps `undefined`, as every `None` is.
+  expect(js).toContain("    children = undefined;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const calls = (children: unknown) => {
+    const given: unknown[] = [];
+    lib.each(children, (child: unknown) => given.push(child));
+    return given;
+  };
+  expect(calls(undefined)).toStrictEqual([null, null, undefined, null]);
+  expect(calls(true)).toStrictEqual([null, null, undefined, null]);
+  expect(calls(null)).toStrictEqual([null, null, null, null]);
+  expect(calls(5)).toStrictEqual([5, null, 5, 5]);
+});

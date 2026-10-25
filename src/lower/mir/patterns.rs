@@ -64,6 +64,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
         let mut given: std::collections::HashMap<Local, usize> = Default::default();
+        // What a call makes, and what JS reads as it's stored, a field's or
+        // a binding's parameter's: a call's `Option` only the crate's own
+        // functions' nullable parameters read is given as it is, their
+        // bodies reading `null` and `undefined` alike (ADR 0857).
+        let mut called: std::collections::HashSet<Local> = Default::default();
+        let mut stored: std::collections::HashSet<Local> = Default::default();
         // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info
         // { owner }`: the variable's read, given where the copy is.
         let mut copies: Vec<(Local, Local)> = Vec::new();
@@ -95,6 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && bindings::null_where_made(self.tcx, &fields[field])
                 {
                     *given.entry(read.local).or_default() += 1;
+                    stored.insert(read.local);
                 }
             }
         }
@@ -124,6 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (writes, none) = made.entry(destination.local).or_default();
                 *writes += 1;
                 *none = true;
+                called.insert(destination.local);
             }
             let Some((def_id, _)) = func.const_fn_def() else {
                 continue;
@@ -133,12 +141,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let idents = self.tcx.fn_arg_idents(def_id);
+            let binding = bindings::is_binding(self.tcx, def_id);
             for (i, arg) in args.iter().enumerate() {
                 if let Some(read) = arg.node.place()
                     && read.projection.is_empty()
                     && (idents.get(i).copied().flatten()).is_some_and(|ident| nullable.contains(&ident.name))
                 {
                     *given.entry(read.local).or_default() += 1;
+                    if binding {
+                        stored.insert(read.local);
+                    }
                 }
             }
         }
@@ -148,6 +160,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (copy, of) in copies {
             if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {
                 *given.entry(of).or_default() += 1;
+                if stored.contains(&copy) {
+                    stored.insert(of);
+                }
             }
         }
         // A `#[rust_js::nullable]` function's result is read by its return.
@@ -158,7 +173,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `Option` it makes is `nullable_written`'s.
                 match local == mir::RETURN_PLACE && result {
                     true => true,
-                    false => none && writes == locals.writes[local] && given.get(&local) == Some(&locals.reads[local]),
+                    false => {
+                        none && writes == locals.writes[local]
+                            && given.get(&local) == Some(&locals.reads[local])
+                            && (!called.contains(&local) || stored.contains(&local))
+                    }
                 }
             })
             .map(|(local, _)| local)

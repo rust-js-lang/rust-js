@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "            if true\n",
     tests: ["test/lowering-options.test.ts", "-t", "a nullable field given a nullable field's copy"],
   },
+  {
+    name: "null-nones-own-param-call-coalesced",
+    breaks: "a call's `Option` only a function's own nullable parameter reads is written `?? null`, `mapIntoArray(init(payload) ?? null, ..)`, where its body reads either (ADR 0857)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                            && (!called.contains(&local) || stored.contains(&local))\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+  },
 ];

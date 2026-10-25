@@ -495,8 +495,8 @@ export const mutations: Mutation[] = [
     name: "nullable-assigned-undefined",
     breaks: "a nullable field assigned `None`, `context.label = None`, is `undefined`, where its cell's `set` writes `null` (ADR 0810)",
     file: "src/lower/mir/assign.rs",
-    find: "            Some(field) if bindings::is_nullable(self.tcx, field) => {\n",
-    replace: "            Some(field) if false && bindings::is_nullable(self.tcx, field) => {\n",
+    find: "            Some(field) => bindings::is_nullable(self.tcx, field),\n",
+    replace: "            Some(field) => false && bindings::is_nullable(self.tcx, field),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
   },
   {
@@ -514,5 +514,21 @@ export const mutations: Mutation[] = [
     find: "        let read_nullable = place.projection.is_empty()\n",
     replace: "        let read_nullable = false && place.projection.is_empty()\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+  },
+  {
+    name: "own-nullable-param-set-undefined",
+    breaks: "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0857)",
+    file: "src/lower/mir/assign.rs",
+    find: "            None => self.own_nullable_param(state, *place),\n",
+    replace: "            None => false,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+  },
+  {
+    name: "own-nullable-param-any-argument",
+    breaks: "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0857)",
+    file: "src/lower/mir/assign.rs",
+    find: "                .is_some_and(|ident| bindings::nullable_params(self.tcx, def_id).contains(&ident.name))\n",
+    replace: "                .is_some()\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
 ];
