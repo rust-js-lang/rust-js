@@ -848,6 +848,7 @@ export function parseURL(url: string): number | null | undefined;
 | a function that never returns, `-> !` | `never` |
 | a `pub use` of a function | `export { firstWord } from "./text.js"` |
 | a doc comment | its JSDoc |
+| a `//` comment before a type, a field or a function, past its attributes | the same comment before its declaration, as written ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 
 Some types aren't declared yet, and a caller of them isn't checked: a
 `Result` and an `async fn`'s result are `any`, as are a tuple struct,

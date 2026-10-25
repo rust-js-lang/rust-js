@@ -647,14 +647,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },
   {
-    name: "declaration-docs-dropped",
-    breaks: "a doc comment isn't its declaration's JSDoc in a `.d.ts`, which a TypeScript caller's editor shows",
-    file: "src/lower/declarations.rs",
-    find: "        declaration[\"docs\"] = jsdoc.into();\n",
-    replace: "        let _ = jsdoc;\n",
-    tests: ["test/declarations.test.ts", "-t", "doc comments as JSDoc"],
-  },
-  {
     name: "declaration-named-as-rust",
     breaks: "a function named as JS keeps a word apart is declared as `new`, not its JS's `new$`",
     file: "src/lower/declarations.rs",

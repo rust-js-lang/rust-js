@@ -163,3 +163,22 @@ checks a caller against was wrong.
 (`Declarations::erased`): `(a: A) => T`. Case N: nothing runs a
 declaration. Held by `test/declarations-impl-fn.test.ts` and the scheduler
 port's snapshot; mutation `declaration-erased-of-the-last-item`.
+
+## Amendment: a declaration carries the `//` comments before its item
+
+React's reconciler documents its types in Flow, so its port's types carry
+those comments as `//`: ReactFiberSuspenseComponent's `SuspenseState` and
+each of its fields, OffscreenProps' TODOs, ReactInternalTypes' fields, and
+ReactFiberLane's `// TODO: Ideally these types would be opaque ..` before
+`pub type Lanes`. Only a `///` doc comment reached the `.d.ts`, as JSDoc
+(ADR 0444), so its types read bare. **A declaration carries the `//` and
+`/* */` comments written right before its item, past its attributes and
+doc comments, as written, then its JSDoc**: a type's, a field's, a
+variant's and a function's, a blank line written after them kept
+(`declarations/comments.rs`, `documented`, the one reader of what's
+written before an item). Not a comment after code on its line,
+`retry_lane: Cell<Lane>, // ..`, which is that code's; nor one with
+nothing but comments before it, the file's, a license's, which the
+`.d.ts` starts with already (ADR 0383); nor one a macro made. Case N:
+nothing runs a declaration. Held by `test/declarations-comments.test.ts`
+and the mutations in `scripts/mutations/lower/declarations/comments.ts`.

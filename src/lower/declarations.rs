@@ -24,7 +24,10 @@ use super::bindings::{
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
+mod comments;
 mod written;
+
+use comments::documented;
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -1479,22 +1482,4 @@ fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {
         }
     }
     keys
-}
-
-/// `declaration` with its item's doc comment, as JSDoc (ADR 0444), which a
-/// TypeScript caller's editor shows: a function's, a type's, a field's.
-fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_id: DefId) -> Value {
-    use rustc_hir::attrs::AttributeKind;
-    let docs: Vec<String> = (rustc_hir::attrs::HasAttrs::get_attrs(def_id, &tcx).iter())
-        .filter_map(|attr| match attr {
-            hir::Attribute::Parsed(AttributeKind::DocComment { comment, .. }) => Some(comment.to_string()),
-            _ => None,
-        })
-        .flat_map(|doc| doc.lines().map(str::to_string).collect::<Vec<_>>())
-        .collect();
-    let lines: Vec<&str> = docs.iter().map(String::as_str).collect();
-    if let Some(jsdoc) = crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty()) {
-        declaration["docs"] = jsdoc.into();
-    }
-    declaration
 }

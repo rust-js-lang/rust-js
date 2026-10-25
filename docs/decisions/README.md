@@ -214,7 +214,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0193 `Some` of a unit variant is tested as the variant](0193-some-of-a-unit-variant.md)
 - [0194 An attribute read before a child is read once](0194-jsx-attributes-read-once.md)
 - [0195 The props a component's struct doesn't name are `...rest`](0195-rest-props.md)
-- [0196 A crate may have a `.d.ts` beside each module's JS](0196-typescript-declarations.md) *(amended by 0811: `#[rust_js::types]` is a TypeScript type, read)*
+- [0196 A crate may have a `.d.ts` beside each module's JS](0196-typescript-declarations.md) *(amended by 0811: `#[rust_js::types]` is a TypeScript type, read; amended: an `impl Fn` parameter is of its own item's parameters; a declaration carries the `//` comments before its item)*
 - [0197 What's moved before anything can leave isn't its scope's to drop](0197-moved-before-leaving.md)
 - [0198 An optional handler passed on to an element is that handler](0198-optional-handlers.md)
 - [0199 A component takes no drop of its type parameters](0199-components-take-no-drops.md)
