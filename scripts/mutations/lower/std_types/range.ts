@@ -140,11 +140,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-own-nth-stepped",
-    breaks: "a range's own `nth(n)` steps each of `n` numbers, `(0..u64::MAX).nth(1 << 31)` never ending",
+    breaks: "a range's own `nth(n)` isn't `$rangeNth(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
     file: "src/lower/std_types/range.rs",
     find: "            (IterMethod::Nth, RangeKind::Exclusive, false) => \"$rangeNth\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
+    snapshots: true,
   },
   {
     name: "range-own-step-chars",
@@ -156,11 +157,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-nth-back-stepped",
-    breaks: "a reversed range's `nth(n)` steps each of `n` numbers from its end",
+    breaks: "a reversed range's `nth(n)` isn't `$rangeNthBack(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
     file: "src/lower/std_types/range.rs",
     find: "            (IterMethod::Nth, RangeKind::Exclusive, true) => \"$rangeNthBack\",\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
+    snapshots: true,
   },
   {
     name: "range-inclusive-nth-exclusive",
