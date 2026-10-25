@@ -661,7 +661,9 @@ export function ratio(a, b) {
 - **`#[rust_js::optional]` on a nullable field makes it absent until
   it's set**, Flow's and TypeScript's `banner?: string | null`: made with
   `None`, it's left out, `{ name, avatar: null }`, as a plain `Option`
-  field is; set to `None`, it's `null`, as a nullable field is. The two
+  field is; made with what may be `None`, a variable or a call, and set to
+  `None`, it's `null`, as a nullable field is, `{ banner: banner ?? null
+  }`: absent, `null` or a value, never `undefined` and there. The two
   marks are the two attributes: `nullable` the `| null`, `optional` the
   `?`. Read, absent, `null` or a value, it's its `Option`. Its `.d.ts` is a
   nullable field's. On a field that isn't nullable it's an error, as a

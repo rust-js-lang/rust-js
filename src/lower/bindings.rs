@@ -1135,7 +1135,8 @@ pub(super) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
-/// Whether a field's `None` is `null` from where it's made on: a nullable one's, not an optional one's (ADR 0810).
+/// Whether a field's `None` is `null` from where it's made on, so its read is `null` or a value: a
+/// nullable one's, not an optional one's, which a literal's `None` leaves out (ADR 0810, amended).
 pub(super) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     is_nullable(tcx, field) && !is_optional(tcx, field)
 }

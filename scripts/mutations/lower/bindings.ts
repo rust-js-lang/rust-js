@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-field-made-null",
-    breaks: "an optional nullable field made with `None` is `null` in its literal, not left out until it's set (ADR 0810)",
+    breaks: "an optional nullable field's read, which may be absent, is taken for `null` or a value, so a nullable field given it stores `undefined` (ADR 0810, amended)",
     file: "src/lower/bindings.rs",
     find: "    is_nullable(tcx, field) && !is_optional(tcx, field)\n",
     replace: "    is_nullable(tcx, field)\n",

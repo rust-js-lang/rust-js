@@ -80,7 +80,8 @@ if (__DEV__) {
 
 - Made with an `Option` that may be `None`, it's given it as it is,
   `{ label }`, `undefined` for `None`, as a plain `Option` field is; a
-  `Some(x)` is `x`.
+  `Some(x)` is `x`. (Amended below: `null` for `None`, `{ label: label
+  ?? null }`.)
 - Its value is `null` or a value only once it's set, so it isn't one a
   nullable field or parameter takes as it is: given one, it's `?? null`,
   `{ name: context.label ?? null }` (`bindings::null_where_made`, the one
@@ -171,3 +172,75 @@ would drop nothing there: not yet.
   has drop glue is left out where it's made".
 - Mutations `made-cell-read-unfolded`, `made-cell-target-folded`
   (`tidy/moves.rs`).
+
+## Amendment: made with what may be `None`, it's `null` for `None`
+
+React's `ReactElement` makes its object's `ref` of what `props.ref` is,
+`null` where it isn't there:
+
+```js
+const ref = refProp !== undefined ? refProp : null;
+..
+element = { $$typeof: REACT_ELEMENT_TYPE, type, key, ref, props };
+```
+
+The port's `let r#ref = if !js::strict_equals(ref_prop, None::<&Unknown>)
+{ ref_prop } else { None };` of a `#[rust_js::nullable, rust_js::optional]`
+field printed `const ref = refProp !== undefined ? refProp : undefined;
+return { ref };`: the key there, and `undefined`. That's neither of what
+the field is to JS, `ref?: T | null`, absent or `null` or a value, which
+`Object.hasOwn`, `Object.keys`, a spread and Jest's `toEqual(null)` each
+tell apart. The rule above, "given an `Option` that may be `None`, it's
+given it as it is", wrote it.
+
+**An optional nullable field is left out only where it's `None` and
+nothing else**: the literal's own `None`, `S { label: None }`, or a
+`Cell::new(None)`, through MIR's temporary of either too
+(`written_none`, `aggregates::Given::WrittenNone`). **Made with anything
+else, a variable, a parameter or a call that may give `None`, it's stored
+as any nullable field is**, `js::Storage::NullForNone.written`: `{ label:
+label ?? null }`, what's never `undefined` as it is, and a variable only
+nullable fields read is `null` where it's made, `const label = null;`
+(ADR 0781's `null_nones`, which now counts an optional field's read
+too; the literal's own `None` is left out whatever its temporary holds). Its key is
+there wherever the literal writes one but a `None`, as a JS literal's
+`{ ref }` is.
+
+```rust
+let title = if n > 1 { Some(n.to_string()) } else { None };
+Titled { title }
+```
+
+```js
+const title = n > 1 ? String(n) : null;
+return { title };
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A for the program, which
+reads `undefined`, `null` and an absent key alike as `None`; to JS, the
+field is now what its declaration says, `field?: T | null`, never there
+and `undefined`.
+
+- What it costs: an `Option` that may be `undefined`, React's `owner`
+  parameter, is `_owner: owner ?? null` where the field takes it, where
+  upstream's `_owner: owner` relies on its callers giving `null`.
+- A read of it is still not `null` or a value (`null_where_made`, which
+  `nulled` asks): it may be absent.
+- Upstream's `refProp !== undefined ? refProp : null` with `{ ref }` needs
+  a fact rust-js hasn't, that the branch of `!js::strict_equals(x, None)`
+  reads an `x` that isn't `undefined`; without it, the port's prints
+  `const ref = refProp !== undefined ? refProp : undefined; return { ref:
+  ref ?? null };`, right but a `?? null` longer.
+
+What holds it:
+
+- `test/lowering-nullable.test.ts`, "an optional nullable field is left
+  out where it's made and null where it's set": a parameter, a `None`
+  variable, copied and moved, React's `ref`, a `Some` or `None` variable
+  and one written in the literal, each run, and none of their objects
+  holding `undefined`.
+- Mutations `optional-field-made-null-in-literal`,
+  `optional-written-none-unasked`, `optional-field-given-undefined`
+  (`aggregates.rs`), `null-none-given-optional`,
+  `written-none-of-two-writes`,
+  `written-none-cell-unasked` (`mir/patterns.rs`).

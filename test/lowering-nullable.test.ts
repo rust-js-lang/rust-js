@@ -453,6 +453,44 @@ pub fn unnamed() -> Context {
     }
 }
 
+// React's \`ReactElement\`, whose \`ref\` is \`null\` where \`props.ref\` isn't there.
+pub fn referred(props: &Unknown) -> Context {
+    let ref_prop = js::get(props, "ref");
+    let renderer = if !js::strict_equals(ref_prop, None::<&Unknown>) {
+        ref_prop
+    } else {
+        None
+    };
+    Context {
+        value: Cell::new(2.0),
+        provider: Cell::new(None),
+        renderer: Cell::new(renderer),
+        label: None,
+    }
+}
+
+pub struct Titled {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub title: Option<String>,
+}
+
+// A variable moved where the struct's made, not MIR's copy of it.
+pub fn untitled() -> Titled {
+    let title = None;
+    Titled { title }
+}
+
+pub fn titled(n: u32) -> Titled {
+    let title = if n > 1 { Some(n.to_string()) } else { None };
+    Titled { title }
+}
+
+pub fn titled_here(n: u32) -> Titled {
+    Titled {
+        title: if n > 1 { None } else { Some(n.to_string()) },
+    }
+}
+
 pub fn info(context: &Context) -> Info {
     Info { name: context.label }
 }
@@ -495,8 +533,10 @@ pub fn label(context: &mut Context, label: &'static str) {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const context = {\n    value,\n    provider: null,\n  };\n  if (dev) {\n    context.renderer = null;\n  }");
-  // Given an \`Option\` that may be \`None\`, as it is: \`undefined\`, as a key that isn't there reads.
-  expect(js).toContain("return {\n    value: 0,\n    provider: null,\n    label,\n  };");
+  // Given an \`Option\` that may be \`None\`, it's stored as a nullable field's is, \`null\` for
+  // \`None\`: there, as the literal writes it, never \`undefined\` (ADR 0810, amended).
+  expect(js).toContain("return {\n    value: 0,\n    provider: null,\n    label: label ?? null,\n  };");
+  expect(js).toContain("return {\n    value: 2,\n    provider: null,\n    renderer: renderer ?? null,\n  };");
   // A nullable field given one's value, which may be \`undefined\`, makes it \`null\`.
   expect(js).toContain("return { name: context.label ?? null };");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    renderer?: unknown | null | undefined;\n    label?: string | null | undefined;\n");
@@ -508,9 +548,23 @@ pub fn label(context: &mut Context, label: &'static str) {
   expect(lib.info(prod).name).toBe(null);
   lib.set(dev, "dom");
   expect([lib.has(dev), lib.which(dev), lib.same(prod, dev)]).toEqual([true, 1, false]);
-  expect([lib.labeled("a").label, "label" in lib.labeled(undefined), lib.unlabeled(lib.labeled(undefined))]).toEqual(["a", true, true]);
-  // A \`None\` only it's given isn't \`null\` where it's made, as one only nullable fields read is (ADR 0781).
-  expect([lib.unnamed().label, lib.unlabeled(lib.unnamed())]).toEqual([undefined, true]);
+  expect([lib.labeled("a").label, lib.labeled(undefined).label, lib.unlabeled(lib.labeled(undefined))]).toEqual(["a", null, true]);
+  // A \`None\` only it's given is \`null\` where it's made, as one only nullable fields read is (ADR 0781).
+  expect(js).toContain("const label = null;");
+  expect([lib.unnamed().label, lib.unlabeled(lib.unnamed())]).toEqual([null, true]);
+  const referred = [lib.referred({ ref: "r" }), lib.referred({}), lib.referred({ ref: null })];
+  expect(referred.map((o) => [o.renderer, Object.hasOwn(o, "renderer"), "label" in o, lib.has(o)])).toEqual([
+    ["r", true, false, true],
+    [null, true, false, false],
+    [null, true, false, false],
+  ]);
+  expect(js).toContain("export function titled(n) {\n  const title = n > 1 ? String(n) : null;\n  return { title };\n}");
+  expect([lib.untitled().title, lib.titled(1).title, lib.titled(2).title]).toEqual([null, null, "2"]);
+  expect([lib.titledHere(1).title, lib.titledHere(2).title]).toEqual(["1", null]);
+  // No optional field is ever \`undefined\` and there.
+  for (const o of [prod, dev, lib.labeled(undefined), lib.unnamed(), ...referred, lib.untitled(), lib.titled(1), lib.titledHere(2)]) {
+    expect(Object.values(o)).not.toContain(undefined);
+  }
   // Assigned, as its cell is set: `None` is `null`, an `Option` `?? null`, a `Some` its value.
   expect(js).toContain("export function unlabel(context) {\n  context.label = null;\n}");
   expect(js).toContain("export function relabel(context, label) {\n  context.label = label ?? null;\n}");

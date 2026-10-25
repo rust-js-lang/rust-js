@@ -484,4 +484,20 @@ export const mutations: Mutation[] = [
     replace: "            && !matches!(\n                self.recognition().classify(def_id, generic_args),\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
+  {
+    name: "written-none-of-two-writes",
+    breaks: "a temporary written `Some(..)` or `None`, `S { title: if c { Some(t) } else { None } }`'s, is taken for the literal's `None`: left out where it's `Some` (ADR 0810, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if !place.projection.is_empty() || locals.writes[place.local] != 1 {\n",
+    replace: "        if !place.projection.is_empty() {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
+  {
+    name: "written-none-cell-unasked",
+    breaks: "an optional nullable field's `Cell::new(None)`, a temporary MIR makes where it has drop glue, isn't the literal's `None`, so it's `undefined ?? null` (ADR 0810, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                }) && matches!(&args[..], [arg] if self.written_none(body, locals, &arg.node));\n",
+    replace: "                }) && false;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+  },
 ];

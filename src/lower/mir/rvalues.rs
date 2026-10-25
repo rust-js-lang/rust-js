@@ -2,6 +2,7 @@
 //! a value.
 
 use super::*;
+use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `terminator` calls a `Cell`'s `get`, `set`, `replace` or
@@ -720,7 +721,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.value_expr(v, span),
                     })
                     .collect::<R<Vec<_>>>()?;
-                let value = self.adt_value(ty, *variant_index, exprs, &nulled, order.as_deref(), span)?;
+                let given: Vec<Given> = (operands.iter().zip(&nulled))
+                    .map(|(o, &nulled)| match nulled {
+                        _ if self.written_none(state.body, &state.locals, o) => Given::WrittenNone,
+                        true => Given::Nulled,
+                        false => Given::Unknown,
+                    })
+                    .collect();
+                let value = self.adt_value(ty, *variant_index, exprs, &given, order.as_deref(), span)?;
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable`, is the JS iterator it is where
                 // it's made, stepped by the compiled impl's `next` and sized
@@ -812,6 +820,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             })
+    }
+
+    /// Whether `operand` is a `None` and nothing else: a local assigned
+    /// once, a `None`, MIR's temporary of `S { label: None }`'s, or a
+    /// `Cell::new` of one, `Cell::new(None)`'s. What an optional nullable
+    /// field leaves out (ADR 0810, amended).
+    pub(super) fn written_none(&self, body: &mir::Body<'tcx>, locals: &Locals, operand: &mir::Operand<'tcx>) -> bool {
+        let Some(place) = operand.place() else {
+            return false;
+        };
+        if !place.projection.is_empty() || locals.writes[place.local] != 1 {
+            return false;
+        }
+        for block in body.basic_blocks.iter() {
+            for statement in &block.statements {
+                if let mir::StatementKind::Assign(assign) = &statement.kind
+                    && assign.0 == place.local.into()
+                {
+                    return matches!(&assign.1, Rvalue::Aggregate(kind, _)
+                        if matches!(**kind, AggregateKind::Adt(did, variant, ..)
+                            if variant.as_u32() == 0 && self.tcx.is_lang_item(did, LangItem::Option)));
+                }
+            }
+            if let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &block.terminator().kind
+                && *destination == place.local.into()
+            {
+                return (func.const_fn_def()).is_some_and(|(def_id, generic_args)| {
+                    self.recognition().classify(def_id, generic_args) == Some(Std::CellNew)
+                }) && matches!(&args[..], [arg] if self.written_none(body, locals, &arg.node));
+            }
+        }
+        false
     }
 
     /// Whether `operand`, an `Option`, is `null` or a value already, as a

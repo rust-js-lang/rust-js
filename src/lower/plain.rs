@@ -312,10 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match ty.kind() {
             ty::Tuple(items) if items.is_empty() => Expr::undefined(),
             ty::Tuple(_) | ty::Array(..) => Expr::array(values),
-            _ => {
-                let nulled = vec![false; values.len()];
-                self.adt_value(ty, VariantIdx::ZERO, values, &nulled, None, span)?
-            }
+            _ => self.adt_value(ty, VariantIdx::ZERO, values, &[], None, span)?,
         })
     }
 

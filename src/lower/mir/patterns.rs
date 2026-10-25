@@ -98,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (field, operand) in operands.iter_enumerated() {
                 if let Some(read) = operand.place()
                     && read.projection.is_empty()
-                    && bindings::null_where_made(self.tcx, &fields[field])
+                    && bindings::is_nullable(self.tcx, &fields[field])
                 {
                     *given.entry(read.local).or_default() += 1;
                     stored.insert(read.local);

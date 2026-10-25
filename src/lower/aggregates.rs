@@ -15,6 +15,20 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+/// What MIR tells of the value a struct literal's field is given, which a
+/// nullable field stores by (ADRs 0275, 0810).
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub(super) enum Given {
+    /// What may be `undefined`.
+    #[default]
+    Unknown,
+    /// `null` or a value already (`nulled`).
+    Nulled,
+    /// A `None` the literal writes, `S { label: None }`'s, or a
+    /// `Cell::new(None)`'s: an optional field's left out.
+    WrittenNone,
+}
+
 /// How the struct literal written at `span`, `P {\n x: 1, .. }`, is
 /// written, which its object is written as (ADR 0835): across lines where
 /// its `{` ends a line, as rustfmt writes one too long for a line, and as
@@ -190,13 +204,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// they're declared: as `adt` makes a literal without a base, which is
     /// how MIR makes each (ADR 0364). An object of them lists them in
     /// `order`, each a declared field's index, as written
-    /// (`written_order`), or as declared where it's `None`.
+    /// (`written_order`), or as declared where it's `None`. Each field is
+    /// `given` what MIR tells of its value, nothing where it's left out.
     pub(super) fn adt_value(
         &mut self,
         ty: Ty<'tcx>,
         variant_index: VariantIdx,
         fields: Vec<Expr>,
-        nulled: &[bool],
+        given: &[Given],
         order: Option<&[usize]>,
         span: Span,
     ) -> R<Expr> {
@@ -263,19 +278,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);
         // what's `nulled`, `null` or a value already, is as it is.
         // A `Cell`'s, what it holds, which the field is (ADR 0772). An
-        // optional one's is as it is, its `None` left out (ADR 0810).
+        // optional one's `None` the literal writes is left out, and what may
+        // be `None` otherwise is stored as any nullable field's is: never
+        // `{ label: undefined }` (ADR 0810, amended).
         for (i, (field, value)) in variant.fields.iter().zip(&mut fields).enumerate() {
-            if bindings::null_where_made(self.tcx, field) {
-                let made = std::mem::replace(value, Expr::undefined());
-                let nulled = nulled.get(i) == Some(&true);
-                *value = match self.is_std_type(field.ty(self.tcx, args).skip_normalization(), StdItem::Cell) {
-                    true => {
-                        let held = js::Storage::NullForNone.written(Expr::held(made), nulled);
-                        Expr::object(vec![Prop::Field(js::HELD.into(), held)])
-                    }
-                    false => js::Storage::NullForNone.written(made, nulled),
-                };
+            if !bindings::is_nullable(self.tcx, field) {
+                continue;
             }
+            let given = given.get(i).copied().unwrap_or_default();
+            let field_ty = field.ty(self.tcx, args).skip_normalization();
+            let cell = self.is_std_type(field_ty, StdItem::Cell);
+            let made = std::mem::replace(value, Expr::undefined());
+            let held = match cell {
+                true => Expr::held(made.clone()),
+                false => made.clone(),
+            };
+            if bindings::is_optional(self.tcx, field)
+                && (given == Given::WrittenNone
+                    || matches!(held.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
+            {
+                // An `Option`'s the `None` it is, a read of what's only
+                // `None`; a cell's as it's made, which a drop may read.
+                *value = match self.option_of(field_ty) {
+                    Some(_) => Expr::undefined(),
+                    None => made,
+                };
+                continue;
+            }
+            let stored = js::Storage::NullForNone.written(held, given == Given::Nulled);
+            *value = match cell {
+                true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
+                false => stored,
+            };
         }
         let tag = (adt_def.is_enum()).then(|| {
             (
