@@ -654,7 +654,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
-- [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md)
 - [0871 `Rev` is std's where it's held; the recognizers reverse what's stepped where it's made](0871-rev-is-stds.md)
 - [0872 A body's facts are made before it's lowered, and never changed](0872-a-bodys-facts-are-made-before-its-lowered.md)
 - [0873 A function handed to JS carries no drop, and `catch_unwind` never unwinds](0873-a-function-handed-to-js-carries-no-drop.md)

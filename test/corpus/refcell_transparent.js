@@ -17,7 +17,7 @@ export function entry() {
 }
 
 function pushAll(pending, value) {
-  Array.from(pending).forEach((queue) => {
+  pending.forEach((queue) => {
     queue.push(value);
   });
 }
