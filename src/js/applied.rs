@@ -34,7 +34,7 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
         let whole = body.clone();
         if ends_function
             && let Some(last) = body.len().checked_sub(1)
-            && let Some(inlined) = block_of(&body[last], &whole, true)
+            && let Some(inlined) = block_of(&body[last], &whole, true, true)
         {
             body.splice(last..=last, inlined);
             continue;
@@ -44,7 +44,7 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
             if done {
                 return;
             }
-            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false).or_else(|| value_of(stmt, &whole));
+            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true).or_else(|| value_of(stmt, &whole));
             if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, inlined(&stmts[i])?))) {
                 stmts.splice(i..=i, inlined);
                 done = true;
@@ -66,12 +66,14 @@ pub fn applied_call(stmt: &Stmt, whole: &[Stmt], params: &[Pattern], body: &[Stm
         return None;
     };
     let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);
-    block_of(&call, whole, false)
+    block_of(&call, whole, false, false)
 }
 
 /// The statements `stmt`, a call of a closure made there, is, in `whole`,
-/// the function's body; `tail`, the body's last, which a `return;` ends too.
-fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
+/// the function's body; `tail`, the body's last, which a `return;` ends too;
+/// `hold`, of a closure the program made, which may be given a lazy
+/// thread-local's call (`in_place`).
+fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool) -> Option<Vec<Stmt>> {
     let StmtKind::Expr(e) = &stmt.kind else { return None };
     let ExprKind::Call(callee, args) = &e.kind else {
         return None;
@@ -87,7 +89,7 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool) -> Option<Vec<Stmt>> {
     if valued || any && !tail && !returns_broken(&mut body) {
         return None;
     }
-    in_place(stmt, whole, &[], (params, args), body)
+    in_place(stmt, whole, &[], (params, args), body, hold)
 }
 
 /// The statements `stmt` is, in `whole`, the function's body, where what
@@ -117,7 +119,7 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     if let Some(call) = first_call(&mut beside) {
         *call = Expr::undefined();
     }
-    let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone())?;
+    let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone(), true)?;
     let Some(Stmt {
         kind: StmtKind::Return(Some(value)),
         ..
@@ -179,6 +181,7 @@ fn in_place(
     beside: &[Stmt],
     (params, args): (&[Pattern], &[Expr]),
     mut body: Vec<Stmt>,
+    hold: bool,
 ) -> Option<Vec<Stmt>> {
     let ([Pattern::Name(param)], [arg]) = (params, args) else {
         return None;
@@ -187,18 +190,29 @@ fn in_place(
     // field of one, a thread-local's `value`.
     // Or another module's, a thread-local imported, `REPORT_GLOBAL_ERROR`,
     // which the linker names apart from what's here (ADR 0840, amended).
-    let given = match &arg.kind {
-        ExprKind::Var(name) => Some(name),
+    // Or, of a closure called where it's made, a thread-local made where
+    // it's first used, `x()` (ADR 0037, amended): held first, `const cell =
+    // x();`, as the call reads it before its body runs.
+    let (given, held) = match &arg.kind {
+        ExprKind::Var(name) => (Some(name), false),
         ExprKind::Member(of, _)
             if arg.reads_same()
                 && let ExprKind::Var(name) = &of.kind =>
         {
-            Some(name)
+            (Some(name), false)
         }
-        ExprKind::Symbol(_) => None,
-        ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => None,
+        ExprKind::Symbol(_) => (None, false),
+        ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
+        ExprKind::Call(callee, called)
+            if hold && called.is_empty() && matches!(callee.kind, ExprKind::Var(_) | ExprKind::Symbol(_)) =>
+        {
+            (None, true)
+        }
         _ => return None,
     };
+    if held {
+        body.insert(0, StmtKind::Const(param.clone(), arg.clone()).at(stmt.span));
+    }
     // What the body declares at its top is declared beside `stmt`: one that
     // is another name of the function, or the variable it's given, is
     // named apart from them, `borrow$1`, as lowering names a body's own
@@ -220,6 +234,10 @@ fn in_place(
         let mut names: HashSet<String> = given.into_iter().cloned().collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
+        // And what the held argument reads: `const x$1 = x();`, not `x`.
+        if held {
+            arg.visit_vars(&mut |name| _ = names.insert(name.to_string()));
+        }
         let mut mentioned = names.clone();
         names_in(&body, &mut mentioned);
         for from in declared.into_iter().filter(|name| names.contains(name)) {
@@ -231,7 +249,7 @@ fn in_place(
             mentioned.insert(to);
         }
     }
-    if !matches!(&arg.kind, ExprKind::Var(v) if v == param) {
+    if !held && !matches!(&arg.kind, ExprKind::Var(v) if v == param) {
         // Read as what it's given: a parameter never set, of a body with no
         // closure of its own, whose names could shadow it.
         let mut set = false;

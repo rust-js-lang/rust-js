@@ -62,6 +62,10 @@ pub struct Calling {
     /// rustc's metadata keeps no parameter's attributes.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub rest: bool,
+    /// Whether it's a thread-local made where it's first used, read by
+    /// calling it, `START()` (ADR 0037, amended).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub lazy: bool,
 }
 
 impl Calling {

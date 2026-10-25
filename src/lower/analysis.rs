@@ -11,6 +11,7 @@ mod drops;
 mod fmt_failures;
 mod held_adapters;
 mod iterator_steps;
+mod lazy_locals;
 mod mutation;
 mod naming;
 mod only_called;
@@ -518,6 +519,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
     pub quiet_locals: HashSet<LocalDefId>,
+    /// The thread-locals, by their keys, made where they're first used, as
+    /// their initializer runs the crate's code or may panic (ADR 0037,
+    /// amended): each `$local(() => init)`, read by calling it.
+    pub lazy_locals: HashSet<LocalDefId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub named_expressions: HashSet<DefId>,
@@ -828,7 +833,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     // A thread-local is a cell, its module's own made plain after
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
-    let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
+    // Those made where they're first used, which aren't plain: a variable
+    // can't be made as it's read (ADR 0037, amended).
+    let lazy_locals = lazy_locals::lazy_locals(tcx, all_bodies, &thread_local_inits);
+    let quiet_locals = plain_locals::plain_thread_locals(
+        tcx,
+        all_bodies,
+        (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),
+        &quiet,
+    );
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -975,6 +988,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         format_options,
         debug_hex,
         quiet_locals,
+        lazy_locals,
         named_expressions,
         local_functions,
         held,

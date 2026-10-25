@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "mir-quiet-locals-none",
     breaks: "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
     file: "src/lower/analysis.rs",
-    find: "let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);",
-    replace: "let quiet_locals: HashSet<_> = HashSet::new();",
+    find: "    let quiet_locals = plain_locals::plain_thread_locals(\n        tcx,\n        all_bodies,\n        (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),\n        &quiet,\n    );\n",
+    replace: "    let quiet_locals: HashSet<_> = HashSet::new();\n",
     tests: ["test/modules.test.ts","-t","thread-local only read and set"],
   },
   {

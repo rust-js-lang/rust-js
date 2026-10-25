@@ -470,7 +470,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "reaches(module, other) && reaches(other, module)",
     replace: "false && reaches(module, other) && reaches(other, module)",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "load-time-calls-unseen",
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
     replace: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects() && false)",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "dictionary-cache-unmade",
@@ -486,7 +486,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "dictionary-cache-runs-code",
@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
     replace: "(consts.iter()).any(|c| c.value.has_effects())",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
   {
     name: "bound-global-default-refused",
@@ -559,5 +559,14 @@ export const mutations: Mutation[] = [
     find: "            .push((exported(def_id, info), alias));\n",
     replace: "            .push((info.name.clone(), alias));\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+  },
+  {
+    name: "lazy-local-runs-at-load",
+    breaks: "a thread-local made where it's first used is taken as code its module's load runs, so what it reads of another module's `const`s is their value, not their name",
+    file: "src/lower/pipeline.rs",
+    find: "        .filter(|(_, key)| !lazy_locals.contains(key))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
+    snapshots: true,
   },
 ];

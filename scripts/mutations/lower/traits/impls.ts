@@ -468,6 +468,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "        if !self.takes_evidence(id) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
 ];

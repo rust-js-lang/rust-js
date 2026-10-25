@@ -112,3 +112,15 @@ string of text not all ASCII past a billion units may be made where std
 panics. Results change only for a program that asks a string that long,
 which runs out either way but in that corner: the second case, listed
 among the guide's differences (`semantics.md`, 25).
+
+## Amendment: a thread-local of std's or a binding's calls, made as its module loads
+
+Rust makes a thread-local at its first use; rust-js makes one whose
+initializer runs the crate's code there too (ADR 0037, amended). One whose
+initializer calls only std's and bindings' functions is made as its module
+loads, as JS writes it, React's `export const TocContext =
+createContext([])`, which the user chose (2026-10-25) over making each
+lazy, `TocContext.value` read through a holder. Results change only where
+such a call does something a program sees before the thread-local's first
+use, or a std call in it panics: the second case's, listed among the
+guide's differences (`semantics.md`, 25).

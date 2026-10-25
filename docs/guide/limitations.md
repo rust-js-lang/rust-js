@@ -72,8 +72,8 @@ depends on what the program does:
 
 - An impl's dictionary made where its module loads, in an import cycle
   with a module that runs code where it loads, a `thread_local!` made by
-  a call that may reach the dictionary before it's made. Move the impl or
-  that code out of the cycle
+  a binding's call, or `js::on_load!`, that may reach the dictionary before
+  it's made. Move the impl or that code out of the cycle
   ([ADR 0592](../decisions/0592-a-dictionary-is-its-modules-const.md)).
 
 ## Iterators and collections

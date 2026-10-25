@@ -363,6 +363,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The thread-locals each `with_borrow` of which can't ask whether it's
     /// borrowed, their module's variables (ADRs 0270, 0580).
     quiet_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    /// The thread-locals made where they're first used, read by calling
+    /// them (ADR 0037, amended).
+    lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     named_expressions: &'a HashSet<DefId>,
@@ -660,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
-            let place = self.fn_ref(def_id);
+            let place = self.item_read(def_id);
             let copied = self.const_use_copied(ty)
                 // One whose value JS holds as itself, `undefined` of one with
                 // no byte written, `MaybeUninit::uninit()`'s, which nothing

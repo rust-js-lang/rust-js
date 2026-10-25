@@ -163,4 +163,12 @@ export const mutations: Mutation[] = [
     replace: "            (ExprKind::Spread(_), true) => false,\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
+  {
+    name: "lazy-local-read-bare",
+    breaks: "a thread-local made where it's first used is read as its holder, not its call, `x.value` of `x()`",
+    file: "src/lower/items.rs",
+    find: "            true => Expr::call(place, Vec::new()),\n",
+    replace: "            true => place,\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
+  },
 ];

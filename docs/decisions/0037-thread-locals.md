@@ -112,3 +112,47 @@ renders a table's memo; a mutation refuses it again.
 
 - [0270](0270-module-variables.md): A thread-local only read and set is its module's variable
 - [0306](0306-item-order.md): A module's items are where its Rust has them
+
+## Amendment: one whose initializer runs the crate's code is made where it's first used
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a thread-local's
+initializer prints, a panic in it, and what it reads of another module
+were where its module loaded; they're where Rust has them now. B for what
+a binding's call does in one, which the user decided (2026-10-25).
+
+A thread-local was made as its module loaded, its initializer the
+module's code. Rust makes each at its first use. `thread_local!{ static
+X: Cell<u32> = Cell::new(noisy()); }` printed `init` before `main`'s first
+line, where Rust prints it at the first `X.with`; and in an import cycle,
+one whose initializer called a function of a module not yet loaded threw
+a `ReferenceError` reading that module's `const` (#207). React's contexts
+are thread-locals too, `pub static TocContext: Context<Toc> =
+create_context(Vec::new())`, which React writes as `export const
+TocContext = createContext([])`, made as the module loads.
+
+- **A thread-local whose initializer runs the crate's code, or may
+  panic, is made where it's first used** (`analysis/lazy_locals.rs`): its
+  initializer's MIR calls a body of the crate's, a function, a method of
+  its impl or a closure, or of what rust-js can't see the body of; drops a
+  value of the crate's with a destructor; checks what may fail; or calls
+  what never returns. It's `$local(() => init)`, whose call makes it the
+  first time and gives it after, read by its call, `source()`, the
+  crate's or a library's (`Calling.lazy`, ABI 5); one whose initializer
+  panics stays unmade, and its next use runs it again, as Rust's does.
+  Its `with(|x| ..)` holds it first, `const x$1 = x();`, and of a closure
+  that only reads a path of it, `|e| e.clone()`, is that path of its
+  call, `source()`.
+- **One that only makes a value, or calls std's or a binding's
+  functions, is made as its module loads**, as JS writes it, React's
+  `createContext([])`: the user's choice of the JS idiom where only JS's
+  or std's code runs. What a binding's call does then, or a std call's
+  panic, is at the module's load, the guide's difference 25.
+- **A lazy one runs nothing as its module loads**, so a dictionary in an
+  import cycle with its module isn't refused for it (ADR 0592): `counts`'
+  thread-local of `shapes::total` compiles, as Rust's does.
+- Held by `test/corpus/thread_local_made_where_used.rs`, against native
+  Rust: an initializer's print after `main`'s, one's drop, one that
+  panics made again, an import cycle's (#207), and another module's
+  `const` read by its name; `test/lowering-structs-enums.test.ts`'s
+  dictionary cycle, which compiles, and one of a binding's, refused; and
+  the mutations `lazy-local-*`, `local-made-*`.

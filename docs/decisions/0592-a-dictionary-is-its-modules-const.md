@@ -87,7 +87,7 @@ the cycle.
 
 ## What holds it
 
-- `test/lowering.test.ts`, "a dictionary that takes nothing is its
+- `test/lowering-dictionaries.test.ts`, "a dictionary that takes nothing is its
   module's const": a dictionary, its module's thread-local made of it,
   a generic one's cache, one of a type's fact, and the cycle refused.
 - Mutations: a dictionary a function again, one read called, each kind of

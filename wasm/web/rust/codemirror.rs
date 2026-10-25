@@ -120,7 +120,8 @@ struct Transaction {
     effects: &'static Effect,
 }
 
-// Made once, as the module loads (ADR 0037). One theme compartment serves
+// Made once: as the module loads, or what runs the crate's code where it's
+// first used (ADR 0037, amended). One theme compartment serves
 // both editors: it only names the slot a view reconfigures.
 thread_local! {
     static THEME: &'static Compartment = new_compartment();

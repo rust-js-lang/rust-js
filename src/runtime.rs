@@ -60,6 +60,7 @@ helpers! {
     IteratorWith,
     Remove,
     Repeat,
+    Local,
     OrInsert,
     OrInsertWith,
     Key,
@@ -382,6 +383,9 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    // A thread-local's holder, whose initializer runs at its first use
+    // (ADR 0037, amended).
+    "$local",
     "$symbolFor",
     "$pathEq",
     "$pathCmp",
@@ -1000,6 +1004,8 @@ impl Helper {
             Helper::SortedKeys => include_str!("runtime/sorted_keys.js"),
             // `vec![item; count]`: clone all but the last slot, which takes item.
             Helper::Repeat => include_str!("runtime/repeat.js"),
+            // A thread-local made where it's first used (ADR 0037, amended).
+            Helper::Local => include_str!("runtime/local.js"),
             // `m.entry(k).or_insert(v)`: initialize only a missing entry.
             Helper::OrInsert => include_str!("runtime/or_insert.js"),
             // `or_insert_with(f)`: `f` runs only if there's none there.

@@ -363,6 +363,15 @@ module runs when it's loaded that ends with a `return;`, which a module
 can't
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md)).
 
+**A thread-local whose initializer runs the crate's code, or may panic, is
+made where it's first used**, as Rust makes each: `const source = $local(()
+=> [..])`, read by its call, `source()`, so what its initializer prints, a
+panic in it, and another module it reads in an import cycle are where Rust
+has them. One that only makes a value, or calls std's or a binding's
+functions, React's `createContext([])`, is made as its module loads, as JS
+writes it
+([0037](../decisions/0037-thread-locals.md), amended).
+
 Differences:
 
 - **A lock is never poisoned:** a panic that unwinds through a held guard
@@ -777,3 +786,7 @@ React and JSX are [their own pages](README.md#react).
     `RangeError` where std panics `capacity overflow`; in Safari and
     Bun, of text not all ASCII past a billion units, it may be made
     (ADR 0774).
+25. A thread-local whose initializer calls only std's and bindings'
+    functions is made as its module loads, where Rust makes each at its
+    first use: what a binding's call does, or a std call's panic, happens
+    then (ADR 0037, amended).

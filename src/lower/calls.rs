@@ -189,7 +189,28 @@ fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> 
             value.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
         });
     }
+    // One argument read once, first: a thread-local made where it's first
+    // used, `x()` (ADR 0037, amended), given a closure that reads it, its
+    // `value` or a path of it, `|l| l.get()`: the path of the call.
+    if let ([js::Pattern::Name(param)], [arg]) = (params, args)
+        && matches!(&arg.kind, js::ExprKind::Call(callee, given)
+            if given.is_empty() && matches!(callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)))
+        && path_of(value, param)
+    {
+        return value.substitute(&|name: &str| (name == param).then(|| arg.clone()));
+    }
     None
+}
+
+/// Whether `value` is `param` or a path of its fields, `param.value`, read
+/// the same however often it's read.
+fn path_of(value: &Expr, param: &str) -> bool {
+    match &value.kind {
+        js::ExprKind::Var(name) => name == param,
+        js::ExprKind::Member(of, _) => path_of(of, param),
+        js::ExprKind::Index(of, at) => path_of(of, param) && at.reads_same(),
+        _ => false,
+    }
 }
 
 /// Whether a call of `def_id` gives `null` for `None`, never `undefined`:

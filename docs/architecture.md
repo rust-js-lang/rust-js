@@ -242,6 +242,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Whether an Option's payload may be falsy in JS, and so whether it's there, by its truth or against `null` (ADR 0298), and what `#[rust_js::types]` says may be | `std_types/option.rs`; `declarations.rs` | `never_falsy`, `present`, `absent` (a test of being set, `presence`, which `null_test` reads); `written_falsy` |
 | Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
+| Which thread-locals are made where they're first used, and a read of one, its call (ADR 0037, amended) | `analysis/lazy_locals.rs`; `items.rs` | `lazy_locals`; `made_where_used`, `item_read` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |

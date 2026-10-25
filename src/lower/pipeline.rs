@@ -110,6 +110,7 @@ pub fn lower_crate<'tcx>(
         format_options,
         debug_hex,
         quiet_locals,
+        lazy_locals,
         named_expressions,
         local_functions,
         held,
@@ -228,7 +229,11 @@ pub fn lower_crate<'tcx>(
     let ref_cells = std::cell::OnceCell::new();
     // What runs where its module loads, which reads another module's
     // `const`s as their values (`FnCx::reads_by_name`).
-    let loads: HashSet<DefId> = (thread_local_inits.keys().map(|init| init.to_def_id()))
+    // A thread-local made where it's first used runs nothing as its module
+    // loads (ADR 0037, amended).
+    let loads: HashSet<DefId> = (thread_local_inits.iter())
+        .filter(|(_, key)| !lazy_locals.contains(key))
+        .map(|(init, _)| init.to_def_id())
         .chain(initialized.iter().map(|body| body.def_id))
         .chain(
             (bodies.iter())
@@ -276,6 +281,7 @@ pub fn lower_crate<'tcx>(
         tidy_until,
         ref_cells: &ref_cells,
         quiet_locals: &quiet_locals,
+        lazy_locals: &lazy_locals,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
         loads: &loads,
@@ -540,16 +546,23 @@ pub fn lower_crate<'tcx>(
                     (thread_local_inits.get(&local).copied()).or_else(|| initializer.then_some(local))
                 }) =>
             {
-                // `const COUNT = { value: 0 };`: made when the module loads.
+                // `const COUNT = { value: 0 };`: made when the module loads. One
+                // whose initializer runs the crate's code, or may panic, made
+                // where it's first used, as Rust makes it, and read by calling
+                // it, `const START = $local(() => ..)` (ADR 0037, amended).
                 let function = lowered.function;
-                let value = match function.body.as_slice() {
-                    [
-                        js::Stmt {
-                            kind: StmtKind::Return(Some(value)),
-                            ..
-                        },
-                    ] => value.clone(),
-                    _ => Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new()),
+                let value = match (lazy_locals.contains(&key), function.body.as_slice()) {
+                    (true, _) => Expr::call_helper("$local", vec![Expr::arrow(Vec::new(), function.body)]),
+                    (
+                        false,
+                        [
+                            js::Stmt {
+                                kind: StmtKind::Return(Some(value)),
+                                ..
+                            },
+                        ],
+                    ) => value.clone(),
+                    (false, _) => Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new()),
                 };
                 // A `static mut`'s is its `{ value }` (ADR 0096).
                 let value = match tcx.static_mutability(key.to_def_id()) {
@@ -1116,6 +1129,7 @@ pub fn lower_crate<'tcx>(
                     makes_dropping_anys: closure_facts.any_dyns_drop,
                     counted: &counted,
                     ref_cells: ref_cell_facts(),
+                    lazy_locals: &lazy_locals,
                 },
                 (&trait_impls, &held.modules),
                 dependencies,

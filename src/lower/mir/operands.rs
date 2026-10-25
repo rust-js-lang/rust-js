@@ -252,7 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.is_rust_fn(named.def)
                 && referred.ty().is_freeze(tcx, self.typing_env)
             {
-                return Ok(self.fn_ref(named.def));
+                return Ok(self.item_read(named.def));
             }
             return self.mir_const(state, &referred);
         }

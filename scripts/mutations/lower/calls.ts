@@ -74,4 +74,13 @@ export const mutations: Mutation[] = [
     replace: "        if true\n            && generic_args\n",
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
   },
+  {
+    name: "lazy-local-path-unapplied",
+    breaks: "`source.with(|e| e.clone())` of a thread-local made where it's first used stays `((e) => e)(source())`",
+    file: "src/lower/calls.rs",
+    find: "        && path_of(value, param)\n",
+    replace: "        && false && path_of(value, param)\n",
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
+    snapshots: true,
+  },
 ];

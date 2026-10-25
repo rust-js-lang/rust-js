@@ -17,6 +17,26 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A read of an item `fn_ref` names: a thread-local made where it's
+    /// first used, the crate's or a library's, is its call, `START()`
+    /// (ADR 0037, amended); anything else, its name.
+    pub(super) fn item_read(&self, def_id: DefId) -> Expr {
+        let place = self.fn_ref(def_id);
+        match self.made_where_used(def_id) {
+            true => Expr::call(place, Vec::new()),
+            false => place,
+        }
+    }
+
+    /// Whether `def_id` is a thread-local made where it's first used, whose
+    /// initializer runs the crate's code or may panic (ADR 0037, amended).
+    pub(in crate::lower) fn made_where_used(&self, def_id: DefId) -> bool {
+        def_id
+            .as_local()
+            .is_some_and(|local| self.krate.lazy_locals.contains(&local))
+            || self.krate.foreign.item(def_id).is_some_and(|item| item.calling.lazy)
+    }
+
     pub(super) fn fn_ref(&self, def_id: DefId) -> Expr {
         // A library's, imported by the name it chose (ADR 0100).
         if let Some(item) = self.krate.foreign.item(def_id) {

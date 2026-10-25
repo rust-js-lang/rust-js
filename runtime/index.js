@@ -809,6 +809,22 @@ export function $repeat(item, count, size, clone, drop) {
   return result;
 }
 
+// A thread-local whose initializer runs the program's code, or may panic:
+// made where it's first used, as Rust's is, and read by calling what this
+// makes (ADR 0037, amended). One whose initializer panics stays unmade, so
+// its next use runs it again, as Rust's does.
+export function $local(init) {
+  let made = false;
+  let value;
+  return () => {
+    if (!made) {
+      value = init();
+      made = true;
+    }
+    return value;
+  };
+}
+
 // `m.entry(key).or_insert(value)`: the value put in if the key's missing;
 // where the key's there, the key given dropped by `dropKey`, then the value
 // by `drop`, of ones with a destructor, as Rust's are (ADRs 0321, 0467).

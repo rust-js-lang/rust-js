@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     name: "const-use-unrecorded",
     breaks: "another module's `const`, `util::SIZE`, is read by its name, but its module isn't imported for it",
     file: "src/lower.rs",
-    find: "            let place = self.fn_ref(def_id);",
+    find: "            let place = self.item_read(def_id);",
     replace: "            let place = Expr::var(&self.krate.fns[&def_id].name);",
     tests: ["test/modules.test.ts", "-t", "imports follow what's used: functions, consts and thread-locals"],
   },
