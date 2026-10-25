@@ -806,7 +806,8 @@ test("a long function is lowered block by block", async () => {
   const lib = await import(join(dir, "mir.js"));
   const items = lib.long(1);
   expect([items.length, items[0], items[2999]]).toEqual([3000, 1, 3000]);
-});
+  // A compile of 3,000 statements, 2.6 s alone: past 5 s beside check:fast's other jobs.
+}, 30_000);
 
 test("a closure's last `_` parameters are left out", async () => {
   const dir = fixture("mir-closure-wild-params");

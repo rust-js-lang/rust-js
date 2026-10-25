@@ -883,7 +883,8 @@ test("a binding's optional argument is an Option of its one function", () => {
   expect(secondForms(bindingsOf("planted.rs", planted))).toEqual([
     "planted.rs:8 `push_state_with_url` is `push_state` with more: give `push_state` each as an `Option`",
   ]);
-});
+  // It reads every binding crate, 1 s alone: past 5 s beside check:fast's other jobs.
+}, 30_000);
 
 test("only recognition spells std's names", () => {
   const strays: string[] = [];

@@ -373,18 +373,33 @@ pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, nam
     }
 }
 
-/// `if (false) { .. } else { rest }`: `rest`, what's always run.
+/// What an `if` always runs, in its place: of `if (false) { .. } else {
+/// rest }`, `rest`; of an `if` that runs nothing either way, a drop flag's
+/// whose branch dropped nothing, `if (_2$live) {}`, its test where it does
+/// anything, else nothing.
 pub(in crate::lower::mir::tidy) fn never_taken(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
-        if let StmtKind::If(test, _, els) = &mut stmts[i].kind
-            && matches!(test.kind, ExprKind::Bool(false))
-        {
-            let rest = els.take().unwrap_or_default();
-            let count = rest.len();
-            stmts.splice(i..=i, rest);
-            i += count;
-            continue;
+        let span = stmts[i].span;
+        if let StmtKind::If(test, then, els) = &mut stmts[i].kind {
+            let rest = if matches!(test.kind, ExprKind::Bool(false)) {
+                Some(els.take().unwrap_or_default())
+            } else if then.is_empty() && els.as_ref().is_none_or(|els| els.is_empty()) {
+                let test = std::mem::replace(test, Expr::bool(false));
+                Some(if test.has_effects() {
+                    vec![StmtKind::Expr(test).at(span)]
+                } else {
+                    Vec::new()
+                })
+            } else {
+                None
+            };
+            // What's put in its place is read again: an `if` of nothing
+            // may be in an `else` taken.
+            if let Some(rest) = rest {
+                stmts.splice(i..=i, rest);
+                continue;
+            }
         }
         i += 1;
     }

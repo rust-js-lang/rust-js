@@ -896,4 +896,39 @@ mod tests {
         };
         assert!(matches!(jsx.props.as_slice(), [Prop::Spread(Expr { kind: ExprKind::Var(v), .. })] if v == "post"));
     }
+
+    /// What an `if` always runs is put in its place (`jumps::never_taken`):
+    /// of `if (false)`, its `else`; of an `if` of nothing either way, its
+    /// test where the test does anything, else nothing; and with inner
+    /// lists first, an `if` that what's taken inside it empties goes too.
+    #[test]
+    fn what_an_if_always_runs() {
+        use super::jumps::never_taken;
+        let none = js::Span::NONE;
+        let if_ = |test: Expr, then: Vec<Stmt>, other: Option<Vec<Stmt>>| StmtKind::If(test, then, other).at(none);
+        let mut body = vec![if_(Expr::bool(false), vec![call("a")], Some(vec![call("b")]))];
+        never_taken(&mut body);
+        assert!(body == vec![call("b")]);
+        let mut body = vec![if_(Expr::var("live"), vec![], None), call("c")];
+        never_taken(&mut body);
+        assert!(body == vec![call("c")]);
+        let ready = Expr::call(Expr::var("ready"), Vec::new());
+        let mut body = vec![if_(ready.clone(), vec![], Some(vec![]))];
+        never_taken(&mut body);
+        assert!(body == vec![StmtKind::Expr(ready).at(none)]);
+        let mut body = vec![if_(
+            Expr::bool(false),
+            vec![call("d")],
+            Some(vec![if_(Expr::var("live"), vec![], None)]),
+        )];
+        never_taken(&mut body);
+        assert!(body.is_empty());
+        let mut body = vec![if_(
+            Expr::var("live"),
+            vec![if_(Expr::bool(false), vec![call("d")], None)],
+            None,
+        )];
+        super::bottom_up(&mut body, &mut never_taken);
+        assert!(body.is_empty());
+    }
 }

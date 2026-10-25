@@ -1,10 +1,10 @@
 //! What holds of a body between tidy's stages (ADR 0659), checked in a
 //! debug build after each: of every body, its jumps land and its names are
 //! declared once in a list; and, once a stage ensures it, nothing follows a
-//! jump, and each label is one a jump names. A check that fails names the
-//! first stage that broke it.
+//! jump, each label is one a jump names, no `if` is empty and none tests a
+//! constant. A check that fails names the first stage that broke it.
 
-use crate::js::{Stmt, StmtKind};
+use crate::js::{ExprKind, Stmt, StmtKind};
 
 /// A property of a body, and why a body doesn't have it.
 pub(super) struct Contract {
@@ -74,6 +74,48 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                 {
                     found = Some(format!("`{label}` named by no jump"));
                 }
+            }
+        });
+        found
+    },
+};
+
+/// No `if` does nothing either way: what decided it is gone, or its
+/// branches were emptied, and the test goes with them.
+pub(super) const NO_EMPTY_IF: Contract = Contract {
+    name: "no empty if",
+    broken: |body| {
+        let mut found = None;
+        crate::js::each_list(body, &mut |stmts| {
+            if found.is_none()
+                && stmts.iter().any(|stmt| {
+                    matches!(&stmt.kind, StmtKind::If(_, then, other)
+                        if then.is_empty() && other.as_ref().is_none_or(|other| other.is_empty()))
+                })
+            {
+                found = Some("an `if` of no statements".into());
+            }
+        });
+        found
+    },
+};
+
+/// No `if` tests a constant: its branch is in its place, the other gone.
+pub(super) const NO_CONSTANT_TEST: Contract = Contract {
+    name: "no constant test",
+    broken: |body| {
+        let mut found = None;
+        crate::js::each_list(body, &mut |stmts| {
+            if found.is_none()
+                && let Some(value) = stmts.iter().find_map(|stmt| match &stmt.kind {
+                    StmtKind::If(test, ..) => match test.kind {
+                        ExprKind::Bool(value) => Some(value),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+            {
+                found = Some(format!("an `if ({value})`"));
             }
         });
         found
@@ -255,6 +297,38 @@ mod tests {
         assert!(!holds(
             &NOTHING_AFTER_A_JUMP,
             &[stmt(StmtKind::If(Expr::bool(true), vec![ret, after], None))]
+        ));
+    }
+
+    #[test]
+    fn an_if_does_something() {
+        let if_ = |then: Vec<Stmt>, other: Option<Vec<Stmt>>| stmt(StmtKind::If(Expr::var("c"), then, other));
+        let ret = stmt(StmtKind::Return(None));
+        assert!(holds(&NO_EMPTY_IF, &[if_(vec![ret.clone()], None)]));
+        assert!(holds(&NO_EMPTY_IF, &[if_(vec![], Some(vec![ret.clone()]))]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![], None)]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![], Some(vec![]))]));
+        assert!(!holds(&NO_EMPTY_IF, &[if_(vec![if_(vec![], None)], None)]));
+    }
+
+    #[test]
+    fn no_if_tests_a_constant() {
+        let ret = stmt(StmtKind::Return(None));
+        assert!(holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(Expr::var("c"), vec![ret.clone()], None))]
+        ));
+        assert!(!holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(Expr::bool(true), vec![ret.clone()], None))]
+        ));
+        assert!(!holds(
+            &NO_CONSTANT_TEST,
+            &[stmt(StmtKind::If(
+                Expr::var("c"),
+                vec![stmt(StmtKind::If(Expr::bool(false), vec![ret], None))],
+                None
+            ))]
         ));
     }
 

@@ -108,4 +108,12 @@ export const mutations: Mutation[] = [
     replace: "                && taken.get(&to) == Some(&7)\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
   },
+  {
+    name: "empty-if-kept",
+    breaks: "an `if` of nothing either way, a drop flag's whose branch dropped nothing, stays, which `settled`'s contract refuses (ADR 0659, amended)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            } else if then.is_empty() && els.as_ref().is_none_or(|els| els.is_empty()) {\n",
+    replace: "            } else if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
+  },
 ];

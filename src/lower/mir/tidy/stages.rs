@@ -43,7 +43,7 @@ pub(super) const STAGES: &[Stage] = &[
             // Where a drop's flag is known, no test of it, nor a `try` for it.
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
         ],
-        ensures: &[],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP],
         again: &[],
     },
     // Twice: what a block's statements, in its place, are followed by, and
@@ -51,13 +51,13 @@ pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "jumps",
         passes: JUMPS,
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED],
         again: &[],
     },
     Stage {
         name: "jumps again",
         passes: JUMPS,
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED],
         again: &[],
     },
     Stage {
@@ -81,7 +81,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
             pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
         ],
-        ensures: &[],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::NO_EMPTY_IF],
         again: &[],
     },
     Stage {
@@ -119,7 +119,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("branch values", branch_values_of),
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
         ],
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],
     },
     Stage {
@@ -139,7 +139,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| filtered_guards(s, &changing))
             }),
         ],
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],
     },
     Stage {
@@ -208,7 +208,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| unwrapped_values(s))
             }),
         ],
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],
     },
     Stage {
@@ -279,7 +279,7 @@ pub(super) const STAGES: &[Stage] = &[
             // } }`: what it's a copy of.
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
         ],
-        ensures: &[],
+        ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],
     },
     Stage {
@@ -383,7 +383,11 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
             }),
         ],
-        ensures: &[],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+        ],
         again: &[],
     },
     Stage {
@@ -454,7 +458,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("let else first", |b, _| js::statement_lists(b, &mut let_else_first)),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
         ],
-        ensures: &[],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+        ],
         again: &[],
     },
     Stage {
@@ -486,8 +494,10 @@ pub(super) const STAGES: &[Stage] = &[
             // `!(b >= 48)` of what's never `NaN`: `b < 48`.
             pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
             // An `if` of `false`, a check that can't fail once what it reads
-            // is in place: its `else`, if any.
-            pass("never taken", |b, _| js::statement_lists(b, &mut never_taken)),
+            // is in place: its `else`, if any; and an `if` of nothing either
+            // way: its test, where that does anything.
+            // Inner lists first, as an `if` is emptied by what's taken in it.
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
             pass("holed lists", |b, _| holed_lists(b)),
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {
@@ -508,7 +518,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| written_continues(s, &h.written.continues))
             }),
         ],
-        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
         again: &[],
     },
     // The body as it's written, its parameters taken apart, and each run of
@@ -530,7 +545,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut unwinds::returned_through_finally)
             }),
         ],
-        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
         again: UNWOUND,
     },
     // Then its temporaries named, its drop flags too; a shadow of a binding
@@ -558,7 +578,12 @@ pub(super) const STAGES: &[Stage] = &[
             }),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
-        ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::LABELS_NAMED],
+        ensures: &[
+            contracts::NOTHING_AFTER_A_JUMP,
+            contracts::LABELS_NAMED,
+            contracts::NO_EMPTY_IF,
+            contracts::NO_CONSTANT_TEST,
+        ],
         again: &[],
     },
 ];

@@ -232,3 +232,39 @@ the flag this ADR already has.
   done: issue #231. A pass is where a program's termination was decided.
   Until it's fixed in the runtime, where std's is, the nightly's part
   with that case fails, as it should.
+
+## Amendment: each stage says what it leaves
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): a check in a debug
+build, and one pass made to finish its job; what a program does is the
+same, and only an `if` that did nothing is gone.
+
+Eleven of the fourteen stages ensured nothing past what every stage does.
+Each now ensures what it was found to leave every body with: seven
+properties were checked after every stage of every body of the corpus,
+6,324 bodies, and a stage ensures one only where it held of all of them,
+and of the lowering, JSX, compiler, bindings and snapshot tests' too.
+
+| Stage | Ensures |
+| --- | --- |
+| `flags` | nothing after a jump |
+| `jumps`, `jumps again`, `loops`, `logicals`, `names`, `in place` | each label named; from `loops` on, no empty `if` |
+| `values` | nothing after a jump; no empty `if` |
+| `chains`, `written` | nothing after a jump; each label named; no empty `if` |
+| `settled`, `scopes`, `finish` | those, and no `if` of a constant |
+
+- **`NO_EMPTY_IF`**: no `if` runs nothing either way. **`NO_CONSTANT_TEST`**:
+  no `if` tests `true` or `false`. Each is a `contracts.rs` contract with
+  its unit test.
+- **What it found**: a library's body kept `if (_2$live) {}` in a
+  `catch`, a drop flag's whose branch dropped nothing once `never taken`
+  took away the `if (false)` inside it, as `never taken` read a list
+  before the lists inside it. It reads them first now, and an `if` of
+  nothing either way is its test where that does anything, else nothing
+  (`what_an_if_always_runs`, and the mutation `empty-if-kept`, which
+  `into_iter_of_a_bound.rs`'s library build catches).
+- **Not ensured, for now**: `loop_exit_moves.js` keeps `while (true) {
+  if (i === words.length || ..) { break; } .. }`, which a person writes as
+  a `while` of the test turned; it's the one body of the corpus that does.
+- **What it costs**: nothing measured: a body of 3,000 statements compiles
+  in 2.15 s with the checks and 2.14 s without.
