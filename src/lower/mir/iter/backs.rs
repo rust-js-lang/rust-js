@@ -185,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A source given as it is is given its back where it's asked;
                 // one the crate steps from its back without one, a range or
                 // another adapter, made knowing it, or refused (ADR 0545).
-                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
+                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .iterator_item(output)
                         .is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing) =>
             {
-                let it = match self.given_js_iterator(receiver.clone(), iter_ty, true, false) {
+                let it = match self.given_stepped(receiver.clone(), iter_ty, true, false) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), iter_ty, (true, false), span)?
@@ -352,6 +352,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = self.reveal(source);
         }
         true
+    }
+
+    /// A map's or a filter's source given as it is, `given_js_iterator`'s:
+    /// its back where it's asked and its bounds here give one; of a type
+    /// parameter whose bounds give none, forward alone, as the type it's
+    /// mapped to is stepped from its back only where they do, which rustc
+    /// asks (ADR 0545, amended): the `either` crate's `IterEither::fold`,
+    /// whose `Map<R, _>` its `rfold` steps from the back.
+    fn given_stepped(&self, value: Expr, iter_ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
+        let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));
+        (self.given_js_iterator(value.clone(), iter_ty, back, len))
+            .or_else(|| {
+                parameter
+                    .then(|| self.given_js_iterator(value.clone(), iter_ty, false, len))
+                    .flatten()
+            })
+            .or_else(|| {
+                parameter
+                    .then(|| self.given_js_iterator(value, iter_ty, false, false))
+                    .flatten()
+            })
     }
 
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {

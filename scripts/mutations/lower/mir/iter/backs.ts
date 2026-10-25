@@ -139,8 +139,8 @@ export const mutations: Mutation[] = [
     name: "given-map-source-raw",
     breaks: "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {\n",
-    replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
+    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {\n",
+    replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -344,5 +344,13 @@ export const mutations: Mutation[] = [
     find: "                    None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+  },
+  {
+    name: "type-parameter-source-unstepped",
+    breaks: "a map or filter of a type parameter whose bounds give no back, its type stepped from its back elsewhere, the `either` crate's `IterEither::fold`, is refused, or given as it is, not a JS iterator: `it.next is not a function`",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));\n",
+    replace: "        let parameter = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
   },
 ];

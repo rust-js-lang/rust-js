@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0455](0455-stepping-from-the-back.md),
 [0488](0488-an-extension-bound-iterator-is-an-iterator.md) and [0535](0535-a-lazy-map-steps-from-its-back.md);
 accepts more of the [iterators draft](draft/cloned-and-buffering-iterators.md)'s
-analysis.
+analysis. Amended: a type parameter's map or filter where its bounds give
+no back is its JS iterator forward alone.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): its items from its
 back, and when its function runs, are Rust's.
@@ -137,3 +138,25 @@ refused, an adapter of the crate's own iterator that steps from its back
 baseline's `$iter` share grows by one in 10,000 lines: the corpus case's
 thirteen arrays stepped from their back are each `$iter(v)`, the source
 `$mapEnds` and `$filterEnds` step from either end.
+
+## Amendment: a type parameter's map where its bounds give no back
+
+The amendment above refused the `either` crate, which the guide's
+crates.io page compiles: its `IterEither::fold` is `inner.map(Right)
+.fold(init, f)` of an `R: Iterator`, and its `rfold`, of an `R:
+DoubleEndedIterator`, steps the same `Map<R, _>` from its back. The type
+being stepped from its back, `fold`'s map asked its source's back, which
+an `Iterator` bound doesn't give: "a `R` as a `DoubleEndedIterator`".
+Given as it was before, the range a caller gives such an `I` was no JS
+iterator, `it.next is not a function`.
+
+**A map's or a filter's source of a type parameter whose bounds give no
+back is its JS iterator forward alone, `$given(it, IIterator)`**
+(`backs.rs`, `given_stepped`): a body steps a type from its back only
+where a `DoubleEndedIterator` bound says it can, which rustc asks, and
+that body's source is given its back.
+
+Held by `test/corpus/generic_map_folded_and_rfolded.rs`, a wrapper's
+`fold` and `rfold`, and a filter's `count` and `next_back`, of a range and
+of a forward-only `repeat(..).take(..)`, against native Rust; and the
+mutation `type-parameter-source-unstepped` (`lower/mir/iter/backs.ts`).

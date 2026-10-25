@@ -986,6 +986,11 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **A map or a filter of a type parameter whose bounds give no back steps
+  it forward** (ADR 0545, amended): the `either` crate, whose
+  `IterEither::fold` maps an `R: Iterator` its `rfold` steps from the
+  back, was refused, "a `R` as a `DoubleEndedIterator`", and so was the
+  guide's crates.io example.
 - **An app built from a rust-js checkout ran a compiler older than the
   checkout's sources** (ADR 0854): `rust-js build` and the editor's check
   ran whatever `target/debug/rust-js` an earlier `cargo build` left, and
