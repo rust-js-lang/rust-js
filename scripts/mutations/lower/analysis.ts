@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "initializer-imports-unnamed",
+    breaks: "a static of a module's binding, `static NOTIFY: fn() -> f64 = toast`, names no import, and lowering it panics",
+    file: "src/lower/analysis.rs",
+    find: "all_bodies.iter().copied().chain(initializers).collect();",
+    replace: "all_bodies.to_vec();",
+    tests: ["test/lowering-bindings.test.ts", "-t", "a static of a module's binding imports it"],
+  },
+  {
     name: "numbered-variants-unnamed",
     breaks: "a numbered enum's variants are no module's `const`s, each read as its number, `payload._status = 0`, not `Pending`",
     file: "src/lower/analysis.rs",

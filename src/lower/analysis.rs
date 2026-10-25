@@ -629,7 +629,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What each module holds of a binding, and where a path reads one
     // through it (ADR 0633).
     let held = bindings::held(tcx, &foreign);
-    let mut uses = js_uses(tcx, all_bodies, &held);
+    // A static's or a constant's initializer, lowered as code, `static F:
+    // fn() -> f64 = toast`, imports what it reads as a function does.
+    let with_initializers: Vec<&Body<'tcx>> = all_bodies.iter().copied().chain(initializers).collect();
+    let mut uses = js_uses(tcx, &with_initializers, &held);
     // What the crate's libraries export (ADR 0100) is named before lowering,
     // after its name there, a module's default too, `import noop from
     // "../shared/noop.js"` (ADR 0773), and imported by the modules that turn

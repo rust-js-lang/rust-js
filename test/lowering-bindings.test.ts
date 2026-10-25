@@ -935,6 +935,35 @@ pub fn orphan(value: &Unknown) -> bool {
   expect([lib.listed([1]), lib.listed({}), lib.listed(undefined), lib.orphan(Object.create(null)), lib.orphan({})]).toEqual([true, false, false, true, false]);
 });
 
+// ADR 0096: a static whose value is a function, its initializer lowered as
+// code, imports a module's binding it reads, as a function's body does:
+// `export const notify = toast;` and `import { toast } from "./toast.js"`.
+test("a static of a module's binding imports it", async () => {
+  const dir = fixture("static-of-binding");
+  writeFileSync(join(dir, "toast.js"), "export const toast = () => 7;\n");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./toast.js#toast")]
+fn toast() -> f64 {
+    unreachable!()
+}
+
+pub static NOTIFY: fn() -> f64 = toast;
+
+mod inner {
+    pub const SHOWN: fn() -> f64 = super::toast;
+}
+
+pub fn shown() -> f64 {
+    NOTIFY() + inner::SHOWN()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`import { toast } from "./toast.js";`);
+  expect(js).toContain("export const NOTIFY = toast;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shown()).toBe(14);
+});
+
 // ADR 0615: \`Object.prototype.hasOwnProperty\`, a JS function of its own,
 // called with the object it asks of, \`.call(object, key)\`, as React's
 // shared hasOwnProperty keeps it, \`const hasOwnProperty =
