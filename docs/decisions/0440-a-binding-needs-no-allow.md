@@ -1,6 +1,7 @@
 # 0440. A binding needs no `#[allow]`
 
-Status: Accepted. Extends [0039](0039-generic-bindings.md) and
+Status: Accepted; amended by [0888](0888-rust-js-clippy.md) (`rust-js
+clippy` lints with what JS reads used). Extends [0039](0039-generic-bindings.md) and
 [0439](0439-a-component-is-named-as-jsx-names-it.md).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): a lint's warning
@@ -98,3 +99,14 @@ read as values", React's `disableLogs` compiled with no warning;
 `js::unknown` and read by key, which warns of a struct JS isn't given
 still; and `test/modules.test.ts`, "a function only js::export_default!
 names is no dead code", which warns of a function nothing names still.
+
+## Amended by 0888: `rust-js clippy`
+
+The first Consequence, that a plain `cargo check` still warns, left a
+port no way to run clippy's lints with this decision's answers: React's
+port's `cargo clippy -- -D warnings` failed on `Logs`, `DeprecatedApis`
+and the default export's hook. **`rust-js clippy` is the app's `cargo
+clippy`**, clippy's lints registered in rust-js's driver, with this
+liveness and the `jsx!` pass as the build has them. A plain `cargo
+clippy` still warns, as a plain `cargo check` does; the amendment above,
+which ruled out a second mechanism in the source, stands.

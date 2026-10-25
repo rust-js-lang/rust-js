@@ -88,14 +88,22 @@ export async function cargoBuild({ manifestPath, packageName, toolchain, offline
  * reads inside JSX as a plain rustc doesn't, Cargo's JSON messages printed as
  * they come. In a target directory of its own, `targetDir`, it neither waits
  * for the dev server's check nor makes it check again.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string }} options
+ *
+ * With `lints`, it's `rust-js clippy`'s (ADR 0888): each crate of the app's
+ * own linted by clippy's lints, with those flags, `["-D", "warnings"]`, as
+ * rust-js reads it, and none compiled; what Cargo says printed as Cargo
+ * prints it, of `packageName`'s, or the manifest's.
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string, packageName?: string, lints?: string[] }} options
  * @returns {Promise<number>} Cargo's exit code
  */
-export async function editorCheck({ manifestPath, toolchain, compiler, react, targetDir }) {
+export async function lintCheck({ manifestPath, toolchain, compiler, react, targetDir, packageName, lints }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
-  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
-  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, toolchain })), CARGO_TARGET_DIR: targetDir };
+  const linted = lints ? [...(packageName ? ["--package", packageName] : [])] : ["--message-format=json"];
+  const args = [`+${toolchain}`, "check", ...linted, "--target", target, "--manifest-path", manifest];
+  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, packageName, toolchain })), CARGO_TARGET_DIR: targetDir };
+  if (lints) env.RUST_JS_CLIPPY = JSON.stringify(lints);
+  else delete env.RUST_JS_CLIPPY;
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
       .on("error", failed)

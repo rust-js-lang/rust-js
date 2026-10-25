@@ -24,7 +24,15 @@ pub enum Invocation {
     /// alone, ended so: why, to be written where `library::refusal` says
     /// (ADR 0415).
     Refused(ExitCode, PathBuf, String),
+    /// A crate of the app's own, linted, not compiled (ADR 0888): Cargo's
+    /// flags, `CLIPPY`'s lint flags, and its value, as it was read.
+    Clippy(Vec<String>, Vec<String>, String),
 }
+
+/// `rust-js clippy`'s lint flags, a JSON list, `["-D", "warnings"]` (ADR
+/// 0888): set, each crate of the app's own is linted, as clippy-driver
+/// lints it, and none is compiled; the rest are rustc's, as Cargo asked.
+pub const CLIPPY: &str = "RUST_JS_CLIPPY";
 
 /// The package the tooling builds as the app, a program no crate uses
 /// (ADR 0360).
@@ -121,8 +129,12 @@ pub fn translate(args: Vec<String>) -> Invocation {
     if probe || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
+    let clippy = std::env::var(CLIPPY).ok();
     match whose() {
         Ok(Whose::Own) => {}
+        // Linted, a dependency is rustc's, as `cargo clippy` lints none of
+        // crates.io's, and nothing reads its JS (ADR 0888).
+        Ok(Whose::Dependency) if clippy.is_some() => return rustc_itself(&rustc, given),
         Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),
         Ok(Whose::Dependency) => {}
         Ok(Whose::Rustc) => return rustc_itself(&rustc, given),
@@ -131,6 +143,15 @@ pub fn translate(args: Vec<String>) -> Invocation {
             eprintln!("rust-js: {error}");
             return Invocation::Rustc(ExitCode::FAILURE);
         }
+    }
+    if let Some(value) = clippy {
+        return match serde_json::from_str(&value) {
+            Ok(lints) => Invocation::Clippy(flags, lints, value),
+            Err(error) => {
+                eprintln!("rust-js: `{CLIPPY}` isn't a list of lint flags: {error}");
+                Invocation::Rustc(ExitCode::FAILURE)
+            }
+        };
     }
     match compile(&flags) {
         Ok(args) => Invocation::RustJs(args),

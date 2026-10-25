@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "        if true || crates_io && versions.contains(&version.as_str()) {\n",
     tests: ["test/registry-crates.test.ts", "-t", "a memchr that isn't crates.io's qualified one"],
   },
+  {
+    name: "cargo-clippy-compiled",
+    breaks: "`rust-js clippy`'s crates of the app's own are compiled, not linted: clippy finds nothing, and JS is written",
+    file: "src/cargo.rs",
+    find: "    if let Some(value) = clippy {\n",
+    replace: "    if let Some(value) = clippy.filter(|_| false) {\n",
+    tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
+  },
 ];

@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "        self.panics_abort = false;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "unwinding is refused where panics abort"],
   },
+  {
+    name: "clippy-without-liveness",
+    breaks: "`rust-js clippy` has no rust-js tool nor its liveness (ADR 0888): a struct JS reads is said never read, and `#[rust_js::..]` is an unknown tool",
+    file: "src/main.rs",
+    find: "        register_tool(config);\n        clippy::configure(config, self.value.take());\n",
+    replace: "        clippy::configure(config, self.value.take());\n",
+    tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
+  },
+  {
+    name: "clippy-jsx-unexpanded",
+    breaks: "`rust-js clippy` doesn't expand JSX (ADR 0888), so what only JSX uses is unused, and a function only `js::export_default!` names dead",
+    file: "src/main.rs",
+    find: "        Syntax.after_crate_root_parsing(compiler, krate)\n    }\n\n    fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {\n        Syntax.after_expansion(compiler, tcx)\n",
+    replace: "        let _ = (compiler, krate);\n        Compilation::Continue\n    }\n\n    fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {\n        Syntax.after_expansion(compiler, tcx)\n",
+    tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
+  },
 ];

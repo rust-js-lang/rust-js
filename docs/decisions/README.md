@@ -240,7 +240,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0219 A sequence a webapi function takes is a slice](0219-webapi-sequences.md)
 - [0220 A JSX tag can be a value, named by a capitalized local](0220-jsx-tag-values.md)
 - [0221 A binding's last slice can be its rest arguments](0221-variadic-bindings.md) *(amended by 0640: a TypeScript rest parameter is a tuple)*
-- [0222 An editor checks the app through rust-js](0222-editor-check.md)
+- [0222 An editor checks the app through rust-js](0222-editor-check.md) *(amended by 0888: one Cargo check with `rust-js clippy`'s)*
 - [0223 The webapi crate knows each event's type and each tag's element](0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](0224-typed-intrinsic-elements.md)
 - [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key)*
@@ -672,6 +672,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too)*
 - [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)
 - [0884 A `js::Map`'s value is any value, and `get` tells a `None` from a missing key](0884-a-maps-value-is-any-value.md)
+- [0888 `rust-js clippy` lints the app as rust-js reads it](0888-rust-js-clippy.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -689,7 +690,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](0438-an-optional-prop-is-given-some.md)
 - [0439 A component is named as JSX names it, and needs no `#[allow]`](0439-a-component-is-named-as-jsx-names-it.md)
-- [0440 A binding needs no `#[allow]`](0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them)*
+- [0440 A binding needs no `#[allow]`](0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them; amended by 0888: `rust-js clippy` lints with them used)*
 - [0441 A `()` given a function value is no argument](0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*

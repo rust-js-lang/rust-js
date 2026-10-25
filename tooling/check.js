@@ -15,7 +15,7 @@ try {
   // Its crates where its npm packages have them, as the dev server's.
   writePatch(app);
   const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
-  process.exitCode = await builder.editorCheck({
+  process.exitCode = await builder.lintCheck({
     manifestPath: join(app, "Cargo.toml"),
     // Not the dev server's, whose Turbopack or Vite doesn't watch it either.
     targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "editor"),

@@ -41,6 +41,7 @@ extern crate rustc_span;
 extern crate rustc_target;
 
 mod cargo;
+mod clippy;
 mod command;
 mod comments;
 mod format;
@@ -172,6 +173,44 @@ impl Callbacks for Syntax {
     }
 }
 
+/// `rust-js clippy`'s check of a crate of the app's own (ADR 0888): rustc as
+/// `--rustc` runs it, rust-js's tool, JSX and liveness, with clippy's lints.
+/// Its analysis is all: rustc writes the metadata Cargo asked for.
+#[cfg(not(target_os = "wasi"))]
+struct Clippy {
+    /// What `cargo::CLIPPY` was, which Cargo is told the check read.
+    value: Option<String>,
+}
+
+#[cfg(not(target_os = "wasi"))]
+impl Callbacks for Clippy {
+    fn config(&mut self, config: &mut rustc_interface::interface::Config) {
+        register_tool(config);
+        clippy::configure(config, self.value.take());
+    }
+
+    fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
+        Syntax.after_crate_root_parsing(compiler, krate)
+    }
+
+    fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        Syntax.after_expansion(compiler, tcx)
+    }
+}
+
+/// rustc, run with `args` by `Clippy`.
+#[cfg(not(target_os = "wasi"))]
+fn linted(args: Vec<String>, value: String) -> ExitCode {
+    rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut Clippy { value: Some(value) }))
+}
+
+/// The playground lints nothing: clippy's crates are the native compiler's.
+#[cfg(target_os = "wasi")]
+fn linted(_: Vec<String>, _: String) -> ExitCode {
+    eprintln!("rust-js: clippy's lints are the native compiler's: run `rust-js clippy` where it's installed");
+    ExitCode::FAILURE
+}
+
 impl Callbacks for RustJs {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
@@ -280,6 +319,7 @@ fn main() -> ExitCode {
     let args = match cargo::translate(args) {
         cargo::Invocation::RustJs(args) => args,
         cargo::Invocation::Rustc(exit) => return exit,
+        cargo::Invocation::Clippy(flags, lints, value) => return linted(clippy::args(flags, lints), value),
         // Why rust-js refused a crate of crates.io's, beside its metadata.
         cargo::Invocation::Refused(exit, note, why) => {
             if let Err(error) = std::fs::write(&note, why) {

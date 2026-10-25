@@ -4,7 +4,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck, packageOf } from "./cargo.js";
+import { cargoWorkspace, checkCargo, lintCheck, packageOf } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** The rust-js checkout this `@rust-js/build` is of, where one runs it from
@@ -180,10 +180,11 @@ export function createNativeBuilder({ root, rustJs }) {
       }
     },
     /** The check an editor runs (ADR 0222), as `checkCargo`'s, its
-     * messages printed as they come; no JS in source, and no runtime needed. */
-    async editorCheck(options) {
-      if (!existsSync(rustJs)) throw new Error(`rust-js-check: ${withoutCompiler(rustJs)}`);
-      return editorCheck({ ...options, toolchain: await toolchain(), compiler: rustJs, react: installedReact(root) ?? undefined });
+     * messages printed as they come, and with `lints`, `rust-js clippy`'s
+     * (ADR 0888); no JS in source, and no runtime needed. */
+    async lintCheck(options) {
+      if (!existsSync(rustJs)) throw new Error(`${options.lints ? "rust-js clippy" : "rust-js-check"}: ${withoutCompiler(rustJs)}`);
+      return lintCheck({ ...options, toolchain: await toolchain(), compiler: rustJs, react: installedReact(root) ?? undefined });
     },
     /** The workspace of a Cargo manifest, and its target directory. */
     async cargoWorkspace(options) {
@@ -243,6 +244,26 @@ export async function buildApp({ app, packageName: named, check = false, log = (
   const packageName = named ?? own;
   if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the app's package, \`rust-js build --package <name>\``);
   await builder.build({ manifestPath, packageName, check, routes: nextRoutes(app), packages, warn: (message) => log(message.trimEnd()) });
+}
+
+/**
+ * `rust-js clippy` (ADR 0888): the app's Rust, `cargo check` of the package
+ * `app`'s `Cargo.toml` is of, or `packageName`, linted by clippy's lints as
+ * rust-js reads it, inside JSX, and what JS reads used (ADR 0440), with
+ * `lints`, clippy's flags, `["-D", "warnings"]`. Nothing is written beside
+ * the Rust, in a target directory of its own. Cargo's exit code.
+ * @param {{ app: string, packageName?: string, lints: string[] }} options
+ * @returns {Promise<number>}
+ */
+export async function clippyApp({ app, packageName, lints }) {
+  const { writePatch } = await import("./patch.js");
+  // Its crates where its npm packages have them, as a build's.
+  if (existsSync(join(app, "package.json"))) writePatch(app);
+  const manifestPath = join(app, "Cargo.toml");
+  if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js clippy\` where the app's is`);
+  const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
+  const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "clippy");
+  return builder.lintCheck({ manifestPath, packageName, lints, targetDir });
 }
 
 /** A Next.js app's Pages Router directories, where a file is a route, of

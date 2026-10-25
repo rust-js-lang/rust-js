@@ -1,6 +1,8 @@
 # rust-js links against rustc's internal crates, whose API changes often.
 # Pin the exact stable release the code was written against, whose
-# `rustc-dev` has them (ADR 0109).
+# `rustc-dev` has them (ADR 0109). Clippy's crates, which `rust-js clippy`
+# links, are the release's too: a bump moves Cargo.toml's rust-clippy commit
+# with it (ADR 0888).
 [toolchain]
 channel = "1.99.0"
 components = ["rustc-dev", "llvm-tools", "rust-src", "rustfmt", "clippy"]

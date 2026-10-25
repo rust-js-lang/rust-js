@@ -1,6 +1,7 @@
 # 0222. An editor checks the app through rust-js
 
-Status: Accepted. Extends [0101](0101-cargo-workspace-wrapper.md) and
+Status: Accepted; amended by [0888](0888-rust-js-clippy.md) (one Cargo
+check with `rust-js clippy`'s). Extends [0101](0101-cargo-workspace-wrapper.md) and
 [0113](0113-plain-rustc.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
@@ -53,3 +54,12 @@ says in `.vscode/settings.json`:**
   `jsx!`**: only its check is rust-js's.
 - **A check takes as long as the dev server's**, a rust-js compile of the
   crate, not rustc's.
+
+## Amended by 0888: one Cargo check with `rust-js clippy`'s
+
+`rust-js clippy` lints the app with clippy's lints as rust-js reads it.
+It and this check run Cargo through rust-js by one function,
+`tooling/cargo.js`'s `lintCheck`: this one without lint flags, Cargo's
+JSON for rust-analyzer, as before; `rust-js clippy` with them. This check
+still runs no clippy lint: it's the build's, its refusals too, which
+lowering says, and clippy-driver's options change what lowering reads.

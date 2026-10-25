@@ -17,7 +17,10 @@ check what compiled programs observe.
 - **One pinned toolchain.** [rust-toolchain.toml](../rust-toolchain.toml)
   owns the exact Rust version and target components. rustc owns Rust validity;
   rust-js uses its internal THIR and MIR APIs. Upgrades require adapting the
-  compiler and rebuilding matching native dependencies and WASI artifacts.
+  compiler and rebuilding matching native dependencies and WASI artifacts,
+  and moving `Cargo.toml`'s clippy crates to the rust-clippy commit whose
+  tree is the release's `src/tools/clippy` ([ADR 0888](decisions/0888-rust-js-clippy.md)),
+  not its `rust-<version>` tag.
   `src/command.rs::TARGET` fixes the checked target to `wasm32-unknown-unknown`,
   including 32-bit `usize`, independently of the host running the compiler.
 - **Modern JavaScript.** Output is readable JS/JSX and ES modules. There is
@@ -39,6 +42,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Responsibility | Code |
 | --- | --- |
 | Compiler entry, command parsing, Cargo wrapper, panic reporting | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs` |
+| `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance | `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
@@ -66,6 +70,10 @@ An application compiles Rust through `rust-js build`, once per invocation
 It writes JS/JSX and declarations beside the Rust; `--check` compares generated
 source files without replacing them. Vite and Next.js consume those files.
 They do not host a rust-js compiler plugin or schedule Rust compilation.
+`rust-js clippy` lints the app and writes nothing: the editor's check's
+Cargo run (`tooling/cargo.js::lintCheck`), with clippy's lint flags in
+`RUST_JS_CLIPPY`, which makes `src/cargo.rs` check each crate of the app's
+own with `main.rs`'s `Clippy` ([ADR 0888](decisions/0888-rust-js-clippy.md)).
 
 `tooling/build.js` finds the compiler, building a checkout's own from its
 sources first ([ADR 0854](decisions/0854-a-checkouts-compiler-is-built-before-it-runs.md)), checks runtime package versions, and
@@ -155,7 +163,7 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 
 | Layer | Modules | May depend on |
 | --- | --- | --- |
-| Driver | `main.rs`, `command.rs`, `cargo.rs`, `panic_runtime.rs` | Every layer |
+| Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
 | Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | Printing and owned output; no rustc |

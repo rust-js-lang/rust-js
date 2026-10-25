@@ -10,8 +10,9 @@ rust-js build --package frontend    # a workspace's package: the app's client
 rust-js build --check               # writes nothing; fails if a file is stale
 ```
 
-There's no other command, no watch mode and no bundler plugin: run
-`rust-js build` again after you change the Rust ([ADR 0412](../../decisions/0412-rust-js-build-is-its-own-process.md)).
+There's no watch mode and no bundler plugin: run `rust-js build` again
+after you change the Rust ([ADR 0412](../../decisions/0412-rust-js-build-is-its-own-process.md)).
+The one other command lints it, `rust-js clippy` ([below](#linting-with-clippy)).
 
 ## What you need
 
@@ -352,4 +353,33 @@ of what JS uses too: a struct's fields a binding is given, `&Logs { .. }`
 as a `&dyn PropertyDescriptorMap`, and a function only
 `js::export_default!` names are used, as JS reads them. A plain `cargo
 check` or `cargo clippy` runs no rust-js and warns of them as dead code
-([ADR 0440](../../decisions/0440-a-binding-needs-no-allow.md)).
+([ADR 0440](../../decisions/0440-a-binding-needs-no-allow.md)): lint
+with `rust-js clippy`.
+
+## Linting with clippy
+
+`rust-js clippy` is the app's `cargo clippy`: clippy's lints, as rust-js
+reads the Rust, inside `jsx!` too, with what JS uses used. Its lint flags
+come after `--`, as `cargo clippy`'s do, and `clippy.toml`,
+`[lints.clippy]` and `#[allow(clippy::..)]` are clippy's own
+([ADR 0888](../../decisions/0888-rust-js-clippy.md)):
+
+```bash
+rust-js clippy                       # the package of the Cargo.toml here
+rust-js clippy --package frontend    # a workspace's package
+rust-js clippy -- -D warnings        # as CI runs it: a finding fails it
+```
+
+It writes no JS, in its own target directory, so it neither waits for
+`rust-js build` nor makes it build again. Only the app's own crates are
+linted, as `cargo clippy` lints no crate of crates.io's. A variable only
+JSX reads, a struct a binding is given, `&Logs { .. }`, and a function
+only `js::export_default!` names are used, so what it says is what
+clippy finds of the Rust:
+
+```
+error: this `if` statement can be collapsed
+  --> src/App.rs:18:5
+```
+
+The playground has no clippy: it's the native compiler's.

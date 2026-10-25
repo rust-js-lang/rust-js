@@ -13,7 +13,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 //
 //   driver ──► front end (rustc) ──► owned output ──► printing (oxc, TypeScript)
 const layers = {
-  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/panic_runtime.rs"],
+  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/panic_runtime.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
@@ -907,8 +907,9 @@ test("only recognition spells std's names", () => {
 
 // An app's Rust is compiled one way, `rust-js build`, its own process
 // beside the app's own dev server or build (ADR 0412): no host's plugin,
-// no config that compiles, no second command, and the compiler is what
-// `rust-js build` runs, not the app's command.
+// no config that compiles, no second command that compiles, and the
+// compiler is what `rust-js build` runs, not the app's command. The one
+// other command, `rust-js clippy`, lints and writes no JS (ADR 0888).
 test("an app's Rust is compiled one way, rust-js build", () => {
   const workspaces: string[] = JSON.parse(read("package.json")).workspaces;
   expect(workspaces.filter((dir) => /plugin/.test(dir))).toEqual([]);
@@ -922,7 +923,8 @@ test("an app's Rust is compiled one way, rust-js build", () => {
   expect(importers).toEqual([]);
   expect(read("scripts/package-compiler.ts")).not.toContain("bin:");
   const cli = read("tooling/cli.js");
-  expect(cli).toContain('if (command !== "build")');
+  expect(cli).toContain('if (command !== "build" && command !== "clippy")');
+  expect(cli).toContain("clippyApp(");
   expect(cli).not.toContain("spawn");
   // The build's one entry, which the CLI is a parse of.
   expect(cli).toContain("buildApp(");

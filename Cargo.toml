@@ -32,6 +32,16 @@ oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.
 # playground has none.
 [target.'cfg(not(target_os = "wasi"))'.dependencies]
 toml = "1"
+# Clippy's lints, which `rust-js clippy` runs with rust-js's JSX and
+# liveness (ADR 0888): natively only, as the playground lints nothing. They
+# use rustc's internal crates, so they're the clippy the pinned release has:
+# rust-clippy's commit whose tree is the release's `src/tools/clippy` when
+# it branched (rust-lang/rust@8dac1c68), not its `rust-1.99.0` tag, which
+# is older. A toolchain bump moves the commit with it (DEVELOPMENT.md).
+clippy_config = { git = "https://github.com/rust-lang/rust-clippy", rev = "2bc35de067e2a538568a675c8cf26e60884cc7e1" }
+clippy_lints = { git = "https://github.com/rust-lang/rust-clippy", rev = "2bc35de067e2a538568a675c8cf26e60884cc7e1" }
+clippy_utils = { git = "https://github.com/rust-lang/rust-clippy", rev = "2bc35de067e2a538568a675c8cf26e60884cc7e1" }
+declare_clippy_lint = { git = "https://github.com/rust-lang/rust-clippy", rev = "2bc35de067e2a538568a675c8cf26e60884cc7e1" }
 
 # No debug info in a dev build. On macOS it stays in each build's object
 # files, which incremental compilation names anew each time and nothing
