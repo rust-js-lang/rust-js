@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "closed-iterator-unclosed",
     breaks: "a `repeat`'s iterator dropped is walked as a struct, not closed",
     file: "src/lower/drops/parts.rs",
-    find: "                if self.recognition().closed_on_drop(ty).is_some()\n                    || (self.recognition().held_function(ty))\n",
-    replace: "                if false\n                    || (self.recognition().held_function(ty))\n",
+    find: "        recognition.closed_on_drop(ty).is_some()\n            || (recognition.held_function(ty))",
+    replace: "        false\n            || (recognition.held_function(ty))",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {

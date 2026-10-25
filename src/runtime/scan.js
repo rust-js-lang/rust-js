@@ -12,7 +12,7 @@ function $lazyScan(items, init, f, handle = true) {
       const step = source.next();
       const next = step.done ? undefined : f(state, step.value);
       if (next !== undefined) return { done: false, value: next };
-      source.return?.();
+      if (!scanning.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
@@ -30,7 +30,7 @@ function $lazyScan(items, init, f, handle = true) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped) source.return?.();
+    if (stopped && !scanning.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
@@ -40,5 +40,6 @@ function $lazyScan(items, init, f, handle = true) {
     scanning.return();
     return folded;
   };
+  scanning.from = [source];
   return scanning;
 }

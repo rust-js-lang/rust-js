@@ -12,15 +12,16 @@ function $lazyTakeWhile(items, keep) {
       const step = source.next();
       if (step.done || keep(step.value)) return step;
       ended = true;
-      source.return?.();
+      if (!taking.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
   );
+  taking.from = [source];
   taking.tryFold = (init, f, broke) => {
     if (ended) return init;
     const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
-    if (ended) source.return?.();
+    if (ended && !taking.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
@@ -45,11 +46,12 @@ function $lazyMapWhile(items, f, present) {
       const step = source.next();
       const value = step.done ? undefined : f(step.value);
       if (!step.done && present(value)) return { done: false, value };
-      source.return?.();
+      if (!mapping.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
   );
+  mapping.from = [source];
   mapping.tryFold = (init, g, broke) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
@@ -62,7 +64,7 @@ function $lazyMapWhile(items, f, present) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped) source.return?.();
+    if (stopped && !mapping.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps

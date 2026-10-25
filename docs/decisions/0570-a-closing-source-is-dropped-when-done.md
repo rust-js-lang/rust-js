@@ -108,3 +108,47 @@ with 17 mutations; `closing` leaves what's closed already as it is, so an
 owning source `rev()` is given isn't closed twice. The readability
 baseline's `while (true)` share grows by 0.1 in 10,000 lines: the case's
 `rfold`, a `while let`.
+
+## Amendment: dropped where its owner drops it
+
+A chain its owner drops, a variable's or a temporary's, now drops what it
+holds where Rust does: at the owner's drop, the scope's or the statement's
+end, not as it's done or an adapter in it ends (#206). Of 1,000 fuzzed
+programs, 21 differed only in when a drop ran, `vec![D(8), D(9), D(10),
+D(11)].into_iter().rev().take_while(..).nth(0)` dropping 8, 9 and 10
+before the statement printed. A held `take`, `take_while` or `map_while`
+stepped to its end dropped what its source had left at that end, not at
+its scope's end.
+
+- **What the body drops is held**: the value a call gives a local that
+  the body drops where it runs on, not only as a panic unwinds past it,
+  of a type dropped by closing it (`dropped_by_closing`, the drop's own
+  rule), is `$held(..)` (`holds_dropped_iterator`). One only moved, into
+  a consumer that takes it, isn't: that consumer's end is its drop.
+- **Held, it's dropped only as it's closed**: `hold()` passes down
+  through each adapter to what it steps (`from`, or `iter`); held, a
+  `$closing` isn't closed as it's done, nor a `take` at its limit, a
+  `take_while` or a `map_while` at its end, a `skip` or a `take` ended from
+  its back. Its owner's drop, `it.return()`, closes it.
+- **A consumer that takes a chain closes it at its end**, `$Steps`'
+  `fold` and `toArray()`, as Rust's drop what they take: what a held source
+  in it has left too, a variable moved into it on one path.
+- **What JS's own consumers take is still closed as it's done**, as a
+  `take` at its limit, a `take_while`'s or `map_while`'s end: `collect()`
+  into a `HashSet` is `new Set(..)`, which closes nothing. #225's closes of
+  a `skip` or a `take` ended from its back, and of `$closing` done from its
+  back, go: whatever steps those is a `$Steps` consumer, which closes at
+  its end, or is refused.
+
+A chain consumed by value where it's made, never held, is still closed as
+it's done, which is where its consumer drops it. The guide's difference
+that a restarting source's adapter drops what it holds at its first
+`None` is gone: one stepped by hand past its `None` is held. All 2,100
+droppable programs of #225's sweep agree, and the 1,100 and 2,044 of
+#220's and #216's; of fuzz seeds 42300–42799, 17 differed, 7 do now, each
+`vec::IntoIter` passing over items in bulk, which std drops as a slice,
+front to back (filed apart).
+`held_iterator_dropped_by_its_owner` and `fold_back_drops_what_it_takes`
+hold it, with twelve mutations. The readability baseline's `$iter` share
+grows by 0.7 in 10,000 lines and `while (true)`'s by 0.1: the new cases'
+arrays stepped, and their `while let` loops.

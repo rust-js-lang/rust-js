@@ -4,6 +4,16 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether a `ty`, an iterator, is dropped by closing it, `it.return()`:
+    /// one closed to drop what it holds (ADR 0422), or an adapter holding a
+    /// function with a destructor, made closing to drop it (ADR 0485). The
+    /// one answer, of its drop and of what its owner holds (#206).
+    pub(in crate::lower) fn dropped_by_closing(&self, ty: Ty<'tcx>) -> bool {
+        let recognition = self.recognition();
+        recognition.closed_on_drop(ty).is_some()
+            || (recognition.held_function(ty)).is_some_and(|function| self.drops(function) != Drops::Nothing)
+    }
+
     /// A `ty`'s drop, written in place: its own `drop`, then its parts'.
     pub(super) fn drop_parts(
         &mut self,
@@ -27,11 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Closed, `it.return()`, which drops what it holds (ADR 0422), and
             // an adapter that holds a function with a destructor, made closing
             // to drop it, `map(f)`'s (ADR 0485).
-            ty::Adt(..)
-                if self.recognition().closed_on_drop(ty).is_some()
-                    || (self.recognition().held_function(ty))
-                        .is_some_and(|function| self.drops(function) != Drops::Nothing) =>
-            {
+            ty::Adt(..) if self.dropped_by_closing(ty) => {
                 out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
             }
             // A channel's end (ADR 0142): a receiver's drops what's still in

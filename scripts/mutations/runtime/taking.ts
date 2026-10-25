@@ -50,12 +50,4 @@ export const mutations: Mutation[] = [
     replace: "    taking.unused = (k) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
-  {
-    name: "taking-back-end-kept",
-    breaks: "a `take` ended from its back isn't done with what it steps (#225)",
-    file: "src/runtime/taking.js",
-    find: "    if (taking.n === 0) return $closed(taking.iter);\n",
-    replace: "    if (taking.n === 0) return { done: true, value: undefined };\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
-  },
 ];

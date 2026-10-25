@@ -5,6 +5,7 @@ import {
   $enumerate,
   $exactLen,
   $foldBack,
+  $held,
   $iterator,
   $lent,
   $mapEnds,
@@ -141,20 +142,22 @@ function main() {
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const rev = $closing(
-    $iterator(
-      count(),
-      countDoubleEndedIterator_nextBack,
-      false,
-      undefined,
-      undefined,
-      countIterator_sizeHint,
-      countDoubleEndedIterator_rfold,
-      countDoubleEndedIterator_nthBack,
+  const rev = $held(
+    $closing(
+      $iterator(
+        count(),
+        countDoubleEndedIterator_nextBack,
+        false,
+        undefined,
+        undefined,
+        countIterator_sizeHint,
+        countDoubleEndedIterator_rfold,
+        countDoubleEndedIterator_nthBack,
+      ),
+      (it) => {
+        console.log(`drop ${it.of.at} ${it.of.end}`);
+      },
     ),
-    (it) => {
-      console.log(`drop ${it.of.at} ${it.of.end}`);
-    },
   );
   let third;
   try {
@@ -163,25 +166,27 @@ function main() {
     rev.return();
   }
   console.log(`${third == null ? "None" : `Some(${third})`}`);
-  const value = $rev(
-    $enumerate(
-      $closing(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
+  const value = $held(
+    $rev(
+      $enumerate(
+        $closing(
+          $iterator(
+            count(),
+            countIterator_next,
+            false,
+            countDoubleEndedIterator_nextBack,
+            (it) => $exactLen(countIterator_sizeHint(it)),
+            countIterator_sizeHint,
+            undefined,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_rfold,
+            countDoubleEndedIterator_nthBack,
+          ),
+          (it) => {
+            console.log(`drop ${it.of.at} ${it.of.end}`);
+          },
         ),
-        (it) => {
-          console.log(`drop ${it.of.at} ${it.of.end}`);
-        },
       ),
     ),
   );

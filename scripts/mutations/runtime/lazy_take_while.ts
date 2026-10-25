@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "    const folded = $Steps.prototype.fold.call(mapping, init, g);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "take-while-held-closes",
+    breaks: "a held `take_while` drops what its source has left as its test fails, not where its owner drops it (#206)",
+    file: "src/runtime/lazy_take_while.js",
+    find: "      if (!taking.held) source.return?.();\n",
+    replace: "      source.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+  },
+  {
+    name: "map-while-held-closes",
+    breaks: "a held `map_while` drops what its source has left as it ends, not where its owner drops it (#206)",
+    file: "src/runtime/lazy_take_while.js",
+    find: "      if (!mapping.held) source.return?.();\n",
+    replace: "      source.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+  },
 ];

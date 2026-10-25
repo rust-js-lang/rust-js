@@ -40,5 +40,6 @@ function $lazySkipWhile(items, skip) {
     }
     return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);
   };
+  skipped.from = [source];
   return skipped;
 }

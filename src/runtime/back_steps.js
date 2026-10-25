@@ -20,11 +20,13 @@ function $nthBack(it, n, found = (item) => item, drop) {
 }
 
 // `it.rfold(init, f)`: `f` of each item from the back, given what it gave;
-// its own `rfold`, where it reaches the crate's (#220).
+// its own `rfold`, where it reaches the crate's (#220). Consuming it, it
+// closes it, as Rust's `rfold` drops what it takes at its end (#206).
 function $foldBack(it, init, f) {
   if (it.rfold !== undefined) return it.rfold(init, f);
   let folded = init;
   for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);
+  it.return?.();
   return folded;
 }
 
@@ -104,6 +106,7 @@ function $mapEnds(it, f) {
   // crate's own where it reaches it (#220).
   if (it.rfold !== undefined) map.rfold = (init, g) => it.rfold(init, (a, x) => g(a, f(x)));
   if (it.tryRfold !== undefined) map.tryRfold = (init, g, broke) => it.tryRfold(init, (a, x) => g(a, f(x)), broke);
+  map.from = [it];
   return map;
 }
 
@@ -164,6 +167,7 @@ function $chainEnds(a, b) {
       return sides.a === undefined ? done : sides.a.nthBack(n);
     };
   }
+  chain.from = [a, b];
   return chain;
 }
 
@@ -221,6 +225,7 @@ function $stepBy(it, step, drop) {
     return folded;
   };
   stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
+  stepped.from = [it];
   return stepped;
 }
 
@@ -266,6 +271,7 @@ function $filterEnds(it, p) {
   if (it.tryRfold !== undefined) {
     filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : a), broke);
   }
+  filter.from = [it];
   return filter;
 }
 
@@ -367,5 +373,6 @@ function $flattenEnds(it, each) {
   };
   const flat = new $Steps(step("next", "next", "back"), () => $closed(it));
   flat.back = step("back", "back", "next");
+  flat.from = [it];
   return flat;
 }

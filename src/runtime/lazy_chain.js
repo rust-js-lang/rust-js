@@ -72,5 +72,6 @@ function $lazyChain(a, b) {
     if (!broke(folded)) second.return?.();
     return folded;
   };
+  chained.from = [first, second];
   return chained;
 }

@@ -10,7 +10,7 @@ function $lazyZip(a, b, dropA) {
     left.return?.();
     right.return?.();
   };
-  return new $Steps(() => {
+  const zipped = new $Steps(() => {
     const item = left.next();
     if (item.done) return item;
     const other = right.next();
@@ -20,6 +20,8 @@ function $lazyZip(a, b, dropA) {
     }
     return { done: false, value: [item.value, other.value] };
   }, close);
+  zipped.from = [left, right];
+  return zipped;
 }
 
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,

@@ -14,14 +14,16 @@ function $closing(it, drop) {
   };
   // Stepped to its end, it's done with, as a chain consumed to its end
   // drops what it holds where the statement or the loop ends (ADR 0570).
-  // Done, from its front, its back or by its `nth` or `nth_back`, it's
-  // done with, each way it's stepped (#225).
+  // Done, from its front or by its `nth` or `nth_back`, it's done with,
+  // each way a consumer of JS's own steps it (#225).
+  // Held, its owner drops it, where Rust does (#206).
   const done = (step) => {
-    if (step.done) close();
+    if (step.done && !closing.held) close();
     return step;
   };
   const closing = new $Steps(() => done(it.next()), close);
-  closing.back = () => done(it.back());
+  closing.from = [it];
+  closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
@@ -57,7 +59,7 @@ function $closing(it, drop) {
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
   closing.tryFold = (init, f, broke) => {
     const folded = $lent(it).tryFold(init, f, broke);
-    if (!broke(folded)) close();
+    if (!broke(folded) && !closing.held) close();
     return folded;
   };
   return closing;

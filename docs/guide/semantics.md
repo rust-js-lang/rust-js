@@ -753,31 +753,27 @@ React and JSX are [their own pages](README.md#react).
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
     Rust's ``called `Result::unwrap()` on an `Err` value`` panic.
-20. An adapter of an iterator that gives `None` and then more, of items
-    with a destructor, drops what it holds at that first `None`, where std
-    drops it with the adapter; what the iterator gives after is stepped as
-    std's is (ADR 0669).
-21. Where the crate's iterator's impl writes its own `size_hint`,
+20. Where the crate's iterator's impl writes its own `size_hint`,
     `collect()` into a `Vec` doesn't ask it, where std's asks it as its
     capacity runs out, which its growth decides; its own `nth`, `fold` and
     `last` are asked as std asks them, through each adapter that passes
     them on, and its `nth_back` and `rfold` as std's adapters stepped from
     their back ask them, its `rev()`'s for its `nth` and its `fold`, a
     `fuse()`'s too (ADR 0711).
-22. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
+21. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
     left out (ADR 0743).
-23. A binding's method of a declared JS type, webapi's `Element` say, is
+22. A binding's method of a declared JS type, webapi's `Element` say, is
     taken to be its class's: `app.append(stepper(..), ..)` looks
     `append` up before its arguments run, where Rust runs them first, so a
     method that's a getter, or one an argument replaces, is told apart
     from Rust's only there. Of a `js::Unknown`, any value, the arguments
     run first, as Rust runs them (ADR 0750).
-24. Room asked for items whose size a type parameter gives, a generic
+23. Room asked for items whose size a type parameter gives, a generic
     function's `Vec::<T>::with_capacity(n)`, is checked by their count
     alone, as if they had none, where std checks their bytes against
     `isize::MAX` (ADR 0774).
-25. A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
+24. A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
     `RangeError` where std panics `capacity overflow`; in Safari and
     Bun, of text not all ASCII past a billion units, it may be made
     (ADR 0774).

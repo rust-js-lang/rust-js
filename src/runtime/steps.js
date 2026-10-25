@@ -26,11 +26,31 @@ class $Steps extends Iterator {
       return { done: true, value: undefined };
     };
   }
-  // Std's `fold`: `f` of each item, given what it gave.
+  // Held, `$held`'s: what its owner drops where Rust drops it, a variable
+  // at its scope's end, a temporary at its statement's (#206). What it steps
+  // is then dropped only as it's closed, not as it's done or ends early, as
+  // each adapter it steps is held too: its sources, `from`, or what it
+  // steps, `iter`.
+  hold() {
+    if (this.held) return;
+    this.held = true;
+    for (const source of this.from ?? (this.iter === undefined ? [] : [this.iter])) source.hold?.();
+  }
+  // Std's `fold`: `f` of each item, given what it gave. Consuming it, it
+  // closes it, as Rust's `fold` drops what it takes at its end: what a held
+  // source has left, one a variable moved here held (#206).
   fold(init, f) {
     let folded = init;
     for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    this.return();
     return folded;
+  }
+  // `collect()`'s, each item, then closed, as `fold` is.
+  toArray() {
+    const items = [];
+    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);
+    this.return();
+    return items;
   }
   // Std's `last`: the last item its `fold` gives, a step, done where there's
   // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
@@ -123,6 +143,7 @@ class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    mapped.from = [this];
     // Std's `Map::fold`, its source's of each mapped.
     mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
     mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
@@ -141,6 +162,7 @@ class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
     kept.fold = (init, g) => this.fold(init, (a, x) => (keep(x, i++) ? g(a, x) : a));
     return kept;
@@ -175,6 +197,7 @@ class $Steps extends Iterator {
         this.return();
       },
     );
+    flat.from = [this];
     flat.fold = (init, g) => {
       let folded = init;
       if (inner !== undefined) folded = inner.reduce(g, folded);
@@ -212,12 +235,15 @@ class $Steps extends Iterator {
   take(n) {
     const taken = new $Steps(
       () => {
-        if (n === 0) return this.return();
+        // At its limit, what it steps is done with, unless it's held,
+        // whose owner drops it (ADR 0570, #206).
+        if (n === 0) return taken.held ? { done: true, value: undefined } : this.return();
         n--;
         return this.next();
       },
       () => this.return(),
     );
+    taken.from = [this];
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
     taken.nth = (k) => {
@@ -234,7 +260,7 @@ class $Steps extends Iterator {
     // (ADR 0570, #225).
     taken.tryFold = (init, g, broke) => {
       if (n === 0) {
-        this.return();
+        if (!taken.held) this.return();
         return init;
       }
       let full = false;
@@ -287,6 +313,7 @@ class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    skipped.from = [this];
     skipped.fold = (init, g) => {
       if (n > 0) {
         const k = n;

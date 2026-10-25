@@ -3,6 +3,7 @@
 import {
   $closing,
   $cmp,
+  $held,
   $iterCmp,
   $iterEq,
   $iterator,
@@ -50,7 +51,7 @@ function heldIterator_nth(held, n) {
 }
 
 function anyAbove(it, n, dropI) {
-  const map = $closing(Iterator.from(it), dropI).map((x) => (x + 1) | 0);
+  const map = $held($closing(Iterator.from(it), dropI).map((x) => (x + 1) | 0));
   try {
     return $lent(map).some((x) => x > n);
   } finally {
@@ -389,29 +390,7 @@ function main() {
         ),
     ).some((x) => x > 5)}`,
   );
-  const map = $closing(
-    $iterator(
-      [c()],
-      heldIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      heldIterator_nth,
-    ),
-    (it) => {
-      console.log(`drop held at ${it.of[0].at}`);
-    },
-  )
-    .drop(2)
-    .map((x) => (x + 1) | 0);
-  try {
-    console.log(`held ${$lent(map).some((x) => x > 5)}`);
-  } finally {
-    map.return();
-  }
-  const chain = $lazyChain(
+  const map = $held(
     $closing(
       $iterator(
         [c()],
@@ -426,8 +405,34 @@ function main() {
       (it) => {
         console.log(`drop held at ${it.of[0].at}`);
       },
-    ).drop(2),
-    $lazyRange(0, 3),
+    )
+      .drop(2)
+      .map((x) => (x + 1) | 0),
+  );
+  try {
+    console.log(`held ${$lent(map).some((x) => x > 5)}`);
+  } finally {
+    map.return();
+  }
+  const chain = $held(
+    $lazyChain(
+      $closing(
+        $iterator(
+          [c()],
+          heldIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          heldIterator_nth,
+        ),
+        (it) => {
+          console.log(`drop held at ${it.of[0].at}`);
+        },
+      ).drop(2),
+      $lazyRange(0, 3),
+    ),
   );
   try {
     console.log(`held ${$lent(chain).every((x) => x < 30)}`);

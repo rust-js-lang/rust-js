@@ -115,4 +115,20 @@ export const mutations: Mutation[] = [
     replace: "        let flow = pruned.as_ref().map_or(body, |_| body);\n",
     tests: ["test/lowering-moves.test.ts", "-t", "setter"],
   },
+  {
+    name: "held-iterator-unheld",
+    breaks: "an iterator its owner drops isn't held, so what it holds is dropped as it's done, before its scope's or statement's end (#206)",
+    file: "src/lower/mir/drops.rs",
+    find: "        place.projection.is_empty() && dropped && self.dropped_by_closing(state.body.local_decls[place.local].ty)\n",
+    replace: "        false && dropped && self.dropped_by_closing(state.body.local_decls[place.local].ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+  },
+  {
+    name: "held-iterator-by-unwind-too",
+    breaks: "an iterator dropped only as a panic unwinds past it, then moved into a chain, is held, so the chain's first side isn't dropped as it's done (#206)",
+    file: "src/lower/mir/drops.rs",
+    find: "            !data.is_cleanup\n                && matches!(",
+    replace: "            matches!(",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
+  },
 ];

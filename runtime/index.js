@@ -1162,11 +1162,31 @@ export class $Steps extends Iterator {
       return { done: true, value: undefined };
     };
   }
-  // Std's `fold`: `f` of each item, given what it gave.
+  // Held, `$held`'s: what its owner drops where Rust drops it, a variable
+  // at its scope's end, a temporary at its statement's (#206). What it steps
+  // is then dropped only as it's closed, not as it's done or ends early, as
+  // each adapter it steps is held too: its sources, `from`, or what it
+  // steps, `iter`.
+  hold() {
+    if (this.held) return;
+    this.held = true;
+    for (const source of this.from ?? (this.iter === undefined ? [] : [this.iter])) source.hold?.();
+  }
+  // Std's `fold`: `f` of each item, given what it gave. Consuming it, it
+  // closes it, as Rust's `fold` drops what it takes at its end: what a held
+  // source has left, one a variable moved here held (#206).
   fold(init, f) {
     let folded = init;
     for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    this.return();
     return folded;
+  }
+  // `collect()`'s, each item, then closed, as `fold` is.
+  toArray() {
+    const items = [];
+    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);
+    this.return();
+    return items;
   }
   // Std's `last`: the last item its `fold` gives, a step, done where there's
   // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
@@ -1259,6 +1279,7 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    mapped.from = [this];
     // Std's `Map::fold`, its source's of each mapped.
     mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
     mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
@@ -1277,6 +1298,7 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
     kept.fold = (init, g) => this.fold(init, (a, x) => (keep(x, i++) ? g(a, x) : a));
     return kept;
@@ -1311,6 +1333,7 @@ export class $Steps extends Iterator {
         this.return();
       },
     );
+    flat.from = [this];
     flat.fold = (init, g) => {
       let folded = init;
       if (inner !== undefined) folded = inner.reduce(g, folded);
@@ -1348,12 +1371,15 @@ export class $Steps extends Iterator {
   take(n) {
     const taken = new $Steps(
       () => {
-        if (n === 0) return this.return();
+        // At its limit, what it steps is done with, unless it's held,
+        // whose owner drops it (ADR 0570, #206).
+        if (n === 0) return taken.held ? { done: true, value: undefined } : this.return();
         n--;
         return this.next();
       },
       () => this.return(),
     );
+    taken.from = [this];
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
     taken.nth = (k) => {
@@ -1370,7 +1396,7 @@ export class $Steps extends Iterator {
     // (ADR 0570, #225).
     taken.tryFold = (init, g, broke) => {
       if (n === 0) {
-        this.return();
+        if (!taken.held) this.return();
         return init;
       }
       let full = false;
@@ -1423,6 +1449,7 @@ export class $Steps extends Iterator {
       },
       () => this.return(),
     );
+    skipped.from = [this];
     skipped.fold = (init, g) => {
       if (n > 0) {
         const k = n;
@@ -1651,6 +1678,15 @@ export function $foldOf(it, init, f) {
   return it.fold(init, f);
 }
 
+// `it`, an iterator a variable or a temporary holds, which its owner drops
+// where Rust drops it, at its scope's or its statement's end: held, so
+// nothing it steps is dropped as it's done or ends early, but as it's
+// closed (ADR 0570 amended, #206).
+export function $held(it) {
+  it.hold?.();
+  return it;
+}
+
 // `it.nth(n)` of items with a destructor: its `n`th item, each before it
 // dropped by `drop` as it's passed, as std's `nth` drops each it skips (ADR
 // 0098); boxed where it may look like `None` (ADR 0051). Of one given the
@@ -1728,14 +1764,16 @@ export function $closing(it, drop) {
   };
   // Stepped to its end, it's done with, as a chain consumed to its end
   // drops what it holds where the statement or the loop ends (ADR 0570).
-  // Done, from its front, its back or by its `nth` or `nth_back`, it's
-  // done with, each way it's stepped (#225).
+  // Done, from its front or by its `nth` or `nth_back`, it's done with,
+  // each way a consumer of JS's own steps it (#225).
+  // Held, its owner drops it, where Rust does (#206).
   const done = (step) => {
-    if (step.done) close();
+    if (step.done && !closing.held) close();
     return step;
   };
   const closing = new $Steps(() => done(it.next()), close);
-  closing.back = () => done(it.back());
+  closing.from = [it];
+  closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
@@ -1771,7 +1809,7 @@ export function $closing(it, drop) {
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
   closing.tryFold = (init, f, broke) => {
     const folded = $lent(it).tryFold(init, f, broke);
-    if (!broke(folded)) close();
+    if (!broke(folded) && !closing.held) close();
     return folded;
   };
   return closing;
@@ -1805,9 +1843,7 @@ export function $skipping(iter, n, drop) {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
-  // Ended from its back, what it steps is done with, as a `take`'s at its
-  // limit is, so a temporary's is dropped (ADR 0570, #225).
-  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : $closed(skipping.iter));
+  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220).
@@ -1859,10 +1895,8 @@ export function $taking(iter, n, drop) {
   };
   // Std's `Take::next_back`: its source's `nth_back` past what it won't
   // give, the crate's own where it reaches it (#220).
-  // Ended from its back, what it steps is done with, as `$Steps`' `take`'s
-  // at its limit is, so a temporary's is dropped (ADR 0570, #225).
   taking.back = () => {
-    if (taking.n === 0) return $closed(taking.iter);
+    if (taking.n === 0) return { done: true, value: undefined };
     const past = Math.max(taking.iter.len() - taking.n, 0);
     taking.n--;
     return $nthBackOf(taking.iter, past, drop);
@@ -2082,11 +2116,13 @@ export function $nthBack(it, n, found = (item) => item, drop) {
 }
 
 // `it.rfold(init, f)`: `f` of each item from the back, given what it gave;
-// its own `rfold`, where it reaches the crate's (#220).
+// its own `rfold`, where it reaches the crate's (#220). Consuming it, it
+// closes it, as Rust's `rfold` drops what it takes at its end (#206).
 export function $foldBack(it, init, f) {
   if (it.rfold !== undefined) return it.rfold(init, f);
   let folded = init;
   for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);
+  it.return?.();
   return folded;
 }
 
@@ -2166,6 +2202,7 @@ export function $mapEnds(it, f) {
   // crate's own where it reaches it (#220).
   if (it.rfold !== undefined) map.rfold = (init, g) => it.rfold(init, (a, x) => g(a, f(x)));
   if (it.tryRfold !== undefined) map.tryRfold = (init, g, broke) => it.tryRfold(init, (a, x) => g(a, f(x)), broke);
+  map.from = [it];
   return map;
 }
 
@@ -2226,6 +2263,7 @@ export function $chainEnds(a, b) {
       return sides.a === undefined ? done : sides.a.nthBack(n);
     };
   }
+  chain.from = [a, b];
   return chain;
 }
 
@@ -2283,6 +2321,7 @@ export function $stepBy(it, step, drop) {
     return folded;
   };
   stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
+  stepped.from = [it];
   return stepped;
 }
 
@@ -2328,6 +2367,7 @@ export function $filterEnds(it, p) {
   if (it.tryRfold !== undefined) {
     filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : a), broke);
   }
+  filter.from = [it];
   return filter;
 }
 
@@ -2429,6 +2469,7 @@ export function $flattenEnds(it, each) {
   };
   const flat = new $Steps(step("next", "next", "back"), () => $closed(it));
   flat.back = step("back", "back", "next");
+  flat.from = [it];
   return flat;
 }
 
@@ -2535,7 +2576,7 @@ export function $lazyScan(items, init, f, handle = true) {
       const step = source.next();
       const next = step.done ? undefined : f(state, step.value);
       if (next !== undefined) return { done: false, value: next };
-      source.return?.();
+      if (!scanning.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
@@ -2553,7 +2594,7 @@ export function $lazyScan(items, init, f, handle = true) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped) source.return?.();
+    if (stopped && !scanning.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
@@ -2563,6 +2604,7 @@ export function $lazyScan(items, init, f, handle = true) {
     scanning.return();
     return folded;
   };
+  scanning.from = [source];
   return scanning;
 }
 
@@ -10826,6 +10868,7 @@ export function $lazyChain(a, b) {
     if (!broke(folded)) second.return?.();
     return folded;
   };
+  chained.from = [first, second];
   return chained;
 }
 
@@ -10841,7 +10884,7 @@ export function $lazyZip(a, b, dropA) {
     left.return?.();
     right.return?.();
   };
-  return new $Steps(() => {
+  const zipped = new $Steps(() => {
     const item = left.next();
     if (item.done) return item;
     const other = right.next();
@@ -10851,6 +10894,8 @@ export function $lazyZip(a, b, dropA) {
     }
     return { done: false, value: [item.value, other.value] };
   }, close);
+  zipped.from = [left, right];
+  return zipped;
 }
 
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,
@@ -10919,6 +10964,7 @@ export function $rev(it) {
     () => it.return?.(),
   );
   rev.back = () => it.next();
+  rev.from = [it];
   rev.len = () => it.len();
   // What a clone of it clones (ADR 0530).
   rev.source = it;
@@ -10951,15 +10997,16 @@ export function $lazyTakeWhile(items, keep) {
       const step = source.next();
       if (step.done || keep(step.value)) return step;
       ended = true;
-      source.return?.();
+      if (!taking.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
   );
+  taking.from = [source];
   taking.tryFold = (init, f, broke) => {
     if (ended) return init;
     const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
-    if (ended) source.return?.();
+    if (ended && !taking.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
@@ -10984,11 +11031,12 @@ export function $lazyMapWhile(items, f, present) {
       const step = source.next();
       const value = step.done ? undefined : f(step.value);
       if (!step.done && present(value)) return { done: false, value };
-      source.return?.();
+      if (!mapping.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
   );
+  mapping.from = [source];
   mapping.tryFold = (init, g, broke) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
@@ -11001,7 +11049,7 @@ export function $lazyMapWhile(items, f, present) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped) source.return?.();
+    if (stopped && !mapping.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
@@ -11055,6 +11103,7 @@ export function $lazySkipWhile(items, skip) {
     }
     return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);
   };
+  skipped.from = [source];
   return skipped;
 }
 

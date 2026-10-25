@@ -517,6 +517,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {
                         Value::Expr(e.uncaught().unwrap_or(e))
                     }
+                    // An iterator its owner drops, held (#206).
+                    Value::Expr(e) if self.holds_dropped_iterator(state, *destination) => {
+                        Value::Expr(Expr::call_helper("$held", vec![e]))
+                    }
                     value => value,
                 };
                 // What the call writes, a setter's `n.textContent = "x"` or a

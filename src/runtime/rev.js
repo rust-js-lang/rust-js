@@ -11,6 +11,7 @@ function $rev(it) {
     () => it.return?.(),
   );
   rev.back = () => it.next();
+  rev.from = [it];
   rev.len = () => it.len();
   // What a clone of it clones (ADR 0530).
   rev.source = it;

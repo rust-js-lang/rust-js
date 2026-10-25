@@ -290,4 +290,12 @@ export const mutations: Mutation[] = [
     replace: "    kept(() => it.next()),\n    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
+  {
+    name: "fold-back-unclosed",
+    breaks: "`rfold` of a chain doesn't close it at its end, so what a `skip` in it leaves isn't dropped (#206)",
+    file: "src/runtime/back_steps.js",
+    find: "  for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);\n  it.return?.();\n",
+    replace: "  for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_back_drops_what_it_takes.rs$"],
+  },
 ];

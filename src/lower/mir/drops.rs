@@ -129,6 +129,25 @@ fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &HashSet<BasicBlock>) ->
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `place`, a call's destination, is a local holding an iterator
+    /// dropped by closing it that the body drops, a variable's or a
+    /// temporary's: held, `$held(..)`, so its owner drops what it steps
+    /// where Rust does, at its scope's or its statement's end, not as it's
+    /// done or an adapter in it ends (ADR 0570 amended, #206). Not one only
+    /// moved, into a consumer that takes it, which drops it at its end.
+    pub(super) fn holds_dropped_iterator(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let Some(drops) = state.drops.as_ref() else {
+            return false;
+        };
+        // Dropped where it runs on, not only as a panic unwinds past it.
+        let dropped = (state.body.basic_blocks.iter_enumerated()).any(|(block, data)| {
+            !data.is_cleanup
+                && matches!(&data.terminator().kind, TerminatorKind::Drop { place: dropped, .. }
+                    if dropped.local == place.local && dropped.projection.is_empty() && drops.drops(block, *dropped))
+        });
+        place.projection.is_empty() && dropped && self.dropped_by_closing(state.body.local_decls[place.local].ty)
+    }
+
     /// What `body`'s drops drop, `None` if none drops anything JS sees.
     pub(super) fn mir_elaboration(&self, body: &mir::Body<'tcx>) -> Option<Elaboration<'tcx>> {
         let tcx = self.tcx;
