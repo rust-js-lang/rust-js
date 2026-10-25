@@ -439,7 +439,7 @@ test("serde: numbers are written and read as serde_json does", async () => {
 }, 120_000);
 
 // serde_json's reader as a server's reads what a client sends it (ADR 0078):
-// each text, well formed or not, read as each of nine types, gives the value
+// each text, well formed or not, read as each of twenty types, gives the value
 // serde_json gives, or its error, with its words, line and column. What's
 // malformed is where a port of the reader goes wrong unseen: its escapes,
 // surrogates, control characters, numbers at their bounds, depth, trailing
@@ -460,6 +460,23 @@ test("serde: text, well formed or not, is read and refused as serde_json reads i
     // enum's, whose map has one key; and a number past f64's by its digits.
     "[1,true]", "[1,true,]", "[1,true,3]", '{"A":1}', '{"A":1,}', '{"A":1,"B":2}', '"B"', '{"B":null}',
     "2e308", "-2e308", "1.7976931348623157e308", "17976931348623159e292",
+    // What's read twice, through serde's content: a tag inside, or beside,
+    // what it tags; an untagged enum tried variant by variant; and fields
+    // flattened into a map of the rest.
+    '{"t":"A","x":1}', '{"x":1,"t":"A"}', '{"t":"C"}', '{"t":"D"}', '{"t":"B","a":1}', '{"t":"A"}', '{"t":1}',
+    '{"t":"A","c":1}', '{"c":1,"t":"A"}', '{"t":"B","c":null}', '{"t":"B"}', '{"t":"A","c":"x"}', '[1]', '["A",1]',
+    '{"a":1,"z":[true],"y":{}}', '{"z":2}',
+    // A variant that holds nothing, one or two values, or fields, and one
+    // given what it doesn't hold; a buffered sequence or map left with
+    // items over; and keys that are numbers and booleans, in quotes.
+    '"C"', '"D"', '{"C":[1,2]}', '{"C":[1]}', '{"D":{"x":1}}', '{"D":[1]}', '{"B":1}', '{"A":null}',
+    '{"t":"T","c":[1,2]}', '{"t":"T","c":[1,2,3]}', '{"t":"S","c":{"x":1,"y":2}}', '{"t":"S","c":[1]}', '{"t":"F","c":{"a":1,"b":2}}', '{"t":"T","c":null}',
+    '{"1":2}', '{"-1":2}', '{"x":2}', '{"1x":2}', '{"true":1}', '{"tru":1}', '{"false":0,"true":1}',
+    '{"t":2}', '{"t":3}', '{"A":1,"B":2}', '"A"', '{"t":1,"a":1}', '{"t":0,"x":2}',
+    // Not `{"c":{"a":1,"b":2},"t":"F"}`: a hand-written visitor given buffered
+    // content throws (#236).
+    '{"t":"W","C":null}', '{"t":"W","C":[1,2]}', '{"t":"W","C":{"x":1}}', '{"t":"W","D":1}', '{"t":"W","D":[1]}', '{"t":"W","B":null}', '{"C":1}', '{"D":"x"}',
+    '{"c":[1,2],"t":"T"}', '{"c":[1,2,3],"t":"T"}', '{"c":null,"t":"T"}', '{"c":{"x":1},"t":"T"}', '{"c":1,"t":"T"}', '{"c":null,"t":"S"}', '{"c":1,"t":"S"}', '{"c":"x","t":"S"}',
   ];
   const dir = fixture("serde-malformed");
   writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Deserialize, Debug)]
@@ -468,7 +485,25 @@ pub struct Strict { pub a: u32 }
 #[derive(serde::Deserialize, Debug)]
 pub struct Loose { pub a: u32, pub b: Option<String> }
 #[derive(serde::Deserialize, Debug)]
-pub enum Tagged { A(u32), B }
+pub enum Tagged { A(u32), B, C(u8, u8), D { x: u32 } }
+#[derive(serde::Deserialize, Debug)]
+#[serde(tag = "t")]
+pub enum Internal { A { x: u32 }, B(Loose), C }
+#[derive(serde::Deserialize, Debug)]
+#[serde(tag = "t", content = "c")]
+pub enum Adjacent { A(u32), B, T(u8, u8), S { x: u32 }, F(First) }
+#[derive(serde::Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Either { I(Internal), N(u32), S(String), L(Vec<u32>), P(Loose), E(Tagged) }
+#[derive(serde::Deserialize, Debug)]
+pub struct Flat { pub a: u32, #[serde(flatten)] pub rest: std::collections::BTreeMap<String, serde_json::Value> }
+// An externally tagged enum read from what's buffered: inside an internally
+// tagged variant, and flattened beside nothing else.
+#[derive(serde::Deserialize, Debug)]
+#[serde(tag = "t")]
+pub enum Holds { W(Tagged) }
+#[derive(serde::Deserialize, Debug)]
+pub struct Beside { #[serde(flatten)] pub e: Tagged }
 // A visitor that stops at a map's first entry, as one written by hand may.
 #[derive(Debug)]
 pub struct First(pub Option<(String, u32)>);
@@ -513,6 +548,14 @@ pub fn report() -> String {
         read!(out, Option<u32>, text);
         read!(out, Tagged, text);
         read!(out, First, text);
+        read!(out, Internal, text);
+        read!(out, Adjacent, text);
+        read!(out, Either, text);
+        read!(out, Flat, text);
+        read!(out, std::collections::BTreeMap<u32, u32>, text);
+        read!(out, std::collections::BTreeMap<bool, u32>, text);
+        read!(out, Holds, text);
+        read!(out, Beside, text);
     }
     out
 }

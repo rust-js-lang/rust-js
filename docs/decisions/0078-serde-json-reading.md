@@ -137,16 +137,30 @@ its errors (an architecture review, 2026-10-25), so a port of an escape,
 a surrogate, a bound or a position could go wrong unseen.
 
 - **`test/serde.test.ts`'s "text, well formed or not, is read and refused
-  as serde_json reads it"** reads 83 texts, and brackets 129 deep and 127,
-  each as eleven types: `Value`, `String`, `Vec<u32>`, `i64`, `u64`,
-  `f64`, a struct with an optional field, one that denies unknown fields,
-  a tuple, an `Option<u32>`, an enum, and a visitor of a map's first entry
-  alone, which a `Deserialize` written by hand may be. Each gives what
-  serde_json gives natively, value or error.
-- **Its 21 mutations** are each a rule of the reader, all caught: trailing
-  text, the depth of 128, an error's line and column and the byte a
-  `peek_error` is at, a leading zero, `-0` a float and `i64::MIN` an
-  integer, `1.` at the end, a float past `f64::MAX` by its digits, control
-  characters, `\q` and `\uZZZZ`, lone and unpaired surrogates, a trailing
-  comma in a list and in a map a visitor left early, the colon, tab and
-  carriage return as whitespace, and an ident cut short.
+  as serde_json reads it"** reads 142 texts, and brackets 129 deep and
+  127, each as twenty types: `Value`, `String`, `Vec<u32>`, `i64`, `u64`,
+  `f64`, a struct with an optional field and one that denies unknown
+  fields, a tuple, an `Option<u32>`, an externally, an internally and an
+  adjacently tagged enum, an untagged one, a struct with a flattened map,
+  maps keyed by numbers and booleans in quotes, an enum read from what an
+  internally tagged variant buffered and one flattened, and a visitor of a
+  map's first entry alone, which a `Deserialize` written by hand may be.
+  Each gives what serde_json gives natively, value or error.
+- **Its mutations, 21 of the reader's and 16 of what reads a sequence, a
+  map, a key, a variant and buffered content (`json_content.js`)**, are
+  each a rule, all caught: trailing text, the depth of 128, an error's
+  line and column and the byte a `peek_error` is at, a leading zero, `-0`
+  a float and `i64::MIN` an integer, `1.` at the end, a float past
+  `f64::MAX` by its digits, control characters, `\q` and `\uZZZZ`, lone
+  and unpaired surrogates, a trailing comma in a list and in a map a
+  visitor left early, the colon, tab and carriage return as whitespace, an
+  ident cut short; a list's and a map's commas and keys, a tuple's length,
+  a buffered list with items over, number and boolean keys in quotes, a
+  buffered enum's single key and a variant by its index, a unit variant
+  given for one that holds something, and a buffered variant of the wrong
+  shape.
+- **What it found**: a `Deserialize` written by hand, given buffered
+  content, an untagged variant's or an adjacently tagged one's whose
+  content comes first, throws a `TypeError` (#236). The text that reaches
+  it, and the mutation of a buffered map's entries left over, which only
+  such a visitor reaches, wait for its fix.
