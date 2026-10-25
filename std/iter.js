@@ -828,7 +828,7 @@ export function iterator_enumerate(self, SelfIterator, dropSelf, dropSelfItem) {
         enumerateIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
       nth: (iterator, n) =>
         enumerateIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
-      close: (iterator) => {
+      close(iterator) {
         dropSelf?.(iterator.iter);
       },
     },
