@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { cargoWorkspace, checkCargo, editorCheck, packageOf } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
-/** This checkout, where a compiler built from it is. */
-const checkout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-export const defaultCompiler = join(checkout, "target/debug/rust-js");
+/** The rust-js checkout this `@rust-js/build` is of, where one runs it from
+ * one; installed, it's of none. */
+const thisCheckout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Where rust-js keeps what it makes for an app, outside what it commits:
  * its Cargo builds, and each host's own. */
@@ -27,16 +27,58 @@ export function withoutCompiler(rustJs) {
 /**
  * The compiler a host runs for an app at `root`, the one answer every host
  * and command asks: `RUST_JS_COMPILER` where it names one, a test's or a
- * script's; else the app's `@rust-js/native`; else this checkout's build.
+ * script's, as it is; else the app's `@rust-js/native`, a release's; else
+ * the rust-js checkout's own, `checkout`'s, built from its sources first
+ * (ADR 0854).
+ * @param {string} root
+ * @param {{ checkout?: string }} [options]
+ * @returns {Promise<string>}
  */
-export function findCompiler(root) {
+export async function findCompiler(root, { checkout = thisCheckout } = {}) {
   if (process.env.RUST_JS_COMPILER) return resolve(root, process.env.RUST_JS_COMPILER);
   const require = createRequire(join(root, "package.json"));
   try { return join(dirname(require.resolve("@rust-js/native/package.json")), "bin/rust-js"); }
   catch (error) {
     if (error.code !== "MODULE_NOT_FOUND") throw error;
-    return defaultCompiler;
   }
+  return checkoutCompiler(checkout);
+}
+
+/**
+ * A rust-js checkout's own compiler, `target/debug/rust-js`, built from the
+ * checkout's sources as they are now by its `build:compiler`, the one
+ * definition, which `bun run build` runs too: Cargo's, which does nothing
+ * when nothing changed, and waits for another host's build of it to finish
+ * (ADR 0854). A build that fails throws: the binary an earlier one left is
+ * of other sources, and isn't run. An installed `@rust-js/build` is of no
+ * checkout, with nothing to build, and the path is of no compiler.
+ * @param {string} checkout
+ * @returns {Promise<string>}
+ */
+async function checkoutCompiler(checkout) {
+  const compiler = join(checkout, "target/debug/rust-js");
+  const manifest = join(checkout, "package.json");
+  const workspace = existsSync(manifest) ? JSON.parse(readFileSync(manifest, "utf8")) : {};
+  if (workspace.name !== "@rust-js/workspace") return compiler;
+  // As a shell in the checkout runs it: with `.cargo/config.toml`'s
+  // `RUSTC_BOOTSTRAP`, as another rebuilds every dependency, and into the
+  // target directory the compiler is run from, whatever the app's is.
+  const { RUSTC_BOOTSTRAP: _, ...env } = process.env;
+  const code = await new Promise((resolve, reject) => {
+    // What it says is on stderr, as Cargo prints it: an editor's check
+    // reads Cargo's messages from stdout.
+    const child = spawn("sh", ["-c", workspace.scripts["build:compiler"]], {
+      cwd: checkout,
+      env: { ...env, PWD: checkout, CARGO_TARGET_DIR: join(checkout, "target") },
+      stdio: ["ignore", 2, 2],
+    });
+    child.on("error", reject);
+    child.on("close", resolve);
+  });
+  if (code !== 0) {
+    throw new Error(`rust-js: building ${compiler} from this checkout's sources failed, as it says above; the one an earlier build left isn't run: fix it, or run \`bun run build:compiler\` in ${checkout}`);
+  }
+  return compiler;
 }
 
 /** The React the project has installed, whose API the react crate is built
@@ -99,10 +141,10 @@ function run(command, args, cwd, env = {}, warn) {
 
 /**
  * What a host builds an app's Rust with (ADR 0101): `rustJs`, the compiler,
- * and Cargo, which checks each crate with it.
- * @param {{ root: string, rustJs?: string }} options
+ * `findCompiler`'s, and Cargo, which checks each crate with it.
+ * @param {{ root: string, rustJs: string }} options
  */
-export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
+export function createNativeBuilder({ root, rustJs }) {
   const compilerPath = existsSync(rustJs) ? realpathSync(rustJs) : rustJs;
   const nativePackage = join(dirname(compilerPath), "../package.json");
   const packaged = existsSync(nativePackage) && JSON.parse(readFileSync(nativePackage, "utf8")).name === "@rust-js/native";
@@ -192,7 +234,7 @@ export async function buildApp({ app, packageName: named, check = false, log = (
   // by a patch, which an install's `postinstall` writes, and again here:
   // an app of no `package.json` has none.
   const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
-  const compiler = findCompiler(app);
+  const compiler = await findCompiler(app);
   if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");

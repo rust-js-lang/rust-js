@@ -41,8 +41,9 @@ refused, with who asked for each.
 `@rust-js/build` is on npm, released with the compiler (ADR 0120). A local
 tarball can be made with `bun pm pack` from `tooling/`. `rust-js build` finds
 the compiler as `RUST_JS_COMPILER` names it, then the application's
-`@rust-js/native` package, then the development checkout; the compiler binary
-isn't in `@rust-js/build`.
+`@rust-js/native` package, then the development checkout's, which it builds
+from the checkout's sources first, with `bun run build:compiler`'s Cargo build
+(ADR 0854); the compiler binary isn't in `@rust-js/build`.
 
 Build and package a native compiler for the current macOS or Linux host:
 

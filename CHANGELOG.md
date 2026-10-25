@@ -970,6 +970,14 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Fixed
 
+- **An app built from a rust-js checkout ran a compiler older than the
+  checkout's sources** (ADR 0854): `rust-js build` and the editor's check
+  ran whatever `target/debug/rust-js` an earlier `cargo build` left, and
+  after a `git pull` wrote stale JS and stale refusals. They build it
+  first, with the checkout's `bun run build:compiler`, Cargo's, which does
+  nothing when nothing changed; a build that fails stops them, and the old
+  binary isn't run. `RUST_JS_COMPILER` and `@rust-js/native` are run as
+  they are.
 - **`js::get`, `js::has`, `js::set` and `js::delete` take any value**
   (ADR 0776), `impl IntoUnknown`, an `Option<&Unknown>` too, as
   TypeScript's `any` is read: `js::has(module_object, "default")` is

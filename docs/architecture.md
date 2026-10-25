@@ -67,7 +67,8 @@ It writes JS/JSX and declarations beside the Rust; `--check` compares generated
 source files without replacing them. Vite and Next.js consume those files.
 They do not host a rust-js compiler plugin or schedule Rust compilation.
 
-`tooling/build.js` finds the compiler, checks runtime package versions, and
+`tooling/build.js` finds the compiler, building a checkout's own from its
+sources first ([ADR 0854](decisions/0854-a-checkouts-compiler-is-built-before-it-runs.md)), checks runtime package versions, and
 coordinates Cargo and project checks. `tooling/cargo.js` reads Cargo metadata
 and runs Cargo with rust-js as its wrapper; `src/cargo.rs` decides how each
 invocation is handled. Workspace, path and npm-provided source crates compile

@@ -7,14 +7,14 @@
 //
 //   rust-js-check [app-dir]
 import { join, resolve } from "node:path";
-import { cacheDirOf, createNativeBuilder } from "./build.js";
+import { cacheDirOf, createNativeBuilder, findCompiler } from "./build.js";
 import { writePatch } from "./patch.js";
 
 const app = resolve(process.argv[2] ?? ".");
 try {
   // Its crates where its npm packages have them, as the dev server's.
   writePatch(app);
-  const builder = createNativeBuilder({ root: app });
+  const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
   process.exitCode = await builder.editorCheck({
     manifestPath: join(app, "Cargo.toml"),
     // Not the dev server's, whose Turbopack or Vite doesn't watch it either.

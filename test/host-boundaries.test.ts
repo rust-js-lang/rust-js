@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fingerprint, publishArtifacts } from "../tooling/publish.js";
 import { crates, reactLibs } from "../tooling/crates.js";
 import { readReport } from "../wasm/web/frame-report.js";
@@ -67,4 +67,72 @@ test("the catalog of crates is each one's Cargo.toml, each a binding crate", () 
   }
   // React's, and what it uses.
   expect([...reactLibs].sort()).toEqual(["js", "react", "webapi"]);
+});
+
+// Which compiler a host runs (ADR 0854): `RUST_JS_COMPILER`'s, as it is;
+// the app's `@rust-js/native`; or a rust-js checkout's own, built from its
+// sources as they are first, by its `build:compiler`, which is Cargo's and
+// does nothing when they haven't changed. An app built from a checkout ran
+// the binary an earlier `cargo build` left, older than its sources, and
+// wrote what they no longer did.
+test("a checkout's own compiler is built from its sources before it runs, and no other is", () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-checkout-")));
+  try {
+    const checkout = join(dir, "rust-js");
+    const app = join(dir, "app");
+    // The stand-in checkout's, not this run's `target`, support.ts's.
+    const compiler = join(checkout, "target", "debug", "rust-js");
+    mkdirSync(dirname(compiler), { recursive: true });
+    mkdirSync(app);
+    writeFileSync(join(app, "package.json"), "{}");
+    // What an earlier build left, of sources since changed.
+    writeFileSync(compiler, "old");
+    writeFileSync(join(checkout, "sources"), "new");
+    const workspace = (build: string) => writeFileSync(join(checkout, "package.json"), JSON.stringify({ name: "@rust-js/workspace", scripts: { "build:compiler": build } }));
+    // A build as Cargo's: the compiler of the sources as they are, each
+    // build counted, and where it ran and what it was given said.
+    workspace(`echo built >> builds; printf '%s' "$PWD $CARGO_TARGET_DIR \${RUSTC_BOOTSTRAP-unset}" > given; echo '   Compiling rust-js'; cp sources target/debug/rust-js`);
+    const builds = () => (existsSync(join(checkout, "builds")) ? readFileSync(join(checkout, "builds"), "utf8").split("\n").length - 1 : 0);
+    const node = Bun.which("node") ?? process.execPath;
+    const find = (env: Record<string, string> = {}, at = checkout) => {
+      const { RUST_JS_COMPILER: _, ...inherited } = process.env;
+      const script = `import { findCompiler } from ${JSON.stringify(join(root, "tooling/build.js"))};
+try { process.stdout.write(await findCompiler(${JSON.stringify(app)}, { checkout: ${JSON.stringify(at)} })); }
+catch (error) { process.stderr.write(error.message); process.exitCode = 1; }`;
+      // Another target directory, and another `RUSTC_BOOTSTRAP`, an app's
+      // or a test's, aren't the checkout's build's.
+      const p = Bun.spawnSync([node, "--input-type=module", "-e", script], {
+        cwd: app, env: { ...inherited, CARGO_TARGET_DIR: join(app, "target"), RUSTC_BOOTSTRAP: "1", ...env }, stdout: "pipe", stderr: "pipe",
+      });
+      return { code: p.exitCode, stdout: p.stdout.toString(), stderr: p.stderr.toString() };
+    };
+    // Built first, in the checkout, into the target directory it's run from,
+    // as a shell builds it; what the build says is on stderr, as an editor's
+    // check reads Cargo's messages from stdout.
+    expect(find()).toEqual({ code: 0, stdout: compiler, stderr: "   Compiling rust-js\n" });
+    expect(readFileSync(compiler, "utf8")).toBe("new");
+    expect(readFileSync(join(checkout, "given"), "utf8")).toBe(`${checkout} ${join(checkout, "target")} unset`);
+    expect(builds()).toBe(1);
+    // A build that fails stops the host, with what it said and what to
+    // run; the compiler an earlier build left isn't run.
+    workspace("echo 'error[E0425]: cannot find value `x` in this scope' >&2; exit 101");
+    expect(find()).toEqual({
+      code: 1,
+      stdout: "",
+      stderr: `error[E0425]: cannot find value \`x\` in this scope\nrust-js: building ${compiler} from this checkout's sources failed, as it says above; the one an earlier build left isn't run: fix it, or run \`bun run build:compiler\` in ${checkout}`,
+    });
+    // `RUST_JS_COMPILER` is run as it is, even the checkout's own build:
+    // whoever names one builds it, as the tests and scripts do.
+    workspace("echo built >> builds");
+    expect(find({ RUST_JS_COMPILER: compiler })).toEqual({ code: 0, stdout: compiler, stderr: "" });
+    // An installed `@rust-js/build` is of no checkout: there's nothing to
+    // build, and its compiler is a release's.
+    expect(find({}, join(app, "node_modules/@rust-js"))).toEqual({ code: 0, stdout: join(app, "node_modules/@rust-js/target/debug/rust-js"), stderr: "" });
+    // So is the app's `@rust-js/native`.
+    const native = join(app, "node_modules/@rust-js/native");
+    mkdirSync(native, { recursive: true });
+    writeFileSync(join(native, "package.json"), JSON.stringify({ name: "@rust-js/native" }));
+    expect(find()).toEqual({ code: 0, stdout: join(native, "bin/rust-js"), stderr: "" });
+    expect(builds()).toBe(1);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

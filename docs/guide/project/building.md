@@ -307,7 +307,19 @@ haven't changed is fresh, and its JS is the JS that build wrote.
 1. the compiler `RUST_JS_COMPILER` names, if it's set;
 2. the app's `@rust-js/native`;
 3. a rust-js checkout's own `target/debug/rust-js`, when `@rust-js/build`
-   is that checkout's.
+   is that checkout's, built from the checkout's sources first
+   ([ADR 0854](../../decisions/0854-a-checkouts-compiler-is-built-before-it-runs.md)).
+
+The first two are run as they are. The checkout's is built each time by
+its `bun run build:compiler`, Cargo's build, which does nothing when its
+sources haven't changed and rebuilds when they have, a `git pull`'s say:
+a checkout never runs a compiler older than its sources. What Cargo says
+comes first. A build that fails stops, and the compiler an earlier build
+left isn't run:
+
+```
+rust-js: building /path/to/rust-js/target/debug/rust-js from this checkout's sources failed, as it says above; the one an earlier build left isn't run: fix it, or run `bun run build:compiler` in /path/to/rust-js
+```
 
 Without one, it stops, and your bundler still builds what's committed:
 

@@ -17,7 +17,8 @@
   ],
   "scripts": {
     "setup": "bun install && bunx --bun playwright install chromium",
-    "build": "cargo build && react/build.sh -o \"$PWD/target/libreact.rmeta\"",
+    "build": "bun run build:compiler && react/build.sh -o \"$PWD/target/libreact.rmeta\"",
+    "build:compiler": "cargo build",
     "build:release": "RUSTFLAGS=\"--remap-path-prefix=$HOME=~\" cargo build --release --locked",
     "pack:compiler": "bun scripts/package-compiler.ts",
     "pack:distribution": "bun scripts/package-distribution.ts",

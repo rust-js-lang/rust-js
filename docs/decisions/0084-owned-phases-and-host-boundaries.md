@@ -1,6 +1,6 @@
 # 0084. Owned compiler phases and explicit host boundaries
 
-Status: Accepted. Refines 0009, 0042, 0045 and 0069.
+Status: Accepted. Refines 0009, 0042, 0045 and 0069. Amended by [0854](0854-a-checkouts-compiler-is-built-before-it-runs.md): the checkout fallback is built from its sources before it runs.
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -159,7 +159,7 @@ module APIs rather than introducing a plugin framework or a second Rust IR.
   current runtime. Bun remains a repository development tool, not a distribution
   requirement. Package tests execute each runtime while blocking the other on PATH.
   Compiler discovery follows the same application boundary: explicit path,
-  installed `@rust-js/native`, then checkout fallback. Native hosts and Vite use
+  installed `@rust-js/native`, then checkout fallback, built first (ADR 0854). Native hosts and Vite use
   the same resolver. Installed-package tests require no compiler or resource
   path overrides; explicit `.bin` paths remain supported.
   `scripts/package-distribution.ts` assembles the four version-matched packages

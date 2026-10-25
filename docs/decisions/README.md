@@ -797,9 +797,10 @@ reordered, and git merges this file by keeping both sides' lines
 **Architecture boundaries**
 
 - [0073 Named imports for generated modules](0073-named-module-imports.md)
-- [0084 Owned compiler phases and explicit host boundaries](0084-owned-phases-and-host-boundaries.md)
+- [0084 Owned compiler phases and explicit host boundaries](0084-owned-phases-and-host-boundaries.md) *(amended by 0854: a checkout's own compiler is built before it runs)*
 - [0085 Experimental scalar library linkage](0085-scalar-library-linkage.md) *(replaced by 0100)*
 - [0572 A compiler file is at most 1,500 lines](0572-a-compiler-file-is-at-most-1500-lines.md)
+- [0854 A checkout's own compiler is built from its sources before it runs](0854-a-checkouts-compiler-is-built-before-it-runs.md)
 
 ## Adding a decision
 
