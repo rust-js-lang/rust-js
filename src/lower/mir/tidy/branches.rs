@@ -1181,10 +1181,8 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
 /// drop }`, and a drop's test inside its own (ADR 0564). `t` of what nothing
 /// assigns, `changing`'s; one that reads through a field or a helper,
 /// `x.value`, `$someValue(x)`, only up to the next call or assignment
-/// through a field, which may change it. Not an `if` the program wrote,
-/// of a condition in `written`, which says what the program says, React's
-/// `// $FlowFixMe[constant-condition]` above it, though an earlier test
-/// decides it (ADR 0564, amended).
+/// through a field, which may change it. Not an `if` the program wrote, of
+/// a condition in `written`: what it says (ADR 0564, amended).
 pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, written: &[js::Span]) {
     let mut i = 0;
     while i < stmts.len() {
@@ -1230,16 +1228,12 @@ fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
 /// where a `match`'s arms are tested one after another, each test whole,
 /// which a `switch` of them reads (ADR 0668).
 fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js::Span]), holds: bool, parts: bool) {
-    // Whether `t` is a condition the program wrote.
     let wrote = |t: &Expr| !t.span.is_none() && written.iter().any(|c| c.lo < t.span.hi && t.span.lo < c.hi);
     let mut j = from;
     while j < stmts.len() {
         match &mut stmts[j].kind {
             StmtKind::If(t, ..) if disturbs(t, test) => return,
-            StmtKind::If(t, ..)
-                if !wrote(t)
-                    && let Some(taken) = decided(t, test) =>
-            {
+            StmtKind::If(t, ..) if let Some(taken) = decided(t, test).filter(|_| !wrote(t)) => {
                 let StmtKind::If(_, then, otherwise) = stmts.remove(j).kind else {
                     unreachable!("matched")
                 };
