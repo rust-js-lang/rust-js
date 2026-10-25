@@ -1,6 +1,6 @@
 //! JS's iterator protocol, TypeScript's `Iterator<T>` and
 //! `IteratorResult<T>`: what an iterable's `[Symbol.iterator]()` gives,
-//! stepped by its `next()` (ADR 0856).
+//! stepped by its `next()` (ADR 0860).
 
 use core::marker::PhantomData;
 

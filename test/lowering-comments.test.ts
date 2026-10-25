@@ -159,7 +159,7 @@ test("a comment before an unsafe block is its code's", async () => {
   expect(lib.resolved(3 as never)).toBe(3);
 });
 
-// ADR 0858: a comment before the `None` a function gives at its end, which
+// ADR 0862: a comment before the `None` a function gives at its end, which
 // is no `return;`, and one after a block's last code, are where they're
 // written, at the end of the body: React's countChildren's callback, `n++;
 // // Don't return anything`.

@@ -610,7 +610,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assigned-test-unmade",
-    breaks: "a loop's first `const` its test reads stays, `while (true) { const step = iterator.next(); if (step.done) { break; } .. }`, not `while (!(step = iterator.next()).done)` (ADR 0856)",
+    breaks: "a loop's first `const` its test reads stays, `while (true) { const step = iterator.next(); if (step.done) { break; } .. }`, not `while (!(step = iterator.next()).done)` (ADR 0860)",
     file: "src/prepare.rs",
     find: "    js::each_item_block_mut(&mut module.items, &mut tested_assignments);\n",
     replace: "",
@@ -618,7 +618,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assigned-test-captured",
-    breaks: "a loop's `const` a closure in it keeps is one `let` of every turn, each closure reading the last (ADR 0856)",
+    breaks: "a loop's `const` a closure in it keeps is one `let` of every turn, each closure reading the last (ADR 0860)",
     file: "src/prepare.rs",
     find: "                js::each_expr(rest, &mut |e| captured |= caught(e));\n",
     replace: "",
@@ -626,7 +626,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assigned-test-read-first-unasked",
-    breaks: "a loop's test that reads something else first, `stack.length === 0 || top == null`, makes the `const` after it, which then reads the stack before the `pop` (ADR 0856)",
+    breaks: "a loop's test that reads something else first, `stack.length === 0 || top == null`, makes the `const` after it, which then reads the stack before the `pop` (ADR 0860)",
     file: "src/prepare.rs",
     find: "                && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)\n",
     replace: "",
@@ -634,7 +634,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assigned-test-read-twice",
-    breaks: "a loop's test that reads its `const` twice, `top == null || top > limit`, makes it in the first, `(top = stack.at(-1)) == null || ..` (ADR 0856)",
+    breaks: "a loop's test that reads its `const` twice, `top == null || top > limit`, makes it in the first, `(top = stack.at(-1)) == null || ..` (ADR 0860)",
     file: "src/prepare.rs",
     find: "                    reads == 1\n",
     replace: "                    reads >= 1\n",

@@ -3,7 +3,7 @@
 Status: Accepted. Amended by [0215](0215-webapi-unions.md): a union is its
 untagged enum, so a function has no other forms of one, and a constructor
 no family of sources. Amends [0024](0024-web-crate.md), whose `web` crate is now
-`webapi`, and [0035](0035-results-and-throwing-js.md). Amended by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): an optional argument is an `Option` of the one function, where it was a `_with_` form of its own. Extended by [0856](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md): JS's iterator protocol, `js::Iterator<T>`.
+`webapi`, and [0035](0035-results-and-throwing-js.md). Amended by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): an optional argument is an `Option` of the one function, where it was a `_with_` form of its own. Extended by [0860](0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md): JS's iterator protocol, `js::Iterator<T>`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

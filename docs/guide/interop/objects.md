@@ -649,7 +649,7 @@ export function evens(limit) {
   != null) { .. }`, as JS writes one; where a closure in the loop keeps
   `n`, it's `while (true) { const n = ..; if (n == null) { break; } .. }`,
   each turn's own `n`
-  ([ADR 0856](../../decisions/0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
+  ([ADR 0860](../../decisions/0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
 - **A chain of std's adapters is a JS iterator**, its helpers
   `filter`, `map`, `take` in Rust's order. A JS caller of `evens(7)`
   spreads it, `[...evens(7)]` being `[0, 2, 4, 6]`.

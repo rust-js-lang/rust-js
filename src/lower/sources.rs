@@ -79,7 +79,7 @@ impl CapturedSources {
 /// Where a block that ends with comments ends, `{ // why }` of `if c { //
 /// why }`, or `{ let _ = a; // Nothing to do. }` of a function's, in the
 /// arena: at its `}`, which its comments are printed before (ADRs 0753,
-/// 0858). Not a block whose code is last, or of nothing, or one a macro
+/// 0862). Not a block whose code is last, or of nothing, or one a macro
 /// wrote.
 pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
     use rustc_lexer::TokenKind;
@@ -107,7 +107,7 @@ pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Spa
 /// Where what a function gives at its end is, `None` of `// Don't return
 /// anything\n None`, where a comment is right before it, nothing but
 /// whitespace and other comments between: the comment's place, once the
-/// `return;` of nothing it is goes (ADR 0858).
+/// `return;` of nothing it is goes (ADR 0862).
 pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Span> {
     if span.from_expansion() {
         return None;

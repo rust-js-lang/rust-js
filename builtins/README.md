@@ -61,7 +61,7 @@ spawn(Box::new(async move {                            // runs, unawaited
   `number::to_string(x, Some(36))` is `x.toString(36)`.
 - `Iterator<T>` is TypeScript's, JS's iterator protocol: `iterator.next()` is
   an `IteratorResult<T>`, its `done` an `Option<bool>` left out until the end,
-  and its `value` ([ADR 0856](../docs/decisions/0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
+  and its `value` ([ADR 0860](../docs/decisions/0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
 
 An app names it in its `Cargo.toml`, `js = { package = "rust-js-builtins",
 .. }`, and `rust-js build` builds it. This repository's tests build its

@@ -1,5 +1,5 @@
 // A `loop` that ends an `if`'s branch, whose `else` follows: the loop's
-// `break` is its own, and the `else` stays, with no label (ADR 0855). A
+// `break` is its own, and the `else` stays, with no label (ADR 0859). A
 // `break 'rows` in a loop inside it is the loop's, by the program's label.
 
 fn walk(items: &[u32], kind: &str, out: &mut Vec<u32>) -> u32 {

@@ -298,7 +298,7 @@ fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
 /// then reads, once and first: the loop of that test, which makes it, `let
 /// step; while (!(step = iterator.next()).done) { .. }`, as JS writes a
 /// walk of an iterator's steps, React's `mapIntoArray`, or of a regular
-/// expression's matches (ADR 0856). Before its locals are named, so the
+/// expression's matches (ADR 0860). Before its locals are named, so the
 /// `let` is one name of the block it's in. Not where a closure reads it,
 /// which a `const` gives a variable of each turn, nor where the test reads
 /// it again, `last == null || last.TAG !== "Op"`, or reads anything first.

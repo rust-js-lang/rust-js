@@ -424,7 +424,7 @@ impl Expr {
         Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary)))
     }
 
-    /// `(name = value)`, its value the assignment's (ADR 0856).
+    /// `(name = value)`, its value the assignment's (ADR 0860).
     pub fn assigned(name: &str, value: Expr) -> Expr {
         Expr::new(ExprKind::Assigned(name.to_string(), Box::new(value)))
     }

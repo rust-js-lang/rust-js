@@ -120,7 +120,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
-- [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0856: JS's iterator protocol, `js::Iterator`)*
+- [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0860: JS's iterator protocol, `js::Iterator`)*
 - [0103 The runtime is a package, `@rust-js/runtime`, as ReScript's is](0103-runtime-package.md)
 - [0104 The tests run side by side, each native program built once](0104-parallel-tests.md)
 - [0105 `bun create @rust-js` makes a Vite and React app in Rust](0105-create.md)
@@ -293,7 +293,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0272 Node's modules are a crate of their own, typed as @types/node](0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](0273-path-modules.md)
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](0274-next-data-fetching.md)
-- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0857: a function's own parameter)*
+- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0861: a function's own parameter)*
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md)
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
@@ -328,7 +328,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0307 A trait's binding method is read of the value itself](0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
 - [0309 A `match` that only gives a value is one expression](0309-value-matches.md)
-- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0856: `number::to_string`'s radix)*
+- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0860: `number::to_string`'s radix)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](0311-flattened-reads.md)
 - [0312 `js::shown` is any value as a template shows it](0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](0313-console-forms.md) *(amended by 0640: `console` takes a tuple)*
@@ -578,7 +578,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md)
 - [0703 A closure made before a call a guard unwinds is made where it's read](0703-a-closure-made-before-a-guarded-call-is-made-where-its-read.md)
 - [0704 A module variable an `if` makes is assigned only where it's something](0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)
-- [0705 A guard's scope reads as any body, its fields the variables it was made of](0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop; extended by 0855: each of its `break`s, a `loop` ending a branch)*
+- [0705 A guard's scope reads as any body, its fields the variables it was made of](0705-a-guards-scope-reads-as-any-body.md) *(amended: a `while`'s test is whole, and a loop that ends a block breaks as a loop; extended by 0859: each of its `break`s, a `loop` ending a branch)*
 - [0706 `panic!` is the one way a port throws an `Error`, and what's caught is read as it was thrown](0706-panic-is-the-one-way-a-port-throws-an-error.md) *(amended by 0710: of any `try`; amended: a `catch_unwind` that heads an `if let` chain is a `try`; amended by 0830: a `let Err(x)`'s `catch` holds what reads `x` or what that declares)*
 - [0708 A comment before an argument, or a field, is before it](0708-a-comment-before-an-argument-is-before-it.md)
 - [0709 A signed counter below a length stays below it, past its loop and through its `as`](0709-a-signed-counter-below-a-length-stays-below-it.md) *(extended by 0746: a length held in a variable, and a `push`)*
@@ -610,7 +610,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0750 A temporary is read past a method, and in the block after it](0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's)*
 - [0751 A binding only an arm's guard reads isn't written in the arm](0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](0752-an-unwrapped-function-called-panics-first.md)
-- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0858: after a block's last code, and before a function's `None` at its end)*
+- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0862: after a block's last code, and before a function's `None` at its end)*
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
@@ -643,6 +643,10 @@ reordered, and git merges this file by keeping both sides' lines
 - [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0857 A function's own nullable parameter is `null` where it's given or set `None`](0857-a-functions-own-nullable-parameter-is-set-null.md)
 - [0858 A comment at a body's end is there, before its `None` or after its last code](0858-a-comment-at-a-bodys-end-is-there.md)
+- [0859 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0859-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
+- [0860 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
+- [0861 A function's own nullable parameter is `null` where it's given or set `None`](0861-a-functions-own-nullable-parameter-is-set-null.md)
+- [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

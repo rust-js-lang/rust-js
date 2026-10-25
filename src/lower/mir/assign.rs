@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A function's `None` it gives at its end, a comment before it,
         // `// Don't return anything\n None`: where it is, which the comment
         // is printed before, as the `return;` of nothing it is goes (ADR
-        // 0858).
+        // 0862).
         if *place == Place::from(mir::RETURN_PLACE)
             && let Rvalue::Aggregate(kind, _) = rvalue
             && let AggregateKind::Adt(did, VariantIdx::ZERO, ..) = **kind
@@ -196,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // assigns what it makes through a temporary, which `nulled` follows.
         // So is a parameter its function names `#[rust_js::nullable(..)]`,
         // set, `children = None`, as React's `mapIntoArray` writes it (ADR
-        // 0857).
+        // 0861).
         let nullable = match self.place_field(state, *place) {
             Some(field) => bindings::is_nullable(self.tcx, field),
             None => self.own_nullable_param(state, *place),
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `place` is a parameter of the function whose body this is
     /// that it names `#[rust_js::nullable(..)]`, TypeScript's `T | null`
-    /// (ADRs 0275, 0857).
+    /// (ADRs 0275, 0861).
     fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
         let def_id = state.body.source.def_id();
         let arg = place.local.as_usize();

@@ -1,4 +1,4 @@
-# 0857. A function's own nullable parameter is `null` where it's given or set `None`
+# 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
 Status: Accepted. Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the

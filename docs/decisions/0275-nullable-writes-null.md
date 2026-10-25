@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0196](0196-typescript-declarations.md). Amended by
 [0772](0772-a-nullable-cell-field-writes-null.md): a nullable `Cell`'s writes. Extended by
 [0810](0810-an-optional-nullable-field-is-absent-until-set.md): an optional one is left out where it's made `None`. Extended by
-[0857](0857-a-functions-own-nullable-parameter-is-set-null.md): a parameter of the crate's own function, set `None`.
+[0861](0861-a-functions-own-nullable-parameter-is-set-null.md): a parameter of the crate's own function, set `None`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

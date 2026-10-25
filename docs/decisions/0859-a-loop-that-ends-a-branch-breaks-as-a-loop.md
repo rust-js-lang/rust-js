@@ -1,4 +1,4 @@
-# 0855. A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept
+# 0859. A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept
 
 Status: Accepted. Extends [0705](0705-a-guards-scope-reads-as-any-body.md)'s
 amendment, whose loop that ends a block MIR made took the block's `break`

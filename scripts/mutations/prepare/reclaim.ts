@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reclaim-assigned-unrenamed",
-    breaks: "a loop's `let step$1` given its name back, `let step`, where the test's assignment still sets `step$1` (ADR 0856)",
+    breaks: "a loop's `let step$1` given its name back, `let step`, where the test's assignment still sets `step$1` (ADR 0860)",
     file: "src/prepare/reclaim.rs",
     find: "        ExprKind::Var(name) | ExprKind::Assigned(name, _) if reads => f(name),\n",
     replace: "        ExprKind::Var(name) if reads => f(name),\n",

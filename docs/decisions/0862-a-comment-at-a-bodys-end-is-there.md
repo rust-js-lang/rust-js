@@ -1,4 +1,4 @@
-# 0858. A comment at a body's end is there, before its `None` or after its last code
+# 0862. A comment at a body's end is there, before its `None` or after its last code
 
 Status: Accepted. Extends [0753](0753-a-branch-of-only-comments-keeps-them.md),
 whose block of only comments kept them where it ends, to a block whose

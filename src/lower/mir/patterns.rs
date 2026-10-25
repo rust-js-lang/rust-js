@@ -67,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What a call makes, and what JS reads as it's stored, a field's or
         // a binding's parameter's: a call's `Option` only the crate's own
         // functions' nullable parameters read is given as it is, their
-        // bodies reading `null` and `undefined` alike (ADR 0857).
+        // bodies reading `null` and `undefined` alike (ADR 0861).
         let mut called: std::collections::HashSet<Local> = Default::default();
         let mut stored: std::collections::HashSet<Local> = Default::default();
         // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info

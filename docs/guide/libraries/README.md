@@ -161,7 +161,7 @@ What it has:
   out until the end, and `value`. The loop of its steps is JS's:
   `loop { let step = iterator.next(); if step.done == Some(true) { break; }
   .. }` is `let step; while (!(step = iterator.next()).done) { .. }`
-  ([ADR 0856](../../decisions/0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
+  ([ADR 0860](../../decisions/0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

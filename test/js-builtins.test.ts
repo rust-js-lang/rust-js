@@ -1297,7 +1297,7 @@ pub fn thrown_again(node: &Node) {
   }
 });
 
-// ADR 0856: TypeScript's `Iterator<T>`, stepped by its `next()`, whose
+// ADR 0860: TypeScript's `Iterator<T>`, stepped by its `next()`, whose
 // `IteratorResult<T>`'s `done` is left out of a step that isn't the end, as
 // React's `mapIntoArray` steps what an iterable's `@@iterator` gives, one
 // with no `[Symbol.iterator]` of its own too; the loop that makes the step

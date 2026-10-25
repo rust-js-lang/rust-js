@@ -471,7 +471,7 @@ pub(super) const STAGES: &[Stage] = &[
             // Each `break` a loop that ends a block MIR made leaves it by,
             // once what's after each loop is placed: the loop's own, a
             // `loop` that ends an `if`'s branch, its `else` after it, as
-            // written, with no label (ADR 0855); one a loop inside it
+            // written, with no label (ADR 0859); one a loop inside it
             // leaves, its `break 'rows`, the loop's, by the program's name.
             pass("loops ending blocks", |b, h| {
                 js::statement_lists(b, &mut |s| blocks_loops_end(s, true));

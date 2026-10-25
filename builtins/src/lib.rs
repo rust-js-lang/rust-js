@@ -1487,7 +1487,7 @@ pub mod number {
     /// `None`, TypeScript's `radix?: number`: `1e21` is `"1e+21"` and
     /// `Infinity` `"Infinity"`, where `f64::to_string`'s are
     /// `"1000000000000000000000"` and `"inf"` (ADR 0310); `to_string(35.0,
-    /// Some(36))` is `"z"`, as React writes an index as a key (ADR 0856).
+    /// Some(36))` is `"z"`, as React writes an index as a key (ADR 0860).
     /// Another radix throws a `RangeError`.
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
     pub fn to_string(this: f64, radix: Option<u32>) -> String {

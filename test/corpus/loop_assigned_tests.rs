@@ -1,6 +1,6 @@
 // A loop whose first statement makes what the test leaving it reads, once
 // and first, is the loop of that test, which makes it: `let x; while ((x =
-// stack.pop()) != null) { .. }` (ADR 0856). Not where a closure in the
+// stack.pop()) != null) { .. }` (ADR 0860). Not where a closure in the
 // loop keeps it, which a `const` gives a variable of each turn, nor where
 // the test reads it twice.
 

@@ -639,7 +639,7 @@ pub enum ExprKind {
     Pair(Box<Expr>, Box<Expr>),
     /// `(name = value)`, an assignment's value: what preparation makes of a
     /// loop's first `const` that the test leaving it reads, `while (!(step =
-    /// iterator.next()).done) { .. }` (ADR 0856). Nothing before
+    /// iterator.next()).done) { .. }` (ADR 0860). Nothing before
     /// preparation makes one, so lowering and tidy never see it.
     Assigned(String, Box<Expr>),
 }

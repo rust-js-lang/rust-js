@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "comments-end-only-comments",
-    breaks: "a block's comments after its last code, `out.push(0); // Nothing to do.`, are gone, as only a block of only comments kept them (ADR 0858)",
+    breaks: "a block's comments after its last code, `out.push(0); // Nothing to do.`, are gone, as only a block of only comments kept them (ADR 0862)",
     file: "src/lower/sources.rs",
     find: "            _ => comments = 0,\n",
     replace: "            _ => return None,\n",
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "commented-never",
-    breaks: "a `None` given at a function's end is never taken for one a comment is before (ADR 0858)",
+    breaks: "a `None` given at a function's end is never taken for one a comment is before (ADR 0862)",
     file: "src/lower/sources.rs",
     find: "    (code < at.lo).then_some(at)\n",
     replace: "    (code < at.lo && false).then_some(at)\n",

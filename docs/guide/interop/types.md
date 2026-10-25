@@ -623,7 +623,7 @@ export function ratio(a, b) {
   and where its body sets it so, `children = None`'s `children = null`,
   and what a call gives it otherwise is as it is, its body reading either
   as `None`; its `.d.ts` is `T | null | undefined`
-  ([ADR 0857](../../decisions/0857-a-functions-own-nullable-parameter-is-set-null.md)).
+  ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md)).
   A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return

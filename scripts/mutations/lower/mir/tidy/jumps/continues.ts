@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-branch-breaks-unnested",
-    breaks: "a loop that ends an `if`'s branch, an `else` after it, keeps its `break bb24` of an `if` in it, and prints a label (ADR 0855)",
+    breaks: "a loop that ends an `if`'s branch, an `else` after it, keeps its `break bb24` of an `if` in it, and prints a label (ADR 0859)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                StmtKind::If(_, a, b) => {\n                    own_breaks(a, label);\n                    if let Some(b) = b {\n                        own_breaks(b, label);\n                    }\n                }\n",
     replace: "                StmtKind::If(..) => {}\n",
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-branch-inner-loops-unlabeled",
-    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch is the `for`'s `break`, which goes on in the `loop` (ADR 0855)",
+    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch is the `for`'s `break`, which goes on in the `loop` (ADR 0859)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                StmtKind::Labeled(_, body) => own_breaks(body, label),\n",
     replace: "                StmtKind::Labeled(_, body) | StmtKind::ForOf { body, .. } => own_breaks(body, label),\n",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-branch-label-not-moved",
-    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch keeps the block MIR made, `bb29: { .. }`, not the loop's `rows:` (ADR 0855)",
+    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch keeps the block MIR made, `bb29: { .. }`, not the loop's `rows:` (ADR 0859)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            let leaves = !js::names_jump(body, &label) && super::labels::fits_in_place(stmts, i, body);\n",
     replace: "            let leaves = false;\n",

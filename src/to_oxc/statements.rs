@@ -666,7 +666,7 @@ impl<'a> Cx<'a> {
 
 /// The span of a block, or a function's body, of `stmts`: to where the
 /// comments of its own it ends with end (`StmtKind::Comments`), which oxc
-/// prints them before, inside it, before its `}` (ADRs 0753, 0858).
+/// prints them before, inside it, before its `}` (ADRs 0753, 0862).
 fn commented_end(stmts: &[js::Stmt]) -> Span {
     let end = (stmts.iter())
         .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none())

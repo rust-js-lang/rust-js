@@ -1,4 +1,4 @@
-# 0856. JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes
+# 0860. JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md)'s js crate with
 TypeScript's `Iterator<T>` and `IteratorResult<T>`, and

@@ -551,7 +551,7 @@ pub fn lazy(n: Option<f64>) -> Lazy {
   (console as any).createTask = original;
 });
 
-// ADR 0857: a function's own parameter it names `#[rust_js::nullable(..)]`
+// ADR 0861: a function's own parameter it names `#[rust_js::nullable(..)]`
 // is `T | null`, a `None` given it or set in its body `null`, as React's
 // `mapIntoArray` sets `children = null` and calls the callback with it,
 // whose test says `toHaveBeenCalledWith(null, 5)`. What's given it is as

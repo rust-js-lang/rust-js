@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "function-body-comments-outside",
-    breaks: "a function's comments at its end, `// Nothing found.`, are printed after it, outside its `}` (ADR 0858)",
+    breaks: "a function's comments at its end, `// Nothing found.`, are printed after it, outside its `}` (ADR 0862)",
     file: "src/to_oxc/statements.rs",
     find: "        FunctionBody::new(commented_end(&stmts), directives, self.stmts(&stmts), b)\n",
     replace: "        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)\n",

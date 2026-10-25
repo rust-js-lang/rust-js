@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-nullable-param-set-undefined",
-    breaks: "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0857)",
+    breaks: "a function's own nullable parameter set to `None` is `undefined`, `children = undefined`, where its callback is to be given `null` (ADR 0861)",
     file: "src/lower/mir/assign.rs",
     find: "            None => self.own_nullable_param(state, *place),\n",
     replace: "            None => false,\n",
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-nullable-param-any-argument",
-    breaks: "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0857)",
+    breaks: "a function's parameter its function doesn't name nullable, or another argument, set to `None` is `null` (ADR 0861)",
     file: "src/lower/mir/assign.rs",
     find: "                .is_some_and(|ident| bindings::nullable_params(self.tcx, def_id).contains(&ident.name))\n",
     replace: "                .is_some()\n",
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-none-comments-dropped",
-    breaks: "a comment before the `None` a function gives at its end, `// Don't return anything`, is gone with its `return;` (ADR 0858)",
+    breaks: "a comment before the `None` a function gives at its end, `// Don't return anything`, is gone with its `return;` (ADR 0862)",
     file: "src/lower/mir/assign.rs",
     find: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span)\n",
     replace: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span).filter(|_| false)\n",

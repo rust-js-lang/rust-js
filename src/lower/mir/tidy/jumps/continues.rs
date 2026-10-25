@@ -259,7 +259,7 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
 /// inside it, as a `loop` that ends an `if`'s branch, an `else` after it,
 /// leaves: `l: { if (t) { while (true) { if (d) { break l; } .. } } else {
 /// .. } }` is `if (t) { while (true) { if (d) { break; } .. } } else { ..
-/// }`, as the program wrote it, with no label (ADR 0855). And one of a loop
+/// }`, as the program wrote it, with no label (ADR 0859). And one of a loop
 /// or a `switch` inside it, `break 'rows` in a `for` of the `loop` it
 /// names, the loop's, by its label, or the block's label where it has none,
 /// which `named labels` then names as the program did.
