@@ -117,4 +117,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(signed_counter|signed_index).rs$"],
     snapshots: true,
   },
+  {
+    name: "guarded-or-at-block",
+    breaks: "the `if (a || b)` of guards MIR's labeled block makes is placed where the block is, nowhere, so the comment before it is before the next `if`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        let span = made_where(stmts[i].span, body);\n",
+    replace: "        let span = stmts[i].span;\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
+  },
 ];

@@ -188,8 +188,20 @@ pub fn emit(
             // being the first placed.
             let found = (0..=line).rev().take(3).find_map(|at| {
                 let written = generated_lines.get(at as usize)?;
+                // An `if`'s test's: its `if (` too, where the `if` is placed
+                // with its test.
+                let opening = match *operator {
+                    "if ("
+                        if written
+                            .get(column as usize..)
+                            .is_some_and(|rest| rest.starts_with(*operator)) =>
+                    {
+                        operator.len()
+                    }
+                    _ => 0,
+                };
                 let before = if at == line {
-                    written.get(..column as usize)?
+                    written.get(..column as usize + opening)?
                 } else {
                     written
                 };
@@ -515,6 +527,26 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 });
             }
         }
+        // Whether the code before a comment, past other comments, is an
+        // `if`, the keyword: the comment is between it and its test.
+        let after_if = |c: &crate::program::Comment| {
+            let mut end = c.lo as usize;
+            loop {
+                let code = sources.text[file_start..end].trim_end();
+                match file
+                    .comments
+                    .iter()
+                    .find(|other| other.hi as usize == file_start + code.len())
+                {
+                    Some(other) if (other.lo as usize) < end => end = other.lo as usize,
+                    _ => {
+                        break code
+                            .strip_suffix("if")
+                            .is_some_and(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'));
+                    }
+                }
+            }
+        };
         let mut attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c))
             .filter_map(|c| {
@@ -575,6 +607,15 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     && arms.get(&at).is_some_and(|arm| arm.operand)
                     && !spans.iter().any(|&(lo, _)| lo == at)
                     && !only_operators(c.hi, at)
+                {
+                    next += 1;
+                }
+                // An `if`'s test's only where it's written after the `if`,
+                // `if\n // c\n a || b {`.
+                while let Some(&at) = starts.get(next)
+                    && arms.get(&at).is_some_and(|arm| arm.opening)
+                    && !spans.iter().any(|&(lo, _)| lo == at)
+                    && !after_if(c)
                 {
                     next += 1;
                 }
@@ -695,7 +736,28 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         }
         // The constructors a class's struct's comments are before.
         let mut documented = std::collections::HashSet::new();
-        for (at, own) in starts_and_end {
+        for (at, mut own) in starts_and_end {
+            // An `if`'s test's, those written after its `if`, after its `if
+            // (`; the rest its statement's.
+            if let Some(&Arm {
+                hi,
+                operator,
+                opening: true,
+                ..
+            }) = arms.get(&at)
+            {
+                let (inside, before): (Vec<_>, Vec<_>) = own.into_iter().partition(|c| after_if(c));
+                if !inside.is_empty() {
+                    let texts = inside
+                        .iter()
+                        .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                    arm_comments.push((at, hi, operator, texts.collect()));
+                }
+                own = before;
+                if !spans.iter().any(|&(lo, _)| lo == at) {
+                    continue;
+                }
+            }
             // A branch's, its text as written, each a line of its own.
             if let Some(&Arm { hi, operator, .. }) = arms.get(&at)
                 && !spans.iter().any(|&(lo, _)| lo == at)
@@ -923,10 +985,28 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
                     hi: s.hi,
                     operator,
                     operand,
+                    opening: false,
                 };
                 (s.lo, arm)
             });
             starts.extend(arms);
+        });
+        // An `if`'s test, after its `if (`, which a comment between `if`
+        // and its first operand is before (`opening`).
+        js::each_block_mut(&mut stmts, &mut |block| {
+            for stmt in block.iter() {
+                if let StmtKind::If(test, ..) = &stmt.kind
+                    && let Some((lo, hi)) = written_extent(test)
+                {
+                    let arm = Arm {
+                        hi,
+                        operator: "if (",
+                        operand: false,
+                        opening: true,
+                    };
+                    starts.entry(lo).or_insert(arm);
+                }
+            }
         });
     };
     for item in &module.items {
@@ -940,13 +1020,29 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
     starts
 }
 
+/// Where the Rust of `e` is, from the first of its parts placed to the end
+/// of the last: an `||` tidy made of guards is placed nowhere, its
+/// operands where they're written.
+fn written_extent(e: &js::Expr) -> Option<(u32, u32)> {
+    let mut extent: Option<(u32, u32)> = None;
+    e.clone().each_mut(&mut |part| {
+        if !part.span.is_none() {
+            let (lo, hi) = extent.unwrap_or((part.span.lo, part.span.hi));
+            extent = Some((lo.min(part.span.lo), hi.max(part.span.hi)));
+        }
+    });
+    extent
+}
+
 /// A start `arm_starts` found: where it ends, the operator it's after in
-/// the JS, and whether it's a binary's operand.
+/// the JS, whether it's a binary's operand, and whether it's an `if`'s
+/// test, whose comments are only those written after its `if`.
 #[derive(Clone, Copy)]
 struct Arm {
     hi: u32,
     operator: &'static str,
     operand: bool,
+    opening: bool,
 }
 
 /// Where each call's and `new`'s argument starts, and each object literal's

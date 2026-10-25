@@ -675,6 +675,59 @@ test("an if a decision tree makes is where its first if is", async () => {
   expect([lib.found("abc" as never, "ab" as never), lib.found("a" as never, "abcd" as never), lib.found("ab" as never, "a" as never), lib.found(undefined as never, "a" as never)]).toEqual([1, 0, 1, 0]);
 });
 
+// React's ReactTaint: `// $FlowFixMe[invalid-compare]` before `if (lifetime
+// === null || ..)`, and inside it, after `if (`, before its first operand.
+// The `||` of an `if` whose arm ends, `guarded`'s, was placed where MIR's
+// labeled block is, nowhere, so a comment before it was before the next
+// `if`, and one inside it lost. It's where its first guard is, and an
+// `if`'s test is a start after its `if (` for what's written after the
+// `if` (ADR 0444, amended).
+test("a comment before an or's if or inside it before its first operand is there", async () => {
+  const { js, lib } = await compiled("comment-or-guard", `use js::{Kind, Unknown};
+
+pub fn checked(value: Option<&Unknown>) {
+    // before an or
+    if value.is_none() || js::type_of(value) != "object" {
+        panic!("a");
+    }
+    // before a single test
+    if matches!(js::classify(value), Kind::Null) {
+        panic!("b");
+    }
+}
+
+pub fn taint(lifetime: Option<&Unknown>) {
+    if
+    // $FlowFixMe[invalid-compare]
+    matches!(js::classify(lifetime), Kind::Null)
+        || (js::type_of(lifetime) != "object" && js::type_of(lifetime) != "function")
+    {
+        panic!("To taint a value");
+    }
+}
+
+pub fn single(value: Option<&Unknown>) -> bool {
+    if
+    // inside a single test
+    value.is_none()
+    {
+        return true;
+    }
+    false
+}
+`);
+  expect(js).toContain('  // before an or\n  if (value == null || typeof value !== "object") {\n');
+  expect(js).toContain("  // before a single test\n  if (value === null) {\n");
+  expect(js).toContain('  if (\n    // $FlowFixMe[invalid-compare]\n    lifetime === null ||\n    (typeof lifetime !== "object" && typeof lifetime !== "function")\n  ) {\n');
+  expect(js).toContain("  if (\n    // inside a single test\n    value == null\n  ) {\n");
+  expect(() => lib.checked(undefined as never)).toThrow("a");
+  expect(() => lib.checked((() => 1) as never)).toThrow("a");
+  expect(() => lib.checked({} as never)).not.toThrow();
+  expect([lib.single(undefined as never), lib.single(1 as never)]).toEqual([true, false]);
+  expect(() => lib.taint(null as never)).toThrow("To taint a value");
+  expect(() => lib.taint({} as never)).not.toThrow();
+});
+
 // React's startTransition: `*current.types.get_mut() = match prev { // If
 // we're a nested transition .. \n Some(prev) => prev.types.borrow().clone(),
 // None => None }`, which drops what the place held, so MIR writes it where

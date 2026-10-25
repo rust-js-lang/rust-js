@@ -484,4 +484,28 @@ export const mutations: Mutation[] = [
     replace: "    for reexport in module.reexports.iter().take(0) {\n        if !reexport.span.is_none() {\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
+  {
+    name: "if-test-no-start",
+    breaks: "an `if`'s test is no start, so `if\\n // $FlowFixMe\\n a || b {`'s comment is before the `if`, not after its `if (`",
+    file: "src/to_oxc.rs",
+    find: "                    starts.entry(lo).or_insert(arm);\n",
+    replace: "                    let _ = (lo, arm);\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
+  },
+  {
+    name: "if-test-takes-any-comment",
+    breaks: "an `if`'s test takes the comment before the `if` too, `if (\\n // before an or\\n value == null ||`",
+    file: "src/to_oxc.rs",
+    find: "own.into_iter().partition(|c| after_if(c));",
+    replace: "own.into_iter().partition(|_| true);",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
+  },
+  {
+    name: "if-opening-unsplit",
+    breaks: "an `if (` placed with its test isn't found before its first JS, so its test's comment is split after an operator lines above, or lost",
+    file: "src/to_oxc.rs",
+    find: "                let before = if at == line {\n                    written.get(..column as usize + opening)?",
+    replace: "                let before = if at == line {\n                    written.get(..column as usize + opening * 0)?",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
+  },
 ];

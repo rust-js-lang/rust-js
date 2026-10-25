@@ -26,6 +26,9 @@ and one before a binary's right operand is after its operator. Amended
 where its Rust is, and an or-pattern's alternative and a let-chain's `&&
 let` are operands too. Amended (2026-10-25, a third time): an `if` a
 match's tree makes of MIR's labeled block is where its first `if` is.
+Amended (2026-10-25, a fourth time): an `if (a || b)` of guards is where
+its first guard is, and a comment between `if` and its test is after
+its `if (`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.
@@ -358,3 +361,35 @@ braces.
 Held by `test/lowering-comments.test.ts`, "an if a decision tree makes
 is where its first if is", run, its `if`s mapped to their tests; and the
 mutation `decision-chain-at-first-arm` (`mir/tidy/decisions.ts`).
+
+## Amended (2026-10-25): an `||` of guards, and inside an `if (`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's ReactTaint writes `// $FlowFixMe[invalid-compare]` inside `if (`,
+before `lifetime === null ||`; its port, before or inside `if
+matches!(js::classify(lifetime), Kind::Null) || (..) {`. Two were lost:
+
+1. **Before an `if (a || b)` whose branch ends**, a `panic!`'s. MIR's
+   structure makes it a labeled block of guards, `l: { if (a) { break l; }
+   if (b) { break l; } rest } throw`, which `guarded` (`tidy/jumps.rs`)
+   makes `if (a || b) { throw } rest`, placed where the block is: nowhere,
+   as MIR made it. The comment before it was before the next `if`, and
+   that one's own lost. **It's where its first guard is** (`made_where`,
+   the answer the `if`s of `&&` and `||` chains are placed by), its test.
+2. **Between `if` and its test**, which rustfmt leaves where it's written.
+   The `if` is placed at its test, so the comment was before the `if`,
+   or, of an `if` placed nowhere, lost. **An `if`'s test is a start whose
+   comments are those written after the `if`, the keyword, past other
+   comments** (`after_if`, `to_oxc.rs`), written after its `if (` as a
+   binary's right operand's are after its operator, on lines of their own,
+   which the formatter lays out as Prettier does: `if (\n // $FlowFixMe
+   ..\n lifetime === null ||\n (..)\n ) {`, as upstream has it. A comment
+   before the `if` stays the statement's; the test is placed where its
+   first part placed is (`written_extent`), an `||` tidy made being placed
+   nowhere itself.
+
+Held by `test/lowering-comments.test.ts`, "a comment before an or's if or
+inside it before its first operand is there", run; and the mutations
+`guarded-or-at-block` (`mir/tidy/jumps.ts`), `if-test-no-start`,
+`if-test-takes-any-comment` and `if-opening-unsplit` (`to_oxc.ts`).

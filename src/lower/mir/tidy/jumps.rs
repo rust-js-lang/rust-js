@@ -387,7 +387,8 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
             .map(|s| break_test(s, label).expect("a guard"))
             .reduce(|a, b| Expr::bin(Op::Or, a, b))
             .expect("one");
-        let span = stmts[i].span;
+        // Where the block is, or of one MIR made, where its first guard is.
+        let span = made_where(stmts[i].span, body);
         let rest = rest.to_vec();
         let tail = stmts.split_off(i + 1);
         stmts.pop();
