@@ -162,8 +162,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "\"Number\" | \"String\" | \"console\"))",
     replace: "\"Number\" | \"String\"))",
-    tests: ["test/corpus.test.ts", "-t", "^(sales_report|map_eq).rs$"],
-    snapshots: true,
+    tests: ["test/lowering-strings.test.ts", "-t", "reads twice is held first, not given to a function called in place"],
   },
   {
     name: "mir-tidy-pure-call-unread-past",

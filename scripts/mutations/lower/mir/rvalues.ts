@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/rvalues.rs",
     "find": "                fields.len() == 1\n",
     "replace": "                fields.len() == 0\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
+    "tests": ["test/lowering-nullable.test.ts", "-t", "a nullable field is written what's never undefined as it is"]
   },
   {
     "name": "mir-null-none-coalesced",

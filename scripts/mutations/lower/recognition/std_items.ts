@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/std_items.rs",
     find: "\"is_err\" if tcx.trait_of_assoc(id).is_none() => {",
     replace: "\"is_err\" if false => {",
-    tests: ["test/corpus.test.ts", "-t", "^try_lock.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrows.rs$"],
     snapshots: true,
   },
   {

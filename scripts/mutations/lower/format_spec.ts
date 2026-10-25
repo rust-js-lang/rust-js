@@ -180,11 +180,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-of-box-not-what-it-holds",
-    breaks: "a placeholder's options of a `Box` or an `Rc` of a string or a number are dropped, `{:>6}` of `Box::new(String::from(\"ada\"))` unpadded",
+    breaks: "a placeholder's options of what's shown inside, an `impl Display + Debug` a function gives, aren't of its type: `{:?}` of it refused. A `Box`'s or an `Rc`'s, `through_boxes` takes through first (#197)",
     file: "src/lower/format_spec.rs",
     find: "        let ty = self.shown_type(ty);\n        let (value, ty) = match kind {\n",
     replace: "        let (value, ty) = match kind {\n",
-    tests: ["test/corpus.test.ts", "-t", "^display_options_handed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
   {
     name: "display-handed-on-nothing",

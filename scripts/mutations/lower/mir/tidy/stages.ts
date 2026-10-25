@@ -304,8 +304,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "                js::statement_lists(b, &mut |s| innermost_jumps(s))\n            }),\n            pass(\"settle jumps\", |b, _| settle_jumps(b)),\n",
     replace: "                js::statement_lists(b, &mut |s| innermost_jumps(s))\n            }),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|writer_callables).rs$"],
-    snapshots: true,
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they're written"],
   },
   {
     name: "mir-tidy-steps-out-of-order",

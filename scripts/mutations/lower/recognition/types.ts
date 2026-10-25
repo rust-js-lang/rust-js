@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "        if self.is_js_object_itself(ty) {\n            return true;\n        }\n",
     replace: "",
-    tests: ["test/js-builtins.test.ts", "-t", "keyed by what js::Kind holds"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "an unknown JS value is classified, and its properties read by name"],
   },
   {
     name: "js-type-of-struct-unrecognized",

@@ -229,11 +229,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-key-trees-refused",
-    breaks: "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is refused",
+    breaks: "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is an ordered tree of its `cmp`, `$ordMap`, not a `$KeyMap` of its value",
     file: "src/lower/std_types/map.rs",
     find: "            || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))\n",
     replace: "            || (self.is_value_key(ty) && !ordered)\n",
     tests: ["test/corpus.test.ts", "-t", "^value_key_trees.rs$"],
+    snapshots: true,
   },
   {
     name: "value-key-tree-own-ord",
