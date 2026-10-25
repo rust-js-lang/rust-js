@@ -843,7 +843,7 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
         mapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         mapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
-      close: (iterator) => {
+      close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);
       },
@@ -928,7 +928,7 @@ export function mapClone(IClone, FClone) {
 export function mapDebug(IDebug, dropI, dropF) {
   return $traitImpl($mapDebug, [IDebug, dropI, dropF], () => ({
     fmt: (arg0, arg1) => mapDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
-    $drop: (map) => {
+    $drop(map) {
       map.return();
     },
   }));
