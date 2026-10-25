@@ -1025,7 +1025,7 @@ test("rust-js build writes the app's JS alone", async () => {
   const { code } = await finished(rustJs(dir, ["build"]));
   expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, "app/linked.d.ts")), existsSync(join(dir, ".next"))]).toEqual([0, true, true, false]);
   const wrong = await finished(rustJs(dir, ["build", "--watch"]));
-  expect([wrong.code, wrong.output]).toEqual([2, "rust-js: unknown argument --watch\nusage: rust-js build [--package <name>] [--check]\n"]);
+  expect([wrong.code, wrong.output]).toEqual([2, "rust-js: unknown argument --watch\nusage: rust-js build [--package <name>] [--check]\n       rust-js clippy [--package <name>] [-- <lint flags>]\n"]);
 }, 300_000);
 
 // Without a compiler, a teammate's who doesn't write Rust, `next build`
