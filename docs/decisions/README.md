@@ -634,7 +634,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0811 `console.createTask` is a property the host may lack](0811-console-create-task-may-be-absent.md) *(amended: `#[rust_js::types]` is a TypeScript type, read into the declaration model, one it can't read an error)*
 - [0830 What follows a `let Err(x)` of a closure that never returns is its `catch`](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)
-- [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md) *(amended: in a closure's body too)*
+- [0840 A thread-local's `with` is its closure's body, wherever it's called](0840-a-thread-locals-with-is-its-closures-body.md) *(amended: in a closure's body too; amended: a shadow of its parameter is a name of its own)*
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md) *(amended: a nullable function's result, kept in a variable or a `Drop` guard's field, is stored as it is; a trait's method's isn't taken as one)*
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)

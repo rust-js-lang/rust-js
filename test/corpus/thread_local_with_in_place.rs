@@ -2,7 +2,11 @@
 // its parameter the thread-local itself: as a statement, as an `if`'s test
 // and as a value, each run where the call was, before what's after it; one
 // that returns early stays a closure, whose `return` is its own (ADR 0840).
-use std::cell::Cell;
+// A shadow of its parameter, `let held = held.as_ref().unwrap();`, is a
+// name of its own from there on, `const held$1 = $unwrap(held);`, the
+// thread-local never set (ADR 0840, amended).
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 struct Internals {
     calls: Cell<u32>,
@@ -16,6 +20,8 @@ thread_local! {
             flag: Cell::new(None),
         }
     };
+    static HELD: Option<Rc<RefCell<Vec<u32>>>> = Some(Rc::new(RefCell::new(vec![1])));
+    static ITEMS: RefCell<Vec<u32>> = RefCell::new(vec![1, 2, 3]);
 }
 
 fn bump(by: u32) -> u32 {
@@ -59,6 +65,28 @@ fn skipped(skip: bool) {
     println!("after {}", INTERNALS.with(|internals| internals.calls.get()));
 }
 
+fn push_held(value: u32) {
+    HELD.with(|held| {
+        let held = held.as_ref().unwrap();
+        held.borrow_mut().push(value);
+    });
+}
+
+fn counted() -> usize {
+    ITEMS.with_borrow(|items| {
+        let items = items.iter().filter(|&&n| n > 1).count();
+        items + 1
+    })
+}
+
+fn summed() -> u32 {
+    ITEMS.with_borrow(|items| {
+        let mut items = items.iter().sum::<u32>();
+        items += bump(4);
+        items
+    })
+}
+
 fn main() {
     INTERNALS.with(|internals| {
         internals.flag.set(Some(false));
@@ -75,4 +103,9 @@ fn main() {
     println!("{total}");
     skipped(true);
     skipped(false);
+    push_held(2);
+    push_held(3);
+    println!("{:?}", HELD.with(|held| held.as_ref().unwrap().borrow().clone()));
+    println!("{} {}", counted(), summed());
+    println!("{:?}", ITEMS.with_borrow(|items| items.clone()));
 }

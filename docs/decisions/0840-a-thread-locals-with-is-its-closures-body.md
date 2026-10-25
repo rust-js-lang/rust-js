@@ -185,3 +185,49 @@ field of one, reads the same as a variable does, and the linker names its
 import apart from what the body declares. Held by
 `test/lowering-cells.test.ts`, "another module's thread-local's with is
 its closure's body", and the mutation `applied-imported-refused`.
+
+## Amendment: a shadow of its parameter is a name of its own
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: the body runs as
+the closure ran it; the thread-local is never set.
+
+A port reads a thread-local `Option` through a shadow of what `with`
+lends, as Rust is written:
+
+```rust
+HELD.with(|held| {
+    let held = held.as_ref().unwrap().borrow();
+    held.iter().for_each(|queue| ..);
+});
+```
+
+Tidy's `shadows` makes a shadow of a binding that's never read again the
+binding set, `held = $unwrap(held);`, so the closure's parameter was set,
+and the call stayed: `((held) => { held = $unwrap(held); .. })(held);`.
+
+**A parameter the body sets is, from its first set on, a name of its
+own** (`in_place`), as lowering names a shadow apart (ADR 0352): the set a
+`const` of a name given apart from the parameter's own, which lowering
+named apart from the thread-local already, `held$1`, so of its root,
+`held`, then reclaimed (ADR 0357); a `let` where it's set again, and each
+read after it that name. The parameter before it, the set's value too, is
+read as what it's given:
+
+```js
+const held$1 = $unwrap(held);
+held$1.forEach((queue) => { .. });
+```
+
+The call stays where the first set isn't the body's own statement, a
+loop's or a branch's, or is no plain `x = ..`, or where a closure made
+before it reads the parameter, which would see the set. A parameter set
+where it's given its own variable, `((items) => { items = ..; })(items)`,
+had been put in place setting that variable; it's renamed alike.
+
+### What holds it
+
+- Corpus `thread_local_with_in_place` against native Rust: a `with`'s
+  shadow of an `Option`'s `Rc`, a `with_borrow`'s of a count and one set
+  again, `items += bump(4)`, a `let`.
+- Mutations `applied-shadow-kept`, `applied-shadow-set-again-const` and
+  `applied-shadow-not-apart` (`js/applied.ts`).

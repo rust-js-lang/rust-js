@@ -217,6 +217,61 @@ fn in_place(
     if held {
         body.insert(0, StmtKind::Const(param.clone(), arg.clone()).at(stmt.span));
     }
+    // The names beside the body in its place, which what it declares
+    // mustn't be: the function's others, what's beside it in `stmt`, the
+    // variable it's given, and what a held argument reads, `const x$1 =
+    // x();`, not `x`.
+    let names = || {
+        let mut others = whole.to_vec();
+        statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
+        let mut names: HashSet<String> = given.into_iter().cloned().collect();
+        names_in(&others, &mut names);
+        names_in(beside, &mut names);
+        if held {
+            arg.visit_vars(&mut |name| _ = names.insert(name.to_string()));
+        }
+        names
+    };
+    // A parameter the body sets, where a shadow of it was, `let held =
+    // held.as_ref().unwrap();`, which tidy's `shadows` made `held =
+    // $unwrap(held);` (ADR 0352): from that set on, a name of its own, as
+    // lowering names a shadow apart, `const held$1 = $unwrap(held);`, the
+    // parameter before it read as what it's given (ADR 0840, amended). Of
+    // a first set the body's own statement, which no closure made before
+    // it could see, else the call stays.
+    if sets(&body, param) {
+        let first = body.iter().position(|s| sets(std::slice::from_ref(s), param))?;
+        let StmtKind::Assign(target, value) = &body[first].kind else {
+            return None;
+        };
+        let mut seen_before = false;
+        each_expr(&body[..first], &mut |e| match &e.kind {
+            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => seen_before |= mentions_in(inner, param) > 0,
+            ExprKind::Function(function) => seen_before |= mentions_in(&function.body, param) > 0,
+            _ => {}
+        });
+        if !matches!(&target.kind, ExprKind::Var(v) if v == param) || seen_before {
+            return None;
+        }
+        let value = value.clone();
+        let mut mentioned = names();
+        names_in(&body, &mut mentioned);
+        // Apart from what the parameter was given apart from, `held` of
+        // `held$1`, as lowering names each (ADR 0352).
+        let root = crate::names::apart(param).map_or(param.as_str(), |(root, _)| root);
+        let to = (1..)
+            .map(|k| crate::names::given_apart(root, k))
+            .find(|to| !mentioned.contains(to))
+            .expect("a name nothing mentions");
+        let mut after = body.split_off(first + 1);
+        renamed(&mut after, param, &to);
+        let again = sets(&after, &to);
+        body[first].kind = match again {
+            true => StmtKind::Let(to, Some(value)),
+            false => StmtKind::Const(to, value),
+        };
+        body.extend(after);
+    }
     // What the body declares at its top is declared beside `stmt`: one that
     // is another name of the function, or the variable it's given, is
     // named apart from them, `borrow$1`, as lowering names a body's own
@@ -233,15 +288,7 @@ fn in_place(
         }
     }
     if !declared.is_empty() {
-        let mut others = whole.to_vec();
-        statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names: HashSet<String> = given.into_iter().cloned().collect();
-        names_in(&others, &mut names);
-        names_in(beside, &mut names);
-        // And what the held argument reads: `const x$1 = x();`, not `x`.
-        if held {
-            arg.visit_vars(&mut |name| _ = names.insert(name.to_string()));
-        }
+        let names = names();
         let mut mentioned = names.clone();
         names_in(&body, &mut mentioned);
         for from in declared.into_iter().filter(|name| names.contains(name)) {
@@ -253,22 +300,33 @@ fn in_place(
             mentioned.insert(to);
         }
     }
-    if !held && !matches!(&arg.kind, ExprKind::Var(v) if v == param) {
-        // Read as what it's given: a parameter never set, of a body with no
-        // closure of its own, whose names could shadow it.
-        let mut set = false;
-        each_block_mut(&mut body, &mut |stmts| {
-            set |= stmts.iter().any(|s| {
-                matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _)
-                if matches!(&t.kind, ExprKind::Var(v) if v == param))
-            });
-        });
-        let whole_body = substituted(&mut body, &|v| (v == param).then(|| arg.clone()));
-        if set || !whole_body {
-            return None;
-        }
+    // Read as what it's given: a parameter never set, now, of a body with
+    // no closure of its own whose names could shadow it.
+    if !held
+        && !matches!(&arg.kind, ExprKind::Var(v) if v == param)
+        && !substituted(&mut body, &|v| (v == param).then(|| arg.clone()))
+    {
+        return None;
     }
     Some(body)
+}
+
+/// Whether `stmts` set `name`, `name = ..` or `name += ..`, in any block,
+/// a closure's too.
+fn sets(stmts: &[Stmt], name: &str) -> bool {
+    let mut set = false;
+    each_list(stmts, &mut |list| {
+        set |= list.iter().any(|s| {
+            matches!(&s.kind, StmtKind::Assign(t, _) | StmtKind::Compound(_, t, _)
+                if matches!(&t.kind, ExprKind::Var(v) if v == name))
+        });
+    });
+    each_expr(stmts, &mut |e| match &e.kind {
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => set |= sets(body, name),
+        ExprKind::Function(function) => set |= sets(&function.body, name),
+        _ => {}
+    });
+    set
 }
 
 /// What a `try` holds, `tried`, a block of its own, with a closure of
