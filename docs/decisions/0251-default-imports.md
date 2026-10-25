@@ -44,3 +44,14 @@ import Label from "./label.jsx";
 - **It's tested**: a declarations test imports a module's memo'd default
   under another name and renders it; mutations export it by name too,
   import it by name, name it as its item is, and print it braced.
+
+## Amendment: the default export isn't also kept out of `called_from_elsewhere` (#230)
+
+`pipeline.rs` removed each module's own default from
+`called_from_elsewhere`, so that it wouldn't also be exported by name.
+The printer already declares the default once (`to_oxc::defaulted`), and
+the references loop leaves it alone, so the output was identical without
+it. A module's function default-exported and called from another
+module printed `export default shown;` and `import shown from
+"./label.js"` either way. Its mutation, `default-exported-by-name-too`,
+survived every test. The `retain` and the mutation are gone.

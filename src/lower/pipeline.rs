@@ -121,7 +121,6 @@ pub fn lower_crate<'tcx>(
     let defaulted: HashSet<DefId> = (modules.iter())
         .filter_map(|&module| super::default_exports::own_default(tcx, module))
         .collect();
-    called_from_elsewhere.retain(|id| !defaulted.contains(id));
     // A library exports what its consumers can reach (ADR 0100).
     if export_library {
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));

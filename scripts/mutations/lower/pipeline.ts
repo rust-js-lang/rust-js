@@ -179,14 +179,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
-    name: "default-exported-by-name-too",
-    breaks: "a module's default export another imports is exported by its name too, `export const Memoized`",
-    file: "src/lower/pipeline.rs",
-    find: "    called_from_elsewhere.retain(|id| !defaulted.contains(id));\n",
-    replace: "\n",
-    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
-  },
-  {
     name: "default-imported-by-name",
     breaks: "a module's default export is imported by its name, `import { Memoized as Label }`",
     file: "src/lower/pipeline.rs",
