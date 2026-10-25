@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "    explicit_adapters.extend(\n        cloned\n",
     replace: "    drop(\n        cloned\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
     name: "fn-given-always-quiet",
