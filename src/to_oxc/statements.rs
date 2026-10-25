@@ -425,12 +425,14 @@ impl<'a> Cx<'a> {
             StmtKind::Expr(e) => Statement::new_expression_statement(sp, self.expr(e), b),
             StmtKind::If(cond, then, els) => {
                 let els = els.as_deref().map(|els| match els {
-                    // A lone `if` in the `else` prints as `else if`.
+                    // A lone `if` in the `else` prints as `else if`; not one
+                    // comments are before, `else { // Nothing has been
+                    // pinged.\n if (..) }`, as it's written (ADR 0444, amended).
                     [
                         only @ js::Stmt {
                             kind: StmtKind::If(..), ..
                         },
-                    ] => self.stmt(only),
+                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) => self.stmt(only),
                     _ => self.block(els),
                 });
                 Statement::new_if_statement(sp, self.expr(cond), self.block(then), els, b)

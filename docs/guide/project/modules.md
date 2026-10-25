@@ -723,7 +723,11 @@ comment lines before a `match` arm is one, the arm's; a comment before a
 the closure `catch_unwind` calls is in the `try`; one before a binary's
 right operand, an or-pattern's alternative, `// c\n | Kind::Object(_)`,
 or a let-chain's `&& let`, is before the operand the JS has of it, after
-its operator; and a comment before what the JS reads away, an arm of
+its operator, a parenthesized one too; one an `else`'s block starts with
+before its only `if` keeps the block, `} else {\n // c\n if (..)`, and
+one written before an `else if`'s `else` is there, `}\n// c\nelse if
+(..)`; one before a call's argument is before it, a `const` too; and a
+comment before what the JS reads away, an arm of
 `prev?.types`, is before the statement it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
 amended). A file's
 leading comments, a license's, are its JS's first

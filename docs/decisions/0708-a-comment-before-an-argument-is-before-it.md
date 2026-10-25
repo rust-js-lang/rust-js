@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md)
 and [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md),
 whose starts a comment is before were a statement's and a conditional's
-branch's.
+branch's. Amended below: a `const` argument is placed where it's written.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -92,3 +92,14 @@ Object.defineProperty(
   field is before it": the port's `define_property`, its comments before
   `"name"` and one before a field.
 - Mutations `argument-comment-unplaced`, `field-comment-unplaced`.
+
+## Amendment: a `const` argument is placed where it's written
+
+ReactFiberLane's `markSpawnedDeferredLane(root, spawnedLane, // This
+render .. NoLanes)`: the argument is a `const` read by its name, which
+`named_const` gave no place, so it was no start, and the comment was
+before the call, the call on one line. **A `const` read by its name is
+placed where it's written**, a start as any argument is: the comment is
+before it, on lines of their own. Held by `lowering-comments`'s
+"ReactFiberLane's comments in an else, an if's test and a call are where
+it writes them" and the mutation `named-const-unplaced` (`lower.ts`).

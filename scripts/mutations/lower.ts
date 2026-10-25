@@ -362,4 +362,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(constant) = std_types::number::math::constant(self.tcx, def_id).filter(|_| false) {\n",
     tests: ["test/lowering-math.test.ts", "-t", "a std function that isn't Math's for every value is the arrow of its call"],
   },
+  {
+    name: "named-const-unplaced",
+    breaks: "a `const` read by its name is placed nowhere, so a comment before it as a call's argument, `// This render ..` before `NO_LANES`, is above the call, which is one line",
+    file: "src/lower.rs",
+    find: "            let place = place.or_at(self.js_span(span));\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+  },
 ];

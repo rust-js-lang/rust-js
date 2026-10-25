@@ -393,3 +393,40 @@ Held by `test/lowering-comments.test.ts`, "a comment before an or's if or
 inside it before its first operand is there", run; and the mutations
 `guarded-or-at-block` (`mir/tidy/jumps.ts`), `if-test-no-start`,
 `if-test-takes-any-comment` and `if-opening-unsplit` (`to_oxc.ts`).
+
+## Amended (2026-10-26): in an `else`'s block, before an `else if`, past an operand
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's ReactFiberLane, and react.dev's llms.txt, lost three comments:
+
+1. **One an `else`'s block starts with, before its only `if`**, `} else {
+   // Nothing has been pinged. ..\n if (!rootHasPendingCommit) {`. A lone
+   `if` in an `else` printed as `else if`, where oxc writes no comment
+   before it. **Where a comment of the Rust is before it, the `else`
+   keeps its block, as it's written** (`Cx::commented`, the starts the
+   comments are attached to, a blank line's not among them).
+2. **One written before an `else if`'s `else`**, react.dev's `}\n// Single
+   page without children - group under its own heading\nelse if (..)`.
+   It was lost, and by (1) would be in a block. **It's before the `else`,
+   after the `}`, on lines of their own, the `else if` one still**, as
+   Prettier keeps it and upstream has it: a branch's split (ADR 0658) after
+   the `}` (`else_if_starts`).
+3. **One before a parenthesized right operand**, `a >= b\n// Default
+   priority ..\n|| (c && d)`, whose `&&` tidy made of branches is placed
+   nowhere: no start, so the comment was lost. **Its start is where its
+   parts are** (`written_extent`), as an `if`'s test's is.
+4. **One after `if`, before a test MIR places at the keyword**, `if\n// Is
+   this one of the newly entangled lanes?\n(lane & a) | (e[i] & a) != 0`:
+   the rules a comment skips a start by, a call's part it's outside of,
+   an operand with code between, an `if`'s test it isn't after, were each
+   asked once, in turn, so one past an operand was then taken by a call's
+   part, `$index(\n // ..\n entanglements, index)`. **Each start is asked
+   every rule again**, so the comment is after `if (`, and the one between
+   the operands before its operand, as upstream has them.
+
+Held by `test/lowering-comments.test.ts`, "ReactFiberLane's comments in an
+else, an if's test and a call are where it writes them", run;
+`test/lowering-loops.test.ts`'s else-if tests; and the mutations
+`commented-else-if` (`to_oxc/statements.ts`), `else-if-comment-in-block`,
+`unplaced-operand-no-start` and `start-rules-asked-once` (`to_oxc.ts`).

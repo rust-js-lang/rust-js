@@ -1110,3 +1110,88 @@ pub fn flags() -> u32 {
   expect(mapped("given | ConcurrentMode")).toEqual(place(rust, "given | CONCURRENT_MODE"));
   expect(mapped("0b0000001")).toEqual(place(rust, "0b0000001"));
 });
+
+// React's ReactFiberLane, its comments as upstream has them: one an `else`'s
+// block starts with before its only `if`, `// Nothing has been pinged.`,
+// keeps the block; one between an `||`'s operands before a parenthesized
+// one; one before a call's argument that's a `const`, `NO_LANES`; and one
+// after an `if` before a test MIR places at the keyword, `(lane & a) | ..
+// != 0`, with one between its operands (ADR 0444, 0708, 0883, amended).
+test("ReactFiberLane's comments in an else, an if's test and a call are where it writes them", async () => {
+  const { js, lib } = await compiled("comments-of-lanes", `pub const NO_LANES: i32 = 0;
+
+pub fn next(pinged: i32, pending: i32, has_commit: bool, warm: i32) -> i32 {
+    let mut next_lanes = NO_LANES;
+    if pinged != NO_LANES {
+        next_lanes = pinged & 3;
+    } else {
+        // Nothing has been pinged. Check for lanes that need to be prewarmed.
+        if !has_commit {
+            let lanes_to_prewarm = pending & !warm;
+            if lanes_to_prewarm != NO_LANES {
+                next_lanes = lanes_to_prewarm & 5;
+            }
+        }
+    }
+    next_lanes
+}
+
+pub fn keep(next_lane: i32, wip_lane: i32) -> i32 {
+    if
+    // Tests whether the next lane is equal or lower priority than the wip
+    // one. This works because the bits decrease in priority as you go left.
+    next_lane >= wip_lane
+        // Default priority updates should not interrupt transition updates.
+        || (next_lane == 32 && (wip_lane & 256) != NO_LANES)
+    {
+        // Keep working on the existing in-progress tree. Do not interrupt.
+        return wip_lane;
+    }
+    next_lane
+}
+
+fn mark_spawned_deferred_lane(lanes: &mut Vec<i32>, spawned_lane: i32, entangled_lanes: i32) {
+    lanes.push(spawned_lane | entangled_lanes);
+}
+
+pub fn finish(lanes: &mut Vec<i32>, spawned_lane: i32) {
+    if spawned_lane != 0 {
+        mark_spawned_deferred_lane(
+            lanes,
+            spawned_lane,
+            // This render finished successfully without suspending, so we don't need
+            // to entangle the spawned task with the parent task.
+            NO_LANES,
+        );
+    }
+}
+
+pub fn entangled(lane: i32, entangled_lanes: i32, entanglements: &[i32], index: usize) -> bool {
+    if
+    // Is this one of the newly entangled lanes?
+    (lane & entangled_lanes)
+        // Is this lane transitively entangled with the newly entangled lanes?
+        | (entanglements[index] & entangled_lanes)
+        != 0
+    {
+        return true;
+    }
+    false
+}
+`);
+  expect(js).toContain(
+    "  } else {\n    // Nothing has been pinged. Check for lanes that need to be prewarmed.\n    if (!hasCommit) {\n",
+  );
+  expect(js).toContain(
+    "    nextLane >= wipLane ||\n    // Default priority updates should not interrupt transition updates.\n    (nextLane === 32 && (wipLane & 256) !== NO_LANES)\n",
+  );
+  expect(js).toContain(
+    "      spawnedLane,\n      // This render finished successfully without suspending, so we don't need\n      // to entangle the spawned task with the parent task.\n      NO_LANES,\n    );\n",
+  );
+  expect(js).toContain(
+    "  if (\n    // Is this one of the newly entangled lanes?\n    ((lane & entangledLanes) |\n      // Is this lane transitively entangled with the newly entangled lanes?\n      ($index(entanglements, index) & entangledLanes)) !==\n    0\n  ) {\n",
+  );
+  const lanes: number[] = [];
+  lib.finish(lanes as never, 4 as never);
+  expect([lib.next(0 as never, 7 as never, false as never, 2 as never), lib.keep(1 as never, 2 as never), lib.keep(32 as never, 256 as never), lanes, lib.entangled(1 as never, 1 as never, [0] as never, 0 as never), lib.entangled(2 as never, 1 as never, [0] as never, 0 as never)]).toEqual([5, 1, 256, [4], true, false]);
+});

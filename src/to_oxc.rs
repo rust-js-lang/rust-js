@@ -101,6 +101,11 @@ pub fn emit(
         across_lines: Default::default(),
         interpolations: Default::default(),
         commented_branches: arms.iter().map(|&(lo, ..)| lo).collect(),
+        // Where a comment of the Rust, not a blank line's, is before what starts there.
+        commented: (comments.iter())
+            .filter(|c| c.span.end > c.span.start)
+            .map(|c| c.attached_to)
+            .collect(),
     };
     let b = &cx.b;
 
@@ -385,6 +390,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // A conditional's branch is a start too, its value's, that a comment
     // before it in Rust is before (ADR 0658).
     let arms = arm_starts(module);
+    // Where each `if` that's an `else`'s only statement starts, and ends.
+    let else_ifs = else_if_starts(module);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
@@ -519,31 +526,25 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 {
                     next += 1;
                 }
-                // Not a part of what starts after it, a call the comment
-                // is before, not inside: `// c\n f(x);`'s is the statement's.
-                while let Some(at) = starts.get(next)
-                    && parts.get(at).is_some_and(|&(whole, _)| whole > c.lo)
-                    && !spans.iter().any(|&(lo, _)| lo == *at)
-                {
-                    next += 1;
-                }
-                // A binary's right operand's only where only its operator is
-                // between, as rustfmt writes it first, `// c\n + &(x)`: not
-                // a match arm's, `None => given` of one read as `n ?? given`
-                // (ADR 0444, amended).
+                // Past each start it's none of, each rule asked again of the
+                // next, so one past an operand isn't then a call's part it's
+                // outside of (ADR 0708, amended).
                 while let Some(&at) = starts.get(next)
-                    && arms.get(&at).is_some_and(|arm| arm.operand)
                     && !spans.iter().any(|&(lo, _)| lo == at)
-                    && !only_operators(c.hi, at)
-                {
-                    next += 1;
-                }
-                // An `if`'s test's only where it's written after the `if`,
-                // `if\n // c\n a || b {`.
-                while let Some(&at) = starts.get(next)
-                    && arms.get(&at).is_some_and(|arm| arm.opening)
-                    && !spans.iter().any(|&(lo, _)| lo == at)
-                    && !after_if(c)
+                    && (
+                        // Not a part of what starts after it, a call the
+                        // comment is before, not inside: `// c\n f(x);`'s is
+                        // the statement's.
+                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)
+                        // A binary's right operand's only where only its
+                        // operator is between, as rustfmt writes it first,
+                        // `// c\n + &(x)`: not a match arm's, `None => given`
+                        // of one read as `n ?? given` (ADR 0444, amended).
+                        || arms.get(&at).is_some_and(|arm| arm.operand) && !only_operators(c.hi, at)
+                        // An `if`'s test's only where it's written after the
+                        // `if`, `if\n // c\n a || b {`.
+                        || arms.get(&at).is_some_and(|arm| arm.opening) && !after_if(c)
+                    )
                 {
                     next += 1;
                 }
@@ -691,6 +692,25 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 if !spans.iter().any(|&(lo, _)| lo == at) {
                     continue;
                 }
+            }
+            // An `else if`'s, written before its `else`, `}\n// c\nelse if`:
+            // before the `else`, after the `}`, on lines of their own, as
+            // Prettier keeps them, the `else if` one still; those written in
+            // an `else`'s block before its only `if` keep the block, where
+            // they are (`Cx::commented`, ADR 0444, amended).
+            if let Some(&hi) = else_ifs.get(&at)
+                && let Some(last) = own.last()
+                && let Some(rest) = sources.text[last.hi as usize..at as usize]
+                    .trim_start()
+                    .strip_prefix("else")
+                && rest.starts_with(char::is_whitespace)
+                && !rest.contains(['{', '}', ';'])
+            {
+                let texts = own
+                    .iter()
+                    .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                arm_comments.push((at, hi, "}", texts.collect()));
+                continue;
             }
             // A branch's, its text as written, each a line of its own.
             if let Some(&Arm { hi, operator, .. }) = arms.get(&at)
@@ -917,8 +937,14 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
                     .into_iter()
                     .collect(),
                 ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| (piece.span, "+", false)).collect(),
+                // One placed nowhere, an `&&` tidy made of branches, `|| (a
+                // && b)`'s, from where its parts are (ADR 0444, amended).
                 ExprKind::Binary(op, _, r) => {
-                    vec![(r.span, expressions::operator(*op), true)]
+                    let span = match r.span.is_none() {
+                        true => written_extent(r).map_or(js::Span::NONE, |(lo, hi)| js::Span { lo, hi }),
+                        false => r.span,
+                    };
+                    vec![(span, expressions::operator(*op), true)]
                 }
                 _ => Vec::new(),
             };
@@ -947,6 +973,35 @@ fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm> {
                         opening: true,
                     };
                     starts.entry(lo).or_insert(arm);
+                }
+            }
+        });
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Statements(stmts) => of(stmts.clone()),
+            js::Item::Function(f) => of(f.body.clone()),
+            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
+        }
+    }
+    starts
+}
+
+/// Where each `if` that's an `else`'s only statement starts, by where it
+/// ends: what's printed `else if` where no comment is before it in the
+/// block (ADR 0444, amended).
+fn else_if_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
+    let mut starts = std::collections::HashMap::new();
+    let mut of = |mut stmts: Vec<js::Stmt>| {
+        js::each_block_mut(&mut stmts, &mut |block| {
+            for stmt in block.iter() {
+                if let StmtKind::If(_, _, Some(els)) = &stmt.kind
+                    && let [only] = els.as_slice()
+                    && matches!(only.kind, StmtKind::If(..))
+                    && !only.span.is_none()
+                {
+                    starts.insert(only.span.lo, only.span.hi);
                 }
             }
         });
@@ -1296,6 +1351,10 @@ struct Cx<'a> {
     /// Where a conditional's branch its comments are before starts (ADR
     /// 0658), whose first JS is placed there (`Cx::branch`).
     commented_branches: std::collections::HashSet<u32>,
+    /// Where a statement that comments are before starts: an `if` that's an
+    /// `else`'s only statement is in its block, not an `else if`, so they're
+    /// there (ADR 0444, amended).
+    commented: std::collections::HashSet<u32>,
 }
 
 /// Of each object of `program`, in the order a visit meets them, as its

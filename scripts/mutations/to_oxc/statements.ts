@@ -234,4 +234,12 @@ export const mutations: Mutation[] = [
     replace: "            && namespace == \"\"\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
+  {
+    name: "commented-else-if",
+    breaks: "an `else`'s block that starts with a comment before its only `if`, `// Nothing has been pinged.`, is an `else if`, and the comment lost",
+    file: "src/to_oxc/statements.rs",
+    find: "                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) => self.stmt(only),\n",
+    replace: "                    ] => self.stmt(only),\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+  },
 ];

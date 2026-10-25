@@ -966,7 +966,8 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("    } else if (route.title != null && route.path != null) {\n");
+  // Its comment before the `else`, as upstream has it (ADR 0444, amended).
+  expect(js).toContain("      }\n    }\n    // Single page without children\n    else if (route.title != null && route.path != null) {\n");
   // Nor a \`continue\` where the body ends anyway.
   expect(js).not.toMatch(/\n      continue;\n    } else if/);
   const lib = await import(join(dir, "mir.js"));
@@ -1069,7 +1070,7 @@ pub fn extractGroupedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<SubGroup
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("        groups.push({\n          heading: route.title,\n          pages,\n        });\n      }\n    } else if (route.title != null && route.path != null) {\n");
+  expect(js).toContain("        groups.push({\n          heading: route.title,\n          pages,\n        });\n      }\n    }\n    // Single page without children - group under its own heading\n    else if (route.title != null && route.path != null) {\n");
   expect(js).not.toContain("\n    if (route.title != null && route.path != null) {");
   const lib = await import(join(dir, "mir.js"));
   const routes = [
