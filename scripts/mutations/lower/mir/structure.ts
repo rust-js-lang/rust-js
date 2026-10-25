@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "settle-before-branches-skipped",
+    breaks: "a value read in place before a `match` whose one arm drops is assigned in that arm alone, and the others compare `undefined`: `*e > match .. { .. }` (#274)",
+    file: "src/lower/mir/structure.rs",
+    find: "        self.settle_before_branches(state, block, &mut out);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "read_past_dropping_arm"],
+  },
+  {
     name: "or-pattern-declared-order",
     breaks: "an or-pattern's variants are tested in the order the enum declares them, not the program's, `Uninitialized || Pending` of `Pending | Uninitialized` (ADR 0780)",
     file: "src/lower/mir/structure.rs",

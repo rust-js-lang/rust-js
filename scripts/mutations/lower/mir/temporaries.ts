@@ -203,8 +203,8 @@ export const mutations: Mutation[] = [
     name: "settled-read-done-with",
     breaks: "a value read in a branch that's done with is read again before a drop after it, where what it reads isn't, and JS throws: the playground's `rootFile.slice(0, -3);` before its borrow's release",
     file: "src/lower/mir/temporaries.rs",
-    find: "                    .any(|b| read_from(state.body, b, l))\n",
-    replace: "                    .any(|_| true)\n",
+    find: "                    (state.body.basic_blocks[block].terminator().successors()).any(|b| read_from(state.body, b, l))\n",
+    replace: "                    (state.body.basic_blocks[block].terminator().successors()).any(|_| true)\n",
     tests: ["test/snapshots.test.ts", "-t", "playground: the generated JS is its snapshot"],
   },
   {

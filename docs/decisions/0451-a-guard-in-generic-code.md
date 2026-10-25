@@ -81,3 +81,20 @@ only those `read_from` the drop's successors, before they're assigned
 again. The `kept_read_past_branch` corpus case reads one in a loop's
 branch, drops a value each pass and one after the loop, against native
 Rust.
+
+## Amendment: read before the branches, not in the one that drops
+
+A value kept to be read in place lives in one map for the whole body, so
+settling it before a drop in one branch removed it for the branches
+lowered after. Past where they met, those read a variable only the
+dropping branch set: `*e > match k { 0 => 1, 115..=967 => D(..).0, _ => 0 }`
+compared `undefined` in every arm but the one that drops `D`, and a
+`filter` kept nothing (#274, fuzz seed 50786). Following ADR 0262's
+"results change" case, Rust's answer is kept: before a block branches,
+each such value that a drop it dominates would settle is read there,
+where every branch has it. The drop's own settling still serves a drop
+with no branch before it. The `read_past_dropping_arm` corpus case
+compares a reference's value past a `match` with a dropping arm, in a
+function and a `filter`, against native Rust. A mutation of the new
+settling is caught. A narrower form, only drops before the branches
+meet, changed no output in the corpus, so the rule doesn't have it.

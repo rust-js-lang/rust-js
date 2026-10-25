@@ -35,6 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]);
         }
         let mut out = self.mir_statements(state, block)?;
+        self.settle_before_branches(state, block, &mut out);
         out.extend(self.mir_within(state, block, &merges)?);
         Ok(out)
     }

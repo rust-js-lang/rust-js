@@ -118,6 +118,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0451). Not one read only before it, as a branch's that's done
     /// with, whose reference isn't there.
     pub(super) fn settle_reads(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, out: &mut Vec<Stmt>) {
+        self.settle(state, &[block], out);
+    }
+
+    /// Before `block` branches, each value kept to be read in place that a
+    /// drop after it would settle: read here, where every branch has it,
+    /// not in the one branch that drops, past which the others would read
+    /// a variable that branch alone set (#274).
+    pub(super) fn settle_before_branches(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        out: &mut Vec<Stmt>,
+    ) {
+        let graph = state.facts.graph();
+        if state.in_place.is_empty() || graph.succ[block.as_usize()].len() < 2 {
+            return;
+        }
+        let drops: Vec<BasicBlock> = (graph.rpo.iter().copied())
+            .filter(|&d| d != block && graph.dominates(block, d))
+            .filter(|&d| {
+                matches!(
+                    state.body.basic_blocks[d].terminator().kind,
+                    TerminatorKind::Drop { .. }
+                )
+            })
+            .collect();
+        self.settle(state, &drops, out);
+    }
+
+    /// Each value kept to be read in place that reads through a shared
+    /// reference and is read past one of `drops`: assigned here.
+    fn settle(&mut self, state: &mut State<'_, 'tcx>, drops: &[BasicBlock], out: &mut Vec<Stmt>) {
+        if drops.is_empty() {
+            return;
+        }
         let references: HashSet<&str> = (state.body.local_decls.iter_enumerated())
             .filter(|(_, decl)| decl.ty.is_ref())
             .map(|(local, _)| state.locals.names[local].as_str())
@@ -139,10 +174,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|(_, e)| reads_reference(e))
             .map(|(&l, _)| l)
             .filter(|&l| {
-                state.body.basic_blocks[block]
-                    .terminator()
-                    .successors()
-                    .any(|b| read_from(state.body, b, l))
+                (drops.iter()).any(|&block| {
+                    (state.body.basic_blocks[block].terminator().successors()).any(|b| read_from(state.body, b, l))
+                })
             })
             .collect();
         settled.sort();
