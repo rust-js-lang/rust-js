@@ -30,10 +30,10 @@ function name(tag, ty, flags, log) {
       if (on(log, "view", viewTransitions)) {
         return "ViewTransition";
       }
+    // The display name for these tags come from the user-provided type:
     // Fallthrough
     case INCOMPLETE_CLASS:
     case INCOMPLETE_FUNCTION:
-      // The display name for these tags come from the user-provided type:
       if (on(log, "legacy", legacyOff)) {
         break;
       }

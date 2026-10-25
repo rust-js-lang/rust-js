@@ -19,6 +19,7 @@
 //! each node from `program.source_text` and the node's span. We hand it the
 //! *Rust* file as `source_text`, and spans that are byte offsets into it.
 
+mod cases;
 mod expressions;
 mod loads;
 mod statements;
@@ -26,6 +27,8 @@ mod trailing;
 
 use self::trailing::{Inside, Trailing, own_line_before_value, with_inside_comments};
 
+pub(crate) use self::cases::fallen_to;
+use self::cases::{FALLTHROUGH, fallthrough_starts};
 pub(crate) use self::expressions::*;
 pub(crate) use self::loads::loaded_modules;
 
@@ -394,6 +397,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let arms = arm_starts(module);
     // Where each `if` that's an `else`'s only statement starts, and ends.
     let else_ifs = else_if_starts(module);
+    // And each `switch`'s case, which a comment before its arm is before.
+    let case_starts = cases::case_starts(module);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
@@ -402,6 +407,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let mut statement_starts = starts.clone();
     statement_starts.sort_unstable();
     starts.extend(parts.keys().copied());
+    starts.extend(case_starts.iter().copied());
     starts.sort_unstable();
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
@@ -548,6 +554,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let mut next = starts.partition_point(|&s| s < c.hi);
                 while let [at, after, ..] = starts[next.min(starts.len())..]
                     && only_comments(c.hi, at)
+                    && case_starts.binary_search(&at).is_err()
                     && let Some(pattern) = sources.text.get(at as usize..after as usize)
                     && pattern.trim_end().ends_with("=>")
                     && !pattern.contains([';', '{', '}', '\n'])
@@ -837,7 +844,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 }
                 _ => {}
             }
-            let attached_to = classes.get(&at).copied().unwrap_or_else(|| printed_first(at));
+            let case = case_starts.binary_search(&at).is_ok().then_some(at);
+            let attached_to = (classes.get(&at).copied())
+                .or(case)
+                .unwrap_or_else(|| printed_first(at));
             if let Some(first) = own.first() {
                 let top = tops.entry(attached_to).or_insert(first.lo);
                 *top = (*top).min(first.lo);
@@ -1237,35 +1247,6 @@ fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
             js::Item::Const(c) => vec![vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]],
         })
         .collect()
-}
-
-/// What a case that falls through to the next says, before it, as React
-/// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).
-const FALLTHROUGH: &str = "// Fallthrough";
-
-/// Where each case a case falls through to starts, of `module`'s
-/// `switch`es: its first value's, which the case is printed at
-/// (`fallen_to`), its comment `FALLTHROUGH` before it.
-fn fallthrough_starts(module: &Module) -> Vec<u32> {
-    let mut starts = Vec::new();
-    for mut body in bodies(module) {
-        js::each_block_mut(&mut body, &mut |stmts| {
-            for stmt in stmts.iter() {
-                if let StmtKind::Switch { cases, .. } = &stmt.kind {
-                    starts.extend((0..cases.len()).filter_map(|k| fallen_to(cases, k)));
-                }
-            }
-        });
-    }
-    starts
-}
-
-/// Where the case `cases[k]` is printed, where the one before falls
-/// through to it: its first value's start, `FALLTHROUGH` before it.
-pub(crate) fn fallen_to(cases: &[js::Case], k: usize) -> Option<u32> {
-    let before = cases.get(k.checked_sub(1)?)?;
-    let first = cases.get(k)?.values.first()?;
-    (before.falls && !first.span.is_none()).then_some(first.span.lo)
 }
 
 /// The span of each statement and item of `module`, closures' and nested

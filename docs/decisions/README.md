@@ -689,7 +689,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
 - [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
-- [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md)
+- [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)

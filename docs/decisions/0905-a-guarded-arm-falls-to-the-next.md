@@ -184,3 +184,28 @@ clause's end does.
   needs no break", run; `test/corpus/shadow_set_in_cases.rs` beside native
   Rust, its JS without the `break;`.
 - Mutation `last-clause-tidy-break-kept`.
+
+## Amendment: a comment before an arm fallen to is before its `// Fallthrough`
+
+React's getComponentNameFromFiber writes `// The display name for these
+tags come from the user-provided type:` before `// Fallthrough` and
+`case IncompleteClassComponent:`; its port writes it before the arm
+`VIEW_TRANSITION_COMPONENT | INCOMPLETE_CLASS_COMPONENT | .. if
+DISABLE_LEGACY_MODE => {}`, whose case the arm before falls through to.
+It printed after the synthesized `// Fallthrough` and the labels, in the
+case's body, as ADR 0590 places a comment before any arm. **A comment
+written right before an arm whose case the one before falls through to
+is before that case: before its `// Fallthrough` and its labels**, its
+pattern's other constants, the earlier case's, between it and the case's
+first value: such a case is a start a comment is before, as a statement
+is, attached to the case itself (`to_oxc/cases.rs`, `case_starts`), on
+the line of a one-line arm too. Another arm's comment is
+its body's still, as the scheduler's `switch` has `case
+ImmediatePriority:\n // Times out immediately`. Case N: comments, which
+nothing runs. `switch_fallthrough.rs`'s reads so. Held by
+`test/lowering-switch-fallthrough.test.ts`, "a guarded arm whose
+constants the next arm names falls through to its case", run in JS,
+`switch_fallthrough.rs` against native Rust, and the mutations
+`arm-comment-case-no-start`, `arm-comment-attached-inside`,
+`arm-comment-of-an-unguarded-arm-in-its-body` (`to_oxc.ts`) and
+`arm-comment-before-every-case` (`to_oxc/cases.ts`).

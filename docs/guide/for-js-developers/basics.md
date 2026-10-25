@@ -1269,8 +1269,10 @@ in a block `{ .. }` where it declares a name. An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
-constants and more, a case that falls through to the next's, `// Fallthrough`
-([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)). Any other `match`, of a range, a binding of a
+constants and more, a case that falls through to the next's, `// Fallthrough`,
+a comment written before that next arm before it and its labels, as React
+writes one
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended). Any other `match`, of a range, a binding of a
 pattern's part or before the last arm, a guard a later arm goes on from, or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one

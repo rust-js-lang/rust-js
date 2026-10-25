@@ -35,6 +35,7 @@ pub fn name(tag: u32, ty: &str, enable_view_transition: bool, disable_legacy_mod
         // The display name for these tags come from the user-provided type:
         VIEW_TRANSITION_COMPONENT | INCOMPLETE_CLASS_COMPONENT | INCOMPLETE_FUNCTION_COMPONENT
             if disable_legacy_mode => {}
+        // A function's name, or the tag's.
         VIEW_TRANSITION_COMPONENT
         | INCOMPLETE_CLASS_COMPONENT
         | INCOMPLETE_FUNCTION_COMPONENT
@@ -57,9 +58,11 @@ pub fn name(tag: u32, ty: &str, enable_view_transition: bool, disable_legacy_mod
 /// What follows the \`match\` is more than its value: the arm the guarded
 /// arms fall to is its case still, no block MIR made around it.
 pub fn counted(tag: u32, on: bool, log: &mut Vec<u32>) {
+    // Each tag's, a comment before the match, not an arm.
     match tag {
         ACTIVITY_COMPONENT => log.push(1),
         VIEW_TRANSITION_COMPONENT if on => log.push(2),
+        // A long log stops here.
         VIEW_TRANSITION_COMPONENT | INCOMPLETE_CLASS_COMPONENT if log.len() > 2 => {}
         VIEW_TRANSITION_COMPONENT | INCOMPLETE_CLASS_COMPONENT | CLASS_COMPONENT => {
             log.push(3);
@@ -68,6 +71,17 @@ pub fn counted(tag: u32, on: bool, log: &mut Vec<u32>) {
         _ => {}
     }
     log.push(0);
+}
+
+/// A comment before a one-line arm fallen to is before its case too.
+pub fn short(n: u32, on: bool) -> u32 {
+    match n {
+        1 if on => 10,
+        // Two's, or one's off.
+        2 | 1 => 20,
+        3 => 30,
+        _ => 0,
+    }
 }
 
 /// The constant the guard's arm names isn't the next arm's first: Rust
@@ -85,7 +99,8 @@ pub fn apart(n: u32, on: bool) -> u32 {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // Upstream's, but for its \`typeof type\`'s test.
+  // Upstream's, but for its \`typeof type\`'s test, the comment written
+  // before the arm fallen to before its \`// Fallthrough\` (ADR 0905, amended).
   expect(js).toContain(`  switch (tag) {
     case ACTIVITY_COMPONENT:
       return "Activity";
@@ -93,13 +108,14 @@ pub fn apart(n: u32, on: bool) -> u32 {
       if (enableViewTransition) {
         return "ViewTransition";
       }
+    // The display name for these tags come from the user-provided type:
     // Fallthrough
     case INCOMPLETE_CLASS_COMPONENT:
     case INCOMPLETE_FUNCTION_COMPONENT:
-      // The display name for these tags come from the user-provided type:
       if (disableLegacyMode) {
         break;
       }
+    // A function's name, or the tag's.
     // Fallthrough
     case CLASS_COMPONENT:
     case FUNCTION_COMPONENT:
@@ -114,7 +130,11 @@ pub fn apart(n: u32, on: bool) -> u32 {
   }
   return null;
 `);
-  expect(js).toContain(`    case INCOMPLETE_CLASS_COMPONENT:
+  expect(js).toContain("  // Each tag's, a comment before the match, not an arm.\n  switch (tag) {\n");
+  expect(js).toContain("      }\n    // Two's, or one's off.\n    // Fallthrough\n    case 2:\n      return 20;\n");
+  expect(js).toContain(`    // A long log stops here.
+    // Fallthrough
+    case INCOMPLETE_CLASS_COMPONENT:
       if (log.length > 2) {
         break;
       }
@@ -128,6 +148,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
   expect(js).not.toMatch(/\bbb\d+:/);
   expect(js).toMatch(/export function apart\(n, on\) \{\n  if \(/);
   const lib = await import(join(dir, "lib.js"));
+  expect([lib.short(1, true), lib.short(1, false), lib.short(2, true), lib.short(3, false), lib.short(9, true)]).toEqual([10, 20, 20, 30, 0]);
   // Upstream's JS, as React writes it.
   const upstream = (tag: number, ty: string, enableViewTransition: boolean, disableLegacyMode: boolean) => {
     switch (tag) {
