@@ -165,4 +165,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = storage;\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
+  {
+    name: "nulled-kept-coalesced",
+    breaks: "a variable that holds a nullable field's value is stored `x ?? null`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            *e = (**made).clone().or_at(span);\n",
+    replace: "            let _ = (made, span);\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
+  },
 ];

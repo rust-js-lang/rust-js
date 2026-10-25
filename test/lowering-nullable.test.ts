@@ -1114,3 +1114,84 @@ pub fn pick(h: &mut Holder, given: Option<u32>) {
   lib.pick(h, 0);
   expect(h.picked()).toBe(7);
 });
+
+// React's `findFirstSuspended` keeps a fiber's \`return\` in a variable and
+// stores it in another's, \`sibling.return = node.return\`; ReactFiberRoot
+// takes the root's transition types, \`const claimed = ..; return
+// claimed\`. What's read of a nullable field is \`null\` or the value, never
+// \`undefined\`: a variable holding it is stored, and returned by a
+// nullable function, as it is, no \`?? null\` (ADR 0620, amended).
+test("a nullable field's value a variable holds is stored as it is", async () => {
+  const dir = fixture("nullable-held");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub struct Root {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub transition_types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,
+}
+
+pub fn fiber(name: &str, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { name: name.to_string(), r#return: RefCell::new(parent) })
+}
+
+pub fn adopt(node: &Fiber, sibling: &Fiber) {
+    let return_fiber = node.r#return.borrow().clone();
+    sibling.r#return.replace(return_fiber);
+}
+
+pub fn root(types: bool) -> Root {
+    let types = types.then(|| Rc::new(RefCell::new(vec!["a".to_string()])));
+    Root { transition_types: RefCell::new(types) }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn claim(root: &Root) -> Option<Rc<RefCell<Vec<String>>>> {
+    let claimed = root.transition_types.take();
+    claimed
+}
+
+/// An optional one, absent until it's set, may be \`undefined\`.
+pub struct Props {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::optional)]
+    pub banner: RefCell<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub shown: RefCell<Option<String>>,
+}
+
+pub fn props() -> Props {
+    Props { banner: RefCell::new(None), shown: RefCell::new(Some("x".to_string())) }
+}
+
+pub fn show(props: &Props) {
+    let banner = props.banner.borrow().clone();
+    props.shown.replace(banner);
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const returnFiber = node.return;\n  sibling.return = returnFiber;\n");
+  expect(js).toContain("  const claimed = root.transitionTypes;\n  root.transitionTypes = null;\n  return claimed;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const parent = lib.fiber("parent", null);
+  const [child, orphan, other] = [lib.fiber("child", parent), lib.fiber("orphan", null), lib.fiber("other", parent)];
+  lib.adopt(child, other);
+  lib.adopt(orphan, child);
+  expect([other.return === parent, child.return]).toEqual([true, null]);
+  const [some, none] = [lib.root(true), lib.root(false)];
+  expect([lib.claim(some), lib.claim(some), lib.claim(none)]).toEqual([["a"], null, null]);
+  expect(js).toContain("  props.shown = banner ?? null;\n");
+  const props = lib.props();
+  lib.show(props);
+  expect(props.shown).toBe(null);
+});

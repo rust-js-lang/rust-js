@@ -688,4 +688,20 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) if false => test,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
   },
+  {
+    name: "nullable-field-read-may-be-undefined",
+    breaks: "what's read of a nullable field may be `undefined`, so a variable holding it is stored `returnFiber ?? null`",
+    file: "src/lower/representation.rs",
+    find: "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined()),\n",
+    replace: "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
+  },
+  {
+    name: "optional-nullable-read-defined",
+    breaks: "an optional nullable field, absent until it's set, is read as never `undefined`, so `undefined` is stored where `null` is",
+    file: "src/lower/representation.rs",
+    find: "                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined()),\n",
+    replace: "                    true if !self.null_where_made(ty, i) || true => self.nullable_cell_handle(field.defined()),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
+  },
 ];

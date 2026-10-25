@@ -824,6 +824,11 @@ export function ratio(a, b) {
   guard's field, `ReactSharedInternals.T = prevTransition;`, but not a
   trait's method's, whose impl may give `undefined`
   ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)).
+  What's read of a nullable field is `null` or its value, so a variable
+  holding it is stored as it is too, `const returnFiber = node.return;
+  sibling.return = returnFiber;`, but an optional one's, absent until it's
+  set, `banner ?? null`
+  ([ADR 0620](../../decisions/0620-an-option-a-test-says-is-there.md), amended).
   Of a `Vec<Option<T>>`, or a cell of one, it's each item's `None`,
   upstream's `createLaneMap(null)`: an item set by index or taken,
   `lanes[index] = null`, and a `None` given where its items are made,

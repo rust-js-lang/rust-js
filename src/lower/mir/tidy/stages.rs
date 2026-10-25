@@ -634,6 +634,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("appends", |b, h| {
                 crate::lower::std_types::text::appended(b, &h.named.text)
             }),
+            // A nullable field's value a variable holds, stored in another
+            // nullable place as it is, no `?? null` (ADR 0620, amended).
+            pass("nulled as they are", |b, _| values::nulled_as_they_are(b)),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[

@@ -501,7 +501,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0617 A parameter is written by its argument](0617-a-parameter-is-written-by-its-argument.md)
 - [0618 `Array.isArray` and `Object.getPrototypeOf` are the js crate's](0618-array-is-array-and-get-prototype-of.md)
 - [0619 A thread-local of a primitive is named as a constant](0619-a-primitive-thread-local-is-a-constant.md) *(amended by 0634: the registry's symbol is a `const`)*
-- [0620 An `Option` a test says is there is written as it is](0620-an-option-a-test-says-is-there.md)
+- [0620 An `Option` a test says is there is written as it is](0620-an-option-a-test-says-is-there.md) *(amended: what's read of a nullable field is never `undefined`)*
 - [0621 A comment before a macro's opening is its code's; one after a module's last code ends its JS](0621-comments-around-macros-and-at-a-modules-end.md) *(amended by 0735: one in the macro before its `fn` is the function's)*
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too; extended by 0891: a constructor its last step)*

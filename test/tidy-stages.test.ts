@@ -58,7 +58,7 @@ test("a stage's end is the last of its passes", () => {
   buildCompiler();
   const ends = stageEnds();
   expect(ends.length).toBeGreaterThan(10);
-  expect(ends).toContain("finish/appends");
+  expect(ends).toContain("finish/nulled as they are");
   expect(ends.some((end) => end.startsWith("again/"))).toBe(true);
 });
 

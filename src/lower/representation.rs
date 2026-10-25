@@ -579,6 +579,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Object(fields), _) => {
                 let field = Expr::member(base, fields[i].0.clone());
                 match self.nullable_cell_field(ty, (i, fields[i].1)) {
+                    // One there where it's made, which stores `null` for
+                    // `None`, so what's read of it is never `undefined`; not
+                    // an optional one, absent until it's set (ADRs 0620,
+                    // amended, 0810).
+                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined()),
                     true => self.nullable_cell_handle(field),
                     false => self.held(field, fields[i].1),
                 }
@@ -598,6 +603,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
             )
             && bindings::nullable_option(self.tcx, field_ty).is_some_and(|option| option != field_ty)
+    }
+
+    /// Whether field `i` of `ty`, a struct's, is `null` for `None` where
+    /// it's made, and so never `undefined` (`bindings::null_where_made`).
+    fn null_where_made(&self, ty: Ty<'tcx>, i: usize) -> bool {
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        adt.is_struct()
+            && bindings::null_where_made(
+                self.tcx,
+                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
+            )
     }
 
     /// A handle on `place`, a `nullable_cell_field`'s, that stores what's

@@ -81,3 +81,36 @@ missing case, `x != null` saying `x != null`.
   where it's made", whose `if (flag && first != null) { return first; }`
   had `?? null`.
 - Mutations `present-coalesce-kept`, `present-coalesce-failed-test-unread`.
+
+## Amendment: what's read of a nullable field is never `undefined`
+
+React's `findFirstSuspended` keeps a fiber's `return` in a variable and
+stores it in another's, and ReactFiberRoot takes a root's transition
+types:
+
+```js
+const returnFiber = node.return;     // upstream: the same, then
+sibling.return = returnFiber ?? null; //   sibling.return = node.return
+const old = root.transitionTypes;    // upstream: const claimed = ..
+root.transitionTypes = null;
+return old ?? null;                  //   return claimed
+```
+
+A nullable place stores `null` for `None` (ADRs 0772, 0841), so what's
+read of one is `null` or the value. **A read of a `#[rust_js::nullable]`
+field there where it's made is never `undefined` (`Known::Defined`), and a
+`const` of it, `x ?? null`, is `x`**: `representation::project` marks the
+read, `fixed_place_of` keeps what's known of a place it makes once, and
+tidy's `nulled_as_they_are` writes `x` of a `const x` its body declares
+once, of what `may_be_undefined` says never is. Not of an optional one
+(ADR 0810), absent until it's set, `undefined` read: `banner ?? null`
+still. Case A, as above: `x ?? null` is `x` wherever `x` isn't
+`undefined`; a field JS made against its declaration, `T | null`, is the
+JS's to keep.
+
+- `test/lowering-nullable.test.ts`, "a nullable field's value a variable
+  holds is stored as it is", run, an optional one's too.
+- Mutations `nullable-field-read-may-be-undefined`,
+  `optional-nullable-read-defined` (`lower/representation.ts`),
+  `fixed-place-facts-dropped` (`lower/mir/assign.ts`),
+  `nulled-kept-coalesced` (`lower/mir/tidy/values.ts`).

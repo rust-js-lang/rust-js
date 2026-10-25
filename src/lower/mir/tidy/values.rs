@@ -357,6 +357,41 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     }
 }
 
+/// A nullable place's `x ?? null` (`Storage::written`) of a `const x` the
+/// body declares once, of what's never `undefined`
+/// (`Expr::may_be_undefined`), a nullable field's read: `x`, as `null ??
+/// null` is `null` and a value is itself. What a variable holds of a
+/// nullable field, stored in another, as it is (ADR 0620, amended).
+pub(super) fn nulled_as_they_are(body: &mut [Stmt]) {
+    let mut declared: HashMap<String, usize> = HashMap::new();
+    for name in js::declared_names(body) {
+        *declared.entry(name).or_default() += 1;
+    }
+    let mut defined: HashSet<String> = HashSet::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && !value.may_be_undefined()
+                && declared.get(name) == Some(&1)
+            {
+                defined.insert(name.clone());
+            }
+        }
+    });
+    if defined.is_empty() {
+        return;
+    }
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
+            && matches!(null.kind, ExprKind::Null)
+            && matches!(&made.kind, ExprKind::Var(x) if defined.contains(x))
+        {
+            let span = e.span;
+            *e = (**made).clone().or_at(span);
+        }
+    });
+}
+
 /// A handle made only to read or write its value there, `Cell::set` of
 /// `&self.n`'s `({ get value() { .. }, set value(value) { .. } }).value =
 /// v`: its place, `t.n = v`. Of a place that reads the same

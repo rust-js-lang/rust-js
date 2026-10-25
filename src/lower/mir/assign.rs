@@ -979,12 +979,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// isn't fixed, an object that's the same however it's reached, and an
     /// index that isn't a constant or a name named too.
     pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let span = place.span;
+        let (span, facts) = (place.span, place.facts);
         let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
             true => e,
             false => this.spill(name, e, out),
         };
-        match place.kind {
+        // The same place, what's known of it kept: a nullable field's read
+        // never `undefined` (ADR 0620, amended).
+        let fixed = match place.kind {
             js::ExprKind::Member(object, field) => Expr::member(fixed(*object, "item", self), &field).or_at(span),
             js::ExprKind::Index(object, index) => {
                 let object = fixed(*object, "items", self);
@@ -994,7 +996,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::index(object, index).or_at(span)
             }
-            kind => Expr { kind, ..place },
-        }
+            kind => return Expr { kind, ..place },
+        };
+        Expr { facts, ..fixed }
     }
 }

@@ -589,4 +589,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_items.rs$"],
     snapshots: true,
   },
+  {
+    name: "fixed-place-facts-dropped",
+    breaks: "a place made once, a cell's taken, forgets what's known of it, so `claimed ?? null`",
+    file: "src/lower/mir/assign.rs",
+    find: "        Expr { facts, ..fixed }\n",
+    replace: "        Expr { facts: js::Facts::NONE, ..fixed }\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
+  },
 ];

@@ -442,6 +442,22 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
     renamed(stmts, APART, name);
 }
 
+/// Each name `stmts` declare, however deep: a statement's, an arrow's
+/// parameters and statements, a function's too.
+pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
+    let mut stmts = stmts.to_vec();
+    let mut declared = Vec::new();
+    binders(&mut stmts, &mut declared);
+    each_expr_mut(&mut stmts, &mut |e| {
+        if let ExprKind::Function(function) = &mut e.kind {
+            for param in function.params.iter_mut() {
+                param.each_name_mut(&mut |n| declared.push(n.clone()));
+            }
+        }
+    });
+    declared
+}
+
 /// The names `stmts` declare, in order, an arrow's in them too.
 fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
     rename_binders(stmts, &mut |name| declared.push(name.clone()));
