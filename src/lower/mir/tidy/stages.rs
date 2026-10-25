@@ -518,6 +518,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
+            // A `while` those leave its own `break`, `while (true) { if
+            // (!(t)) { break; } .. }` of one that ends an `if`'s branch with
+            // code after the `if`, whose `break` left the block: its test.
+            pass("tests of loops ending blocks", |b, h| {
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
+            }),
             // A test the program wrote `!(a && b)`, MIR's `!a || !b`: as
             // written (ADR 0879, amended).
             pass("written negations", |b, h| {

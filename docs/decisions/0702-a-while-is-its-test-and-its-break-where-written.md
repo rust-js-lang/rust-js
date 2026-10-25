@@ -3,6 +3,8 @@
 Status: Accepted. Extends tidy's `while_tests` and
 [0683](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)'s `if`
 as written, which left a loop's test in its body.
+Amended: a `while` that ends an `if`'s branch with code after the `if`
+is its test too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -103,8 +105,33 @@ written: upstream's `do { .. } while (s >= 1 && c >= 0)` is the port's
   c -= 1;` as statements after the `if`, which a `for`'s update would
   move. Left for when a `for` the program can't write in Rust is asked for.
 
+## Amendment: a `while` that ends an `if`'s branch
+
+React's ReactFiberLane walks a root's lanes in an `if` that code follows:
+
+```rust
+if all_entangled_lanes != NO_LANES {
+    let entanglements = root.entanglements.borrow();
+    let mut lanes = entangled_lanes & all_entangled_lanes;
+    while lanes > 0 {
+        ..
+    }
+}
+entangled_lanes
+```
+
+MIR's exit of the `while` is the `if`'s end, a block of its own, so the
+`while (true) { if (!(lanes > 0)) { break bb7; } .. }` `while_tests`
+reads in the chains stage leaves the block, not the loop, and stayed.
+The settled stage makes that `break` the loop's own (ADR 0859); then
+`while_tests` runs again, `tests of loops ending blocks`, and reads its
+test: `while (lanes > 0) { .. }`, as upstream's. Before, a borrow counted
+across the loop ended the block with its `finally`, which hid it.
+
 ## What holds it
 
+- `test/lowering-loops.test.ts`, "a while that ends an if's branch keeps
+  its test", run in JS; mutation `settled-while-tests-off`.
 - `test/lowering-written-loops.test.ts`, "a while is its test, its break
   where it was written", run in JS.
 - `test/corpus/signed_index.rs`, React's loops, run in both.

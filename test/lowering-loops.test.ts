@@ -1222,6 +1222,31 @@ pub fn run() -> Vec<u32> {
   expect(lib.run()).toEqual([3, 4]);
 });
 
+// A `while` that ends an `if`'s branch, with code after the `if`, whose
+// exit left MIR's block, is its test, as ReactFiberLane's
+// `getEntangledLanes` walks its lanes (ADR 0702, amended).
+test("a while that ends an if's branch keeps its test", async () => {
+  const dir = fixture("while-ending-branch");
+  writeFileSync(join(dir, "lib.rs"), `pub fn entangled(lanes: i32, all: i32) -> i32 {
+    let mut entangled = lanes;
+    if all != 0 {
+        let mut rest = lanes & all;
+        while rest > 0 {
+            entangled |= rest << 1;
+            rest &= rest - 1;
+        }
+    }
+    entangled
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    while (rest > 0) {\n");
+  expect(js).not.toContain("while (true)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.entangled(0b101, 0b100), lib.entangled(0b101, 0)]).toEqual([0b1101, 0b101]);
+});
+
 // A loop's `if`s the program ends with `continue`,
 // `if c == "{" { depth += 1; continue; }`, are written so, each then what
 // follows, not an `else if` chain, as react.dev's createFileMap splits a
