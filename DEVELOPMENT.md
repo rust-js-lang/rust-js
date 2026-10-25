@@ -241,10 +241,6 @@ as a wrong answer is.
 - **Keep the Mac awake** while work runs unattended (`caffeinate -dims` in
   a terminal): a sleeping Mac pauses every process, and `timeout` with
   them, so a five-minute command took hours and its tests failed on time.
-- **Never search the whole disk** (`find /`): it ran sixteen minutes and
-  slowed every agent. A dependency's source is where Cargo keeps it: a
-  crates.io one under `~/.cargo/registry/src/*/<name>-<version>`, a git
-  one, as oxc is, under `~/.cargo/git/checkouts/<repo>-*/<rev>/`.
 
 ### Landing a branch on a moving `main`
 
@@ -255,9 +251,6 @@ checked:
   origin/main`. If `main` was force-pushed (`forced update`, an author
   rewrite), `git rebase --onto origin/main <old tip>`, so the old commits
   don't come back.
-- **See the rebase finish before checking**: `git status` says `rebasing`
-  while it waits on a conflict, and checks run then test a half-applied
-  branch, which passes or fails for no reason of its own.
 - **Regenerate what's generated on a conflict**, never merge it by hand:
   `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`,
   corpus snapshots with `bun run bless`; the decision index merges by
@@ -276,7 +269,6 @@ checked:
 | `test/snapshots.test.ts`'s `inbox` case under load | Times out at 5 s nearly every loaded run; a re-run each time | A timeout that fits its compile, or a smaller program |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
-| `check:fast`'s bindings job while other worktrees build | Failed once at 35 s and passed alone, 75 of 75 | Find what it races on |
 | A sweep of generated programs against native Rust, by hand | 4–5 min for 1,100–2,100 programs, again after each fix, each a `rustc`, a rust-js compile and a run | A checked-in runner: native outputs kept by source, only rust-js's compile and run again, verdicts said against the last sweep (fixed, regressed) |
 | `check:fast`'s guide, std package and readability job | The guide's examples take every core for ~20 s, and the other jobs slow (architecture's 6 s to 13 s) | The guide's examples kept by what they compiled, as the corpus's runs are |
 
