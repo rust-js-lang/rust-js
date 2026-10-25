@@ -98,7 +98,6 @@ beforeAll(async () => {
   if (first.code !== 0) throw new Error(`rust-js build failed:\n${first.stderr}`);
   vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0 } });
   await vite.listen();
-  browser = await chromium.launch({ headless: true });
 }, 600_000);
 
 afterAll(async () => {
@@ -119,8 +118,16 @@ async function settled(names: Locator, expected: string[]): Promise<string[]> {
   return last;
 }
 
+// The browser, launched by the first test that opens a page, so one that
+// checks only the committed JS, as a mutation's does, runs where none is
+// installed.
+async function launched(): Promise<Browser> {
+  browser ??= await chromium.launch({ headless: true });
+  return browser;
+}
+
 async function open(hash = "#/"): Promise<Page> {
-  const page = await browser!.newPage();
+  const page = await (await launched()).newPage();
   await page.goto(vite!.resolvedUrls!.local[0] + hash);
   return page;
 }
@@ -370,7 +377,7 @@ test("the production build, served by the native server with its API, works", as
   const dist = join(pilot, "web", "dist");
   const [server, at] = await startServer({ DIST: dist });
   try {
-    const page = await browser!.newPage();
+    const page = await (await launched()).newPage();
     await page.goto(`${at}/#/`);
     const names = page.locator(".contacts li a");
     await names.first().waitFor();
