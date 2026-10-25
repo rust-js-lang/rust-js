@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && false\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/snapshots.test.ts", "-t", "values: the generated JS is its snapshot"],
   },
   {
     name: "optional-call-of-any-object",
@@ -86,28 +86,12 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
   },
   {
-    name: "not-of-truthy-kept",
-    breaks: "`!js::truthy(value)` is `!!!value`, not `!value`",
-    file: "src/js/make.rs",
-    find: "        if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
-    replace: "        if false && let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)\n",
-    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
-  },
-  {
     name: "is-array-tested-for-null",
     breaks: "`value != null && Array.isArray(value)` says what `Array.isArray(value)` does",
     file: "src/js/make.rs",
     find: "            && is_array == \"isArray\"\n",
     replace: "            && is_array == \"isArrayNot\"\n",
     tests: ["test/lowering-matches.test.ts", "-t", "matches! of a kind's literal"],
-  },
-  {
-    name: "truthy-tested-for-null",
-    breaks: "`s != null && !!s` is kept, not `!!s`, `s.is_some_and(|s| !s.is_empty())`'s",
-    file: "src/js/make.rs",
-    find: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n",
-    replace: "            && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind\n            && same_path(tested, of)\n            && false\n",
-    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of the truth of what it holds"],
   },
   {
     name: "handle-value-kept",

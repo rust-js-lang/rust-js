@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                Expr::member(this, name).answered_by_a_getter()\n",
     replace: "                Expr::member(this, name)\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "get binding's property a let chain"],
+    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
   },
   {
     name: "js-new-this-called",

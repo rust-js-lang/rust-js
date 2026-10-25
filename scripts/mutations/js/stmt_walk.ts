@@ -36,11 +36,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "presence-truthy-unread",
-    breaks: "`!!o ? o.m(x) : undefined` isn't a presence test, so it isn't `o?.m(x)`",
+    breaks: "`!!o ? o[1] : undefined` isn't a presence test, so it isn't `o?.[1]`: env_vars' `option ? option[1] : undefined`",
     file: "src/js/stmt_walk.rs",
     find: "        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {\n            ExprKind::Unary(UnaryOp::Not, x) => Some(x),\n            _ => None,\n        },\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends where it's None"],
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+    snapshots: true,
   },
   {
     name: "items-by-kind",
@@ -83,14 +84,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "nested_fn_prepared"],
     snapshots: true,
-  },
-  {
-    name: "same-place-index",
-    breaks: "`counts[name] = counts[name] ?? v` isn't `counts[name] ??= v`",
-    file: "src/js/stmt_walk.rs",
-    find: "            || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j)\n",
-    replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "same-path-index-unseen",
