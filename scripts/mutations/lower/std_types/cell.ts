@@ -136,8 +136,8 @@ export const mutations: Mutation[] = [
     name: "cell-set-keeps-old",
     breaks: "a `Cell`'s `set` drops none of the value it replaces",
     file: "src/lower/std_types/cell.rs",
-    find: "                    self.drop_value(old, item, span, out_set)?;\n",
-    replace: "                    let _ = old;\n",
+    find: "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        self.drop_value(old, item, span, out_set)?;\n",
+    replace: "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        let _ = old;\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
