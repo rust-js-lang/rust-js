@@ -1,4 +1,4 @@
-# 0879. A field that's a closure of statements is a method
+# 0882. A field that's a closure of statements is a method
 
 Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
 to one an object's field holds.

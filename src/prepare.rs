@@ -1101,7 +1101,7 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
 
 /// A field that's a closure of statements, `then: (resolve, reject) => {
 /// .. }`, as a method, `then(resolve, reject) { .. }`, as React's ReactAct
-/// writes its thenable (ADR 0879). An arrow and a method differ only in
+/// writes its thenable (ADR 0882). An arrow and a method differ only in
 /// their `this` (and `arguments`, which no Rust reads), so not one that
 /// reads `this`, a class's. One named `__proto__` is a property as any
 /// method is: only `__proto__: value` sets the prototype.

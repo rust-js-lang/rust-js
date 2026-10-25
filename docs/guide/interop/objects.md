@@ -351,7 +351,7 @@ reject) { .. }`, as JS writes a thenable; one of a value alone stays an
 arrow, `double: (x) => x * 2`. A method and an arrow differ only in
 their `this`, which a Rust closure never reads; one that reads a class's
 `this` stays an arrow
-([ADR 0879](../../decisions/0879-a-field-of-statements-is-a-method.md)):
+([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md)):
 
 ```rust
 pub struct Thenable {

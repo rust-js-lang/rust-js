@@ -662,7 +662,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
 - [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md)
-- [0879 A field that's a closure of statements is a method](0879-a-field-of-statements-is-a-method.md)
+- [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md)

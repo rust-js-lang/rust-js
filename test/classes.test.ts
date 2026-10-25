@@ -339,7 +339,7 @@ Component.prototype.limit = 1;
   expect(js).not.toContain("A plain struct's doc");
 });
 
-// A field that's a closure of statements is a method (ADR 0879), but not
+// A field that's a closure of statements is a method (ADR 0882), but not
 // one that reads the class's `this`, which a method would read as the
 // object it's in: an arrow still, whose `this` is the class's.
 test("a field's closure that reads this stays an arrow", async () => {
