@@ -2,7 +2,9 @@
 // (#214): a `skip_while`'s fold is its source's after its first item; an
 // adapter's `nth` is `advance_by` then `next`, and `advance_by` its
 // `try_fold`; a `fuse` over a `skip` passes `nth` on; a `take_while`'s
-// fold is its `try_fold`, a `step_by`'s inside first by `next`.
+// fold is its `try_fold`, a `step_by`'s inside first by `next`; a
+// compiled `fuse()`'s `try_fold` is its source's; a `step_by` of what
+// reaches the crate's own `nth` asks it, a `chain`'s of its second side.
 struct Count {
     at: i32,
     end: i32,
@@ -47,4 +49,9 @@ fn main() {
     println!("{:?}", counted().skip(2).fuse().nth(1));
     println!("{:?}", counted().step_by(2).take(4).count());
     println!("{:?}", counted().step_by(2).take_while(|&x| x < 7).count());
+    println!("{:?}", counted().step_by(2).fuse().any(|x| x > 5));
+    println!("{:?}", counted().fuse().step_by(2).sum::<i32>());
+    println!("{:?}", counted().chain(counted()).step_by(2).count());
+    println!("{:?}", counted().fuse().chain(counted().fuse()).step_by(3).count());
+    println!("{:?}", counted().skip(2).take_while(|&x| x < 7).last());
 }

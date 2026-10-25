@@ -24,8 +24,12 @@ function $lazyTakeWhile(items, keep) {
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
-  // folded as std folds it (#214).
-  taking.fold = (init, f) => taking.tryFold(init, f, () => false);
+  // folded as std folds it, then dropped with it (#214).
+  taking.fold = (init, f) => {
+    const folded = taking.tryFold(init, f, () => false);
+    taking.return();
+    return folded;
+  };
   return taking;
 }
 

@@ -3,12 +3,14 @@
 import {
   $foldBack,
   $fuseFold,
+  $fuseTryFold,
   $given,
   $lastDropping,
   $lent,
   $nthDropping,
   $peekableFold,
   $peekableHint,
+  $peekableTryFold,
   $pretty,
   $sizeHint,
   $some,
@@ -379,6 +381,7 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
       nth: (iterator, n) => peekableIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
       last: (iterator) => peekableIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $peekableFold(it, init, f, SelfIterator),
+      tryFold: (it, init, f, broke) => $peekableTryFold(it, init, f, broke, SelfIterator),
     },
   );
 }
@@ -394,6 +397,7 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
         fuseIterator_nth(iterator, n, SelfIterator, SelfFused, dropSelf, dropSelfItem),
       last: (iterator) => fuseIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
+      tryFold: (it, init, f, broke) => $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf),
     },
   );
 }

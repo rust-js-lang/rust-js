@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "peekable-fold-peeked-lost",
     breaks: "a peekable's fold leaves out what it peeked at",
     file: "src/runtime/fold_by.js",
-    find: "    folded = f(folded, $someValue(peeked));\n",
-    replace: "",
+    find: "    folded = f(folded, $someValue(peeked));\n  }\n  return $foldBy(",
+    replace: "  }\n  return $foldBy(",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
@@ -35,5 +35,13 @@ export const mutations: Mutation[] = [
     find: "  if (iterator?.fold !== undefined) peekable.ownFold = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
+  {
+    name: "fuse-try-fold-by-next",
+    breaks: "a compiled `Fuse`'s `try_fold` steps it by `next`, not its source's own `try_fold`, so `step_by(2).fuse().any(..)` asks the crate's own `nth(0)` first (#214)",
+    file: "src/runtime/fold_by.js",
+    find: "    if (it.tryFold !== undefined) return it.tryFold(init, f, broke);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
 ];

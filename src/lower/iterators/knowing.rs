@@ -559,11 +559,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.push(dictionary.unwrap_or_else(Expr::undefined));
             }
             args.extend(drop);
+            // And its `try_fold`, std's, its source's too (#214).
+            let mut tried = vec![Expr::var("it"), Expr::var("init"), Expr::var("f"), Expr::var("broke")];
+            tried.extend(args.iter().skip(3).cloned());
+            let try_helper = match helper {
+                "$fuseFold" => "$fuseTryFold",
+                _ => "$peekableTryFold",
+            };
+            let try_fold = Expr::arrow(
+                vec!["it".into(), "init".into(), "f".into(), "broke".into()],
+                vec![StmtKind::Return(Some(Expr::call_helper(try_helper, tried))).at(js::Span::NONE)],
+            );
             let fold = Expr::arrow(
                 vec!["it".into(), "init".into(), "f".into()],
                 vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
             );
             props.push(crate::js::Prop::Field("fold".into(), fold));
+            props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
         }
         Ok(Expr::object(props))
     }

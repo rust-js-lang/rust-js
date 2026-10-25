@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    const a = { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
   },
+  {
+    name: "chain-nth-by-next",
+    breaks: "a chain's `nth` steps it by `next`, not std's: its first side advanced, then its second's own `nth` (#214)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  chained.nth = (n) => {\n",
+    replace: "  chained.nthUnused = (n) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

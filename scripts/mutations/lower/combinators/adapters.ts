@@ -270,8 +270,8 @@ export const mutations: Mutation[] = [
     name: "step-by-unfused-filtered",
     breaks: "`step_by` of an iterator that gives `None` then more counts on past it, a filter of each `n`th, not std's `nth`",
     file: "src/lower/combinators/adapters.rs",
-    find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs()) {\n",
-    replace: "                if false {\n",
+    find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())\n",
+    replace: "                if false\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
   },
   {
@@ -297,5 +297,13 @@ export const mutations: Mutation[] = [
     find: "Expr::call_helper(if boxed { \"$nthSome\" } else { \"$nth\" }, vec![items, next()])",
     replace: "Expr::call_helper(\"$nth\", vec![items, next()])",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+  },
+  {
+    name: "step-by-own-nth-filtered",
+    breaks: "`step_by` of a fused source whose `nth` reaches the crate's own is a filter of indices, which asks it none, where std's asks `nth` (#214)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.recognition().nths_its_own(receiver_ty)\n",
+    replace: "                    || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
 ];

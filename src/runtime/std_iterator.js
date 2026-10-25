@@ -19,6 +19,10 @@ function $stdIterator(struct, steps) {
   if (steps.fold !== undefined) {
     it.fold = (init, f) => steps.fold(it, init, f);
   }
+  // Its `try_fold`, std's, where it passes it on to its source's (#214).
+  if (steps.tryFold !== undefined) {
+    it.tryFold = (init, f, broke) => steps.tryFold(it, init, f, broke);
+  }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }

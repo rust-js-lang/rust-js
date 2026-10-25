@@ -387,7 +387,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     Some("Chain") => 2,
                     Some(
                         "Map" | "Filter" | "FilterMap" | "Enumerate" | "Inspect" | "Skip" | "SkipWhile" | "Copied"
-                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take",
+                        | "Cloned" | "Fuse" | "Peekable" | "FlatMap" | "Flatten" | "Take" | "TakeWhile",
                     ) => 1,
                     _ => 0,
                 };
@@ -413,6 +413,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return self.own_iterator_method(ty, "nth").is_some();
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
+        // A chain's, its second side's, which std's `Chain::nth` asks once
+        // its first runs out (#214).
+        if std_path(self.tcx, adt.did()) == "std::iter::Chain" {
+            return args.types().nth(1).is_some_and(|second| self.nths_its_own(second));
+        }
         matches!(
             std_path(self.tcx, adt.did()).strip_prefix("std::iter::"),
             Some("Skip" | "Take" | "StepBy" | "Enumerate" | "Fuse" | "Peekable")

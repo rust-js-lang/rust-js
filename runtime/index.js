@@ -9215,6 +9215,10 @@ export function $stdIterator(struct, steps) {
   if (steps.fold !== undefined) {
     it.fold = (init, f) => steps.fold(it, init, f);
   }
+  // Its `try_fold`, std's, where it passes it on to its source's (#214).
+  if (steps.tryFold !== undefined) {
+    it.tryFold = (init, f, broke) => steps.tryFold(it, init, f, broke);
+  }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
@@ -10541,6 +10545,23 @@ export function $lazyChain(a, b) {
     const b = last(second);
     return b.done ? a : b;
   };
+  // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
+  // `n` of `b`'s own `nth`, where it has one (#214).
+  chained.nth = (n) => {
+    if (first !== undefined) {
+      const left = first.advanceBy !== undefined ? first.advanceBy(n) : $Steps.prototype.advanceBy.call($lent(first), n);
+      if (left === 0) {
+        const step = first.next();
+        if (!step.done) return step;
+        n = 0;
+      } else {
+        n = left;
+      }
+      first.return?.();
+      first = undefined;
+    }
+    return second.nth !== undefined ? second.nth(n) : $lent(second).nth(n);
+  };
   chained.tryFold = (init, f, broke) => {
     let folded = init;
     if (first !== undefined) {
@@ -10674,8 +10695,12 @@ export function $lazyTakeWhile(items, keep) {
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
-  // folded as std folds it (#214).
-  taking.fold = (init, f) => taking.tryFold(init, f, () => false);
+  // folded as std folds it, then dropped with it (#214).
+  taking.fold = (init, f) => {
+    const folded = taking.tryFold(init, f, () => false);
+    taking.return();
+    return folded;
+  };
   return taking;
 }
 
@@ -11257,6 +11282,54 @@ export function $fuseFold(fuse, init, f, iterator, drop) {
   const iter = $someValue(fuse.iter);
   fuse.iter = undefined;
   return $foldBy(iter, init, f, iterator, drop);
+}
+
+// `try_fold` of `it`, by its `Iterator` dictionary, `iterator`, as
+// `$foldBy`'s fold (#214): a JS iterator's own `tryFold`, which a `$Steps`
+// passes to its source's as std's adapters do; else each `next`, its
+// `Some` unboxed, until `broke` says stop.
+export function $tryFoldBy(it, init, f, broke, iterator) {
+  let folded = init;
+  if (iterator === undefined || iterator.next === $next || iterator.next === $nextSome) {
+    if (it.tryFold !== undefined) return it.tryFold(init, f, broke);
+    for (let step = it.next(); !step.done; step = it.next()) {
+      folded = f(folded, step.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  }
+  for (let item = iterator.next(it); item != null; item = iterator.next(it)) {
+    folded = f(folded, $someValue(item));
+    if (broke(folded)) return folded;
+  }
+  return folded;
+}
+
+// A `Peekable`'s `try_fold`, std's: what it peeked at, unless that was its
+// end, then its source's (#214).
+export function $peekableTryFold(peekable, init, f, broke, iterator) {
+  let folded = init;
+  if (peekable.peeked !== undefined) {
+    const peeked = $someValue(peekable.peeked);
+    peekable.peeked = undefined;
+    if (peeked == null) return init;
+    folded = f(folded, $someValue(peeked));
+    if (broke(folded)) return folded;
+  }
+  return $tryFoldBy(peekable.iter, folded, f, broke, iterator);
+}
+
+// A `Fuse`'s `try_fold`, std's: its source's, while it has one, which it
+// lets go of, dropped by `drop`, once that's run to its end (#214).
+export function $fuseTryFold(fuse, init, f, broke, iterator, drop) {
+  if (fuse.iter == null) return init;
+  const iter = $someValue(fuse.iter);
+  const folded = $tryFoldBy(iter, init, f, broke, iterator);
+  if (!broke(folded)) {
+    fuse.iter = undefined;
+    drop?.(iter);
+  }
+  return folded;
 }
 
 // A `str`'s splits and searches of a predicate of a `char`, a closure, a

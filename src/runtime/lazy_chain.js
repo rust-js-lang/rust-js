@@ -43,6 +43,23 @@ function $lazyChain(a, b) {
     const b = last(second);
     return b.done ? a : b;
   };
+  // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
+  // `n` of `b`'s own `nth`, where it has one (#214).
+  chained.nth = (n) => {
+    if (first !== undefined) {
+      const left = first.advanceBy !== undefined ? first.advanceBy(n) : $Steps.prototype.advanceBy.call($lent(first), n);
+      if (left === 0) {
+        const step = first.next();
+        if (!step.done) return step;
+        n = 0;
+      } else {
+        n = left;
+      }
+      first.return?.();
+      first = undefined;
+    }
+    return second.nth !== undefined ? second.nth(n) : $lent(second).nth(n);
+  };
   chained.tryFold = (init, f, broke) => {
     let folded = init;
     if (first !== undefined) {

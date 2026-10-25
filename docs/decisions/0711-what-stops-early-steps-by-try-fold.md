@@ -151,7 +151,12 @@ Four of std's answers were missing:
   a `fuse()`'s source, is a dictionary of `next` and, where its chain
   reaches the crate's own, `$foldOf`, `$nth` and `$last`, so the
   `Fuse`'s `nth` reaches the `Skip`'s.
-A `take_while`'s `fold` is its `try_fold` too. `adapters_own_nth_fold`
-holds them, with five mutations. 34 programs still differ, which #214
-lists: mostly a `try_fold` through std's compiled `Fuse` or `Peekable`,
-whose JS iterator steps what it's given by `next`.
+A `take_while`'s `fold` is its `try_fold` too, its source dropped after,
+and its fold is a source `last()` goes through. A compiled `Fuse`'s and a
+`Peekable`'s `try_fold` are std's, their source's (`$fuseTryFold`,
+`$peekableTryFold`, by `$tryFoldBy`, a JS iterator's own); a chain's
+`nth` is std's, its first side advanced, then its second's own `nth`,
+which `nths_its_own` says a chain reaches; and `step_by` of a fused
+source whose `nth` reaches the crate's own is `$stepBy`, not a filter of
+indices. All 1,728 programs agree; `adapters_own_nth_fold` holds them,
+with eleven mutations.

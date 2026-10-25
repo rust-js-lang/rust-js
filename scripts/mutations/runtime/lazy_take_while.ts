@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "take-while-fold-by-next",
     breaks: "a `take_while`'s fold steps it by `next`, not std's `try_fold`, so a `step_by` inside asks the crate's own `nth(0)` first (#214)",
     file: "src/runtime/lazy_take_while.js",
-    find: "  taking.fold = (init, f) => taking.tryFold(init, f, () => false);\n",
-    replace: "",
+    find: "    const folded = taking.tryFold(init, f, () => false);\n    taking.return();\n    return folded;\n  };\n",
+    replace: "    return $Steps.prototype.fold.call(taking, init, f);\n  };\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
 ];

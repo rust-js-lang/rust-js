@@ -4,7 +4,9 @@ import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $count,
   $foldOf,
+  $folded,
   $iterator,
+  $lazyChain,
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
@@ -114,5 +116,74 @@ function main() {
   console.log(
     `${$lazyTakeWhile($stepBy($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), 2), (x) => x < 7).reduce((n) => n + 1, 0)}`,
   );
+  console.log(
+    `${$lent(
+      iterator_fuse(
+        $stepBy(
+          $iterator(
+            counted(),
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            undefined,
+            countIterator_fold,
+            countIterator_nth,
+          ),
+          2,
+        ),
+        { next: $next, fold: $foldOf, nth: $nth },
+        false,
+      ),
+    ).some((x) => x > 5)}`,
+  );
+  console.log(
+    `${$stepBy(
+      iterator_fuse(
+        counted(),
+        { next: countIterator_next, fold: countIterator_fold, nth: countIterator_nth },
+        false,
+      ),
+      2,
+    ).reduce((a, b) => (a + b) | 0, 0)}`,
+  );
+  console.log(
+    `${$stepBy($lazyChain($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), $iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth)), 2).reduce((n) => n + 1, 0)}`,
+  );
+  console.log(
+    `${$stepBy(
+      $lazyChain(
+        iterator_fuse(
+          counted(),
+          { next: countIterator_next, fold: countIterator_fold, nth: countIterator_nth },
+          false,
+        ),
+        iterator_fuse(
+          counted(),
+          { next: countIterator_next, fold: countIterator_fold, nth: countIterator_nth },
+          false,
+        ),
+      ),
+      3,
+    ).reduce((n) => n + 1, 0)}`,
+  );
+  const value$3 = $folded(
+    $lazyTakeWhile(
+      $iterator(
+        counted(),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        countIterator_fold,
+        countIterator_nth,
+      ).drop(2),
+      (x) => x < 7,
+    ),
+  )
+    .toArray()
+    .at(-1);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
 }
 //# sourceMappingURL=case.js.map

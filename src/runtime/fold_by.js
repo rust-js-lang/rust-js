@@ -40,3 +40,51 @@ function $fuseFold(fuse, init, f, iterator, drop) {
   fuse.iter = undefined;
   return $foldBy(iter, init, f, iterator, drop);
 }
+
+// `try_fold` of `it`, by its `Iterator` dictionary, `iterator`, as
+// `$foldBy`'s fold (#214): a JS iterator's own `tryFold`, which a `$Steps`
+// passes to its source's as std's adapters do; else each `next`, its
+// `Some` unboxed, until `broke` says stop.
+function $tryFoldBy(it, init, f, broke, iterator) {
+  let folded = init;
+  if (iterator === undefined || iterator.next === $next || iterator.next === $nextSome) {
+    if (it.tryFold !== undefined) return it.tryFold(init, f, broke);
+    for (let step = it.next(); !step.done; step = it.next()) {
+      folded = f(folded, step.value);
+      if (broke(folded)) return folded;
+    }
+    return folded;
+  }
+  for (let item = iterator.next(it); item != null; item = iterator.next(it)) {
+    folded = f(folded, $someValue(item));
+    if (broke(folded)) return folded;
+  }
+  return folded;
+}
+
+// A `Peekable`'s `try_fold`, std's: what it peeked at, unless that was its
+// end, then its source's (#214).
+function $peekableTryFold(peekable, init, f, broke, iterator) {
+  let folded = init;
+  if (peekable.peeked !== undefined) {
+    const peeked = $someValue(peekable.peeked);
+    peekable.peeked = undefined;
+    if (peeked == null) return init;
+    folded = f(folded, $someValue(peeked));
+    if (broke(folded)) return folded;
+  }
+  return $tryFoldBy(peekable.iter, folded, f, broke, iterator);
+}
+
+// A `Fuse`'s `try_fold`, std's: its source's, while it has one, which it
+// lets go of, dropped by `drop`, once that's run to its end (#214).
+function $fuseTryFold(fuse, init, f, broke, iterator, drop) {
+  if (fuse.iter == null) return init;
+  const iter = $someValue(fuse.iter);
+  const folded = $tryFoldBy(iter, init, f, broke, iterator);
+  if (!broke(folded)) {
+    fuse.iter = undefined;
+    drop?.(iter);
+  }
+  return folded;
+}

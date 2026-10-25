@@ -349,8 +349,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
                 // Of a source that may give more after a `None`, as std's
-                // steps it, by `nth`, which a `None` stops (#161).
-                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs()) {
+                // steps it, by `nth`, which a `None` stops (#161); and of one
+                // whose `nth` reaches the crate's own, which std asks (#214).
+                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())
+                    || self.recognition().nths_its_own(receiver_ty)
+                {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);
                     return Ok(Expr::call(Expr::helper("$stepBy"), list));
