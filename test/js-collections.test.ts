@@ -230,3 +230,69 @@ console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["undefined"
     '[false,["none Some(None) true","one Some(Some(1)) true","zero Some(Some(0)) true","later Some(None) true","absent None false"],["nullish","nullish","value","absent"],[true,true,true]]\n',
   );
 });
+
+// ADR 0875, amended: a `Set`'s `forEach` of a closure that borrows what's around it,
+// as React's ReactFiberLane's `getTransitionsForLanes` pushes each
+// transition, and its iterators; and a set's and a map's own methods,
+// which run nothing of what they hold, so a borrow held across them, of
+// `transitionLanes` as React's `addTransitionToLanesMap` holds it, isn't
+// counted.
+test("a Set's forEach and iterators, and a borrow held across its own methods", () => {
+  const { dir, js, dts } = compiled("js-set-steps", `use js::{Set, Unknown};
+use std::cell::RefCell;
+
+pub struct Root {
+    pub transition_lanes: RefCell<Vec<Option<&'static Set<Unknown>>>>,
+}
+
+pub fn root() -> Root {
+    Root { transition_lanes: RefCell::new(vec![None; 3]) }
+}
+
+pub fn add_transition(root: &Root, transition: &Unknown, index: usize) {
+    let mut transition_lanes_map = root.transition_lanes.borrow_mut();
+    let transitions = transition_lanes_map[index].unwrap_or_else(|| js::set::new(None));
+    transitions.add(transition);
+    transition_lanes_map[index] = Some(transitions);
+}
+
+pub fn transitions_for(root: &Root, index: usize) -> Option<Vec<&'static Unknown>> {
+    let mut transitions_for_lanes = Vec::new();
+    let transitions = root.transition_lanes.borrow()[index];
+    if let Some(transitions) = transitions {
+        transitions.for_each(|transition| {
+            transitions_for_lanes.push(transition);
+        });
+    }
+    if transitions_for_lanes.is_empty() {
+        return None;
+    }
+    Some(transitions_for_lanes)
+}
+
+pub fn listed(set: &Set<str>) -> Vec<String> {
+    let mut out: Vec<String> = set.values().map(str::to_uppercase).collect();
+    for (key, value) in set.entries() {
+        out.push(format!("{key}={value}"));
+    }
+    out.extend(set.keys().map(|key| key.len().to_string()));
+    out
+}
+`);
+  expect(js).toContain(
+    "  const transitionLanesMap = root.transitionLanes;\n  const transitions = $index(transitionLanesMap, index) ?? new Set();\n  transitions.add(transition);\n",
+  );
+  expect(js).toContain("    transitions.forEach((transition) => {\n      transitionsForLanes.push(transition);\n    });\n");
+  expect(js).not.toContain("$borrow");
+  expect(dts).toContain("export function listed(set: Set<string>): string[];");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const root = lib.root();
+const a = {}, b = {};
+lib.addTransition(root, a, 1);
+lib.addTransition(root, b, 1);
+lib.addTransition(root, a, 1);
+const found = lib.transitionsFor(root, 1);
+console.log(JSON.stringify([found.length, found[0] === a, found[1] === b, lib.transitionsFor(root, 0) ?? null, lib.listed(new Set(["a", "bc"]))]));
+`);
+  expect(out).toBe('[2,true,true,null,["A","BC","a=a","bc=bc","1","2"]]\n');
+});

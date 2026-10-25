@@ -29,6 +29,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// its value of `key`, `None` of a key it doesn't have; of an `Option`,
     /// `Some(None)` of a key whose value is `None`, as a [`Map`]'s.
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
@@ -36,6 +37,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// [`map.set(key, value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/set):
     /// `value` its value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn set(&self, key: &K, value: V) {
         unreachable!()
     }
@@ -43,6 +45,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// [`map.has(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/has):
     /// whether it has a value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn has(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -50,6 +53,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// [`map.delete(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/delete):
     /// `key` and its value gone; whether it had them.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn delete(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -61,6 +65,7 @@ pub mod weak_map {
     /// [`new WeakMap()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/WeakMap):
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new WeakMap")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new<K: WeakKey + ?Sized, V>() -> &'static WeakMap<K, V> {
         unreachable!()
     }
@@ -102,6 +107,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// `map.has(key)` tells, where JS's `get` alone gives `undefined` of
     /// each: `$someGet(map, key)` (ADR 0884).
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
@@ -109,6 +115,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// [`map.set(key, value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/set):
     /// `value` its value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn set(&self, key: &K, value: V) {
         unreachable!()
     }
@@ -116,6 +123,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// [`map.has(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/has):
     /// whether it has a value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn has(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -123,6 +131,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// [`map.delete(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/delete):
     /// `key` and its value gone; whether it had them.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn delete(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -137,6 +146,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// [`map.clear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/clear):
     /// each key and its value gone.
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn clear(&self) {
         unreachable!()
     }
@@ -149,6 +159,7 @@ pub mod map {
     /// one of each key and its value, the last of a key twice, or of
     /// nothing, `None`, as TypeScript's `new Map(entries?)` (ADR 0875).
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new<K: ?Sized, V>(entries: Option<&[(&K, V)]>) -> &'static Map<K, V> {
         unreachable!()
     }
@@ -169,6 +180,7 @@ impl<T: ?Sized> Set<T> {
     /// [`set.add(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/add):
     /// `value` held, once.
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn add(&self, value: &T) {
         unreachable!()
     }
@@ -176,6 +188,7 @@ impl<T: ?Sized> Set<T> {
     /// [`set.has(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/has):
     /// whether it holds `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn has(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -183,6 +196,7 @@ impl<T: ?Sized> Set<T> {
     /// [`set.delete(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/delete):
     /// `value` gone; whether it held it.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn delete(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -197,7 +211,47 @@ impl<T: ?Sized> Set<T> {
     /// [`set.clear()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/clear):
     /// each value gone.
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn clear(&self) {
+        unreachable!()
+    }
+}
+
+/// What steps a set gives each of its values, held by JS as long as it
+/// holds them, `&'static`.
+impl<T: ?Sized + 'static> Set<T> {
+    /// [`set.forEach(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/forEach):
+    /// `f` of each value it holds, in the order they were added. JS runs `f`
+    /// before `forEach` returns and keeps nothing of it, so it may borrow
+    /// what's around it, `set.for_each(|v| list.push(v))` (ADR 0875, amended).
+    #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    pub fn for_each(&self, f: impl FnMut(&'static T)) {
+        unreachable!()
+    }
+
+    /// [`set.values()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/values):
+    /// the values it holds, in the order they were added, a JS iterator
+    /// (ADR 0140), what `for (const v of set)` steps.
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static T>> {
+        unreachable!()
+    }
+
+    /// [`set.keys()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/keys):
+    /// its values, as `values()` gives them: a set's keys are its values.
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = &'static T>> {
+        unreachable!()
+    }
+
+    /// [`set.entries()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/entries):
+    /// each value it holds twice, `[v, v]`, as a map's entry is its key and
+    /// its value, a JS iterator.
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static T, &'static T)>> {
         unreachable!()
     }
 }
@@ -209,6 +263,7 @@ pub mod set {
     /// one of each of `values`, once, or of nothing, `None`, as
     /// TypeScript's `new Set(values?)`.
     #[cfg_attr(rust_js, rust_js::link_name = "new Set")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new<T: ?Sized>(values: Option<&[&T]>) -> &'static Set<T> {
         unreachable!()
     }
@@ -223,6 +278,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// [`set.add(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet/add):
     /// `value` held.
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn add(&self, value: &T) {
         unreachable!()
     }
@@ -230,6 +286,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// [`set.has(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet/has):
     /// whether it holds `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn has(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -237,6 +294,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// [`set.delete(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet/delete):
     /// `value` gone; whether it held it.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn delete(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -248,6 +306,7 @@ pub mod weak_set {
     /// [`new WeakSet()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakSet/WeakSet):
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new WeakSet")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new<T: WeakKey + ?Sized>() -> &'static WeakSet<T> {
         unreachable!()
     }

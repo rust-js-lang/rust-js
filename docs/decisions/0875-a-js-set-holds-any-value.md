@@ -5,7 +5,8 @@ Status: Accepted. Extends [0849](0849-a-map-takes-any-key.md), whose
 which now takes what the map starts with, `None` of nothing. Amended by
 [0884](0884-a-maps-value-is-any-value.md): a `Map`'s value is any value,
 so BadMapPolyfill's port keys its frozen object to `null`, `Kind::Null`,
-as upstream does.
+as upstream does. Amended below: a `Set`'s `forEach`, `values`, `keys` and
+`entries`, and a keyed collection's own methods run nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 collection, a value the one `SameValueZero` says, as TypeScript's `Set<T>`
@@ -86,3 +87,57 @@ const empty = new Set();
   a set of an object twice, another, `undefined`, `null`, `NaN` twice, `0`
   and `-0`, six values; one of text; and the `.d.ts`'s `Set<string>`.
 - 0849's tests, of `map::new(None)`.
+
+## Amendment: a set's `forEach` and iterators, and what its methods run
+
+React's ReactFiberLane collects the transitions of each lane:
+
+```js
+const transitions = root.transitionLanes[index];
+if (transitions !== null) {
+  transitions.forEach(transition => {
+    transitionsForLanes.push(transition);
+  });
+}
+```
+
+and adds one while it holds the lane's table, `transitionLanesMap[index]`
+of `root.transitionLanes`. A `js::Set` had neither `forEach` nor a way to
+step it, and a borrow held across `transitions.add(transition)` was
+counted: a binding may run anything (ADR 0863), and every borrow of the
+table's type was checked, `$borrowMut` in a `try`/`finally`.
+
+- **`set.for_each(f)` is `set.forEach(f)`**, as TypeScript's `Set<T>`
+  has it, `f` given each value, `&'static T`, as JS holds it. JS runs `f`
+  before `forEach` returns and keeps nothing of it, so `f` is an
+  `impl FnMut` of any lifetime and may borrow what's around it, as
+  `promise::new`'s executor may (ADR 0782): `|transition|
+  transitions_for_lanes.push(transition)`. TypeScript's other parameters,
+  the value again and the set, are left out, as a typed array's callback
+  leaves out the array (ADR 0283).
+- **`values()`, `keys()` and `entries()` are JS iterators** (ADR 0140), as a
+  typed array's are: `for v in set.values()`, `for (k, v) in set.entries()`,
+  `[v, v]` of each. No `IntoIterator`, as a typed array has none: the
+  set's own iterator is `values()`.
+- **A `Map`'s, a `Set`'s, a `WeakMap`'s and a `WeakSet`'s own methods and
+  constructors run nothing**, `#[rust_js::runs_nothing]` (ADR 0867):
+  `SameValueZero` calls nothing of a key or a value, and `new Set(values)`
+  and `new Map(entries)` read the array they're given, not what's in it.
+  So a borrow held across `transitions.add(transition)` isn't counted,
+  and the lane's table is the array it holds. `forEach` runs what it's
+  given, and isn't marked.
+
+```js
+export function addTransition(root, transition, index) {
+  const transitionLanesMap = root.transitionLanes;
+  const transitions = $index(transitionLanesMap, index) ?? new Set();
+  transitions.add(transition);
+  transitionLanesMap[index] = transitions;
+}
+```
+
+Held by `test/js-collections.test.ts`, "a Set's forEach and iterators, and
+a borrow held across its own methods": ReactFiberLane's
+`addTransitionToLanesMap` and `getTransitionsForLanes`, run, no borrow
+counted, and a set's values, keys and entries stepped.
+

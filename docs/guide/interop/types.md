@@ -316,7 +316,10 @@ export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
   a `HashSet`, a JS `Set` too. Each is made of what it starts with,
   `js::set::new(Some(&[frozen]))` `new Set([frozen])` and
   `js::map::new(Some(&[(key, value)]))` `new Map([[key, value]])`, or of
-  nothing, `None`, as TypeScript's constructors take an optional array
+  nothing, `None`, as TypeScript's constructors take an optional array.
+  A set's `for_each(f)` is its `forEach`, `f` of each value, which may
+  borrow what's around it as JS runs it at once; its `values()`, `keys()`
+  and `entries()` are JS iterators
   ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)):
 
 ```rust
@@ -328,14 +331,32 @@ pub fn takes_frozen_keys() -> bool {
     let set: &Set<Dict<u32>> = js::set::new(Some(&[frozen]));
     map.has(frozen) && set.has(frozen)
 }
+
+pub fn listed(set: &Set<str>) -> Vec<&'static str> {
+    let mut values = Vec::new();
+    set.for_each(|value| values.push(value));
+    values.extend(set.values());
+    values
+}
 ```
 
 ```js
+import { $extend } from "@rust-js/runtime";
+
 export function takesFrozenKeys() {
   const frozen = Object.freeze({});
   const map = new Map([[frozen, true]]);
   const set = new Set([frozen]);
   return map.has(frozen) && set.has(frozen);
+}
+
+export function listed(set) {
+  const values = [];
+  set.forEach((value) => {
+    values.push(value);
+  });
+  $extend(values, set.values());
+  return values;
 }
 ```
 
