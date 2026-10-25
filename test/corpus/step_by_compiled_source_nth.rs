@@ -81,4 +81,13 @@ fn main() {
         .take_while(|loud| loud.0 < 98)
         .last();
     println!("{:?}", last.map(|loud| loud.0));
+    // An `inspect`'s `nth`, std's default: `advance_by` by its `try_fold`,
+    // its `skip`'s `nth(n - 1)`, then the next (#302).
+    let nth = louds(98, 2)
+        .into_iter()
+        .rev()
+        .skip(id(2))
+        .inspect(|loud| println!("see {}", loud.0))
+        .nth(id(3));
+    println!("{:?}", nth.map(|loud| loud.0));
 }

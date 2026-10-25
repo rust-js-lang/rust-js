@@ -392,3 +392,17 @@ each before it. `step_by_compiled_source_nth` adds the shape, and
 `last-steps-not-folds` is caught.
 Readability: the line adds `$iter` (87.7 to 87.8 in 10,000 lines) and
 renamed temporaries (734.3 to 735), as each such case does.
+
+## Amendment: an `nth` of an adapter with its own `try_fold` is std's default (#302)
+
+`$nthDropping` stepped `next` for an iterator without its own `nth`.
+std's default `nth` is `advance_by`, which a sized iterator runs by
+`try_fold`. For `rev().skip(2).inspect(..).nth(3)`, that reaches the
+`skip`'s `nth(1)` and then the next, not `Skip::next`'s `nth(2)` (fuzz
+seed 73125). `$nthDropping` now asks any iterator with an `nth`. A
+`$Steps`' default `nth` is `advanceBy` by its `tryFold`, and since #294
+it's given the drop, so it drops what it passes. The old mutation
+`nth-dropping-default-nth`, whose premise was that it didn't, is gone. `step_by_compiled_source_nth` adds the shape, and
+`nth-dropping-default-stepped` is caught.
+Readability: the line adds `Iterator.from` (15.2 to 15.3 in 10,000 lines)
+and renamed temporaries (729.4 to 730.4), as each such case does.

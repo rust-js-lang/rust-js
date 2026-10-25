@@ -436,5 +436,47 @@ function main() {
   };
   const value$16 = last ? map$4(last) : undefined;
   console.log(`${value$16 == null ? "None" : `Some(${value$16})`}`);
+  // An `inspect`'s `nth`, std's default: `advance_by` by its `try_fold`,
+  // its `skip`'s `nth(n - 1)`, then the next (#302).
+  const value$17 = $rev($closing($iter(louds(98, 2)), $dropEach(loudDrop_drop)));
+  let tmp$14;
+  try {
+    tmp$14 = id(2);
+  } catch (error) {
+    value$17.return();
+    throw error;
+  }
+  const inspect$1 = (loud) => {
+    console.log(`see ${loud[0]}`);
+  };
+  const value$18 = $held(
+    Iterator.from(
+      $skipping(value$17, tmp$14, loudDrop_drop).map((item) => {
+        inspect$1(item);
+        return item;
+      }),
+    ),
+  );
+  try {
+    nth = $nthDropping($lent(value$18), id(3), loudDrop_drop, false);
+  } catch (error) {
+    value$18.return();
+    throw error;
+  }
+  try {
+    value$18.return();
+  } catch (error) {
+    if (nth != null) {
+      loudDrop_drop(nth);
+    }
+    throw error;
+  }
+  const map$5 = (loud) => {
+    const result = loud[0];
+    loudDrop_drop(loud);
+    return result;
+  };
+  const value$19 = nth ? map$5(nth) : undefined;
+  console.log(`${value$19 == null ? "None" : `Some(${value$19})`}`);
 }
 //# sourceMappingURL=case.js.map
