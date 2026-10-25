@@ -528,10 +528,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match std_method {
-            // By what gives each as it is, an untagged variant's constructor,
-            // `map(StaticPath::Params)`: no step.
+            // By what gives each as it is, `map(StaticPath::Params)`: no step,
+            // but where a `Map` hides the crate's own steps (#235).
             Some(IterMethod::Map) => match self.unary_callback(arg(), own) {
-                f if f.is_identity() => it,
+                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,
                 f => method("map", it, vec![f]),
             },
             // Of items with a destructor: each it doesn't keep dropped as it

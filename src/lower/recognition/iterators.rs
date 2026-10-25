@@ -393,6 +393,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))
     }
 
+    /// Whether what std asks of an iterator of type `ty` reaches the crate's
+    /// own `nth`, `last` or `nth_back`, each of which an adapter that
+    /// passes it on gives, and a `map` doesn't (#235).
+    pub(in crate::lower) fn reaches_own_steps(&self, ty: Ty<'tcx>) -> bool {
+        self.nths_its_own(ty) || self.lasts_its_own(ty) || self.nth_backs_its_own(ty)
+    }
+
     /// What a `rev()` of type `ty` steps from its back, its source.
     fn reversed_source(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty::Adt(adt, args) = ty.kind() else { return None };

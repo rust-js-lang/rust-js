@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     "name": "identity-map-step",
     "breaks": "a map by an untagged variant constructor stays a step, `.map((value) => value)`",
     "file": "src/lower/mir/iter.rs",
-    "find": "                f if f.is_identity() => it,\n",
+    "find": "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
     "replace": "",
     "tests": ["test/lowering-iterators.test.ts", "-t", "gives the value itself is none"]
   },
@@ -380,5 +380,13 @@ export const mutations: Mutation[] = [
     find: "            let receiver = self.closing(receiver, receiver_ty, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
+  {
+    name: "identity-map-dropped-over-own-steps",
+    breaks: "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
+    file: "src/lower/mir/iter.rs",
+    find: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    replace: "                f if f.is_identity() => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_own_nth.rs$"],
   },
 ];
