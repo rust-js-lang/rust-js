@@ -692,6 +692,18 @@ export async function cached(n) {
 
 One in an `async` block, which is no function, is an error ([ADR 0349](../../decisions/0349-body-directives.md)).
 
+## Item order
+
+A module's items are in the JS where your Rust has them. What's made when
+the module loads, a `const`'s or a thread-local's value or a
+`js::on_load!`'s code, moves only to come after what it reads then: a
+later thread-local it reads, directly or through a function it calls.
+A function it only holds as its value, `if js::is_defined(u32::leading_zeros)
+{ u32::leading_zeros } else { clz32_fallback }`, isn't run when it's made,
+so what that function reads stays where it's written, after it; what
+calls the value it's held in is after what the function reads ([ADR
+0306](../../decisions/0306-item-order.md), amended).
+
 ## Comments and blank lines
 
 Every comment you write is in the JS where its code is, and so is each

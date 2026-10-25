@@ -990,6 +990,67 @@ pub fn values() -> [u32; 4] {
   expect(values()).toEqual([2, 11, 11, 1]);
 });
 
+// React's clz32.js: `export const clz32 = Math.clz32 ? Math.clz32 :
+// clz32Fallback;`, then the `const`s the fallback reads. A function an
+// initializer only holds, as its value, isn't run when it's made: what it
+// reads isn't before the initializer, which is where its Rust has it. One
+// that calls what holds it, `USED`, is after what that function reads
+// (ADR 0306, amended).
+test("a function an initializer only holds doesn't move what it reads before it", async () => {
+  const dir = fixture("item-order-held");
+  writeFileSync(join(dir, "lib.rs"), `// TODO: This is pretty well supported by browsers. Maybe we can drop it.
+
+thread_local! {
+    pub static CLZ32: fn(u32) -> u32 = if js::is_defined(u32::leading_zeros) {
+        u32::leading_zeros
+    } else {
+        clz32_fallback
+    };
+}
+
+// Count leading zeros.
+#[cfg_attr(rust_js, rust_js::name = "log")]
+const LOG: fn(f64) -> f64 = f64::ln;
+const LN2: f64 = std::f64::consts::LN_2;
+fn clz32_fallback(x: u32) -> u32 {
+    if x == 0 {
+        return 32;
+    }
+    (31.0 - ((LOG(x as f64) / LN2) as u32 as f64)) as u32
+}
+
+thread_local! {
+    static PICK: fn(u32) -> u32 = scaled;
+    static PICKED: [fn(u32) -> u32; 1] = [PICK.with(|pick| *pick)];
+    static USED: u32 = PICKED.with(|picked| picked[0](2));
+    static SCALE: u32 = 3;
+}
+
+fn scaled(n: u32) -> u32 {
+    n * SCALE.with(|scale| *scale)
+}
+
+pub fn values(x: u32) -> [u32; 3] {
+    [CLZ32.with(|f| f(x)), clz32_fallback(x), USED.with(|used| *used)]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
+  );
+  const at = (text: string) => {
+    expect(js).toContain(text);
+    return js.indexOf(text);
+  };
+  // What only holds `scaled` is where it's written; what calls it is after
+  // what it reads, through the array and the thread-local holding it.
+  expect(at("const pick = scaled;\nconst picked = [pick];\n")).toBeLessThan(at("const SCALE = 3;"));
+  expect(at("const SCALE = 3;")).toBeLessThan(at("const USED ="));
+  const { values } = await import(join(dir, "lib.js"));
+  expect(values(1 as never)).toEqual([31, 31, 6]);
+});
+
 // ADR 0295: a module's imports are one block, as a person orders them:
 // packages, then its own relative modules, bindings and the crate's alike,
 // each by path; then what it imports for its effect, as written, as

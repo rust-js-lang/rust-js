@@ -126,6 +126,7 @@ function builtDebug_fmt(built, options) {
       }, .. }`;
 }
 
+export const listyDebug = { fmt: listyDebug_fmt };
 function listyDebug_fmt(listy, options) {
   return options?.alternate
     ? $pretty("[", ["0"].concat(Array.from(listy[0], (entry) => String(entry))), "]")
@@ -133,9 +134,6 @@ function listyDebug_fmt(listy, options) {
 }
 
 export const rawDebug = { fmt: rawDebug_fmt };
-
-export const listyDebug = { fmt: listyDebug_fmt };
-
 function rawDebug_fmt(raw, options) {
   return `[${raw[0]} [${[raw[0]].join(", ")}]]`;
 }

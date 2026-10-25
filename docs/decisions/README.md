@@ -324,7 +324,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0303 Top-level statements that span lines are set apart](0303-blank-lines.md) *(superseded by 0865 where the source tells: a blank line is where the Rust has one)*
 - [0304 `js::import!` of an item loads its module when it's asked for](0304-dynamic-import.md)
 - [0305 A binding marked `require` is read through `require(module)`](0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
-- [0306 A module's items are where its Rust has them](0306-item-order.md)
+- [0306 A module's items are where its Rust has them](0306-item-order.md) *(amended: a function an initializer only holds isn't run)*
 - [0307 A trait's binding method is read of the value itself](0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
 - [0309 A `match` that only gives a value is one expression](0309-value-matches.md)

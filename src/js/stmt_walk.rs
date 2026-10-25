@@ -605,21 +605,45 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
                 Item::Const(_) | Item::Statements(_) => None,
             })
             .collect();
-        // The items each reads when it's loaded.
+        // What each `const` holds, a function its value may be, which what
+        // reads it may call (ADR 0306, amended).
+        let holds: HashMap<&str, Vec<&str>> = (items.iter())
+            .filter_map(|item| match item {
+                Item::Const(constant) => {
+                    let mut held = Vec::new();
+                    (constant.value).visit_held_vars(&mut |v, only_held| {
+                        if only_held {
+                            held.push(v);
+                        }
+                    });
+                    Some((constant.name.as_str(), held))
+                }
+                _ => None,
+            })
+            .collect();
+        // The items each reads when it's loaded: what its value only holds,
+        // `clz32Fallback`, made before it but not run; what it runs, and
+        // what that reads, calls and holds, all of it.
         let reads: Vec<HashSet<usize>> = (items.iter().enumerate())
             .map(|(i, item)| {
                 let mut seen = HashSet::new();
                 let mut work = Vec::new();
                 match item {
-                    Item::Const(constant) => constant.value.visit_vars(&mut |v| work.push(v)),
+                    Item::Const(constant) => constant.value.visit_held_vars(&mut |v, only_held| match only_held {
+                        true => _ = seen.insert(v),
+                        false => work.push(v),
+                    }),
                     Item::Statements(stmts) => visit_stmts(stmts, &mut |v| work.push(v)),
                     Item::Namespace(_) | Item::Function(_) => {}
                 }
+                let mut ran = HashSet::new();
                 while let Some(name) = work.pop() {
-                    if seen.insert(name)
-                        && let Some(item) = called.get(name)
-                    {
-                        item.visit_vars(&mut |v| work.push(v));
+                    seen.insert(name);
+                    if ran.insert(name) {
+                        if let Some(item) = called.get(name) {
+                            item.visit_vars(&mut |v| work.push(v));
+                        }
+                        work.extend(holds.get(name).into_iter().flatten());
                     }
                 }
                 seen.iter()

@@ -184,4 +184,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(thread_local_set_before_use|thread_local_made_where_used|let_chain_values).rs$"],
   },
+  {
+    name: "held-branch-run",
+    breaks: "a conditional's branch is taken to run, so clz32's `clz32Fallback` moves what it reads before it",
+    file: "src/js/expr_walk.rs",
+    find: "                a.visit_held_vars(read);\n                b.visit_held_vars(read);\n            }\n            ExprKind::Binary(",
+    replace: "                a.visit_vars(&mut |v| read(v, false));\n                b.visit_vars(&mut |v| read(v, false));\n            }\n            ExprKind::Binary(",
+    tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
+  },
+  {
+    name: "held-array-item-run",
+    breaks: "an array's item is taken to run, so `[pick]` moves `SCALE`, what the function `pick` holds reads, before it",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_vars(read)),\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
+  },
 ];

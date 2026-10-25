@@ -77,6 +77,40 @@ impl Expr {
         }
     }
 
+    /// Each variable this reads, as `visit_vars` gives them, and whether
+    /// its value is only held, in what this evaluates to, neither called nor
+    /// read into when this is: this itself, a conditional's branch, an
+    /// `||`'s, `&&`'s or `??`'s operand, an array's item or an object's
+    /// field, `clz32Fallback` of `Math.clz32 ? Math.clz32 : clz32Fallback`
+    /// (ADR 0306, amended).
+    pub fn visit_held_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str, bool)) {
+        match &self.kind {
+            ExprKind::Var(name) => read(name, true),
+            ExprKind::Cond(test, a, b) => {
+                test.visit_vars(&mut |v| read(v, false));
+                a.visit_held_vars(read);
+                b.visit_held_vars(read);
+            }
+            ExprKind::Binary(Op::Or | Op::And | Op::Coalesce, a, b) => {
+                a.visit_held_vars(read);
+                b.visit_held_vars(read);
+            }
+            ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_vars(read)),
+            ExprKind::Object(props, ..) => {
+                for prop in props {
+                    match prop {
+                        Prop::Field(_, value) => value.visit_held_vars(read),
+                        Prop::Spread(value)
+                        | Prop::Getter(_, value)
+                        | Prop::Setter(_, value)
+                        | Prop::Method(_, value) => value.visit_vars(&mut |v| read(v, false)),
+                    }
+                }
+            }
+            _ => self.visit_vars(&mut |v| read(v, false)),
+        }
+    }
+
     /// This with each variable that `with` names replaced by its expression:
     /// a closure's parameter by its argument, to put its body in place.
     /// `None` if there's a closure inside, whose own names could shadow them.
