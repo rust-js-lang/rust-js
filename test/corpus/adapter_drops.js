@@ -115,7 +115,7 @@ function main() {
   }
   const zipped = $lazyZip(
     $closing(value, $dropEach(loudDrop_drop)),
-    $closing(Iterator.from(tmp), $dropEach(loudDrop_drop)),
+    $closing($iter(tmp), $dropEach(loudDrop_drop)),
     loudDrop_drop,
   );
   let pair;
@@ -172,7 +172,7 @@ function main() {
   }
   const chained = $lazyChain(
     $closing(value$1, $dropEach(loudDrop_drop)),
-    $closing(Iterator.from(tmp$1), $dropEach(loudDrop_drop)),
+    $closing($iter(tmp$1), $dropEach(loudDrop_drop)),
   );
   let chained$live;
   try {
@@ -1390,7 +1390,7 @@ function main() {
       $closing($iterator(value$8, countdownIterator_next), (it) => {
         loudDrop_drop(it.of._tag);
       }),
-      $closing(Iterator.from(tmp$17), $dropEach(loudDrop_drop)),
+      $closing($iter(tmp$17), $dropEach(loudDrop_drop)),
     );
   } catch (error) {
     if (fused$live) {

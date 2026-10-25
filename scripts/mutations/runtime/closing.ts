@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "closing-slice-from-back",
     breaks: "a `Vec`'s `IntoIter` passed over from its back drops what it passes back to front, where std drops it as one slice, front to back (#234)",
     file: "src/runtime/closing.js",
-    find: "      for (const item of passed) drop.each(item);\n",
-    replace: "      for (const item of passed.reverse()) drop.each(item);\n",
+    find: "      it.end -= n;\n      for (const item of passed) drop.each(item);\n",
+    replace: "      it.end -= n;\n      for (const item of passed.reverse()) drop.each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -121,5 +121,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));\n",
     replace: "  if (it.nth !== undefined) closing.nth = (k) => it.nth(k);\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "closing-front-nth-unowned",
+    breaks: "a `Vec`'s `IntoIter` doesn't say its `nth` drops what it passes, so a `chain` of it isn't asked its `nth` and drops a reversed side's back to front (#250)",
+    file: "src/runtime/closing.js",
+    find: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n    closing.ownNth = true;\n",
+    replace: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];

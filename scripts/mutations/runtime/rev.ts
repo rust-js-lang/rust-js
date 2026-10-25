@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(rev_drops|generic_double_ended).rs$"],
   },
   {
-    name: "rev-sourceless",
-    breaks: "a `$rev` keeps nothing of what it steps for a clone to clone",
-    file: "src/runtime/rev.js",
-    find: "  rev.source = it;\n",
-    replace: "",
-    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
-  },
-  {
     name: "rev-fold-by-next",
     breaks: "a `rev()`'s fold steps its source by `next_back`, not the crate's own `rfold` it reaches (#220)",
     file: "src/runtime/rev.js",
@@ -65,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.ownNthBack) rev.ownNth = true;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "rev-advance-by-each",
+    breaks: "a reversed `Vec`'s `advance_by`, a `chain`'s `nth`, drops what it passes one at a time from the back, not as its source's one slice (#250)",
+    file: "src/runtime/rev.js",
+    find: "    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];

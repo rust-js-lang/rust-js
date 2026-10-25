@@ -28,14 +28,27 @@ function $closing(it, drop, slices = true) {
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
   if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.nthBack = (k) => {
-      const n = Math.min(k, it.len());
+    closing.advanceBackBy = (m) => {
+      const n = Math.min(m, it.len());
       const passed = it.items.slice(it.end - n, it.end);
       it.end -= n;
       for (const item of passed) drop.each(item);
-      return done(n < k ? { done: true, value: undefined } : it.back());
+      return m - n;
     };
+    closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
     closing.ownNthBack = true;
+    // And from its front, its `advance_by` and `nth`, what they pass over
+    // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
+    // (#250); how many there weren't.
+    closing.advanceBy = (m) => {
+      const n = Math.min(m, it.len());
+      const passed = it.items.slice(it.at, it.at + n);
+      it.at += n;
+      for (const item of passed) drop.each(item);
+      return m - n;
+    };
+    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
+    closing.ownNth = true;
   }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`

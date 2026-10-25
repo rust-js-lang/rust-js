@@ -6,6 +6,24 @@
 // `ownLast`, that one, which drops what it passes itself (#182).
 function $lastDropping(it, drop, boxed) {
   const some = (item) => (boxed ? $some(item) : item);
+  // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
+  // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
+  // as `b_last.or(a_last)` drops it (#232).
+  // Std's `Skip::last`: its source's, after what it skips (#232).
+  if (it.skipped !== undefined) {
+    const source = it.skipped();
+    if (source !== undefined) return $lastDropping(source, drop, boxed);
+    it.return?.();
+    return undefined;
+  }
+  if (it.sides !== undefined) {
+    const [a, b] = it.sides();
+    const aLast = a === undefined ? undefined : $lastDropping(a, drop, true);
+    const bLast = $lastDropping(b, drop, true);
+    if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
+    if (aLast !== undefined) drop?.($someValue(aLast));
+    return some($someValue(bLast));
+  }
   if (it.ownLast) {
     const step = it.last();
     return step.done ? undefined : some(step.value);

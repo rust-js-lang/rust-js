@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "      if (step.done) second.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
+  {
+    name: "chain-own-nth-unset",
+    breaks: "a `chain` of two `Vec`s doesn't say its `nth` drops what it passes, so `skip` steps each from a reversed side's back (#250)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  if (first.ownNth && second.ownNth) chained.ownNth = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "chain-advance-by-stepped",
+    breaks: "a `chain` of a `chain` advanced, its `nth`, steps its first side one at a time, not std's `Chain::advance_by` of each side's (#250)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  chained.advanceBy = (m, drop) => {",
+    replace: "  chained.advanceByUnused = (m, drop) => {",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
 ];

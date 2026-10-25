@@ -48,7 +48,7 @@ function main() {
               }
             }
           }),
-          $closing(Iterator.from([undefined]), (vec) => {
+          $closing($iter([undefined]), (vec) => {
             for (const item of vec) {
               if (item != null) {
                 loudDrop_drop(item);

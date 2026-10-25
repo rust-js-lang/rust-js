@@ -73,6 +73,29 @@ function $lazyChain(a, b) {
     if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
+  // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
+  // go once it's run out (#250).
+  const advanced = (it, m, drop) =>
+    it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
+  chained.advanceBy = (m, drop) => {
+    if (first !== undefined) {
+      m = advanced(first, m, drop);
+      if (m === 0) return 0;
+      first.return?.();
+      first = undefined;
+    }
+    return advanced(second, m, drop);
+  };
+  // Its `nth` drops what it passes over itself where each side's does, a
+  // `Vec`'s (#250).
+  if (first.ownNth && second.ownNth) chained.ownNth = true;
+  // Its sides, `a` let go as it's taken, as std's `last` takes them
+  // (`$lastDropping`, #232).
+  chained.sides = () => {
+    const a = first;
+    first = undefined;
+    return [a, second];
+  };
   chained.from = [first, second];
   return chained;
 }

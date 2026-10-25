@@ -1679,6 +1679,24 @@ export function $mulAddF32(a, b, c) {
 // `ownLast`, that one, which drops what it passes itself (#182).
 export function $lastDropping(it, drop, boxed) {
   const some = (item) => (boxed ? $some(item) : item);
+  // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
+  // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
+  // as `b_last.or(a_last)` drops it (#232).
+  // Std's `Skip::last`: its source's, after what it skips (#232).
+  if (it.skipped !== undefined) {
+    const source = it.skipped();
+    if (source !== undefined) return $lastDropping(source, drop, boxed);
+    it.return?.();
+    return undefined;
+  }
+  if (it.sides !== undefined) {
+    const [a, b] = it.sides();
+    const aLast = a === undefined ? undefined : $lastDropping(a, drop, true);
+    const bLast = $lastDropping(b, drop, true);
+    if (bLast === undefined) return aLast === undefined ? undefined : some($someValue(aLast));
+    if (aLast !== undefined) drop?.($someValue(aLast));
+    return some($someValue(bLast));
+  }
   if (it.ownLast) {
     const step = it.last();
     return step.done ? undefined : some(step.value);
@@ -1812,14 +1830,27 @@ export function $closing(it, drop, slices = true) {
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
   if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.nthBack = (k) => {
-      const n = Math.min(k, it.len());
+    closing.advanceBackBy = (m) => {
+      const n = Math.min(m, it.len());
       const passed = it.items.slice(it.end - n, it.end);
       it.end -= n;
       for (const item of passed) drop.each(item);
-      return done(n < k ? { done: true, value: undefined } : it.back());
+      return m - n;
     };
+    closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
     closing.ownNthBack = true;
+    // And from its front, its `advance_by` and `nth`, what they pass over
+    // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
+    // (#250); how many there weren't.
+    closing.advanceBy = (m) => {
+      const n = Math.min(m, it.len());
+      const passed = it.items.slice(it.at, it.at + n);
+      it.at += n;
+      for (const item of passed) drop.each(item);
+      return m - n;
+    };
+    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
+    closing.ownNth = true;
   }
   closing.back = () => it.back();
   // Its length, its iterator's, where it knows it: what an `enumerate`
@@ -1894,6 +1925,27 @@ export function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // What std's `Skip::last` steps after its `nth(n - 1)?`: its source, what
+  // it skips dropped, or `undefined` where that found none (#232).
+  skipping.skipped = () => {
+    if (skipping.n > 0 && skipping.iter.ownNth) {
+      const k = skipping.n;
+      skipping.n = 0;
+      const step = skipping.iter.nth(k - 1);
+      if (step.done) return undefined;
+      drop?.(step.value);
+      return skipping.iter;
+    }
+    for (; skipping.n > 0; skipping.n--) {
+      const step = skipping.iter.next();
+      if (step.done) {
+        skipping.n = 0;
+        return undefined;
+      }
+      drop?.(step.value);
+    }
+    return skipping.iter;
+  };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
   // it passes over itself, a reversed `Vec`'s as one slice (#234).
   if (iter.ownNth) {
@@ -11057,6 +11109,29 @@ export function $lazyChain(a, b) {
     if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
+  // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
+  // go once it's run out (#250).
+  const advanced = (it, m, drop) =>
+    it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
+  chained.advanceBy = (m, drop) => {
+    if (first !== undefined) {
+      m = advanced(first, m, drop);
+      if (m === 0) return 0;
+      first.return?.();
+      first = undefined;
+    }
+    return advanced(second, m, drop);
+  };
+  // Its `nth` drops what it passes over itself where each side's does, a
+  // `Vec`'s (#250).
+  if (first.ownNth && second.ownNth) chained.ownNth = true;
+  // Its sides, `a` let go as it's taken, as std's `last` takes them
+  // (`$lastDropping`, #232).
+  chained.sides = () => {
+    const a = first;
+    first = undefined;
+    return [a, second];
+  };
   chained.from = [first, second];
   return chained;
 }
@@ -11155,11 +11230,12 @@ export function $rev(it) {
   rev.back = () => it.next();
   rev.from = [it];
   rev.len = () => it.len();
-  // What a clone of it clones (ADR 0530).
-  rev.source = it;
   // Its `advance_by`, its source's `advance_back_by`, std's, of its
   // `next_back`, each dropped, `drop`: what its `nth` steps past.
   rev.advanceBy = (m, drop) => {
+    // One that drops what it passes over itself, a `Vec`'s, as one slice
+    // (#250).
+    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
     for (; m > 0; m--) {
       const step = it.back();
       if (step.done) break;
@@ -11169,8 +11245,14 @@ export function $rev(it) {
   };
   if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);
   if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
-  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s (#234).
+  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
+  // either end (#234, #250).
   if (it.ownNthBack) rev.ownNth = true;
+  if (it.ownNth) {
+    rev.nthBack = (k) => it.nth(k);
+    rev.advanceBackBy = (m) => it.advanceBy(m);
+    rev.ownNthBack = true;
+  }
   if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);
   return rev;
 }

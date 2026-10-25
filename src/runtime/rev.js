@@ -13,11 +13,12 @@ function $rev(it) {
   rev.back = () => it.next();
   rev.from = [it];
   rev.len = () => it.len();
-  // What a clone of it clones (ADR 0530).
-  rev.source = it;
   // Its `advance_by`, its source's `advance_back_by`, std's, of its
   // `next_back`, each dropped, `drop`: what its `nth` steps past.
   rev.advanceBy = (m, drop) => {
+    // One that drops what it passes over itself, a `Vec`'s, as one slice
+    // (#250).
+    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);
     for (; m > 0; m--) {
       const step = it.back();
       if (step.done) break;
@@ -27,8 +28,14 @@ function $rev(it) {
   };
   if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);
   if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
-  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s (#234).
+  // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
+  // either end (#234, #250).
   if (it.ownNthBack) rev.ownNth = true;
+  if (it.ownNth) {
+    rev.nthBack = (k) => it.nth(k);
+    rev.advanceBackBy = (m) => it.advanceBy(m);
+    rev.ownNthBack = true;
+  }
   if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);
   return rev;
 }

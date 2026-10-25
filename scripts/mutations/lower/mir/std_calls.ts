@@ -785,4 +785,12 @@ export const mutations: Mutation[] = [
     replace: "                    (value, code.is_some_and(|_| false))\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
   },
+  {
+    name: "chain-array-argument-unstepped",
+    breaks: "an array given to `chain` is `Iterator.from(xs)`, not a `$iter`, so its `nth` isn't a `Vec`'s and the chain's `skip` steps each (#250)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                                    if this.slice_item(ty.peel_refs()).is_some()\n",
+    replace: "                                    if false && this.slice_item(ty.peel_refs()).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
 ];

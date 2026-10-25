@@ -957,6 +957,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let e = this.iterable_items(e, ty, span, out)?;
                             // Closed to drop what it holds, a JS iterator of it.
                             Ok(match this.closing_drop(ty, span)? {
+                                // An array, a `$iter` of it, as std's `IntoIter` steps
+                                // it, its `nth` from either end too (#250).
+                                Some(drop)
+                                    if this.slice_item(ty.peel_refs()).is_some()
+                                        && !crate::lower::iterators::is_js_iterator(&e) =>
+                                {
+                                    let it = this.stepped_items(e);
+                                    this.closed_by(it, drop, ty)
+                                }
                                 Some(drop) if crate::lower::iterators::is_js_iterator(&e) => {
                                     this.closed_by(e, drop, ty)
                                 }

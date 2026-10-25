@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "        drop?.(step.value);\n      }\n      return skipping.iter.next();\n",
     replace: "      }\n      return skipping.iter.next();\n",
-    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
   {
     name: "skip-dropping-unclosed",

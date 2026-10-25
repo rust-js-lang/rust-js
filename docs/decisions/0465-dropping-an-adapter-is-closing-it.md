@@ -146,3 +146,30 @@ compile, where a reversed `Vec`'s `step_by` is `$stepBy`. The readability
 baseline's `while (true)` share grows by 0.2 in 10,000 lines and its
 `$iter` share by 0.5. Both come from the new case, whose three `for`
 loops each drop what they're given, over its eight `Vec`s.
+
+## Amendment: a `chain` asks each side as std's `Chain` does (#232, #250)
+
+- **`last`** (`$lastDropping`) of a `chain` is each side's own `last`,
+  `a`'s then `b`'s, each dropping what it passes. Where `b` has a last,
+  `a`'s is dropped then, as `b_last.or(a_last)` drops it. A `skip`'s is
+  its source's after what it skips (`skipped`), as std's `Skip::last` is
+  `iter.nth(n - 1)?` then `iter.last()`. `vec![D(16), D(17)].chain(vec![
+  D(18), D(19)]).last()` drops 16, 18, then 17.
+- **`nth`** is std's `Chain::nth`, `a.advance_by(n)` then `b`'s, and
+  `$lazyChain` gains std's `advance_by`. A `Vec`'s `IntoIter` drops what
+  it passes as one slice from either end, so its `$closing` gains
+  `advance_by` and `nth` from its front (`ownNth`), and `$rev` maps
+  them across. A chain whose two sides drop what they pass is `ownNth`
+  itself, so `$skipping` and `$nthDropping` ask it.
+- An array given to `chain` or `zip` is a `$iter` of it, as std's
+  `IntoIter` steps it, where it was `Iterator.from(xs)`.
+  `adapter_drops.js` and `last_option_drops.js` read so now.
+
+Held by `test/corpus/chain_sides_own_steps.rs` and eight mutations.
+`$rev`'s `source`, which nothing read since a held `Rev` became std's
+compiled one, is gone, along with its mutation. The readability
+baseline's `$iter` share grows by 1.7 in 10,000 lines: 4 are the chain
+arguments, whose `Iterator.from` share falls by 0.4, and the rest are
+the new case's sixteen `Vec`s. Its renamed `x$1` share grows by 2.8,
+the new case's temporaries, each a `Vec` made in a `try` that drops
+what came before.

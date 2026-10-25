@@ -26,4 +26,28 @@ export const mutations: Mutation[] = [
     replace: "  return seen",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
+  {
+    name: "chain-last-each-stepped",
+    breaks: "`a.chain(b).last()` steps every item in turn, dropping each as the next comes, not std's each side's own `last` (#232)",
+    file: "src/runtime/last_dropping.js",
+    find: "  if (it.sides !== undefined) {",
+    replace: "  if (false) {",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "chain-last-first-kept",
+    breaks: "`a.chain(b).last()` never drops `a`'s last where `b` has one, as `b_last.or(a_last)` does (#232)",
+    file: "src/runtime/last_dropping.js",
+    find: "    if (aLast !== undefined) drop?.($someValue(aLast));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "skip-last-each-stepped",
+    breaks: "`chain(..).skip(n).last()` steps every item, not its source's own `last` after what it skips (#232)",
+    file: "src/runtime/last_dropping.js",
+    find: "  if (it.skipped !== undefined) {",
+    replace: "  if (false) {",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
 ];

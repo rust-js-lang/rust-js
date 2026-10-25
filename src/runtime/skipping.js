@@ -29,6 +29,27 @@ function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // What std's `Skip::last` steps after its `nth(n - 1)?`: its source, what
+  // it skips dropped, or `undefined` where that found none (#232).
+  skipping.skipped = () => {
+    if (skipping.n > 0 && skipping.iter.ownNth) {
+      const k = skipping.n;
+      skipping.n = 0;
+      const step = skipping.iter.nth(k - 1);
+      if (step.done) return undefined;
+      drop?.(step.value);
+      return skipping.iter;
+    }
+    for (; skipping.n > 0; skipping.n--) {
+      const step = skipping.iter.next();
+      if (step.done) {
+        skipping.n = 0;
+        return undefined;
+      }
+      drop?.(step.value);
+    }
+    return skipping.iter;
+  };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
   // it passes over itself, a reversed `Vec`'s as one slice (#234).
   if (iter.ownNth) {
