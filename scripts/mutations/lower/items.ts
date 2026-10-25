@@ -171,4 +171,21 @@ export const mutations: Mutation[] = [
     replace: "            true => place,\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
   },
+  {
+    name: "own-item-reference-unknown",
+    breaks: "one of the crate's functions, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
+    file: "src/lower/items.rs",
+    find: "        } else {\n            reference.item()\n",
+    replace: "        } else {\n            reference\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "library-item-reference-unknown",
+    breaks: "a library's function, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
+    file: "src/lower/items.rs",
+    find: "                None => reference.item(),\n",
+    replace: "                None => reference,\n",
+    tests: ["test/crates.test.ts", "-t", "a library's function returned past a guard's drop"],
+  },
 ];

@@ -395,8 +395,8 @@ export const mutations: Mutation[] = [
     name: "defined-may-be-undefined",
     breaks: "what lowering knows is never `undefined` is asked of its form alone, `createTask(..)` a call that may be",
     file: "src/js/make.rs",
-    find: "            _ if self.known == Known::Defined => false,\n",
-    replace: "",
+    find: "            _ if matches!(self.known, Known::Defined | Known::Item) => false,\n",
+    replace: "            _ if self.known == Known::Item => false,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
   {
@@ -440,5 +440,22 @@ export const mutations: Mutation[] = [
     replace: "        if op == UnaryOp::Not && arg.is_falsy_constant() && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
     snapshots: true,
+  },
+  {
+    name: "item-not-fixed",
+    breaks: "one of the program's functions isn't the same wherever it's read, so a guard's scope returns it inside its `try`, not after the `finally`",
+    file: "src/js/make.rs",
+    find: "        self.is_constant() || self.known == Known::Item\n",
+    replace: "        self.is_constant()\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "item-may-be-undefined",
+    breaks: "one of the program's functions may be `undefined`, so a nullable place stores it as `noop ?? null`",
+    file: "src/js/make.rs",
+    find: "            _ if matches!(self.known, Known::Defined | Known::Item) => false,\n",
+    replace: "            _ if self.known == Known::Defined => false,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a function a nullable place is given"],
   },
 ];

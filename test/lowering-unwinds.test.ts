@@ -597,7 +597,7 @@ pub fn finish(scope: impl FnOnce() -> Option<f64>) -> f64 {
 };
 `);
   expect(js).toContain("  let v;\n  try {\n    v = scope();\n  } catch {\n    return 0;\n  }\n  INTERNALS.T = v;\n");
-  expect(js).toContain("  try {\n    const catchUnwind = scope();\n    if (catchUnwind != null) {\n");
+  expect(js).toContain("  try {\n    const done = scope();\n    if (done != null) {\n      return done;\n");
   expect(js).not.toContain("TAG");
   const lib = await import(join(dir, "lib.js"));
   const internals = (await import(join(dir, "internals.js"))).default;

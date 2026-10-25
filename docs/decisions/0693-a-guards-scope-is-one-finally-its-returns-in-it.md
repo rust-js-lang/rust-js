@@ -1,7 +1,7 @@
 # 0693. A guard's scope is one `finally`, its `if`s, loops and `return`s in it
 
 Status: Accepted; amended (around a `catch`, one `try`, `catch` and
-`finally`). Amends [0437](0437-a-scopes-drops-are-one-finally.md),
+`finally`; a function or a constant returned last, after it). Amends [0437](0437-a-scopes-drops-are-one-finally.md),
 whose run of statements a drop ends was flat: an `if` or a loop in it, or
 a `return` from inside it, ended the run.
 Amended by [0705](0705-a-guards-scope-reads-as-any-body.md): what each
@@ -142,3 +142,43 @@ each of its own meaning to the passes before.
 Held by `test/lowering.test.ts`, "a guard dropped around catch_unwind is
 its try's catch and finally", run; the mutation
 `try-catch-finally-nested` (`to_oxc/statements.ts`).
+
+## Amended (2026-10-25): a function or a constant returned last is after the `finally`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same value
+returned and the same drop, run in the same order on every path; only
+where the `return` is written changes.
+
+React's `startGestureTransition` is one `try`, `catch` and `finally`,
+then `return noop;`. Its port's scope ends with `&noop`, which Rust makes
+before the guard drops, so the scope's run, `result = noop;` last, was
+`try { try { .. } catch (error) { .. } return noop; } finally { .. }`
+(`returned_through_finally`): the `try` held more than the `catch`, and
+wasn't printed as one with it.
+
+**What a scope returns last, the same whenever it's made, is returned
+after its `finally`**: a constant, or one of the program's functions,
+its own or a library's (`Expr::is_fixed`), `try { .. } catch (error) {
+.. } finally { .. } return noop;`. Made before the drop or after, it's
+the same value: the drop can't change a constant, nor what a function's
+name holds, which nothing assigns. Anything else, a variable or a call,
+is returned in the `try` as before, made before the `finally` runs.
+
+What a function's reference is, lowering knows where it writes one
+(`items.rs::fn_ref`), and says so on the expression, `Known::Item`; a
+later pass reads that, not the name, which a module's `let` of a static
+may share the form of, and a drop may set. One of the program's functions
+is never `undefined` either (`Expr::may_be_undefined`): a nullable place
+stores it as it is, `h.done = noop`.
+
+Held by the corpus cases `catch_unwind_guard_returned` (React's
+`startGestureTransition`: a guard, a `catch_unwind` returning what its
+scope's `Option::map` gave, and a function after; each way out restoring
+once) and `catch_unwind_nested_ok` (`return 7;`), against native Rust;
+`test/crates.test.ts`, "a library's function returned past a guard's
+drop is returned after its finally"; `test/lowering-nullable.test.ts`, "a
+function a nullable place is given is stored as it is"; and the mutations
+`fixed-return-kept-in-finally` (`lower/mir/tidy/unwinds.ts`),
+`own-item-reference-unknown`, `library-item-reference-unknown`
+(`lower/items.ts`), `item-not-fixed` and `item-may-be-undefined`
+(`js/make.ts`).

@@ -81,7 +81,10 @@ fn written_at(stmt: &Stmt) -> Option<u32> {
 /// `let result; try { ..; result = e; } finally { .. } return result;`, what
 /// a function gives made last in a `try` whose `finally` drops what's held:
 /// `try { ..; return e; } finally { .. }`, which runs the `finally` once `e`
-/// is made, as the original does (ADR 0588).
+/// is made, as the original does (ADR 0588). Of an `e` the same whenever
+/// it's made, a constant or a function, `noop` (`Expr::is_fixed`), which
+/// the drop can't change: `try { .. } finally { .. } return e;`, as a
+/// person writes it, after (ADR 0693, amended).
 pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
@@ -100,9 +103,13 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             let StmtKind::Try(body, _) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
-            let last = body.last_mut().expect("matched");
-            if let StmtKind::Assign(_, value) = std::mem::replace(&mut last.kind, StmtKind::Return(None)) {
-                last.kind = StmtKind::Return(Some(value));
+            let last = body.pop().expect("matched");
+            let StmtKind::Assign(_, value) = last.kind else {
+                unreachable!("matched")
+            };
+            match value.is_fixed() {
+                true => stmts.insert(i + 1, StmtKind::Return(Some(value)).at(last.span)),
+                false => body.push(StmtKind::Return(Some(value)).at(last.span)),
             }
         }
         i += 1;

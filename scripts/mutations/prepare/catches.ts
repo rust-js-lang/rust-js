@@ -161,6 +161,7 @@ export const mutations: Mutation[] = [
     find: "    let only_read = read == js::mentions_in(&rest, &payload) && !js::Writes::of(&rest).changed.contains(&payload);\n",
     replace: "    let only_read = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_message_changed.rs$"],
+    snapshots: true,
   },
   {
     name: "thrown-error-read-as-payload",
@@ -201,6 +202,7 @@ export const mutations: Mutation[] = [
     find: "        if last < taken {\n",
     replace: "        if taken > 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
+    snapshots: true,
   },
   {
     name: "unwound-let-hoisted-moved",
@@ -209,6 +211,7 @@ export const mutations: Mutation[] = [
     find: "    if hoisted {\n",
     replace: "    if hoisted && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
+    snapshots: true,
   },
   {
     name: "unwound-let-shadow-const",
@@ -217,6 +220,7 @@ export const mutations: Mutation[] = [
     find: "    let made = if mutable {\n",
     replace: "    let made = if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-not-unchained",
@@ -241,6 +245,7 @@ export const mutations: Mutation[] = [
     find: " || (otherwise.is_some() && !leaves) {\n",
     replace: " {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_chained.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-else-dropped",
@@ -298,6 +303,7 @@ export const mutations: Mutation[] = [
     find: "            !test.may_throw() && then.iter().all(cannot_throw) && otherwise.iter().flatten().all(cannot_throw)\n",
     replace: "            !test.may_throw()\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
+    snapshots: true,
   },
   {
     name: "cannot-throw-if-refused",
@@ -314,5 +320,23 @@ export const mutations: Mutation[] = [
     find: "        false => call.span,\n",
     replace: "        false => span,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment in catch_unwind's closure"],
+  },
+  {
+    name: "ok-binding-alias-kept",
+    breaks: "`Ok(Some(f)) => return f` keeps its pattern's alias of the `try`'s value, `const value = ..; if (value) { const f = value; return f; }`",
+    file: "src/prepare/catches.rs",
+    find: "            let name = match whole_binding(&ok, result, &call) {\n",
+    replace: "            let name = match None::<String> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ok-binding-clash-unchecked",
+    breaks: "the `try`'s value is named by the pattern's binding where the closure has that name too, so one of them stays given apart, `const picked$1 = pick(n)`",
+    file: "src/prepare/catches.rs",
+    find: "    let unclashed = !of_call.iter().any(|n| is_name(n));\n",
+    replace: "    let unclashed = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
+    snapshots: true,
   },
 ];

@@ -492,6 +492,11 @@ pub enum Known {
     /// `!o` (`Expr::presence`, ADR 0298, amended): true exactly where `o`
     /// is set, or isn't, as `o != null` is, which `null_test` reads it as.
     Presence,
+    /// One of the program's functions, its own or a library's, by its
+    /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the
+    /// same function wherever and whenever it's read (`Expr::is_fixed`,
+    /// ADR 0693, amended).
+    Item,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

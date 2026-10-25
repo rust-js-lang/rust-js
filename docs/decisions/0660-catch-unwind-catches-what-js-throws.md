@@ -23,7 +23,8 @@ Amended by [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is
 the `catch` of a `let Err(x)` of a closure that never returns holds what
 follows that reads `x`, or what that declares. Amended below: an `Ok`
 arm that tests what it holds is in the `try`, and a binding's setter is a
-write that may throw.
+write that may throw; and the `try`'s value is named by the pattern that
+binds all of it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops
@@ -297,3 +298,30 @@ runs after catch_unwind's try", whose setter throws; and the mutations
 `cannot-throw-if-arms-unread`, `cannot-throw-if-refused`
 (`prepare/catches.ts`), `tried-const-called` (`js/applied.ts`) and
 `setter-write-only-makes-a-value` (`lower/binding_calls.ts`).
+
+## Amendment (2026-10-25): the `try`'s value by its pattern's name
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value read
+in the same places; only its name changes.
+
+The amendment above gave the `try`'s value the result's name and kept the
+pattern's binding of it, `const value = finish ? finish() : undefined; if
+(value) { const finish = value; return finish; }`: two names of one
+value, where upstream has none but the test's.
+
+**Where the pattern binds the whole value, `Ok(Some(f))`'s `const f =
+value;`, the value is `f`, its binding gone**: `const finish = g ? g(..) :
+undefined; if (finish) { return finish; }`, as an `if let Some(v) =
+o.map(..)` outside a `catch_unwind` reads. Only where that's its one
+name: the binding declared once in the arm, read only after it there, and
+neither its name nor one given apart from it, `finish$1`, read or
+declared in the closure, whose body the `try` runs first. Else the value
+keeps the result's name, as before, so neither is given apart to be the
+other: `const picked = pick(n); const value = picked != null ? .. :
+undefined; if (value != null) { const picked = value; .. }`.
+
+Held by the corpus cases `catch_unwind_guard_returned` (its `gesture`
+named by the binding, its `finished`, whose closure reads `finish`, by
+the result) and `catch_unwind_nested_ok`, against native Rust; and the
+mutations `ok-binding-alias-kept` and `ok-binding-clash-unchecked`
+(`prepare/catches.ts`).

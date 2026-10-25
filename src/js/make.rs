@@ -891,17 +891,34 @@ impl Expr {
         )
     }
 
+    /// This, a reference to one of the program's functions
+    /// (`Known::Item`).
+    pub fn item(self) -> Expr {
+        Expr {
+            known: Known::Item,
+            ..self
+        }
+    }
+
+    /// Whether this is the same value wherever and whenever it's read,
+    /// whatever runs between: a constant, or one of the program's
+    /// functions (`Known::Item`), which nothing assigns.
+    pub fn is_fixed(&self) -> bool {
+        self.is_constant() || self.known == Known::Item
+    }
+
     /// Whether this may be `undefined`, as its form tells. A constant but
     /// `undefined`, `null` among them, and what's made here, an object, an
     /// array, a function, a `new`, a template, a regex or JSX, never is; nor
     /// what an operator gives but `&&`, `||` and `??`, which may give an
-    /// operand that may be; nor what lowering knows is `Known::Defined`.
+    /// operand that may be; nor what lowering knows is `Known::Defined`,
+    /// nor one of the program's functions (`Known::Item`).
     /// Anything else, a variable or a call, may be. The one answer of
     /// whether a JS value may be `undefined`, which a nullable place's
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if self.known == Known::Defined => false,
+            _ if matches!(self.known, Known::Defined | Known::Item) => false,
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(_)

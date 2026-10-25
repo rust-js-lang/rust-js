@@ -267,7 +267,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     // An `Ok` arm that reads its value only as `result._0`, where a pattern
     // inside it tests and binds it, `Ok(Some(f)) => return f`'s `if
     // (result._0) { const f = result._0; return f; }`: the value is the
-    // `try`'s, by the result's own name, which nothing else reads.
+    // `try`'s, which nothing else reads, by the pattern's name where it
+    // binds the whole value, `if (f) { return f; }`, else by the result's.
     let read_in_place;
     let (value_name, ok) = match value_name {
         None if held_reads(ok, result) > 0 && held_reads(ok, result) == js::mentions_in(ok, result) => {
@@ -277,8 +278,22 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
                     *e = Expr::var(result).or_at(e.span);
                 }
             });
+            let name = match whole_binding(&ok, result, &call) {
+                Some(binding) => {
+                    js::statement_lists(&mut ok, &mut |stmts| {
+                        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, _) if *name == binding));
+                    });
+                    js::each_expr_mut(&mut ok, &mut |e| {
+                        if matches!(&e.kind, ExprKind::Var(v) if v == result) {
+                            *e = Expr::var(&binding).or_at(e.span);
+                        }
+                    });
+                    binding
+                }
+                None => result.clone(),
+            };
             read_in_place = ok;
-            (Some(result.clone()), read_in_place.as_slice())
+            (Some(name), read_in_place.as_slice())
         }
         value_name => (value_name, ok),
     };
@@ -392,6 +407,37 @@ fn cannot_throw(stmt: &Stmt) -> bool {
         }
         _ => stmt.only_makes_values(),
     }
+}
+
+/// Of an `Ok` arm that reads its value as `result`, the pattern's binding
+/// of all of it, `const f = result;` of `Ok(Some(f))`'s `if (result) {
+/// const f = result; return f; }`, which may name the `try`'s value: its
+/// one declaration there, every read of it after it, and a name `call`,
+/// which the `try` runs first, neither reads nor declares, nor one given
+/// apart from it, `picked$1`, which it would keep from being that name
+/// (ADR 0352).
+fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<String> {
+    let mut found = None;
+    let mut aliases = 0;
+    js::each_list(ok, &mut |list| {
+        for (at, stmt) in list.iter().enumerate() {
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && matches!(&value.kind, ExprKind::Var(v) if v == result)
+            {
+                aliases += 1;
+                found = Some((name.clone(), js::mentions_in(&list[at + 1..], name)));
+            }
+        }
+    });
+    let (name, read_after) = found.filter(|_| aliases == 1)?;
+    let base = |n: &str| crate::names::apart(n).map_or(n, |(base, _)| base).to_string();
+    let is_name = |n: &str| base(n) == base(&name);
+    let mut declared = 0;
+    js::each_declared(ok, &mut |d| declared += usize::from(is_name(d)));
+    let mut of_call = HashSet::new();
+    js::names_in(&[StmtKind::Expr(call.clone()).at(call.span)], &mut of_call);
+    let unclashed = !of_call.iter().any(|n| is_name(n));
+    (declared == 1 && read_after == js::mentions_in(ok, &name) && unclashed).then_some(name)
 }
 
 /// How often `stmts` read `result._0`, the value a `Result` holds.

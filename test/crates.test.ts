@@ -177,6 +177,13 @@ for (const name of readdirSync(triples).sort()) {
   }, 300_000);
 }
 
+// ADR 0693, amended: a library's function, which nothing assigns, returned
+// past a guard's drop is returned after its `finally`, as the crate's own is.
+test("a library's function returned past a guard's drop is returned after its finally", () => {
+  const out = chain(pairs, "returned_item", ["dep", "app"]);
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("    depth = previous;\n  }\n  return noop;\n}");
+}, 300_000);
+
 // ADR 0844: a library that reads no count of its `Rc`s counts none, and its
 // contract says so: its JS is the value itself, a context's
 // create-then-assign, as is its consumer's. A consumer that counts one it

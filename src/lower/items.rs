@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let reference = Expr::var(&self.krate.imports[&self.module][&export]);
             return match &item.member {
                 Some(method) => Expr::member(reference, method.clone()),
-                None => reference,
+                None => reference.item(),
             };
         }
         self.dependencies.borrow_mut().uses.push((self.item, def_id));
@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if target.owner.is_some() {
             Expr::member(reference, target.name.clone())
         } else {
-            reference
+            reference.item()
         }
     }
 

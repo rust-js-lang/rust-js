@@ -361,9 +361,10 @@ aborts.
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
 whose `finally` drops what it holds however it's left: a guard whose
 `Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)),
-one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, and
-the drop's body is in it, what it declares named apart from the
-function's where JS's scopes need it ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md)).
+one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, a
+function or a constant it returns last after them, `return noop;`, as the
+drop can't change it, and the drop's body is in it, what it declares
+named apart from the function's where JS's scopes need it ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md)).
 The scope reads as it would without the guard, and the guard's fields
 are the variables it was made of, `name` above, where nothing sets them
 once it's made ([ADR 0705](../../decisions/0705-a-guards-scope-reads-as-any-body.md)).
@@ -522,7 +523,8 @@ Where its `Result` is matched, its `unwrap_or` returned, or an `if let
 Ok(v)` returns `v`, it's JS's `try`, the closure's body in it; the last's
 `catch` does nothing, what follows running where it threw. An `Ok` arm
 is in the `try` where it can't throw, one that tests what it holds too,
-`Ok(Some(f)) => return f`; one that may, a binding's setter's among it,
+`Ok(Some(f)) => return f`, the value by its pattern's name, `if (f) {
+return f; }`; one that may, a binding's setter's among it,
 runs after the `try`, as what it throws isn't the `catch`'s:
 
 ```rust

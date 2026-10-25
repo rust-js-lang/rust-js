@@ -21,34 +21,31 @@ function finish(n) {
   const previous = depth;
   depth = (previous + 1) >>> 0;
   try {
-    try {
-      const picked = pick(n);
-      const catchUnwind = picked != null ? (picked + 1) >>> 0 : undefined;
-      if (catchUnwind != null) {
-        const picked = catchUnwind;
-        return picked;
-      }
-    } catch (thrown) {
-      const error = $unwound(thrown);
-      const value =
-        error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
-          ? error.value
-          : undefined;
-      console.log(`caught ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+    const picked = pick(n);
+    const catchUnwind = picked != null ? (picked + 1) >>> 0 : undefined;
+    if (catchUnwind != null) {
+      const picked = catchUnwind;
+      return picked;
     }
-    return 7;
+  } catch (thrown) {
+    const error = $unwound(thrown);
+    const value =
+      error.impl.typeId() === "alloc::string::String" || error.impl === $panicMessage
+        ? error.value
+        : undefined;
+    console.log(`caught ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   } finally {
     console.log(`restored ${previous}`);
     depth = previous;
   }
+  return 7;
 }
 
 /** Its value bound and tested further, `Ok(Some(v)) if ..`'s arm. */
 function guarded(n, limit) {
   try {
-    const catchUnwind = pick(n);
-    if (catchUnwind != null && catchUnwind < limit) {
-      const v = catchUnwind;
+    const v = pick(n);
+    if (v != null && v < limit) {
       return v;
     }
     return 1;
@@ -59,14 +56,13 @@ function guarded(n, limit) {
 
 /** An arm that may panic itself, which nothing here catches. */
 function checked(n) {
-  let catchUnwind;
+  let v;
   try {
-    catchUnwind = pick(n);
+    v = pick(n);
   } catch {
     return 2;
   }
-  if (catchUnwind != null) {
-    const v = catchUnwind;
+  if (v != null) {
     if (v > 30) {
       throw new Error(`checked ${v}`);
     }

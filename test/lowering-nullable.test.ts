@@ -893,3 +893,49 @@ pub fn make(dev: bool) -> SharedStateClient {
   const dev = lib.make(true);
   expect(["actQueue" in prod, "asyncTransitions" in prod, dev.actQueue, dev.asyncTransitions]).toEqual([false, false, null, 0]);
 });
+
+// One of the crate's functions is never `undefined` (`Known::Item`): a
+// nullable place stores it as it is, `h.done = noop`, where it's set and
+// where an `Option` of it is mapped to it (ADR 0693, amended).
+test("a function a nullable place is given is stored as it is", async () => {
+  const dir = fixture("nullable-function-item");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Holder {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub done: Cell<Option<fn() -> u32>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub picked: Option<fn() -> u32>,
+}
+
+fn noop() -> u32 {
+    7
+}
+
+pub fn make() -> Holder {
+    Holder {
+        done: Cell::new(None),
+        picked: None,
+    }
+}
+
+pub fn finish(h: &Holder) {
+    h.done.set(Some(noop));
+}
+
+pub fn pick(h: &mut Holder, given: Option<u32>) {
+    h.picked = given.map(|_| noop as fn() -> u32);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  h.done = noop;\n");
+  expect(js).toContain("  h.picked = given != null ? noop : null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const h = lib.make();
+  lib.finish(h);
+  lib.pick(h, null);
+  expect([h.done(), h.picked]).toEqual([7, null]);
+  lib.pick(h, 0);
+  expect(h.picked()).toBe(7);
+});

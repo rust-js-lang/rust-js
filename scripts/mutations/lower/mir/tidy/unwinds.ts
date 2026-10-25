@@ -103,4 +103,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
     snapshots: true,
   },
+  {
+    name: "fixed-return-kept-in-finally",
+    breaks: "a function or a constant a guard's scope returns last stays in its `try`, `try { try { .. } catch { .. } return noop; } finally { .. }`, not after one `try`, `catch` and `finally`",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "            match value.is_fixed() {\n",
+    replace: "            match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
+    snapshots: true,
+  },
 ];
