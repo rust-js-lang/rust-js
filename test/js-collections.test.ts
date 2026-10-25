@@ -85,7 +85,7 @@ console.log(JSON.stringify([registered, lib.cleaned()]));
   expect(ran(dir, script, "none")).toBe("[false,[]]\n");
 });
 
-// ADR 0874: `value instanceof C` of a constructor held as a value, React's
+// ADR 0878: `value instanceof C` of a constructor held as a value, React's
 // typed arrays' shared one, `getPrototypeOf(Uint32Array.prototype)
 // .constructor`, and of the one class the js crate names, `DataView`: false
 // of another realm's typed array, as upstream's is, which

@@ -1,4 +1,4 @@
-# 0874. `instanceof` of a constructor held as a value is `js::instance_of`
+# 0878. `instanceof` of a constructor held as a value is `js::instance_of`
 
 Status: Accepted. Extends [0024](0024-web-crate.md)'s forms of a
 binding's `link_name` by one, `"instanceof"`, beside `"instanceof X"`.

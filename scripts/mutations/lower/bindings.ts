@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "instance-of-given-unknown",
-    breaks: "a binding's `link_name = \"instanceof\"`, `js::instance_of`'s, is a call of a method named so, `value.instanceof(constructor)` (ADR 0874)",
+    breaks: "a binding's `link_name = \"instanceof\"`, `js::instance_of`'s, is a call of a method named so, `value.instanceof(constructor)` (ADR 0878)",
     file: "src/lower/bindings.rs",
     find: "        \"instanceof\" => return JsForm::InstanceOfGiven,\n",
     replace: "",

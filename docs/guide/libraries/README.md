@@ -160,7 +160,7 @@ What it has:
   `getPrototypeOf(Uint32Array.prototype).constructor`, each typed array's
   `prototype()` its `X.prototype`; `data_view::is(value)` is `value
   instanceof DataView`
-  ([ADR 0874](../../decisions/0874-instanceof-of-a-constructor-value.md)).
+  ([ADR 0878](../../decisions/0878-instanceof-of-a-constructor-value.md)).
   A `Set` holds any value, as a `Map` keys one; each is made of what it
   starts with, `set::new(Some(&[a, b]))`, or `None`
   ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)). A

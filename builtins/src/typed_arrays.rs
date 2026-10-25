@@ -316,7 +316,7 @@ pub mod data_view {
         unreachable!()
     }
 
-    /// [`value instanceof DataView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView): whether `value`, any value, as TypeScript's `any`, is a `DataView` (ADR 0874).
+    /// [`value instanceof DataView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView): whether `value`, any value, as TypeScript's `any`, is a `DataView` (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "instanceof DataView")]
     pub fn is(this: Option<&Unknown>) -> bool {
         unreachable!()
@@ -566,7 +566,7 @@ pub mod int8_array {
     /// [`Int8Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    /// [`Int8Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array): what each `Int8Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Int8Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array): what each `Int8Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Int8Array.prototype")]
     pub fn prototype() -> &'static Int8Array {
         unreachable!()
@@ -841,7 +841,7 @@ pub mod uint8_array {
     /// [`Uint8Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    /// [`Uint8Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array): what each `Uint8Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Uint8Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array): what each `Uint8Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Uint8Array.prototype")]
     pub fn prototype() -> &'static Uint8Array {
         unreachable!()
@@ -1116,7 +1116,7 @@ pub mod uint8_clamped_array {
     /// [`Uint8ClampedArray.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 1;
 
-    /// [`Uint8ClampedArray.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray): what each `Uint8ClampedArray` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Uint8ClampedArray.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray): what each `Uint8ClampedArray` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Uint8ClampedArray.prototype")]
     pub fn prototype() -> &'static Uint8ClampedArray {
         unreachable!()
@@ -1391,7 +1391,7 @@ pub mod int16_array {
     /// [`Int16Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 2;
 
-    /// [`Int16Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array): what each `Int16Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Int16Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array): what each `Int16Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Int16Array.prototype")]
     pub fn prototype() -> &'static Int16Array {
         unreachable!()
@@ -1666,7 +1666,7 @@ pub mod uint16_array {
     /// [`Uint16Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 2;
 
-    /// [`Uint16Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array): what each `Uint16Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Uint16Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array): what each `Uint16Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Uint16Array.prototype")]
     pub fn prototype() -> &'static Uint16Array {
         unreachable!()
@@ -1941,7 +1941,7 @@ pub mod int32_array {
     /// [`Int32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    /// [`Int32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array): what each `Int32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Int32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array): what each `Int32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Int32Array.prototype")]
     pub fn prototype() -> &'static Int32Array {
         unreachable!()
@@ -2216,7 +2216,7 @@ pub mod uint32_array {
     /// [`Uint32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    /// [`Uint32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array): what each `Uint32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Uint32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array): what each `Uint32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Uint32Array.prototype")]
     pub fn prototype() -> &'static Uint32Array {
         unreachable!()
@@ -2491,7 +2491,7 @@ pub mod float32_array {
     /// [`Float32Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 4;
 
-    /// [`Float32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array): what each `Float32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Float32Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array): what each `Float32Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Float32Array.prototype")]
     pub fn prototype() -> &'static Float32Array {
         unreachable!()
@@ -2766,7 +2766,7 @@ pub mod float64_array {
     /// [`Float64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    /// [`Float64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array): what each `Float64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`Float64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array): what each `Float64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get Float64Array.prototype")]
     pub fn prototype() -> &'static Float64Array {
         unreachable!()
@@ -3041,7 +3041,7 @@ pub mod big_int64_array {
     /// [`BigInt64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    /// [`BigInt64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array): what each `BigInt64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`BigInt64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array): what each `BigInt64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get BigInt64Array.prototype")]
     pub fn prototype() -> &'static BigInt64Array {
         unreachable!()
@@ -3316,7 +3316,7 @@ pub mod big_uint64_array {
     /// [`BigUint64Array.BYTES_PER_ELEMENT`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/BYTES_PER_ELEMENT): how many bytes an element is.
     pub const BYTES_PER_ELEMENT: u32 = 8;
 
-    /// [`BigUint64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array): what each `BigUint64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0874).
+    /// [`BigUint64Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array): what each `BigUint64Array` inherits from, its methods, whose prototype in turn is every typed array's, as React's `getPrototypeOf(Uint32Array.prototype).constructor` reads (ADR 0878).
     #[cfg_attr(rust_js, rust_js::link_name = "get BigUint64Array.prototype")]
     pub fn prototype() -> &'static BigUint64Array {
         unreachable!()

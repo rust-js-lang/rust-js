@@ -609,7 +609,7 @@ pub fn class<T>() -> &'static Class {
 /// [`value instanceof constructor`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/instanceof):
 /// whether `constructor.prototype` is on the prototype chain of `value`,
 /// any value, of a constructor held as a value, as TypeScript's
-/// `instanceof` takes `any` on each side (ADR 0874): React's
+/// `instanceof` takes `any` on each side (ADR 0878): React's
 /// `getPrototypeOf(Uint32Array.prototype).constructor`, or a class's,
 /// `js::class::<Component>()`. A test of one class a binding names is
 /// that binding's, `#[rust_js::link_name = "instanceof Editor"]`, as the

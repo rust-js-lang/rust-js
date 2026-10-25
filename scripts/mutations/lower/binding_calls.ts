@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "instance-of-given-backwards",
-    breaks: "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0874)",
+    breaks: "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),\n",
     replace: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, args.remove(0), this),\n",

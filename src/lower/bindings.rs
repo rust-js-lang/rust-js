@@ -299,7 +299,7 @@ pub(super) enum JsForm {
     /// `this instanceof Class`: a checked one, as a `bool`.
     InstanceOf(String),
     /// `instanceof`: `this instanceof constructor`, of a constructor
-    /// given as a value, `js::instance_of`'s (ADR 0874).
+    /// given as a value, `js::instance_of`'s (ADR 0878).
     InstanceOfGiven,
     /// `get []`: `this[key]`, a property by a name given (ADR 0225).
     GetIndex,
