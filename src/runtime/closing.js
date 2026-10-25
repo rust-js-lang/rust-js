@@ -28,25 +28,13 @@ function $closing(it, drop, slices = true) {
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
   if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.advanceBackBy = (m) => {
-      const n = Math.min(m, it.len());
-      const passed = it.items.slice(it.end - n, it.end);
-      it.end -= n;
-      for (const item of passed) drop.each(item);
-      return m - n;
-    };
+    closing.advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
     closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
     closing.ownNthBack = true;
     // And from its front, its `advance_by` and `nth`, what they pass over
     // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
     // (#250); how many there weren't.
-    closing.advanceBy = (m) => {
-      const n = Math.min(m, it.len());
-      const passed = it.items.slice(it.at, it.at + n);
-      it.at += n;
-      for (const item of passed) drop.each(item);
-      return m - n;
-    };
+    closing.advanceBy = (m) => $advanceSlice(it, m, drop.each);
     closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
     // Each item's own drop, which what it gives on is dropped by (#261).
@@ -65,6 +53,10 @@ function $closing(it, drop, slices = true) {
       if (it.rfold !== undefined) closing.rfold = rfoldClosing;
       if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
     };
+  }
+  // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
+  if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
+    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
   }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
@@ -95,4 +87,17 @@ function $closing(it, drop, slices = true) {
     return folded;
   };
   return closing;
+}
+
+// `it`, the array's items a `Vec`'s `IntoIter` owns, advanced by `m` from
+// its front, or from its back, `back`: what it passes dropped as one slice,
+// front to back, by `each`, as std's `advance_by` and `advance_back_by` drop
+// them; how many there weren't (#234, #250, #286).
+function $advanceSlice(it, m, each, back = false) {
+  const n = Math.min(m, it.len());
+  const passed = back ? it.items.slice(it.end - n, it.end) : it.items.slice(it.at, it.at + n);
+  if (back) it.end -= n;
+  else it.at += n;
+  for (const item of passed) each(item);
+  return m - n;
 }

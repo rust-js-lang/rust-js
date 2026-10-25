@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "chain-side-advanced-undropped",
     breaks: "a chain's `nth` advances a `skip` side, which has no `advance_by` of its own, dropping none of what it passes (#269)",
     file: "src/runtime/lazy_chain.js",
-    find: "  const advanced = (it, m, drop = it.dropItem) =>\n",
+    find: "  const advanced = (it, m, drop = it.dropItem ?? first?.dropItem ?? second.dropItem) =>\n",
     replace: "  const advanced = (it, m, drop) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },

@@ -1409,23 +1409,24 @@ export class $Steps extends Iterator {
     );
     taken.from = [this];
     // Its `nth` drops what it passes over itself where its source's does, a
-    // reversed `Vec`'s, as one slice, and it knows each item's drop (#261).
-    if (this.ownNth && this.dropItem !== undefined) {
+    // reversed `Vec`'s, as one slice, by each item's drop, its source's or
+    // the one it's given (#261, #286).
+    if (this.ownNth) {
       taken.ownNth = true;
-      taken.dropItem = this.dropItem;
+      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;
     }
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
-    taken.nth = (k) => {
+    taken.nth = (k, drop = taken.dropItem) => {
       if (n > k) {
         n -= k + 1;
-        return this.nth(k);
+        return this.nth(k, drop);
       }
       // Past its end, its source's `nth(n - 1)`, whose item std's `Take::nth`
       // drops, where its source says how (#261).
       if (n > 0) {
-        const step = this.nth(n - 1);
-        if (!step.done) taken.dropItem?.(step.value);
+        const step = this.nth(n - 1, drop);
+        if (!step.done) drop?.(step.value);
       }
       n = 0;
       // Past its end, what it steps done with, unless it's held, whose
@@ -1850,25 +1851,13 @@ export function $closing(it, drop, slices = true) {
   // `advance_back_by` drops them, then its next from the back; not of one
   // that drops each as it's passed, `slices` false, a `Drain`'s (#234).
   if (slices && it.items !== undefined && it.nthBack === undefined && drop?.each !== undefined) {
-    closing.advanceBackBy = (m) => {
-      const n = Math.min(m, it.len());
-      const passed = it.items.slice(it.end - n, it.end);
-      it.end -= n;
-      for (const item of passed) drop.each(item);
-      return m - n;
-    };
+    closing.advanceBackBy = (m) => $advanceSlice(it, m, drop.each, true);
     closing.nthBack = (k) => done(closing.advanceBackBy(k) > 0 ? { done: true, value: undefined } : it.back());
     closing.ownNthBack = true;
     // And from its front, its `advance_by` and `nth`, what they pass over
     // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
     // (#250); how many there weren't.
-    closing.advanceBy = (m) => {
-      const n = Math.min(m, it.len());
-      const passed = it.items.slice(it.at, it.at + n);
-      it.at += n;
-      for (const item of passed) drop.each(item);
-      return m - n;
-    };
+    closing.advanceBy = (m) => $advanceSlice(it, m, drop.each);
     closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());
     closing.ownNth = true;
     // Each item's own drop, which what it gives on is dropped by (#261).
@@ -1887,6 +1876,10 @@ export function $closing(it, drop, slices = true) {
       if (it.rfold !== undefined) closing.rfold = rfoldClosing;
       if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
     };
+  }
+  // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
+  if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
+    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
   }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
@@ -1917,6 +1910,19 @@ export function $closing(it, drop, slices = true) {
     return folded;
   };
   return closing;
+}
+
+// `it`, the array's items a `Vec`'s `IntoIter` owns, advanced by `m` from
+// its front, or from its back, `back`: what it passes dropped as one slice,
+// front to back, by `each`, as std's `advance_by` and `advance_back_by` drop
+// them; how many there weren't (#234, #250, #286).
+export function $advanceSlice(it, m, each, back = false) {
+  const n = Math.min(m, it.len());
+  const passed = back ? it.items.slice(it.end - n, it.end) : it.items.slice(it.at, it.at + n);
+  if (back) it.end -= n;
+  else it.at += n;
+  for (const item of passed) each(item);
+  return m - n;
 }
 
 // `it.skip(n)` explicit, Rust's `Skip` (ADR 0542): what it steps, `iter`,
@@ -9816,6 +9822,11 @@ export function $stdIterator(struct, steps) {
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
   }
+  // Its `advance_by`, std's, its source's, which drops what it passes as
+  // its source does, a `Vec`'s as one slice (#286).
+  if (steps.advanceBy !== undefined) {
+    it.advanceBy = (m, drop) => steps.advanceBy(it, m, drop);
+  }
   // Its `nth`, the compiled one, which passes it on to its source's (#182).
   // Each std's body, which drops what it passes itself, as `$iterator`'s
   // own do: `ownNth`, `ownLast`.
@@ -11200,7 +11211,9 @@ export function $lazyChain(a, b) {
   };
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250).
-  const advanced = (it, m, drop = it.dropItem) =>
+  // Each side's item drop is the other's too, as they give one type of item:
+  // a compiled struct's, which has none of its own, the other's (#285).
+  const advanced = (it, m, drop = it.dropItem ?? first?.dropItem ?? second.dropItem) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
   chained.advanceBy = (m, drop) => {
     if (first !== undefined) {
@@ -12008,6 +12021,45 @@ export function $inspectFold(inspect, init, g, iterator) {
     },
     iterator,
   );
+}
+
+// `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which
+// drops what it passes itself, a `Vec`'s as one slice; else std's, each
+// it steps past given to `drop`. How many there weren't (#286).
+export function $advanceByOf(it, m, drop, iterator) {
+  const given = iterator === undefined ? it : $given(it, iterator, true);
+  if (Object.hasOwn(given, "advanceBy")) return given.advanceBy(m, drop);
+  return $Steps.prototype.advanceBy.call($lent(given), m, drop);
+}
+
+// A `Fuse`'s `advance_by`, std's: its source's, while it has one, which it
+// lets go of, dropped by `dropSelf`, where that ran short; of a
+// `FusedIterator`, `fused`, kept, as std's specialization keeps it (#286).
+export function $fuseAdvanceBy(fuse, m, drop, iterator, dropSelf, fused = false) {
+  if (fuse.iter == null) return m;
+  const iter = $someValue(fuse.iter);
+  const left = $advanceByOf(iter, m, drop, iterator);
+  if (left > 0 && !fused) {
+    fuse.iter = undefined;
+    dropSelf?.(iter);
+  }
+  return left;
+}
+
+// A `Rev`'s `advance_by`, std's: its source's `advance_back_by`, by its
+// dictionaries, `iterator` and `back`: its own, which drops what it passes
+// itself, a `Vec`'s as one slice; else each `next_back`, given to `drop`.
+export function $revAdvanceBy(rev, m, drop, iterator, back) {
+  const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
+  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m);
+  // An array's items it owns, a `Vec`'s, dropped as one slice.
+  if (it.items !== undefined && drop !== undefined) return $advanceSlice(it, m, drop, true);
+  for (; m > 0; m--) {
+    const step = it.back();
+    if (step.done) break;
+    drop?.(step.value);
+  }
+  return m;
 }
 
 // A `Fuse`'s fold, std's: its source's, while it has one, which it lets go

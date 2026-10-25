@@ -245,23 +245,24 @@ class $Steps extends Iterator {
     );
     taken.from = [this];
     // Its `nth` drops what it passes over itself where its source's does, a
-    // reversed `Vec`'s, as one slice, and it knows each item's drop (#261).
-    if (this.ownNth && this.dropItem !== undefined) {
+    // reversed `Vec`'s, as one slice, by each item's drop, its source's or
+    // the one it's given (#261, #286).
+    if (this.ownNth) {
       taken.ownNth = true;
-      taken.dropItem = this.dropItem;
+      if (this.dropItem !== undefined) taken.dropItem = this.dropItem;
     }
     // Its `nth(k)`, std's: its source's, where it has more than `k` left;
     // else its source's past what it has left, and done.
-    taken.nth = (k) => {
+    taken.nth = (k, drop = taken.dropItem) => {
       if (n > k) {
         n -= k + 1;
-        return this.nth(k);
+        return this.nth(k, drop);
       }
       // Past its end, its source's `nth(n - 1)`, whose item std's `Take::nth`
       // drops, where its source says how (#261).
       if (n > 0) {
-        const step = this.nth(n - 1);
-        if (!step.done) taken.dropItem?.(step.value);
+        const step = this.nth(n - 1, drop);
+        if (!step.done) drop?.(step.value);
       }
       n = 0;
       // Past its end, what it steps done with, unless it's held, whose

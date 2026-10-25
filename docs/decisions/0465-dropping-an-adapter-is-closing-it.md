@@ -294,3 +294,22 @@ front drops what it passes front to back, as std's `advance_by` does.
 `chain-nth-given-drop-unused` are caught.
 Readability: the line's `Vec`s add `$iter` (81.9 to 82.1 in 10,000
 lines) and renamed temporaries (713.5 to 714.1), as each such case does.
+
+## Amendment: a compiled `Fuse`'s and `Rev`'s `advance_by` is std's (#286)
+
+std's `Chain::nth` asks its first side's `advance_by`. Through
+`take(2)`, a held `fuse()` and a `rev()`, that reaches a `Vec`'s
+`advance_back_by`, which drops a slice front to back. The compiled
+structs had no `advanceBy`, so the JS stepped each item from the back.
+Now `std_iterator_steps` gives a `Fuse` `$fuseAdvanceBy` (its source's,
+let go on a shortfall unless it's a `FusedIterator`) and a `Rev`
+`$revAdvanceBy` (its source's `advance_back_by`). `$stdIterator` exposes
+it, and `$closing` forwards a struct's own. The one-slice drop is
+`$advanceSlice`, shared with `$closing`'s `Vec` steps. And a `take` is
+its own `nth` wherever its source is, using the item drop it's given
+when its source has none (#285). Fuzz seeds 55134 and 55183.
+`chain_sides_own_steps` adds both shapes, against native Rust. The
+mutations `rev-advance-by-stepped`, `closing-advance-unforwarded`,
+`take-own-nth-needs-item-drop` and `fuse-advance-by-unlisted` are caught.
+Readability: the lines' `Vec`s add `$iter` (82.1 to 82.4 in 10,000
+lines) and renamed temporaries (714.1 to 715.5), as each such case does.

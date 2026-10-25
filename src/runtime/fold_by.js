@@ -53,6 +53,45 @@ function $inspectFold(inspect, init, g, iterator) {
   );
 }
 
+// `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which
+// drops what it passes itself, a `Vec`'s as one slice; else std's, each
+// it steps past given to `drop`. How many there weren't (#286).
+function $advanceByOf(it, m, drop, iterator) {
+  const given = iterator === undefined ? it : $given(it, iterator, true);
+  if (Object.hasOwn(given, "advanceBy")) return given.advanceBy(m, drop);
+  return $Steps.prototype.advanceBy.call($lent(given), m, drop);
+}
+
+// A `Fuse`'s `advance_by`, std's: its source's, while it has one, which it
+// lets go of, dropped by `dropSelf`, where that ran short; of a
+// `FusedIterator`, `fused`, kept, as std's specialization keeps it (#286).
+function $fuseAdvanceBy(fuse, m, drop, iterator, dropSelf, fused = false) {
+  if (fuse.iter == null) return m;
+  const iter = $someValue(fuse.iter);
+  const left = $advanceByOf(iter, m, drop, iterator);
+  if (left > 0 && !fused) {
+    fuse.iter = undefined;
+    dropSelf?.(iter);
+  }
+  return left;
+}
+
+// A `Rev`'s `advance_by`, std's: its source's `advance_back_by`, by its
+// dictionaries, `iterator` and `back`: its own, which drops what it passes
+// itself, a `Vec`'s as one slice; else each `next_back`, given to `drop`.
+function $revAdvanceBy(rev, m, drop, iterator, back) {
+  const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
+  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m);
+  // An array's items it owns, a `Vec`'s, dropped as one slice.
+  if (it.items !== undefined && drop !== undefined) return $advanceSlice(it, m, drop, true);
+  for (; m > 0; m--) {
+    const step = it.back();
+    if (step.done) break;
+    drop?.(step.value);
+  }
+  return m;
+}
+
 // A `Fuse`'s fold, std's: its source's, while it has one, which it lets go
 // of, dropped by `drop`, as its `next` does at its end.
 function $fuseFold(fuse, init, f, iterator, drop) {

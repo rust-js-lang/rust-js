@@ -51,5 +51,12 @@ fn main() {
     // A chain's `nth` past a `fuse()`'s items, which it drops (#285).
     let fused = louds(50, 3).into_iter().fuse().chain(louds(53, 1)).nth(2);
     println!("{:?}", fused.map(|l| l.0));
+    // Std's `advance_by` through a `take` of a held `fuse()` of a `rev()`:
+    // a `Vec`'s `advance_back_by`, one slice, front to back (#286).
+    let advanced = louds(55, 3).into_iter().rev().fuse().take(2).chain(louds(58, 1)).nth(2);
+    println!("{:?}", advanced.map(|l| l.0));
+    // A `skip`'s `last` past a `fuse()`'s items, which it drops (#285).
+    let last = louds(60, 2).into_iter().fuse().chain(louds(62, 1)).skip(2).last();
+    println!("{:?}", last.map(|l| l.0));
     println!("end");
 }

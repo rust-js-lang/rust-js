@@ -87,7 +87,9 @@ function $lazyChain(a, b) {
   };
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250).
-  const advanced = (it, m, drop = it.dropItem) =>
+  // Each side's item drop is the other's too, as they give one type of item:
+  // a compiled struct's, which has none of its own, the other's (#285).
+  const advanced = (it, m, drop = it.dropItem ?? first?.dropItem ?? second.dropItem) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
   chained.advanceBy = (m, drop) => {
     if (first !== undefined) {

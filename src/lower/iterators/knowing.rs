@@ -702,6 +702,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
             }
         }
+        // Its `advance_by`, std's: a fuse's its source's while it has one, a
+        // `FusedIterator`'s kept; a `Rev`'s its source's `advance_back_by`,
+        // a `Vec`'s, which drops what it passes as one slice (#286).
+        let advance = match ty.peel_refs().kind() {
+            ty::Adt(_, args) if self.recognition().is_fuse(ty) => {
+                let source = args.type_at(0);
+                let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
+                let drop = self.drop_function(source, span)?.unwrap_or_else(Expr::undefined);
+                let fused = self.type_fact_value(source, crate::lower::recognition::TypeFact::Fused, span)?;
+                Some(("$fuseAdvanceBy", vec![dictionary, drop, fused]))
+            }
+            _ => match self.recognition().reversed(ty) {
+                Some(source) => {
+                    let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
+                    let back = (self.recognition().double_ended_iterator())
+                        .and_then(|back| self.iterator_evidence(source, back))
+                        .unwrap_or_else(Expr::undefined);
+                    Some(("$revAdvanceBy", vec![dictionary, back]))
+                }
+                None => None,
+            },
+        };
+        if let Some((helper, given)) = advance {
+            let mut args = vec![Expr::var("it"), Expr::var("m"), Expr::var("drop")];
+            args.extend(given);
+            // Its trailing `undefined`s left off, as a call writes none.
+            while args.len() > 3
+                && matches!(
+                    args.last().map(|a| &a.kind),
+                    Some(js::ExprKind::Undefined | js::ExprKind::Bool(false))
+                )
+            {
+                args.pop();
+            }
+            let advance = Expr::arrow(
+                vec!["it".into(), "m".into(), "drop".into()],
+                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
+            );
+            props.push(crate::js::Prop::Field("advanceBy".into(), advance));
+        }
         // Of a kind dropped by closing, `Rev`'s, which an adapter over it
         // closes as it's closed: closing it drops what it holds, each field
         // by its drop, as Rust drops the struct (ADR 0871).

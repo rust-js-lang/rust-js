@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fuse-advance-by-unlisted",
+    breaks: "std's compiled `Fuse` has no `advance_by`, so it steps each item, not its source's (#286)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                Some((\"$fuseAdvanceBy\", vec![dictionary, drop, fused]))\n",
+    replace: "                None\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "map-fold-not-std",
     breaks: "std's compiled `Map` folds by its `next`, never reaching the crate's own `fold` through a peekable (#264)",
     file: "src/lower/iterators/knowing.rs",

@@ -6,6 +6,7 @@ import {
   $findBack,
   $findDropping,
   $foldBack,
+  $fuseAdvanceBy,
   $fuseFold,
   $fuseTryFold,
   $given,
@@ -20,6 +21,7 @@ import {
   $peekableHint,
   $peekableTryFold,
   $pretty,
+  $revAdvanceBy,
   $sizeHint,
   $some,
   $someMut,
@@ -1185,6 +1187,7 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
       fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
       tryFold: (it, init, f, broke) =>
         $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf, SelfFused),
+      advanceBy: (it, m, drop) => $fuseAdvanceBy(it, m, drop, SelfIterator, dropSelf, SelfFused),
     },
   );
 }
@@ -1198,6 +1201,7 @@ export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSe
       hint: (iterator) => revIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
       nth: (iterator, n) =>
         revIterator_nth(iterator, n, SelfIterator, SelfDoubleEndedIterator, dropSelf, dropSelfItem),
+      advanceBy: (it, m, drop) => $revAdvanceBy(it, m, drop, SelfIterator, SelfDoubleEndedIterator),
       close(iterator) {
         dropSelf?.(iterator.iter);
       },

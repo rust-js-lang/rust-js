@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closing-advance-unforwarded",
+    breaks: "a closed compiled `Fuse`'s `advance_by` steps each item, not its source's, a `Rev`'s of a `Vec` (#286)",
+    file: "src/runtime/closing.js",
+    find: "    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);\n",
+    replace: "    closing.unforwarded = (m, drop) => it.advanceBy(m, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
     name: "closing-own-nth-unsaid",
     breaks: "a closed compiled `Peekable` doesn't say its `nth` is its own, so a `step_by` over it steps each item, dropping a reversed `Vec`'s back to front, not as one slice (#261)",
     file: "src/runtime/closing.js",
@@ -118,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "closing-slice-from-back",
     breaks: "a `Vec`'s `IntoIter` passed over from its back drops what it passes back to front, where std drops it as one slice, front to back (#234)",
     file: "src/runtime/closing.js",
-    find: "      it.end -= n;\n      for (const item of passed) drop.each(item);\n",
-    replace: "      it.end -= n;\n      for (const item of passed.reverse()) drop.each(item);\n",
+    find: "  for (const item of passed) each(item);\n",
+    replace: "  for (const item of back ? passed.reverse() : passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
