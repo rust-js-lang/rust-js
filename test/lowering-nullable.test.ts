@@ -433,13 +433,22 @@ pub struct Context {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub renderer: Cell<Option<&'static Unknown>>,
     pub plain: Cell<Option<&'static Unknown>>,
+    // Absent until set, read where it may be absent: its handle stores
+    // its \`None\` as \`null\` too (#292).
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub current: Cell<Option<&'static Unknown>>,
 }
 
 pub fn make(renderer: &'static Unknown) -> Context {
     Context {
         renderer: Cell::new(Some(renderer)),
         plain: Cell::new(Some(renderer)),
+        current: Cell::new(Some(renderer)),
     }
+}
+
+pub fn current_cleared(context: &Context) -> bool {
+    cleared(&context.current)
 }
 
 fn cleared(cell: &Cell<Option<&'static Unknown>>) -> bool {
@@ -529,6 +538,8 @@ pub fn copied_reset(context: &Context) {
   context.renderer = "dom";
   lib.closureReset(context);
   expect(context.renderer).toBe(null);
+  // An optional one's, through a helper: `null`, as it's set (#292).
+  expect([lib.currentCleared(context), context.current]).toEqual([true, null]);
 });
 
 // React's `createContext`, whose DEV-only `_currentRenderer` isn't in its
