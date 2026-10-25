@@ -1,7 +1,7 @@
 //@ run-fail: RefCell already mutably borrowed
 // A function pointer made of a closure that borrows a cell held while
 // it's called: the borrow is counted, and the closure's panics, as std's
-// does (ADR 0904).
+// does (ADR 0907).
 
 use std::cell::RefCell;
 

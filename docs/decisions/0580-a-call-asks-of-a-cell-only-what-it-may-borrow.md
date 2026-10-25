@@ -9,7 +9,7 @@ a call runs runs the crate's impls its bounds name. Extended by
 only what it's given, so `vec![..]` runs nothing. Extended by
 [0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs
 only what it's given, given only numbers and text, borrows nothing.
-Extended by [0904](0904-a-fn-pointer-runs-what-the-crate-made-it-of.md):
+Extended by [0907](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md):
 a fn pointer's call runs what the crate made one of its type of, not
 anything, where no value of its type comes from outside.
 

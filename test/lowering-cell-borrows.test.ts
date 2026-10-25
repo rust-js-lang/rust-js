@@ -94,7 +94,7 @@ pub fn touch(root: &Root) {
   }
 });
 
-// ADR 0904: React's ReactFiberLane picks a lane's index through `clz32`, a
+// ADR 0907: React's ReactFiberLane picks a lane's index through `clz32`, a
 // thread-local fn pointer of `Math.clz32` or its fallback, while it holds
 // `root.entanglements`. What a fn pointer may be is each function the
 // crate makes one of, where no value of its type comes from outside.
