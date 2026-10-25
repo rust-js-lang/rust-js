@@ -92,11 +92,8 @@ const Lexer = {
 
   tokens(lexer) {
     const out = [];
-    while (true) {
-      const c = $peek(lexer.chars);
-      if (c == null) {
-        break;
-      }
+    let c;
+    while ((c = $peek(lexer.chars)) != null) {
       if (/^\p{White_Space}$/u.test(c)) {
         Lexer.bump(lexer);
         continue;
@@ -306,19 +303,17 @@ const Parser = {
     while (Parser.peek(parser) === "LParen") {
       Parser.next(parser);
       const args = [];
-      bb40: {
-        if (Parser.peek(parser) !== "RParen") {
-          while (true) {
-            const result = Parser.expr(parser);
-            if (result.TAG === "Err") {
-              return result;
-            }
-            args.push(result._0);
-            if (Parser.peek(parser) !== "Comma") {
-              break bb40;
-            }
-            Parser.next(parser);
+      if (Parser.peek(parser) !== "RParen") {
+        while (true) {
+          const result = Parser.expr(parser);
+          if (result.TAG === "Err") {
+            return result;
           }
+          args.push(result._0);
+          if (Parser.peek(parser) !== "Comma") {
+            break;
+          }
+          Parser.next(parser);
         }
       }
       const result$2 = Parser.expect(parser, "RParen");

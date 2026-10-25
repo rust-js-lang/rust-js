@@ -52,11 +52,8 @@ function afterChar(s, c) {
 function pieces(s) {
   let rest = s;
   const pieces = [];
-  while (true) {
-    const at = rest.indexOf(",");
-    if (at === -1) {
-      break;
-    }
+  let at;
+  while ((at = rest.indexOf(",")) !== -1) {
     pieces.push(rest.slice(0, at));
     rest = rest.slice(at + 1);
   }

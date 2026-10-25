@@ -97,13 +97,9 @@ function main() {
     [0, 0],
     [0, 1],
   ]);
-  while (true) {
-    const value = $next(iter);
-    if (value == null) {
-      // Through a `&mut`: what's bound names the item, and writes it.
-      break;
-    }
-    const p = value.slice();
+  let value$1;
+  while ((value$1 = $next(iter)) != null) {
+    const p = value$1.slice();
     if (p[0] === 0 && p[1] === 0) {
       console.log("origin");
     } else {
@@ -111,6 +107,8 @@ function main() {
       console.log(`${x} ${y}`);
     }
   }
+
+  // Through a `&mut`: what's bound names the item, and writes it.
   const grid = [1, 2, 3];
   grid[0] = (grid[0] + 10) | 0;
   grid[2] = (grid[2] * 2) | 0;

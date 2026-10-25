@@ -123,14 +123,11 @@ function valueDisplay_fmt(value) {
   }
   f += "{";
   const iter = $sortedEntries(value._0, $cmp).entries();
-  while (true) {
-    const value = $next(iter);
-    if (value == null) {
-      break;
-    }
-    const i = value[0];
-    const k = value[1][0];
-    const x = value[1][1];
+  let value$1;
+  while ((value$1 = $next(iter)) != null) {
+    const i = value$1[0];
+    const k = value$1[1][0];
+    const x = value$1[1][1];
     if (i > 0) {
       f += ",";
     }

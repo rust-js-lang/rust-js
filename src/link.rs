@@ -242,6 +242,10 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
             visitor.read.insert(symbol.clone());
         }
         ExprKind::Var(n) => visitor.name(n),
+        ExprKind::Assigned(n, a) => {
+            visitor.name(n);
+            expr(a, visitor);
+        }
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)

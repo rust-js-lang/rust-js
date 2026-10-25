@@ -637,6 +637,11 @@ pub enum ExprKind {
     /// a `&mut dyn Trait` of a value JS can't change in place, its impl's
     /// dictionary and a handle on its place (ADR 0099).
     Pair(Box<Expr>, Box<Expr>),
+    /// `(name = value)`, an assignment's value: what preparation makes of a
+    /// loop's first `const` that the test leaving it reads, `while (!(step =
+    /// iterator.next()).done) { .. }` (ADR 0856). Nothing before
+    /// preparation makes one, so lowering and tidy never see it.
+    Assigned(String, Box<Expr>),
 }
 
 /// A JSX element (ADR 0040).

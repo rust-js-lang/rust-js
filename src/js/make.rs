@@ -424,6 +424,11 @@ impl Expr {
         Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary)))
     }
 
+    /// `(name = value)`, its value the assignment's (ADR 0856).
+    pub fn assigned(name: &str, value: Expr) -> Expr {
+        Expr::new(ExprKind::Assigned(name.to_string(), Box::new(value)))
+    }
+
     /// What a box, a cell or a handle holds: `b.value` (`HELD`).
     pub fn held(of: Expr) -> Expr {
         Expr::member(of, HELD)

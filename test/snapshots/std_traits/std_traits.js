@@ -346,11 +346,8 @@ function fibonacci() {
 export function iterations() {
   let total = 0;
   const iter = { n: 3 };
-  while (true) {
-    const x = countdownIterator_next(iter);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = countdownIterator_next(iter)) != null) {
     total = (total + x) >>> 0;
   }
   const c = { n: 2 };

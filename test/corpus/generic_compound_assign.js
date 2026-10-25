@@ -22,11 +22,8 @@ function moneyAddAssign_addAssign(money, other) {
 function total(items, TAddAssign, TDefault, TCopy) {
   let sum = TDefault.default();
   const iter = $iter(items);
-  while (true) {
-    const value = $nextSome(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = $nextSome(iter)) != null) {
     const item = TCopy.copy($someValue(value));
     const self = { value: sum };
     TAddAssign.addAssign(self, TCopy.copy(item));

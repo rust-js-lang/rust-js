@@ -19,11 +19,8 @@ export function entry() {
 function total(values, zero, TAdd, TCopy) {
   let sum = TCopy.copy(zero);
   const iter = $iter(values);
-  while (true) {
-    const value = $nextSome(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = $nextSome(iter)) != null) {
     const v = TCopy.copy($someValue(value));
     sum = TAdd.add(TCopy.copy(sum), TCopy.copy(v));
   }

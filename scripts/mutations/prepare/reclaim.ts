@@ -85,4 +85,12 @@ export const mutations: Mutation[] = [
     "replace": "            js::Item::Function(function) => Some(function.name.clone()),",
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
+  {
+    name: "reclaim-assigned-unrenamed",
+    breaks: "a loop's `let step$1` given its name back, `let step`, where the test's assignment still sets `step$1` (ADR 0856)",
+    file: "src/prepare/reclaim.rs",
+    find: "        ExprKind::Var(name) | ExprKind::Assigned(name, _) if reads => f(name),\n",
+    replace: "        ExprKind::Var(name) if reads => f(name),\n",
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+  },
 ];

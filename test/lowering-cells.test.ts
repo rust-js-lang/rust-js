@@ -484,7 +484,7 @@ pub fn last() {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function schedule(n) {\n  timerQueue.push(n);\n}");
-  expect(js).toContain("  let seen = 0;\n  // Count each timer.\n  while (true) {\n    const t = timerQueue.pop();\n");
+  expect(js).toContain("  let seen = 0;\n  // Count each timer.\n  let t;\n  while ((t = timerQueue.pop()) != null) {\n");
   expect(js).toContain("    if (t > limit) {\n      break;\n    }\n");
   expect(js).toContain("export function last() {\n  // Drop the rest.\n  while (true) {\n");
   expect(js).toContain("    if (t === 0) {\n      return;\n    }\n");

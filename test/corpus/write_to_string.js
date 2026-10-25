@@ -17,11 +17,8 @@ function render(items) {
 
 function table(out, rows) {
   const iter = { start: 0, end: rows };
-  while (true) {
-    const i = $rangeNext(iter);
-    if (i == null) {
-      break;
-    }
+  let i;
+  while ((i = $rangeNext(iter)) != null) {
     out.value += `row ${i}\n`;
   }
   out.value += "end";

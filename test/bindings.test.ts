@@ -914,11 +914,11 @@ pub fn anchor(id: f64) -> String {
 }
 
 pub fn int_of(value: Option<&Unknown>) -> String {
-    number::to_string(js::parse_int(value, Some(10)))
+    number::to_string(js::parse_int(value, Some(10)), None)
 }
 
 pub fn float_of(value: &Unknown) -> String {
-    number::to_string(js::parse_float(value))
+    number::to_string(js::parse_float(value), None)
 }
 
 pub fn json_of(value: &Unknown) -> Result<Option<String>, &'static JsError> {
@@ -1187,10 +1187,10 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
                         arg = Some(js::unknown_of(js::concat_text(arg).unwrap()));
                     }
                     Some("d") | Some("i") => {
-                        arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, Some(10)))));
+                        arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, Some(10)), None)));
                     }
                     Some("f") => {
-                        arg = Some(js::unknown_of(number::to_string(js::parse_float(arg))));
+                        arg = Some(js::unknown_of(number::to_string(js::parse_float(arg), None)));
                     }
                     _ => {}
                 }

@@ -241,11 +241,8 @@ function main() {
       try {
         try {
           const iter = sinks.entries();
-          while (true) {
-            const value = $next(iter);
-            if (value == null) {
-              break;
-            }
+          let value;
+          while ((value = $next(iter)) != null) {
             const i = value[0];
             const sink = value[1];
             const value$1 = $borrowMut(sink.value, true);
@@ -255,13 +252,13 @@ function main() {
               $unborrow(value$1);
             }
           }
-          const value = $borrow($index(sinks, 0).value, true);
+          const value$1 = $borrow($index(sinks, 0).value, true);
           try {
             console.log(
-              `${value.impl.total(value.value)} ${$index(sinks, 0).strong} ${counter.strong}`,
+              `${value$1.impl.total(value$1.value)} ${$index(sinks, 0).strong} ${counter.strong}`,
             );
           } finally {
-            $unborrow(value);
+            $unborrow(value$1);
           }
         } finally {
           for (const item of sinks) {

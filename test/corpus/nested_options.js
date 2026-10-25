@@ -133,11 +133,8 @@ function main() {
   const value$12 = $someAt(items$1, items$1.length - 1);
   console.log(`${last == null ? "None" : "Some(())"} ${value$12 == null ? "None" : "Some(())"}`);
   const stack = [$some(undefined), undefined];
-  while (true) {
-    const pop = $pop(stack);
-    if (pop == null) {
-      break;
-    }
+  let pop;
+  while ((pop = $pop(stack)) != null) {
     const top = $someValue(pop);
     console.log(`${top == null ? "None" : `Some(${unitDebug_fmt($someValue(top))})`}`);
   }

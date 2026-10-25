@@ -41,11 +41,8 @@ function main() {
   const iter = refWrapIntoIterator_intoIter(w, {
     clone: (value) => ({ start: value.start, end: value.end }),
   });
-  while (true) {
-    const x = wrapIterator_next(iter, { next: $rangeNext });
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = wrapIterator_next(iter, { next: $rangeNext })) != null) {
     total = (total + x) | 0;
   }
   const arg = $iterator(

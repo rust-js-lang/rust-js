@@ -370,11 +370,8 @@ function main() {
                   }
                   value$0$live$2 = false;
                   let iter = $iter(["0x17", "18", "0xy", "z"]);
-                  while (true) {
-                    const flag = $next(iter);
-                    if (flag == null) {
-                      break;
-                    }
+                  let flag;
+                  while ((flag = $next(iter)) != null) {
                     const value = parseFlag(flag, dNamed);
                     value$0$live = true;
                     if (value.TAG === "Ok") {
@@ -404,22 +401,19 @@ function main() {
                     ["21", "x", true],
                     ["22", "", false],
                   ]);
-                  while (true) {
-                    const value = $next(iter);
-                    if (value == null) {
-                      break;
-                    }
-                    const a = value[0];
-                    const b = value[1];
-                    const both = value[2];
-                    const value$1 = parsePair(a, b, both, dNamed, dDrop_drop);
+                  let value$2;
+                  while ((value$2 = $next(iter)) != null) {
+                    const a = value$2[0];
+                    const b = value$2[1];
+                    const both = value$2[2];
+                    const value = parsePair(a, b, both, dNamed, dDrop_drop);
                     value$0$1$live = true;
                     value$0$0$live = true;
-                    if (value$1.TAG === "Ok") {
+                    if (value.TAG === "Ok") {
                       value$0$0$live = false;
-                      const d = value$1._0[0];
+                      const d = value._0[0];
                       value$0$1$live = false;
-                      const e = value$1._0[1];
+                      const e = value._0[1];
                       const map = (e) => {
                         const result = e[0];
                         dDrop_drop(e);
@@ -432,23 +426,23 @@ function main() {
                       }
                     } else {
                       try {
-                        console.log(`${value$1._0}`);
+                        console.log(`${value._0}`);
                       } catch (error) {
-                        if (value$1.TAG === "Ok") {
-                          dDrop_drop(value$1._0[0]);
-                          if (value$1._0[1] != null) {
-                            dDrop_drop(value$1._0[1]);
+                        if (value.TAG === "Ok") {
+                          dDrop_drop(value._0[0]);
+                          if (value._0[1] != null) {
+                            dDrop_drop(value._0[1]);
                           }
                         }
                         throw error;
                       }
                     }
-                    if (value$1.TAG === "Ok") {
+                    if (value.TAG === "Ok") {
                       if (value$0$0$live) {
-                        dDrop_drop(value$1._0[0]);
+                        dDrop_drop(value._0[0]);
                       }
-                      if (value$0$1$live && value$1._0[1] != null) {
-                        dDrop_drop(value$1._0[1]);
+                      if (value$0$1$live && value._0[1] != null) {
+                        dDrop_drop(value._0[1]);
                       }
                     }
                     value$0$1$live = false;

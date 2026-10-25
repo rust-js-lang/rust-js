@@ -44,11 +44,8 @@ function transform(s, withWord, boundary, options) {
     const charIndices = iterator_peekable($iter($charIndices(word)), { next: $next });
     let init = 0;
     let mode = "Boundary";
-    while (true) {
-      const value = $next(charIndices);
-      if (value == null) {
-        break;
-      }
+    let value;
+    while ((value = $next(charIndices)) != null) {
       const i = value[0];
       const c = value[1];
       const peek = $peek(charIndices);

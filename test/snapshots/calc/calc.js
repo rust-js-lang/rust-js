@@ -84,11 +84,8 @@ export function toRpn(tokens) {
     } else if (t === "LParen") {
       stack.push("LParen");
     } else {
-      while (true) {
-        const top = stack.pop();
-        if (top == null) {
-          break;
-        }
+      let top;
+      while ((top = stack.pop()) != null) {
         if (top === "LParen") {
           break;
         }
@@ -96,11 +93,8 @@ export function toRpn(tokens) {
       }
     }
   }
-  while (true) {
-    const t = stack.pop();
-    if (t == null) {
-      break;
-    }
+  let t;
+  while ((t = stack.pop()) != null) {
     out.push(t);
   }
   return out;

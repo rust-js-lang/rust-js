@@ -88,11 +88,10 @@ export function dijkstra(edges, n, src) {
   const heap = [];
   dist[$at(dist, src)] = 0;
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
-  while (true) {
-    const pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
-    if (pop == null) {
-      break;
-    }
+  let pop;
+  while (
+    (pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]))) != null
+  ) {
     const d = pop[0][0];
     const u = pop[0][1];
     const option = $index(dist, u);
@@ -118,11 +117,8 @@ export function bfsOrder(n, edges) {
   const order = [];
   q.push(0);
   seen[$at(seen, 0)] = true;
-  while (true) {
-    const u = q.shift();
-    if (u == null) {
-      break;
-    }
+  let u;
+  while ((u = q.shift()) != null) {
     order.push(u);
     for (const [a, b] of edges) {
       if (a === u && !$index(seen, b)) {

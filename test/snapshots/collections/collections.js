@@ -55,11 +55,8 @@ export function endOnce(n) {
 export function mutCounter(n) {
   let total = 0;
   const iter = { start: 0, end: n };
-  while (true) {
-    const value = $rangeNext(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = $rangeNext(iter)) != null) {
     let i = value;
     i = (i * 10) | 0;
     total = (total + i) | 0;
@@ -188,11 +185,8 @@ export function shared(times) {
   let total = 0;
   try {
     const iter = $iter(v.value);
-    while (true) {
-      const x = $next(iter);
-      if (x == null) {
-        break;
-      }
+    let x;
+    while ((x = $next(iter)) != null) {
       total = (total + x) | 0;
     }
     return [total, v.value.length];

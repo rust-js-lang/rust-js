@@ -61,11 +61,8 @@ function clampTo(r, x) {
 
 function firstSquareOver(limit) {
   const iter = { start: 1 };
-  while (true) {
-    const n = $rangeFromNext(iter);
-    if (n == null) {
-      break;
-    }
+  let n;
+  while ((n = $rangeFromNext(iter)) != null) {
     if (Math.imul(n, n) >>> 0 > limit) {
       return n;
     }
@@ -129,20 +126,14 @@ function main() {
       .join(", ")}]`,
   );
   let iter = w.rows;
-  while (true) {
-    const row = $rangeNext(iter);
-    if (row == null) {
-      break;
-    }
+  let row;
+  while ((row = $rangeNext(iter)) != null) {
     $print(`${row} `);
   }
   const span = { start: 10, end: 12 };
   iter = span;
-  while (true) {
-    const n = $rangeInclusiveNext(iter);
-    if (n == null) {
-      break;
-    }
+  let n;
+  while ((n = $rangeInclusiveNext(iter)) != null) {
     $print(`${n} `);
   }
   console.log("");
@@ -206,11 +197,8 @@ function main() {
   const kept = new Set();
   $extendMap(kept, $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext), true);
   iter = { start: "x", end: "z" };
-  while (true) {
-    const c = $rangeInclusiveNext(iter);
-    if (c == null) {
-      break;
-    }
+  let c;
+  while ((c = $rangeInclusiveNext(iter)) != null) {
     $print(c);
   }
   console.log(

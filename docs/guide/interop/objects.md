@@ -632,11 +632,8 @@ export function launch() {
 export function sumCountdown() {
   let total = 0;
   const iter = { from: 4 };
-  while (true) {
-    const n = countdownIterator_next(iter);
-    if (n == null) {
-      break;
-    }
+  let n;
+  while ((n = countdownIterator_next(iter)) != null) {
     total = (total + n) >>> 0;
   }
   return total;
@@ -647,6 +644,12 @@ export function evens(limit) {
 }
 ```
 
+- **A `for` loop of it, or a `while let Some(n) = it.next()`, is a loop of
+  what its test makes**, `let n; while ((n = countdownIterator_next(iter))
+  != null) { .. }`, as JS writes one; where a closure in the loop keeps
+  `n`, it's `while (true) { const n = ..; if (n == null) { break; } .. }`,
+  each turn's own `n`
+  ([ADR 0856](../../decisions/0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
 - **A chain of std's adapters is a JS iterator**, its helpers
   `filter`, `map`, `take` in Rust's order. A JS caller of `evens(7)`
   spreads it, `[...evens(7)]` being `[0, 2, 4, 6]`.

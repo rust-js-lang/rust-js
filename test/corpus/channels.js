@@ -20,11 +20,8 @@ export function entry() {
 function produce(tx) {
   const iter = { start: 1, end: 3 };
   try {
-    while (true) {
-      const id = $rangeInclusiveNext(iter);
-      if (id == null) {
-        break;
-      }
+    let id;
+    while ((id = $rangeInclusiveNext(iter)) != null) {
       $unwrapOk($send(tx, { id, name: `job ${id}` }), undefined, (e) => "SendError { .. }");
     }
   } finally {
@@ -34,11 +31,8 @@ function produce(tx) {
 
 function drain(rx) {
   const names = [];
-  while (true) {
-    const recv = $recv(rx);
-    if (recv.TAG !== "Ok") {
-      break;
-    }
+  let recv;
+  while ((recv = $recv(rx)).TAG === "Ok") {
     names.push(`${recv._0.id} ${recv._0.name}`);
   }
   return names;

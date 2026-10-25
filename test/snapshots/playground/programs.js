@@ -149,11 +149,8 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
   const css = [];
   const iter = $iter(sources);
-  while (true) {
-    const value$1 = $next(iter);
-    if (value$1 == null) {
-      break;
-    }
+  let value$1;
+  while ((value$1 = $next(iter)) != null) {
     for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
       const find = styles.find(([name]) => name === specifier);
       if (find != null && !css.includes(find[1])) {

@@ -48,11 +48,8 @@ function namesIterator_next(names) {
 
 function equalNamesIterator_next(equalNames) {
   const iter = equalNames.inner;
-  while (true) {
-    const value = namesIterator_next(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = namesIterator_next(iter)) != null) {
     const n = value[0];
     const bits = value[1];
     if (bits === equalNames.bits) {

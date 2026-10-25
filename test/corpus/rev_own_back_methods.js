@@ -35,11 +35,8 @@ function countDoubleEndedIterator_nthBack(count, n) {
 function countDoubleEndedIterator_rfold(count, init, f) {
   console.log("rfold");
   let acc = init;
-  while (true) {
-    const x = countDoubleEndedIterator_nextBack(count);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = countDoubleEndedIterator_nextBack(count)) != null) {
     acc = f(acc, x);
   }
   return acc;

@@ -15,6 +15,13 @@ impl<'a> Cx<'a> {
         }
         match &e.kind {
             ExprKind::Handle(..) | ExprKind::Pair(..) => unreachable!("written by preparation"),
+            ExprKind::Assigned(name, value) => Expression::new_assignment_expression(
+                sp,
+                AssignmentOperator::Assign,
+                self.assignment_target(&js::Expr::var(name)),
+                self.expr(value),
+                b,
+            ),
             ExprKind::Num(n) => self.number(sp, *n),
             // `5n`, and `-5n` as `-` of it, as a number is written.
             ExprKind::BigInt(n) => {

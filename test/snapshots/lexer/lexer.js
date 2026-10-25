@@ -38,11 +38,8 @@ export const Lexer = {
   },
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));
-    while (true) {
-      const c = $peek(lexer.chars);
-      if (c == null) {
-        break;
-      }
+    let c;
+    while ((c = $peek(lexer.chars)) != null) {
       const d = $toDigit(c, 10);
       if (d == null) {
         break;
@@ -54,11 +51,10 @@ export const Lexer = {
   },
   word(lexer, first) {
     let w = first;
-    while (true) {
-      const c = $nextIf(lexer.chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
-      if (c == null) {
-        break;
-      }
+    let c;
+    while (
+      (c = $nextIf(lexer.chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null
+    ) {
       w += c;
     }
     return w;

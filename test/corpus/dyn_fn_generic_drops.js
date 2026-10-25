@@ -26,11 +26,8 @@ function main() {
   const registry = { callbacks: [] };
   const iter = { start: 1, end: 2 };
   try {
-    while (true) {
-      const i = $rangeInclusiveNext(iter);
-      if (i == null) {
-        break;
-      }
+    let i;
+    while ((i = $rangeInclusiveNext(iter)) != null) {
       const guard = [i];
       Registry.add(
         registry,

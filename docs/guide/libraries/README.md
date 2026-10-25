@@ -136,7 +136,8 @@ What it has:
   methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,
   for an index a JS API gives or takes; a place found in a Rust string is
   std's `find` and slicing, which are JS's own there (ADR 0642);
-  `js::number::to_fixed` rounds a tie away from zero; `js::math`'s
+  `js::number::to_fixed` rounds a tie away from zero, and
+  `js::number::to_string(x, Some(36))` is `x.toString(36)`; `js::math`'s
   `round`, `sign`, `max`, `min` and `random` are `Math`'s
   ([ADR 0247](../../decisions/0247-js-string-methods.md),
   [ADR 0365](../../decisions/0365-js-math-where-rust-differs.md)). A
@@ -154,6 +155,13 @@ What it has:
   what a function of any view takes, `view: &ArrayBufferView`; and
   `array_buffer::is_view(value)` takes any value, `Option<&Unknown>`
   ([ADR 0741](../../decisions/0741-an-array-buffer-view-is-what-each-view-derefs-to.md)).
+- **JS's iterator protocol:** `js::Iterator<T>` is TypeScript's
+  `Iterator<T>`, what an iterable's `[Symbol.iterator]()` gives, stepped
+  by `next()`, whose `IteratorResult<T>` has `done`, an `Option<bool>` left
+  out until the end, and `value`. The loop of its steps is JS's:
+  `loop { let step = iterator.next(); if step.done == Some(true) { break; }
+  .. }` is `let step; while (!(step = iterator.next()).done) { .. }`
+  ([ADR 0856](../../decisions/0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

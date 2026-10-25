@@ -46,12 +46,9 @@ function main() {
   const value = $index(points, 0);
   const firstPoint = [value[0], value[1]];
   const iter = $iter(points);
-  while (true) {
-    const value = $next(iter);
-    if (value == null) {
-      break;
-    }
-    value[0] = (value[0] * 10) | 0;
+  let value$1;
+  while ((value$1 = $next(iter)) != null) {
+    value$1[0] = (value$1[0] * 10) | 0;
   }
   console.log(
     `(${firstPoint[0]}, ${firstPoint[1]}) [${points.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`,

@@ -20,6 +20,8 @@ pub use atomics::{AtomicArray, WaitAsyncResult, WaitAsyncValue, WaitResult, Wait
 pub mod date;
 pub use date::Date;
 pub mod intl;
+mod iterator;
+pub use iterator::{Iterator, IteratorResult};
 pub mod promise;
 pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
@@ -622,7 +624,7 @@ pub fn has<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
 /// `for (const key in o)`; any other use of it, a JS iterator of them.
 #[cfg_attr(rust_js, rust_js::link_name = "for in")]
 #[allow(unused_variables)]
-pub fn keys_in(this: &Unknown) -> Box<dyn Iterator<Item = String>> {
+pub fn keys_in(this: &Unknown) -> Box<dyn core::iter::Iterator<Item = String>> {
     unreachable!()
 }
 
@@ -1480,12 +1482,15 @@ pub mod number {
         unreachable!()
     }
 
-    /// [`x.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toString):
-    /// `x` as JS writes it: `1e21` is `"1e+21"` and `Infinity` `"Infinity"`,
-    /// where `f64::to_string`'s are `"1000000000000000000000"` and `"inf"`
-    /// (ADR 0310).
+    /// [`x.toString(radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toString):
+    /// `x` as JS writes it, in base `radix`, 2 to 36, or ten where it's
+    /// `None`, TypeScript's `radix?: number`: `1e21` is `"1e+21"` and
+    /// `Infinity` `"Infinity"`, where `f64::to_string`'s are
+    /// `"1000000000000000000000"` and `"inf"` (ADR 0310); `to_string(35.0,
+    /// Some(36))` is `"z"`, as React writes an index as a key (ADR 0856).
+    /// Another radix throws a `RangeError`.
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
-    pub fn to_string(this: f64) -> String {
+    pub fn to_string(this: f64, radix: Option<u32>) -> String {
         unreachable!()
     }
 }

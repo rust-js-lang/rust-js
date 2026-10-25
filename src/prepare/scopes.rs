@@ -319,6 +319,11 @@ impl Walk {
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
             ExprKind::Var(name) => self.read(name),
+            // What it sets is resolved as a read is.
+            ExprKind::Assigned(name, a) => {
+                self.read(name);
+                self.expr(a);
+            }
             // What the printer writes of JS's own: `String(x)`, `undefined`,
             // `NaN` and `Infinity`.
             ExprKind::Stringed(a) => {

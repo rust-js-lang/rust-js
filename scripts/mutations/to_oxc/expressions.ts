@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = made;\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "across lines where"],
   },
+  {
+    name: "assigned-value-alone",
+    breaks: "a loop's test's `(step = iterator.next())` sets another variable, `step$unset`, its `step` never set (ADR 0856)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                self.assignment_target(&js::Expr::var(name)),\n                self.expr(value),\n",
+    replace: "                self.assignment_target(&js::Expr::var(&format!(\"{name}$unset\"))),\n                self.expr(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
+  },
 ];

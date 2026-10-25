@@ -61,11 +61,8 @@ function enumeratedPull_pull(enumerated, PPull) {
 
 function drain(p, PPull) {
   const out = [];
-  while (true) {
-    const pull = PPull.pull(p);
-    if (pull == null) {
-      break;
-    }
+  let pull;
+  while ((pull = PPull.pull(p)) != null) {
     const x = $someValue(pull);
     out.push(x);
   }

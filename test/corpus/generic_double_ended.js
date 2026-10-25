@@ -67,11 +67,8 @@ function ends(t) {
 
 function boxed(t) {
   const out = [];
-  while (true) {
-    const back = $nextBack(t);
-    if (back == null) {
-      break;
-    }
+  let back;
+  while ((back = $nextBack(t)) != null) {
     out.push(back);
     const front = $next(t);
     if (front != null) {

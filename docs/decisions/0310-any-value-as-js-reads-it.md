@@ -3,6 +3,8 @@
 Status: Accepted. Extends the js crate (ADR 0102) and its `Unknown` (ADR
 0225). Amended by [0639](0639-concat-text-of-any-value-may-throw.md):
 `concat_text` of a value of any shape gives a `Result`, as it may throw.
+Extended by [0856](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md):
+`number::to_string(x, radix)`, its radix TypeScript's `radix?`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

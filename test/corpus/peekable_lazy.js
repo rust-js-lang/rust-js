@@ -24,11 +24,8 @@ function tokens(src) {
       .filter((c) => !/^\p{White_Space}$/u.test(c)),
     { next: $next },
   );
-  while (true) {
-    const c = $next(chars);
-    if (c == null) {
-      break;
-    }
+  let c;
+  while ((c = $next(chars)) != null) {
     if (/^[0-9]$/.test(c)) {
       let number = c;
       while (true) {

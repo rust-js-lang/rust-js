@@ -10,11 +10,8 @@ export function entry() {
 function textIn(root, path) {
   let dir = root;
   const parts = iterator_peekable($iter(path.split("/")), { next: $next });
-  while (true) {
-    const part = $next(parts);
-    if (part == null) {
-      break;
-    }
+  let part;
+  while ((part = $next(parts)) != null) {
     const value = dir.get(part);
     if (value == null) {
       return;
@@ -33,11 +30,8 @@ function textIn(root, path) {
 }
 
 function firstBig(v) {
-  while (true) {
-    const x = v.pop();
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = v.pop()) != null) {
     const y = (x * 2) >>> 0;
     if (y < 10) {
       continue;
@@ -50,11 +44,8 @@ function firstBig(v) {
 function smallSum(v, flag) {
   let total = 0;
   if (flag) {
-    while (true) {
-      const x = v.pop();
-      if (x == null) {
-        break;
-      }
+    let x;
+    while ((x = v.pop()) != null) {
       if (x >= 50) {
         return 7;
       }
@@ -66,11 +57,8 @@ function smallSum(v, flag) {
 
 function once(v) {
   let n = 0;
-  while (true) {
-    const x = v.pop();
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = v.pop()) != null) {
     if (x === 0) {
       continue;
     }
@@ -84,11 +72,8 @@ function once(v) {
 
 function shadowed(v) {
   const n = 0;
-  while (true) {
-    const x = v.pop();
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = v.pop()) != null) {
     const y = (x + 1) >>> 0;
     if (y === 1) {
       continue;
@@ -133,11 +118,8 @@ function stopped(v) {
 
 function floatSum(v) {
   let total = 0;
-  while (true) {
-    const x = v.pop();
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = v.pop()) != null) {
     if (!(x < 50)) {
       return -1;
     }

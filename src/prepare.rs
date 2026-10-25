@@ -30,6 +30,7 @@ pub fn module(module: &mut js::Module) {
         }
     }
     js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot));
+    js::each_item_block_mut(&mut module.items, &mut tested_assignments);
     reclaim::module(module);
     compound(module);
     read_together(module);
@@ -289,6 +290,85 @@ fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
             stmts.splice(i + 1..i + 1, els);
         }
         i += 1;
+    }
+}
+
+/// `while (true) { const step = iterator.next(); if (step.done) { break; }
+/// .. }`, a loop whose first statement makes what the test that leaves it
+/// then reads, once and first: the loop of that test, which makes it, `let
+/// step; while (!(step = iterator.next()).done) { .. }`, as JS writes a
+/// walk of an iterator's steps, React's `mapIntoArray`, or of a regular
+/// expression's matches (ADR 0856). Before its locals are named, so the
+/// `let` is one name of the block it's in. Not where a closure reads it,
+/// which a `const` gives a variable of each turn, nor where the test reads
+/// it again, `last == null || last.TAG !== "Op"`, or reads anything first.
+fn tested_assignments(stmts: &mut Vec<Stmt>) {
+    // What a test reads first, of what it evaluates first.
+    fn first_read(e: &Expr) -> &Expr {
+        match &e.kind {
+            ExprKind::Member(a, _)
+            | ExprKind::OptionalMember(a, _)
+            | ExprKind::Unary(_, a)
+            | ExprKind::Stringed(a)
+            | ExprKind::Index(a, _)
+            | ExprKind::OptionalIndex(a, _)
+            | ExprKind::Binary(_, a, _)
+            | ExprKind::Cond(a, _, _)
+            | ExprKind::Call(a, _)
+            | ExprKind::OptionalCall(a, _) => first_read(a),
+            _ => e,
+        }
+    }
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::While { label, cond, body } = &mut stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let assigned = match body.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Const(name, made),
+                    ..
+                },
+                Stmt {
+                    kind: StmtKind::If(test, then, None),
+                    ..
+                },
+                rest @ ..,
+            ] if matches!(cond.kind, ExprKind::Bool(true))
+                && matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(l), .. }] if l.is_none() || l == label)
+                && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)
+                && {
+                    let mut reads = 0;
+                    test.visit_vars(&mut |v| reads += usize::from(v == name));
+                    reads == 1
+                } =>
+            {
+                let caught = |e: &Expr| {
+                    matches!(
+                        e.kind,
+                        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
+                    ) && e.mentions_var(name)
+                };
+                let mut captured = false;
+                js::each_expr(rest, &mut |e| captured |= caught(e));
+                let assigned = Expr::assigned(name, made.clone());
+                (!captured)
+                    .then(|| test.substitute(&|n: &str| (n == name).then(|| assigned.clone())))
+                    .flatten()
+                    .map(|test| (name.clone(), test))
+            }
+            _ => None,
+        };
+        let Some((name, test)) = assigned else {
+            i += 1;
+            continue;
+        };
+        *cond = test.negated_test();
+        body.drain(..2);
+        stmts.insert(i, StmtKind::Let(name, None).at(js::Span::NONE));
+        i += 2;
     }
 }
 
@@ -1216,6 +1296,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
         | ExprKind::Handle(a, _)
+        | ExprKind::Assigned(_, a)
         | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Binary(js::Op::Coalesce, a, b) => {
             expr(a);

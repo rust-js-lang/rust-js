@@ -37,11 +37,8 @@ function countIterator_nth(count, n) {
 function countIterator_fold(count, init, f) {
   console.log("fold");
   let acc = init;
-  while (true) {
-    const x = countIterator_next(count);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = countIterator_next(count)) != null) {
     acc = f(acc, x);
   }
   return acc;

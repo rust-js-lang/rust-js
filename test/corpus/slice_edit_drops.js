@@ -251,11 +251,8 @@ function lend() {
       head[0] = (head[0] + (rest.length & 255)) & 255;
     }
     const iter = $iter($chunksMut(d, 2));
-    while (true) {
-      const chunk = $next(iter);
-      if (chunk == null) {
-        break;
-      }
+    let chunk;
+    while ((chunk = $next(iter)) != null) {
       chunk.reverse();
     }
     console.log(`edited [${ids(d).join(", ")}]`);

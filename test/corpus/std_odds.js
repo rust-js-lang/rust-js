@@ -12,11 +12,8 @@ function greet(err) {
 
 function table(rows) {
   const iter = { start: 0, end: rows };
-  while (true) {
-    const row = $rangeNext(iter);
-    if (row == null) {
-      break;
-    }
+  let row;
+  while ((row = $rangeNext(iter)) != null) {
     $print(`${row * row} `);
   }
   console.log("");

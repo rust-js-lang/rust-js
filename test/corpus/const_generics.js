@@ -96,11 +96,8 @@ function main() {
   console.log(`[${filled(7, 3).join(", ")}] [${filled(1, 0).join(", ")}]`);
   const ring = Ring.new(2);
   const iter = { start: 1, end: 5 };
-  while (true) {
-    const x = $rangeInclusiveNext(iter);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = $rangeInclusiveNext(iter)) != null) {
     Ring.push(ring, x, 2);
   }
   console.log(`[${ring.items.join(", ")}] ${Ring.capacity(ring, 2)}`);

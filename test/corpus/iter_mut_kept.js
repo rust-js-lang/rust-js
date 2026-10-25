@@ -40,11 +40,8 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   const part = $iter($mutItems($view(v, 2)));
-  while (true) {
-    const x = $next(part);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = $next(part)) != null) {
     x.value = -x.value | 0;
   }
   console.log(`[${v.join(", ")}]`);

@@ -21,11 +21,8 @@ function iSorted(IIterator) {
 const countSummed = {
   total: (self) => {
     let n = 0;
-    while (true) {
-      const x = countIterator_next(self);
-      if (x == null) {
-        break;
-      }
+    let x;
+    while ((x = countIterator_next(self)) != null) {
       n = (n + x) >>> 0;
     }
     return n;
@@ -35,11 +32,8 @@ const countSummed = {
 const intoIterSummed = {
   total: (self) => {
     let n = 0;
-    while (true) {
-      const x = $next(self);
-      if (x == null) {
-        break;
-      }
+    let x;
+    while ((x = $next(self)) != null) {
       n = (n + x) >>> 0;
     }
     return n;

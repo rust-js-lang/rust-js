@@ -138,11 +138,8 @@ export function negated(v) {
 export function inclusive(n) {
   let total = 0;
   const iter = { start: 1, end: n };
-  while (true) {
-    const i = $rangeInclusiveNext(iter);
-    if (i == null) {
-      break;
-    }
+  let i;
+  while ((i = $rangeInclusiveNext(iter)) != null) {
     total = (total + i) >>> 0;
   }
   const down = $range(0, n + 1).toReversed();

@@ -26,11 +26,8 @@ function genIterator_next(gen, AArray, dropA) {
 function genDrop_drop(gen, AArray, dropA) {
   let n = 0;
   const iter = gen;
-  while (true) {
-    const value = genIterator_next(iter, AArray, dropA);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = genIterator_next(iter, AArray, dropA)) != null) {
     n = (n + 1) | 0;
     AArray.$dropItem?.($someValue(value));
   }

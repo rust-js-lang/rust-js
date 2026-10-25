@@ -230,11 +230,8 @@ function main() {
     "zzz-0 x1",
   ].slice();
   const totals = [];
-  while (true) {
-    const text = queue.shift();
-    if (text == null) {
-      break;
-    }
+  let text;
+  while ((text = queue.shift()) != null) {
     const value = parseOrder(text);
     if (value.TAG === "Ok") {
       const parsed = value._0;
@@ -258,6 +255,7 @@ function main() {
       console.log(`bad order: ${value._0}`);
     }
   }
+
   console.log(
     `low stock: [${Inventory.lowStock(inventory, 3)
       .map((item) => $debugStr(item))

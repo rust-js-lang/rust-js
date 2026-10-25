@@ -24,11 +24,8 @@ function wordsSource_nextItem(words) {
 
 function drain(s, SSource) {
   const out = [];
-  while (true) {
-    const nextItem = SSource.nextItem(s);
-    if (nextItem == null) {
-      break;
-    }
+  let nextItem;
+  while ((nextItem = SSource.nextItem(s)) != null) {
     const x = $someValue(nextItem);
     out.push(x);
   }

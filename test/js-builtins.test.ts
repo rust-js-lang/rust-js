@@ -1296,3 +1296,64 @@ pub fn thrown_again(node: &Node) {
     expect(again).toBe(thrown);
   }
 });
+
+// ADR 0856: TypeScript's `Iterator<T>`, stepped by its `next()`, whose
+// `IteratorResult<T>`'s `done` is left out of a step that isn't the end, as
+// React's `mapIntoArray` steps what an iterable's `@@iterator` gives, one
+// with no `[Symbol.iterator]` of its own too; the loop that makes the step
+// its test reads, `while (!(step = iterator.next()).done)`; and a number's
+// string in a radix, `index.toString(36)`.
+test("an iterator is stepped by its next, and a number written in a radix", async () => {
+  const dir = fixture("js-iterator-protocol");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn keys(iterator: &js::Iterator<Option<&'static Unknown>>, prefix: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+    let mut ii = 0;
+    loop {
+        let step = iterator.next();
+        if step.done == Some(true) {
+            break;
+        }
+        let child = step.value;
+        keys.push(prefix.to_string() + &js::number::to_string(f64::from(ii), Some(36)) + "=" + &js::string(child));
+        ii += 1;
+    }
+    keys
+}
+
+pub fn read(iterator: &js::Iterator<f64>) -> Vec<f64> {
+    let mut read = Vec::new();
+    let mut step = iterator.next();
+    while step.done != Some(true) {
+        read.push(step.value);
+        step = iterator.next();
+    }
+    read
+}
+
+pub fn decimal(n: f64) -> String {
+    js::number::to_string(n, None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  let step;\n  while (!(step = iterator.next()).done) {\n    const child = step.value;\n");
+  expect(js).toContain("prefix + ii.toString(36)");
+  expect(js).toContain("  while (!step.done) {\n");
+  expect(js).toContain("return n.toString();");
+  const lib = await import(join(dir, "lib.js"));
+  // A program's own iterator, `next` alone, its steps' `done` left out
+  // until the end, and one given `done: false`.
+  const counted = (n: number, given: boolean) => {
+    let i = 0;
+    return { next: () => (i < n ? (given ? { value: i++, done: false } : { value: i++ }) : { value: "end", done: true }) };
+  };
+  const keys: string[] = lib.keys(counted(37, false), ".");
+  expect(keys.slice(0, 2)).toEqual([".0=0", ".1=1"]);
+  expect(keys.slice(35)).toEqual([".z=35", ".10=36"]);
+  expect(lib.keys(new Map([["a", 1]]).entries(), "")).toEqual(["0=a,1"]);
+  expect(lib.read(counted(3, true))).toEqual([0, 1, 2]);
+  expect(lib.read([4, 5].values())).toEqual([4, 5]);
+  expect([lib.decimal(1e21), lib.decimal(Infinity), lib.decimal(0.5)]).toEqual(["1e+21", "Infinity", "0.5"]);
+});

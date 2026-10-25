@@ -26,11 +26,8 @@ function debugByteDebug_fmt(debugByte) {
   const bytes = new Array(10).fill(0);
   let len = 0;
   const iter = $escapeByte(debugByte[0]).entries();
-  while (true) {
-    const value = $next(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = $next(iter)) != null) {
     const i = value[0];
     let b = value[1];
     if (i >= 2 && 97 <= b && b <= 102) {

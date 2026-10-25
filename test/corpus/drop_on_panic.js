@@ -14,11 +14,8 @@ function count(to) {
   const outer = 100;
   const iter = { start: 1, end: to };
   try {
-    while (true) {
-      const i = $rangeInclusiveNext(iter);
-      if (i == null) {
-        break;
-      }
+    let i;
+    while ((i = $rangeInclusiveNext(iter)) != null) {
       const step = i;
       try {
         if (i === 3) {

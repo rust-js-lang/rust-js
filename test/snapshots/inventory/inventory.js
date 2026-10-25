@@ -52,11 +52,8 @@ function storeDisplay_fmt(store) {
   const items = Array.from(store.stock);
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const iter = $iter(items);
-  while (true) {
-    const value = $next(iter);
-    if (value == null) {
-      break;
-    }
+  let value;
+  while ((value = $next(iter)) != null) {
     const name = value[0];
     const qty = value[1];
     f += `${name}=${qty} `;
@@ -196,11 +193,8 @@ export function report() {
   out += `total=${value.value} again=${borrow.value}\n`;
   const stack = [1, 2, 3];
   const popped = [];
-  while (true) {
-    const top = stack.pop();
-    if (top == null) {
-      break;
-    }
+  let top;
+  while ((top = stack.pop()) != null) {
     if (top === 2) {
       stack.push(10);
     }

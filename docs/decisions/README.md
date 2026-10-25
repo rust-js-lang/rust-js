@@ -120,7 +120,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
-- [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md)
+- [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0856: JS's iterator protocol, `js::Iterator`)*
 - [0103 The runtime is a package, `@rust-js/runtime`, as ReScript's is](0103-runtime-package.md)
 - [0104 The tests run side by side, each native program built once](0104-parallel-tests.md)
 - [0105 `bun create @rust-js` makes a Vite and React app in Rust](0105-create.md)
@@ -328,7 +328,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0307 A trait's binding method is read of the value itself](0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
 - [0309 A `match` that only gives a value is one expression](0309-value-matches.md)
-- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw)*
+- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0856: `number::to_string`'s radix)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](0311-flattened-reads.md)
 - [0312 `js::shown` is any value as a template shows it](0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](0313-console-forms.md) *(amended by 0640: `console` takes a tuple)*
@@ -640,6 +640,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
 - [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
+- [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -8,11 +8,8 @@ export function entry() {
 
 function sum(it) {
   let total = 0;
-  while (true) {
-    const x = $next(it);
-    if (x == null) {
-      break;
-    }
+  let x;
+  while ((x = $next(it)) != null) {
     total = (total + x) >>> 0;
   }
   return total;

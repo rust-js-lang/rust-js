@@ -28,11 +28,8 @@ function first(it) {
 
 function number(it) {
   let n = 0;
-  while (true) {
-    const c = $nextIf(it, (c) => /^[0-9]$/.test(c));
-    if (c == null) {
-      break;
-    }
+  let c;
+  while ((c = $nextIf(it, (c) => /^[0-9]$/.test(c))) != null) {
     n = (((n * 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
   }
   return n;

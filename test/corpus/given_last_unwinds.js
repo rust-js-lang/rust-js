@@ -16,11 +16,8 @@ function replaced(keys) {
   let x = [0];
   try {
     const iter = $iter(keys);
-    while (true) {
-      const k = $next(iter);
-      if (k == null) {
-        break;
-      }
+    let k;
+    while ((k = $next(iter)) != null) {
       const x$1 = [k];
       try {
         check(k);

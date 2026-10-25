@@ -555,7 +555,7 @@ impl<'a> Cx<'a> {
         }
     }
 
-    fn assignment_target(&self, e: &js::Expr) -> AssignmentTarget<'a> {
+    pub(super) fn assignment_target(&self, e: &js::Expr) -> AssignmentTarget<'a> {
         let b = &self.b;
         let sp = span(e.span);
         match &e.kind {

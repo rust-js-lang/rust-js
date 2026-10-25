@@ -59,11 +59,8 @@ function publish(bus, msg) {
     const ids = Array.from(b.value.handlers.keys());
     ids.sort($cmp);
     const iter = $iter(ids);
-    while (true) {
-      const id = $next(iter);
-      if (id == null) {
-        break;
-      }
+    let id;
+    while ((id = $next(iter)) != null) {
       $unwrap(b.value.handlers.get(id), "no entry found for key")(msg);
     }
   } finally {
