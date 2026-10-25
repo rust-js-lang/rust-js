@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod catches;
+mod initializers;
 mod reclaim;
 
 /// A closure's parameter given its name back, preparation's, which a body
@@ -17,7 +18,8 @@ mod reclaim;
 mod scopes;
 
 pub fn module(module: &mut js::Module) {
-    assigned_in_place(&mut module.items);
+    initializers::declared_at_top(module);
+    initializers::assigned_in_place(&mut module.items);
     forwarding_functions(module);
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         prepared(function);
@@ -34,57 +36,6 @@ pub fn module(module: &mut js::Module) {
     reclaim::module(module);
     compound(module);
     read_together(module);
-}
-
-/// A module's `const` a closure called where it's made makes, a
-/// thread-local's an `if` gives, not exported: `let name;` and the
-/// closure's body, each `return v` at its ends `name = v`, an early one's
-/// `if` the rest's `else`, as JS writes it (ADR 0601); a `return
-/// undefined` nothing, as `let name;` is that already (ADR 0704):
-///
-/// ```js
-/// let schedule;
-/// if (typeof setImmediate !== "undefined") {
-///   schedule = () => { .. };
-/// } else {
-///   ..
-/// }
-/// ```
-///
-/// Where a `return` is anywhere else, a loop's, or the body declares a
-/// name at its top, which would be the module's, it stays the call.
-fn assigned_in_place(items: &mut [js::Item]) {
-    for item in items {
-        let js::Item::Const(constant) = item else { continue };
-        if constant.export {
-            continue;
-        }
-        let ExprKind::Call(callee, args) = &constant.value.kind else {
-            continue;
-        };
-        let ExprKind::Arrow(params, body) = &callee.kind else {
-            continue;
-        };
-        if !params.is_empty() || !args.is_empty() {
-            continue;
-        }
-        let Some(assigned) = assigned(body, &constant.name) else {
-            continue;
-        };
-        let declares = |s: &Stmt| {
-            matches!(
-                s.kind,
-                StmtKind::Const(..) | StmtKind::Let(..) | StmtKind::Destructure { .. } | StmtKind::Function(_)
-            )
-        };
-        if assigned.iter().any(declares) {
-            continue;
-        }
-        let span = constant.span;
-        let mut stmts = vec![StmtKind::Let(constant.name.clone(), None).at(span)];
-        stmts.extend(assigned);
-        *item = js::Item::Statements(stmts);
-    }
 }
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only
@@ -221,45 +172,6 @@ fn forwarding_functions(module: &mut js::Module) {
             _ => unreachable!("found"),
         }
     }
-}
-
-/// `stmts`, which end in a `return`, each `return v` at their ends
-/// `name = v`; `None` where one is elsewhere.
-fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
-    let mut out = Vec::new();
-    for (i, stmt) in stmts.iter().enumerate() {
-        let last = i + 1 == stmts.len();
-        match &stmt.kind {
-            StmtKind::Return(Some(value)) if last => {
-                if !matches!(value.kind, ExprKind::Undefined) {
-                    out.push(StmtKind::Assign(Expr::var(name), value.clone()).at(stmt.span));
-                }
-            }
-            StmtKind::If(test, then, otherwise) if js::returns(std::slice::from_ref(stmt)).0 => {
-                let then = assigned(then, name)?;
-                let otherwise = match otherwise {
-                    Some(otherwise) if last => assigned(otherwise, name)?,
-                    // An early `return`'s: what follows is its `else`.
-                    None if !last => assigned(&stmts[i + 1..], name)?,
-                    _ => return None,
-                };
-                // Of a branch left with nothing to do, the other's test.
-                out.push(
-                    match (then.is_empty(), otherwise.is_empty()) {
-                        (_, true) => StmtKind::If(test.clone(), then, None),
-                        (true, false) => StmtKind::If(test.clone().negated_test(), otherwise, None),
-                        (false, false) => StmtKind::If(test.clone(), then, Some(otherwise)),
-                    }
-                    .at(stmt.span),
-                );
-                return Some(out);
-            }
-            // A `return` a loop's or a `try`'s, or no `return` at the end.
-            _ if last || js::returns(std::slice::from_ref(stmt)).0 => return None,
-            _ => out.push(stmt.clone()),
-        }
-    }
-    Some(out)
 }
 
 /// An `if` whose branch never goes on, `js::ends`', by a `return`, a

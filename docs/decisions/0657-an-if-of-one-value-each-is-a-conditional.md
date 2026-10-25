@@ -5,7 +5,9 @@ whose module variable an `if` makes was a `let` each branch set where a
 branch was a function, and the tidy rule of a conditional of two values,
 which took no function as a branch. Amended by
 [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):
-a branch with a comment is a conditional too, its comment before its value.
+a branch with a comment is a conditional too, its comment before its value;
+and by [0870](0870-a-let-chains-value-reads-its-binding-first.md): a let
+chain's value too, its binding read first.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the same value,
 written as a person writes it.
@@ -90,3 +92,11 @@ What keeps an `if`, as before:
   static Unknown": React's form, `const reportGlobalError = typeof
   reportError !== "undefined" ? reportError : (error) => ..`.
 - Mutation `function-not-small`.
+
+## Amendment: a let chain's value too (ADR 0870)
+
+A let chain of one binding whose branches are each one value, `if a &&
+let Some(x) = e { t } else { f }`, reads its binding first, `const x = a ?
+e : undefined;`, and is then a conditional by this rule, `x != null ? t :
+f`, as an `if let`'s is
+([0870](0870-a-let-chains-value-reads-its-binding-first.md)).

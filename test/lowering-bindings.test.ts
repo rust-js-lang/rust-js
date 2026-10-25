@@ -1338,3 +1338,105 @@ pub fn text_of(value: &Unknown) -> String {
   expect(() => lib.textOf(["x"])).toThrow("no text");
   expect(reads).toEqual(["f.url", "g.url"]);
 });
+
+// ADR 0870: React's `createTask`, a thread-local of a let chain's value,
+// `if __DEV__ && let Some(create_task) = console::create_task() { .. } else
+// { .. }`: the getter read once, where `__DEV__` holds, then a conditional
+// of it, each the module's `const`, not a closure called where it's made
+// of a `let tmp` its branches set.
+test("a thread-local of a let chain's value is the module's consts", async () => {
+  const dir = fixture("chain-value-thread-local");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{ConsoleTask, console};
+
+const DEV: bool = true;
+
+type CreateTask = dyn Fn(&str) -> Option<&'static ConsoleTask>;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn no_task(_name: &str) -> Option<&'static ConsoleTask> {
+    None
+}
+
+thread_local! {
+    static CREATE_TASK: Box<CreateTask> =
+        // eslint-disable-next-line react-internal/no-production-logging
+        if DEV && let Some(create_task) = console::create_task() {
+            Box::new(move |name| Some(create_task(name)))
+        } else {
+            Box::new(no_task)
+        };
+}
+
+pub fn task(name: &str) -> Option<&'static ConsoleTask> {
+    CREATE_TASK.with(|create| create(name))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`// eslint-disable-next-line react-internal/no-production-logging
+const createTask$1 = DEV ? console.createTask : undefined;
+
+const createTask = createTask$1 ? (name) => createTask$1(name) : noTask;
+`);
+  expect(js).not.toContain("tmp");
+  expect(js).not.toContain("(() =>");
+  const reads: string[] = [];
+  const own = Object.getOwnPropertyDescriptor(console, "createTask");
+  Object.defineProperty(console, "createTask", {
+    configurable: true,
+    get() {
+      reads.push("createTask");
+      return (name: string) => ({ name });
+    },
+  });
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    expect([lib.task("a"), lib.task("b")]).toEqual([{ name: "a" }, { name: "b" }]);
+    expect(reads).toEqual(["createTask"]);
+    // Where the host has none: `noTask`'s `null`.
+    Object.defineProperty(console, "createTask", { configurable: true, value: undefined });
+    const none = await import(`${join(dir, "lib.js")}?none`);
+    expect(none.task("a")).toBeNull();
+  } finally {
+    if (own) Object.defineProperty(console, "createTask", own);
+    else delete (console as { createTask?: unknown }).createTask;
+  }
+});
+
+// ADR 0870: a thread-local's `const` made the module's is named apart from
+// what the module's other code reads, a global of a binding's too, which
+// the `const` would otherwise be.
+test("a thread-local of a let chain's value is the module's consts, named apart", async () => {
+  const dir = fixture("chain-value-named-apart");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsLabel")]
+fn label() -> u32 {
+    unreachable!()
+}
+
+const DEV: bool = true;
+
+thread_local! {
+    static FIRST: usize = if DEV && let Some(rust_js_label) = "ab".find('b') { rust_js_label } else { 0 };
+}
+
+pub fn labeled() -> u32 {
+    label()
+}
+
+pub fn first() -> usize {
+    FIRST.with(|first| *first)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`const rustJsLabel$1 = DEV ? $find("ab", "b") : undefined;\n`);
+  expect(js).toContain(`const FIRST = rustJsLabel$1 ?? 0;\n`);
+  const globals = globalThis as { rustJsLabel?: () => number };
+  globals.rustJsLabel = () => 7;
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    expect([lib.labeled(), lib.first()]).toEqual([7, 1]);
+  } finally {
+    delete globals.rustJsLabel;
+  }
+});

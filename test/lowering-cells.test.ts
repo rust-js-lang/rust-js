@@ -877,6 +877,11 @@ thread_local! {
         let at = js::math::random();
         if at < 2.0 { 1 } else { 2 }
     };
+    static KEPT: f64 = {
+        let mut twice = js::math::random();
+        twice *= 2.0;
+        if twice < 4.0 { twice } else { 2.0 }
+    };
     static FOUND: u32 = loop {
         if js::math::random() < 2.0 {
             break 1;
@@ -885,16 +890,18 @@ thread_local! {
 }
 
 pub fn pick() -> u32 {
-    PICK.with(|pick| pick()) + SEEN.with(|s| *s) + FOUND.with(|f| *f)
+    PICK.with(|pick| pick()) + SEEN.with(|s| *s) + FOUND.with(|f| *f) + KEPT.with(|k| *k as u32 * 0)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('let PICK;\nif (typeof rustJsFast !== "undefined") {\n  PICK = () => rustJsFast();\n} else if');
   expect(js).toContain("} else if (Math.random() < 2) {\n  const n = 2;\n");
-  // What it declares at its top would be the module's, and a loop's
+  // Its `const`s and then its value are the module's (ADR 0870).
+  expect(js).toContain("const at = Math.random();\nconst SEEN = at < 2 ? 1 : 2;\n");
+  // What else it declares at its top would be the module's, and a loop's
   // `return` no branch's: each stays a closure called where it's made.
-  expect(js).toContain("const SEEN = (() => {\n  const at = Math.random();\n");
+  expect(js).toContain("const KEPT = (() => {\n  let twice = Math.random();\n");
   expect(js).toContain("const FOUND = (() => {\n  while (true) {\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.pick()).toBe(4);

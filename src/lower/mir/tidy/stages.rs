@@ -620,6 +620,12 @@ const JUMPS: &[Pass] = &[
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
     pass("branch values", branch_values_of),
     pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+    // A let chain's value, each branch one: its binding read first, `const
+    // x = a ? e : undefined;`, as an `if let`'s, which the next run and
+    // `values` make one value of (ADR 0870).
+    pass("chain values", |b, h| {
+        js::statement_lists(b, &mut |s| chain_values(s, h.returns))
+    }),
 ];
 
 /// What branches make a value of, the function's too; and the arms of a

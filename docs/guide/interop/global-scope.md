@@ -508,3 +508,50 @@ export { getTime };
   declaration is hoisted, so it stays one.
 - **Only of Rust's closures**, which take no more than their parameters.
   A thread-local holding a JS function stays called by its function.
+
+A let chain of one value each, React's `if __DEV__ && let
+Some(create_task) = console::create_task()`, reads what it binds first,
+once, where the tests before it hold, and is then a conditional of it,
+each the module's `const`; the binding's is named apart from the
+thread-local's own
+([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md)):
+
+```rust
+use webapi::{ConsoleTask, console};
+
+const DEV: bool = true;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn no_task(_name: &str) -> Option<&'static ConsoleTask> {
+    None
+}
+
+thread_local! {
+    static CREATE_TASK: Box<dyn Fn(&str) -> Option<&'static ConsoleTask>> =
+        if DEV && let Some(create_task) = console::create_task() {
+            Box::new(move |name| Some(create_task(name)))
+        } else {
+            Box::new(no_task)
+        };
+}
+
+pub fn task(name: &str) -> Option<&'static ConsoleTask> {
+    CREATE_TASK.with(|create| create(name))
+}
+```
+
+```js
+const DEV = true;
+
+function noTask(name) {
+  return null;
+}
+
+const createTask$1 = DEV ? console.createTask : undefined;
+
+const createTask = createTask$1 ? (name) => createTask$1(name) : noTask;
+
+export function task(name) {
+  return createTask(name);
+}
+```

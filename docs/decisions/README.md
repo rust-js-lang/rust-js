@@ -482,7 +482,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md) *(amended: a `let` of a name alone is its own statement, and a cast's is the variable)*
 - [0599 A result its branches make before it's coerced is returned where made](0599-a-coerced-result-is-returned-where-made.md)
 - [0600 The guide is the site on GitHub Pages](0600-the-guide-is-the-site.md)
-- [0601 A module's variable an `if` makes is a `let` each branch assigns](0601-a-module-variable-an-if-makes-is-a-let.md) *(amended by 0657: one value each is a conditional; 0704: `undefined` is no assignment)*
+- [0601 A module's variable an `if` makes is a `let` each branch assigns](0601-a-module-variable-an-if-makes-is-a-let.md) *(amended by 0657: one value each is a conditional; 0704: `undefined` is no assignment; 0870: a closure of `const`s and its value is the module's)*
 - [0602 A binding taken as a `fn` is its JS function, read where it's taken](0602-a-binding-taken-as-a-fn-is-its-function.md) *(amended by 0667: a variadic one's, of rest arguments as a value)*
 - [0603 A comment before a `let` with no JS is the next statement's](0603-a-comment-before-an-unprinted-let.md) *(extended by 0444, amended: a block's `let` too)*
 - [0604 A binding as a value gives its arguments as its call does](0604-a-bindings-value-gives-what-its-call-gives.md)
@@ -538,7 +538,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](0656-an-events-emit-arguments-are-typescripts-emits.md)
-- [0657 An `if` of one value each, a function's too, is a conditional](0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too)*
+- [0657 An `if` of one value each, a function's too, is a conditional](0657-an-if-of-one-value-each-is-a-conditional.md) *(amended by 0658: a branch with a comment too; 0870: a let chain's value too)*
 - [0658 A comment before a branch's value is before it in the conditional](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0659 Tidy is a list of stages, each with what it leaves a body with](0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too; a stage read again is the runner's)*
 - [0660 `catch_unwind` catches what JS throws, a panic among it](0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown; 0830: a `let Err(x)`'s `catch` is what follows that reads it; amended: an `Ok` arm that tests what it holds is in the `try`, a setter's write may throw; the `try`'s value by its pattern's name; amended: a `return` in the closure of a `try` that ends the function is the function's)*
@@ -552,7 +552,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0669 An adapter steps its source as std's does](0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
 - [0670 A tree's writes have one owner, and its walks one definition](0670-a-trees-writes-have-one-owner.md)
 - [0671 A nested body is lowered in one call](0671-a-nested-body-is-lowered-in-one-call.md)
-- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice)*
+- [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice; amended by 0870: a chain's value reads its binding first)*
 - [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md)
 - [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
@@ -654,6 +654,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0867 `AggregateError` is ES2021's, and a binding that runs nothing borrows nothing](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 - [0868 What std's impls and derives run is what their bounds say](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 - [0869 A web API's callback it calls once is an `FnOnce`](0869-a-web-callback-called-once-is-fn-once.md)
+- [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

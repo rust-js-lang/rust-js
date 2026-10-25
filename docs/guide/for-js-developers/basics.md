@@ -807,6 +807,40 @@ export function fee(member, amount) {
 An `if` condition must be a `bool`. There's no truthiness: write
 `!s.is_empty()`, `n != 0`, `opt.is_some()`.
 
+A let chain's value, each branch one value, reads what its `let` binds
+first, only where the tests before it hold, and once, then is one `?:`
+of it, as an `if let`'s is. A thread-local's is its module's `const`s
+([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md)):
+
+```rust
+fn discount(code: &str) -> Option<f64> {
+    if code == "SAVE10" { Some(0.1) } else { None }
+}
+
+pub fn total(member: bool, code: &str, amount: f64) -> f64 {
+    let saved = if member && let Some(rate) = discount(code) {
+        amount * rate
+    } else {
+        0.0
+    };
+    amount - saved
+}
+```
+
+```js
+function discount(code) {
+  if (code === "SAVE10") {
+    return 0.1;
+  }
+}
+
+export function total(member, code, amount) {
+  const rate = member ? discount(code) : undefined;
+  const saved = rate != null ? amount * rate : 0;
+  return amount - saved;
+}
+```
+
 An `if` statement is the one you wrote: its test as written and its
 branches in their order. A branch that returns needs no `else` after it,
 as ESLint's `no-else-return` has it, but an `else if` after an arm that

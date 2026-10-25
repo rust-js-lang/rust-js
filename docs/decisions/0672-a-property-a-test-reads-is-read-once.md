@@ -201,3 +201,14 @@ may answer is (ADR 0750): one read, before the test, as Rust's,
 `const type = child.type; if (typeof type === "string" && ..)`. Held by
 `test/jsx-children.test.ts`'s "a capture of an inlined closure leaves no
 const behind" and the mutation `plain-read-of-a-getter`.
+
+## Amendment: a chain's value reads its binding first, whatever it is (ADR 0870)
+
+A let chain of one binding whose branches are each one value reads its
+binding first, a call's too, `const k = on ? lookup(n) : undefined;`,
+and is then one test and two values, `k != null ? t : f`
+([0870](0870-a-let-chains-value-reads-its-binding-first.md)). When a
+chain's binding may be read first is one function's,
+`logicals::read_first`, which `read_once_first` asks of a getter's read;
+and a test of a value's truth, `if (createTask)`, says it's there, as
+`implies` now tells.

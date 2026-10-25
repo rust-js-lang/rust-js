@@ -526,4 +526,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "an if let chain made of a labeled block"],
   },
+  {
+    name: "truth-implies-nothing",
+    breaks: "a test of a value's truth, `if (words)`, doesn't say it's there, so a let chain of it stays its two `if`s, React's `createTask` a closure called where it's made (ADR 0870)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, &by.tested()) =>\n",
+    replace: "            if false =>\n",
+    tests: ["test/corpus.test.ts", "test/lowering-bindings.test.ts", "-t", "^let_chain_values.rs$|a thread-local of a let chain"],
+    snapshots: true,
+  },
 ];

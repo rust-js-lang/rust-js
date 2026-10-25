@@ -279,17 +279,164 @@ fn read_once_first(stmt: &mut Stmt) -> Option<Stmt> {
     };
     let mut others = false;
     second.visit_vars(&mut |v| others |= v != name);
+    let breaks = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(_))));
+    if !reads_a_getter(value) || others || !breaks {
+        return None;
+    }
+    let (first, kind) = read_first(test, read, inner)?;
+    stmt.kind = kind;
+    Some(first)
+}
+
+/// `if (a) { const x = e; if (b) { s } }`, a chain's binding before the
+/// test of it, read first: `const x = a ? e : undefined;`, and the `if`
+/// it's left, `if (b) { s }`, one test, whose failures are one `else`. The
+/// one rule of when that's the chain, which `read_once_first` and
+/// `chain_values` ask: `e` is read once, where `a` holds, as it was; and
+/// `b`, which does nothing and holds only where `x` is a value, `x !=
+/// null`, `typeof x === "string"` or `x` (`implies`), fails of `undefined`,
+/// where `a` doesn't hold, as the chain did; and `a` reads no other `x`,
+/// which the `const` would now be (ADRs 0672 and 0870).
+fn read_first(test: &Expr, read: &Stmt, inner: &Stmt) -> Option<(Stmt, StmtKind)> {
+    let (StmtKind::Const(name, value), StmtKind::If(second, _, None)) = (&read.kind, &inner.kind) else {
+        return None;
+    };
     let defined = Expr::bin(Op::LooseNe, Expr::var(name), Expr::null());
     let mut tests = Vec::new();
     and_parts(second, &mut tests);
-    let breaks = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(_))));
-    let getter = reads_a_getter(value);
-    if !getter || others || second.has_effects() || !breaks || !tests.iter().any(|t| implies(t, &defined)) {
+    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name) {
         return None;
     }
     let first = StmtKind::Const(name.clone(), Expr::cond(test.clone(), value.clone(), Expr::undefined())).at(read.span);
-    stmt.kind = inner.kind.clone();
-    Some(first)
+    Some((first, inner.kind.clone()))
+}
+
+/// A value a let chain of one binding gives, `if a && let Some(x) = e { t }
+/// else { f }`, each branch one value, a thread-local's or a `let`'s: `x`
+/// read first (`read_first`), `const x = a ? e : undefined;`, as an `if
+/// let`'s is, and its `if` then of one test and two values, which
+/// `branch_values` and `returned_values` make one, `x != null ? t : f`
+/// (ADR 0870): not the chain's two `if`s and the `let` they assign, which a
+/// thread-local's closure called where it's made returns. MIR's of it: `l:
+/// { if (a) { const x = e; if (x != null) { v = t; break l; } } v = f; }`,
+/// or of what's returned, `if (a) { .. { return t; } } return f;`, neither
+/// a `return` the program wrote; nor where the list names `x` anywhere
+/// else. A place's read MIR makes no `const` of, `if (s.width != null)`,
+/// which `and_tests` makes one test of.
+pub(super) fn chain_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
+    for stmt in stmts.iter_mut() {
+        let StmtKind::Labeled(label, body) = &mut stmt.kind else {
+            continue;
+        };
+        let label = Some(label.as_str());
+        let made = match body.as_slice() {
+            [chain, rest @ ..] => valued_chain(chain, rest, label, returns, &body[1..]),
+            [] => None,
+        };
+        if let Some((first, test)) = made {
+            body[0] = test;
+            body.insert(0, first);
+        }
+    }
+    let Some(at) = stmts.len().checked_sub(2) else {
+        return;
+    };
+    let (before, chain) = stmts.split_at(at);
+    let others: Vec<Stmt> = before.iter().chain(&chain[1..]).cloned().collect();
+    if let Some((first, test)) = valued_chain(&chain[0], &chain[1..], None, returns, &others) {
+        stmts[at] = test;
+        stmts.insert(at, first);
+    }
+}
+
+/// Of `chain`, `if (a) { const x = e; if (b) { .. } }`, followed by `rest`
+/// in a list whose other statements are `others`, and of a block `label`
+/// where the list is one's: what `chain_values` makes of it, each branch
+/// one value, the `const` where the chain is, as the comment before the
+/// chain is before the read it says of, and the test where it was.
+fn valued_chain(
+    chain: &Stmt,
+    rest: &[Stmt],
+    label: Option<&str>,
+    returns: &[js::Span],
+    others: &[Stmt],
+) -> Option<(Stmt, Stmt)> {
+    // The tests before the binding, a level each, `a && b && let ..`'s.
+    fn levels<'s>(stmt: &'s Stmt, tests: &mut Vec<Expr>) -> Option<(&'s Stmt, &'s Stmt)> {
+        let StmtKind::If(test, then, None) = &stmt.kind else {
+            return None;
+        };
+        tests.push(test.clone());
+        match then.as_slice() {
+            [read, inner] if matches!(read.kind, StmtKind::Const(..)) => Some((read, inner)),
+            [inner] => levels(inner, tests),
+            _ => None,
+        }
+    }
+    let mut tests = Vec::new();
+    let (read, inner) = levels(chain, &mut tests)?;
+    let (StmtKind::Const(name, _), StmtKind::If(_, body, None)) = (&read.kind, &inner.kind) else {
+        return None;
+    };
+    // Its value, each way: what's left once `x`'s copies, `const k = x;`,
+    // the pattern's, are.
+    let aliases = body
+        .iter()
+        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, v) if matches!(&v.kind, ExprKind::Var(x) if x == name)));
+    let yes = one_value(&body[aliases.count()..], label, returns, false)?;
+    let no = one_value(rest, label, returns, true)?;
+    let one = match (yes, no) {
+        (Valued::Assigned(x, yes), Valued::Assigned(y, no)) => x == y && small(yes) && small(no),
+        (Valued::Returned(yes), Valued::Returned(no)) => small(yes) && small(no) && folds_into_return(yes, no),
+        _ => false,
+    };
+    if !one {
+        return None;
+    }
+    if js::mentions_in(others, name) > 0 || declared(others).any(|n| n == name) {
+        return None;
+    }
+    let test = (tests.into_iter())
+        .reduce(|a, b| Expr::bin(Op::And, a, b))
+        .expect("one");
+    let (first, test) = read_first(&test, read, inner)?;
+    Some((first.kind.at(chain.span), test.at(inner.span)))
+}
+
+/// What a branch of a chain's value gives, of `label`'s block.
+enum Valued<'s> {
+    Assigned(&'s str, &'s Expr),
+    Returned(&'s Expr),
+}
+
+/// Of `stmts`, a branch's: one value, `v = t;` and its `break` to `label`,
+/// or `v = f;` the block ends with, `last`, or `return t;` the program
+/// didn't write.
+fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], last: bool) -> Option<Valued<'s>> {
+    let assigned = |s: &'s Stmt| match &s.kind {
+        StmtKind::Assign(target, value) => match &target.kind {
+            ExprKind::Var(x) => Some(Valued::Assigned(x, value)),
+            _ => None,
+        },
+        _ => None,
+    };
+    match stmts {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(value)),
+                span,
+            },
+        ] if label.is_none() && !written(returns, *span) => Some(Valued::Returned(value)),
+        [assign] if label.is_some() && last => assigned(assign),
+        [
+            assign,
+            Stmt {
+                kind: StmtKind::Break(Some(l)),
+                ..
+            },
+        ] if Some(l.as_str()) == label => assigned(assign),
+        _ => None,
+    }
 }
 
 /// Each test `a && b && c` is of, in order.

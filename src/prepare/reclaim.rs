@@ -251,7 +251,7 @@ fn reclaimable<'a>(name: &'a str, mentioned: &HashSet<String>) -> Option<&'a str
 
 /// Each name the module mentions: its items' own, what they declare and
 /// read, and its imports'.
-fn mentions(module: &mut js::Module) -> HashSet<String> {
+pub(super) fn mentions(module: &mut js::Module) -> HashSet<String> {
     let mut names = HashSet::new();
     for item in &mut module.items {
         if let Some(name) = item.declared() {
@@ -282,7 +282,7 @@ fn mentions(module: &mut js::Module) -> HashSet<String> {
 
 /// The names `item` declares, anywhere in it, and with `reads` those it
 /// reads too, its own name a function's.
-fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut String)) {
+pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut String)) {
     let function = |function: &mut js::Function, f: &mut dyn FnMut(&mut String)| {
         if reads {
             f(&mut function.name);

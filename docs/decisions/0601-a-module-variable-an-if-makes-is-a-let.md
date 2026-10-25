@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0270](0270-module-variables.md)'s
 thread-locals. Amended by [0657](0657-an-if-of-one-value-each-is-a-conditional.md):
-an `if` of one value each, a function too, is a `const` of a conditional.
+an `if` of one value each, a function too, is a `const` of a conditional;
+and by [0870](0870-a-let-chains-value-reads-its-binding-first.md): a
+closure of `const`s and then its value is the module's `const`s.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same value, made
 once when the module loads.
@@ -62,3 +64,13 @@ A `return undefined` at an end, an `Option`'s `None`, assigns nothing:
 `let name;` is `undefined` already, so `else { name = undefined; }` is
 gone, and a `then` left with nothing is the `else`'s under its test
 negated ([0704](0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)).
+
+## Amendment: a closure of `const`s and its value is the module's (ADR 0870)
+
+A closure whose body is `const`s and then the value it returns, `const at
+= Math.random(); return at < 2 ? 1 : 2;`, a let chain's value read first
+(ADR 0870), is those `const`s and the value, the module's: `const at =
+Math.random(); const SEEN = at < 2 ? 1 : 2;`, each named apart from what
+the module names elsewhere (`prepare::initializers::declared_at_top`).
+A body that declares at its top and does more, `let at = ..; at *= 2;`,
+stays the call.
