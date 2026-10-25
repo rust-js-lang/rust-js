@@ -766,4 +766,12 @@ export const mutations: Mutation[] = [
     replace: "                ty::Adt(_, held) if variable.is_some() && held.is_empty() => held.type_at(0),\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
   },
+  {
+    name: "nullable-local-declared-undefined",
+    breaks: "a nullable thread-local's variable is declared `Fiber | null | undefined`, where its `None` is `null` (ADR 0586, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                if super::bindings::nullable_local(self.tcx, def_id)\n",
+    replace: "                if false && super::bindings::nullable_local(self.tcx, def_id)\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+  },
 ];

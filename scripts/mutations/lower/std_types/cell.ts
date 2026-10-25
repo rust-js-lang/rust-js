@@ -414,4 +414,20 @@ export const mutations: Mutation[] = [
     replace: "                let checked = ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell));\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
   },
+  {
+    name: "nullable-local-set-undefined",
+    breaks: "a nullable thread-local set `None` is `undefined`, `current = undefined`, where React's is `null` (ADR 0586, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+  },
+  {
+    name: "nullable-made-as-given",
+    breaks: "a nullable thread-local's cell is made of what it's given, `undefined`, not `null` (ADR 0586, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                *value = js::Storage::NullForNone.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+  },
 ];

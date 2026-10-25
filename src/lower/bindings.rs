@@ -13,8 +13,13 @@ use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
 mod effects;
+mod nullable;
 mod rest_values;
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
+pub(super) use nullable::{
+    is_nullable, is_optional, null_where_made, nullable_items, nullable_local, nullable_option, nullable_params,
+    nullable_result,
+};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
@@ -94,19 +99,36 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     valid = false;
                 }
             }
+            // Or of a type parameter, `create_cursor<T>(default_value: T)`,
+            // whose `None` is `null` where it's given an `Option`.
             for name in nullable_params(tcx, def.to_def_id()) {
                 let at = idents
                     .iter()
                     .position(|ident| ident.is_some_and(|ident| ident.name == name));
-                if !at.is_some_and(
-                    |i| matches!(inputs[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)),
-                ) {
+                if !at.is_some_and(|i| match inputs[i].kind() {
+                    ty::Adt(adt, _) => tcx.is_lang_item(adt.did(), LangItem::Option),
+                    ty::Param(_) => true,
+                    _ => false,
+                }) {
                     let message = format!(
-                        "rust-js: `#[rust_js::nullable({name})]` names no parameter of this function that's an `Option`"
+                        "rust-js: `#[rust_js::nullable({name})]` names no parameter of this function that's an `Option`, or a type parameter's value"
                     );
                     tcx.dcx().span_err(tcx.def_span(def), message);
                     valid = false;
                 }
+            }
+        }
+        // A `#[rust_js::nullable]` thread-local is a `Cell` or a `RefCell` of
+        // an `Option`, whose `None` is `null` (ADR 0586, amended).
+        if matches!(tcx.def_kind(def), DefKind::Const { .. }) && nullable_local(tcx, def.to_def_id()) {
+            let ty = tcx.type_of(def).instantiate_identity().skip_normalization();
+            let of_option = matches!(ty.kind(), ty::Adt(key, args)
+                if super::recognition::is_std_def(tcx, key.did(), super::recognition::StdItem::LocalKey)
+                    && nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0)));
+            if !of_option {
+                let message = "rust-js: `#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`, whose `None` is then `null`; this one isn't";
+                tcx.dcx().span_err(tcx.def_span(def), message);
+                valid = false;
             }
         }
         // A `#[rust_js::nullable]` field is an `Option` whose `None` is `null`
@@ -1090,58 +1112,6 @@ pub(super) fn is_omitted(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
-/// Whether a field of an `Option` is declared to take `null` too,
-/// `#[rust_js::nullable]` (ADR 0196).
-pub(super) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
-    tcx.get_attrs_by_path(field.did, &path).next().is_some()
-}
-
-/// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).
-pub(super) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
-    tcx.get_attrs_by_path(field.did, &path).next().is_some()
-}
-
-/// Whether a field's `None` is `null` from where it's made on, so its read is `null` or a value: a
-/// nullable one's, not an optional one's, which a literal's `None` leaves out (ADR 0810, amended).
-pub(super) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    is_nullable(tcx, field) && !is_optional(tcx, field)
-}
-
-/// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
-/// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772), or a
-/// `RefCell`'s, a field's the value it holds (ADRs 0362, 0863). `None` of
-/// any other type.
-pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let option = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
-    let cell = |adt: ty::AdtDef<'_>, item| adt.did() == super::recognition::std_item(tcx, item);
-    match ty.kind() {
-        _ if option(ty) => Some(ty),
-        ty::Adt(adt, args)
-            if (cell(*adt, super::recognition::StdItem::Cell) || cell(*adt, super::recognition::StdItem::RefCell))
-                && option(args.type_at(0)) =>
-        {
-            Some(args.type_at(0))
-        }
-        _ => None,
-    }
-}
-
-/// The `Option` each item of a `#[rust_js::nullable]` field of type `ty`
-/// is, a `Vec<Option<T>>`'s or a `Cell`'s or a `RefCell`'s of one, whose
-/// `None` is `null` in JS, upstream's `createLaneMap(null)` (ADR 0586,
-/// amended). `None` of any other type.
-pub(super) fn nullable_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    let ty::Adt(adt, args) = ty.kind() else { return None };
-    let std = |item| adt.did() == super::recognition::std_item(tcx, item);
-    if std(super::recognition::StdItem::Cell) || std(super::recognition::StdItem::RefCell) {
-        return nullable_items(tcx, args.type_at(0));
-    }
-    let item = args.types().next()?;
-    (std(super::recognition::StdItem::Vec) && nullable_option(tcx, item) == Some(item)).then_some(item)
-}
-
 /// The parameters a binding names `#[rust_js::lazy(..)]`, each a function
 /// JS calls once for the value, React's `useState(init)`: given a closure
 /// whose body does nothing and gives no function, its value (ADR 0593).
@@ -1152,27 +1122,6 @@ pub(super) fn lazy_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
         .flatten()
         .filter_map(|item| item.ident().map(|ident| ident.name))
         .collect()
-}
-
-/// The parameters a binding names `#[rust_js::nullable(..)]`, each
-/// `T | null` as a nullable field is (ADR 0275). On the function, since a
-/// parameter's own attributes are kept neither in an `extern` block nor
-/// in another crate's metadata.
-pub(super) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
-    tcx.get_attrs_by_path(def_id, &path)
-        .filter_map(|attr| attr.meta_item_list())
-        .flatten()
-        .filter_map(|item| item.ident().map(|ident| ident.name))
-        .collect()
-}
-
-/// Whether a function says its result's `None` is `null`,
-/// `#[rust_js::nullable]` alone on it, TypeScript's `T | null`, as a JS
-/// caller of it tests `!== null`: React's scheduler's `peek(queue)`.
-pub(super) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
-    tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
 }
 
 /// Whether a binding's `index`th parameter, `this` too, is optional,

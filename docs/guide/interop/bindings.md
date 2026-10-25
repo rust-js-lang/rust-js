@@ -748,8 +748,12 @@ export async function open(other) {
   ([ADR 0700](../../decisions/0700-typescripts-function-gives-any-value.md)).
 - **`#[rust_js::nullable]` makes the result's `None` `null`** for a caller
   that tests `!== null`; `#[rust_js::nullable(range)]` passes the parameter
-  `range`'s `None` as `null`. Reading a result, `None` is `undefined` or
-  `null` either way ([ADR 0275](../../decisions/0275-nullable-writes-null.md)).
+  `range`'s `None` as `null`. Of a type parameter, `fn create_cursor<T>(
+  default_value: T)`, it's where it's given an `Option`, `createCursor(null)`,
+  and any other value as it is, `createCursor(0)`
+  ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
+  Reading a result, `None` is `undefined` or `null` either way
+  ([ADR 0275](../../decisions/0275-nullable-writes-null.md)).
 - **`#[rust_js::variadic]` makes the last parameter the rest
   arguments** ([ADR 0221](../../decisions/0221-variadic-bindings.md)). A
   TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`

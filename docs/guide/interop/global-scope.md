@@ -516,6 +516,13 @@ export function last() {
   exports `setIsRendering`. A `RefCell` of an array or an object is that
   object, which any module changes in place
   ([ADR 0270](../../decisions/0270-module-variables.md), amended).
+- **`#[rust_js::nullable]` on one of a `Cell` or a `RefCell` of an
+  `Option` makes its `None` `null`**, where it's made and where it's set,
+  `export let current = null;` and `current = null;`, `Fiber | null` to
+  TypeScript, as React's `let current: Fiber | null = null` is
+  ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
+  A `None` a `with_borrow_mut` closure writes is `undefined`, as any a
+  closure makes is.
 - **A `with_borrow` closure that may borrow the cell again keeps the cell**,
   borrowed while the closure runs, so a second `borrow_mut()` panics as
   std's does. What a closure, or a function given to `with_borrow`, may

@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "module-variable-set-unseen",
     breaks: "a thread-local that's its module's variable is set as a cell, `$borrowMut(current)` (ADR 0270, amended)",
     file: "src/lower/mir/local_facts.rs",
-    find: "                Some(Std::CellSet) if quiet_local(&first.node) => _ = quiet.calls.insert(block),\n",
-    replace: "",
+    find: "                        quiet.calls.insert(block);\n                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
+    replace: "                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "            quiet.guards.extend(more);\n",
     replace: "            let _ = more;\n            break;\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+  },
+  {
+    name: "nullable-local-calls-unseen",
+    breaks: "no call that writes a nullable thread-local is found, so its `None` is written `undefined` (ADR 0586, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        quiet.nullable.insert(block);\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
 ];

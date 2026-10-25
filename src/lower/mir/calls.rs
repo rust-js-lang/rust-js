@@ -125,6 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     tys: &tys,
                     nulled: &[],
                     quiet: false,
+                    null_for_none: false,
                     span,
                 };
                 self.std_values(known, call, vec![place.clone(), rhs], false, ty, out)?
@@ -317,8 +318,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(value)
             }
             // A parameter it names `#[rust_js::nullable(..)]`: its
-            // `None` is `null`, and a `Some(..)` its value (ADR 0275).
-            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, nulled),
+            // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
+            // type parameter, where it's given an `Option` (ADR 0586,
+            // amended).
+            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_some() => {
+                js::Storage::NullForNone.written(value, nulled)
+            }
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing
             // and gives no function is its value, `useState(0)` (ADR 0593).

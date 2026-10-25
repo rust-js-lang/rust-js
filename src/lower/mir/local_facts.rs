@@ -70,6 +70,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
 pub(super) struct QuietCells {
     pub(super) calls: HashSet<BasicBlock>,
     pub(super) guards: HashSet<Local>,
+    /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
+    /// whose `None` is `null` (ADR 0586, amended).
+    pub(super) nullable: HashSet<BasicBlock>,
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -269,9 +272,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             }
         };
-        // The thread-local `operand` is, `&KEY`, a module's variable: a
-        // promoted reference to it, or one reborrowed, `&*r`.
-        let quiet_local = |operand: &Operand<'tcx>| -> bool {
+        // The thread-local `operand` is, `&KEY`: a promoted reference to
+        // it, or one reborrowed, `&*r`.
+        let local_key = |operand: &Operand<'tcx>| -> Option<rustc_span::def_id::DefId> {
             let mut operand = operand.clone();
             let constant = loop {
                 let Some(place) = operand.place() else {
@@ -294,8 +297,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
                 _ => None,
             };
-            matches!(referred, Some(mir::Const::Unevaluated(uv, _))
-                if uv.promoted.is_none() && uv.def.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)))
+            match referred {
+                Some(mir::Const::Unevaluated(uv, _)) if uv.promoted.is_none() => Some(uv.def),
+                _ => None,
+            }
         };
         let mut drops = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -314,7 +319,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(first) = args.first() else { continue };
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
-                Some(Std::CellSet) if quiet_local(&first.node) => _ = quiet.calls.insert(block),
+                Some(Std::CellSet | Std::CellReplace | Std::CellTake) if let Some(key) = local_key(&first.node) => {
+                    if key.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)) {
+                        quiet.calls.insert(block);
+                    }
+                    if crate::lower::bindings::nullable_local(tcx, key) {
+                        quiet.nullable.insert(block);
+                    }
+                }
                 Some(
                     known @ (Std::Borrow { lock: false, .. }
                     | Std::CellReplace

@@ -86,8 +86,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // variable holding the handle, which tidy writes as its storage
         // stores (ADR 0791), what MIR says so is marked so (ADR 0841).
         let given_nulled = call.nulled.get(1) == Some(&true);
+        let null_for_none = call.null_for_none;
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
+            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),
             _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),
             _ => value,
         };
@@ -618,6 +621,25 @@ pub(in crate::lower) fn plain_statics(
         }
     }
     exported
+}
+
+/// A nullable thread-local's cell as it's made, `{ value: undefined }` of
+/// `RefCell::new(None)`: its `None` `null`, `{ value: null }`, its module's
+/// variable `let current = null` (ADR 0586, amended).
+pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
+    match made.kind {
+        js::ExprKind::Object(mut props, layout) if matches!(props.as_slice(), [Prop::Field(key, _)] if key == js::HELD) =>
+        {
+            if let Some(Prop::Field(_, value)) = props.first_mut() {
+                *value = js::Storage::NullForNone.written(std::mem::replace(value, Expr::undefined()), false);
+            }
+            Expr {
+                kind: js::ExprKind::Object(props, layout),
+                ..made
+            }
+        }
+        _ => made,
+    }
 }
 
 /// What a module reads of another's thread-locals that are that module's

@@ -1038,6 +1038,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tys: arg_tys,
             nulled: given.nulled,
             quiet: given.quiet,
+            null_for_none: given.null_for_none,
             span,
         };
         self.std_values(known, call, values, boxed, output, out)

@@ -1108,6 +1108,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
             _ => ty,
         };
         let ty = match variable {
+            // A nullable one's `None` is `null` (ADR 0586, amended).
+            Some(_)
+                if super::bindings::nullable_local(self.tcx, def_id)
+                    && let Some(inner) = self.option(ty) =>
+            {
+                json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] })
+            }
             Some(_) => self.ts(ty),
             None => self.as_written(self.written_type(def_id), |out| out.ts(ty)),
         };

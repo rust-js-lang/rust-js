@@ -219,6 +219,13 @@ pub fn lower_crate<'tcx>(
         // its variable, by its name.
         let key = thread_local_inits.get(&def_id).copied();
         let named = key.unwrap_or(def_id);
+        // A nullable one's `None` `null` (ADR 0586, amended).
+        let value = match key {
+            Some(key) if super::bindings::nullable_local(tcx, key.to_def_id()) => {
+                super::std_types::cell::nullable_made(value)
+            }
+            _ => value,
+        };
         let info = &fns[&named.to_def_id()];
         const_items.entry(info.module).or_default().push(js::Const {
             name: info.name.clone(),
@@ -617,6 +624,11 @@ pub fn lower_crate<'tcx>(
                         ],
                     ) => value.clone(),
                     (false, _) => Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new()),
+                };
+                // A nullable thread-local's `None` `null` (ADR 0586, amended).
+                let value = match super::bindings::nullable_local(tcx, key.to_def_id()) {
+                    true => super::std_types::cell::nullable_made(value),
+                    false => value,
                 };
                 // A `static mut`'s is its `{ value }` (ADR 0096).
                 let value = match tcx.static_mutability(key.to_def_id()) {

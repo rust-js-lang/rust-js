@@ -10,13 +10,16 @@ use crate::lower::std_types::once::OnceOp;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What MIR says of the call being lowered's arguments, past their
-    /// values: which `Option`s are `null` already (`nulled`), and whether
-    /// the cell it's given is a place no borrow of which can meet another
-    /// (`QuietCells`, ADR 0863, amended).
+    /// values: which `Option`s are `null` already (`nulled`), whether the
+    /// cell it's given is a place no borrow of which can meet another
+    /// (`QuietCells`, ADR 0863, amended), and whether it's a nullable
+    /// thread-local's, its `None` `null` (ADR 0586, amended).
     pub(super) fn call_given<'n>(&self, state: &State<'_, 'tcx>, nulled: &'n [bool]) -> crate::lower::calls::Given<'n> {
+        let cells = state.facts.quiet_cells();
         crate::lower::calls::Given {
             nulled,
-            quiet: state.facts.quiet_cells().calls.contains(&state.at),
+            quiet: cells.calls.contains(&state.at),
+            null_for_none: cells.nullable.contains(&state.at),
         }
     }
 }

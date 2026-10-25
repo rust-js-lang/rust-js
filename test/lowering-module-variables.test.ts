@@ -199,3 +199,133 @@ if (__DEV__) {
 }
 `);
 });
+
+// React's ReactCurrentFiber: `export let current: Fiber | null = null`, set
+// `null` again where it's reset. A `#[rust_js::nullable]` thread-local's
+// `None` is `null` where it's made and where it's set (ADR 0586, amended).
+test("a nullable thread-local's None is null where it's made and set", async () => {
+  const dir = fixture("nullable-thread-local");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static CURRENT: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static OWNER: Cell<Option<&'static str>> = const { Cell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(fiber))]
+pub fn set_current_fiber(fiber: Option<Rc<Fiber>>) {
+    CURRENT.set(fiber);
+}
+
+pub fn own(name: &'static str) {
+    OWNER.set(Some(name));
+}
+
+pub fn reset() {
+    CURRENT.set(None);
+    OWNER.set(None);
+}
+
+pub fn current_tag() -> Option<u8> {
+    CURRENT.with_borrow(|current| current.as_ref().map(|fiber| fiber.tag))
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export let current = null;\n");
+  expect(js).toContain("export let owner = null;\n");
+  // A nullable parameter's `None` is `null` where a call gives it, and
+  // `undefined` from JS too, as its `.d.ts` says (ADR 0861).
+  expect(js).toContain("  current = fiber ?? null;\n");
+  expect(js).toContain("  current = null;\n  owner = null;\n");
+  const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(types).toContain("export let current: Fiber | null;\n");
+  expect(types).toContain("export let owner: string | null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.current, lib.owner]).toEqual([null, null]);
+  lib.setCurrentFiber({ tag: 3 });
+  lib.own("App");
+  expect([lib.currentTag(), lib.owner]).toEqual([3, "App"]);
+  lib.reset();
+  expect([lib.current, lib.owner, lib.currentTag()]).toEqual([null, null, undefined]);
+});
+
+// A binding's type parameter `#[rust_js::nullable(..)]` names: its `None`
+// `null` where it's given an `Option`, React's `createCursor(null)`, and
+// any other value as it is, `createCursor(0)` (ADR 0586, amended).
+test("a binding's nullable type parameter is given null for None", () => {
+  const dir = fixture("nullable-generic-binding");
+  writeFileSync(join(dir, "stack.js"), "export function createCursor(defaultValue) {\n  return { current: defaultValue };\n}\n");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct StackCursor<T> {
+    pub current: RefCell<T>,
+}
+
+pub struct Hidden {
+    pub lanes: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./stack.js#createCursor")]
+#[cfg_attr(rust_js, rust_js::nullable(default_value))]
+fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+    let _ = default_value;
+    unreachable!()
+}
+
+thread_local! {
+    pub static HIDDEN: StackCursor<Option<Rc<Hidden>>> = create_cursor(None);
+    pub static LANES: StackCursor<u32> = create_cursor(0);
+}
+
+pub fn hidden() -> bool {
+    HIDDEN.with(|cursor| cursor.current.borrow().is_some())
+}
+
+pub fn lanes() -> u32 {
+    LANES.with(|cursor| *cursor.current.borrow())
+}
+
+pub fn hidden_of(context: Option<Rc<Hidden>>) -> StackCursor<Option<Rc<Hidden>>> {
+    create_cursor(context)
+}
+
+pub fn lanes_of(lanes: u32) -> StackCursor<u32> {
+    create_cursor(lanes)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("createCursor(null)");
+  expect(js).toContain("createCursor(0)");
+  expect(js).toContain("  return createCursor(context ?? null);\n");
+  expect(js).toContain("  return createCursor(lanes);\n");
+});
+
+// One of what's no `Option`, whose `None` it can't be, is refused.
+test("a nullable thread-local of no Option is refused", () => {
+  const dir = fixture("nullable-thread-local-number");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static COUNT: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn bump() {
+    COUNT.set(COUNT.get() + 1);
+}
+`);
+  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+    "`#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`",
+  );
+});
+

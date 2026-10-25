@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-some-coalesced",
     breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, nulled),\n",
-    replace: "            () if named(bindings::nullable_params(tcx, def_id)) => js::Storage::NullForNone.written(value, false),\n",
+    find: "                js::Storage::NullForNone.written(value, nulled)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
+    replace: "                js::Storage::NullForNone.written(value, false)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
     tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
   },
   {
@@ -307,5 +307,13 @@ export const mutations: Mutation[] = [
     find: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len()) {\n",
     replace: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len() && false) {\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+  },
+  {
+    name: "nullable-type-parameter-of-any",
+    breaks: "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
+    file: "src/lower/mir/calls.rs",
+    find: "            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_some() => {\n",
+    replace: "            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_none() => {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
   },
 ];

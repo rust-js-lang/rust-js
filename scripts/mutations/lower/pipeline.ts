@@ -585,4 +585,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => lowered_items.push((def_id, lowered)),\n",
     tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
   },
+  {
+    name: "nullable-local-made-undefined",
+    breaks: "a nullable `const { .. }` thread-local's `None` is made `undefined`, `export let current;`, where React's is `null` (ADR 0586, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "            Some(key) if super::bindings::nullable_local(tcx, key.to_def_id()) => {\n",
+    replace: "            Some(key) if false && super::bindings::nullable_local(tcx, key.to_def_id()) => {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+  },
 ];
