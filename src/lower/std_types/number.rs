@@ -530,7 +530,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Math`'s function, its arguments as they are (ADR 0887).
         if let Some(name) = math::function(op, num) {
             // `Math.clz32` takes its argument modulo 2^32 itself, `lanes as
-            // u32`'s wrap too (ADR 0891).
+            // u32`'s wrap too (ADR 0895).
             let values = match name {
                 "clz32" => values.into_iter().map(operators::bits_operand).collect(),
                 _ => values,

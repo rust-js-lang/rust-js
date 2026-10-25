@@ -346,16 +346,16 @@ export function fits(str, substr) {
 ```
 - **A bit set is written with JS's operators,** each assignment its
   compound, `lanes &= ~lane`, of a field or a `Cell`'s too
-  ([ADR 0890](../../decisions/0890-a-bitwise-assignment-is-its-compound.md)).
+  ([ADR 0894](../../decisions/0894-a-bitwise-assignment-is-its-compound.md)).
   An `i32`'s `<<` is JS's, and what a bitwise operator takes needs no
   wrap of its own, `lanes & -lanes`, as JS's takes it modulo 2^32 anyway;
   elsewhere a wrap stays, `-lanes | 0` of `i32::MIN`
-  ([ADR 0891](../../decisions/0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)).
+  ([ADR 0895](../../decisions/0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md)).
   So `lanes.isolate_lowest_one()`, std's `lanes & lanes.wrapping_neg()`,
   is `lanes & -lanes`
   ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)); and a
   test of bits against `0` is their truth, `if (lane & SYNC_LANE)`
-  ([ADR 0892](../../decisions/0892-a-test-of-bits-against-zero-is-their-truth.md)):
+  ([ADR 0896](../../decisions/0896-a-test-of-bits-against-zero-is-their-truth.md)):
 
 ```rust
 use std::cell::Cell;

@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "i32-shift-left-unwrapped-for-u32-too",
-    breaks: "a `u32`'s `n << 1` is JS's int32, `0x40000000 << 1` negative (ADR 0891)",
+    breaks: "a `u32`'s `n << 1` is JS's int32, `0x40000000 << 1` negative (ADR 0895)",
     file: "src/lower/std_types/number/operators.rs",
     find: "            BinOp::Shl if num == Num::I32 => ",
     replace: "            BinOp::Shl if num.bits() == 32 => ",
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bitwise-operand-of-any-or-unwrapped",
-    breaks: "an operand `a | 1` of a bitwise operator is taken for a wrap, `a & b` (ADR 0891)",
+    breaks: "an operand `a | 1` of a bitwise operator is taken for a wrap, `a & b` (ADR 0895)",
     file: "src/lower/std_types/number/operators.rs",
     find: "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int() == Some(0) => *x,\n",
     replace: "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int().is_some() => *x,\n",
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "negation-unwrapped",
-    breaks: "`-lanes` of `i32::MIN` is 2^31, no `i32` (ADR 0891)",
+    breaks: "`-lanes` of `i32::MIN` is 2^31, no `i32` (ADR 0895)",
     file: "src/lower/std_types/number/operators.rs",
     find: "                Ok(num.wrap(Expr::unary(UnaryOp::Neg, a)))\n",
     replace: "                Ok(Expr::unary(UnaryOp::Neg, a))\n",

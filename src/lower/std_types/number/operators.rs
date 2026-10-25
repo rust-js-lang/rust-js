@@ -147,7 +147,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::BitXor => self.bitwise(Op::BitXor, l, r, num),
             // Rust (without overflow checks) masks the shift amount to the
             // type's width. JS masks to 32, which is only right for 32 bits.
-            // An `i32`'s is JS's `<<`, an int32 already (ADR 0891).
+            // An `i32`'s is JS's `<<`, an int32 already (ADR 0895).
             BinOp::Shl if num == Num::I32 => Expr::bin(Op::Shl, bits_operand(l), bits_operand(r)),
             BinOp::Shl if num.bits() == 32 => num.wrap(Expr::bin(Op::Shl, bits_operand(l), bits_operand(r))),
             BinOp::Shl => num.wrap(Expr::bin(Op::Shl, bits_operand(l), mask_shift(bits_operand(r), num))),
@@ -370,7 +370,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// ToUint32 of either wrap of `x` is that of `x`, so `lanes & -lanes`, not
 /// `lanes & (-lanes | 0)`, and `1 << (i + 1)`, not `1 << ((i + 1) >>> 0)`.
 /// A wrap is of a number, which the conversion reads nothing else of
-/// (ADR 0891).
+/// (ADR 0895).
 pub(in crate::lower) fn bits_operand(e: Expr) -> Expr {
     match e.kind {
         js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int() == Some(0) => *x,

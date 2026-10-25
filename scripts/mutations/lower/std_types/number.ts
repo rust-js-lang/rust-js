@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clz32-argument-kept-wrapped",
-    breaks: "`(lanes as u32).leading_zeros()` is `Math.clz32(lanes >>> 0)`, a wrap `clz32` makes itself (ADR 0891)",
+    breaks: "`(lanes as u32).leading_zeros()` is `Math.clz32(lanes >>> 0)`, a wrap `clz32` makes itself (ADR 0895)",
     file: "src/lower/std_types/number.rs",
     find: "                \"clz32\" => values.into_iter().map(operators::bits_operand).collect(),\n",
     replace: "                \"clz32\" => values,\n",

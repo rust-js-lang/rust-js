@@ -684,7 +684,7 @@ fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
 /// so it's truthy where it isn't `0`. A `u32`'s wrap of one, `(a & b) >>>
 /// 0`, is `0` where what it wraps is. Of a test whose truth alone is read,
 /// an `if`'s, a `while`'s or a conditional's, and the parts of an `&&`,
-/// `||` or `!` of one (ADR 0892).
+/// `||` or `!` of one (ADR 0896).
 pub(super) fn bit_tests(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {

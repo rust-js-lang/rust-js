@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bit-test-compared",
-    breaks: "`if lane & 8 != 0` is `if ((lane & 8) !== 0)`, not `if (lane & 8)` (ADR 0892)",
+    breaks: "`if lane & 8 != 0` is `if ((lane & 8) !== 0)`, not `if (lane & 8)` (ADR 0896)",
     file: "src/lower/mir/tidy/logicals.rs",
     find: "        ExprKind::Binary(op @ (Op::Ne | Op::Eq), a, b) if b.as_int() == Some(0) && bits(a) => {\n",
     replace: "        ExprKind::Binary(op @ (Op::Ne | Op::Eq), a, b) if b.as_int() == Some(0) && bits(a) && false => {\n",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bit-test-of-zero-kept-truthy",
-    breaks: "`if lane & 4 == 0` is `if (lane & 4)`, its branch taken where it isn't (ADR 0892)",
+    breaks: "`if lane & 4 == 0` is `if (lane & 4)`, its branch taken where it isn't (ADR 0896)",
     file: "src/lower/mir/tidy/logicals.rs",
     find: "                false => Expr::unary(UnaryOp::Not, bits),\n",
     replace: "                false => bits,\n",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bit-test-of-a-value-too",
-    breaks: "a statement's test of any `Cond`, the value `(a & b) !== 0` too, is `a & b`, a number where a `bool` is returned (ADR 0892)",
+    breaks: "a statement's test of any `Cond`, the value `(a & b) !== 0` too, is `a & b`, a number where a `bool` is returned (ADR 0896)",
     file: "src/lower/mir/tidy/logicals.rs",
     find: "    js::each_expr_mut(body, &mut |e| {\n        if let ExprKind::Cond(test, ..) = &mut e.kind {\n            bit_test(test);\n        }\n    });\n",
     replace: "    js::each_expr_mut(body, &mut |e| bit_test(e));\n",
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bit-test-of-a-wrap",
-    breaks: "an `i32`'s wrap `((item % 2) | 0) === 0` is taken for bits, `!((item % 2) | 0)` (ADR 0892)",
+    breaks: "an `i32`'s wrap `((item % 2) | 0) === 0` is taken for bits, `!((item % 2) | 0)` (ADR 0896)",
     file: "src/lower/mir/tidy/logicals.rs",
     find: "        ExprKind::Binary(Op::BitOr, _, zero) if zero.as_int() == Some(0) => false,\n",
     replace: "",

@@ -1,4 +1,4 @@
-# 0890. A bitwise operator's assignment is its compound
+# 0894. A bitwise operator's assignment is its compound
 
 Status: Accepted. Extends preparation's compound (`prepare.rs`'s
 `compound`), which [0631](0631-a-step-of-one-is-plus-plus.md) prints a

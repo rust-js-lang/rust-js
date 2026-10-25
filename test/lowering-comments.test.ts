@@ -1189,7 +1189,7 @@ pub fn entangled(lane: i32, entangled_lanes: i32, entanglements: &[i32], index: 
     "      spawnedLane,\n      // This render finished successfully without suspending, so we don't need\n      // to entangle the spawned task with the parent task.\n      NO_LANES,\n    );\n",
   );
   expect(js).toContain(
-    "  if (\n    // Is this one of the newly entangled lanes?\n    ((lane & entangledLanes) |\n      // Is this lane transitively entangled with the newly entangled lanes?\n      ($index(entanglements, index) & entangledLanes)) !==\n    0\n  ) {\n",
+    "  if (\n    // Is this one of the newly entangled lanes?\n    (lane & entangledLanes) |\n    // Is this lane transitively entangled with the newly entangled lanes?\n    ($index(entanglements, index) & entangledLanes)\n  ) {\n",
   );
   const lanes: number[] = [];
   lib.finish(lanes as never, 4 as never);

@@ -1,4 +1,4 @@
-# 0891. An `i32`'s `<<` and an operand of a bitwise operator need no wrap
+# 0895. An `i32`'s `<<` and an operand of a bitwise operator need no wrap
 
 Status: Accepted. Extends [0011](0011-numbers.md), which keeps each
 integer's result in range with a wrap, `x | 0` or `x >>> 0`.

@@ -65,7 +65,7 @@ pub fn marked(root: &mut Root, lane: i32) {
   expect(root).toEqual({ pendingLanes: 7, current: { flags: 6 } });
 });
 
-// ADR 0891: JS's `<<` of an `i32` is an int32 already, so it's no wrap's,
+// ADR 0895: JS's `<<` of an `i32` is an int32 already, so it's no wrap's,
 // `1 << i`; and an operand JS's `&`, `|`, `^`, `~` or a shift takes modulo
 // 2^32 itself needs no wrap of its own, `lanes & -mask`, `(a + b) & m`,
 // `1 << (i + 1)`. What isn't such an operand keeps its wrap: `-lanes | 0`
@@ -153,7 +153,7 @@ pub fn lowest_of_sum(a: i32, b: i32) -> i32 {
   expect(lib.lowestOfSum(2147483647, 1)).toBe(min);
 });
 
-// ADR 0892: React's `if (lanes & SyncLane)`. A test of a bitwise
+// ADR 0896: React's `if (lanes & SyncLane)`. A test of a bitwise
 // operator's value against 0, `(lanes & 8) !== 0`, is its truth, `lanes &
 // 8`, and `=== 0` its `!`: the value is a number, never NaN. Only where
 // its truth alone is read: a value stays a comparison, and so does a

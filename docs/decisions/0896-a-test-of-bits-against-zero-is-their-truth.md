@@ -1,4 +1,4 @@
-# 0892. A test of bits against `0` is their truth
+# 0896. A test of bits against `0` is their truth
 
 Status: Accepted. Extends tidy's `written` stage, beside `turned`'s `!(b
 >= 48)`, `b < 48`.
@@ -57,7 +57,10 @@ which a number of 32 bits a bitwise operator's value always is.
 ## Consequences
 
 - `user_fmt_traits.rs`'s `if (flags[0] & bit)`, `lane_bits.rs`'s
-  `if (lanes & 2 && ..)` and the guide's `if (lane & SYNC_LANE)` read so.
+  `if (lanes & 2 && ..)` and the guide's `if (lane & SYNC_LANE)` read so;
+  and `lowering-comments.test.ts`'s ReactFiberLane test is upstream's
+  `if (// .. \n (lane & entangledLanes) | // .. \n (entanglements[index] &
+  entangledLanes))`, its comments where they were, without `!== 0`.
 
 ## What holds it
 
