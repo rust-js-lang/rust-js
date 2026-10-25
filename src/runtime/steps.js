@@ -66,8 +66,8 @@ class $Steps extends Iterator {
   }
   // Std's `nth`: `advance_by(k)`, a `None` among them ending it, then the
   // next, so an adapter's reaches its source's `try_fold` (#214).
-  nth(k) {
-    if (this.advanceBy(k) > 0) return { done: true, value: undefined };
+  nth(k, drop) {
+    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };
     return this.next();
   }
   // Std's `advance_by(m)`, of a sized iterator: `m` stepped past by its

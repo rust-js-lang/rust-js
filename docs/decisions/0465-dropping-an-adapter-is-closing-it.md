@@ -357,3 +357,26 @@ stepped them back to front (fuzz seed 62344). `std_iterator_steps` now
 gives them `$peekableCount` and `$fuseCount`, and `$stdIterator` exposes
 them. `chain_sides_own_steps` counts both, and `peekable-count-unlisted`
 and `fuse-count-unlisted` are caught.
+
+## Amendment: a `skip`'s first step asks its source's `nth`, std's default too (#294)
+
+std's `Skip::next` asks its source's `nth(n)`. Where that source has no
+`nth` of its own, std's default advances by `try_fold`. Two shapes
+dropped a reversed `Vec`'s items back to front (fuzz seeds 63126 and
+63028):
+- `rev().skip(2).inspect(..).step_by(2).count()`: the JS `step_by` was a
+  `filter`, whose consumer folded it into `Skip::fold`. Its source's
+  first step is a `Skip`'s `nth` past a slice, `steps_past_a_slice`, so
+  it's now `$stepBy`, stepped by `next` as std's `StepBy` steps it.
+- `rev().skip(2).take_while(..).skip(2)`: `$skipping` stepped a
+  `take_while` by `next`. Now it asks the `nth` of a source with its own
+  `tryFold`, whose default, `advanceBy` by `tryFold`, reaches the inner
+  `skip`'s `nth(n - 1)`. `$Steps`' `nth` is given the items' drop for
+  what it passes.
+
+`step_by_compiled_source_nth` adds all three lines, against native Rust.
+The mutations `step-by-past-a-skip-filtered`, `skipping-nth-only-own` and
+`steps-nth-drop-ungiven` are caught.
+Readability: the lines add `$iter` (87.6 to 87.7 in 10,000 lines),
+`Iterator.from` (15.3 to 15.4) and renamed temporaries (732.9 to
+735.1), as each such case does.

@@ -1230,8 +1230,8 @@ export class $Steps extends Iterator {
   }
   // Std's `nth`: `advance_by(k)`, a `None` among them ending it, then the
   // next, so an adapter's reaches its source's `try_fold` (#214).
-  nth(k) {
-    if (this.advanceBy(k) > 0) return { done: true, value: undefined };
+  nth(k, drop) {
+    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };
     return this.next();
   }
   // Std's `advance_by(m)`, of a sized iterator: `m` stepped past by its
@@ -1937,10 +1937,12 @@ export function $skipping(iter, n, drop) {
     () => {
       // Std's `Skip::next`, its source's `nth(n)`, where that drops what
       // it passes over itself, a reversed `Vec`'s as one slice (#234).
-      if (skipping.n > 0 && skipping.iter.ownNth) {
+      // And of one with a `try_fold` of its own, whose `nth` is std's
+      // default, `advance_by` by it, as std's `Skip::next` asks (#294).
+      if (skipping.n > 0 && (skipping.iter.ownNth || Object.hasOwn(skipping.iter, "tryFold"))) {
         const n = skipping.n;
         skipping.n = 0;
-        return skipping.iter.nth(n);
+        return skipping.iter.nth(n, drop);
       }
       for (; skipping.n > 0; skipping.n--) {
         const step = skipping.iter.next();

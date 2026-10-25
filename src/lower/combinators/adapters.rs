@@ -377,8 +377,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.recognition().nths_its_own(receiver_ty)
                     || self.steps_a_range(receiver_ty.peel_refs())
                     // And of a `Vec`'s reversed, whose `nth` drops what it
-                    // passes over as one slice (#234).
+                    // passes over as one slice (#234), or of one whose first
+                    // step asks a `Skip`'s `nth` of one (#294).
                     || self.recognition().nths_a_slice(receiver_ty)
+                    || self.recognition().steps_past_a_slice(receiver_ty)
                 {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);

@@ -76,6 +76,27 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether stepping `ty` by its `next` first asks a `Skip`'s `nth` of
+    /// one that drops what it passes as one slice, a reversed `Vec`'s: a
+    /// `Skip` of such, or an adapter whose `next` is its source's of one,
+    /// `Map`, `Inspect`, `Fuse`, `Peekable`, `Enumerate`, `Take`. Its `fold`
+    /// asks `nth(n - 1)` then the next, which drop otherwise, so what's
+    /// stepped as std's `StepBy` steps it, by `next`, isn't folded (#294).
+    pub(in crate::lower) fn steps_past_a_slice(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty.peel_refs());
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Skip" => self.nths_a_slice(args.type_at(0)),
+            "std::iter::Map"
+            | "std::iter::Inspect"
+            | "std::iter::Fuse"
+            | "std::iter::Peekable"
+            | "std::iter::Enumerate"
+            | "std::iter::Take" => self.steps_past_a_slice(args.type_at(0)),
+            _ => false,
+        }
+    }
+
     /// What a `Rev`, std's, steps from its end: the `Range<u32>` of a
     /// `Rev<Range<u32>>`.
     pub(in crate::lower) fn reversed(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {

@@ -7,6 +7,7 @@ import {
   $enumerate,
   $held,
   $iter,
+  $lazyTakeWhile,
   $lent,
   $next,
   $nextBack,
@@ -303,7 +304,7 @@ function main() {
     throw error;
   }
   const step$4 = $step(tmp$6);
-  const sum = $stepBy(take, step$4, loudDrop_drop)
+  let sum = $stepBy(take, step$4, loudDrop_drop)
     .map((loud) => {
       const result = loud[0];
       loudDrop_drop(loud);
@@ -311,5 +312,103 @@ function main() {
     })
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${sum}`);
+  // A `step_by` whose first step is a `skip`'s `nth`, through an
+  // `inspect`: stepped, as std's `StepBy` steps it, not folded (#294).
+  const value$10 = $rev($closing($iter(louds(70, 3)), $dropEach(loudDrop_drop)));
+  let tmp$7;
+  try {
+    tmp$7 = id(2);
+  } catch (error) {
+    value$10.return();
+    throw error;
+  }
+  const inspect = (loud) => {
+    console.log(`see ${loud[0]}`);
+  };
+  const value$11 = Iterator.from(
+    $skipping(value$10, tmp$7, loudDrop_drop).map((item) => {
+      inspect(item);
+      return item;
+    }),
+  );
+  let tmp$8;
+  try {
+    tmp$8 = id(2);
+  } catch (error) {
+    value$11.return();
+    throw error;
+  }
+  const step$5 = $step(tmp$8);
+  const counted = $stepBy(value$11, step$5, loudDrop_drop).reduce((n, item) => {
+    loudDrop_drop(item);
+    return n + 1;
+  }, 0);
+  console.log(`${counted}`);
+  // And one whose outer `skip` passes items through the advance, which
+  // drops them by the drop its `nth` is given (#294).
+  const value$12 = $rev($closing($iter(louds(80, 5)), $dropEach(loudDrop_drop)));
+  let tmp$9;
+  try {
+    tmp$9 = id(1);
+  } catch (error) {
+    value$12.return();
+    throw error;
+  }
+  const keep = (loud) => loud[0] > 80;
+  const takeWhile = $lazyTakeWhile($skipping(value$12, tmp$9, loudDrop_drop), (item) => {
+    if (keep(item)) {
+      return true;
+    }
+    loudDrop_drop(item);
+    return false;
+  });
+  let tmp$10;
+  try {
+    tmp$10 = id(2);
+  } catch (error) {
+    takeWhile.return();
+    throw error;
+  }
+  sum = $skipping(takeWhile, tmp$10, loudDrop_drop)
+    .map((loud) => {
+      const result = loud[0];
+      loudDrop_drop(loud);
+      return result;
+    })
+    .reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`${sum}`);
+  // A `skip` of a `take_while` of a `skip`: its `nth`, std's default,
+  // advances by `try_fold`, so the inner `skip`'s `nth(n - 1)` (#294).
+  const value$13 = $rev($closing($iter(louds(90, 2)), $dropEach(loudDrop_drop)));
+  let tmp$11;
+  try {
+    tmp$11 = id(2);
+  } catch (error) {
+    value$13.return();
+    throw error;
+  }
+  const keep$1 = (loud) => loud[0] < 90;
+  const value$14 = $lazyTakeWhile($skipping(value$13, tmp$11, loudDrop_drop), (item) => {
+    if (keep$1(item)) {
+      return true;
+    }
+    loudDrop_drop(item);
+    return false;
+  });
+  let tmp$12;
+  try {
+    tmp$12 = id(2);
+  } catch (error) {
+    value$14.return();
+    throw error;
+  }
+  const short = $skipping(value$14, tmp$12, loudDrop_drop)
+    .map((loud) => {
+      const result = loud[0];
+      loudDrop_drop(loud);
+      return result;
+    })
+    .reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`${short}`);
 }
 //# sourceMappingURL=case.js.map

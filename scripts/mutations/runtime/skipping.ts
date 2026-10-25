@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "skipping-nth-only-own",
+    breaks: "a `skip` steps a source with a `try_fold` of its own by `next`, not by its `nth`, whose `advance_by` std folds, so a `take_while` of a reversed `Vec`'s `skip` drops back to front (#294)",
+    file: "src/runtime/skipping.js",
+    find: "(skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\"))",
+    replace: "skipping.iter.ownNth",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "skipping-advance-by-stepped",
     breaks: "an explicit `skip`'s `advance_by` steps each item, not its source's of what it skips and more, so a chain's `nth` past a reversed `Vec`'s skip drops back to front (#287)",
     file: "src/runtime/skipping.js",
@@ -62,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "skipping-next-each",
     breaks: "`rev().skip(n)` of a `Vec` drops the `n` one at a time from the back, not as its source's `nth` drops them, one slice (#234)",
     file: "src/runtime/skipping.js",
-    find: "      if (skipping.n > 0 && skipping.iter.ownNth) {",
+    find: "      if (skipping.n > 0 && (skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\"))) {",
     replace: "      if (false) {",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },

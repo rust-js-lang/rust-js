@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "steps-nth-drop-ungiven",
+    breaks: "std's default `nth` of a `$Steps` advances without the items' drop, so a `skip` of a `take_while` never drops what it passes (#294)",
+    file: "src/runtime/steps.js",
+    find: "    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };\n",
+    replace: "    if (this.advanceBy(k) > 0) return { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "take-own-nth-needs-item-drop",
     breaks: "a `take` of a closed compiled struct, which has no item drop of its own, isn't its own `nth`, so a chain over it steps each item (#286)",
     file: "src/runtime/steps.js",
@@ -247,7 +255,7 @@ export const mutations: Mutation[] = [
     name: "steps-nth-by-next",
     breaks: "an adapter's `nth` steps it by `next`, not std's `advance_by` then `next`, so `step_by(2).map(..).nth(1)` asks the crate's own `nth(0)` first (#214)",
     file: "src/runtime/steps.js",
-    find: "    if (this.advanceBy(k) > 0) return { done: true, value: undefined };\n",
+    find: "    if (this.advanceBy(k, drop) > 0) return { done: true, value: undefined };\n",
     replace: "    for (; k > 0; k--) if (this.next().done) return { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },

@@ -40,4 +40,36 @@ fn main() {
         .map(|loud| loud.0)
         .sum();
     println!("{sum}");
+    // A `step_by` whose first step is a `skip`'s `nth`, through an
+    // `inspect`: stepped, as std's `StepBy` steps it, not folded (#294).
+    let counted = louds(70, 3)
+        .into_iter()
+        .rev()
+        .skip(id(2))
+        .inspect(|loud| println!("see {}", loud.0))
+        .step_by(id(2))
+        .count();
+    println!("{counted}");
+    // And one whose outer `skip` passes items through the advance, which
+    // drops them by the drop its `nth` is given (#294).
+    let sum: u32 = louds(80, 5)
+        .into_iter()
+        .rev()
+        .skip(id(1))
+        .take_while(|loud| loud.0 > 80)
+        .skip(id(2))
+        .map(|loud| loud.0)
+        .sum();
+    println!("{sum}");
+    // A `skip` of a `take_while` of a `skip`: its `nth`, std's default,
+    // advances by `try_fold`, so the inner `skip`'s `nth(n - 1)` (#294).
+    let short: u32 = louds(90, 2)
+        .into_iter()
+        .rev()
+        .skip(id(2))
+        .take_while(|loud| loud.0 < 90)
+        .skip(id(2))
+        .map(|loud| loud.0)
+        .sum();
+    println!("{short}");
 }

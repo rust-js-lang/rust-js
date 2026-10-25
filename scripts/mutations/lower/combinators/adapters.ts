@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "step-by-past-a-skip-filtered",
+    breaks: "a `step_by` whose first step is a `skip`'s `nth` of a reversed `Vec` is a `filter`, whose fold reaches `Skip::fold`, dropping back to front (#294)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    || self.recognition().steps_past_a_slice(receiver_ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+  },
+  {
     name: "inspect-skipped",
     breaks: "`inspect(f)` doesn't call `f`",
     file: "src/lower/combinators/adapters.rs",
