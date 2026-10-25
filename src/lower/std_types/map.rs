@@ -745,7 +745,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Part::Keys => method(m, "keys", Vec::new()),
             Part::Values => method(m, "values", Vec::new()),
         };
-        Ok(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]))
+        let listed = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
+        // A set's own, whose `forEach` steps them as the array's does (ADR
+        // 0873).
+        Ok(match self.is_set(map_ty) {
+            true => Expr {
+                known: js::Known::SetItems,
+                ..listed
+            },
+            false => listed,
+        })
     }
 
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's

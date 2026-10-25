@@ -248,9 +248,12 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                 Some((items, _)) => Some(items),
                 None => None,
             },
-            ("forEach", [f]) => {
-                eager_items(chain, true, Some(f)).map(|(items, _)| array_method(items, "forEach", f.clone()))
-            }
+            ("forEach", [f]) => eager_items(chain, true, Some(f)).map(|(items, _)| match set_of(&items, f) {
+                // A set's items each given alone: the set's own `forEach`,
+                // `set.forEach((x) => ..)`, as JS writes it (ADR 0873).
+                Some(set) => Expr::call(Expr::member(set, "forEach"), vec![f.clone()]),
+                None => array_method(items, "forEach", f.clone()),
+            }),
             // `count()`'s, `reduce((n) => n + 1, 0)`: the array's `length`.
             ("reduce", [f, init]) if init.as_int() == Some(0) && counts(f) => {
                 eager_items(chain, true, None).map(|(items, _)| Expr::member(items, "length"))
@@ -284,6 +287,23 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             *e = Expr { span: e.span, ..eager };
         }
     });
+}
+
+/// The set `items` are of, `set` of `Array.from(set)`, a `HashSet`'s
+/// items (`Known::SetItems`), where `f`, what each is given to, reads the
+/// item alone: an arrow of one parameter, or none, which a set's `forEach`
+/// gives the item first, as an array's does, then the item again and the
+/// set, where an array's gives its index and itself (ADR 0873).
+fn set_of(items: &Expr, f: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(_, args) = &items.kind else {
+        return None;
+    };
+    match (&args[..], &f.kind) {
+        ([set], js::ExprKind::Arrow(params, _)) if items.known == js::Known::SetItems && params.len() <= 1 => {
+            Some(set.clone())
+        }
+        _ => None,
+    }
 }
 
 /// A chain MIR makes lazily for the next statement's array alone to

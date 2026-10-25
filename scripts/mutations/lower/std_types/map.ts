@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "set-items-unknown",
+    breaks: "a `HashSet`'s items aren't known to be a set's, so its `iter().for_each(..)` is `Array.from(set).forEach(..)` (ADR 0873)",
+    file: "src/lower/std_types/map.rs",
+    find: "        Ok(match self.is_set(map_ty) {\n",
+    replace: "        Ok(match self.is_set(map_ty) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^set_for_each.rs$"],
+    snapshots: true,
+  },
+  {
     name: "value-keys-by-identity",
     breaks: "a `HashMap<Point, _>` is a plain `Map`, which finds a struct key by identity, and never the equal one asked for",
     file: "src/lower/std_types/map.rs",

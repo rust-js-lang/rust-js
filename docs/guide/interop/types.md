@@ -165,6 +165,10 @@ pub fn tags() -> HashSet<&'static str> {
     HashSet::from(["rust", "js"])
 }
 
+pub fn log_tags(tags: &HashSet<&str>) {
+    tags.iter().for_each(|tag| println!("{tag}"));
+}
+
 pub fn ranks() -> BTreeMap<u32, &'static str> {
     BTreeMap::from([(2, "silver"), (1, "gold")])
 }
@@ -195,6 +199,12 @@ export function tags() {
   return new Set(["rust", "js"]);
 }
 
+export function logTags(tags) {
+  tags.forEach((tag) => {
+    console.log(`${tag}`);
+  });
+}
+
 export function ranks() {
   return new Map([
     [2, "silver"],
@@ -217,7 +227,10 @@ export function middle(items) {
   insertion order, where Rust's order is unspecified
   ([ADR 0059](../../decisions/0059-hashmap.md)). A key that's a struct, a
   tuple or an enum with a derived `Eq` is compared by value, in the
-  runtime's `$KeyMap`.
+  runtime's `$KeyMap`. A set's `iter().for_each(..)` is the set's own
+  `forEach`, `tags.forEach((tag) => ..)`, each item given in the order
+  `Array.from(tags)` has them
+  ([ADR 0873](../../decisions/0873-a-sets-for-each-is-its-own.md)).
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order.
 - **A `js::Map` is JS's `Map` of any key**, as TypeScript's `Map<K, V>`
