@@ -118,6 +118,11 @@ pub(in crate::lower) enum NumOp {
     LeadingZeros,
     TrailingZeros,
     CountOnes,
+    /// `isolate_lowest_one()`, or `isolate_highest_one()` (`highest`): its
+    /// bits but the one, as std's body has it, of the operators.
+    IsolateOne {
+        highest: bool,
+    },
     IsPowerOfTwo,
     /// `next_power_of_two()`, wrapping to `0` past its width as release
     /// Rust's does, and `checked_next_power_of_two()`, `None` there.
@@ -417,6 +422,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (NumOp::IlogBase { checked }, Some(base)) => helper("$ilog", vec![a, base, Expr::bool(checked)]),
             (NumOp::CheckedIsqrt, None) => helper("$checkedIsqrt", vec![a]),
+            // std's bodies, of the operators: `self & self.wrapping_neg()`,
+            // `lanes & -lanes`; and `self & (MIN_BIT.wrapping_shr(
+            // self.leading_zeros()))`, its highest bit shifted down to the
+            // highest it has, `0`'s shift masked to none (ADR 0156, amended).
+            (NumOp::IsolateOne { highest }, None) => {
+                let a = if a.reads_same() { a } else { self.spill("value", a, out) };
+                let other = match highest {
+                    false => self.unary(UnOp::Neg, a.clone(), ty, span)?,
+                    true => {
+                        let zeros = self.number_call(NumOp::LeadingZeros, vec![a.clone()], ty, span, out)?;
+                        let top = num.literal(if num.signed() { lo } else { 1 << (num.bits() - 1) });
+                        self.binary(BinOp::Shr, top, zeros, None, ty, span)?
+                    }
+                };
+                self.binary(BinOp::BitAnd, a, other, None, ty, span)?
+            }
             (NumOp::OverflowingShift { right }, Some(n)) => {
                 let n = if n.reads_same() { n } else { self.spill("by", n, out) };
                 let past = Expr::bin(Op::Ge, n.clone(), Expr::int(i128::from(num.bits())));
@@ -551,6 +572,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | NumOp::OverflowingPow
             | NumOp::AddOtherSign(_)
             | NumOp::CheckedSignedDiff
+            | NumOp::IsolateOne { .. }
             | NumOp::BytesEqIgnoreAsciiCase => {
                 unreachable!("lowered by either_width_call")
             }

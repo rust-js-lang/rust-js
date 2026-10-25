@@ -350,7 +350,10 @@ export function fits(str, substr) {
   An `i32`'s `<<` is JS's, and what a bitwise operator takes needs no
   wrap of its own, `lanes & -lanes`, as JS's takes it modulo 2^32 anyway;
   elsewhere a wrap stays, `-lanes | 0` of `i32::MIN`
-  ([ADR 0891](../../decisions/0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)):
+  ([ADR 0891](../../decisions/0891-an-operand-of-a-bitwise-operator-needs-no-wrap.md)).
+  So `lanes.isolate_lowest_one()`, std's `lanes & lanes.wrapping_neg()`,
+  is `lanes & -lanes`
+  ([ADR 0156](../../decisions/0156-integer-bits-and-bytes.md)):
 
 ```rust
 use std::cell::Cell;
@@ -373,7 +376,7 @@ pub fn lane_of(index: u32) -> i32 {
 }
 
 pub fn highest_priority_lane(lanes: i32) -> i32 {
-    lanes & -lanes
+    lanes.isolate_lowest_one()
 }
 ```
 

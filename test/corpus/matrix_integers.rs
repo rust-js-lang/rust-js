@@ -27,12 +27,14 @@ macro_rules! integers {
         let bits = $t::BITS;
         for a in values {
             println!(
-                "{} {a}: zeros {} {} ones {} {} swap {} rev {} rot {} {} neg {} {:?} pow {} {} {} {:?}",
+                "{} {a}: zeros {} {} ones {} {} isolate {} {} swap {} rev {} rot {} {} neg {} {:?} pow {} {} {} {:?}",
                 stringify!($t),
                 a.leading_zeros(),
                 a.trailing_zeros(),
                 a.count_ones(),
                 a.count_zeros(),
+                a.isolate_lowest_one(),
+                a.isolate_highest_one(),
                 a.swap_bytes(),
                 a.reverse_bits(),
                 a.rotate_left(1),

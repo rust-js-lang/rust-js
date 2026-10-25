@@ -85,7 +85,8 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   `signum`, `fract` and `to_radians`
   ([0154](../decisions/0154-number-methods.md)), and an integer's `checked_*`,
   `wrapping_*`, `overflowing_*` and `saturating_*`, each of the exact result
-  ([0155](../decisions/0155-integer-families.md)), its bits rotated and its
+  ([0155](../decisions/0155-integer-families.md)), its bits rotated, one
+  isolated, `lanes.isolate_lowest_one()` being `lanes & -lanes`, and its
   bytes, little-endian natively, as wasm32's are
   ([0156](../decisions/0156-integer-bits-and-bytes.md)). A NaN's sign and
   payload aren't kept, so `is_sign_negative` of one is `false`.

@@ -250,4 +250,28 @@ export const mutations: Mutation[] = [
     replace: "                \"clz32\" => values,\n",
     tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
   },
+  {
+    name: "isolate-lowest-one-unnegated",
+    breaks: "`lanes.isolate_lowest_one()` is `lanes & lanes`, its every bit (ADR 0156, amended)",
+    file: "src/lower/std_types/number.rs",
+    find: "                    false => self.unary(UnOp::Neg, a.clone(), ty, span)?,\n",
+    replace: "                    false => a.clone(),\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "isolate_lowest_one and isolate_highest_one"],
+  },
+  {
+    name: "isolate-highest-one-top-unsigned",
+    breaks: "a signed `isolate_highest_one()` shifts `2^(bits - 1)`, which an `i64`'s `>>` doesn't fill with its sign: `-1i64`'s is `2^63` (ADR 0156, amended)",
+    file: "src/lower/std_types/number.rs",
+    find: "                        let top = num.literal(if num.signed() { lo } else { 1 << (num.bits() - 1) });\n",
+    replace: "                        let top = num.literal(1 << (num.bits() - 1));\n",
+    tests: ["test/corpus.test.ts", "-t", "^matrix_integers.rs$"],
+  },
+  {
+    name: "isolate-one-receiver-read-twice",
+    breaks: "`(a + b).isolate_lowest_one()` computes its receiver twice, `((a + b) | 0) & -((a + b) | 0)`",
+    file: "src/lower/std_types/number.rs",
+    find: "            (NumOp::IsolateOne { highest }, None) => {\n                let a = if a.reads_same() { a } else { self.spill(\"value\", a, out) };\n",
+    replace: "            (NumOp::IsolateOne { highest }, None) => {\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "isolate_lowest_one and isolate_highest_one"],
+  },
 ];

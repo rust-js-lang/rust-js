@@ -25,8 +25,12 @@ fn halved(mut n: u32, by: u32) -> u32 {
     n
 }
 
-fn lowest(lanes: i32) -> i32 {
-    lanes & -lanes
+fn masked(lanes: i32, mask: i32) -> i32 {
+    lanes & -mask
+}
+
+fn highest_priority_lane(lanes: i32) -> i32 {
+    lanes.isolate_lowest_one()
 }
 
 fn lane_of(index: u32) -> i32 {
@@ -101,9 +105,11 @@ fn main() {
     let edges = [0, 1, 6, -1, i32::MIN, i32::MAX, 1 << 30];
     for lanes in edges {
         println!(
-            "{lanes}: removed {} lowest {} negated {} higher {}",
+            "{lanes}: removed {} lowest {} {} {} negated {} higher {}",
             removed(lanes, 1),
-            lowest(lanes),
+            masked(lanes, lanes),
+            highest_priority_lane(lanes),
+            lanes.isolate_highest_one(),
             lanes.wrapping_neg(),
             equal_or_higher(lanes),
         );

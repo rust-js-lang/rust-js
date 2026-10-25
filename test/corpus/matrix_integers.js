@@ -60,31 +60,32 @@ function main() {
     const value$1 = $trailingZeros(a & 255, 8);
     const value$2 = $countOnes(a & 255);
     const value$3 = 8 - $countOnes(a & 255);
-    const value$4 = $swapBytes(a, 8, true);
-    const value$5 = $reverseBits(a, 8, true);
-    const value$6 = ($rotateBits(a & 255, 1, 8, true) << 24) >> 24;
-    const value$7 = ($rotateBits(a & 255, 3, 8, false) << 24) >> 24;
-    const value$8 = $checked(-a, -128, 127);
-    const value$9 = ($pow(a, 0) << 24) >> 24;
-    const value$10 = ($pow(a, 2) << 24) >> 24;
-    const value$11 = ($pow(a, (bits - 1) >>> 0) << 24) >> 24;
+    const value$4 = a & (-128 >> ((Math.clz32(a & 255) - 24) & 7));
+    const value$5 = $swapBytes(a, 8, true);
+    const value$6 = $reverseBits(a, 8, true);
+    const value$7 = ($rotateBits(a & 255, 1, 8, true) << 24) >> 24;
+    const value$8 = ($rotateBits(a & 255, 3, 8, false) << 24) >> 24;
+    const value$9 = $checked(-a, -128, 127);
+    const value$10 = ($pow(a, 0) << 24) >> 24;
+    const value$11 = ($pow(a, 2) << 24) >> 24;
+    const value$12 = ($pow(a, (bits - 1) >>> 0) << 24) >> 24;
     const arg = $checkedPow(a, 3, -128, 127);
     console.log(
-      `i8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${(-a << 24) >> 24} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & ((-a << 24) >> 24)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${(-a << 24) >> 24} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), -128, 127);
+    const value$13 = $parseInt(String(a), -128, 127);
     const arg$1 = $parseInt((a & 255).toString(16), -128, 127, 16);
     console.log(
-      `i8 ${a}: fmt ${(a & 255).toString(16)} ${(a & 255).toString(2)} ${(a & 255).toString(8)} 0x${(a & 255).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i8 ${a}: fmt ${(a & 255).toString(16)} ${(a & 255).toString(2)} ${(a & 255).toString(8)} 0x${(a & 255).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
-    const value$15 = BigInt.asUintN(64, BigInt(a));
-    const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32Bits(a);
+    const value$15 = BigInt(a);
+    const value$16 = BigInt.asUintN(64, BigInt(a));
+    const value$17 = BigInt.asUintN(128, BigInt(a));
+    const value$18 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `i8 ${a}: as ${a} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `i8 ${a}: as ${a} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 8 ? ((a << (s & 7)) << 24) >> 24 : undefined;
@@ -93,11 +94,11 @@ function main() {
         `i8 ${a} shift ${s}: ${((a << (s & 7)) << 24) >> 24} ${a >> (s & 7)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$18 = Math.sign(a);
-    const value$19 = (Math.abs(a) << 24) >> 24;
-    const value$20 = $checked(Math.abs(a), -128, 127);
+    const value$19 = Math.sign(a);
+    const value$20 = (Math.abs(a) << 24) >> 24;
+    const value$21 = $checked(Math.abs(a), -128, 127);
     console.log(
-      `i8 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
+      `i8 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
     );
     for (const b of values) {
       const quotient =
@@ -132,31 +133,32 @@ function main() {
     const value$1 = $trailingZeros(a & 65535, 16);
     const value$2 = $countOnes(a & 65535);
     const value$3 = 16 - $countOnes(a & 65535);
-    const value$4 = $swapBytes(a, 16, true);
-    const value$5 = $reverseBits(a, 16, true);
-    const value$6 = ($rotateBits(a & 65535, 1, 16, true) << 16) >> 16;
-    const value$7 = ($rotateBits(a & 65535, 3, 16, false) << 16) >> 16;
-    const value$8 = $checked(-a, -32768, 32767);
-    const value$9 = ($pow(a, 0) << 16) >> 16;
-    const value$10 = ($pow(a, 2) << 16) >> 16;
-    const value$11 = ($pow(a, (bits - 1) >>> 0) << 16) >> 16;
+    const value$4 = a & (-32768 >> ((Math.clz32(a & 65535) - 16) & 15));
+    const value$5 = $swapBytes(a, 16, true);
+    const value$6 = $reverseBits(a, 16, true);
+    const value$7 = ($rotateBits(a & 65535, 1, 16, true) << 16) >> 16;
+    const value$8 = ($rotateBits(a & 65535, 3, 16, false) << 16) >> 16;
+    const value$9 = $checked(-a, -32768, 32767);
+    const value$10 = ($pow(a, 0) << 16) >> 16;
+    const value$11 = ($pow(a, 2) << 16) >> 16;
+    const value$12 = ($pow(a, (bits - 1) >>> 0) << 16) >> 16;
     const arg = $checkedPow(a, 3, -32768, 32767);
     console.log(
-      `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${(-a << 16) >> 16} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & ((-a << 16) >> 16)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${(-a << 16) >> 16} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), -32768, 32767);
+    const value$13 = $parseInt(String(a), -32768, 32767);
     const arg$1 = $parseInt((a & 65535).toString(16), -32768, 32767, 16);
     console.log(
-      `i16 ${a}: fmt ${(a & 65535).toString(16)} ${(a & 65535).toString(2)} ${(a & 65535).toString(8)} 0x${(a & 65535).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i16 ${a}: fmt ${(a & 65535).toString(16)} ${(a & 65535).toString(2)} ${(a & 65535).toString(8)} 0x${(a & 65535).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
-    const value$15 = BigInt.asUintN(64, BigInt(a));
-    const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32Bits(a);
+    const value$15 = BigInt(a);
+    const value$16 = BigInt.asUintN(64, BigInt(a));
+    const value$17 = BigInt.asUintN(128, BigInt(a));
+    const value$18 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
@@ -165,11 +167,11 @@ function main() {
         `i16 ${a} shift ${s}: ${((a << (s & 15)) << 16) >> 16} ${a >> (s & 15)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$18 = Math.sign(a);
-    const value$19 = (Math.abs(a) << 16) >> 16;
-    const value$20 = $checked(Math.abs(a), -32768, 32767);
+    const value$19 = Math.sign(a);
+    const value$20 = (Math.abs(a) << 16) >> 16;
+    const value$21 = $checked(Math.abs(a), -32768, 32767);
     console.log(
-      `i16 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
+      `i16 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
     );
     for (const b of values) {
       const quotient =
@@ -204,31 +206,32 @@ function main() {
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
     const value$3 = 32 - $countOnes(a);
-    const value$4 = $swapBytes(a, 32, true);
-    const value$5 = $reverseBits(a, 32, true);
-    const value$6 = $rotateBits(a >>> 0, 1, 32, true) | 0;
-    const value$7 = $rotateBits(a >>> 0, 3, 32, false) | 0;
-    const value$8 = $checked(-a, -2147483648, 2147483647);
-    const value$9 = $pow(a, 0);
-    const value$10 = $pow(a, 2);
-    const value$11 = $pow(a, (bits - 1) >>> 0);
+    const value$4 = a & (-2147483648 >> Math.clz32(a));
+    const value$5 = $swapBytes(a, 32, true);
+    const value$6 = $reverseBits(a, 32, true);
+    const value$7 = $rotateBits(a >>> 0, 1, 32, true) | 0;
+    const value$8 = $rotateBits(a >>> 0, 3, 32, false) | 0;
+    const value$9 = $checked(-a, -2147483648, 2147483647);
+    const value$10 = $pow(a, 0);
+    const value$11 = $pow(a, 2);
+    const value$12 = $pow(a, (bits - 1) >>> 0);
     const arg = $checkedPow(a, 3, -2147483648, 2147483647);
     console.log(
-      `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a | 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & -a} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a | 0} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), -2147483648, 2147483647);
+    const value$13 = $parseInt(String(a), -2147483648, 2147483647);
     const arg$1 = $parseInt((a >>> 0).toString(16), -2147483648, 2147483647, 16);
     console.log(
-      `i32 ${a}: fmt ${(a >>> 0).toString(16)} ${(a >>> 0).toString(2)} ${(a >>> 0).toString(8)} 0x${(a >>> 0).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i32 ${a}: fmt ${(a >>> 0).toString(16)} ${(a >>> 0).toString(2)} ${(a >>> 0).toString(8)} 0x${(a >>> 0).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
-    const value$15 = BigInt.asUintN(64, BigInt(a));
-    const value$16 = BigInt.asUintN(128, BigInt(a));
-    const value$17 = f32Bits(Math.fround(a));
+    const value$15 = BigInt(a);
+    const value$16 = BigInt.asUintN(64, BigInt(a));
+    const value$17 = BigInt.asUintN(128, BigInt(a));
+    const value$18 = f32Bits(Math.fround(a));
     const arg$2 = f64Bits(a);
     console.log(
-      `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 32 ? a << s : undefined;
@@ -237,11 +240,11 @@ function main() {
         `i32 ${a} shift ${s}: ${a << s} ${a >> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$18 = Math.sign(a);
-    const value$19 = Math.abs(a) | 0;
-    const value$20 = $checked(Math.abs(a), -2147483648, 2147483647);
+    const value$19 = Math.sign(a);
+    const value$20 = Math.abs(a) | 0;
+    const value$21 = $checked(Math.abs(a), -2147483648, 2147483647);
     console.log(
-      `i32 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
+      `i32 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
     );
     for (const b of values) {
       const quotient =
@@ -287,20 +290,22 @@ function main() {
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
     const value$3 = 64 - $bigCountOnes(a);
-    const value$4 = $swapBytes(a, 64, true);
-    const value$5 = $reverseBits(a, 64, true);
-    const value$6 = BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, a), 1, 64, true));
-    const value$7 = BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, a), 3, 64, false));
-    const value$8 = BigInt.asIntN(64, -a);
-    const value$9 = $bigChecked(-a, -9223372036854775808n, 9223372036854775807n);
-    const value$10 = BigInt.asIntN(64, $bigPow(a, 0));
-    const value$11 = BigInt.asIntN(64, $bigPow(a, 2));
-    const value$12 = BigInt.asIntN(64, $bigPow(a, (bits - 1) >>> 0));
+    const value$4 = a & BigInt.asIntN(64, -a);
+    const value$5 = a & (-9223372036854775808n >> (BigInt($bigLeadingZeros(a)) & 63n));
+    const value$6 = $swapBytes(a, 64, true);
+    const value$7 = $reverseBits(a, 64, true);
+    const value$8 = BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, a), 1, 64, true));
+    const value$9 = BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, a), 3, 64, false));
+    const value$10 = BigInt.asIntN(64, -a);
+    const value$11 = $bigChecked(-a, -9223372036854775808n, 9223372036854775807n);
+    const value$12 = BigInt.asIntN(64, $bigPow(a, 0));
+    const value$13 = BigInt.asIntN(64, $bigPow(a, 2));
+    const value$14 = BigInt.asIntN(64, $bigPow(a, (bits - 1) >>> 0));
     const arg = $checkedPow(a, 3, -9223372036854775808n, 9223372036854775807n);
     console.log(
-      `i64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseBig(String(a), -9223372036854775808n, 9223372036854775807n);
+    const value$15 = $parseBig(String(a), -9223372036854775808n, 9223372036854775807n);
     const arg$1 = $parseBig(
       BigInt.asUintN(64, a).toString(16),
       -9223372036854775808n,
@@ -308,20 +313,20 @@ function main() {
       16,
     );
     console.log(
-      `i64 ${a}: fmt ${BigInt.asUintN(64, a).toString(16)} ${BigInt.asUintN(64, a).toString(2)} ${BigInt.asUintN(64, a).toString(8)} 0x${BigInt.asUintN(64, a).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i64 ${a}: fmt ${BigInt.asUintN(64, a).toString(16)} ${BigInt.asUintN(64, a).toString(2)} ${BigInt.asUintN(64, a).toString(8)} 0x${BigInt.asUintN(64, a).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = Number(BigInt.asIntN(8, a));
-    const value$15 = Number(BigInt.asIntN(16, a));
-    const value$16 = Number(BigInt.asIntN(32, a));
-    const value$17 = Number(BigInt.asUintN(8, a));
-    const value$18 = Number(BigInt.asUintN(16, a));
-    const value$19 = Number(BigInt.asUintN(32, a));
-    const value$20 = BigInt.asUintN(64, a);
-    const value$21 = BigInt.asUintN(128, a);
-    const value$22 = f32Bits($bigToF32(a));
+    const value$16 = Number(BigInt.asIntN(8, a));
+    const value$17 = Number(BigInt.asIntN(16, a));
+    const value$18 = Number(BigInt.asIntN(32, a));
+    const value$19 = Number(BigInt.asUintN(8, a));
+    const value$20 = Number(BigInt.asUintN(16, a));
+    const value$21 = Number(BigInt.asUintN(32, a));
+    const value$22 = BigInt.asUintN(64, a);
+    const value$23 = BigInt.asUintN(128, a);
+    const value$24 = f32Bits($bigToF32(a));
     const arg$2 = f64Bits(Number(a));
     console.log(
-      `i64 ${a}: as ${value$14} ${value$15} ${value$16} ${a} ${a} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} f32 ${value$22} f64 ${arg$2}`,
+      `i64 ${a}: as ${value$16} ${value$17} ${value$18} ${a} ${a} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} f32 ${value$24} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asIntN(64, a << (BigInt(s) & 63n));
@@ -332,11 +337,11 @@ function main() {
         `i64 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
       );
     }
-    const value$23 = $bigSignum(a);
-    const value$24 = BigInt.asIntN(64, $bigAbs(a));
-    const value$25 = $bigChecked($bigAbs(a), -9223372036854775808n, 9223372036854775807n);
+    const value$25 = $bigSignum(a);
+    const value$26 = BigInt.asIntN(64, $bigAbs(a));
+    const value$27 = $bigChecked($bigAbs(a), -9223372036854775808n, 9223372036854775807n);
     console.log(
-      `i64 ${a}: signed ${value$23} ${value$24} ${value$25 == null ? "None" : `Some(${value$25})`} ${$bigAbs(a)}`,
+      `i64 ${a}: signed ${value$25} ${value$26} ${value$27 == null ? "None" : `Some(${value$27})`} ${$bigAbs(a)}`,
     );
     for (const b of values) {
       const quotient =
@@ -405,19 +410,22 @@ function main() {
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
     const value$3 = 128 - $bigCountOnes(a, 128);
-    const value$4 = $swapBytes(a, 128, true);
-    const value$5 = $reverseBits(a, 128, true);
-    const value$6 = BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, a), 1, 128, true));
-    const value$7 = BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, a), 3, 128, false));
-    const value$8 = BigInt.asIntN(128, -a);
-    const value$9 = $bigChecked(
+    const value$4 = a & BigInt.asIntN(128, -a);
+    const value$5 =
+      a & (-170141183460469231731687303715884105728n >> (BigInt($bigLeadingZeros(a, 128)) & 127n));
+    const value$6 = $swapBytes(a, 128, true);
+    const value$7 = $reverseBits(a, 128, true);
+    const value$8 = BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, a), 1, 128, true));
+    const value$9 = BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, a), 3, 128, false));
+    const value$10 = BigInt.asIntN(128, -a);
+    const value$11 = $bigChecked(
       -a,
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
     );
-    const value$10 = BigInt.asIntN(128, $bigPow(a, 0, 128));
-    const value$11 = BigInt.asIntN(128, $bigPow(a, 2, 128));
-    const value$12 = BigInt.asIntN(128, $bigPow(a, (bits - 1) >>> 0, 128));
+    const value$12 = BigInt.asIntN(128, $bigPow(a, 0, 128));
+    const value$13 = BigInt.asIntN(128, $bigPow(a, 2, 128));
+    const value$14 = BigInt.asIntN(128, $bigPow(a, (bits - 1) >>> 0, 128));
     const arg = $checkedPow(
       a,
       3,
@@ -425,9 +433,9 @@ function main() {
       170141183460469231731687303715884105727n,
     );
     console.log(
-      `i128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseBig(
+    const value$15 = $parseBig(
       String(a),
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
@@ -439,21 +447,21 @@ function main() {
       16,
     );
     console.log(
-      `i128 ${a}: fmt ${BigInt.asUintN(128, a).toString(16)} ${BigInt.asUintN(128, a).toString(2)} ${BigInt.asUintN(128, a).toString(8)} 0x${BigInt.asUintN(128, a).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i128 ${a}: fmt ${BigInt.asUintN(128, a).toString(16)} ${BigInt.asUintN(128, a).toString(2)} ${BigInt.asUintN(128, a).toString(8)} 0x${BigInt.asUintN(128, a).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = Number(BigInt.asIntN(8, a));
-    const value$15 = Number(BigInt.asIntN(16, a));
-    const value$16 = Number(BigInt.asIntN(32, a));
-    const value$17 = BigInt.asIntN(64, a);
-    const value$18 = Number(BigInt.asUintN(8, a));
-    const value$19 = Number(BigInt.asUintN(16, a));
-    const value$20 = Number(BigInt.asUintN(32, a));
-    const value$21 = BigInt.asUintN(64, a);
-    const value$22 = BigInt.asUintN(128, a);
-    const value$23 = f32Bits($bigToF32(a));
+    const value$16 = Number(BigInt.asIntN(8, a));
+    const value$17 = Number(BigInt.asIntN(16, a));
+    const value$18 = Number(BigInt.asIntN(32, a));
+    const value$19 = BigInt.asIntN(64, a);
+    const value$20 = Number(BigInt.asUintN(8, a));
+    const value$21 = Number(BigInt.asUintN(16, a));
+    const value$22 = Number(BigInt.asUintN(32, a));
+    const value$23 = BigInt.asUintN(64, a);
+    const value$24 = BigInt.asUintN(128, a);
+    const value$25 = f32Bits($bigToF32(a));
     const arg$2 = f64Bits(Number(a));
     console.log(
-      `i128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} f32 ${value$23} f64 ${arg$2}`,
+      `i128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} f32 ${value$25} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asIntN(128, a << (BigInt(s) & 127n));
@@ -464,15 +472,15 @@ function main() {
         `i128 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
       );
     }
-    const value$24 = $bigSignum(a);
-    const value$25 = BigInt.asIntN(128, $bigAbs(a));
-    const value$26 = $bigChecked(
+    const value$26 = $bigSignum(a);
+    const value$27 = BigInt.asIntN(128, $bigAbs(a));
+    const value$28 = $bigChecked(
       $bigAbs(a),
       -170141183460469231731687303715884105728n,
       170141183460469231731687303715884105727n,
     );
     console.log(
-      `i128 ${a}: signed ${value$24} ${value$25} ${value$26 == null ? "None" : `Some(${value$26})`} ${$bigAbs(a)}`,
+      `i128 ${a}: signed ${value$26} ${value$27} ${value$28 == null ? "None" : `Some(${value$28})`} ${$bigAbs(a)}`,
     );
     for (const b of values) {
       const quotient =
@@ -555,31 +563,32 @@ function main() {
     const value$1 = $trailingZeros(a, 8);
     const value$2 = $countOnes(a);
     const value$3 = 8 - $countOnes(a);
-    const value$4 = $swapBytes(a, 8, false);
-    const value$5 = $reverseBits(a, 8, false);
-    const value$6 = $rotateBits(a, 1, 8, true);
-    const value$7 = $rotateBits(a, 3, 8, false);
-    const value$8 = $checked(-a, 0, 255);
-    const value$9 = $pow(a, 0) & 255;
-    const value$10 = $pow(a, 2) & 255;
-    const value$11 = $pow(a, (bits - 1) >>> 0) & 255;
+    const value$4 = a & (128 >>> ((Math.clz32(a) - 24) & 7));
+    const value$5 = $swapBytes(a, 8, false);
+    const value$6 = $reverseBits(a, 8, false);
+    const value$7 = $rotateBits(a, 1, 8, true);
+    const value$8 = $rotateBits(a, 3, 8, false);
+    const value$9 = $checked(-a, 0, 255);
+    const value$10 = $pow(a, 0) & 255;
+    const value$11 = $pow(a, 2) & 255;
+    const value$12 = $pow(a, (bits - 1) >>> 0) & 255;
     const arg = $checkedPow(a, 3, 0, 255);
     console.log(
-      `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 255} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & (-a & 255)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a & 255} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), 0, 255);
+    const value$13 = $parseInt(String(a), 0, 255);
     const arg$1 = $parseInt(a.toString(16), 0, 255, 16);
     console.log(
-      `u8 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u8 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32Bits(a);
+    const value$17 = BigInt(a);
+    const value$18 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 8 ? (a << (s & 7)) & 255 : undefined;
@@ -620,31 +629,32 @@ function main() {
     const value$1 = $trailingZeros(a, 16);
     const value$2 = $countOnes(a);
     const value$3 = 16 - $countOnes(a);
-    const value$4 = $swapBytes(a, 16, false);
-    const value$5 = $reverseBits(a, 16, false);
-    const value$6 = $rotateBits(a, 1, 16, true);
-    const value$7 = $rotateBits(a, 3, 16, false);
-    const value$8 = $checked(-a, 0, 65535);
-    const value$9 = $pow(a, 0) & 65535;
-    const value$10 = $pow(a, 2) & 65535;
-    const value$11 = $pow(a, (bits - 1) >>> 0) & 65535;
+    const value$4 = a & (32768 >>> ((Math.clz32(a) - 16) & 15));
+    const value$5 = $swapBytes(a, 16, false);
+    const value$6 = $reverseBits(a, 16, false);
+    const value$7 = $rotateBits(a, 1, 16, true);
+    const value$8 = $rotateBits(a, 3, 16, false);
+    const value$9 = $checked(-a, 0, 65535);
+    const value$10 = $pow(a, 0) & 65535;
+    const value$11 = $pow(a, 2) & 65535;
+    const value$12 = $pow(a, (bits - 1) >>> 0) & 65535;
     const arg = $checkedPow(a, 3, 0, 65535);
     console.log(
-      `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 65535} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${a & (-a & 65535)} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a & 65535} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), 0, 65535);
+    const value$13 = $parseInt(String(a), 0, 65535);
     const arg$1 = $parseInt(a.toString(16), 0, 65535, 16);
     console.log(
-      `u16 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u16 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32Bits(a);
+    const value$17 = BigInt(a);
+    const value$18 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$14} ${value$15} ${a & 255} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 16 ? (a << (s & 15)) & 65535 : undefined;
@@ -685,31 +695,32 @@ function main() {
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
     const value$3 = 32 - $countOnes(a);
-    const value$4 = $swapBytes(a, 32, false);
-    const value$5 = $reverseBits(a, 32, false);
-    const value$6 = $rotateBits(a, 1, 32, true);
-    const value$7 = $rotateBits(a, 3, 32, false);
-    const value$8 = $checked(-a, 0, 4294967295);
-    const value$9 = $pow(a, 0) >>> 0;
-    const value$10 = $pow(a, 2) >>> 0;
-    const value$11 = $pow(a, (bits - 1) >>> 0) >>> 0;
+    const value$4 = (a & (2147483648 >>> Math.clz32(a))) >>> 0;
+    const value$5 = $swapBytes(a, 32, false);
+    const value$6 = $reverseBits(a, 32, false);
+    const value$7 = $rotateBits(a, 1, 32, true);
+    const value$8 = $rotateBits(a, 3, 32, false);
+    const value$9 = $checked(-a, 0, 4294967295);
+    const value$10 = $pow(a, 0) >>> 0;
+    const value$11 = $pow(a, 2) >>> 0;
+    const value$12 = $pow(a, (bits - 1) >>> 0) >>> 0;
     const arg = $checkedPow(a, 3, 0, 4294967295);
     console.log(
-      `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a >>> 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${(a & -a) >>> 0} ${value$4} swap ${value$5} rev ${value$6} rot ${value$7} ${value$8} neg ${-a >>> 0} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$12 = $parseInt(String(a), 0, 4294967295);
+    const value$13 = $parseInt(String(a), 0, 4294967295);
     const arg$1 = $parseInt(a.toString(16), 0, 4294967295, 16);
     console.log(
-      `u32 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u32 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = f32Bits(Math.fround(a));
+    const value$17 = BigInt(a);
+    const value$18 = f32Bits(Math.fround(a));
     const arg$2 = f64Bits(a);
     console.log(
-      `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
+      `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 32 ? (a << s) >>> 0 : undefined;
@@ -761,35 +772,37 @@ function main() {
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
     const value$3 = 64 - $bigCountOnes(a);
-    const value$4 = $swapBytes(a, 64, false);
-    const value$5 = $reverseBits(a, 64, false);
-    const value$6 = $rotateBits(BigInt.asUintN(64, a), 1, 64, true);
-    const value$7 = $rotateBits(BigInt.asUintN(64, a), 3, 64, false);
-    const value$8 = BigInt.asUintN(64, -a);
-    const value$9 = $bigChecked(-a, 0n, 18446744073709551615n);
-    const value$10 = BigInt.asUintN(64, $bigPow(a, 0));
-    const value$11 = BigInt.asUintN(64, $bigPow(a, 2));
-    const value$12 = BigInt.asUintN(64, $bigPow(a, (bits - 1) >>> 0));
+    const value$4 = a & BigInt.asUintN(64, -a);
+    const value$5 = a & (9223372036854775808n >> (BigInt($bigLeadingZeros(a)) & 63n));
+    const value$6 = $swapBytes(a, 64, false);
+    const value$7 = $reverseBits(a, 64, false);
+    const value$8 = $rotateBits(BigInt.asUintN(64, a), 1, 64, true);
+    const value$9 = $rotateBits(BigInt.asUintN(64, a), 3, 64, false);
+    const value$10 = BigInt.asUintN(64, -a);
+    const value$11 = $bigChecked(-a, 0n, 18446744073709551615n);
+    const value$12 = BigInt.asUintN(64, $bigPow(a, 0));
+    const value$13 = BigInt.asUintN(64, $bigPow(a, 2));
+    const value$14 = BigInt.asUintN(64, $bigPow(a, (bits - 1) >>> 0));
     const arg = $checkedPow(a, 3, 0n, 18446744073709551615n);
     console.log(
-      `u64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u64 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseBig(String(a), 0n, 18446744073709551615n);
+    const value$15 = $parseBig(String(a), 0n, 18446744073709551615n);
     const arg$1 = $parseBig(a.toString(16), 0n, 18446744073709551615n, 16);
     console.log(
-      `u64 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u64 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = Number(BigInt.asIntN(8, a));
-    const value$15 = Number(BigInt.asIntN(16, a));
-    const value$16 = Number(BigInt.asIntN(32, a));
-    const value$17 = BigInt.asIntN(64, a);
-    const value$18 = Number(BigInt.asUintN(8, a));
-    const value$19 = Number(BigInt.asUintN(16, a));
-    const value$20 = Number(BigInt.asUintN(32, a));
-    const value$21 = f32Bits($bigToF32(a));
+    const value$16 = Number(BigInt.asIntN(8, a));
+    const value$17 = Number(BigInt.asIntN(16, a));
+    const value$18 = Number(BigInt.asIntN(32, a));
+    const value$19 = BigInt.asIntN(64, a);
+    const value$20 = Number(BigInt.asUintN(8, a));
+    const value$21 = Number(BigInt.asUintN(16, a));
+    const value$22 = Number(BigInt.asUintN(32, a));
+    const value$23 = f32Bits($bigToF32(a));
     const arg$2 = f64Bits(Number(a));
     console.log(
-      `u64 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${a} ${value$18} ${value$19} ${value$20} ${a} ${a} f32 ${value$21} f64 ${arg$2}`,
+      `u64 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${a} ${a} f32 ${value$23} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asUintN(64, a << (BigInt(s) & 63n));
@@ -860,37 +873,40 @@ function main() {
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
     const value$3 = 128 - $bigCountOnes(a, 128);
-    const value$4 = $swapBytes(a, 128, false);
-    const value$5 = $reverseBits(a, 128, false);
-    const value$6 = $rotateBits(BigInt.asUintN(128, a), 1, 128, true);
-    const value$7 = $rotateBits(BigInt.asUintN(128, a), 3, 128, false);
-    const value$8 = BigInt.asUintN(128, -a);
-    const value$9 = $bigChecked(-a, 0n, 340282366920938463463374607431768211455n);
-    const value$10 = BigInt.asUintN(128, $bigPow(a, 0, 128));
-    const value$11 = BigInt.asUintN(128, $bigPow(a, 2, 128));
-    const value$12 = BigInt.asUintN(128, $bigPow(a, (bits - 1) >>> 0, 128));
+    const value$4 = a & BigInt.asUintN(128, -a);
+    const value$5 =
+      a & (170141183460469231731687303715884105728n >> (BigInt($bigLeadingZeros(a, 128)) & 127n));
+    const value$6 = $swapBytes(a, 128, false);
+    const value$7 = $reverseBits(a, 128, false);
+    const value$8 = $rotateBits(BigInt.asUintN(128, a), 1, 128, true);
+    const value$9 = $rotateBits(BigInt.asUintN(128, a), 3, 128, false);
+    const value$10 = BigInt.asUintN(128, -a);
+    const value$11 = $bigChecked(-a, 0n, 340282366920938463463374607431768211455n);
+    const value$12 = BigInt.asUintN(128, $bigPow(a, 0, 128));
+    const value$13 = BigInt.asUintN(128, $bigPow(a, 2, 128));
+    const value$14 = BigInt.asUintN(128, $bigPow(a, (bits - 1) >>> 0, 128));
     const arg = $checkedPow(a, 3, 0n, 340282366920938463463374607431768211455n);
     console.log(
-      `u128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u128 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} isolate ${value$4} ${value$5} swap ${value$6} rev ${value$7} rot ${value$8} ${value$9} neg ${value$10} ${value$11 == null ? "None" : `Some(${value$11})`} pow ${value$12} ${value$13} ${value$14} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseBig(String(a), 0n, 340282366920938463463374607431768211455n);
+    const value$15 = $parseBig(String(a), 0n, 340282366920938463463374607431768211455n);
     const arg$1 = $parseBig(a.toString(16), 0n, 340282366920938463463374607431768211455n, 16);
     console.log(
-      `u128 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u128 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = Number(BigInt.asIntN(8, a));
-    const value$15 = Number(BigInt.asIntN(16, a));
-    const value$16 = Number(BigInt.asIntN(32, a));
-    const value$17 = BigInt.asIntN(64, a);
-    const value$18 = BigInt.asIntN(128, a);
-    const value$19 = Number(BigInt.asUintN(8, a));
-    const value$20 = Number(BigInt.asUintN(16, a));
-    const value$21 = Number(BigInt.asUintN(32, a));
-    const value$22 = BigInt.asUintN(64, a);
-    const value$23 = f32Bits($bigToF32(a));
+    const value$16 = Number(BigInt.asIntN(8, a));
+    const value$17 = Number(BigInt.asIntN(16, a));
+    const value$18 = Number(BigInt.asIntN(32, a));
+    const value$19 = BigInt.asIntN(64, a);
+    const value$20 = BigInt.asIntN(128, a);
+    const value$21 = Number(BigInt.asUintN(8, a));
+    const value$22 = Number(BigInt.asUintN(16, a));
+    const value$23 = Number(BigInt.asUintN(32, a));
+    const value$24 = BigInt.asUintN(64, a);
+    const value$25 = f32Bits($bigToF32(a));
     const arg$2 = f64Bits(Number(a));
     console.log(
-      `u128 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${a} f32 ${value$23} f64 ${arg$2}`,
+      `u128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} ${a} f32 ${value$25} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = BigInt.asUintN(128, a << (BigInt(s) & 127n));

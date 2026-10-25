@@ -49,3 +49,26 @@ integer's bits, take its bytes and read a float's bits:
 
 - `swap_bytes`, `reverse_bits`, `leading_ones` and `trailing_ones` are
   still errors.
+
+## Amendment: one bit isolated
+
+clippy's default `manual_isolate_lowest_one` asks React's `lanes &
+-lanes` (ReactFiberLane's `getHighestPriorityLane`) be written
+`lanes.isolate_lowest_one()`, which rust-js refused, "does not support
+calling `isolate_lowest_one` yet". **`isolate_lowest_one()` and
+`isolate_highest_one()` are std's bodies, of the operators**: `self &
+self.wrapping_neg()`, an `i32`'s `lanes & -lanes` (ADR 0891), and `self &
+MIN_BIT.wrapping_shr(self.leading_zeros())`, an `i32`'s `lanes &
+(-2147483648 >> Math.clz32(lanes))`, each width's wrap where its
+operators have one, a BigInt's too. The receiver is read once, a call's
+spilled. Case N: each is the operators std's body is, which rust-js
+computes as Rust does. Held by `test/lowering-bits.test.ts`,
+"isolate_lowest_one and isolate_highest_one are std's operators", the
+integer matrix (`scripts/matrix.ts`), each width at its boundaries
+against native Rust, `lane_bits.rs`, and the mutations
+`isolate-lowest-one-unnegated`, `isolate-highest-one-top-unsigned` and
+`isolate-one-receiver-read-twice` (`std_types/number.ts`).
+`docs/readability.txt`'s renamed share grows, 714.6 to 715.5 in 10,000
+lines: the matrix's new results, and `lane_bits.rs`'s, are each a
+`value$n` read by the `println!` after it, as that line's others are,
+no new shape.

@@ -220,6 +220,8 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "leading_zeros" if !float => NumOp::LeadingZeros,
         "trailing_zeros" if !float => NumOp::TrailingZeros,
         "count_ones" if !float => NumOp::CountOnes,
+        "isolate_lowest_one" if !float => NumOp::IsolateOne { highest: false },
+        "isolate_highest_one" if !float => NumOp::IsolateOne { highest: true },
         "is_power_of_two" if !float && !signed => NumOp::IsPowerOfTwo,
         "next_power_of_two" if !float && !signed => NumOp::NextPowerOfTwo { checked: false },
         "checked_next_power_of_two" if !float && !signed => NumOp::NextPowerOfTwo { checked: true },

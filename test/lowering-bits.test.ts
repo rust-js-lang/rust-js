@@ -67,7 +67,7 @@ pub fn marked(root: &mut Root, lane: i32) {
 
 // ADR 0891: JS's `<<` of an `i32` is an int32 already, so it's no wrap's,
 // `1 << i`; and an operand JS's `&`, `|`, `^`, `~` or a shift takes modulo
-// 2^32 itself needs no wrap of its own, `lanes & -lanes`, `(a + b) & m`,
+// 2^32 itself needs no wrap of its own, `lanes & -mask`, `(a + b) & m`,
 // `1 << (i + 1)`. What isn't such an operand keeps its wrap: `-lanes | 0`
 // of `i32::MIN` is itself, and `(1 << 31) - 1` wraps to `i32::MAX`.
 test("a shift and an operand of a bitwise operator are unwrapped", async () => {
@@ -75,8 +75,8 @@ test("a shift and an operand of a bitwise operator are unwrapped", async () => {
     1 << i
 }
 
-pub fn lowest(lanes: i32) -> i32 {
-    lanes & -lanes
+pub fn unmasked(lanes: i32, mask: i32) -> i32 {
+    lanes & -mask
 }
 
 pub fn negated(lanes: i32) -> i32 {
@@ -105,7 +105,7 @@ pub fn joined(a: i32, b: i32) -> i32 {
 }
 `);
   expect(js).toContain("  return 1 << i;\n");
-  expect(js).toContain("  return lanes & -lanes;\n");
+  expect(js).toContain("  return lanes & -mask;\n");
   expect(js).toContain("  return -lanes | 0;\n");
   expect(js).toContain("  const index = (31 - Math.clz32(lanes)) >>> 0;\n  return ((1 << (index + 1)) - 1) | 0;\n");
   expect(js).toContain("  return (a + b) & mask;\n");
@@ -114,8 +114,41 @@ pub fn joined(a: i32, b: i32) -> i32 {
   expect(js).toContain("  return (a | 1) & b;\n");
   const min = -2147483648;
   expect([0, 1, 30, 31, 32, 33].map((i) => lib.lane(i))).toEqual([1, 2, 1 << 30, min, 1, 2]);
-  expect([0, 6, -1, min, 2147483647].map((n) => lib.lowest(n))).toEqual([0, 2, 1, min, 1]);
+  expect([0, 6, -1, min, 2147483647].map((n) => lib.unmasked(n, n))).toEqual([0, 2, 1, min, 1]);
   expect([lib.negated(min), lib.negated(5)]).toEqual([min, -5]);
   expect([0, 1, 5, 1 << 30, min, -1].map((n) => lib.equalOrHigher(n))).toEqual([0, 1, 7, 2147483647, 0, 0]);
   expect([lib.masked(2147483647, 1, -1), lib.flipped(min, 1), lib.doubled(0x40000000), lib.joined(2, 3)]).toEqual([min, min, 2147483648, 3]);
+});
+
+// ADR 0156, amended: clippy's `manual_isolate_lowest_one` asks for
+// `lanes.isolate_lowest_one()`, React's `lanes & -lanes`; std's body is
+// `self & self.wrapping_neg()`, lowered of the operators, so an `i32`'s is
+// `lanes & -lanes`. `isolate_highest_one()` is std's `self & (MIN_BIT
+// .wrapping_shr(self.leading_zeros()))`. What's read twice is read once.
+test("isolate_lowest_one and isolate_highest_one are std's operators", async () => {
+  const { js, lib } = await compiled("bits-isolated", `pub fn highest_priority_lane(lanes: i32) -> i32 {
+    lanes.isolate_lowest_one()
+}
+
+pub fn highest_bit(lanes: i32) -> i32 {
+    lanes.isolate_highest_one()
+}
+
+pub fn highest_bit_u32(lanes: u32) -> u32 {
+    lanes.isolate_highest_one()
+}
+
+pub fn lowest_of_sum(a: i32, b: i32) -> i32 {
+    (a + b).isolate_lowest_one()
+}
+`);
+  expect(js).toContain("  return lanes & -lanes;\n");
+  expect(js).toContain("  return lanes & (-2147483648 >> Math.clz32(lanes));\n");
+  expect(js).toContain("  return (lanes & (2147483648 >>> Math.clz32(lanes))) >>> 0;\n");
+  expect(js).toContain("  const value = (a + b) | 0;\n  return value & -value;\n");
+  const min = -2147483648;
+  expect([0, 6, -1, min, 12].map((n) => lib.highestPriorityLane(n))).toEqual([0, 2, 1, min, 4]);
+  expect([0, 6, -1, min, 2147483647].map((n) => lib.highestBit(n))).toEqual([0, 4, min, min, 1 << 30]);
+  expect([0, 6, 0xffffffff].map((n) => lib.highestBitU32(n))).toEqual([0, 4, 2147483648]);
+  expect(lib.lowestOfSum(2147483647, 1)).toBe(min);
 });

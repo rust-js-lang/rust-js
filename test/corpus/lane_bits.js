@@ -22,7 +22,11 @@ function halved(n, by) {
   return n;
 }
 
-function lowest(lanes) {
+function masked(lanes, mask) {
+  return lanes & -mask;
+}
+
+function highestPriorityLane(lanes) {
   return lanes & -lanes;
 }
 
@@ -104,9 +108,13 @@ function main() {
   const edges = [0, 1, 6, -1, -2147483648, 2147483647, 1 << 30];
   for (const lanes of edges) {
     const value = removed(lanes, 1);
-    const value$1 = lowest(lanes);
+    const value$1 = masked(lanes, lanes);
+    const value$2 = highestPriorityLane(lanes);
+    const isolateHighestOne = lanes & (-2147483648 >> Math.clz32(lanes));
     const arg = equalOrHigher(lanes);
-    console.log(`${lanes}: removed ${value} lowest ${value$1} negated ${-lanes | 0} higher ${arg}`);
+    console.log(
+      `${lanes}: removed ${value} lowest ${value$1} ${value$2} ${isolateHighestOne} negated ${-lanes | 0} higher ${arg}`,
+    );
   }
   for (const index of [0, 1, 30, 31, 32, 33]) {
     const arg = laneOf(index);
