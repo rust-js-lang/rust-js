@@ -92,3 +92,17 @@ iterator already, as `into_iter` or a dictionary gave it.
 ## Amended by
 
 [ADR 0715](0715-what-an-into-iterator-bound-is-given.md): what a type parameter bounded by `IntoIterator` is given is `iterable_items` of its argument, a `&mut` collection's handles among them, and a `&mut` range is stepped where it is.
+
+## Amendment: a function given as a value converts what its call does (#281)
+
+A call of the crate's generic function converts each argument as
+`given_iterators` says, for example an `Option` that an `IntoIterator`
+bound takes, `x == null ? [] : [x]`. The same function given as a value,
+`map(total)`, was its bare name, so each item reached it unconverted, and
+`for (const x of 1)` threw. Following ADR 0262's "results change" case,
+Rust's answer is kept: `fn_item_value` asks `given_iterators` whether the
+call converts any argument, `converts_arguments`. If it does, the value
+is the arrow of its call, `(x) => total(x == null ? [] : [x])`. One whose
+call gives each argument as it is stays its name, `map(total)` of `Vec`s.
+`fn_item_converting_argument` runs both against native Rust, and the
+mutation `fn-item-conversion-unasked` is caught.

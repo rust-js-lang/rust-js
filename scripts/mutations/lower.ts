@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-item-conversion-unasked",
+    breaks: "a function given as a value whose call converts an argument, an `Option` an `IntoIterator` takes, is its name, so `map(total)` iterates the `Option`'s value and throws (#281)",
+    file: "src/lower.rs",
+    find: "                || self.converts_arguments(def_id, args, span)?\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fn_item_converting_argument.rs$"],
+  },
+  {
     name: "load-reads-const-by-name",
     breaks: "a thread-local's value reads another module's `const` by name, `{ value: LIMIT }`, which an import cycle may load first: `Cannot access 'LIMIT' before initialization` (ADR 0722)",
     file: "src/lower.rs",

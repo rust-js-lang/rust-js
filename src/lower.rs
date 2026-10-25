@@ -703,6 +703,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a call of the crate's `def_id`, given `args`, gives any
+    /// argument other than as it is, as `given_iterators` says: an `Option`
+    /// an `IntoIterator` bound takes, the array of its items (ADR 0061). Its
+    /// value is then the arrow of its call, which does so too (#281).
+    fn converts_arguments(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<bool> {
+        let given = (self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, args)
+            .skip_normalization()
+            .skip_binder())
+        .inputs()
+        .to_vec();
+        let names: Vec<String> = (0..given.len()).map(|i| format!("arg{i}")).collect();
+        let mut values: Vec<Expr> = names.iter().map(|name| Expr::var(name)).collect();
+        self.given_iterators(def_id, &mut values, &given, span, &mut Vec::new())?;
+        Ok((values.iter().zip(&names)).any(|(value, name)| !matches!(&value.kind, js::ExprKind::Var(v) if v == name)))
+    }
+
     /// A function as a value: a constructor's, `.map(Some)`, an arrow making
     /// what its call makes (ADR 0125); the crate's, `component(Card, props)`,
     /// its JS name, given its dictionaries; a std one's, `.map(str::trim)`,
@@ -784,6 +803,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     classes::member(self.tcx, def_id),
                     Some(classes::Member::Constructor | classes::Member::Method)
                 )
+                || self.converts_arguments(def_id, args, span)?
             {
                 return Ok(None);
             }
