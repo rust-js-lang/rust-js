@@ -54,6 +54,7 @@ mod jsx_api;
 mod library;
 mod literals;
 pub(crate) mod liveness;
+mod load_order;
 mod loops;
 mod mir;
 mod mut_refs;

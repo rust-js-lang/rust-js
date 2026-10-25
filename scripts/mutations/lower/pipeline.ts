@@ -565,7 +565,7 @@ export const mutations: Mutation[] = [
     name: "load-cycle-unseen",
     breaks: "a module's load reads another's constant by its name though they import each other, which may load it first, before it's made",
     file: "src/lower/pipeline.rs",
-    find: "                .any(|&(from, read)| from == own && made_where_loaded(read) && reaches(fns[&read].module, own))\n",
+    find: "                .any(|&(from, read)| from == own && made_where_loaded(read) && imports.reaches(fns[&read].module, own))\n",
     replace: "                .any(|&(from, read)| from == own && made_where_loaded(read) && false)\n",
     tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
   },
@@ -584,5 +584,13 @@ export const mutations: Mutation[] = [
     find: "            Some(key) if super::bindings::nullable_local(tcx, key.to_def_id()) => {\n",
     replace: "            Some(key) if false && super::bindings::nullable_local(tcx, key.to_def_id()) => {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+  },
+  {
+    name: "effects-import-nothing",
+    breaks: "a module's `js::import!(\"./setup.js\")` imports none of the crate's modules that file does, so a cycle through it is unseen and the module loaded first reads a constant before it's made",
+    file: "src/lower/pipeline.rs",
+    find: "    let bound = used.chain(users).chain(effects);\n",
+    replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
 ];

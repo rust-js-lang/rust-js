@@ -50,6 +50,9 @@ pub struct Built<'a> {
     pub panics_abort: bool,
     /// `--tidy-until <stage/pass>`: tidy stops after that pass (ADR 0659).
     pub tidy_until: Option<&'a str>,
+    /// What the JS modules its bindings import load of the crate's modules
+    /// (ADR 0031, amended).
+    pub js_modules: &'a dyn crate::program::JsModules,
 }
 
 /// Lower every function, grouped by module. Reports all unsupported
@@ -67,6 +70,7 @@ pub fn lower_crate<'tcx>(
         std_bodies,
         panics_abort,
         tidy_until,
+        js_modules,
     } = built;
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
@@ -242,6 +246,19 @@ pub fn lower_crate<'tcx>(
     // Lower each body once. Cross-module references have symbolic names until
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items: Vec<(DefId, super::LoweredFn)> = Vec::new();
+    // Each module's JS, where a JS file of the program's own imports it
+    // from, and what it imports for its effects (`module_imports`).
+    let places: Vec<ModuleJs> = (modules.iter())
+        .map(|&module| ModuleJs {
+            module,
+            path: paths[&module].clone(),
+            file: module_file(tcx, module).name.clone().into_local_path(),
+            located: located(tcx, module),
+            effects: (super::bindings::marks(tcx, module, "import"))
+                .filter_map(|attr| Some(attr.value_str()?.to_string()))
+                .collect(),
+        })
+        .collect();
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
     let keeps_capacity = asks_capacity || foreign.keeps_capacity();
@@ -363,7 +380,14 @@ pub fn lower_crate<'tcx>(
                 if !crate_facts.loads_in_cycles.borrow().is_empty() {
                     break;
                 }
-                let again = load_cycles(tcx, &lowered_items, &fns, &loads);
+                let lowered = || (lowered_items.iter()).map(|(_, item)| &item.dependencies);
+                let edges = (
+                    lowered().flat_map(|d| &d.references),
+                    lowered().flat_map(|d| &d.held),
+                    lowered().flat_map(|d| &d.package_uses),
+                );
+                let imports = module_imports(&places, &fns, edges, &imported, js_modules);
+                let again = load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
                 if again.is_empty() {
                     break;
                 }
@@ -849,7 +873,9 @@ pub fn lower_crate<'tcx>(
         .filter(|&&(from, id)| fns[&id].module != from)
         .map(|&(_, id)| id)
         .collect();
-    refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, &targets);
+    let edges = (pass.references.iter(), pass.held.iter(), pass.package_uses.iter());
+    let imports = module_imports(&places, &fns, edges, &imported, js_modules);
+    refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
     // The exported thread-locals their modules made their variables.
     let mut variables: HashSet<DefId> = HashSet::new();
     let mut lowered: Vec<UnlinkedModule> = modules
@@ -1333,44 +1359,61 @@ fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
     }
 }
 
+/// A module's JS: where it's laid out, its module path, its Rust file and
+/// whether a `#[path]` placed it (ADR 0273), and what it imports for its
+/// effects alone, `js::import!("./setup.js")` (ADR 0110).
+struct ModuleJs {
+    module: LocalModId,
+    path: Vec<String>,
+    file: Option<std::path::PathBuf>,
+    located: bool,
+    effects: Vec<String>,
+}
+
+/// What the crate's modules import of each other (`load_order`), of what
+/// their bodies import: another module's items each reads, the bindings it
+/// reads through another that holds them (ADR 0633), and the JS modules it
+/// imports, a binding's, as `imported` says of each too, and those it
+/// imports for their effects.
+fn module_imports<'d>(
+    places: &[ModuleJs],
+    fns: &HashMap<DefId, FnInfo>,
+    (references, held, package_uses): (
+        impl Iterator<Item = &'d (LocalModId, DefId)>,
+        impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
+        impl Iterator<Item = &'d (LocalModId, Export)>,
+    ),
+    imported: &BTreeMap<Export, HashSet<LocalModId>>,
+    js_modules: &dyn crate::program::JsModules,
+) -> super::load_order::ModuleImports {
+    let laid_out: Vec<_> = (places.iter())
+        .map(|js| (js.module, (js.path.as_slice(), js.file.as_deref(), js.located)))
+        .collect();
+    let referenced = references.map(|&(from, id)| (from, fns[&id].module));
+    let held = held.map(|&(from, holder, ..)| (from, holder));
+    let used = package_uses.map(|(from, (module, _))| (*from, module.as_str()));
+    let users =
+        (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
+    let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
+    let bound = used.chain(users).chain(effects);
+    super::load_order::ModuleImports::new(&laid_out, referenced.chain(held), bound, js_modules)
+}
+
 /// Each body run where its module loads, of `loads`, that reads another of
 /// the crate's modules' `const` or numbered enum's variant by its name,
 /// where that module may load after its own: one it reaches by what the
-/// crate's modules import of each other, `lowered`'s references and held
-/// bindings, an import cycle. JS would read it before its module made it,
-/// so that body reads its value (`FnCx::reads_by_name`, ADR 0031, amended).
-/// What it imports by name is an edge, so the cycles found are each one's
-/// that may be.
+/// crate's modules import of each other, `imports`, an import cycle, through
+/// a JS file of the program's own too. JS would read it before its module
+/// made it, so that body reads its value (`FnCx::reads_by_name`, ADR 0031,
+/// amended). What it imports by name is an edge, so the cycles found are
+/// each one's that may be.
 fn load_cycles(
     tcx: TyCtxt<'_>,
     lowered: &[(DefId, super::LoweredFn)],
     fns: &HashMap<DefId, FnInfo>,
     loads: &HashSet<DefId>,
+    imports: &super::load_order::ModuleImports,
 ) -> Vec<DefId> {
-    let mut imports: HashMap<LocalModId, HashSet<LocalModId>> = HashMap::new();
-    for (_, item) in lowered {
-        for &(from, id) in &item.dependencies.references {
-            imports.entry(from).or_default().insert(fns[&id].module);
-        }
-        for &(from, holder, ..) in &item.dependencies.held {
-            imports.entry(from).or_default().insert(holder);
-        }
-    }
-    let reaches = |from: LocalModId, to: LocalModId| {
-        let mut seen = HashSet::from([from]);
-        let mut pending = vec![from];
-        while let Some(at) = pending.pop() {
-            for &next in imports.get(&at).into_iter().flatten() {
-                if next == to {
-                    return true;
-                }
-                if seen.insert(next) {
-                    pending.push(next);
-                }
-            }
-        }
-        false
-    };
     let made_where_loaded = |id: DefId| {
         matches!(
             tcx.def_kind(id),
@@ -1382,7 +1425,7 @@ fn load_cycles(
         .filter(|(id, item)| {
             let own = fns[id].module;
             (item.dependencies.references.iter())
-                .any(|&(from, read)| from == own && made_where_loaded(read) && reaches(fns[&read].module, own))
+                .any(|&(from, read)| from == own && made_where_loaded(read) && imports.reaches(fns[&read].module, own))
         })
         .map(|&(id, _)| id)
         .collect()
@@ -1397,7 +1440,7 @@ fn refuse_dictionaries_in_load_cycles(
     tcx: TyCtxt<'_>,
     pass: &Pass,
     const_items: &HashMap<LocalModId, Vec<js::Const>>,
-    targets: &HashMap<LocalModId, HashSet<(LocalModId, String, String, String)>>,
+    (modules, imports): (&[LocalModId], &super::load_order::ModuleImports),
 ) {
     // A dictionary, its cache and what its entries share run nothing of the
     // program's where they're made: not code a cycle's load runs.
@@ -1407,27 +1450,8 @@ fn refuse_dictionaries_in_load_cycles(
                 (consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())
             })
     };
-    let reaches = |from: LocalModId, to: LocalModId| {
-        let mut seen = HashSet::from([from]);
-        let mut pending = vec![from];
-        while let Some(at) = pending.pop() {
-            for &(next, ..) in targets.get(&at).into_iter().flatten() {
-                if next == to {
-                    return true;
-                }
-                if seen.insert(next) {
-                    pending.push(next);
-                }
-            }
-        }
-        false
-    };
-    let loaders: Vec<LocalModId> = targets
-        .keys()
-        .chain(pass.statements.keys())
-        .copied()
-        .filter(runs_code)
-        .collect();
+    let reaches = |from, to| imports.reaches(from, to);
+    let loaders: Vec<LocalModId> = modules.iter().copied().filter(runs_code).collect();
     for &(module, impl_id) in &pass.dictionary_consts {
         if let Some(&other) = loaders
             .iter()

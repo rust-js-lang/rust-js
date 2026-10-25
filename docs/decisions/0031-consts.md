@@ -9,7 +9,8 @@ imported by its name. Extended by
 variant is its module's `const` too, and what a module's load makes reads
 another module's `const` as its value, as an import cycle may load it first.
 Amended (2026-10-26): a `#[repr(transparent)]` struct's constructor of a
-constant is its field, by its name.
+constant is its field, by its name. Amended (2026-10-26): an import cycle
+through a JS file of the program's own is one (below).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -220,6 +221,7 @@ each other, the value is read, as before.
   may be; reading values only takes edges away.
 - **Of the imports `refuse_dictionaries_in_load_cycles` reads too**: each
   body's references of another module's items and its held bindings.
+  (Amended below: and through a JS file of the program's own, one graph.)
 
 Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
 same either way; read by its name, its module has made it.
@@ -229,3 +231,87 @@ its name where its module loads first", run, a cycle's value too; the
 corpus's `load_cycle_values`. Mutations `load-cycle-unseen`,
 `load-relowered-twice` (`lower/pipeline.ts`), `load-reads-values`,
 `load-reads-by-name` (`lower/items.ts`).
+
+## Amendment: an import cycle through a JS file of the program's own
+
+React's ReactFiberLane binds a JS file of React's own,
+`#[link_name = "./src/ReactFiberDevToolsHook.js#isDevToolsPresent"]`.
+That file imports ReactEventPriorities, a module of the crate's, which
+imports ReactFiberLane and reads its lanes where it loads:
+
+```js
+export const NoEventPriority = NoLane;
+```
+
+The graph above had no edge through the JS file, so it saw no cycle, and
+the port read `NoLane` by its name. An app that loads ReactFiberLane first
+loads the hook, then ReactEventPriorities, before ReactFiberLane has made
+`NoLane`: a `ReferenceError` (`undefined` under CommonJS), where Rust's
+constant is always there.
+
+**A module that imports a JS file of the program's own imports what that
+file imports, and what those files do in turn.** It's read where the
+crate's JS is, as the root's file names it (ADR 0028): beside the output,
+and in source (ADR 0041). `output::LocalJs` reads each file once per build
+with oxc (`to_oxc::loaded_modules`), and follows each relative specifier.
+A module of the crate's is matched by its JS file's path, laid out as the
+planner lays it out, with or without its extension, case-folded. Another
+file is found as Node and bundlers find one, `./priority` as
+`priority.js` or `priority/index.js`. React's port reads its values:
+
+```js
+export const NoEventPriority = 0;
+```
+
+- **What a file loads** is each `import`, `export .. from` and `export *
+  from`, and each `import()` or `require()` of a string, wherever it's
+  written, as a function it makes may run as it loads. Not `import type`,
+  which loads nothing. It's read as JS with JSX, then as TypeScript, which
+  reads most of Flow's types: React's hook is read so.
+- **What can't be said may import any module of the crate's**: a file not
+  found, unread, read as neither, one that loads `import(name)`, or a
+  specifier that may name any file, `#internal` of a package's `imports`
+  or `/src/a.js`. Reading values only takes edges away.
+- **A package's imports none of the crate's**, `react`, `node:path`,
+  `shared/ReactFeatureFlags`; nor does a style, data or an image,
+  `./hook.css`. A package that imports the crate's own JS back, a cycle
+  of packages, isn't seen: following one would mean resolving packages as
+  each bundler does, for what's otherwise a cycle Cargo's dependencies
+  don't allow between crates.
+- **A module's `js::import!("./setup.js")`** (ADR 0110) is an edge too.
+- **One graph**, `load_order::ModuleImports`, which `load_cycles` and
+  `refuse_dictionaries_in_load_cycles` both ask: a dictionary in a cycle
+  through a JS file is refused as one through the crate's own imports.
+- **Lowering asks; artifact planning answers**, through
+  `program::JsModules`: where each module's JS goes is the planner's, and
+  only printing reads JS with oxc, so the front end uses no later phase.
+  The driver hands lowering the planner's `LocalJs`, and the planner what
+  it read.
+- **The files read are what the build read**: of the manifest's sources,
+  and of what Cargo is told the build read (`OutputPlan::bound`), so a
+  change to a file's imports rebuilds the crate. The cache lives for one
+  build; Cargo's record of the files is what's checked against them next
+  time.
+- **Not yet: a `pub use` re-export**, `export { one } from "./a.js"`, is
+  no edge, and a cycle through one isn't seen (issue #295).
+
+Case C ([0262](0262-when-rust-and-js-disagree.md)): the JS loaded in
+another order would throw where Rust reads its constant, so Rust's value
+is kept, paid for in output. It's a forced difference from React's own
+JS, which reads `NoLane` by its name: React relies on what loads first.
+`NoEventPriority = 0` holds whichever does.
+
+Test: `lowering-constants`'s "a constant read where a module loads is its
+value where a bound JS file imports back", run with the module loaded
+first, through a file a directory down and extension-less, a file of its
+own, a module, a package and a style of no cycle, a file not found, and a
+`js::import!`; `lowering-dictionaries`'s "a dictionary that takes nothing
+is its module's const", refused through a JS file; `to_oxc::loads`'s
+`each_module_a_file_loads`. Mutations `bound-file-unfollowed`,
+`bound-module-unmatched`, `package-may-import-any`,
+`missing-import-ignored`, `missing-bound-file-imports-nothing`,
+`style-may-import-any` (`output.ts`), `bound-file-imports-nothing`,
+`unread-bound-file-imports-nothing` (`lower/load_order.ts`),
+`effects-import-nothing` (`lower/pipeline.ts`), `bound-js-unread`
+(`main.ts`), `export-from-loads-nothing`, `import-loads-nothing`
+(`to_oxc/loads.ts`).

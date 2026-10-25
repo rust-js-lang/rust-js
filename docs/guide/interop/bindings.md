@@ -215,7 +215,12 @@ are properties ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 | `"chart.js#Chart.register"` | `import { Chart } from "chart.js"`, then `Chart.register` |
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
-each module that imports it gets the path from its own directory.
+each module that imports it gets the path from its own directory. The
+build reads it, and the files of the program's own it imports, for which
+of the crate's modules it loads: a module whose load reads another's
+`const` in a cycle through it reads its value
+([ADR 0031](../../decisions/0031-consts.md), amended). A change to one
+rebuilds the crate.
 
 ```rust
 #[cfg_attr(rust_js, rust_js::link_name = "canvas-confetti#default")]

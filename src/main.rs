@@ -127,6 +127,9 @@ struct RustJs {
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
     /// refused of it (ADR 0660).
     panics_abort: bool,
+    /// The JS files of the program's own its bindings import, read where
+    /// lowering asks what they load (ADR 0031, amended).
+    local_js: output::LocalJs,
 }
 
 /// `rust_js` is a tool rustc knows, as it knows `rustfmt`: a program
@@ -279,6 +282,7 @@ impl Callbacks for RustJs {
                     std_bodies: self.std_bodies,
                     panics_abort: self.panics_abort,
                     tidy_until: self.tidy_until.as_deref(),
+                    js_modules: &self.local_js,
                 },
             )
             && tcx.dcx().has_errors().is_none()
@@ -477,12 +481,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         tidy_until,
         cargo,
         panics_abort: false,
+        local_js: output::LocalJs::new(&plan),
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.
     if let Some((linked, sources)) = callbacks.lowered.take()
         && exit == ExitCode::SUCCESS
     {
+        plan.bound = callbacks.local_js.read();
         // What Cargo is told of the build, published with it (ADR 0101).
         plan.extra = match &recorded {
             Some((Some(manifest), Some((_, metadata)))) => cargo::record(manifest, &dependency_paths, metadata)?,

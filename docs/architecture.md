@@ -198,7 +198,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Crate facts and validation | `analysis.rs`, `analysis/` |
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
-| Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `reexports.rs`, `sources.rs`, `library.rs` |
+| Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
@@ -288,6 +288,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
 | A variant without fields as a body writes it, a numbered enum's its module's `const` (ADR 0722), and a constant rustc computed there | `representation.rs` | `unit_variant`, `const_value` |
 | Whether a body reads a `const` or a numbered enum's variant by its name, or, where its module loads, another module's as its value (ADR 0722) | `items.rs` | `reads_by_name` |
+| What the crate's modules import of each other where their JS loads, through the JS files of the program's own they import too, which a module's load and a dictionary in a load cycle ask (ADR 0031, amended) | `load_order.rs`; `program.rs`; `output.rs`; `to_oxc/loads.rs` | `ModuleImports`, `reaches`; `JsModules`, `loaded`; `LocalJs`; `loaded_modules` |
 | Whether a struct literal's object is across lines, as the literal is written | `aggregates.rs` | `object_layout`, `const_object` |
 | An untagged enum's `undefined` and `null`, and what's there of `classify(Some(v))` | `untagged.rs`; `body_queries.rs` | `unit_value`, `holds_nullish`, `told_by_kind`; `given_present`, `present_calls` |
 | What an untagged enum's variants are together, a test's and a `switch`'s case | `untagged.rs` | `untagged_test`, `untagged_cases` |

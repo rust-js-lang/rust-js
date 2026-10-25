@@ -205,4 +205,52 @@ pub mod counts {
   const refused = Bun.spawnSync([compiler, join(loaded, "lib.rs"), "-o", join(loaded, "lib.js")]);
   expect(refused.exitCode).not.toBe(0);
   expect(refused.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
+
+  // So is one whose cycle is through a JS file of the program's own that
+  // `shapes` binds, which imports `counts` (ADR 0031, amended).
+  const through = fixture("dictionary-in-a-load-cycle-through-js");
+  writeFileSync(join(through, "lib.rs"), `pub trait Shape {
+    fn area(&self) -> u32;
+}
+
+pub mod shapes {
+    pub struct Square(pub u32);
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./scale.js#scale")]
+    fn scale() -> u32 {
+        unreachable!()
+    }
+
+    impl super::Shape for Square {
+        fn area(&self) -> u32 {
+            self.0 * self.0 * scale()
+        }
+    }
+
+    pub fn total<S: super::Shape>(shapes: &[S]) -> u32 {
+        shapes.iter().map(|s| s.area()).sum()
+    }
+}
+
+pub mod counts {
+    use std::cell::Cell;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "tick")]
+    fn tick() -> u32 {
+        unreachable!()
+    }
+
+    thread_local! {
+        static FIRST: Cell<u32> = Cell::new(tick());
+    }
+
+    pub fn first() -> u32 {
+        FIRST.get() + super::shapes::total(&[super::shapes::Square(2)])
+    }
+}
+`);
+  writeFileSync(join(through, "scale.js"), "import {first} from './counts.js';\n\nexport const scale = () => (first ? 1 : 0);\n");
+  const cyclic = Bun.spawnSync([compiler, join(through, "lib.rs"), "-o", join(through, "lib.js")]);
+  expect(cyclic.exitCode).not.toBe(0);
+  expect(cyclic.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
 });

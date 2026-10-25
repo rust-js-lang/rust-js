@@ -2,8 +2,24 @@
 
 use crate::js;
 use crate::runtime::Helper;
-use std::collections::HashSet;
-use std::path::PathBuf;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+
+/// A module of the crate's, as its JS is laid out: its module path, its
+/// Rust file, and whether a `#[path]` placed it (ADR 0273).
+pub type ModuleAt<'a> = (&'a [String], Option<&'a Path>, bool);
+
+/// What a JS module a crate's module imports, as its binding names it,
+/// `./src/hook.js`, `react`, loads of the crate's modules where it loads
+/// (ADR 0031, amended). Lowering asks it, for which module may load before
+/// another; artifact planning answers it, which lays out the crate's JS and
+/// reads the program's own files (`output::LocalJs`).
+pub trait JsModules {
+    /// Of `modules`, which each of `specifiers` may load, by their places
+    /// in it: none, of a package's; `None` where that can't be said, so any
+    /// may be.
+    fn loaded<'s>(&self, specifiers: &[&'s str], modules: &[ModuleAt]) -> HashMap<&'s str, Option<HashSet<usize>>>;
+}
 
 /// Normalized Rust source retained independently of the frontend.
 pub struct Source {

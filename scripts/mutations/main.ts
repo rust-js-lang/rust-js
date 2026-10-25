@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = (compiler, krate);\n        Compilation::Continue\n    }\n\n    fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {\n        Syntax.after_expansion(compiler, tcx)\n",
     tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
   },
+  {
+    name: "bound-js-unread",
+    breaks: "the JS files of its own a crate's bindings import, which decide what its modules' loads read by name, aren't what the build read: Cargo doesn't rebuild when one changes (ADR 0031, amended)",
+    file: "src/main.rs",
+    find: "        plan.bound = callbacks.local_js.read();\n",
+    replace: "",
+    tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
+  },
 ];

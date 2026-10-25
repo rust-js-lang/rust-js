@@ -101,7 +101,11 @@ export function banner(count) {
   value, reads another module's `const` by its name, `createCursor(NoLanes)`,
   as that module, which it imports, loads first; but where the two import
   each other, its value, `{ value: 100 }`, as the one loaded first runs
-  before the other has made its `const`s. A function reads it by its name
+  before the other has made its `const`s. So it is where they import each
+  other through a JS file of the program's own that one binds, which
+  rust-js reads with what it imports: React's `NoEventPriority = 0`, where
+  ReactFiberLane's hook imports ReactEventPriorities, which reads
+  ReactFiberLane's `NoLane`. A function reads it by its name
   ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md),
   [ADR 0031](../../decisions/0031-consts.md), amended).
 - A `const` of literals is the value rustc computed, `4 * 1024` is

@@ -4,8 +4,8 @@
 // amended). Each test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -162,4 +162,120 @@ pub mod second {
   expect(read()).toBe(2);
   const { twice } = await import(join(dir, "first.js"));
   expect(twice()).toBe(14);
+});
+
+// React's ReactFiberLane binds ReactFiberDevToolsHook.js, a JS file of its
+// own, which imports ReactEventPriorities, which reads ReactFiberLane's
+// lane where it loads, `NoEventPriority = NoLane`: an import cycle through
+// the JS file. ReactFiberLane loaded first would load it before it makes
+// `NoLane`, so its value is read (ADR 0031, amended). Where the JS file
+// imports nothing of the crate that imports it back, nor does what it
+// imports, the name is; where what it imports isn't found, the value.
+test("a constant read where a module loads is its value where a bound JS file imports back", async () => {
+  const lib = (hook: string, effects = "") => `pub mod lane {
+    pub type Lane = i32;${effects}
+
+    unsafe extern "Rust" {
+        #[cfg_attr(rust_js, rust_js::name = "isDevToolsPresent")]
+        #[link_name = "${hook}#isDevToolsPresent"]
+        safe static IS_DEV_TOOLS_PRESENT: bool;
+    }
+
+    #[cfg_attr(rust_js, rust_js::name = "NoLane")]
+    pub const NO_LANE: Lane = 0;
+    #[cfg_attr(rust_js, rust_js::name = "SyncLane")]
+    pub const SYNC_LANE: Lane = 2;
+
+    pub fn marked(lane: Lane) -> Lane {
+        if IS_DEV_TOOLS_PRESENT {
+            lane
+        } else {
+            SYNC_LANE
+        }
+    }
+}
+
+pub mod priorities {
+    use super::lane::{Lane, NO_LANE};
+
+    #[derive(Clone, Copy)]
+    #[repr(transparent)]
+    pub struct EventPriority(Lane);
+
+    #[cfg_attr(rust_js, rust_js::name = "NoEventPriority")]
+    pub const NO_EVENT_PRIORITY: EventPriority = EventPriority(NO_LANE);
+
+    pub fn lane_of(priority: EventPriority) -> Lane {
+        priority.0
+    }
+}
+
+pub mod tags {
+    #[cfg_attr(rust_js, rust_js::name = "LegacyRoot")]
+    pub const LEGACY_ROOT: i32 = 0;
+}
+`;
+  // Through a file it imports, a directory down, which names the module
+  // without its extension, as React's do.
+  const cyclic = fixture("load-cycle-through-js");
+  writeFileSync(join(cyclic, "lib.rs"), lib("./src/DevToolsHook.js"));
+  mkdirSync(join(cyclic, "src", "shared"), { recursive: true });
+  writeFileSync(
+    join(cyclic, "src", "DevToolsHook.js"),
+    "import {priorityOf} from './shared/priority.js';\nimport {join} from 'node:path';\n\nexport const isDevToolsPresent = join('a', 'b') === 'a';\nexport {priorityOf};\n",
+  );
+  writeFileSync(
+    join(cyclic, "src", "shared", "priority.js"),
+    "import {NoEventPriority} from '../../priorities';\n\nexport function priorityOf() {\n  return NoEventPriority;\n}\n",
+  );
+  run([compiler, join(cyclic, "lib.rs"), "-o", join(cyclic, "lib.js"), ...withJs]);
+  expect(readFileSync(join(cyclic, "priorities.js"), "utf8")).toContain("export const NoEventPriority = 0;\n");
+  // Loaded first, as an app that imports it first loads it.
+  const { marked } = await import(join(cyclic, "lane.js"));
+  expect(marked(8)).toBe(2);
+  const { priorityOf } = await import(join(cyclic, "src", "DevToolsHook.js"));
+  expect(priorityOf()).toBe(0);
+
+  // A file that imports a module of the crate's that imports nothing back,
+  // a file of its own that imports nothing, a package and a style: its
+  // module loads first. The build read it, and the file it imports: of the
+  // manifest's sources, which Cargo is told of too.
+  const acyclic = fixture("load-order-through-js");
+  writeFileSync(join(acyclic, "lib.rs"), lib("./hook.js"));
+  writeFileSync(join(acyclic, "util.js"), "export const absent = false;\n");
+  writeFileSync(join(acyclic, "hook.css"), "");
+  writeFileSync(
+    join(acyclic, "hook.js"),
+    "import {absent} from './util.js';\nimport {LegacyRoot} from './tags.js';\nimport 'node:path';\nimport './hook.css';\n\nexport const isDevToolsPresent = absent && LegacyRoot === 0;\n",
+  );
+  const manifest = join(acyclic, "lib.manifest.json");
+  run([compiler, join(acyclic, "lib.rs"), "-o", join(acyclic, "lib.js"), "--manifest", manifest, ...withJs]);
+  expect(readFileSync(join(acyclic, "priorities.js"), "utf8")).toContain("export const NoEventPriority = NoLane;\n");
+  const { marked: unmarked } = await import(join(acyclic, "lane.js"));
+  expect(unmarked(8)).toBe(2);
+  const { NoEventPriority } = await import(join(acyclic, "priorities.js"));
+  expect(NoEventPriority).toBe(0);
+  const { sources } = JSON.parse(readFileSync(manifest, "utf8"));
+  expect(sources.map((file: string) => basename(file)).sort()).toEqual(["hook.js", "lib.rs", "util.js"]);
+
+  // One that imports a file that isn't there, which may be any; and one
+  // that isn't there itself.
+  const unknown = fixture("load-order-unknown-js");
+  writeFileSync(join(unknown, "lib.rs"), lib("./hook.js"));
+  writeFileSync(join(unknown, "hook.js"), "export {isDevToolsPresent} from './generated.js';\n");
+  run([compiler, join(unknown, "lib.rs"), "-o", join(unknown, "lib.js"), ...withJs]);
+  expect(readFileSync(join(unknown, "priorities.js"), "utf8")).toContain("export const NoEventPriority = 0;\n");
+  const absent = fixture("load-order-absent-js");
+  writeFileSync(join(absent, "lib.rs"), lib("./hook.js"));
+  run([compiler, join(absent, "lib.rs"), "-o", join(absent, "lib.js"), ...withJs]);
+  expect(readFileSync(join(absent, "priorities.js"), "utf8")).toContain("export const NoEventPriority = 0;\n");
+
+  // One imported for its effects, `js::import!`, that imports it back.
+  const effects = fixture("load-cycle-through-effects");
+  writeFileSync(join(effects, "lib.rs"), lib("./hook.js", '\n\n    js::import!("./setup.js");'));
+  writeFileSync(join(effects, "hook.js"), "export const isDevToolsPresent = false;\n");
+  writeFileSync(join(effects, "setup.js"), "import {NoEventPriority} from './priorities.js';\n\nglobalThis.priority = () => NoEventPriority;\n");
+  run([compiler, join(effects, "lib.rs"), "-o", join(effects, "lib.js"), ...withJs]);
+  expect(readFileSync(join(effects, "priorities.js"), "utf8")).toContain("export const NoEventPriority = 0;\n");
+  await import(join(effects, "lane.js"));
 });

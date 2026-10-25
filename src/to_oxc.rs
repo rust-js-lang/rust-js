@@ -20,12 +20,14 @@
 //! *Rust* file as `source_text`, and spans that are byte offsets into it.
 
 mod expressions;
+mod loads;
 mod statements;
 mod trailing;
 
 use self::trailing::{Inside, Trailing, own_line_before_value, with_inside_comments};
 
 pub(crate) use self::expressions::*;
+pub(crate) use self::loads::loaded_modules;
 
 use std::path::PathBuf;
 
