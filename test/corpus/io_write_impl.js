@@ -26,7 +26,7 @@ export function bufWrite(CAP) {
       flush: (arg0) => bufWrite_flush(arg0.value, CAP),
       writeAll: $ioWriteAll(write),
       writeFmt: $ioWriteFmt(write),
-      $drop: (buf) => {
+      $drop(buf) {
         bufDrop_drop(buf, CAP);
       },
     };

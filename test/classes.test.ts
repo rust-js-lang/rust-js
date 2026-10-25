@@ -338,3 +338,44 @@ Component.prototype.limit = 1;
   expect(js).not.toContain("What it's given");
   expect(js).not.toContain("A plain struct's doc");
 });
+
+// A field that's a closure of statements is a method (ADR 0879), but not
+// one that reads the class's `this`, which a method would read as the
+// object it's in: an arrow still, whose `this` is the class's.
+test("a field's closure that reads this stays an arrow", async () => {
+  const { js, dir } = compiled("class-this-in-a-field", `#[cfg_attr(rust_js, rust_js::class)]
+pub struct Counter {
+    pub n: u32,
+}
+
+pub struct Reader<'a> {
+    pub read: Box<dyn Fn(u32) -> u32 + 'a>,
+    pub plain: Box<dyn Fn(u32) -> u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Counter {
+    pub fn new(n: u32) -> Self {
+        Counter { n }
+    }
+
+    pub fn reader(&self) -> Reader<'_> {
+        Reader {
+            read: Box::new(move |k| {
+                let x = self.n + k;
+                x * 2
+            }),
+            plain: Box::new(move |k| {
+                let x = k + 1;
+                x * 2
+            }),
+        }
+    }
+}
+`);
+  expect(js).toContain("    read: (k) => {\n      const x = (this.n + k) >>> 0;\n");
+  expect(js).toContain("    plain(k) {\n      const x = (k + 1) >>> 0;\n");
+  const { Counter } = await import(join(dir, "lib.js"));
+  const reader = new Counter(4).reader();
+  expect([reader.read(1), reader.plain(1)]).toEqual([10, 4]);
+});

@@ -230,7 +230,7 @@ export function Player({ src, ref }) {
   useImperativeHandle(
     ref,
     () => ({
-      play: () => {
+      play() {
         const element = video.current;
         if (element) {
           element.play();

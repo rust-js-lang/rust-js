@@ -9,12 +9,12 @@ export function entry() {
 const tallyCounter = {
   get: tallyCounter_get,
   set: (arg0, arg1) => tallyCounter_set(arg0.value, arg1),
-  bump: (self, by) => {
+  bump(self, by) {
     const next = (tallyCounter_get(self.value) + by) | 0;
     tallyCounter_set(self.value, next);
     return next;
   },
-  replaceWith: (self, other) => {
+  replaceWith(self, other) {
     self.value = other;
   },
 };
@@ -28,12 +28,12 @@ function tallyCounter_set(tally, n) {
 const i32Counter = {
   get: i32Counter_get,
   set: i32Counter_set,
-  bump: (self, by) => {
+  bump(self, by) {
     const next = (i32Counter_get(self.value) + by) | 0;
     i32Counter_set(self, next);
     return next;
   },
-  replaceWith: (self, other) => {
+  replaceWith(self, other) {
     self.value = other;
   },
 };

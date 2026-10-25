@@ -7,7 +7,7 @@ export function entry() {
 }
 
 const TABLE = {
-  init: () => {
+  init() {
     console.log("making the table");
     return new Map([
       ["one", 1],
@@ -37,7 +37,7 @@ function main() {
 
   let calls = 0;
   const lazy = {
-    init: () => {
+    init() {
       calls = (calls + 1) | 0;
       return "made";
     },
@@ -86,7 +86,7 @@ function main() {
 
   // `()` looks like `None` in JS: what's made is still there.
   const unit = {
-    init: () => {
+    init() {
       console.log("unit");
     },
   };

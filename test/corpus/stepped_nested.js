@@ -8,7 +8,7 @@ export function entry() {
 
 const numbersSecond = {
   items: numbersSecond_items,
-  second: (self) => {
+  second(self) {
     const items = numbersSecond_items(self);
     const it = $iter(items);
     $next(it);

@@ -40,12 +40,12 @@ function main() {
     a,
     [1, 2, 3],
     {
-      extend: (collection, items) => {
+      extend(collection, items) {
         $extend(collection.value, items);
       },
     },
     {
-      extend: (collection, items) => {
+      extend(collection, items) {
         $extendMap(collection.value, $sortedKeys(items, $cmp), true);
       },
     },
@@ -55,12 +55,12 @@ function main() {
     b,
     [5, 4, 5],
     {
-      extend: (collection, items) => {
+      extend(collection, items) {
         $extend(collection.value, items);
       },
     },
     {
-      extend: (collection, items) => {
+      extend(collection, items) {
         $extendMap(collection.value, $sortedKeys(items, $cmp), true);
       },
     },
@@ -69,7 +69,7 @@ function main() {
   const value = [];
   const c = { value };
   fill(c, 2, {
-    extend: (collection, items) => {
+    extend(collection, items) {
       $extend(collection.value, items);
     },
   });
@@ -77,7 +77,7 @@ function main() {
   const v = [7];
   const c$1 = { value: v };
   fill(c$1, 3, {
-    extend: (collection, items) => {
+    extend(collection, items) {
       $extend(collection.value, items);
     },
   });
@@ -85,7 +85,7 @@ function main() {
   s += ["y", "z"].join("");
   const c$2 = { value: s };
   shout(c$2, {
-    extend: (collection, items) => {
+    extend(collection, items) {
       collection.value += Array.from(items).join("");
     },
   });

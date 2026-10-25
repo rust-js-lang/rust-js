@@ -10,7 +10,7 @@ const $_T__N_Array = new Map();
 
 function _T__N_Array(N, dropT) {
   return $traitImpl($_T__N_Array, [N, dropT], () => ({
-    $drop: (value) => {
+    $drop(value) {
       for (const item of value) {
         dropT?.(item);
       }

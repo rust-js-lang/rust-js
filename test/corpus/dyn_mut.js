@@ -13,7 +13,7 @@ function cDebug_fmt(c) {
 const cCounter = {
   bump: (arg0) => cCounter_bump(arg0.value),
   get: cCounter_get,
-  twice: (self) => {
+  twice(self) {
     cCounter_bump(self.value);
     cCounter_bump(self.value);
   },
@@ -28,7 +28,7 @@ function cCounter_get(c) {
 const i32Counter = {
   bump: i32Counter_bump,
   get: i32Counter_get,
-  twice: (self) => {
+  twice(self) {
     i32Counter_bump(self);
     i32Counter_bump(self);
   },

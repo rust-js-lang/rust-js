@@ -10,7 +10,7 @@ const $tExt = new WeakMap();
 
 function tExt(TIterator) {
   return $traitImpl($tExt, [TIterator], () => ({
-    second: (self) => {
+    second(self) {
       TIterator.next(self);
       return TIterator.next(self);
     },

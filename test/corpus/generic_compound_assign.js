@@ -69,7 +69,7 @@ function main() {
     `${total(
       [1, 2, 250],
       {
-        addAssign: (cell, b) => {
+        addAssign(cell, b) {
           cell.value = (cell.value + b) & 255;
         },
       },
@@ -83,12 +83,12 @@ function main() {
       4,
       5,
       {
-        mulAssign: (cell, b) => {
+        mulAssign(cell, b) {
           cell.value = Math.imul(cell.value, b);
         },
       },
       {
-        subAssign: (cell, b) => {
+        subAssign(cell, b) {
           cell.value = (cell.value - b) | 0;
         },
       },
@@ -98,12 +98,12 @@ function main() {
         2,
         0.25,
         {
-          mulAssign: (cell, b) => {
+          mulAssign(cell, b) {
             cell.value *= b;
           },
         },
         {
-          subAssign: (cell, b) => {
+          subAssign(cell, b) {
             cell.value -= b;
           },
         },
@@ -112,11 +112,11 @@ function main() {
   );
   console.log(
     `${shifted(1n, {
-      shlAssign: (cell, b) => {
+      shlAssign(cell, b) {
         cell.value = BigInt.asUintN(64, cell.value << (BigInt(b) & 63n));
       },
     })} ${joined("hello", {
-      addAssign: (cell, b) => {
+      addAssign(cell, b) {
         cell.value += b;
       },
     })}`,
@@ -125,7 +125,7 @@ function main() {
   ordered(
     log,
     {
-      addAssign: (cell, b) => {
+      addAssign(cell, b) {
         cell.value = (cell.value + b) | 0;
       },
     },

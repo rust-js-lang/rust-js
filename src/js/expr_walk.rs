@@ -10,9 +10,11 @@ impl Expr {
         let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
             for prop in props {
                 match prop {
-                    Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) | Prop::Setter(_, value) => {
-                        value.visit_vars(read)
-                    }
+                    Prop::Field(_, value)
+                    | Prop::Spread(value)
+                    | Prop::Getter(_, value)
+                    | Prop::Setter(_, value)
+                    | Prop::Method(_, value) => value.visit_vars(read),
                 }
             }
         };
@@ -105,6 +107,7 @@ impl Expr {
                     Prop::Field(name, value) => Some(Prop::Field(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Getter(name, value) => Some(Prop::Getter(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Setter(name, value) => Some(Prop::Setter(name.clone(), value.replace(with, callbacks)?)),
+                    Prop::Method(name, value) => Some(Prop::Method(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Spread(value) => Some(Prop::Spread(value.replace(with, callbacks)?)),
                 })
                 .collect::<Option<Vec<_>>>()
@@ -363,9 +366,11 @@ impl Expr {
     pub fn reads_only_vars(&self) -> bool {
         let props = |props: &[Prop]| {
             props.iter().all(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
-                    value.reads_only_vars()
-                }
+                Prop::Field(_, value)
+                | Prop::Getter(_, value)
+                | Prop::Setter(_, value)
+                | Prop::Method(_, value)
+                | Prop::Spread(value) => value.reads_only_vars(),
             })
         };
         match &self.kind {
@@ -527,9 +532,11 @@ impl Expr {
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
             ExprKind::Object(props, ..) => props.iter().any(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
-                    value.has_effects()
-                }
+                Prop::Field(_, value)
+                | Prop::Getter(_, value)
+                | Prop::Setter(_, value)
+                | Prop::Method(_, value)
+                | Prop::Spread(value) => value.has_effects(),
             }),
             ExprKind::Unary(op, a) => op.writes() || a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
@@ -570,6 +577,7 @@ impl Expr {
                         Prop::Field(_, value)
                         | Prop::Getter(_, value)
                         | Prop::Setter(_, value)
+                        | Prop::Method(_, value)
                         | Prop::Spread(value) => value.has_effects(),
                     })
                     || jsx.children.iter().any(Expr::has_effects)

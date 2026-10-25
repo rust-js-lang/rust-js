@@ -309,7 +309,9 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
 fn properties(props: &mut [Prop], visitor: &mut Visitor<'_>) {
     for prop in props {
         match prop {
-            Prop::Field(_, e) | Prop::Getter(_, e) | Prop::Setter(_, e) | Prop::Spread(e) => expr(e, visitor),
+            Prop::Field(_, e) | Prop::Getter(_, e) | Prop::Setter(_, e) | Prop::Method(_, e) | Prop::Spread(e) => {
+                expr(e, visitor)
+            }
         }
     }
 }

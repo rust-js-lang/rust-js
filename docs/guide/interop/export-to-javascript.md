@@ -605,7 +605,7 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 
 ```js
 export const NOOP = {
-  enqueueForceUpdate: () => {},
+  enqueueForceUpdate() {},
 };
 
 /** Base class helpers for the updating state of a component. */

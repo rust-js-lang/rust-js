@@ -16,7 +16,7 @@ function noisyDrop_drop(noisy) {
 
 const personGreet = {
   id: personGreet_id,
-  greet: (self) => {
+  greet(self) {
     const noisy = [1];
     if (noisy) {
       try {
@@ -30,7 +30,7 @@ const personGreet = {
       noisyDrop_drop(noisy);
     }
   },
-  parts: (self) => {
+  parts(self) {
     const first = [2];
     try {
       noisyDrop_drop([3]);
@@ -51,7 +51,7 @@ const personGreet = {
     }
     return result;
   },
-  lists: (self, long) => {
+  lists(self, long) {
     const dropList = (list) => {
       noisyDrop_drop(list.item);
       if (list.next != null) {

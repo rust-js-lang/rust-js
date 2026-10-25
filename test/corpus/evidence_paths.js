@@ -55,7 +55,7 @@ const $optionGetterT = new WeakMap();
 function optionGetterT(TClone) {
   return $traitImpl($optionGetterT, [TClone], () => ({
     get: (arg0) => optionGetterT_get(arg0, TClone),
-    twice: (self) => {
+    twice(self) {
       const x = optionGetterT_get(self, TClone);
       return [TClone.clone(x), x];
     },
@@ -93,7 +93,7 @@ const $pointMovableS = new WeakMap();
 function pointMovableS(SClone, SAdd) {
   return $traitImpl($pointMovableS, [SClone, SAdd], () => ({
     Positioned: () => pointPositionedS(SClone),
-    translate: (self, dx) => {
+    translate(self, dx) {
       const before = pointPositionedS_x(self.value, SClone);
       const x = SAdd.add(pointPositionedS_x(self.value, SClone), dx);
       pointPositionedS_setX(self.value, x, SClone);

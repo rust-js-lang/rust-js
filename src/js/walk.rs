@@ -134,7 +134,7 @@ macro_rules! walks {
                         let (Prop::Field(_, value)
                         | Prop::Spread(value)
                         | Prop::Getter(_, value)
-                        | Prop::Setter(_, value)) = prop;
+                        | Prop::Setter(_, value) | Prop::Method(_, value)) = prop;
                         value.$expr(f);
                     }
                 };

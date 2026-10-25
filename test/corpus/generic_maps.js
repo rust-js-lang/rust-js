@@ -37,7 +37,7 @@ const $tCounting = new WeakMap();
 
 function tCounting(TIterator) {
   return $traitImpl($tCounting, [TIterator], () => ({
-    countsBy: (self, f, KHash, KPartialEq, KMap) => {
+    countsBy(self, f, KHash, KPartialEq, KMap) {
       const counts = new KMap();
       $given(self, TIterator, true)
         .map((item) => f(item))
@@ -74,10 +74,10 @@ function main() {
       ["a", 3],
     ]),
     {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeStr(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeStr(state, item);
         }
@@ -117,10 +117,10 @@ function main() {
   const c = tCounting({ next: $next }).counts(
     $iter(["x", "y", "x"]),
     {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeStr(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeStr(state, item);
         }
@@ -138,10 +138,10 @@ function main() {
     ]),
     (p) => p[0],
     {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeU8(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         H.write(state, items);
       },
     },
@@ -165,10 +165,10 @@ function main() {
     $iter(["ab", "cd", "a"]),
     (s) => $byteLen(s),
     {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeUsize(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         H.write(
           state,
           items.flatMap((n) => $toBytes(n, 4, true)),

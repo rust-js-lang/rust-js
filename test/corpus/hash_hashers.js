@@ -118,12 +118,12 @@ function throughDyn(hasher, n) {
 function main() {
   console.log(
     `[${written([-3n, 4n, "x"], {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeI64(state, value[0]);
         H.writeU64(state, value[1]);
         H.writeU32(state, value[2].codePointAt(0));
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeI64(state, item[0]);
           H.writeU64(state, item[1]);
@@ -136,7 +136,7 @@ function main() {
   );
   console.log(
     `[${written([1, undefined], {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeLengthPrefix(state, value.length);
         for (const item of value) {
           if (item != null) {
@@ -147,7 +147,7 @@ function main() {
           }
         }
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
@@ -166,10 +166,10 @@ function main() {
   );
   console.log(
     `[${written("ab", {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeStr(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeStr(state, item);
         }
@@ -180,14 +180,14 @@ function main() {
   );
   console.log(
     `[${written([1, 2], {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeLengthPrefix(state, value.length);
         H.write(
           state,
           value.flatMap((n) => $toBytes(n, 2, true)),
         );
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeLengthPrefix(state, item.length);
           H.write(
@@ -207,10 +207,10 @@ function main() {
   );
   console.log(
     `${fnv("hello", {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeStr(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeStr(state, item);
         }

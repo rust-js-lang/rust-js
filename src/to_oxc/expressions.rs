@@ -407,7 +407,10 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let (name, value) = match prop {
             Prop::Spread(value) => return Some(JSXAttributeItem::new_spread_attribute(SPAN, self.expr(value), b)),
-            Prop::Field(name, value) | Prop::Getter(name, value) | Prop::Setter(name, value) => (name, value),
+            Prop::Field(name, value)
+            | Prop::Getter(name, value)
+            | Prop::Setter(name, value)
+            | Prop::Method(name, value) => (name, value),
         };
         let sp = span(value.span);
         let value = match &value.kind {
@@ -443,13 +446,16 @@ impl<'a> Cx<'a> {
         }
     }
 
-    /// `get name() { .. }` or `set name(value) { .. }`.
+    /// `get name() { .. }`, `set name(value) { .. }`, or a method, `name(a)
+    /// { .. }`, `async name() { .. }`.
     fn accessor(
         &self,
         kind: PropertyKind,
         name: &str,
         params: &[js::Pattern],
         body: &[js::Stmt],
+        is_async: bool,
+        at: js::Span,
     ) -> ObjectPropertyKind<'a> {
         let b = &self.b;
         let params = self.params(FormalParameterKind::FormalParameter, params);
@@ -459,7 +465,7 @@ impl<'a> Cx<'a> {
             FunctionType::FunctionExpression,
             None,
             false, // generator
-            false, // async
+            is_async,
             false, // declare
             None,  // type parameters
             None,  // this param
@@ -468,25 +474,51 @@ impl<'a> Cx<'a> {
             Some(ArenaBox::new_in(body, b)),
             b,
         );
-        let key = PropertyKey::new_static_identifier(SPAN, self.name(name), b);
-        ObjectPropertyKind::new_object_property(SPAN, kind, key, value, false, false, false, b)
+        let method = kind == PropertyKind::Init;
+        let key = if crate::names::is_identifier(name) {
+            PropertyKey::new_static_identifier(SPAN, self.name(name), b)
+        } else {
+            PropertyKey::new_string_literal(SPAN, self.name(name), None, b)
+        };
+        // A method starts where its arrow did, which a comment before the
+        // field is attached to, as a field's value (ADR 0708).
+        let at = match method {
+            true => Span::new(at.lo, at.lo),
+            false => SPAN,
+        };
+        ObjectPropertyKind::new_object_property(at, kind, key, value, method, false, false, b)
     }
 
     fn property(&self, prop: &Prop) -> ObjectPropertyKind<'a> {
         let b = &self.b;
         match prop {
             Prop::Setter(name, value) => match &value.kind {
-                ExprKind::Arrow(params, body) => self.accessor(PropertyKind::Set, name, params, body),
+                ExprKind::Arrow(params, body) => {
+                    self.accessor(PropertyKind::Set, name, params, body, false, value.span)
+                }
                 _ => unreachable!("a setter is an arrow of one parameter"),
             },
             Prop::Getter(name, value) => match &value.kind {
-                ExprKind::Arrow(params, body) => self.accessor(PropertyKind::Get, name, params, body),
+                ExprKind::Arrow(params, body) => {
+                    self.accessor(PropertyKind::Get, name, params, body, false, value.span)
+                }
                 _ => self.accessor(
                     PropertyKind::Get,
                     name,
                     &[],
                     &[js::StmtKind::Return(Some(value.clone())).at(value.span)],
+                    false,
+                    value.span,
                 ),
+            },
+            Prop::Method(name, value) => match &value.kind {
+                ExprKind::Arrow(params, body) => {
+                    self.accessor(PropertyKind::Init, name, params, body, false, value.span)
+                }
+                ExprKind::AsyncArrow(params, body) => {
+                    self.accessor(PropertyKind::Init, name, params, body, true, value.span)
+                }
+                _ => unreachable!("a method is an arrow"),
             },
             Prop::Field(name, value) => {
                 // Where its value starts, which a comment before the field

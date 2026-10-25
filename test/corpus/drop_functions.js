@@ -32,7 +32,7 @@ function list(n) {
 
 const sevenMake = {
   size: sevenMake_size,
-  make: (self) => {
+  make(self) {
     const dropList = (list) => {
       if (list.TAG === "Cons") {
         noisyDrop_drop(list._0);

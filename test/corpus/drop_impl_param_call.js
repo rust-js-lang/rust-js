@@ -15,7 +15,7 @@ const $wrapPeek = new WeakMap();
 function wrapPeek(TClone, dropT) {
   return $traitImpl($wrapPeek, [TClone, dropT], () => ({
     peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
-    $drop: (wrap) => {
+    $drop(wrap) {
       dropT?.(wrap[0]);
     },
   }));

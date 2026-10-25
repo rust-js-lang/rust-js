@@ -20,7 +20,7 @@ const $tExt = new WeakMap();
 
 function tExt(TIterator) {
   return $traitImpl($tExt, [TIterator], () => ({
-    widest: (self, SelfItemOrd) => {
+    widest(self, SelfItemOrd) {
       let best;
       for (const item of $iterator(self, TIterator.next, true)) {
         const value = $someValue(best);
@@ -30,7 +30,7 @@ function tExt(TIterator) {
       }
       return best;
     },
-    positionMax: (self, SelfItemOrd) => {
+    positionMax(self, SelfItemOrd) {
       const option = tExt({ next: $nextSome }).widest(
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], { next: $nextSome }),
         { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },

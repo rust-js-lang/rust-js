@@ -76,7 +76,7 @@ const Node = {
 
 export const nodeClone = {
   clone: nodeClone_clone,
-  $drop: (node) => {
+  $drop(node) {
     $weakDrop(node.me);
   },
 };
@@ -87,7 +87,7 @@ function nodeClone_clone(node) {
 
 export const nodePartialEq = {
   eq: nodePartialEq_eq,
-  $drop: (node) => {
+  $drop(node) {
     $weakDrop(node.me);
   },
 };
@@ -98,7 +98,7 @@ function nodePartialEq_eq(node, _) {
 
 export const nodeDebug = {
   fmt: nodeDebug_fmt,
-  $drop: (node) => {
+  $drop(node) {
     $weakDrop(node.me);
   },
 };

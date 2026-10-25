@@ -11,7 +11,7 @@ const $vecStableDeref = new WeakMap();
 export function vecStableDeref(dropT) {
   return $traitImpl($vecStableDeref, [dropT], () => ({
     Deref: () => ({ deref: (x) => x }),
-    $drop: (vec) => {
+    $drop(vec) {
       for (const item of vec) {
         dropT?.(item);
       }

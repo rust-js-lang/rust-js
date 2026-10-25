@@ -130,7 +130,7 @@ const $eitherDeref = new WeakMap();
 export function eitherDeref(LDeref, RDeref, dropL, dropR) {
   return $traitImpl($eitherDeref, [LDeref, RDeref, dropL, dropR], () => ({
     deref: (arg0) => eitherDeref_deref(arg0, LDeref, RDeref, dropL, dropR),
-    $drop: (either) => {
+    $drop(either) {
       if (either.TAG === "Left") {
         dropL?.(either._0);
       }
@@ -150,7 +150,7 @@ export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
   return $traitImpl($eitherDerefMut, [LDerefMut, RDerefMut, dropL, dropR], () => ({
     Deref: () => eitherDeref(LDerefMut.Deref(), RDerefMut.Deref(), dropL, dropR),
     derefMut: (arg0) => eitherDerefMut_derefMut(arg0.value, LDerefMut, RDerefMut, dropL, dropR),
-    $drop: (either) => {
+    $drop(either) {
       if (either.TAG === "Left") {
         dropL?.(either._0);
       }

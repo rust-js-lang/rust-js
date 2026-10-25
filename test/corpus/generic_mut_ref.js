@@ -13,7 +13,7 @@ function cDebug_fmt(c) {
 const i32Bump = {
   bump: i32Bump_bump,
   get: i32Bump_get,
-  bumpedTwice: (self) => {
+  bumpedTwice(self) {
     i32Bump_bump(self);
     i32Bump_bump(self);
     return i32Bump_get(self.value);
@@ -29,7 +29,7 @@ function i32Bump_get(self) {
 const cBump = {
   bump: (arg0) => cBump_bump(arg0.value),
   get: cBump_get,
-  bumpedTwice: (self) => {
+  bumpedTwice(self) {
     cBump_bump(self.value);
     cBump_bump(self.value);
     return cBump_get(self.value);

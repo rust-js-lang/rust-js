@@ -19,7 +19,7 @@ function main() {
   const asFloat = $unionField(bits, "float", [], {
     int: (value) => $floatFromBits(value, 4),
     bytes: (value) => $floatFromBits($fromBytes(value, 4, true, false), 4),
-    halves: (value) => {
+    halves(value) {
       const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
       return $floatFromBits($fromBytes(bytes, 4, true, false), 4);
     },
@@ -30,14 +30,14 @@ function main() {
     halves: (value) => [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)],
   });
   const asHalves = $unionField(bits, "halves", [], {
-    int: (value) => {
+    int(value) {
       const bytes = $toBytes(value, 4, true);
       return [
         $fromBytes(bytes.slice(0, 2), 2, true, false),
         $fromBytes(bytes.slice(2, 4), 2, true, false),
       ];
     },
-    float: (value) => {
+    float(value) {
       const bytes = $toBytes($floatToBits(value, 4), 4, true);
       return [
         $fromBytes(bytes.slice(0, 2), 2, true, false),
@@ -56,7 +56,7 @@ function main() {
     `0x${$unionField(bits, "int", [], {
       float: (value) => $floatToBits(value, 4),
       bytes: (value) => $fromBytes(value, 4, true, false),
-      halves: (value) => {
+      halves(value) {
         const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
         return $fromBytes(bytes, 4, true, false);
       },
@@ -71,20 +71,20 @@ function main() {
     `0x${$unionField(bits, "int", [], {
       float: (value) => $floatToBits(value, 4),
       bytes: (value) => $fromBytes(value, 4, true, false),
-      halves: (value) => {
+      halves(value) {
         const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
         return $fromBytes(bytes, 4, true, false);
       },
     }).toString(16)} ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(
       $unionField(bits, "halves", [], {
-        int: (value) => {
+        int(value) {
           const bytes = $toBytes(value, 4, true);
           return [
             $fromBytes(bytes.slice(0, 2), 2, true, false),
             $fromBytes(bytes.slice(2, 4), 2, true, false),
           ];
         },
-        float: (value) => {
+        float(value) {
           const bytes = $toBytes($floatToBits(value, 4), 4, true);
           return [
             $fromBytes(bytes.slice(0, 2), 2, true, false),
@@ -102,7 +102,7 @@ function main() {
   const wide = { whole: 1234605616436508552n };
   console.log(
     `[${$unionField(wide, "parts", [], {
-      whole: (value) => {
+      whole(value) {
         const bytes = $toBytes(value, 8, true);
         return [
           $fromBytes(bytes.slice(0, 4), 4, true, false),
@@ -112,11 +112,11 @@ function main() {
     })
       .slice()
       .join(", ")}] 0x${$unionField(wide, "small", [], {
-      whole: (value) => {
+      whole(value) {
         const bytes = $toBytes(value, 8, true);
         return bytes[0];
       },
-      parts: (value) => {
+      parts(value) {
         const bytes = [...$toBytes(value[0], 4, true), ...$toBytes(value[1], 4, true)];
         return bytes[0];
       },
@@ -125,7 +125,7 @@ function main() {
   $unionSet(wide, "parts", [1, 2]);
   console.log(
     `0x${$unionField(wide, "whole", [], {
-      parts: (value) => {
+      parts(value) {
         const bytes = [...$toBytes(value[0], 4, true), ...$toBytes(value[1], 4, true)];
         return $fromBytes(bytes, 8, true, false);
       },
@@ -136,21 +136,21 @@ function main() {
   // union-overwrite.rs does: the union's bytes change.
   const over = { word: 0xdede };
   $unionField(over, "pair", [], {
-    word: (value) => {
+    word(value) {
       const bytes = $toBytes(value, 2, true);
       return [bytes[0], bytes[1]];
     },
   })[0] = 0xbe;
   console.log(
     `0x${$unionField(over, "word", [], {
-      pair: (value) => {
+      pair(value) {
         const bytes = [value[0], value[1]];
         return $fromBytes(bytes, 2, true, false);
       },
     }).toString(16)}`,
   );
   $unionField(wide, "parts", [], {
-    whole: (value) => {
+    whole(value) {
       const bytes = $toBytes(value, 8, true);
       return [
         $fromBytes(bytes.slice(0, 4), 4, true, false),
@@ -160,7 +160,7 @@ function main() {
   })[1] = 0xaa;
   console.log(
     `0x${$unionField(wide, "whole", [], {
-      parts: (value) => {
+      parts(value) {
         const bytes = [...$toBytes(value[0], 4, true), ...$toBytes(value[1], 4, true)];
         return $fromBytes(bytes, 8, true, false);
       },

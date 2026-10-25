@@ -1053,6 +1053,38 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
     })
 }
 
+/// A field that's a closure of statements, `then: (resolve, reject) => {
+/// .. }`, as a method, `then(resolve, reject) { .. }`, as React's ReactAct
+/// writes its thenable (ADR 0879). An arrow and a method differ only in
+/// their `this` (and `arguments`, which no Rust reads), so not one that
+/// reads `this`, a class's. One named `__proto__` is a property as any
+/// method is: only `__proto__: value` sets the prototype.
+fn method(prop: &Prop) -> Option<Prop> {
+    let Prop::Field(name, value) = prop else {
+        return None;
+    };
+    let (ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body)) = &value.kind else {
+        return None;
+    };
+    let mut this = false;
+    js::each_expr(body, &mut |e| this |= matches!(&e.kind, ExprKind::This));
+    if this {
+        return None;
+    }
+    // One of a value alone, `double: (x) => x * 2`, reads as it is, as a
+    // person writes a WebAssembly import's.
+    if matches!(
+        body.as_slice(),
+        [Stmt {
+            kind: StmtKind::Return(Some(_)),
+            ..
+        }]
+    ) {
+        return None;
+    }
+    Some(Prop::Method(name.clone(), value.clone()))
+}
+
 fn expr(e: &mut Expr) {
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
@@ -1176,7 +1208,7 @@ fn expr(e: &mut Expr) {
             // An attribute that's `undefined`, a `None` say, is none, as JSX
             // leaves it out.
             jsx.props.retain(|p| {
-                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) if matches!(value.kind, ExprKind::Undefined))
+                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Method(_, value) if matches!(value.kind, ExprKind::Undefined))
             });
             for prop in &mut jsx.props {
                 match prop {
@@ -1190,7 +1222,9 @@ fn expr(e: &mut Expr) {
                         }
                         expr(value);
                     }
-                    Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => expr(value),
+                    Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Method(_, value) | Prop::Spread(value) => {
+                        expr(value)
+                    }
                 }
             }
             for child in &mut jsx.children {
@@ -1285,10 +1319,16 @@ fn expr(e: &mut Expr) {
                         if matches!(value.kind, ExprKind::Undefined) && !layout.commented.contains(key))
                 });
             }
-            for prop in props {
-                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) =
-                    prop;
+            for prop in props.iter_mut() {
+                let (Prop::Field(_, value)
+                | Prop::Getter(_, value)
+                | Prop::Setter(_, value)
+                | Prop::Method(_, value)
+                | Prop::Spread(value)) = prop;
                 expr(value);
+                if let Some(method) = method(prop) {
+                    *prop = method;
+                }
             }
         }
         // Every variant with an expression in it is above, so a rule of

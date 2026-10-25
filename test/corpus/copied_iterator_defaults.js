@@ -37,17 +37,17 @@ const $tSkipping = new WeakMap();
 
 function tSkipping(TIterator, dropT, dropTItem) {
   return $traitImpl($tSkipping, [TIterator, dropT, dropTItem], () => ({
-    skipOne: (self) => {
+    skipOne(self) {
       const next = TIterator.next(self);
       if (next != null) {
         dropTItem?.($someValue(next));
       }
     },
-    skipTwo: (self) => {
+    skipTwo(self) {
       tSkipping(TIterator, dropT, dropTItem).skipOne(self);
       tSkipping(TIterator, dropT, dropTItem).skipOne(self);
     },
-    second: (self) => {
+    second(self) {
       try {
         const next = TIterator.next(self);
         if (next != null) {
@@ -66,7 +66,7 @@ const $tTotals = new WeakMap();
 
 function tTotals(TIterator, dropT) {
   return $traitImpl($tTotals, [TIterator, dropT], () => ({
-    total: (self) => {
+    total(self) {
       const iter = self;
       const result = $given(iter, TIterator).reduce((a, b) => (a + b) & 255, 0);
       if (TIterator.fold === undefined) {
@@ -74,13 +74,13 @@ function tTotals(TIterator, dropT) {
       }
       return result;
     },
-    doubled: (self) => {
+    doubled(self) {
       const iter = $closing($given(self, TIterator), dropT).map((x) => (x * 2) & 255);
       const result = iter.toArray();
       iter.return();
       return result;
     },
-    looped: (self) => {
+    looped(self) {
       let n = 0;
       const iter = self;
       while (true) {
@@ -113,17 +113,17 @@ const $holderPeeled = new WeakMap();
 
 function holderPeeled(IIterator, dropI, dropIItem) {
   return $traitImpl($holderPeeled, [IIterator, dropI, dropIItem], () => ({
-    dropFirst: (self) => {
+    dropFirst(self) {
       const next = holderIterator_next(self, IIterator, dropI, dropIItem);
       if (next != null) {
         dropIItem?.($someValue(next));
       }
     },
-    dropTwo: (self) => {
+    dropTwo(self) {
       holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
       holderPeeled(IIterator, dropI, dropIItem).dropFirst(self);
     },
-    $drop: (holder) => {
+    $drop(holder) {
       dropI?.(holder[0]);
     },
   }));
@@ -134,7 +134,7 @@ const $holderNamed = new WeakMap();
 function holderNamed(dropI, dropIItem) {
   return $traitImpl($holderNamed, [dropI, dropIItem], () => ({
     name: (self) => "holder",
-    $drop: (holder) => {
+    $drop(holder) {
       dropI?.(holder[0]);
     },
   }));

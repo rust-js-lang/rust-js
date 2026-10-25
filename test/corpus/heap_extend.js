@@ -27,7 +27,7 @@ function main() {
   $heapExtend(heap, $sortedKeys(new Set([60]), $cmp), $cmp);
   const e = { value: heap };
   add(e, {
-    extend: (collection, items) => {
+    extend(collection, items) {
       $heapExtend(collection.value, items, $cmp);
     },
   });

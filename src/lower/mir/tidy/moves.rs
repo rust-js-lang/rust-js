@@ -367,7 +367,11 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
         }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => in_order(&mut std::iter::once(&**f).chain(args)),
         ExprKind::Object(props, ..) => in_order(&mut props.iter().map(|p| {
-            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
+            let (js::Prop::Field(_, v)
+            | js::Prop::Getter(_, v)
+            | js::Prop::Setter(_, v)
+            | js::Prop::Method(_, v)
+            | js::Prop::Spread(v)) = p;
             v
         })),
         ExprKind::Jsx(jsx) => {
@@ -376,7 +380,11 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
                 _ => None,
             };
             let props = jsx.props.iter().map(|p| {
-                let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
+                let (js::Prop::Field(_, v)
+                | js::Prop::Getter(_, v)
+                | js::Prop::Setter(_, v)
+                | js::Prop::Method(_, v)
+                | js::Prop::Spread(v)) = p;
                 v
             });
             // JS's JSX runtime makes `key` after the children, and

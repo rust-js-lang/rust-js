@@ -30,7 +30,7 @@ const Counter = {
         },
       },
       data: len,
-      f: (len, selfLen) => {
+      f(len, selfLen) {
         selfLen.value.value = len;
       },
     };

@@ -745,6 +745,9 @@ pub enum Prop {
     /// `set name(v) { .. }`, of an arrow that takes one: a handle's on a
     /// place, which preparation writes of `Handle` (ADR 0099).
     Setter(String, Expr),
+    /// `name(a, b) { .. }`, of an arrow that reads no `this`: a field that's
+    /// a closure, which preparation writes of a `Field` (ADR 0879).
+    Method(String, Expr),
 }
 
 #[derive(Clone, Copy, PartialEq)]

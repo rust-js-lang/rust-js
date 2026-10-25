@@ -42,7 +42,7 @@ function loneDrop_drop(lone) {
 
 export const probeClone = {
   clone: probeClone_clone,
-  $drop: (probe) => {
+  $drop(probe) {
     $weakDrop(probe.me);
   },
 };

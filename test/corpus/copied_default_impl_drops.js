@@ -50,13 +50,13 @@ const $holderSkipping = new WeakMap();
 
 function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
   return $traitImpl($holderSkipping, [IIterator, IDefault, dropI, dropIItem], () => ({
-    skipOne: (self) => {
+    skipOne(self) {
       const next = holderIterator_next(self, IIterator, IDefault, dropI, dropIItem);
       if (next != null) {
         dropIItem?.($someValue(next));
       }
     },
-    eat: (self) => {
+    eat(self) {
       const dropSelf = (holder) => {
         dropI?.(holder[0]);
       };
@@ -66,7 +66,7 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
         dropSelf?.(self);
       }
     },
-    eatAfterOne: (self) => {
+    eatAfterOne(self) {
       const dropSelf = (holder) => {
         dropI?.(holder[0]);
       };
@@ -78,11 +78,11 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
       }
       holderSkipping(IIterator, IDefault, dropI, dropIItem).eat(self);
     },
-    skipTwo: (self) => {
+    skipTwo(self) {
       holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
       holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
     },
-    $drop: (holder) => {
+    $drop(holder) {
       dropI?.(holder[0]);
     },
   }));
@@ -93,7 +93,7 @@ const $holderSkip = new WeakMap();
 function holderSkip(IIterator, dropI, dropIItem) {
   return $traitImpl($holderSkip, [IIterator, dropI, dropIItem], () => ({
     skip: (arg0) => holderSkip_skip(arg0.value, IIterator, dropI, dropIItem),
-    $drop: (holder) => {
+    $drop(holder) {
       dropI?.(holder[0]);
     },
   }));

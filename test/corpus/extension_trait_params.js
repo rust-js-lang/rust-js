@@ -10,7 +10,7 @@ const $iSorted = new WeakMap();
 
 function iSorted(IIterator) {
   return $traitImpl($iSorted, [IIterator], () => ({
-    sorted: (self, SelfItemOrd) => {
+    sorted(self, SelfItemOrd) {
       const v = $given(self, IIterator, true).toArray();
       $sort(v, SelfItemOrd.cmp);
       return v;
@@ -18,7 +18,7 @@ function iSorted(IIterator) {
   }));
 }
 const countSummed = {
-  total: (self) => {
+  total(self) {
     let n = 0;
     let x;
     while ((x = countIterator_next(self)) != null) {
@@ -28,7 +28,7 @@ const countSummed = {
   },
 };
 const intoIterSummed = {
-  total: (self) => {
+  total(self) {
     let n = 0;
     let x;
     while ((x = $next(self)) != null) {

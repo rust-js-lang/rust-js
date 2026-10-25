@@ -16,7 +16,7 @@ const $wrapPeek = new WeakMap();
 function wrapPeek(TClone, dropT) {
   return $traitImpl($wrapPeek, [TClone, dropT], () => ({
     peek: (arg0) => wrapPeek_peek(arg0, TClone, dropT),
-    $drop: (wrap) => {
+    $drop(wrap) {
       dropT?.(wrap[0]);
     },
   }));
@@ -38,13 +38,13 @@ const $wrapPass = new WeakMap();
 
 function wrapPass(dropT) {
   return $traitImpl($wrapPass, [dropT], () => ({
-    pass: (self) => {
+    pass(self) {
       const dropSelf = (wrap) => {
         dropT?.(wrap[0]);
       };
       helperTaking(self, dropSelf);
     },
-    $drop: (wrap) => {
+    $drop(wrap) {
       dropT?.(wrap[0]);
     },
   }));
@@ -64,13 +64,13 @@ const $wrapTake = new WeakMap();
 
 function wrapTake(dropT) {
   return $traitImpl($wrapTake, [dropT], () => ({
-    take: (self) => {
+    take(self) {
       const dropSelf = (wrap) => {
         dropT?.(wrap[0]);
       };
       dropSelf?.(self);
     },
-    $drop: (wrap) => {
+    $drop(wrap) {
       dropT?.(wrap[0]);
     },
   }));
@@ -80,14 +80,14 @@ const $pairTake = new WeakMap();
 
 function pairTake(dropA, dropB) {
   return $traitImpl($pairTake, [dropA, dropB], () => ({
-    take: (self) => {
+    take(self) {
       const dropSelf = (pair) => {
         dropA?.(pair[0]);
         dropB?.(pair[1]);
       };
       dropSelf?.(self);
     },
-    $drop: (pair) => {
+    $drop(pair) {
       dropA?.(pair[0]);
       dropB?.(pair[1]);
     },
@@ -95,7 +95,7 @@ function pairTake(dropA, dropB) {
 }
 
 const loudTake = {
-  take: (self) => {
+  take(self) {
     loudDrop_drop?.(self);
   },
   $drop: loudDrop_drop,

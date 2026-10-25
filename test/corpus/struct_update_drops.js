@@ -10,7 +10,7 @@ function noisyDrop_drop(noisy) {
 
 export const partialDefault = {
   default: partialDefault_default,
-  $drop: (partial) => {
+  $drop(partial) {
     noisyDrop_drop(partial.x);
     noisyDrop_drop(partial.y);
   },

@@ -152,7 +152,7 @@ function groupsFirstOfNext(IIterator, dropI, dropIItem, dropIItemItem, dropIItem
           dropIItemItem,
           dropIItemIntoIter,
         ),
-      $drop: (groups) => {
+      $drop(groups) {
         dropI?.(groups[0]);
       },
     }),
@@ -226,7 +226,7 @@ function main() {
   const all = concat(
     [[[10]], [[11], [12]]],
     {
-      extend: (collection, items) => {
+      extend(collection, items) {
         $extend(collection.value, items);
       },
     },

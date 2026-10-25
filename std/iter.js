@@ -812,7 +812,7 @@ export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSe
       hint: (iterator) => revIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
       nth: (iterator, n) =>
         revIterator_nth(iterator, n, SelfIterator, SelfDoubleEndedIterator, dropSelf, dropSelfItem),
-      close: (iterator) => {
+      close(iterator) {
         dropSelf?.(iterator.iter);
       },
     },

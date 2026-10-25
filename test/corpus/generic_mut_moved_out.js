@@ -12,7 +12,7 @@ function stackDebug_fmt(stack) {
 
 const stackDrain = {
   Default: () => ({ default: () => ({ items: [] }) }),
-  drainOut: (self) => {
+  drainOut(self) {
     const old = self.value;
     self.value = stackDrain.Default().default();
     return old;

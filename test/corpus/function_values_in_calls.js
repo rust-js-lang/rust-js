@@ -28,7 +28,7 @@ function tally(total, lens) {
 const i32Step = {
   add: i32Step_add,
   now: i32Step_now,
-  step: (self, by) => {
+  step(self, by) {
     i32Step_add(self, by);
     return i32Step_now(self.value);
   },

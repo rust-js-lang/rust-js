@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "method-printed-as-a-function-field",
+    breaks: "a field's method is printed `then: function (k) { .. }`, not `then(k) { .. }`",
+    file: "src/to_oxc/expressions.rs",
+    find: "        let method = kind == PropertyKind::Init;\n",
+    replace: "        let method = false;\n",
+    tests: ["test/classes.test.ts", "-t", "reads this stays"],
+  },
+  {
     name: "chain-member-outside",
     breaks: "a member of a `?.` link is outside its chain, `(o?.inner).v`",
     file: "src/to_oxc/expressions.rs",

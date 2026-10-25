@@ -345,7 +345,42 @@ export function mixed() {
 }
 ```
 
-A closure, `Box<dyn Fn(u32) -> u32>`, is a JS function, not a pair.
+A closure, `Box<dyn Fn(u32) -> u32>`, is a JS function, not a pair. A
+field that's a closure of statements is a method, `then(resolve,
+reject) { .. }`, as JS writes a thenable; one of a value alone stays an
+arrow, `double: (x) => x * 2`. A method and an arrow differ only in
+their `this`, which a Rust closure never reads; one that reads a class's
+`this` stays an arrow
+([ADR 0879](../../decisions/0879-a-field-of-statements-is-a-method.md)):
+
+```rust
+pub struct Thenable {
+    pub then: Box<dyn Fn(u32) -> u32>,
+    pub double: Box<dyn Fn(u32) -> u32>,
+}
+
+pub fn thenable(k: u32) -> Thenable {
+    Thenable {
+        then: Box::new(move |n| {
+            let sum = n + k;
+            sum * 2
+        }),
+        double: Box::new(|n| n * 2),
+    }
+}
+```
+
+```js
+export function thenable(k) {
+  return {
+    then(n) {
+      const sum = (n + k) >>> 0;
+      return (sum * 2) >>> 0;
+    },
+    double: (n) => (n * 2) >>> 0,
+  };
+}
+```
 
 ## Derives: `Debug`, `Clone`, `PartialEq`, `Default`
 

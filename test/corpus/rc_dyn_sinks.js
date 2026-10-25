@@ -35,7 +35,7 @@ function counterSink_total(counter) {
 const loudSink = {
   take: loudSink_take,
   total: loudSink_total,
-  $drop: (loud) => {
+  $drop(loud) {
     loudDrop_drop({ value: loud });
   },
 };

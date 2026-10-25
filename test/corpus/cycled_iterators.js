@@ -35,7 +35,7 @@ function genIterator_next(gen) {
 
 export const counterClone = {
   clone: counterClone_clone,
-  $drop: (counter) => {
+  $drop(counter) {
     loudDrop_drop(counter.tag);
   },
 };

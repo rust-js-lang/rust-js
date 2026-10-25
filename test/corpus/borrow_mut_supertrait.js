@@ -9,7 +9,7 @@ export function entry() {
 export const vecPoolIndex = {
   BorrowMut: () => ({ borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) }),
   len: (self) => ({ borrow: (value) => value }).borrow(self).length,
-  first: (self) => {
+  first(self) {
     const value$1 = {
       borrowMut: (value) => value,
       Borrow: () => ({ borrow: (value) => value }),
@@ -29,7 +29,7 @@ export function _usize__K_PoolIndex(K) {
       Borrow: () => ({ borrow: (value) => value }),
     }),
     len: (self) => ({ borrow: (value) => value }).borrow(self).length,
-    first: (self) => {
+    first(self) {
       const value$1 = {
         borrowMut: (value) => value,
         Borrow: () => ({ borrow: (value) => value }),

@@ -21,7 +21,7 @@ const $tCounting = new WeakMap();
 
 function tCounting(TIterator, dropT, dropTItem) {
   return $traitImpl($tCounting, [TIterator, dropT, dropTItem], () => ({
-    counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) => {
+    counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {
       let counts;
       try {
         counts = new SelfItemMap();
@@ -77,10 +77,10 @@ function main() {
   const words = tCounting({ next: $next }).counts(
     $iter(["x", "y", "x"]),
     {
-      hash: (value, state, H) => {
+      hash(value, state, H) {
         H.writeStr(state, value);
       },
-      hashSlice: (items, state, H) => {
+      hashSlice(items, state, H) {
         for (const item of items) {
           H.writeStr(state, item);
         }

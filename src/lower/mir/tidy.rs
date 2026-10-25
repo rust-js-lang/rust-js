@@ -445,7 +445,11 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
 fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
     let props = |props: &[js::Prop]| {
         props.iter().all(|p| {
-            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
+            let (js::Prop::Field(_, v)
+            | js::Prop::Getter(_, v)
+            | js::Prop::Setter(_, v)
+            | js::Prop::Method(_, v)
+            | js::Prop::Spread(v)) = p;
             !matches!(p, js::Prop::Spread(_)) && inert_element(v, changing)
         })
     };

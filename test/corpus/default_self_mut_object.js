@@ -5,7 +5,7 @@ export function entry() {
 }
 
 const xCh = {
-  change: (self) => {
+  change(self) {
     xCh_set(self, 5);
     return self;
   },
@@ -16,7 +16,7 @@ function xCh_set(x, a) {
 }
 
 const i32Ch = {
-  change: (self) => {
+  change(self) {
     const self$1 = { value: self };
     i32Ch_set(self$1, 5);
     self = self$1.value;

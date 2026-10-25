@@ -19,7 +19,7 @@ export function entry() {
 
 export const nodeClone = {
   clone: nodeClone_clone,
-  $drop: (node) => {
+  $drop(node) {
     $weakDrop(node.me);
   },
 };

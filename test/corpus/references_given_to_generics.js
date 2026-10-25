@@ -82,10 +82,10 @@ function main() {
   console.log(
     `${
       hashed(a, {
-        hash: (value, state, H) => {
+        hash(value, state, H) {
           kHash.hash(value, state, H);
         },
-        hashSlice: (items, state, H) => {
+        hashSlice(items, state, H) {
           for (const item of items) {
             kHash.hash(item, state, H);
           }

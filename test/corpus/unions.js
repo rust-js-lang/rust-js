@@ -24,7 +24,7 @@ const Value = {
   show(value) {
     if (value.kind === "Int") {
       return `int ${$unionField(value.number, "int", [], {
-        float: (value) => {
+        float(value) {
           const bytes = $toBytes($floatToBits(value, 8), 8, true);
           return $fromBytes(bytes.slice(0, 4), 4, true, true);
         },
@@ -36,7 +36,7 @@ const Value = {
     if (value.kind === "Int") {
       if (
         $unionField(value.number, "int", [], {
-          float: (value) => {
+          float(value) {
             const bytes = $toBytes($floatToBits(value, 8), 8, true);
             return $fromBytes(bytes.slice(0, 4), 4, true, true);
           },
@@ -72,12 +72,12 @@ function main() {
   $index(values, 0).kind = "Int";
   console.log(
     `${$unionField(copy.number, "int", [], {
-      float: (value) => {
+      float(value) {
         const bytes = $toBytes($floatToBits(value, 8), 8, true);
         return $fromBytes(bytes.slice(0, 4), 4, true, true);
       },
     })} ${$unionField($index(values, 0).number, "int", [], {
-      float: (value) => {
+      float(value) {
         const bytes = $toBytes($floatToBits(value, 8), 8, true);
         return $fromBytes(bytes.slice(0, 4), 4, true, true);
       },

@@ -3,6 +3,31 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "field-method-reads-this",
+    breaks: "a field's closure that reads a class's `this` is a method, `read(k) { this.n }`, whose `this` is the object it's in",
+    file: "src/prepare.rs",
+    find: "    if this {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "reads this stays"],
+  },
+  {
+    name: "field-method-never",
+    breaks: "a field that's a closure of statements stays an arrow, `then: (resolve, reject) => { .. }`, not ReactAct's `then(resolve, reject) { .. }`",
+    file: "src/prepare.rs",
+    find: "                if let Some(method) = method(prop) {",
+    replace: "                if let Some(method) = method(prop).filter(|_| false) {",
+    tests: ["test/classes.test.ts", "-t", "reads this stays"],
+  },
+  {
+    name: "field-method-of-a-value",
+    breaks: "a field of a closure of a value alone, `double: (x) => x * 2`, is a method of a `return`, `double(x) { return x * 2; }`",
+    file: "src/prepare.rs",
+    find: "        return None;\n    }\n    Some(Prop::Method(name.clone(), value.clone()))",
+    replace: "    }\n    Some(Prop::Method(name.clone(), value.clone()))",
+    tests: ["test/snapshots.test.ts", "-t", "async"],
+    snapshots: true,
+  },
+  {
     name: "fallen-held-kept",
     breaks: "`const type = a || b || undefined; return type ?? \"Object\";` stays, not `a || b || \"Object\"`",
     file: "src/prepare.rs",

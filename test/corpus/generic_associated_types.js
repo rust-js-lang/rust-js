@@ -20,7 +20,7 @@ export function entry() {
 const shelfContainer = {
   ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
   items: shelfContainer_items,
-  last: (self) => {
+  last(self) {
     const items = shelfContainer_items(self).toArray();
     return $someAt(items, items.length - 1);
   },
@@ -32,7 +32,7 @@ function shelfContainer_items(shelf) {
 const countsContainer = {
   ItemDebug: () => ({ fmt: (value) => String(value) }),
   items: countsContainer_items,
-  last: (self) => {
+  last(self) {
     const items = countsContainer_items(self).toArray();
     return $someAt(items, items.length - 1);
   },
@@ -44,7 +44,7 @@ function countsContainer_items(counts) {
 const countdownContainer = {
   ItemDebug: () => ({ fmt: (value) => String(value) }),
   items: countdownContainer_items,
-  last: (self) => {
+  last(self) {
     const items = countdownContainer_items(self).toArray();
     return $someAt(items, items.length - 1);
   },

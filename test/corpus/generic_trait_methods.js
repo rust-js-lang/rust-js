@@ -8,7 +8,7 @@ export function entry() {
 
 const circleShape = {
   area: circleShape_area,
-  describe: (self, label, TDisplay) => {
+  describe(self, label, TDisplay) {
     const arg = circleShape_area(self);
     return `${TDisplay.fmt(label)}: ${$displayF64(arg)}`;
   },
