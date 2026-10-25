@@ -62,16 +62,26 @@ fn forwarding_functions(module: &mut js::Module) {
                 _ => None,
             })
             .collect();
-        let variable = match (names, function.body.as_slice()) {
-            (
-                Some(names),
-                [
-                    Stmt {
-                        kind: StmtKind::Return(Some(call)),
-                        ..
-                    },
-                ],
-            ) => match &call.kind {
+        // Its call's value, `return GET_TIME(n);`, or none, `QUEUE(callback);`
+        // of a function of no value.
+        let (call, returns) = match function.body.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(call)),
+                    ..
+                },
+            ] => (Some(call), true),
+            [
+                Stmt {
+                    kind: StmtKind::Expr(call),
+                    ..
+                },
+            ] => (Some(call), false),
+            _ => (None, false),
+        };
+        let arity = names.as_ref().map_or(0, Vec::len);
+        let variable = match (names, call) {
+            (Some(names), Some(call)) => match &call.kind {
                 ExprKind::Call(callee, args)
                     if args.len() == names.len()
                         && (args.iter().zip(&names)).all(|(a, n)| matches!(&a.kind, ExprKind::Var(v) if v == n)) =>
@@ -136,7 +146,17 @@ fn forwarding_functions(module: &mut js::Module) {
             }
             _ => {}
         }
-        if given.is_empty() || !given.iter().all(arrows) {
+        // Or only called, by the crate's own code, by its parameters: a
+        // function of a value gives the variable's, and one of none gives
+        // `undefined`, which no caller reads, a `()` being `undefined`
+        // where it's read; and none gives it more than its parameters, a
+        // JS function's too. React's ReactAct has `const
+        // queueSeveralMicrotasks = .. ? (callback) => { .. } :
+        // queueMacrotask;` (ADR 0610, amended).
+        let called_only = !export
+            && !module.aliases.iter().any(|(local, _)| *local == name)
+            && only_called(&module.items, i, &name, arity);
+        if given.is_empty() || !(returns && given.iter().all(arrows) || called_only) {
             i += 1;
             continue;
         }
@@ -172,6 +192,32 @@ fn forwarding_functions(module: &mut js::Module) {
             _ => unreachable!("found"),
         }
     }
+}
+
+/// Whether each read of `name` in `items` but the function at `at` is a
+/// call of it by `arity` arguments.
+fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool {
+    let (mut reads, mut calls) = (0, 0);
+    let mut each = |e: &Expr| {
+        calls += usize::from(matches!(&e.kind, ExprKind::Call(callee, args)
+            if args.len() == arity && matches!(&callee.kind, ExprKind::Var(v) if v == name)));
+    };
+    for (j, item) in items.iter().enumerate() {
+        if j == at {
+            continue;
+        }
+        item.visit_vars(&mut |v| reads += usize::from(v == name));
+        match item {
+            js::Item::Function(function) => js::each_expr(&function.body, &mut each),
+            js::Item::Statements(stmts) => js::each_expr(stmts, &mut each),
+            js::Item::Const(constant) => constant.value.each(&mut each),
+            js::Item::Namespace(namespace) => {
+                namespace.constants.iter().for_each(|c| c.value.each(&mut each));
+                namespace.methods.iter().for_each(|m| js::each_expr(&m.body, &mut each));
+            }
+        }
+    }
+    reads == calls
 }
 
 /// An `if` whose branch never goes on, `js::ends`', by a `return`, a

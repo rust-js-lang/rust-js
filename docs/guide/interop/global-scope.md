@@ -506,8 +506,61 @@ export { getTime };
 
 - **Not where the module's load calls the function**: a function
   declaration is hoisted, so it stays one.
-- **Only of Rust's closures**, which take no more than their parameters.
-  A thread-local holding a JS function stays called by its function.
+- **Only of Rust's closures**, which take no more than their parameters,
+  or of a private function only called, by its parameters: one holding a
+  JS function or another function, `queue_macrotask`, is that variable
+  where nothing passes the function as a value and it's not exported, as
+  React's ReactAct has `const queueSeveralMicrotasks = .. ? (callback) =>
+  { .. } : queueMacrotask;`; else it stays called by its function
+  ([ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md),
+  amended):
+
+```rust
+use std::cell::Cell;
+
+thread_local! {
+    static COUNT: Cell<u32> = const { Cell::new(0) };
+    static QUEUE: fn(Box<dyn Fn()>) = if js::is_defined(webapi::global::queue_microtask) {
+        |callback| webapi::global::queue_microtask(callback)
+    } else {
+        run_now
+    };
+}
+
+fn run_now(task: Box<dyn Fn()>) {
+    task();
+}
+
+fn queue_task(callback: Box<dyn Fn()>) {
+    QUEUE.with(|queue| queue(callback));
+}
+
+pub fn count() -> u32 {
+    queue_task(Box::new(|| COUNT.set(COUNT.get() + 1)));
+    COUNT.get()
+}
+```
+
+```js
+let COUNT = 0;
+const queueTask =
+  typeof queueMicrotask !== "undefined"
+    ? (callback) => {
+        queueMicrotask(callback);
+      }
+    : runNow;
+
+function runNow(task) {
+  task();
+}
+
+export function count() {
+  queueTask(() => {
+    COUNT = (COUNT + 1) >>> 0;
+  });
+  return COUNT;
+}
+```
 
 One of a value where a test holds and `None` where it doesn't is assigned
 only where it's something, `let componentFrameCache; if (__DEV__) {

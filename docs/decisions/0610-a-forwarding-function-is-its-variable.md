@@ -53,3 +53,47 @@ hoisted, so its load may call it before the variable is set.
   binding taken as a fn is its JS function", one of a JS function.
 - Mutations: the function kept, one of a JS function taken, one the load
   calls taken, the variable unexported.
+
+## Amendment: a private function only called is its variable, of any value
+
+React's ReactAct picks how to wait a few microtasks where it loads, and
+calls it by its name:
+
+```js
+const queueSeveralMicrotasks =
+  typeof queueMicrotask === 'function'
+    ? (callback: () => void) => {
+        queueMicrotask(() => queueMicrotask(callback));
+      }
+    : queueMacrotask;
+```
+
+Its port's `thread_local! { static QUEUE_SEVERAL_MICROTASKS: fn(Box<dyn
+Fn()>) = if .. { |callback| .. } else { queue_macrotask }; }` and `fn
+queue_several_microtasks(callback) { QUEUE_SEVERAL_MICROTASKS.with(|f|
+f(callback)); }`, the one natural Rust of a function value made where the
+module loads, printed the `const` and a function calling it: one value is
+another module's function, not an arrow, and the function gives none, a
+statement of its call, not `return`.
+
+**A function that isn't exported, by its own name or another (ADR 0596),
+and that the crate's code only calls, by its parameters, is its variable
+whatever the variable holds**, a JS function, another module's function or
+an arrow; and of no value, `f(callback);`, as of one, `return f(n);`.
+None of its callers gives it more than its parameters, so neither does
+the variable's function get more; a function of a value gives the
+variable's, and one of none gives `undefined`, which no caller reads: a
+`()` is `undefined` where it's read, its call a statement before it.
+One passed as a value, `const given = runNow;`, may be given more by
+what calls it, and stays a function; an exported one, which JS may call
+otherwise, keeps ADR 0610's arrows of Rust's.
+
+Case N (ADR 0262): each call calls the same function with the same
+arguments, at the same time; the module's load reads the variable before
+nothing calls it, as before.
+
+Tests: `lowering-forwarding`, a private function of no value of
+another module's function one way, one a closure calls, and kept: one
+passed as a value, one `pub`, and one a `pub use` exports by another
+name. Mutations: each of the three left out, and the rule never taken.
+
