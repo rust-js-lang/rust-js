@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     replace: "Inline(_, _))\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
+  {
+    name: "ne-override-trusted",
+    breaks: "a `PartialEq` whose `ne` is its own is taken as equal only to itself, as its `eq` says (ADR 0864)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            if trait_id == partial_eq && implementors.contains_key(&trait_method(tcx, partial_eq, \"ne\")) {\n",
+    replace: "            if false && implementors.contains_key(&trait_method(tcx, partial_eq, \"ne\")) {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+  },
 ];

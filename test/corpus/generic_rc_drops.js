@@ -29,7 +29,7 @@ function tee(iter, dropI, dropIItem) {
     owner: false,
   };
   const t1 = {
-    rcbuffer: { value: { value: buffer }, strong: 1, weak: 0 },
+    rcbuffer: { value: buffer, strong: 1, weak: 0 },
     id: true,
   };
   let t2;
@@ -40,10 +40,10 @@ function tee(iter, dropI, dropIItem) {
     };
   } catch (error) {
     $rcDrop(t1.rcbuffer, (value) => {
-      for (const item of value.value.backlog) {
+      for (const item of value.backlog) {
         dropIItem?.(item);
       }
-      dropI?.(value.value.iter);
+      dropI?.(value.iter);
     });
     throw error;
   }
@@ -53,12 +53,11 @@ function tee(iter, dropI, dropIItem) {
 function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
   let popFront$0$live = false;
   const buffer = $borrowMut(tee.rcbuffer.value, true);
-  const value = buffer.value.owner === tee.id;
   let result;
-  if (value) {
+  if (buffer.owner === tee.id) {
     let popFront;
     try {
-      popFront = $shift(buffer.value.backlog);
+      popFront = $shift(buffer.backlog);
     } catch (error) {
       $unborrow(buffer);
       throw error;
@@ -85,7 +84,7 @@ function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
   }
   let next;
   try {
-    next = IIterator.next(buffer.value.iter);
+    next = IIterator.next(buffer.iter);
   } catch (error) {
     $unborrow(buffer);
     throw error;
@@ -103,13 +102,13 @@ function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
       throw error;
     }
     try {
-      buffer.value.backlog.push(tmp);
+      buffer.backlog.push(tmp);
     } catch (error) {
       dropIItem?.(elt);
       $unborrow(buffer);
       throw error;
     }
-    buffer.value.owner = !tee.id;
+    buffer.owner = !tee.id;
     result = $some(elt);
   }
   $unborrow(buffer);
@@ -145,10 +144,10 @@ function main() {
           console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
-            for (const item of value.value.backlog) {
+            for (const item of value.backlog) {
               loudDrop_drop(item);
             }
-            for (const item of value.value.iter) {
+            for (const item of value.iter) {
               loudDrop_drop(item);
             }
           });
@@ -170,10 +169,10 @@ function main() {
         console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
       } finally {
         $rcDrop(c.rcbuffer, (value) => {
-          for (const item of value.value.backlog) {
+          for (const item of value.backlog) {
             loudDrop_drop(item);
           }
-          for (const item of value.value.iter) {
+          for (const item of value.iter) {
             loudDrop_drop(item);
           }
         });

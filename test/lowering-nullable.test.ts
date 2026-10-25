@@ -81,6 +81,79 @@ pub fn has(context: &Context) -> bool {
   expect(context.renderer).toBe(null);
 });
 
+// React's `Transition`, whose `types` a nested transition shares and the
+// outer one is given back: a field's `RefCell<Option<_>>` only ever
+// borrowed for a moment is the value it holds, its `None` `null` where it's
+// written, left out where it's made, `get_mut()` and `replace` alike (ADR
+// 0863); and one that's a cell of its own is refused.
+test("a nullable RefCell field's None is null where it's written", async () => {
+  const dir = fixture("nullable-refcell-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Transition {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,
+}
+
+pub fn start(prev: Option<&Transition>) -> Transition {
+    let mut current = Transition {
+        types: RefCell::new(None),
+    };
+    *current.types.get_mut() = match prev {
+        Some(prev) => prev.types.borrow().clone(),
+        None => None,
+    };
+    current
+}
+
+pub fn add(transition: &Transition, ty: &str) {
+    let types = transition.types.borrow().clone();
+    match types {
+        None => {
+            transition.types.replace(Some(Rc::new(RefCell::new(vec![ty.to_string()]))));
+        }
+        Some(types) => types.borrow_mut().push(ty.to_string()),
+    }
+}
+
+pub fn clear(transition: &Transition) -> bool {
+    transition.types.replace(None).is_some()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const current = {};\n  current.types = (prev ? prev.types : undefined) ?? null;\n  return current;\n");
+  expect(js).toContain("    transition.types = [ty];\n");
+  expect(js).toContain("  transition.types = null;\n");
+  expect(js).not.toContain("$borrow");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("types?: string[] | null | undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  const outer = lib.start(null);
+  expect(outer.types).toBe(null);
+  lib.add(outer, "a");
+  const inner = lib.start(outer);
+  lib.add(inner, "b");
+  expect([outer.types, inner.types === outer.types]).toEqual([["a", "b"], true]);
+  expect([lib.clear(inner), inner.types, lib.clear(inner)]).toEqual([true, null, false]);
+  expect(lib.start(lib.start(null)).types).toBe(null);
+  const cell = fixture("nullable-refcell-cell");
+  writeFileSync(join(cell, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Slot {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub held: RefCell<Option<u32>>,
+}
+
+pub fn lent(slot: &Slot) -> &RefCell<Option<u32>> {
+    &slot.held
+}
+`);
+  expect(() => run([compiler, join(cell, "lib.rs"), "-o", join(cell, "lib.js")])).toThrow(
+    "`#[rust_js::nullable]` of a `RefCell` is of one a field holds as the value it holds",
+  );
+});
+
 // React's lazy(): `const owner = null; .. owner: owner`. A `None` bound to a
 // variable that only nullable fields and binding parameters read is
 // `null` where it's made, and read as it is (ADR 0781).

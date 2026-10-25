@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const log = { value: [] };
+const log = [];
 
 function asksDrop_drop(asks) {
   const tryBorrowMut = $tryBorrow(log, true);
@@ -22,12 +22,16 @@ function asksDrop_drop(asks) {
 function main() {
   const _asks = undefined;
   try {
-    $withBorrowMut(log, (log) => {
-      log.push(1);
-      if (log.length === 1) {
-        throw new Error("boom");
-      }
-    });
+    $withBorrowMut(
+      log,
+      (log) => {
+        log.push(1);
+        if (log.length === 1) {
+          throw new Error("boom");
+        }
+      },
+      true,
+    );
   } finally {
     asksDrop_drop({ value: _asks });
   }

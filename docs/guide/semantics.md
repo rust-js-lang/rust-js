@@ -219,7 +219,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 | `Box<T>`, `Arc<T>` | the value itself; a `Box`'s `as_ref()` and `as_mut()` too, `b.as_mut().push(2)` is `b.push(2)` ([0550](../decisions/0550-a-known-as-mut-is-the-value.md)) |
 | `Rc<T>` | the value itself; `{ value, strong, weak }` where the crate reads its counts, `strong_count` or a `Weak`'s `upgrade` ([0320](../decisions/0320-counted-rcs.md)) |
 | `Weak<T>` | what its `Rc` is, the value itself, and `null` of `Weak::new()`, where nothing asks whether it's alive; its counted `Rc`'s box where the crate counts it ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)) |
-| `Cell`, `RefCell`, `Mutex`, `RwLock`, an atomic, `static mut` | `{ value }`; a `Cell`, or a `RefCell` only borrowed for a moment, in a struct's field or a variable, is its value ([0144](../decisions/0144-locks.md), [0287](../decisions/0287-cells-as-variables.md), [0288](../decisions/0288-cell-fields.md), [0362](../decisions/0362-refcell-fields-never-counted.md)) |
+| `Cell`, `RefCell`, `Mutex`, `RwLock`, an atomic, `static mut` | `{ value }`; a `Cell`, or a `RefCell` only borrowed for a moment, in a struct's field or a variable, is its value; a `RefCell` of an array, a `Map`, a `Set` or an object is that object ([0144](../decisions/0144-locks.md), [0287](../decisions/0287-cells-as-variables.md), [0288](../decisions/0288-cell-fields.md), [0362](../decisions/0362-refcell-fields-never-counted.md), [0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md)) |
 | `thread_local!` | a variable of its module, `let taskCount`, or a `{ value }` cell (below) ([0270](../decisions/0270-module-variables.md)) |
 | `Vec`, slice, array | array |
 
@@ -264,7 +264,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   value, read and written
   ([0328](../decisions/0328-refcell-borrow-counts.md),
   [0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
-  [0585](../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)):
+  [0585](../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)).
+  A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
+  object, changed in place, and one no borrow of which is ever held while
+  code that may borrow it runs isn't checked at all
+  ([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md)):
 
 ```rust
 # use std::cell::RefCell;

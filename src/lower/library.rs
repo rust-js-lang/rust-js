@@ -54,6 +54,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) makes_dropping_anys: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
+    /// What it does with its `RefCell`s (ADR 0863).
+    pub(super) ref_cells: crate::library::RefCellFacts,
 }
 
 /// The items another crate can reach, and the impls it calls through them;
@@ -77,6 +79,7 @@ pub(super) fn exports<'tcx>(
         writers_take_options,
         makes_dropping_anys,
         counted,
+        ref_cells: _,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -166,6 +169,46 @@ pub(super) fn exports<'tcx>(
             shapes.sort();
             shapes.dedup();
             shapes
+        },
+        ref_cells: contracts.ref_cells.clone(),
+    }
+}
+
+/// What a library's contract calls each of `tys`, sorted, each once (ADR
+/// 0863): as it calls a type an `Rc` it counts points at (ADR 0852).
+pub(super) fn shapes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    tys: impl IntoIterator<Item = rustc_middle::ty::Ty<'tcx>>,
+) -> Vec<RcShape> {
+    let mut shapes: Vec<RcShape> = tys.into_iter().map(|ty| rc_shape(tcx, ty)).collect();
+    shapes.sort();
+    shapes.dedup();
+    shapes
+}
+
+/// May `ty`, a `RefCell`'s type, be one `shape` names, a library's, as
+/// `analysis::may_be_cell` says of two (ADR 0863): a type parameter of
+/// either any type, and a `dyn`'s or a slice's what it's made of.
+pub(in crate::lower) fn may_be_cell_shape<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    shape: &RcShape,
+    ty: rustc_middle::ty::Ty<'tcx>,
+) -> bool {
+    use rustc_middle::ty;
+    match ty.kind() {
+        ty::Dynamic(..) => true,
+        ty::Slice(item) | ty::Array(item, _) => {
+            shape.of.as_deref().is_none_or(|of| matches!(of, "[]" | "[;]"))
+                && shape.args.first().is_none_or(|arg| may_be_cell_shape(tcx, arg, *item))
+        }
+        _ => match (&shape.of, super::analysis::head(tcx, ty)) {
+            (Some(of), Some((head, args))) => {
+                of.starts_with("dyn ")
+                    || *of == head_key(tcx, &head)
+                        && shape.args.len() == args.len()
+                        && (shape.args.iter().zip(args)).all(|(shape, arg)| may_be_cell_shape(tcx, shape, arg))
+            }
+            _ => true,
         },
     }
 }
@@ -389,6 +432,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
         (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
             .is_some_and(|library| (library.counted_rcs.iter()).any(|shape| may_be_shape(self.tcx, shape, pointee)))
+    }
+
+    /// What each library does with its `RefCell`s (ADR 0863), by its name.
+    pub(super) fn ref_cell_facts(&self) -> Vec<(String, crate::library::RefCellFacts)> {
+        let mut facts: Vec<_> = (self.dependencies.libraries.iter())
+            .filter(|(_, library)| !library.ref_cells.is_empty())
+            .map(|(name, library)| (name.clone(), library.ref_cells.clone()))
+            .collect();
+        facts.sort_by(|a, b| a.0.cmp(&b.0));
+        facts
     }
 
     /// Do the writers of `krate`, a library's, take their `Formatter`'s

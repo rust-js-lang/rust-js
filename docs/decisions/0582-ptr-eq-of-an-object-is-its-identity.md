@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0320](0320-counted-rcs.md), which counted every
 `Rc` that `ptr_eq` asks of. Amended: not of a `#[repr(transparent)]`
 struct, which is its field (ADR 0584), a number's `===` its value.
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): of an
+`Rc<RefCell<T>>` of an object too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Two `Rc`s point at
 one value exactly when their JS objects are one.

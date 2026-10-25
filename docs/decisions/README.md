@@ -346,7 +346,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0325 Maps' and sets' own methods, a B-tree's in its keys' order](0325-map-and-set-methods.md)
 - [0326 `Option`'s and `Result`'s other methods, and an `Option`'s place filled](0326-option-and-result-methods.md)
 - [0327 Cells', locks', a `VecDeque`'s, `char`'s and arrays' other methods](0327-cell-deque-char-methods.md)
-- [0328 A `RefCell` counts its borrows, as std's does](0328-refcell-borrow-counts.md)
+- [0328 A `RefCell` counts its borrows, as std's does](0328-refcell-borrow-counts.md) *(amended by 0863: a `RefCell` of an object is the object, its borrows counted only where one may meet another)*
 - [0329 A `Pin` is its pointer](0329-pin.md)
 - [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md)
 - [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](0331-dyn-any.md) *(amended by 0660: what unwound is one)*
@@ -380,7 +380,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0359 next/font: each Google Font a function, generated](0359-next-font.md)
 - [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built)*
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
-- [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md)
+- [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
 - [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds)*
 - [0365 JS's Math where Rust's methods differ: `js::math`](0365-js-math-where-rust-differs.md)
@@ -461,12 +461,12 @@ reordered, and git merges this file by keeping both sides' lines
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md)
-- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
+- [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls)*
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
-- [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md)
+- [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md)
-- [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md)
+- [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one)*
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
 - [0588 A binding may throw by the result it's declared with](0588-a-binding-throws-by-its-declared-result.md)
@@ -617,7 +617,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
-- [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set)*
+- [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
 - [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*
 - [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
@@ -647,6 +647,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0860 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0861 A function's own nullable parameter is `null` where it's given or set `None`](0861-a-functions-own-nullable-parameter-is-set-null.md)
 - [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md)
+- [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md)
+- [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -687,7 +689,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0460 A callable that writes to a `Formatter` is a writer, and a writer's options are its crate's](0460-writer-callables.md)
 - [0461 A `Formatter` held is a handle on its writer's text, and a `fmt::Result` meets generic code as a `Result`](0461-a-formatter-held.md)
 - [0462 An `io::Error` is a value: its kind, and the error it holds](0462-io-error-values.md)
-- [0463 Hashing is std's: its hashers, and what `Hash` writes to one](0463-hashing-is-stds.md)
+- [0463 Hashing is std's: its hashers, and what `Hash` writes to one](0463-hashing-is-stds.md) *(extended by 0864: `ptr::hash` writes its address)*
 - [0464 A pick drops what it passes over, and a consumed iterator is dropped after](0464-a-pick-drops-what-it-passes-over.md)
 - [0465 Dropping a std adapter is closing it, and what it holds is closed by its own drop](0465-dropping-an-adapter-is-closing-it.md)
 - [0466 A generic map's class is its caller's, a type fact of its key](0466-a-generic-maps-class-is-its-callers.md)
@@ -786,7 +788,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0559 `{:x?}` of an integer is its hex](0559-debug-hex-of-an-integer.md)
 - [0560 A copied default resolves a call with its own bounds](0560-a-copied-default-resolves-with-its-own-bounds.md)
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](0561-std-bodies.md)
-- [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md)
+- [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md) *(extended by 0864: a hash of an address)*
 - [0563 What's found once of a crate is keyed by the crate's own files](0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
 - [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides; amended: an `if` the program wrote stays)*
 - [0565 How the generated JS reads is a gate, as what it computes is](0565-readability-is-a-gate.md) *(amended: a share that shrank asks a bless by one in 10,000 lines or more)*

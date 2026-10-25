@@ -691,6 +691,29 @@ pub(crate) fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefI
         .expect("the trait has the method")
 }
 
+impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// The crate's own `eq` and `hash` of `adt`, its impls' of `PartialEq`
+    /// and `Hash`, where its `PartialEq` has no `ne` of its own, which may
+    /// say otherwise (ADR 0864).
+    pub(in crate::lower) fn eq_and_hash(&self, adt: DefId) -> Option<(DefId, DefId)> {
+        let tcx = self.tcx;
+        let own = |trait_id: DefId, method: &str| -> Option<DefId> {
+            let imp = (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten()).find(|&&imp| {
+                matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(of, _) if of.did() == adt)
+            })?;
+            let implementors = tcx.impl_item_implementor_ids(imp.to_def_id());
+            let partial_eq = tcx.lang_items().eq_trait()?;
+            if trait_id == partial_eq && implementors.contains_key(&trait_method(tcx, partial_eq, "ne")) {
+                return None;
+            }
+            implementors.get(&trait_method(tcx, trait_id, method)).copied()
+        };
+        let partial_eq = tcx.lang_items().eq_trait()?;
+        Some((own(partial_eq, "eq")?, own(std_item(tcx, StdItem::Hash), "hash")?))
+    }
+}
+
 /// Is `id` the method `name` of std's trait `item`, `Error::source`?
 pub(crate) fn is_std_method(tcx: TyCtxt<'_>, id: DefId, item: StdItem, name: &str) -> bool {
     tcx.item_name(id).as_str() == name && tcx.trait_of_assoc(id).is_some_and(|tr| is_std_def(tcx, tr, item))

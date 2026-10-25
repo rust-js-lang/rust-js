@@ -34,6 +34,9 @@ pub(in crate::lower) enum HashOp {
     Hash,
     /// `T::hash_slice(items, state)` of a std type: its items', unprefixed.
     HashSlice,
+    /// `ptr::hash(p, state)`: its pointer's address, as a `*const T`'s
+    /// `hash` writes it (ADRs 0562, 0864).
+    Address,
 }
 
 /// What std's `Hash` of a type writes, by the impl's shape.
@@ -133,13 +136,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     values.collect(),
                 )
             }
-            HashOp::Hash | HashOp::HashSlice => {
+            HashOp::Hash | HashOp::HashSlice | HashOp::Address => {
                 let value = values.next().expect("what's hashed");
                 let state = values.next().expect("a hasher");
                 let hasher = self.hasher(state, call.generic_args.type_at(1), call.span, out)?;
                 let hashed = call.generic_args.type_at(0);
                 match op {
                     HashOp::Hash => self.hash_writes(value, hashed, &hasher, call.span, out)?,
+                    HashOp::Address => {
+                        let pointer = ty::Ty::new_imm_ptr(self.tcx, hashed);
+                        self.hash_writes(value, pointer, &hasher, call.span, out)?
+                    }
                     _ => {
                         let value = self.spilled(value, out);
                         self.item_writes(value, hashed, &hasher, call.span, out)?;

@@ -7,16 +7,16 @@ export function entry() {
 }
 
 function main() {
-  const cell = { value: [1] };
+  const cell = [1];
   const reading = $borrow(cell, true);
   try {
     const borrowMut = $borrowMut(cell, true);
     try {
-      borrowMut.value.push(2);
+      borrowMut.push(2);
     } finally {
       $unborrow(borrowMut);
     }
-    console.log(`${reading.value.length}`);
+    console.log(`${reading.length}`);
   } finally {
     $unborrow(reading);
   }

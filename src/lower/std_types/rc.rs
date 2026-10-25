@@ -265,8 +265,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // A guard's `value`, an `Rc`'s what it points at (ADR 0520); a
             // reference it holds, an `Rc<&T>`'s, is shown as references are,
-            // through it (ADR 0504, #228).
+            // through it (ADR 0504, #228). A guard of a `RefCell` of an
+            // object is the object (ADR 0863).
             value = match self.is_guard(ty) {
+                true if self.guards_value_cell(ty) => value,
                 true => Expr::held(value),
                 false => self.counted_pointee(value, inside),
             };

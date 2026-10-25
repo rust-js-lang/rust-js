@@ -7,12 +7,12 @@ export function entry() {
 }
 
 function main() {
-  const cell = { value: [1] };
+  const cell = [1];
   const writing = $borrowMut(cell, true);
   try {
-    const copy = { value: $borrow(cell).value };
+    const copy = $borrow(cell);
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.join(", ")}]`)} } ${writing.value.length}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.join(", ")}]`, true)} } ${writing.length}`,
     );
   } finally {
     $unborrow(writing);

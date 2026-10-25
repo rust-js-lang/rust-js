@@ -287,6 +287,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("ptr_eq") {
             return Some(Some(Std::PtrEq));
         }
+        // `ptr::hash(p, state)`, its pointer's address, as `*const T`'s
+        // `hash` writes it (ADRs 0562, 0864).
+        if std_path(tcx, def_id) == "std::ptr::hash" {
+            return Some(Some(Std::Hash(HashOp::Address)));
+        }
         if diagnostic("mem_replace") {
             return Some(Some(Std::Replace));
         }

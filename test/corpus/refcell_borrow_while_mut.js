@@ -9,23 +9,23 @@ export function entry() {
 function total(cell) {
   const borrow = $borrow(cell, true);
   try {
-    return borrow.value.reduce((a, b) => (a + b) | 0, 0);
+    return borrow.reduce((a, b) => (a + b) | 0, 0);
   } finally {
     $unborrow(borrow);
   }
 }
 
 function main() {
-  const cell = { value: [1, 2] };
+  const cell = [1, 2];
   const borrowMut = $borrowMut(cell, true);
   try {
-    borrowMut.value.push(total(cell));
+    borrowMut.push(total(cell));
   } finally {
     $unborrow(borrowMut);
   }
   const borrow = $borrow(cell, true);
   try {
-    console.log(`[${borrow.value.join(", ")}]`);
+    console.log(`[${borrow.join(", ")}]`);
   } finally {
     $unborrow(borrow);
   }

@@ -886,21 +886,14 @@ pub fn two_loggers() -> usize {
 ```
 
 ```js
-import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
-
 export const Logger = {
   log(logger, line) {
-    const borrowMut = $borrowMut(logger.lines, true);
-    try {
-      borrowMut.value.push(line);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    logger.lines.push(line);
   },
 };
 
 export function twoLoggers() {
-  const lines = { value: [] };
+  const lines = [];
   const a = {
     lines,
   };
@@ -909,15 +902,17 @@ export function twoLoggers() {
   };
   Logger.log(a, "from a");
   Logger.log(b, "from b");
-  const borrow = $borrow(lines, true);
-  $unborrow(borrow);
-  return borrow.value.length;
+  return lines.length;
 }
 ```
 
 - **An `Rc` is the value itself,** and `Rc::clone` shares it, as two JS
   variables share one object.
-- **A `RefCell` is `{ value }`,** and it counts its borrows, as std's does:
+- **A `RefCell` of an array, a `Map`, a `Set` or an object is that
+  object**, `lines` above; of anything else, a number or an `Option`, it's
+  `{ value }`. It counts its borrows where one may meet another, as std's
+  does, and checks none where none can, as `lines`' can't
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)):
   a `borrow_mut()` while another borrow is alive panics with
   `RefCell already borrowed`, as in native Rust ([ADR 0328](../../decisions/0328-refcell-borrow-counts.md)).
 - A `Cell<T>` is the same for a `Copy` value, a number say, with `get` and

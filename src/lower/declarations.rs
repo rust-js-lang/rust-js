@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::program::Reexport;
 use rustc_hir as hir;
@@ -40,7 +40,7 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
     aliases: &[(DefId, (String, String))],
-    (plain_ref_cells, counted): (&HashSet<Ty<'tcx>>, &super::analysis::Counted<'tcx>),
+    (ref_cells, counted): (&super::drops::RefCells<'tcx>, &super::analysis::Counted<'tcx>),
     (fns, held): (&HashMap<DefId, super::FnInfo>, &[super::bindings::HeldBinding]),
 ) -> Option<Value> {
     let mut out = Declarations {
@@ -48,7 +48,7 @@ pub(super) fn module<'tcx>(
         module,
         fns,
         files,
-        plain_ref_cells,
+        ref_cells,
         counted,
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
@@ -305,7 +305,7 @@ struct Declarations<'a, 'tcx> {
     /// `new` (ADR 0546).
     fns: &'a HashMap<DefId, super::FnInfo>,
     /// The `RefCell`s a field holds as their value (ADR 0362).
-    plain_ref_cells: &'a HashSet<Ty<'tcx>>,
+    ref_cells: &'a super::drops::RefCells<'tcx>,
     /// The `Rc`s counted, `{ value, strong, weak }`: every other, and its
     /// `Weak`, is the value it points at (ADRs 0320, 0843).
     counted: &'a super::analysis::Counted<'tcx>,
@@ -1173,7 +1173,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
         match ty.kind() {
             ty::Adt(adt, args)
                 if is_std_def(self.tcx, adt.did(), StdItem::Cell)
-                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>
+                    || self.ref_cells.is_plain(self.tcx, ty)
+                    || self.ref_cells.is_value_cell(self.tcx, ty) =>
             {
                 self.ts(args.type_at(0))
             }
@@ -1289,6 +1290,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     && !self.counted.counts(tcx, pointee)
                 {
                     return json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] });
+                }
+                // A `RefCell` of an object is the object (ADR 0863).
+                if self.ref_cells.is_value_cell(tcx, ty) {
+                    return self.ts(args.type_at(0));
                 }
                 // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288).
                 if is_std_def(tcx, did, StdItem::Cell) {

@@ -675,4 +675,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Some(Std::Same);\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_methods.rs$"],
   },
+  {
+    name: "ptr-hash-unrecognized",
+    breaks: "`ptr::hash` is refused as addressing memory, and with it a type whose `Hash` it is (ADR 0864)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if std_path(tcx, def_id) == \"std::ptr::hash\" {\n",
+    replace: "        if false && std_path(tcx, def_id) == \"std::ptr::hash\" {\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+  },
 ];

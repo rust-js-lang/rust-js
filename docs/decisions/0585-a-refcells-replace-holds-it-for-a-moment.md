@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0362](0362-refcell-fields-never-counted.md),
 whose field's `RefCell` is its value where each borrow of it is held for a
 moment, and [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md).
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): of a
+`RefCell` of an object, which changes in place, and `get_mut`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow that can't
 fail isn't counted; one that can still is, and still throws where Rust

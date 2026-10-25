@@ -219,6 +219,47 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
     .toThrow("this crate counts an `Rc<std::string::String>`");
 }, 300_000);
 
+// ADR 0863: a library's `RefCell`s, as React's `Transition` holds its
+// types: a plain field the value it holds, an `Rc`'s `RefCell<Vec<String>>`
+// the array, an `Option`'s `RefCell<HashSet<u32>>` the `Set`, none of whose
+// borrows is checked, as none can meet another. Its consumer agrees, or is
+// refused where it would hold one while the library's code runs, lend the
+// plain field, or box what the library hands it as the object it holds.
+test("a library's RefCells are the values they hold, and its consumer agrees or is refused", () => {
+  const out = chain(pairs, "ref_cells", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("  const current = {\n    seen: new Set(),\n  };\n  current.types = prev ? prev.types : undefined;\n");
+  expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.some((t) => t === ty)) {\n    types.push(ty);\n");
+  expect(dep).toContain("    return a === b;\n");
+  expect(dep).toContain("    const count = transition.seen.size;\n    transition.seen.clear();\n");
+  expect(dep).not.toContain("$borrow");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");
+  expect(app).not.toContain("$borrow");
+  // A consumer that only makes the library's struct makes its plain field
+  // the value it holds, as the library reads it.
+  counting(out, "use std::cell::RefCell;\n\npub fn main() {\n    let made = dep::Transition {\n        types: RefCell::new(None),\n        seen: None,\n    };\n    dep::add_type(&made, \"x\");\n    println!(\"{:?}\", dep::types(&made));\n}\n");
+  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  const made = {};\n");
+  const facts = contract(out).ref_cells;
+  expect([facts.unchecked.length, facts.plain.length, facts.counted, facts.boxed]).toEqual([3, 1, undefined, undefined]);
+  expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let held = types.borrow_mut();\n    dep::add_type(&t, \"b\");\n    println!(\"{}\", held.len());\n}\n"))
+    .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
+  expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let n = types.borrow().len() + dep::types(&t).len();\n    println!(\"{n}\");\n}\n"))
+    .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
+  expect(() => counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn some(types: &RefCell<Option<Rc<RefCell<Vec<String>>>>>) -> bool {\n    types.borrow().is_some()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    println!(\"{}\", some(&t.types));\n}\n"))
+    .toThrow("`dep`, a rust-js library, has a field's");
+  expect(() => counting(out, "use std::cell::RefCell;\n\nfn get<T: Clone>(cell: &RefCell<T>) -> T {\n    cell.borrow().clone()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    println!(\"{:?}\", get(&types));\n}\n"))
+    .toThrow("as a `{ value }`");
+  // One whose generic code has a `RefCell<T>` of any `T` boxes each, and
+  // one that holds a borrow while what it's given runs counts it: its
+  // consumer boxes and checks them as it does.
+  const counted = chain(pairs, "ref_cells_counted", ["dep", "app"]);
+  expect([contract(counted).ref_cells.boxed, contract(counted).ref_cells.counted.length]).toEqual([[{}], 1]);
+  const consumer = readFileSync(join(counted, "app", "lib.js"), "utf8");
+  expect(consumer).toContain("        const borrowMut = $borrowMut(list.value, true);\n");
+  expect(consumer).toContain("      value.value.push(3);\n");
+}, 300_000);
+
 /** The library contract of `out`'s `dep`. */
 function contract(out: string) {
   return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;

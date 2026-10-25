@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "            .find(|&part| crate::lower::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
     tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
   },
+  {
+    name: "value-cell-guard-shown-value",
+    breaks: "`{:?}` of a guard of a `RefCell` of an object shows its `value`, `undefined`",
+    file: "src/lower/std_types/rc.rs",
+    find: "                true if self.guards_value_cell(ty) => value,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
+  },
 ];

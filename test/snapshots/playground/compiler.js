@@ -24,16 +24,7 @@ import {
   WASI,
 } from "@bjorn3/browser_wasi_shim";
 import { reactLibs } from "../../../tooling/crates.js";
-import {
-  $borrow,
-  $borrowMut,
-  $extend,
-  $rsplitOnce,
-  $stripPrefix,
-  $try,
-  $unborrow,
-  $unwrap,
-} from "@rust-js/runtime";
+import { $extend, $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
 
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
@@ -197,7 +188,7 @@ function textsIn(folder, prefix, found) {
  * ends in a trap. With `test`, the crate's `#[test]` functions too (ADR 0026).
  */
 export async function compile(loaded, sources, rootFile, test) {
-  const stderr = { value: [] };
+  const stderr = [];
   const stdoutLines = stderr;
   const stderrLines = stderr;
   const outDir = new PreopenDirectory("/out", new Map());
@@ -205,20 +196,10 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
-      const borrowMut = $borrowMut(stdoutLines, true);
-      try {
-        borrowMut.value.push(line);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      stdoutLines.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
-      const borrowMut = $borrowMut(stderrLines, true);
-      try {
-        borrowMut.value.push(line);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      stderrLines.push(line);
     }), // stderr
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
@@ -313,19 +294,6 @@ export async function compile(loaded, sources, rootFile, test) {
     }
   }
   const memory = instance.exports.memory.buffer;
-  const borrow = $borrow(stderr, true);
-  let join;
-  let tmp;
-  let tmp$1;
-  let memory$1;
-  try {
-    join = borrow.value.join("\n");
-    tmp = t1 - t0;
-    tmp$1 = t2 - t1;
-    memory$1 = memory.byteLength;
-  } finally {
-    $unborrow(borrow);
-  }
   return {
     exit,
     ok,
@@ -333,10 +301,10 @@ export async function compile(loaded, sources, rootFile, test) {
     root,
     main,
     tests,
-    stderr: join,
-    instantiate: tmp,
-    run: tmp$1,
-    memory: memory$1,
+    stderr: stderr.join("\n"),
+    instantiate: t1 - t0,
+    run: t2 - t1,
+    memory: memory.byteLength,
   };
 }
 //# sourceMappingURL=compiler.js.map

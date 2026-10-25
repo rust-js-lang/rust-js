@@ -1,0 +1,113 @@
+# 0864. A type equal only to itself keys a JS `Set` and `Map` by itself
+
+Status: Accepted. Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
+writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
+(`ptr::eq` of objects is `===`) to a set's and a map's keys, and
+[0562](0562-a-pointer-is-a-place-and-an-address.md)'s address to a hash.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None, by the program's
+own `Eq` and `Hash`: two of these are equal exactly when they're one
+value, which is what JS's `Set` and `Map` ask of an object key, so the
+set holds the keys Rust's does and finds each where Rust's does. Only
+the order a `HashSet` iterates in differs, which is unspecified in Rust
+and insertion order here, as of every `HashSet` (ADR 0059).
+
+## Context
+
+React's `Transition` keeps the fibers it updated, each by itself:
+
+```js
+currentTransition._updatedFibers = new Set();
+..
+if (updatedFibersCount > 10) { .. }
+currentTransition._updatedFibers.clear();
+```
+
+A fiber is the reconciler's JS object, which the port's `react` package
+names by a binding type, `Fiber(PhantomData<JsObject>)`. Rust's way to
+key a set by identity is the type's own `Eq` and `Hash`, of its address:
+
+```rust
+impl PartialEq for Fiber {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Fiber {}
+
+impl Hash for Fiber {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(self, state);
+    }
+}
+```
+
+rust-js refused it: a `HashSet<&'static Fiber>` was "values of type
+`&'static Fiber`", a key JS's `Set` can't find by its own `eq`, and
+`std::ptr::hash` was unknown.
+
+## Decision
+
+**A struct of the crate's whose `PartialEq::eq` is `ptr::eq(self, other)`
+alone, whose `Hash::hash` is `ptr::hash(self, state)` alone, and whose
+`ne` is std's, is equal only to itself: a set or map of it, or of
+references to it, is a JS `Set` or `Map` keyed by each object, and `==`
+of two is `===`.**
+
+```rust
+pub struct Transition {
+    #[cfg_attr(rust_js, rust_js::name = "_updatedFibers")]
+    pub updated_fibers: Option<RefCell<HashSet<&'static Fiber>>>,
+}
+..
+current_transition.updated_fibers = Some(RefCell::new(HashSet::new()));
+```
+
+```js
+currentTransition._updatedFibers = new Set();
+```
+
+- **This is the one way** to write a set or map of JS objects by
+  identity: Rust's own, a type whose `Eq` and `Hash` say so. A struct
+  that derives them compares by value, a `$KeyMap` (ADR 0121); one whose
+  `eq` does anything else, or compares other values than its own two, is
+  refused as a key JS's `Set` can't find by it.
+- **`ptr::hash(p, state)` is what std's writes**, the pointer's address
+  as a `*const T`'s `hash` writes it (ADR 0562's address), wherever it's
+  called.
+- **A copy of a `&&Fiber`, `iter().copied()`, is the reference**: the
+  same key, not a copy of the fiber. `copied()` and `cloned()` of an
+  iterator of references to references clone the reference, as std's do.
+
+## Why
+
+- **It's React's JS**, `new Set()`, `.size`, `.clear()`, and the Rust an
+  engineer writes for a set of things by identity.
+- **It's exactly JS's equality of an object**: no case where the `Set`
+  finds a different key than Rust's would.
+- **No new API**: the program's own impls say it, so no rust-js type or
+  attribute is the identity set.
+
+## Alternatives
+
+- **A `js::Set` binding of objects**: JS's type in Rust's place, where
+  std's `HashSet` says the same and native Rust runs it.
+- **A wrapper key, `ByAddress<&Fiber>`**: a crate's type for what the
+  type's own impls say, and a `$KeyMap` of wrappers in JS.
+- **Recognize `ptr::eq` of any two values in `eq`**: an `eq` that compares
+  another value's address isn't identity, which a JS `Set` would find
+  wrongly.
+
+## What holds it
+
+- Corpus `identity_keys` (a set and a map of them, `entry`, a hash of
+  one, `copied()` and `cloned()` of references to them) and
+  `refcell_identity_set`.
+- `test/lowering-collections.test.ts`, "a type equal only to itself keys
+  a JS Set by itself": `new Set(fibers)`, and refusals of one with its
+  own `ne`, one that compares `self` with `self`, and one that compares
+  more.
+- Mutations `identity-key-refused`, `identity-eq-unseen`,
+  `ne-override-trusted`, `forwards-args-unchecked`, `ptr-hash-unrecognized`,
+  `ptr-hash-of-pointee`, `copied-pointee-peeled`.

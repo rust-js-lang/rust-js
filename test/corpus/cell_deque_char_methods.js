@@ -36,15 +36,15 @@ function main() {
   $cellSwap(count, other);
   count.value = (count.value * 2) | 0;
   console.log(`${count.value} ${other.value}`);
-  const list = { value: [1] };
-  list.value.push(2);
-  const more = { value: [9] };
-  $refCellSwap(list, more);
+  const list = [1];
+  list.push(2);
+  const more = [9];
+  $refCellSwap(list, more, true);
   const borrow = $borrow(list, true);
   try {
     const value = $borrow(more, true);
     try {
-      console.log(`[${borrow.value.join(", ")}] [${value.value.join(", ")}]`);
+      console.log(`[${borrow.join(", ")}] [${value.join(", ")}]`);
     } finally {
       $unborrow(value);
     }

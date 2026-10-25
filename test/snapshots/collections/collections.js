@@ -5,17 +5,13 @@
 import {
   $add,
   $at,
-  $borrow,
-  $borrowMut,
   $cmp,
   $cmpIn,
   $cmpItems,
   $debugStr,
   $index,
   $insert,
-  $iter,
   $mutGet,
-  $next,
   $orInsert,
   $orInsertWith,
   $rangeNext,
@@ -24,7 +20,6 @@ import {
   $sortedEntries,
   $sortedKeys,
   $trim,
-  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -155,44 +150,31 @@ export function toggled(n) {
   return [ids, done];
 }
 
-/** A `RefCell` is `{ value }`: `*c.borrow_mut() += 1` changes its value. */
+/**
+ * A `RefCell` no borrow of which meets another is its value (ADR 0863):
+ * `*c.borrow_mut() += 1` changes it.
+ */
 export function cell(times) {
-  const c = { value: 0 };
+  let c = 0;
   for (let i = 0; i < times; i++) {
-    const borrowMut = $borrowMut(c, true);
-    borrowMut.value = (borrowMut.value + 2) | 0;
-    $unborrow(borrowMut);
+    c = (c + 2) | 0;
   }
-  const borrow = $borrow(c, true);
-  const result = (borrow.value + 1) | 0;
-  $unborrow(borrow);
-  return result;
+  return (c + 1) | 0;
 }
 
 /** Shared through an `Rc`, a `RefCell<Vec<_>>` is one array everyone changes. */
 export function shared(times) {
-  const log = { value: [] };
+  const log = [];
   const writer = log;
   for (let i = 0; i < times; i++) {
-    const borrowMut = $borrowMut(writer, true);
-    try {
-      borrowMut.value.push(Math.imul(i, i));
-    } finally {
-      $unborrow(borrowMut);
-    }
+    writer.push(Math.imul(i, i));
   }
-  const v = $borrow(log, true);
+  const v = log;
   let total = 0;
-  try {
-    const iter = $iter(v.value);
-    let x;
-    while ((x = $next(iter)) != null) {
-      total = (total + x) | 0;
-    }
-    return [total, v.value.length];
-  } finally {
-    $unborrow(v);
+  for (const x of v) {
+    total = (total + x) | 0;
   }
+  return [total, v.length];
 }
 
 /** Strings: `trim`, `is_empty`, `==`, `String::from`. */

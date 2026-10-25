@@ -260,6 +260,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `unwrap_or_default`, whose `Err` it drops; and an
                     // `Option`'s `as_mut`, a reference (ADR 0509).
                     | Std::Capacity(_)
+                    // A cell's `get_mut`, a `&mut` to what it holds, which a
+                    // write through drops as it's written (ADR 0863).
+                    | Std::CellGetMut
                     | Std::Comb(Comb::PopIf | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrDefault)
                     | Std::Slice(SliceOp::PopFrontIf)
                     | Std::Method("map")

@@ -225,7 +225,7 @@ pub fn lower_crate<'tcx>(
     // What each function's lowering found of drops, gathered in the order
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
-    let plain_ref_cells = std::cell::OnceCell::new();
+    let ref_cells = std::cell::OnceCell::new();
     // What runs where its module loads, which reads another module's
     // `const`s as their values (`FnCx::reads_by_name`).
     let loads: HashSet<DefId> = (thread_local_inits.keys().map(|init| init.to_def_id()))
@@ -274,7 +274,8 @@ pub fn lower_crate<'tcx>(
         format_options,
         debug_hex,
         tidy_until,
-        plain_ref_cells: &plain_ref_cells,
+        ref_cells: &ref_cells,
+        quiet_locals: &quiet_locals,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
         loads: &loads,
@@ -918,8 +919,8 @@ pub fn lower_crate<'tcx>(
                     function.export = false;
                 }
             }
-            let no_plain = HashSet::new();
-            let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
+            let no_ref_cells = super::drops::RefCells::default();
+            let ref_cells = ref_cells.get().unwrap_or(&no_ref_cells);
             let declarations = super::declarations::module(
                 tcx,
                 module,
@@ -927,7 +928,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 &reexports,
                 &aliased_items,
-                (plain_ref_cells, &counted),
+                (ref_cells, &counted),
                 (&fns, module_held),
             );
             let aliases: Vec<(String, String)> = aliased_items.into_iter().map(|(_, names)| names).collect();
@@ -1064,6 +1065,23 @@ pub fn lower_crate<'tcx>(
             );
         }
     }
+    // What the library does with its `RefCell`s, which its consumers agree
+    // with (ADR 0863).
+    let ref_cell_facts = || {
+        let recognition = super::recognition::Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        };
+        let no_ref_cells = super::drops::RefCells::default();
+        ref_cells
+            .get()
+            .unwrap_or(&no_ref_cells)
+            .facts(&recognition, &cell_borrows, &|t| {
+                super::drops::drop_runs(recognition, (export_library, &closure_facts), &counted, t)
+            })
+    };
     tcx.dcx().has_errors().is_none().then_some(Unlinked {
         library: export_library.then(|| {
             super::library::exports(
@@ -1080,6 +1098,7 @@ pub fn lower_crate<'tcx>(
                     writers_take_options,
                     makes_dropping_anys: closure_facts.any_dyns_drop,
                     counted: &counted,
+                    ref_cells: ref_cell_facts(),
                 },
                 (&trait_impls, &held.modules),
                 dependencies,

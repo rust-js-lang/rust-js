@@ -128,7 +128,8 @@ pub fn toggled(n: u32) -> (u32, u32) {
     (ids, done)
 }
 
-/// A `RefCell` is `{ value }`: `*c.borrow_mut() += 1` changes its value.
+/// A `RefCell` no borrow of which meets another is its value (ADR 0863):
+/// `*c.borrow_mut() += 1` changes it.
 pub fn cell(times: i32) -> i32 {
     let c = RefCell::new(0);
     for _ in 0..times {

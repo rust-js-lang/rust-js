@@ -46,6 +46,10 @@ export function parseManifest(text) {
         || !strings(library.impls) || !strings(library.libraries)
         // ADR 0852: what the `Rc`s it counts point at; none where it's absent.
         || !(library.counted_rcs === undefined || Array.isArray(library.counted_rcs) && library.counted_rcs.every(rcShape))
+        // ADR 0863: what it does with its `RefCell`s, each a list of shapes.
+        || !(library.ref_cells === undefined || object(library.ref_cells)
+          && ["boxed", "counted", "unchecked", "plain", "handed"].every(kind => library.ref_cells[kind] === undefined
+            || Array.isArray(library.ref_cells[kind]) && library.ref_cells[kind].every(rcShape)))
         || !Array.isArray(library.items) || !library.items.every(item => object(item)
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")

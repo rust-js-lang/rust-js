@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0288](0288-cell-fields.md) to the `RefCell`s of
 [0328](0328-refcell-borrow-counts.md).
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): a library's
+plain field, which its contract lists, is its consumer's too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

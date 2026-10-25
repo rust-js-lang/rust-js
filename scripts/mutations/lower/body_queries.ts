@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "            registered_equalities: HashSet::new(),\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
   },
+  {
+    name: "forwards-args-unchecked",
+    breaks: "an `eq` that compares the addresses of other values than its own is taken as equal only to itself (ADR 0864)",
+    file: "src/lower/body_queries.rs",
+    find: "    (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()\n",
+    replace: "    Some(()).and(super::fn_def(thir[fun].ty))\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+  },
 ];

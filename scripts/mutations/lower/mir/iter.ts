@@ -389,4 +389,12 @@ export const mutations: Mutation[] = [
     replace: "                f if f.is_identity() => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_own_nth.rs$"],
   },
+  {
+    name: "copied-pointee-peeled",
+    breaks: "`copied()` of an iterator of references to references copies what the inner one points at, `{ ...item }`, a set of `&Fiber` keys of copies",
+    file: "src/lower/mir/iter.rs",
+    find: "        let pointee = match *item.kind() {\n            ty::Ref(_, pointee, _) => pointee,\n            _ => item,\n        };\n",
+    replace: "        let pointee = item.peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+  },
 ];

@@ -539,4 +539,12 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span).filter(|_| false)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
   },
+  {
+    name: "got-mut-written-undefined",
+    breaks: "a nullable `RefCell` field written through its `get_mut` is `undefined` for `None`, not `null` (ADR 0863)",
+    file: "src/lower/mir/assign.rs",
+    find: "            .or_else(|| self.field_got_mut(state, *place))\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
+  },
 ];

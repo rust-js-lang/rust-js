@@ -4,7 +4,6 @@ import {
   $append,
   $asciiCase,
   $bigMax,
-  $borrowMut,
   $cmp,
   $debugStr,
   $displayF32,
@@ -12,7 +11,6 @@ import {
   $print,
   $some,
   $sortedEntries,
-  $unborrow,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -158,14 +156,9 @@ function main() {
   console.log(
     `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
-  const cell = { value: [1] };
-  const borrowMut = $borrowMut(cell, true);
-  try {
-    borrowMut.value.push(2);
-  } finally {
-    $unborrow(borrowMut);
-  }
-  console.log(`[${cell.value.join(", ")}] 5`);
+  const cell = [1];
+  cell.push(2);
+  console.log(`[${cell.join(", ")}] 5`);
   const front = [1];
   const back = [2, 3];
   $append(front, back);

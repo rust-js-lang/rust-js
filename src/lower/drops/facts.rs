@@ -10,7 +10,8 @@ use std::iter::once;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};
 use rustc_middle::thir::{
-    AdtExprBase, Expr as ThirExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind as ThirStmt, Thir,
+    AdtExprBase, Block, Expr as ThirExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtId, StmtKind as ThirStmt,
+    Thir,
 };
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty};
@@ -36,6 +37,14 @@ pub(in crate::lower) struct Facts {
     /// nothing can ask whether its cell is borrowed: checked, and not
     /// counted, nor dropped (ADR 0328).
     pub(in crate::lower) momentary: HashSet<ExprId>,
+    /// Each borrow, by its call's `fun`, whose guard a `let` holds, never
+    /// moved but into `drop`, while nothing after it in its block can ask
+    /// whether its cell is borrowed: not counted (ADR 0863).
+    pub(in crate::lower) let_held: HashSet<ExprId>,
+    /// Each other, by its call's `fun`, whose guard is held only while code
+    /// of the crate's or std's runs, which rust-js sees, while it's held: no
+    /// library's code, nor JS's (ADR 0863).
+    pub(in crate::lower) held_while_seen: HashSet<ExprId>,
 }
 
 /// What a pattern takes of a value it's matched against.
@@ -96,7 +105,8 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     /// The expressions being walked, outermost first.
     stack: Vec<ExprId>,
     /// The statements being walked, each its temporaries' scope and what's
-    /// in it, a `let` with an `else` nothing.
+    /// in it, a `let` with an `else` nothing; and the arms of a `match`,
+    /// whose temporaries live while its body runs, one with a guard nothing.
     statements: Vec<(region::Scope, Option<ExprId>)>,
     /// Each `let` statement's value, and its pattern.
     lets: HashMap<ExprId, &'a Pat<'tcx>>,
@@ -445,6 +455,17 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         let Some(scope) = tree.temporary_scope(self.thir[e].temp_scope_id).temp_lifetime else {
             return;
         };
+        // An `if let`'s scrutinee's, which lives while its test and its
+        // `then` run, not its `else` (edition 2024).
+        let if_then = (self.stack.iter().rev()).find_map(|&s| match self.thir[s].kind {
+            ExprKind::If {
+                if_then_scope,
+                cond,
+                then,
+                ..
+            } if if_then_scope == scope => Some([cond, then]),
+            _ => None,
+        });
         let extent = self
             .stack
             .iter()
@@ -458,9 +479,78 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     .find(|(s, _)| *s == scope)
                     .and_then(|&(_, root)| root)
             });
-        let Some(extent) = extent else {
+        let extents: Vec<ExprId> = match (if_then, extent) {
+            (Some(both), _) => both.to_vec(),
+            (None, Some(extent)) => vec![extent],
+            (None, None) => return,
+        };
+        if self.held_quietly((fun, cell), &[], &extents) {
+            self.facts.momentary.insert(fun);
+        }
+    }
+
+    /// A guard a `let` holds, `let v = c.borrow();`, until its block ends or
+    /// `drop(v)`: not counted where nothing after it in its block can ask
+    /// whether its cell is borrowed (ADR 0863), as a momentary one isn't
+    /// (ADR 0328). Not one moved anywhere else, which may outlive what's
+    /// asked of its block.
+    fn let_held(&mut self, pattern: &Pat<'tcx>, init: ExprId, (rest, value): (&[StmtId], Option<ExprId>)) {
+        let PatKind::Binding {
+            var,
+            mode: BindingMode(ByRef::No, _),
+            subpattern: None,
+            ty,
+            ..
+        } = pattern.kind
+        else {
             return;
         };
+        let recognition = &self.cx.recognition;
+        let call = strip(self.thir, init);
+        let ExprKind::Call { fun, .. } = self.thir[call].kind else {
+            return;
+        };
+        if !recognition.is_guard(ty)
+            || !matches!(
+                fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)),
+                Some(Std::Borrow { lock: false, .. })
+            )
+        {
+            return;
+        }
+        let Some(cell) = borrowed(recognition, self.thir, call) else {
+            return;
+        };
+        let mut moves = Moves {
+            recognition,
+            thir: self.thir,
+            var,
+            moved: false,
+        };
+        // Held until a statement of its block drops it, `drop(v);`, or
+        // its block ends.
+        let (rest, value) = match rest.iter().position(|&stmt| match self.thir[stmt].kind {
+            ThirStmt::Expr { expr, .. } => moves.drops_it(expr),
+            ThirStmt::Let { .. } => false,
+        }) {
+            Some(at) => (&rest[..at], None),
+            None => (rest, value),
+        };
+        for &stmt in rest {
+            moves.visit_stmt(&self.thir[stmt]);
+        }
+        if let Some(value) = value {
+            moves.visit_expr(&self.thir[value]);
+        }
+        if !moves.moved && self.held_quietly((fun, cell), rest, value.as_slice()) {
+            self.facts.let_held.insert(fun);
+        }
+    }
+
+    /// Whether `fun`'s guard of `cell`, held while `stmts` and `exprs` run,
+    /// meets no borrow that may ask of it (`Quiet`); if one may, whether
+    /// only code rust-js sees runs while it's held (`Seen`), a fact of it.
+    fn held_quietly(&mut self, (fun, cell): (ExprId, Borrow<'tcx>), stmts: &[StmtId], exprs: &[ExprId]) -> bool {
         let mut quiet = Quiet {
             cx: self.cx,
             borrows: self.borrows,
@@ -469,10 +559,116 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             cell,
             quiet: true,
         };
-        quiet.visit_expr(&self.thir[extent]);
-        if quiet.quiet {
-            self.facts.momentary.insert(fun);
+        for &stmt in stmts {
+            quiet.visit_stmt(&self.thir[stmt]);
         }
+        for &extent in exprs {
+            quiet.visit_expr(&self.thir[extent]);
+        }
+        if quiet.quiet {
+            return true;
+        }
+        let mut seen = Seen {
+            recognition: &self.cx.recognition,
+            borrows: self.borrows,
+            thir: self.thir,
+            seen: true,
+        };
+        for &stmt in stmts {
+            seen.visit_stmt(&self.thir[stmt]);
+        }
+        for &extent in exprs {
+            seen.visit_expr(&self.thir[extent]);
+        }
+        if seen.seen {
+            self.facts.held_while_seen.insert(fun);
+        }
+        false
+    }
+}
+
+/// Whether a `let`'s guard `var` is moved, but into `drop`: given by value
+/// anywhere, which may keep it (ADR 0863). A reference to it can't outlive
+/// it.
+struct Moves<'c, 'a, 'tcx> {
+    recognition: &'c crate::lower::recognition::Recognition<'c, 'tcx>,
+    thir: &'a Thir<'tcx>,
+    var: LocalVarId,
+    moved: bool,
+}
+
+impl<'c, 'a, 'tcx> Moves<'c, 'a, 'tcx> {
+    fn is_var(&self, e: ExprId) -> bool {
+        matches!(self.thir[strip(self.thir, e)].kind, ExprKind::VarRef { id } if id == self.var)
+    }
+
+    /// Whether `e` is `drop(var)`.
+    fn drops_it(&self, e: ExprId) -> bool {
+        self.is_drop(&self.thir[strip(self.thir, e)].kind)
+    }
+
+    fn is_drop(&self, kind: &ExprKind<'tcx>) -> bool {
+        matches!(*kind, ExprKind::Call { fun, ref args, .. }
+            if matches!(
+                fn_def(self.thir[fun].ty).and_then(|(id, a)| self.recognition.classify(id, a)),
+                Some(Std::Drop)
+            ) && matches!(args[..], [only] if self.is_var(only)))
+    }
+}
+
+impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Moves<'c, 'a, 'tcx> {
+    fn thir(&self) -> &'a Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
+        if self.moved {
+            return;
+        }
+        match expr.kind {
+            ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } if self.is_var(arg) => return,
+            ExprKind::Call { .. } if self.is_drop(&expr.kind) => return,
+            ExprKind::VarRef { id } if id == self.var => {
+                self.moved = true;
+                return;
+            }
+            // What a closure takes, which rustc's walk doesn't reach.
+            ExprKind::Closure(ref closure) => {
+                for &upvar in closure.upvars.iter() {
+                    self.visit_expr(&self.thir[upvar]);
+                }
+            }
+            _ => {}
+        }
+        visit::walk_expr(self, expr);
+    }
+}
+
+/// Whether evaluating an expression runs only code rust-js sees, the
+/// crate's or std's, of no library's nor JS's (ADR 0863).
+struct Seen<'c, 'a, 'tcx> {
+    recognition: &'c crate::lower::recognition::Recognition<'c, 'tcx>,
+    borrows: &'c CellBorrows<'tcx>,
+    thir: &'a Thir<'tcx>,
+    seen: bool,
+}
+
+impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
+    fn thir(&self) -> &'a Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
+        if !self.seen {
+            return;
+        }
+        self.seen = match expr.kind {
+            ExprKind::Call { fun, .. } => fn_def(self.thir[fun].ty)
+                .is_some_and(|(id, args)| !self.borrows.call_runs_unseen(self.recognition, (id, args))),
+            ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => false,
+            _ => true,
+        };
+        visit::walk_expr(self, expr);
     }
 }
 
@@ -525,11 +721,25 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
             _ => false,
         };
-        if asks || (!is_place(&expr.kind) && self.drops(expr.ty)) {
+        // A write over a value with a destructor runs it.
+        let writes_over = matches!(expr.kind, ExprKind::Assign { lhs, .. } if self.drops(self.thir[lhs].ty));
+        if asks || writes_over || (!is_place(&expr.kind) && self.drops(expr.ty)) {
             self.quiet = false;
             return;
         }
         visit::walk_expr(self, expr);
+    }
+
+    /// A `let` of a value with a destructor, which runs where its block
+    /// ends, even of a place moved into it, `let y = x;`.
+    fn visit_stmt(&mut self, stmt: &'a rustc_middle::thir::Stmt<'tcx>) {
+        if let ThirStmt::Let { ref pattern, .. } = stmt.kind
+            && self.drops(pattern.ty)
+        {
+            self.quiet = false;
+            return;
+        }
+        visit::walk_stmt(self, stmt);
     }
 }
 
@@ -575,6 +785,28 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
             } => (init_scope, initializer.filter(|_| else_block.is_none())),
         });
         visit::walk_stmt(self, stmt);
+        self.statements.pop();
+    }
+
+    fn visit_block(&mut self, block: &'a Block) {
+        for (i, &stmt) in block.stmts.iter().enumerate() {
+            if let ThirStmt::Let {
+                ref pattern,
+                initializer: Some(init),
+                else_block: None,
+                ..
+            } = self.thir[stmt].kind
+            {
+                self.let_held(pattern, init, (&block.stmts[i + 1..], block.expr));
+            }
+        }
+        visit::walk_block(self, block);
+    }
+
+    fn visit_arm(&mut self, arm: &'a rustc_middle::thir::Arm<'tcx>) {
+        self.statements
+            .push((arm.scope, arm.guard.is_none().then_some(arm.body)));
+        visit::walk_arm(self, arm);
         self.statements.pop();
     }
 

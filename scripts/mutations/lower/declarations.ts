@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "cell-field-declared-any",
     breaks: "a `Cell` field is declared `any`, where it's the number it holds",
     file: "src/lower/declarations.rs",
-    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
-    replace: "                if super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
+    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || self.ref_cells.is_plain(self.tcx, ty)\n",
+    replace: "                if self.ref_cells.is_plain(self.tcx, ty)\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
   {
@@ -466,8 +466,8 @@ export const mutations: Mutation[] = [
     "name": "plain-refcell-declared-cell",
     "breaks": "a field's `RefCell` held as its value is declared `{ value }`",
     "file": "src/lower/declarations.rs",
-    "find": "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || super::drops::is_plain_ref_cell(self.plain_ref_cells, self.tcx, ty) =>",
-    "replace": "                if is_std_def(self.tcx, adt.did(), StdItem::Cell) =>",
+    "find": "                    || self.ref_cells.is_plain(self.tcx, ty)\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
+    "replace": "                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
     "tests": [
       "test/declarations.test.ts"
     ]
@@ -727,5 +727,13 @@ export const mutations: Mutation[] = [
     find: "            if !held && aliases.iter().any(|&(item, _)| item == def_id) {\n",
     replace: "            if false && aliases.iter().any(|&(item, _)| item == def_id) {\n",
     tests: ["test/modules.test.ts", "-t", "a pub use by another name of the module's own function exports it by that"],
+  },
+  {
+    name: "value-cell-declared-any",
+    breaks: "a `RefCell` of an array a function gives is declared `any`, not the array it is",
+    file: "src/lower/declarations.rs",
+    find: "                if self.ref_cells.is_value_cell(tcx, ty) {\n",
+    replace: "                if false && self.ref_cells.is_value_cell(tcx, ty) {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
 ];

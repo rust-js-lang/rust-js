@@ -76,6 +76,11 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
     /// Fn`, which drops it then (ADR 0521).
     pub(in crate::lower) closure_facts: &'a ClosureFacts,
     pub(in crate::lower) state: &'a TypeDrops<'tcx>,
+    /// Where it's asked as a body's lowered, the crate's `RefCell`s, and
+    /// what its bodies may borrow: a guard of one no borrow of which can
+    /// meet another is never counted, so drops nothing (ADR 0863). Not
+    /// before, as which are is found by what bodies drop.
+    pub(in crate::lower) ref_cells: Option<(&'a super::RefCells<'tcx>, &'a crate::lower::analysis::CellBorrows<'tcx>)>,
 }
 
 impl<'a, 'tcx> DropQuery<'a, 'tcx> {
@@ -232,6 +237,30 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.drops(ty) == Drops::Runs
+    }
+
+    /// Whether `ty` is a `Ref` or a `RefMut` of a `RefCell` no borrow of
+    /// which can meet another, which is never counted (ADR 0863).
+    fn uncounted_guard(&self, ty: Ty<'tcx>) -> bool {
+        let Some((ref_cells, borrows)) = self.ref_cells else {
+            return false;
+        };
+        let tcx = self.recognition.tcx;
+        let ty::Adt(_, args) = ty.kind() else { return false };
+        let of_ref_cell = [StdItem::RefCellRef, StdItem::RefCellRefMut]
+            .into_iter()
+            .any(|item| self.recognition.is_std_type(ty, item));
+        let Some(held) = args.types().next().filter(|_| of_ref_cell) else {
+            return false;
+        };
+        let cell = Ty::new_adt(
+            tcx,
+            tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),
+            tcx.mk_args(&[held.into()]),
+        );
+        ref_cells.quiet(&self.recognition, borrows, cell, &|t| {
+            super::drop_runs(self.recognition, (self.library, self.closure_facts), self.counted, t)
+        })
     }
 
     /// What a closure takes by value that has a destructor: each variable,
@@ -460,7 +489,9 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,
             // A guard: its cell borrowed once fewer (ADR 0328). What it guards
             // is its cell's to drop.
-            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,
+            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {
+                Drops::Nothing
+            }
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
             // An iterator that owns an array's items, `vec::IntoIter`: what it
             // hasn't given yet, each dropped in order, as a loop that leaves

@@ -35,7 +35,7 @@ from your crate and what a binding must be given.
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
-| `Cell<T>`, `RefCell<T>` | `{ value }`; in a field, the property itself | [Cells](#cell-and-refcell) |
+| `Cell<T>`, `RefCell<T>` | `{ value }`; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object | [Cells](#cell-and-refcell) |
 | `OnceCell<T>`, `OnceLock<T>` | `{ value }` of an `Option`; in a field, the property, absent until it's set | [OnceCell](#oncecell-and-oncelock) |
 | `&T` | the value | [References](#references) |
 | `&mut` to an object | the object, changed in place | [References](#references) |
@@ -926,8 +926,6 @@ pub fn shared() -> RefCell<Vec<u32>> {
 ```
 
 ```js
-import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
-
 export function hit(counter, line) {
   counter.hits = (counter.hits + 1) >>> 0;
   counter.log.push(line);
@@ -940,17 +938,11 @@ export function doubled() {
 }
 
 export function shared() {
-  const list = { value: [] };
-  const first = $borrow(list, true);
-  const empty = first.value.length === 0;
-  $unborrow(first);
+  const list = [];
+  const first = list;
+  const empty = first.length === 0;
   if (empty) {
-    const borrowMut = $borrowMut(list, true);
-    try {
-      borrowMut.value.push(1);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    list.push(1);
   }
   return list;
 }
@@ -962,9 +954,23 @@ export function shared() {
   in the crate lasts a moment, as `borrow_mut().push(..)`, `replace` and
   `take` do ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
   [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)).
-- **A `RefCell` held across code is `{ value }` and counts its borrows**, as
-  std's does: a second `borrow_mut()` while one is held panics
-  ([ADR 0328](../../decisions/0328-refcell-borrow-counts.md)).
+- **A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
+  object**, `list` above, its whole writes, `replace`, `take`, `*cell.get_mut()
+  = v`, made in place; of a number, a string or an `Option` it's `{ value }`.
+  Generic code's `RefCell<T>` of any `T`, and one made a `RefCell<dyn T>`,
+  is `{ value }` too, for every `T`
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+- **A `RefCell` held across code counts its borrows**, as std's does: a
+  second `borrow_mut()` while one is held panics
+  ([ADR 0328](../../decisions/0328-refcell-borrow-counts.md)). One no borrow
+  of which is ever held while code that may borrow it runs is checked
+  nowhere, as none can fail
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+- **A library's manifest says what it does with its `RefCell`s**, and a
+  crate using it that would read one otherwise is refused: one it shares as
+  the object, which the crate's generic code would box, or a borrow of one
+  it never checks held while the library's code may run
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
 - **A local `Cell` whose cell no one else sees is a plain variable.**
 - **A `Mutex` and an `RwLock` are cells too**, `{ value }`.
 

@@ -8,6 +8,9 @@ still refused. Amends [0390](0390-addressable-memory-is-refused-as-such.md),
 [0406](0406-a-union-is-the-field-it-holds.md); extends
 [0417](0417-an-allocation-is-an-array-of-slots.md) and
 [0285](0285-ptr-eq.md). Replaces the draft `bytes-through-a-pointer`.
+Extended by
+[0864](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md): a hash of
+an address.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C for what a pointer
 reads, writes, compares and measures within one allocation, and for the

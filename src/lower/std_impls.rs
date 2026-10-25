@@ -293,6 +293,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => {
                 return self.clone_value(place, held, span, out);
             }
+            // A `RefCell` of an object's, the object's clone (ADR 0863),
+            // while it's borrowed: checked free to, and held where its
+            // clone may ask (ADR 0328).
+            ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
+                if !self.recognition().std_alone(args.type_at(0)) {
+                    let param = self.fresh("value");
+                    let mut body = Vec::new();
+                    let value = self.clone_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
+                    body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
+                    return Ok(Expr::call(
+                        Expr::helper("$withBorrow"),
+                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],
+                    ));
+                }
+                let cell = match self.quiet_ref_cell(ty) {
+                    true => place,
+                    false => Expr::call(Expr::helper("$borrow"), vec![place]),
+                };
+                return self.clone_value(cell, args.type_at(0), span, out);
+            }
             // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
             // and held where its value's clone may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
@@ -688,6 +708,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);
                 Expr::object(vec![Prop::Field("init".into(), init)])
             }
+            // A `RefCell` of an object, the object (ADR 0863).
+            ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
+                self.default_value(args.type_at(0), span)?
+            }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => Expr::object(
                 vec![Prop::Field(js::HELD.into(), self.default_value(args.type_at(0), span)?)],
             ),
@@ -757,6 +781,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_discriminant(ty)
             // A function pointer, by identity, as Rust's by address (ADR 0262).
             || matches!(ty.kind(), ty::FnPtr(..))
+            // One whose `==` is its address's, `ptr::eq`, and whose `Hash`
+            // its address's, `ptr::hash`: JS's `===` of the object, which
+            // a `Set` keys by (ADR 0864).
+            || self.equal_only_to_itself(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()
@@ -767,6 +795,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => JsEq::Strict,
             false => JsEq::SameValue,
         })
+    }
+
+    /// Whether `ty` is a type of the crate's whose `PartialEq` is its
+    /// address's, `fn eq(&self, other: &Self) -> bool { ptr::eq(self,
+    /// other) }`, and whose `Hash` is too, `ptr::hash(self, state)`, its
+    /// `ne` std's: equal only to itself, as JS's `===` of an object is
+    /// (ADR 0864). Of a value JS holds as an object: a struct of fields or
+    /// a JS object's binding.
+    pub(super) fn equal_only_to_itself(&self, ty: Ty<'tcx>) -> bool {
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        if !adt.is_struct() || !adt.did().is_local() {
+            return false;
+        }
+        let Some((eq, hash)) = self.recognition().eq_and_hash(adt.did()) else {
+            return false;
+        };
+        let calls = |id: DefId, known: super::recognition::Std| {
+            (self.krate.bodies.get(&id))
+                .and_then(|body| super::body_queries::forwards_to(&body.thir))
+                .is_some_and(|(callee, args)| self.recognition().classify(callee, args) == Some(known))
+        };
+        calls(eq, super::recognition::Std::PtrEq)
+            && calls(
+                hash,
+                super::recognition::Std::Hash(super::std_types::hash::HashOp::Address),
+            )
     }
 
     /// Whether `ty`, through its references, is a JS value of any shape,
@@ -1071,7 +1125,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &format!("`==` on `{ty}`")));
         }
         if !self.custom_eq(ty) {
-            return Ok(Expr::call(Expr::helper("$eq"), vec![a, b]));
+            // Two cells are each borrowed to compare; a value isn't, though
+            // it's the object a `RefCell` is, read through its guard (ADR
+            // 0863).
+            let mut given = vec![a, b];
+            if self.recognition().is_borrowed_cell(ty) {
+                given.push(Expr::bool(true));
+            }
+            return Ok(Expr::call(Expr::helper("$eq"), given));
         }
         // Each is read more than once below.
         let a = if a.reads_same() { a } else { self.spill("left", a, out) };
@@ -1087,22 +1148,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.eq_value(a, b, args.type_at(0), span, out)
             }
             // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
-            // their values' `==` may ask.
+            // their values' `==` may ask; of one that's the object it holds,
+            // the object (ADR 0863).
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
+                let itself = self.is_value_cell(ty);
+                let flagged = |mut given: Vec<Expr>| {
+                    if itself {
+                        given.push(Expr::bool(true));
+                    }
+                    given
+                };
                 let mut body = Vec::new();
                 let eq = self.eq_value(Expr::var("x"), Expr::var("y"), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
                 let inner = Expr::call(
                     Expr::helper("$withBorrow"),
-                    vec![b, Expr::arrow(vec!["y".into()], body)],
+                    flagged(vec![b, Expr::arrow(vec!["y".into()], body)]),
                 );
                 Ok(Expr::call(
                     Expr::helper("$withBorrow"),
-                    vec![
+                    flagged(vec![
                         a,
                         Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
-                    ],
+                    ]),
                 ))
+            }
+            ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
+                let (a, b) = match self.quiet_ref_cell(ty) {
+                    true => (a, b),
+                    false => (
+                        Expr::call(Expr::helper("$borrow"), vec![a]),
+                        Expr::call(Expr::helper("$borrow"), vec![b]),
+                    ),
+                };
+                self.eq_value(a, b, args.type_at(0), span, out)
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let (a, b) = match std(StdItem::RefCell) {

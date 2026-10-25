@@ -6,6 +6,9 @@ which asks of a cell only what a call may borrow. Amends [0025](0025-vec-loops-r
 [0327](0327-cell-deque-char-methods.md); extends
 [0098](0098-destructors.md); counted by
 [0314](0314-std-data-structures.md).
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): a `RefCell`
+of an object is the object, and only a borrow that may meet another is
+counted.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), and D, said at run
 time, for a lock locked while its thread holds it.

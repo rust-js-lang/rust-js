@@ -42,16 +42,16 @@ function filled(word, N) {
 }
 
 function main() {
-  const h = { cell: { value: [] } };
+  const h = { cell: [] };
   const borrowMut = $borrowMut(h.cell, true);
   try {
-    borrowMut.value.push(1);
+    borrowMut.push(1);
   } finally {
     $unborrow(borrowMut);
   }
   const borrow = $borrow(h.cell, true);
   try {
-    console.log(`[${borrow.value.join(", ")}] ${filled("a", 3)}`);
+    console.log(`[${borrow.join(", ")}] ${filled("a", 3)}`);
   } finally {
     $unborrow(borrow);
   }

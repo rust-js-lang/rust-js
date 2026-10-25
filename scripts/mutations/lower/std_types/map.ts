@@ -430,4 +430,12 @@ export const mutations: Mutation[] = [
     replace: "                for value in values.by_ref() {\n                    if false && value.has_effects() {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_capacity_effects.rs$"],
   },
+  {
+    name: "identity-key-refused",
+    breaks: "a type equal only to itself is refused as a set's key (ADR 0864)",
+    file: "src/lower/std_types/map.rs",
+    find: "            && (!self.has_user_impl(self.partial_eq_trait(), peeled) || self.equal_only_to_itself(peeled))\n",
+    replace: "            && !self.has_user_impl(self.partial_eq_trait(), peeled)\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+  },
 ];

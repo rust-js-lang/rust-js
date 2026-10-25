@@ -282,14 +282,15 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
   // The listener heard the first ping, and was gone for the second.
   expect(asyncs.listenUntilAborted()).toBe(1);
   // A spawned task runs up to its first `.await` at once, the rest later.
+  // An `Rc<RefCell<Vec<i32>>>` is the array (ADR 0863).
   const log = asyncs.spawned();
-  expect(log.value).toEqual([1, 2]);
+  expect(log).toEqual([1, 2]);
   await Bun.sleep(20);
-  expect(log.value).toEqual([1, 2, 3]);
+  expect(log).toEqual([1, 2, 3]);
   const started = asyncs.started();
-  expect(started.value).toEqual([1, 2]);
+  expect(started).toEqual([1, 2]);
   await Bun.sleep(20);
-  expect(started.value).toEqual([1, 2, 3]);
+  expect(started).toEqual([1, 2, 3]);
   // `window.fetch(..)`, from the webapi crate, and the response's promises.
   // Bun has `fetch`; the webapi crate reaches it through `window`. A POST's
   // answer is its method and body, as the server was sent them.
@@ -345,7 +346,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
   // A closure of an `async` block, an async arrow.
-  expect(js).toContain("const loading = async () => {\n    const borrowMut = $borrowMut(taskLog, true);");
+  expect(js).toContain("const loading = async () => {\n    taskLog.push(1);");
   // A future in a variable is the promise; `.await` on it is `await`.
   expect(js).toContain("const first = setTimeout(5, 1);");
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");
@@ -1130,8 +1131,10 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
   // A bound at the type's own end always holds, so it isn't tested.
   expect(js).toContain("if (n <= -1) {");
   expect(js).toContain("? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`\n    : undefined;");
-  // A block's statements go before the `const` of its value.
-  expect(js).toContain("  const c = counter;\n  const bump = (n) => {");
+  // A block's statements go before the `const` of its value; the
+  // `Rc<RefCell<i32>>` its closure shares, no borrow of which meets
+  // another, is the variable (ADR 0863).
+  expect(js).toContain("  let counter = 0;\n  const bump = (n) => {\n    counter = (counter + n) | 0;");
 });
 
 // ADR 0070: a std function taken as a value is an arrow, and an array's

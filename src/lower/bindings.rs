@@ -111,7 +111,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {
-                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` of one, whose `None` is `null`; this one isn't";
+                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Cell` or a `RefCell` of one, whose `None` is `null`; this one isn't";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
@@ -1141,14 +1141,16 @@ pub(super) fn null_where_made(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
 }
 
 /// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
-/// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772). `None` of
+/// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772), or a
+/// `RefCell`'s, a field's the value it holds (ADRs 0362, 0863). `None` of
 /// any other type.
 pub(super) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let option = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    let cell = |adt: ty::AdtDef<'_>, item| adt.did() == super::recognition::std_item(tcx, item);
     match ty.kind() {
         _ if option(ty) => Some(ty),
         ty::Adt(adt, args)
-            if adt.did() == super::recognition::std_item(tcx, super::recognition::StdItem::Cell)
+            if (cell(*adt, super::recognition::StdItem::Cell) || cell(*adt, super::recognition::StdItem::RefCell))
                 && option(args.type_at(0)) =>
         {
             Some(args.type_at(0))

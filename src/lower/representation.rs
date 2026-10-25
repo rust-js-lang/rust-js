@@ -1261,6 +1261,14 @@ fn const_js_by<'tcx>(
         // A std struct's fields are its own, not the JS value rust-js makes
         // of it: `iter::empty()` is no `[undefined]`. Only a `PhantomData`, and
         // `Reverse(x)`, `[x]`, are their fields.
+        // A `RefCell` of an object is the object, where generic code has
+        // none of any value (ADR 0863), which only a body lowering it knows:
+        // its initializer's, as one that can't be said here is.
+        ty::Adt(adt, args)
+            if is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>
+        {
+            None
+        }
         // A `Cell` or a `RefCell` is `{ value }`, what its `UnsafeCell` holds,
         // as one made at run time is.
         ty::Adt(adt, _)

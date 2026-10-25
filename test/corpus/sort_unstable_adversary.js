@@ -2,7 +2,6 @@
 
 import {
   $at,
-  $borrowMut,
   $cmp,
   $index,
   $range,
@@ -10,7 +9,6 @@ import {
   $selectNthUnstable,
   $slice,
   $sortUnstable,
-  $unborrow,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -24,33 +22,29 @@ function adversary(n, select) {
   const start = new Array(n).fill(gas);
   start[$at(start, 0)] = (gas + 2) >>> 0;
   start[$at(start, 1)] = (gas + 1) >>> 0;
-  const values = { value: start };
+  const values = start;
   let solid = 0;
   let candidate = 0;
   let asked = 0;
   const compare = (x, y) => {
     asked = (asked + 1) >>> 0;
-    const v = $borrowMut(values, true);
-    try {
-      if ($index(v.value, x) === gas && $index(v.value, y) === gas) {
-        if (x === candidate) {
-          const value = solid;
-          v.value[$at(v.value, x)] = value;
-        } else {
-          const value = solid;
-          v.value[$at(v.value, y)] = value;
-        }
-        solid = (solid + 1) >>> 0;
+    const v = values;
+    if ($index(v, x) === gas && $index(v, y) === gas) {
+      if (x === candidate) {
+        const value = solid;
+        v[$at(v, x)] = value;
+      } else {
+        const value = solid;
+        v[$at(v, y)] = value;
       }
-      if ($index(v.value, x) === gas) {
-        candidate = x;
-      } else if ($index(v.value, y) === gas) {
-        candidate = y;
-      }
-      return $cmp($index(v.value, x), $index(v.value, y));
-    } finally {
-      $unborrow(v);
+      solid = (solid + 1) >>> 0;
     }
+    if ($index(v, x) === gas) {
+      candidate = x;
+    } else if ($index(v, y) === gas) {
+      candidate = y;
+    }
+    return $cmp($index(v, x), $index(v, y));
   };
   const items = $range(0, n);
   if (select != null) {

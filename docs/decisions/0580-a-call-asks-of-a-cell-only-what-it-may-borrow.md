@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0328](0328-refcell-borrow-counts.md), whose
 "nothing can ask" counted any call of the crate's as one that may, and
 [0270](0270-module-variables.md)'s plain thread-locals.
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): std's code
+a call runs runs the crate's impls its bounds name.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet. A JS getter that

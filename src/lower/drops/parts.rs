@@ -1,5 +1,5 @@
-//! What dropping a value's parts runs, its items', and which `RefCell`s
-//! are plain, found before a body's lowered.
+//! What dropping a value's parts runs, its items', and a body's drop
+//! facts, found before it's lowered.
 
 use super::*;
 
@@ -107,9 +107,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .any(|cell| self.is_std_type(ty, cell)) =>
             {
                 let inner = args.type_at(0);
-                let value = match self.cell_dyn_trait(inner) {
-                    Some(_) => value,
-                    None => Expr::held(value),
+                // A `RefCell` of an object is the object (ADR 0863).
+                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {
+                    true => value,
+                    false => Expr::held(value),
                 };
                 self.drop_in(value, inner, span, made, out)?
             }
@@ -325,150 +326,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// This body's facts, found the first time they're asked for; what it
     /// does that isn't supported is an error then.
-    /// A `RefCell` type a field holds as its value (ADR 0362): each field of
-    /// one in the crate is only ever borrowed for a moment, where nothing can
-    /// ask, so no borrow of it is counted, its count stays 0, and its checks
-    /// can't fail. A cell lent, bound, moved, replaced or cloned, of a derive,
-    /// or of a type with a destructor, or a library's, is a cell.
-    pub(in crate::lower) fn plain_ref_cell(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_type(ty, StdItem::RefCell)
-            && is_plain_ref_cell(
-                (self.krate.plain_ref_cells).get_or_init(|| self.find_plain_ref_cells()),
-                self.tcx,
-                ty,
-            )
-    }
-
-    fn find_plain_ref_cells(&self) -> HashSet<Ty<'tcx>> {
-        let tcx = self.tcx;
-        // Of THIR's borrows, as MIR's are, whose guards of a field's handle
-        // tidy reads as the field (ADR 0364).
-        if self.krate.library {
-            return HashSet::new();
-        }
-        let mut plain = HashSet::new();
-        let mut cells = HashSet::new();
-        let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
-        for body in bodies {
-            // Each body's own facts, asked where it is, of its own type
-            // parameters, with no dictionaries: a type parameter's drop is
-            // then a maybe, and its borrow counted.
-            let owner = tcx.typeck_root_def_id(body.def_id);
-            let recognition = crate::lower::recognition::Recognition {
-                tcx,
-                typing_env: ty::TypingEnv::post_analysis(tcx, owner),
-                trait_impls: self.krate.trait_impls,
-                foreign: self.krate.foreign,
-            };
-            let state = TypeDrops::default();
-            let query = without_dictionaries(
-                recognition,
-                (false, self.krate.closure_facts),
-                self.krate.counted,
-                &state,
-            );
-            let thir = &body.thir;
-            let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
-            // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`,
-            // or to a write that holds it only while it swaps the value,
-            // `x.f.replace(v)`, whose old value drops after; `x.f.take()`
-            // runs `T::default()` too, which std's runs nothing of.
-            let writes_for_a_moment = |fun: rustc_middle::thir::ExprId| {
-                crate::lower::fn_def(thir[fun].ty).is_some_and(|(id, args)| match recognition.classify(id, args) {
-                    Some(crate::lower::Std::CellReplace) => true,
-                    Some(crate::lower::Std::CellTake) => {
-                        args.types().next().is_some_and(|held| recognition.std_default(held))
-                    }
-                    _ => false,
-                })
-            };
-            let mut for_a_moment = HashSet::new();
-            for expr in thir.exprs.iter() {
-                if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                    && (facts.momentary.contains(&fun) || writes_for_a_moment(fun))
-                    && let Some(&lent) = args.first()
-                    && let ExprKind::Borrow { arg, .. } = thir[crate::lower::body_queries::strip(thir, lent)].kind
-                {
-                    for_a_moment.insert(crate::lower::body_queries::strip(thir, arg));
-                }
-            }
-            for (id, expr) in thir.exprs.iter_enumerated() {
-                if let ExprKind::Field { .. } = expr.kind
-                    && self.is_std_type(expr.ty, StdItem::RefCell)
-                {
-                    match for_a_moment.contains(&id) {
-                        true => plain.insert(expr.ty),
-                        false => cells.insert(expr.ty),
-                    };
-                }
-            }
-            // One bound by a pattern is a value of its own, a cell.
-            let mut bound = BoundRefCells {
-                recognition: self.recognition(),
-                thir,
-                found: &mut cells,
-            };
-            for expr in thir.exprs.iter() {
-                if let ExprKind::Let { ref pat, .. } = expr.kind {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
-                }
-            }
-            for stmt in thir.stmts.iter() {
-                if let ThirStmt::Let { ref pattern, .. } = stmt.kind {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pattern);
-                }
-            }
-            for arm in thir.arms.iter() {
-                rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, &arm.pattern);
-            }
-            for param in thir.params.iter() {
-                if let Some(pat) = &param.pat {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
-                }
-            }
-        }
-        // A derive's, which reads its fields itself (ADR 0049).
-        for imp in tcx.hir_crate_items(()).definitions() {
-            if matches!(tcx.def_kind(imp), DefKind::Impl { of_trait: true })
-                && crate::lower::recognition::known_derive(tcx, imp.to_def_id())
-                && let ty::Adt(adt, args) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind()
-            {
-                for field in adt.all_fields() {
-                    let field_ty = field.ty(tcx, args).skip_normalization();
-                    if self.is_std_type(field_ty, StdItem::RefCell) {
-                        cells.insert(field_ty);
-                    }
-                }
-            }
-        }
-        // A generic one may be any of them.
-        if cells.iter().any(|ty| ty.has_param()) {
-            return HashSet::new();
-        }
-        // Of no type parameter: asked anywhere.
-        let recognition = crate::lower::recognition::Recognition {
-            tcx,
-            typing_env: ty::TypingEnv::fully_monomorphized(),
-            trait_impls: self.krate.trait_impls,
-            foreign: self.krate.foreign,
-        };
-        let state = TypeDrops::default();
-        let query = without_dictionaries(
-            recognition,
-            (false, self.krate.closure_facts),
-            self.krate.counted,
-            &state,
-        );
-        // Each of its regions erased, as `is_plain_ref_cell` asks.
-        let erased = |set: HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
-            set.into_iter().map(|ty| tcx.erase_and_anonymize_regions(ty)).collect()
-        };
-        let cells = erased(cells);
-        let mut plain = erased(plain);
-        plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
-        plain
-    }
-
     pub(in crate::lower) fn drop_facts(&mut self) -> R<Rc<Facts>> {
         let key = std::ptr::from_ref(self.frame.thir) as usize;
         if let Some(facts) = self.drop_state.facts.get(&key) {
@@ -510,11 +367,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
-}
-
-/// Whether `ty` is one of `plain`, the crate's `RefCell`s held as their
-/// values (ADR 0362), of its regions erased: a field's own type says `dyn
-/// FnMut() + 'static`, a body's `'{erased}`.
-pub(in crate::lower) fn is_plain_ref_cell<'tcx>(plain: &HashSet<Ty<'tcx>>, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    plain.contains(&tcx.erase_and_anonymize_regions(ty))
 }

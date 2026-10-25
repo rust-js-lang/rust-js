@@ -334,7 +334,11 @@ export function $debug(v) {
   return String(v);
 }
 
-export function $eq(a, b) {
+// Two values `==` compares part by part, each part that's a `RefCell`
+// borrowed to compare it, as are `a` and `b` where they're `cells`. One
+// that's the object it holds is also the value its guard reads, which isn't
+// borrowed to be compared (ADR 0863).
+export function $eq(a, b, cells) {
   // Not an object's `===` of itself: one of a NaN isn't equal to itself.
   if ((a === b && typeof a !== "object") || (a == null && b == null)) {
     return true;
@@ -343,16 +347,16 @@ export function $eq(a, b) {
     return false;
   }
   // A `RefCell` mutably borrowed can't be borrowed to compare (ADR 0328).
-  if (a.borrows < 0 || b.borrows < 0) throw new Error("RefCell already mutably borrowed");
+  if (cells && (a.borrows < 0 || b.borrows < 0)) throw new Error("RefCell already mutably borrowed");
   if (Array.isArray(a)) {
-    return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i]));
+    return Array.isArray(b) && a.length === b.length && a.every((x, i) => $eq(x, b[i], true));
   }
   // A map's or a set's, held in what's compared (ADR 0059).
   if (a instanceof Set) return b instanceof Set && $setEq(a, b);
-  if (a instanceof Map) return b instanceof Map && $mapEq(a, b, $eq);
+  if (a instanceof Map) return b instanceof Map && $mapEq(a, b, (x, y) => $eq(x, y, true));
   // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  return [...keys].every((k) => $eq(a[k], b[k]));
+  return [...keys].every((k) => $eq(a[k], b[k], true));
 }
 // Two maps (ADR 0059): as many entries, and each key of `a` one of `b`'s,
 // whose value `eq` says is equal, `===` where it's given none; and two sets,
@@ -5047,6 +5051,7 @@ export function $decodeUtf16(units) {
 // free to borrow so, as its guard. `borrows` counts the guards held: how
 // many share it, or -1 for the one that changes it. One held only while
 // nothing can ask isn't counted; with `hold`, it's counted until `$unborrow`.
+// A `RefCell` of an object is the object, which counts its own (ADR 0863).
 export function $borrow(cell, hold) {
   if (cell.borrows < 0) throw new Error("RefCell already mutably borrowed");
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
@@ -5080,11 +5085,12 @@ export function $tryBorrow(cell, mutable) {
 
 // What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
 // whether it's equal, where `f` may ask too. A panic's unwinding releases
-// it before what it drops can ask.
-export function $withBorrow(cell, f) {
+// it before what it drops can ask. Of one that's the object it holds
+// (`itself`, ADR 0863), the cell.
+export function $withBorrow(cell, f, itself) {
   $borrow(cell, true);
   try {
-    return f(cell.value);
+    return f(itself ? cell : cell.value);
   } finally {
     $unborrow(cell);
   }
@@ -5104,30 +5110,37 @@ export function $withBorrowMut(cell, f, boxed) {
 
 // A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
 // or `<borrowed>` where it's mutably borrowed.
-export function $showBorrowed(cell, show) {
-  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show);
+export function $showBorrowed(cell, show, itself) {
+  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, itself);
 }
 
 // A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
 // it's mutably borrowed, the cell itself for a number or text (ADR 0074),
-// and what it makes in its place.
-export function $replaceWith(cell, f, boxed) {
-  const next = $withBorrowMut(cell, f, boxed);
+// and what it makes in its place. Of one that's the object it holds
+// (`itself`, ADR 0863), the object is the `&mut`, changed in place.
+export function $replaceWith(cell, f, boxed, itself) {
+  const next = $withBorrowMut(cell, f, boxed || itself);
+  if (itself) return $take(cell, next);
   const previous = cell.value;
   cell.value = next;
   return previous;
 }
 
 // A `RefCell`'s `swap(&other)`: each mutably borrowed, the first while the
-// second is, so a cell swapped with itself is borrowed twice.
-export function $refCellSwap(a, b) {
+// second is, so a cell swapped with itself is borrowed twice. Two that are
+// the objects they hold (`itself`, ADR 0863) swap what's in them.
+export function $refCellSwap(a, b, itself) {
   $borrowMut(a, true);
   try {
     $borrowMut(b);
   } finally {
     $unborrow(a);
   }
-  [a.value, b.value] = [b.value, a.value];
+  if (itself) {
+    $assign(b, $take(a, b));
+  } else {
+    [a.value, b.value] = [b.value, a.value];
+  }
 }
 
 // A `Mutex`'s `lock()`, an `RwLock`'s `write()`, and its `read()`: the

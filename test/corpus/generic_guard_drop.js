@@ -46,26 +46,26 @@ function holderDrop_drop(holder) {
   holder.items.length = 0;
   const borrowMut = $borrowMut(holder.log, true);
   try {
-    borrowMut.value.push("dropped");
+    borrowMut.push("dropped");
   } finally {
     $unborrow(borrowMut);
   }
 }
 
 function main() {
-  const cell = { value: [1, 2] };
+  const cell = [1, 2];
   take($borrow(cell, true), $unborrow);
-  console.log(`${length($borrow(cell, true), { deref: (x) => x.value }, $unborrow)}`);
+  console.log(`${length($borrow(cell, true), { deref: (x) => x }, $unborrow)}`);
   const borrowMut = $borrowMut(cell, true);
   try {
-    borrowMut.value.push(3);
+    borrowMut.push(3);
   } finally {
     $unborrow(borrowMut);
   }
-  console.log(`${length($borrowMut(cell, true), { deref: (x) => x.value }, $unborrow)}`);
-  shown($borrow(cell, true), { deref: (x) => x.value }, $unborrow);
-  console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x.value }, $unborrow)}`);
-  const log = { value: [] };
+  console.log(`${length($borrowMut(cell, true), { deref: (x) => x }, $unborrow)}`);
+  shown($borrow(cell, true), { deref: (x) => x }, $unborrow);
+  console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x }, $unborrow)}`);
+  const log = [];
   const held = {
     items: [4, 5, 6],
     log,
@@ -73,7 +73,7 @@ function main() {
   const value = length(held, holderDeref, holderDrop_drop);
   const borrow = $borrow(log, true);
   try {
-    console.log(`${value} [${borrow.value.map((item) => $debugStr(item)).join(", ")}]`);
+    console.log(`${value} [${borrow.map((item) => $debugStr(item)).join(", ")}]`);
   } finally {
     $unborrow(borrow);
   }

@@ -672,4 +672,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },
+  {
+    name: "value-cell-const-boxed",
+    breaks: "a thread-local's `const { RefCell::new(Pair { .. }) }` is `{ value: { a, b } }`, which its borrows read as the struct it isn't",
+    file: "src/lower/representation.rs",
+    find: "            if is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
+    replace: "            if false && is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_const_object.rs$"],
+  },
 ];

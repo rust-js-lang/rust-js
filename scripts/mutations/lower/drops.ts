@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
   },
   {
-    "name": "plain-refcell-bound-kept",
-    "breaks": "a field's `RefCell` a pattern binds, a cell of its own, is taken for its value",
-    "file": "src/lower/drops.rs",
-    "find": "                    self.found.insert(field.pattern.ty);\n",
-    "replace": "",
-    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
-  },
-  {
     name: "consumed-closed-required",
     breaks: "a generic `repeat(t).take(n)` takes no destructor of `T`, though `take`'s drop drops it",
     file: "src/lower/drops.rs",

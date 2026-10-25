@@ -21,6 +21,28 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### New
 
+- **A `RefCell` of an object is the object** (ADR 0863): a
+  `RefCell<Vec<T>>` is the array, of a `HashMap` the `Map`, of a `HashSet`
+  the `Set`, of a struct the object, no `{ value }`, an `Rc` of one too;
+  its `replace`, `take`, `get_mut` and `*x.borrow_mut() = v` change it in
+  place, or assign the field that holds it. **A borrow that can't meet
+  another isn't checked**: React's `transitionTypes.push(type)` and
+  `!transitionTypes.some((t) => t === type)`, where they were `$borrow`,
+  `$iter($lent(..))` and `$unborrow`; a `let`'s guard too, `let v =
+  log.borrow();`, held until its block ends or `drop(v)`. One held while
+  code that may borrow the cell runs, the crate's `Clone` that std's clone
+  runs, a closure given to std, an `if let`'s body, is counted, and panics
+  `already borrowed` as Rust's does. Generic code's `RefCell<T>` of any `T`, and one made a
+  `RefCell<dyn T>`, keeps `{ value }`. A library's manifest says what it
+  does with its `RefCell`s, and a consumer that disagrees is refused. A
+  nullable `RefCell<Option<T>>` field is `null` where it's `None`, and
+  `Rc::ptr_eq` of an `Rc<RefCell<Vec<T>>>` is `a === b`, uncounted.
+- **A type equal only to itself keys a JS `Set` and `Map` by itself** (ADR
+  0864): a struct whose `eq` is `ptr::eq(self, other)` and whose `hash` is
+  `ptr::hash(self, state)`, React's `Fiber`, makes `HashSet<&Fiber>` a
+  `new Set()`, `.size`, `.clear()`, where it was refused; `ptr::hash` is
+  std's, of the address. `iter().copied()` of `&&T` copies the reference,
+  where it cloned the `T`.
 - **A parameter's `#[rust_js::name]` is its JS name** (ADR 0855): React's
   `useContext(Context)` is `fn use_context(#[cfg_attr(rust_js,
   rust_js::name = "Context")] context: &ReactContext<T>)`, its body's,

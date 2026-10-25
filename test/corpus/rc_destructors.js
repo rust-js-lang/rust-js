@@ -131,24 +131,24 @@ function main() {
   }
   console.log("after h");
 
-  const cell = { value: { value: [["x"]] }, strong: 1, weak: 0 };
+  const cell = { value: [["x"]], strong: 1, weak: 0 };
   let borrowMut;
   try {
     borrowMut = $borrowMut(cell.value, true);
   } catch (error) {
     $rcDrop(cell, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });
     throw error;
   }
   try {
-    borrowMut.value.push(["y"]);
+    borrowMut.push(["y"]);
   } catch (error) {
     $unborrow(borrowMut);
     $rcDrop(cell, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });
@@ -158,7 +158,7 @@ function main() {
     $unborrow(borrowMut);
   } catch (error) {
     $rcDrop(cell, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });
@@ -169,7 +169,7 @@ function main() {
     other = $rcClone(cell);
   } catch (error) {
     $rcDrop(cell, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });
@@ -177,20 +177,20 @@ function main() {
   }
   try {
     $rcDrop(cell, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });
     const borrow = $borrow(other.value, true);
     try {
-      console.log(`${borrow.value.length}`);
+      console.log(`${borrow.length}`);
     } finally {
       $unborrow(borrow);
     }
     const value = $borrowMut(other.value, true);
     let last;
     try {
-      last = value.value.pop();
+      last = value.pop();
     } catch (error) {
       $unborrow(value);
       throw error;
@@ -205,7 +205,7 @@ function main() {
     }
   } finally {
     $rcDrop(other, (value) => {
-      for (const item of value.value) {
+      for (const item of value) {
         noisyDrop_drop(item);
       }
     });

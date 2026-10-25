@@ -767,6 +767,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The field `place`, `*r`, is where `r` is what a `RefCell`'s `get_mut`
+    /// gave of one, `r = x.f.get_mut()`: a `#[rust_js::nullable]` field's
+    /// `RefCell<Option<T>>`, which `*r = None` writes `null` (ADR 0863).
+    pub(super) fn field_got_mut(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<&'tcx ty::FieldDef> {
+        let [PlaceElem::Deref] = place.projection.as_slice() else {
+            return None;
+        };
+        let body = state.body;
+        let lent = body
+            .basic_blocks
+            .iter()
+            .find_map(|data| match &data.terminator().kind {
+                mir::TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if destination.local == place.local && destination.projection.is_empty() => {
+                    let (id, generic_args) = crate::lower::fn_def(func.ty(&body.local_decls, self.tcx))?;
+                    (self.recognition().classify(id, generic_args) == Some(crate::lower::Std::CellGetMut))
+                        .then(|| args.first().and_then(|arg| arg.node.place()))
+                        .flatten()
+                }
+                _ => None,
+            })?;
+        let [] = lent.projection.as_slice() else { return None };
+        body.basic_blocks
+            .iter()
+            .flat_map(|data| &data.statements)
+            .find_map(|statement| match &statement.kind {
+                mir::StatementKind::Assign(assigned)
+                    if assigned.0.local == lent.local && assigned.0.projection.is_empty() =>
+                {
+                    match &assigned.1 {
+                        Rvalue::Ref(_, BorrowKind::Mut { .. }, of) => self.place_field(state, *of),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+    }
+
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a

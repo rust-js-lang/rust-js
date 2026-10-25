@@ -135,7 +135,7 @@ function main() {
     $unborrow(value$3);
   }
   // Its `impl` isn't one of its fields: it's equal to a cell of its value.
-  console.log(`${$eq(circle, { value: { r: 1.5 } })}`);
+  console.log(`${$eq(circle, { value: { r: 1.5 } }, true)}`);
   const boxed = { value: { side: 1 }, impl: squareShape };
   const value$4 = $borrowMut(boxed, true);
   try {

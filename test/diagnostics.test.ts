@@ -34,7 +34,8 @@ for (const [name, source, message, crate] of [
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
-  ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<Option<u32>>,\n}", "is of a field that's an `Option`"],
+  // A `Cell` or a `RefCell` of one is (ADRs 0772, 0863); of a number isn't.
+  ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<u32>,\n}", "is of a field that's an `Option`"],
   // An `Option` field's `None` is left out where it's made already (ADR 0810).
   ["an optional field that isn't nullable", "pub struct Context {\n    #[rust_js::optional]\n    pub renderer: Option<u32>,\n}", "`#[rust_js::optional]` is of a `#[rust_js::nullable]` field"],
   ["a lazy parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::lazy(init)]\n#[allow(unused_variables)]\npub fn f(initial: impl FnOnce() -> u32) {}', "`#[rust_js::lazy(init)]` names no parameter of this function"],

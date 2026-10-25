@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "contract-counts-unread",
     breaks: "a library's contract read as counting every `Rc` whatever it says, so its consumer counts what it hands as a box (ADRs 0844, 0852)",
     file: "src/library.rs",
-    find: "                counted_rcs: library.counted_rcs,\n                impls:",
-    replace: "                counted_rcs: vec![RcShape { of: None, args: Vec::new() }],\n                impls:",
+    find: "                counted_rcs: library.counted_rcs,\n                ref_cells: library.ref_cells,\n                impls:",
+    replace: "                counted_rcs: vec![RcShape { of: None, args: Vec::new() }],\n                ref_cells: library.ref_cells,\n                impls:",
     tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
   },
   {
@@ -57,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "                makes_dropping_anys: library.makes_dropping_anys,\n",
     replace: "                makes_dropping_anys: false,\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "where the library makes one of what drops"],
+  },
+  {
+    name: "contract-ref-cells-unread",
+    breaks: "a library's contract's `RefCell`s are read as none, so its consumer reads its plain field as a `{ value }` (ADR 0863)",
+    file: "src/library.rs",
+    find: "                ref_cells: library.ref_cells,\n                impls: library.impls.into_iter().collect(),\n                ..Exports::default()\n            };\n            // Where",
+    replace: "                ref_cells: Default::default(),\n                impls: library.impls.into_iter().collect(),\n                ..Exports::default()\n            };\n            // Where",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
 ];

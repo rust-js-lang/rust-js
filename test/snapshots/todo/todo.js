@@ -34,7 +34,7 @@ function on(target, event, state, view, change) {
   target.addEventListener(event, () => {
     const borrowMut = $borrowMut(state, true);
     try {
-      change(borrowMut.value);
+      change(borrowMut);
     } finally {
       $unborrow(borrowMut);
     }
@@ -97,13 +97,13 @@ function render(state, view) {
   try {
     view.list.textContent = "";
     let left = 0;
-    const iter = $iter(s.value.todos);
+    const iter = $iter(s.todos);
     let todo;
     while ((todo = $next(iter))) {
       if (!todo.done) {
         left = (left + 1) | 0;
       }
-      if (shown(s.value.filter, todo)) {
+      if (shown(s.filter, todo)) {
         view.list.append(item(state, view, todo));
       }
     }
@@ -116,7 +116,7 @@ function render(state, view) {
 
 export function main() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
-  const state = { value: { todos: [], nextId: 1, filter: "All" } };
+  const state = { todos: [], nextId: 1, filter: "All" };
   const view = { list: create("ul"), left: create("span") };
 
   // Typing a title and pressing Enter adds it.
@@ -129,7 +129,7 @@ export function main() {
     if (e.key === "Enter" && title) {
       const borrowMut = $borrowMut(adding, true);
       try {
-        add(borrowMut.value, title);
+        add(borrowMut, title);
       } finally {
         $unborrow(borrowMut);
       }

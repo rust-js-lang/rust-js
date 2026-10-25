@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
     snapshots: true,
   },
+  {
+    name: "ptr-hash-of-pointee",
+    breaks: "`ptr::hash(p, state)` hashes what `p` points at, not its address",
+    file: "src/lower/std_types/hash.rs",
+    find: "                        let pointer = ty::Ty::new_imm_ptr(self.tcx, hashed);\n",
+    replace: "                        let pointer = hashed;\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
+  },
 ];

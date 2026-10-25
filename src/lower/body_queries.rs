@@ -254,6 +254,53 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
     }
 }
 
+/// The function `thir`'s body is a call of, given its parameters as they
+/// are, in order: `ptr::eq(self, other)`, each reborrowed or made a raw
+/// pointer, and its generic arguments (ADR 0864). `None` of a body that
+/// does anything else.
+pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let mut e = strip(thir, thir.exprs.last_index()?);
+    // Its block's value, or of a function of no result, its one statement.
+    if let ExprKind::Block { block } = thir[e].kind {
+        let block = &thir[block];
+        e = match (block.stmts.as_ref(), block.expr) {
+            ([], Some(value)) => strip(thir, value),
+            ([only], None) => match thir[*only].kind {
+                rustc_middle::thir::StmtKind::Expr { expr, .. } => strip(thir, expr),
+                _ => return None,
+            },
+            _ => return None,
+        };
+    }
+    let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
+        return None;
+    };
+    // A parameter, as it's given: reborrowed, `&*self`, or made a raw
+    // pointer, `self as *const _`.
+    let param = |mut a: ExprId| -> Option<LocalVarId> {
+        loop {
+            a = strip(thir, a);
+            match thir[a].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } => match thir[strip(thir, arg)].kind {
+                    ExprKind::Deref { arg } => a = arg,
+                    _ => return None,
+                },
+                ExprKind::PointerCoercion { source, .. } | ExprKind::Cast { source } => a = source,
+                ExprKind::VarRef { id } => return Some(id),
+                _ => return None,
+            }
+        }
+    };
+    let params: Vec<LocalVarId> = (thir.params.iter())
+        .map(|p| match p.pat.as_deref().map(|pat| &pat.kind) {
+            Some(rustc_middle::thir::PatKind::Binding { var, .. }) => Some(*var),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    let given: Vec<LocalVarId> = args.iter().map(|&a| param(a)).collect::<Option<_>>()?;
+    (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()
+}
+
 /// Does `thir` read a static of `module`, or a `thread_local!`'s, whose
 /// value, made where its module loads, may not be there yet where another's
 /// initializer is (ADR 0096)? Another module's is an import, which JS makes

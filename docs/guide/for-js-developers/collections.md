@@ -684,6 +684,63 @@ export function at(b, row, col) {
 }
 ```
 
+- **A key equal only to itself is keyed by itself,** as a JS `Set` keys an
+  object. Say so in its own `PartialEq` and `Hash`, of its address,
+  `ptr::eq` and `ptr::hash`, and a set of references to it is a `Set` of
+  the objects, React's set of the fibers a transition updated
+  ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)):
+
+```rust
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
+pub struct Fiber {
+    pub lanes: u32,
+}
+
+impl PartialEq for Fiber {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Fiber {}
+
+impl Hash for Fiber {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(self, state);
+    }
+}
+
+pub fn updated(fibers: &[&'static Fiber]) -> usize {
+    let mut updated: HashSet<&'static Fiber> = HashSet::new();
+    for fiber in fibers {
+        updated.insert(fiber);
+    }
+    let count = updated.len();
+    updated.clear();
+    count
+}
+```
+
+```js
+export const fiberPartialEq = { eq: fiberPartialEq_eq };
+
+function fiberPartialEq_eq(fiber, other) {
+  return fiber === other;
+}
+
+export function updated(fibers) {
+  const updated = new Set();
+  for (const fiber of fibers) {
+    updated.add(fiber);
+  }
+  const count = updated.size;
+  updated.clear();
+  return count;
+}
+```
+
 A map you want in key order is a `BTreeMap`, a set a `BTreeSet`. It's a JS
 `Map` too, and Rust code iterates it in key order:
 

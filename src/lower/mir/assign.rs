@@ -196,8 +196,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // assigns what it makes through a temporary, which `nulled` follows.
         // So is a parameter its function names `#[rust_js::nullable(..)]`,
         // set, `children = None`, as React's `mapIntoArray` writes it (ADR
-        // 0861).
-        let nullable = match self.place_field(state, *place) {
+        // 0861), and a field a `get_mut` lent, `*t.types.get_mut() = None`
+        // (ADR 0863).
+        let nullable = match self
+            .place_field(state, *place)
+            .or_else(|| self.field_got_mut(state, *place))
+        {
             Some(field) => bindings::is_nullable(self.tcx, field),
             None => self.own_nullable_param(state, *place),
         };

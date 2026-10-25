@@ -406,18 +406,18 @@ function valueDisplay_fmt(value) {
 
 const Env = {
   child(env) {
-    return [{ value: { vars: new Map(), parent: env } }];
+    return [{ vars: new Map(), parent: env }];
   },
 
   get(env, name) {
     const scope = $borrow(env[0], true);
     let result;
     try {
-      const v = scope.value.vars.get(name);
+      const v = scope.vars.get(name);
       if (v) {
         result = v;
       } else {
-        result = scope.value.parent != null ? Env.get(scope.value.parent, name) : undefined;
+        result = scope.parent != null ? Env.get(scope.parent, name) : undefined;
       }
     } finally {
       $unborrow(scope);
@@ -428,7 +428,7 @@ const Env = {
   set(env, name, value) {
     const borrowMut = $borrowMut(env[0], true);
     try {
-      borrowMut.value.vars.set(name, value);
+      borrowMut.vars.set(name, value);
     } finally {
       $unborrow(borrowMut);
     }
@@ -587,7 +587,7 @@ function run(src) {
     return result$2;
   }
   const program = result$2._0;
-  const globals = [{ value: { vars: new Map() } }];
+  const globals = [{ vars: new Map() }];
   Env.set(globals, "len", { TAG: "Builtin", _0: "len", _1: len });
   Env.set(globals, "upper", { TAG: "Builtin", _0: "upper", _1: upper });
   const interp = { depth: 0, calls: 0 };

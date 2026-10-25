@@ -519,7 +519,11 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
         if adt.is_struct()
             && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))
             && !adt.non_enum_variant().fields.is_empty()
-            && transparent_field(tcx, adt).is_none());
+            && transparent_field(tcx, adt).is_none())
+        // A `RefCell`, its own object, `{ value }`, or the object it holds,
+        // which it alone owns (ADR 0863).
+        || matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
+            if super::is_std_def(tcx, adt.did(), StdItem::RefCell));
     if object && tcx.item_name(id).as_str() == "ptr_eq" {
         return false;
     }

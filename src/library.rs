@@ -139,6 +139,44 @@ pub struct Library {
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
+    /// What it does with its `RefCell`s, which its consumers agree with
+    /// (ADR 0863). None where it has none.
+    #[serde(default, skip_serializing_if = "RefCellFacts::is_empty")]
+    pub ref_cells: RefCellFacts,
+}
+
+/// What a library does with its `RefCell`s (ADR 0863), each type by its
+/// shape, as an `Rc`'s pointee is named (ADR 0852): a consumer represents,
+/// checks and borrows each as the library does, or is refused.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RefCellFacts {
+    /// Those of an object it has as `{ value }`, not the object: one of a
+    /// type parameter's value, `_`, all of them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub boxed: Vec<RcShape>,
+    /// Those some borrow of which it counts, held while code that may
+    /// borrow it runs: a consumer checks each borrow of one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub counted: Vec<RcShape>,
+    /// Those it borrows unchecked, none of whose borrows can meet another:
+    /// a consumer holds no borrow of one while the library's code runs.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unchecked: Vec<RcShape>,
+    /// Those a field of its types holds as its value (ADR 0362), each
+    /// field of one only ever borrowed for a moment: a consumer reads and
+    /// borrows one so.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub plain: Vec<RcShape>,
+    /// Those its types' fields hold, and its exported functions take and
+    /// give, which a consumer shares with it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub handed: Vec<RcShape>,
+}
+
+impl RefCellFacts {
+    pub fn is_empty(&self) -> bool {
+        *self == RefCellFacts::default()
+    }
 }
 
 /// What a library a compiler wrote before a fact was in its contract is
@@ -151,7 +189,7 @@ fn made_before() -> bool {
 /// what makes it, an item by its key or a primitive's name, and the types
 /// it's made of; `_`, no `of`, where it may be any type, a type
 /// parameter's value.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct RcShape {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub of: Option<String>,
@@ -203,6 +241,8 @@ pub struct Exports {
     pub makes_dropping_anys: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
+    /// What it does with its `RefCell`s (ADR 0863).
+    pub ref_cells: RefCellFacts,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -259,6 +299,7 @@ impl Dependencies {
                 makes_dropping_anys: library.makes_dropping_anys,
                 writers_take_options: library.writers_take_options,
                 counted_rcs: library.counted_rcs,
+                ref_cells: library.ref_cells,
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };
@@ -343,6 +384,7 @@ impl Dependencies {
             makes_dropping_anys: library.makes_dropping_anys,
             writers_take_options: library.writers_take_options,
             counted_rcs: library.counted_rcs,
+            ref_cells: library.ref_cells,
             impls: library.impls.into_iter().collect(),
             ..Exports::default()
         };

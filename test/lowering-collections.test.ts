@@ -446,3 +446,49 @@ pub fn queued(queue: &mut VecDeque<u32>) {
   lib.more(xs, [5, 6], seen);
   expect([rows, xs, [...seen]]).toEqual([[["a", "b"], ["-k", "v"], ["+k", "v"]], [1, 5, 6], [2, 1]]);
 });
+
+// ADR 0864: React's `Transition` keeps the fibers it updated in a
+// `Set<Fiber>`, each by itself. A type whose `PartialEq` is `ptr::eq` and
+// whose `Hash` is `ptr::hash` is equal only to itself, as JS's `===` of an
+// object is, so a set of it is JS's `Set`, keyed by the object. One whose
+// `ne` is its own, or whose `eq` compares another's address, isn't.
+test("a type equal only to itself keys a JS Set by itself", () => {
+  const source = (eq: string, ne: string) => `use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
+pub struct Fiber {
+    pub tag: u32,
+}
+
+impl PartialEq for Fiber {
+    fn eq(&self, other: &Self) -> bool {
+        ${eq}
+    }${ne}
+}
+
+impl Eq for Fiber {}
+
+impl Hash for Fiber {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(self, state);
+    }
+}
+
+pub fn count(fibers: &[&'static Fiber]) -> usize {
+    let set: HashSet<&'static Fiber> = fibers.iter().copied().collect();
+    set.len()
+}
+`;
+  const compile = (name: string, eq: string, ne = "") => {
+    const dir = fixture(name);
+    writeFileSync(join(dir, "lib.rs"), source(eq, ne));
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+    return readFileSync(join(dir, "lib.js"), "utf8");
+  };
+  const js = compile("identity-set", "std::ptr::eq(self, other)");
+  expect(js).toContain("const set = new Set(fibers);");
+  expect(() => compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }"))
+    .toThrow("values of type");
+  expect(() => compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toThrow("values of type");
+  expect(() => compile("identity-set-self", "std::ptr::eq(self, self)")).toThrow("values of type");
+});

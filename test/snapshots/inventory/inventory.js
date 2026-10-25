@@ -5,8 +5,6 @@
 // in a map, closures that return closures, and `Rc<RefCell<..>>` (ADR 0067).
 
 import {
-  $borrow,
-  $borrowMut,
   $cmp,
   $debugF64,
   $debugStr,
@@ -16,7 +14,6 @@ import {
   $orInsert,
   $partialCmp,
   $toFixed,
-  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -171,26 +168,15 @@ export function report() {
   const cheap = prices.map((p) => half(p));
   const arg = events.filter((e) => e.TAG === "Sale").length;
   out += `[${prices.map((item) => $debugF64(item)).join(", ")}] [${cheap.map((item) => $debugF64(item)).join(", ")}] ${arg}\n`;
-  const counter = { value: 0 };
-  const c = counter;
+  let counter = 0;
   const bump = (n) => {
-    const borrowMut = $borrowMut(c, true);
-    borrowMut.value = (borrowMut.value + n) | 0;
-    $unborrow(borrowMut);
+    counter = (counter + n) | 0;
   };
   for (const n of [-3, 0, 4, 7, 12]) {
     bump(n);
     out += `${classify(n)} `;
   }
-  const value = $borrow(counter, true);
-  let borrow;
-  try {
-    borrow = $borrow(counter, true);
-    $unborrow(borrow);
-  } finally {
-    $unborrow(value);
-  }
-  out += `total=${value.value} again=${borrow.value}\n`;
+  out += `total=${counter} again=${counter}\n`;
   const stack = [1, 2, 3];
   const popped = [];
   let top;

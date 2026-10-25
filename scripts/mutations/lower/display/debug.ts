@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "value-cell-shown-value",
+    breaks: "`{:?}` of a `RefCell` of an object shows its `value`, `undefined`",
+    file: "src/lower/display/debug.rs",
+    find: "                        if self.is_value_cell(ty) {\n",
+    replace: "                        if false && self.is_value_cell(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
+  },
 ];

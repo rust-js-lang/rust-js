@@ -682,4 +682,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Path(_) => (values.into_iter().zip(tys))",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
+  {
+    name: "get-mut-drop-refused",
+    breaks: "a `RefCell`'s `get_mut` of a value with a destructor is refused, though it drops nothing (ADR 0863)",
+    file: "src/lower/std_types/values.rs",
+    find: "                    // A cell's `get_mut`, a `&mut` to what it holds, which a\n                    // write through drops as it's written (ADR 0863).\n                    | Std::CellGetMut\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_plain_field_drops.rs$"],
+  },
 ];

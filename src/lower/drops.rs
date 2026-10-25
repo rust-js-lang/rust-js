@@ -31,6 +31,7 @@ mod facts;
 mod functions;
 mod inlined;
 mod parts;
+mod ref_cells;
 mod scopes;
 mod types;
 mod uses;
@@ -39,7 +40,7 @@ pub(super) use self::uses::*;
 
 use facts::{Facts, find_facts};
 pub(super) use inlined::inlined_drops;
-pub(super) use parts::is_plain_ref_cell;
+pub(super) use ref_cells::{RefCells, holds_itself};
 pub(super) use types::Drops;
 use types::{DropQuery, TypeDrops, describe};
 
@@ -73,6 +74,7 @@ fn without_dictionaries<'a, 'tcx>(
         counted,
         closure_facts,
         state,
+        ref_cells: None,
     }
 }
 
@@ -87,34 +89,6 @@ struct Made<'tcx> {
 /// A part of a value, field by field: each step the variant it's in, by
 /// index, for an enum's, and the field.
 pub(super) type Path = Vec<(Option<u32>, usize)>;
-
-/// Each `RefCell` a pattern binds of a field, not as `_` (ADR 0362).
-struct BoundRefCells<'a, 'b, 'tcx> {
-    recognition: super::recognition::Recognition<'a, 'tcx>,
-    thir: &'b rustc_middle::thir::Thir<'tcx>,
-    found: &'b mut HashSet<Ty<'tcx>>,
-}
-
-impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_, 'b, 'tcx> {
-    fn thir(&self) -> &'b rustc_middle::thir::Thir<'tcx> {
-        self.thir
-    }
-
-    fn visit_pat(&mut self, pat: &'b Pat<'tcx>) {
-        if let rustc_middle::thir::PatKind::Variant { ref subpatterns, .. }
-        | rustc_middle::thir::PatKind::Leaf { ref subpatterns } = pat.kind
-        {
-            for field in subpatterns {
-                if !matches!(field.pattern.kind, rustc_middle::thir::PatKind::Wild)
-                    && self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
-                {
-                    self.found.insert(field.pattern.ty);
-                }
-            }
-        }
-        rustc_middle::thir::visit::walk_pat(self, pat);
-    }
-}
 
 /// A copied default's drops: the drop functions of its trait's type
 /// parameters, by index, and those it can't make, with why (ADR 0098).
@@ -202,6 +176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             counted: self.krate.counted,
             closure_facts: self.krate.closure_facts,
             state: &self.drop_state.types,
+            ref_cells: Some((self.ref_cells(), self.krate.cell_borrows)),
         }
     }
 

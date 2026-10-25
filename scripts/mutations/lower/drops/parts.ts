@@ -35,38 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {
-    "name": "plain-refcell-never",
-    "breaks": "a field's `RefCell` only borrowed for a moment stays `{ value }`, `$borrowMut(parent.children).value.push(node)`",
-    "file": "src/lower/drops/parts.rs",
-    "find": "        self.is_std_type(ty, StdItem::RefCell)\n            && is_plain_ref_cell(\n",
-    "replace": "        self.is_std_type(ty, StdItem::RefCell)\n            && false\n            && is_plain_ref_cell(\n",
-    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
-  },
-  {
-    "name": "plain-refcell-any-borrow",
-    "breaks": "a field's `RefCell` borrowed while something may ask, counted, is taken for its value",
-    "file": "src/lower/drops/parts.rs",
-    "find": "                    && (facts.momentary.contains(&fun) || writes_for_a_moment(fun))\n",
-    "replace": "                    && (true || writes_for_a_moment(fun))\n",
-    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
-  },
-  {
-    "name": "plain-refcell-lent-kept",
-    "breaks": "a field's `RefCell` lent whole, whose borrows the callee counts, is taken for its value",
-    "file": "src/lower/drops/parts.rs",
-    "find": "                        false => cells.insert(expr.ty),",
-    "replace": "                        false => plain.insert(expr.ty),",
-    "tests": ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"]
-  },
-  {
-    name: "mir-ref-cells-all-cells",
-    breaks: "a `RefCell` field only ever borrowed for a moment is a cell from MIR, `{ value: [] }`",
-    file: "src/lower/drops/parts.rs",
-    find: "        if self.krate.library {\n            return HashSet::new();\n        }\n",
-    replace: "        if true {\n            return HashSet::new();\n        }\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "field only ever borrowed for a moment"],
-  },
-  {
     name: "owned-iter-left-undropped",
     breaks: "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
     file: "src/lower/drops/parts.rs",
@@ -86,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "dyn-cell-drop-of-value",
     breaks: "a `RefCell<dyn T>` dropped drops its `value` as the pair, not the cell it is",
     file: "src/lower/drops/parts.rs",
-    find: "                    Some(_) => value,\n",
-    replace: "                    Some(_) => Expr::held(value),\n",
+    find: "                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {\n                    true => value,\n",
+    replace: "                let value = match self.is_value_cell(ty) {\n                    true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_drop.rs$"],
   },
   {
@@ -131,14 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
   {
-    name: "plain-cells-asked-where-first",
-    breaks: "which cells are plain is asked of each body where the first function that asks is: another's const parameter, `N`, isn't there, and rustc crashes",
-    file: "src/lower/drops/parts.rs",
-    find: "                typing_env: ty::TypingEnv::post_analysis(tcx, owner),\n",
-    replace: "                typing_env: self.typing_env,\n",
-    tests: ["test/corpus.test.ts", "-t", "^const_param_drop_cells.rs$"],
-  },
-  {
     name: "map-keys-undropped",
     breaks: "dropping a map of keys and values with destructors drops its values alone",
     file: "src/lower/drops/parts.rs",
@@ -179,14 +139,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
-    name: "plain-refcell-derive-kept",
-    breaks: "a derive's `RefCell` field, which it reads itself, is taken for its value",
-    file: "src/lower/drops/parts.rs",
-    find: "                && crate::lower::recognition::known_derive(tcx, imp.to_def_id())\n",
-    replace: "                && false\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "only borrowed for a moment"],
-  },
-  {
     name: "fn-dyn-dropped-as-pair",
     breaks: "a `dyn Fn` is dropped by a dictionary it doesn't have",
     file: "src/lower/drops/parts.rs",
@@ -195,35 +147,19 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
-    name: "replace-lends-the-cell",
-    breaks: "a field's `RefCell` a `replace` writes is a cell, its borrows counted, React's scheduler's task's callback `{ value }`",
-    file: "src/lower/drops/parts.rs",
-    find: "                    Some(crate::lower::Std::CellReplace) => true,\n",
-    replace: "                    Some(crate::lower::Std::CellReplace) => false,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
-  },
-  {
-    name: "take-default-trusted",
-    breaks: "a `take` that runs the crate's `Default` while it holds the cell is taken as holding it for a moment",
-    file: "src/lower/drops/parts.rs",
-    find: "                        args.types().next().is_some_and(|held| recognition.std_default(held))\n",
-    replace: "                        true\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
-  },
-  {
-    name: "plain-ref-cell-regions-kept",
-    breaks: "a field's `RefCell` of a `dyn + 'static` isn't found held as its value, made `{ value }` where it's read as the value",
-    file: "src/lower/drops/parts.rs",
-    find: "    plain.contains(&tcx.erase_and_anonymize_regions(ty))\n",
-    replace: "    plain.contains(&ty)\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
-  },
-  {
     name: "future-dropped-again",
     breaks: "an `async` block's future, dropped after its body has run, drops what it took again",
     file: "src/lower/drops/parts.rs",
     find: "            ty::Coroutine(..) => {}\n",
     replace: "            ty::Coroutine(def_id, _) => self.drop_taken(*def_id, span, made, out)?,\n",
     tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+  },
+  {
+    name: "value-cell-drops-value",
+    breaks: "a `RefCell` of an object dropped drops its `value`, `undefined`, not the object, its items' destructors unrun",
+    file: "src/lower/drops/parts.rs",
+    find: "                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {\n",
+    replace: "                let value = match self.cell_dyn_trait(inner).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
   },
 ];

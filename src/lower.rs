@@ -357,8 +357,12 @@ struct CrateFacts<'a, 'tcx> {
     /// The pass tidy stops after, `--tidy-until`'s (ADR 0659).
     tidy_until: Option<&'a str>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
-    /// 0362), found once the first is asked of.
-    plain_ref_cells: &'a std::cell::OnceCell<HashSet<Ty<'tcx>>>,
+    /// 0362), and those whose borrows are counted (ADR 0863), found once
+    /// the first is asked of.
+    ref_cells: &'a std::cell::OnceCell<drops::RefCells<'tcx>>,
+    /// The thread-locals each `with_borrow` of which can't ask whether it's
+    /// borrowed, their module's variables (ADRs 0270, 0580).
+    quiet_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     named_expressions: &'a HashSet<DefId>,

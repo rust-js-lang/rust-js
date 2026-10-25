@@ -738,7 +738,8 @@ export function click() {
 - A `pub const` and a `pub static` are `export const`s.
 - A `pub` thread-local is its module's variable, exported. A `Cell` or a
   `RefCell` in it is `{ value }`, which JS reads and Rust code sees
-  change.
+  change; a `RefCell` of an array, a `Map`, a `Set` or an object is that
+  object ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
 
 ## Modules and `pub use`
 

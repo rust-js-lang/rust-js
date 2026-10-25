@@ -6,16 +6,20 @@ export function entry() {
   main();
 }
 
-const log = { value: [] };
+const log = [];
 
 function len() {
-  return $withBorrow(log, (log) => log.length);
+  return $withBorrow(log, (log) => log.length, true);
 }
 
 function main() {
-  $withBorrowMut(log, (log) => {
-    log.push(String(len()));
-  });
+  $withBorrowMut(
+    log,
+    (log) => {
+      log.push(String(len()));
+    },
+    true,
+  );
   console.log(`${len()}`);
 }
 //# sourceMappingURL=case.js.map

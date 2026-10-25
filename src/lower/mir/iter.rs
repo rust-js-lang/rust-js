@@ -584,13 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
             Some(IterMethod::Copied | IterMethod::Cloned) => match item {
-                Some(item) => {
-                    let x = self.fresh("item");
-                    let mut body = Vec::new();
-                    let copy = self.clone_value(Expr::var(&x), item.peel_refs(), span, &mut body)?;
-                    body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-                    method("map", it, vec![Expr::arrow(vec![x.into()], body)])
-                }
+                Some(item) => self.copied_items(it, item, span)?,
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
@@ -615,6 +609,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.count()`, of `def_id` of an iterator of type `iter_ty`: each item
     /// counted, and dropped as `count` drops it; of a string's UTF-16 units,
     /// its `length` (ADR 0632).
+    /// `copied()` or `cloned()` of an iterator of `item`s, references: a
+    /// copy of what each points at, once. Of an item that's a reference
+    /// to a reference, `&&Fiber`, the reference, which a copy is itself,
+    /// not what it points at, so the items as they are.
+    fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let x = self.fresh("item");
+        let mut body = Vec::new();
+        let pointee = match *item.kind() {
+            ty::Ref(_, pointee, _) => pointee,
+            _ => item,
+        };
+        let copy = self.clone_value(Expr::var(&x), pointee, span, &mut body)?;
+        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) {
+            return Ok(it);
+        }
+        body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
+        Ok(Expr::call(
+            Expr::member(it, "map"),
+            vec![Expr::arrow(vec![x.into()], body)],
+        ))
+    }
+
     fn counted(
         &mut self,
         it: Expr,

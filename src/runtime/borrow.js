@@ -2,6 +2,7 @@
 // free to borrow so, as its guard. `borrows` counts the guards held: how
 // many share it, or -1 for the one that changes it. One held only while
 // nothing can ask isn't counted; with `hold`, it's counted until `$unborrow`.
+// A `RefCell` of an object is the object, which counts its own (ADR 0863).
 function $borrow(cell, hold) {
   if (cell.borrows < 0) throw new Error("RefCell already mutably borrowed");
   if (hold) $setBorrows(cell, (cell.borrows ?? 0) + 1);
@@ -35,11 +36,12 @@ function $tryBorrow(cell, mutable) {
 
 // What `f` makes of a `RefCell`'s value while it's borrowed: its clone, or
 // whether it's equal, where `f` may ask too. A panic's unwinding releases
-// it before what it drops can ask.
-function $withBorrow(cell, f) {
+// it before what it drops can ask. Of one that's the object it holds
+// (`itself`, ADR 0863), the cell.
+function $withBorrow(cell, f, itself) {
   $borrow(cell, true);
   try {
-    return f(cell.value);
+    return f(itself ? cell : cell.value);
   } finally {
     $unborrow(cell);
   }
@@ -59,30 +61,37 @@ function $withBorrowMut(cell, f, boxed) {
 
 // A `RefCell`'s `{:?}`: what it holds, shown by `show` while it's borrowed,
 // or `<borrowed>` where it's mutably borrowed.
-function $showBorrowed(cell, show) {
-  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show);
+function $showBorrowed(cell, show, itself) {
+  return cell.borrows < 0 ? "<borrowed>" : $withBorrow(cell, show, itself);
 }
 
 // A `RefCell`'s `replace_with(f)`: `f` given a `&mut` to its value while
 // it's mutably borrowed, the cell itself for a number or text (ADR 0074),
-// and what it makes in its place.
-function $replaceWith(cell, f, boxed) {
-  const next = $withBorrowMut(cell, f, boxed);
+// and what it makes in its place. Of one that's the object it holds
+// (`itself`, ADR 0863), the object is the `&mut`, changed in place.
+function $replaceWith(cell, f, boxed, itself) {
+  const next = $withBorrowMut(cell, f, boxed || itself);
+  if (itself) return $take(cell, next);
   const previous = cell.value;
   cell.value = next;
   return previous;
 }
 
 // A `RefCell`'s `swap(&other)`: each mutably borrowed, the first while the
-// second is, so a cell swapped with itself is borrowed twice.
-function $refCellSwap(a, b) {
+// second is, so a cell swapped with itself is borrowed twice. Two that are
+// the objects they hold (`itself`, ADR 0863) swap what's in them.
+function $refCellSwap(a, b, itself) {
   $borrowMut(a, true);
   try {
     $borrowMut(b);
   } finally {
     $unborrow(a);
   }
-  [a.value, b.value] = [b.value, a.value];
+  if (itself) {
+    $assign(b, $take(a, b));
+  } else {
+    [a.value, b.value] = [b.value, a.value];
+  }
 }
 
 // A `Mutex`'s `lock()`, an `RwLock`'s `write()`, and its `read()`: the

@@ -21,11 +21,11 @@ export function entry() {
 
 function subscribe(bus, f) {
   const b = $borrowMut(bus.value, true);
-  const id = b.value.next;
-  b.value.next = (b.value.next + 1) >>> 0;
+  const id = b.next;
+  b.next = (b.next + 1) >>> 0;
   let bus$1;
   try {
-    b.value.handlers.set(id, f);
+    b.handlers.set(id, f);
     bus$1 = $downgrade(bus);
   } finally {
     $unborrow(b);
@@ -39,12 +39,12 @@ function subscribe(bus, f) {
 function publish(bus, msg) {
   const b = $borrow(bus.value, true);
   try {
-    const ids = Array.from(b.value.handlers.keys());
+    const ids = Array.from(b.handlers.keys());
     ids.sort($cmp);
     const iter = $iter(ids);
     let id;
     while ((id = $next(iter)) != null) {
-      $unwrap(b.value.handlers.get(id), "no entry found for key")(msg);
+      $unwrap(b.handlers.get(id), "no entry found for key")(msg);
     }
   } finally {
     $unborrow(b);
@@ -57,13 +57,11 @@ const Component = {
     const first = subscribe(bus, (m) => {
       console.log(`${n} got ${m}`);
     });
-    const c = { value: 0 };
+    let c = 0;
     let second;
     try {
       second = subscribe(bus, () => {
-        const borrowMut = $borrowMut(c, true);
-        borrowMut.value = (borrowMut.value + 1) | 0;
-        $unborrow(borrowMut);
+        c = (c + 1) | 0;
       });
     } catch (error) {
       const bus = $upgrade(first.bus);
@@ -71,7 +69,7 @@ const Component = {
         try {
           const borrowMut = $borrowMut(bus.value, true);
           try {
-            borrowMut.value.handlers.delete(first.id);
+            borrowMut.handlers.delete(first.id);
           } finally {
             $unborrow(borrowMut);
           }
@@ -93,10 +91,8 @@ const Component = {
 function main() {
   const bus = {
     value: {
-      value: {
-        next: 1,
-        handlers: new Map(),
-      },
+      next: 1,
+      handlers: new Map(),
     },
     strong: 1,
     weak: 0,
@@ -113,7 +109,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -135,7 +131,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -152,7 +148,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -174,7 +170,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -191,7 +187,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -211,7 +207,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -229,7 +225,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -251,7 +247,7 @@ function main() {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
-              borrowMut.value.handlers.delete(item.id);
+              borrowMut.handlers.delete(item.id);
             } finally {
               $unborrow(borrowMut);
             }
@@ -276,7 +272,7 @@ function main() {
               try {
                 const borrowMut = $borrowMut(bus.value, true);
                 try {
-                  borrowMut.value.handlers.delete(item.id);
+                  borrowMut.handlers.delete(item.id);
                 } finally {
                   $unborrow(borrowMut);
                 }
@@ -292,7 +288,7 @@ function main() {
       publish(bus, "empty");
       const borrow = $borrow(bus.value, true);
       try {
-        console.log(`left ${borrow.value.handlers.size}`);
+        console.log(`left ${borrow.handlers.size}`);
       } finally {
         $unborrow(borrow);
       }
@@ -304,7 +300,7 @@ function main() {
             try {
               const borrowMut = $borrowMut(bus.value, true);
               try {
-                borrowMut.value.handlers.delete(item$1.id);
+                borrowMut.handlers.delete(item$1.id);
               } finally {
                 $unborrow(borrowMut);
               }

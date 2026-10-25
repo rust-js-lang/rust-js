@@ -73,6 +73,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate", drops: [], stepped: [] },
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, drops: [0], stepped: [[1, "9f0e"]] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
+    ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
   };
   const value = { ...manifest, library };
   expect(parseManifest(JSON.stringify(value))).toEqual(value);
@@ -83,7 +84,8 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
   for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
     { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, drops: ["T"] }] },
     { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, stepped: [["I", 0]] }] },
-    { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] }]) {
+    { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] },
+    { ...library, ref_cells: [] }, { ...library, ref_cells: { plain: {} } }, { ...library, ref_cells: { boxed: [{ of: 1 }] } }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");
   }
 });

@@ -495,7 +495,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             vec!["value".into()],
                             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                         );
-                        Expr::call(Expr::helper("$showBorrowed"), vec![value, show])
+                        let mut given = vec![value, show];
+                        // Of one that's the object it holds, the object (ADR 0863).
+                        if self.is_value_cell(ty) {
+                            given.push(Expr::bool(true));
+                        }
+                        Expr::call(Expr::helper("$showBorrowed"), given)
                     }
                     false => self.debug_string_with(Expr::held(value), args.type_at(0), span, pretty)?,
                 };

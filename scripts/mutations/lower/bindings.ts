@@ -482,4 +482,12 @@ export const mutations: Mutation[] = [
     replace: "    (!matches!(read.kind(), ty::Alias(..))).then_some(read).filter(|_| false)\n",
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
   },
+  {
+    name: "nullable-refcell-refused",
+    breaks: "`#[rust_js::nullable]` of a field's `RefCell<Option<T>>` is refused (ADR 0863)",
+    file: "src/lower/bindings.rs",
+    find: "            if (cell(*adt, super::recognition::StdItem::Cell) || cell(*adt, super::recognition::StdItem::RefCell))\n",
+    replace: "            if cell(*adt, super::recognition::StdItem::Cell)\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
+  },
 ];

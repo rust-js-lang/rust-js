@@ -11,6 +11,7 @@ use crate::lower::bindings::{JsForm, is_binding, js_form};
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
 use crate::lower::recognition::{Recognition, Std, StdItem};
+use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
@@ -45,7 +46,13 @@ struct Summary<'tcx> {
 #[derive(Default)]
 pub(in crate::lower) struct CellBorrows<'tcx> {
     of: HashMap<DefId, Option<Summary<'tcx>>>,
+    /// Each of the crate's types' impls of a trait, by the type: what std's
+    /// code bounding one by the trait may run of it.
+    impls: Impls,
 }
+
+/// Each of the crate's ADTs' trait impls: the trait, and the impl.
+type Impls = HashMap<DefId, Vec<(DefId, DefId)>>;
 
 /// What a body does itself: what it borrows and drops, the bodies of the
 /// crate's it runs, of their generic arguments, and whether it may run what
@@ -66,6 +73,14 @@ impl<'tcx> CellBorrows<'tcx> {
         bodies: &[&Body<'tcx>],
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> Self {
+        let mut impls: Impls = HashMap::new();
+        for (&trait_id, of_trait) in tcx.all_local_trait_impls(()) {
+            for &imp in of_trait {
+                if let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
+                    impls.entry(adt.did()).or_default().push((trait_id, imp.to_def_id()));
+                }
+            }
+        }
         let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -73,7 +88,7 @@ impl<'tcx> CellBorrows<'tcx> {
                     typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
                     ..*recognition
                 };
-                (body.def_id, direct(&recognition, &body.thir, drops))
+                (body.def_id, direct(&recognition, &impls, &body.thir, drops))
             })
             .collect();
         let mut of: HashMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
@@ -105,7 +120,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 break;
             }
         }
-        CellBorrows { of }
+        CellBorrows { of, impls }
     }
 
     /// Whether running `body`, a closure's, may ask of `held`, a borrow.
@@ -132,13 +147,91 @@ impl<'tcx> CellBorrows<'tcx> {
         match called(recognition, def_id, args, receiver) {
             Called::Nothing => false,
             Called::Cell(theirs) => asks(tcx, theirs, held),
-            Called::Body(body, args) => match self.of.get(&body) {
-                Some(Some(theirs)) => {
-                    instantiated(tcx, theirs, Some(args), drops).is_none_or(|theirs| theirs.asks(tcx, held))
-                }
-                _ => true,
-            },
+            Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
+            Called::Std(id, args) => {
+                let given = std_given(recognition, &self.impls, id, args);
+                given.any
+                    || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
+                    || (given.bodies.iter()).any(|&body| self.runs_asks(tcx, body, None, held, drops))
+            }
             Called::Any => true,
+        }
+    }
+
+    /// Whether `cell`'s own impls may ask of it (ADR 0863): a `RefCell<T>`'s
+    /// `Clone`, `PartialEq`, `PartialOrd`, `Ord` and `Debug` hold a borrow
+    /// of it while `T`'s run, which may borrow it mutably, or run what
+    /// rust-js can't see.
+    pub(in crate::lower) fn impls_ask(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        cell: Ty<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let ty::Adt(_, args) = cell.kind() else {
+            return true;
+        };
+        let items = tcx.lang_items();
+        let traits = [
+            items.clone_trait(),
+            items.eq_trait(),
+            items.partial_ord_trait(),
+            Some(crate::lower::recognition::std_item(tcx, StdItem::Ord)),
+            Some(crate::lower::recognition::std_item(tcx, StdItem::Debug)),
+        ];
+        let mut given = Given::default();
+        let mut seen = HashSet::new();
+        for trait_id in traits.into_iter().flatten() {
+            bound_runs(
+                recognition,
+                &self.impls,
+                (args.type_at(0), trait_id),
+                &mut seen,
+                &mut given,
+            );
+        }
+        let held = Borrow {
+            cell: Cell::Type(cell),
+            mutable: false,
+        };
+        given.any
+            || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
+            || (given.bodies.iter()).any(|&body| self.runs_asks(tcx, body, None, held, drops))
+    }
+
+    /// Whether calling `def_id`, of `args`, may run code rust-js can't see
+    /// (ADR 0863): a library's, JS's, or a function's it's given as a
+    /// value; a body of the crate's that may, or std's that may run one.
+    pub(in crate::lower) fn call_runs_unseen(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    ) -> bool {
+        let summarized = |body: &DefId| matches!(self.of.get(body), Some(Some(_)));
+        match called(recognition, def_id, args, None) {
+            Called::Nothing | Called::Cell(_) => false,
+            Called::Body(body, _) => !summarized(&body),
+            Called::Std(id, args) => {
+                let given = std_given(recognition, &self.impls, id, args);
+                given.any || !given.bodies.iter().all(summarized)
+            }
+            Called::Any => true,
+        }
+    }
+
+    /// Whether running `body` of the crate's, of `args`, may ask of `held`.
+    fn runs_asks(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        body: DefId,
+        args: Option<ty::GenericArgsRef<'tcx>>,
+        held: Borrow<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        match self.of.get(&body) {
+            Some(Some(theirs)) => instantiated(tcx, theirs, args, drops).is_none_or(|theirs| theirs.asks(tcx, held)),
+            _ => true,
         }
     }
 }
@@ -215,6 +308,9 @@ enum Called<'tcx> {
     Cell(Borrow<'tcx>),
     /// A body of the crate's, of these generic arguments.
     Body(DefId, ty::GenericArgsRef<'tcx>),
+    /// A function of std's, of these generic arguments, which runs what its
+    /// bounds say of them (`std_given`).
+    Std(DefId, ty::GenericArgsRef<'tcx>),
     /// What rust-js can't see.
     Any,
 }
@@ -308,8 +404,196 @@ fn called<'tcx>(
     }
     match id.is_local() && !is_binding(tcx, id) {
         true => Called::Body(id, instance.args),
-        false if recognition.is_std(id) => Called::Nothing,
+        false if recognition.is_std(id) => Called::Std(id, instance.args),
         false => Called::Any,
+    }
+}
+
+/// What std's code may run of the crate's, called of some generic
+/// arguments, by the bounds it's called under: it calls what it's given
+/// only through them (ADR 0328).
+#[derive(Default)]
+struct Given<'tcx> {
+    /// The cells it borrows, a `RefCell<T>`'s by `RefCell<T>: Clone`, say.
+    cells: Vec<Borrow<'tcx>>,
+    /// The crate's bodies it may run: a closure or function it's given, an
+    /// impl's method.
+    bodies: Vec<DefId>,
+    /// What rust-js can't see: a type parameter's, a `dyn`'s or a
+    /// library's type's impl.
+    any: bool,
+}
+
+/// What `id`, std's, of `args`, may run of the crate's code (`Given`): for
+/// each trait with methods that bounds a type it's given, `F: FnMut(&T) ->
+/// bool` or `T: Clone`, the closure or function, the crate's impl of it,
+/// through what a derive reads of its fields, the cell whose impl borrows
+/// it, or what rust-js can't see.
+fn std_given<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    impls: &Impls,
+    id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Given<'tcx> {
+    let tcx = recognition.tcx;
+    let mut given = Given::default();
+    let mut seen = HashSet::new();
+    for (clause, _) in tcx.clauses_of(id).instantiate(tcx, args) {
+        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+            continue;
+        };
+        let bound = bound.skip_binder();
+        bound_runs(
+            recognition,
+            impls,
+            (bound.self_ty(), bound.def_id()),
+            &mut seen,
+            &mut given,
+        );
+    }
+    // A cell's own trait impl's method borrows it: `RefCell`'s
+    // `PartialEq::eq` borrows both it's given, its `Clone::clone` the one
+    // it clones (ADR 0863).
+    if let Some(imp) = tcx.trait_impl_of_assoc(id) {
+        let own = tcx.mk_args(&args[..tcx.generics_of(imp).count().min(args.len())]);
+        let cell = tcx.type_of(imp).instantiate(tcx, own).skip_normalization();
+        if recognition.is_borrowed_cell(cell) {
+            given.cells.push(Borrow {
+                cell: Cell::Type(tcx.erase_and_anonymize_regions(cell)),
+                mutable: !recognition.is_std_type(cell, StdItem::RefCell),
+            });
+        }
+    }
+    given
+}
+
+/// Whether a trait or one it extends has a method: what a bound by it may
+/// run. `Sized`, `Copy` and `Send` have none.
+fn has_methods(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+    rustc_middle::ty::elaborate::supertrait_def_ids(tcx, trait_id).any(|t| {
+        // A trait alias, `ptr::Thin`, may stand for any.
+        tcx.def_kind(t) != DefKind::Trait
+            || (tcx.associated_item_def_ids(t).iter()).any(|&item| matches!(tcx.def_kind(item), DefKind::AssocFn))
+    })
+}
+
+/// What std's code may run of `ty` by its bound `trait_id` (`std_given`).
+fn bound_runs<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    impls: &Impls,
+    (ty, trait_id): (Ty<'tcx>, DefId),
+    seen: &mut HashSet<(Ty<'tcx>, DefId)>,
+    given: &mut Given<'tcx>,
+) {
+    let tcx = recognition.tcx;
+    if given.any || !seen.insert((ty, trait_id)) || !has_methods(tcx, trait_id) {
+        return;
+    }
+    let traits: Vec<DefId> = rustc_middle::ty::elaborate::supertrait_def_ids(tcx, trait_id).collect();
+    let mut walk = ty.walk();
+    while let Some(part) = walk.next() {
+        let Some(part) = part.as_type() else { continue };
+        // A raw pointer's, which std's code reads nothing of.
+        if crate::lower::pointers::raw_pointee(tcx, part).is_some() {
+            continue;
+        }
+        match *part.kind() {
+            // Called, by an `Fn` trait; or, by another, `F: Clone`, what it
+            // took is. Its signature, among its arguments, isn't given.
+            ty::Closure(closure, closure_args) => {
+                walk.skip_current_subtree();
+                if !closure.is_local() {
+                    given.any = true;
+                    continue;
+                }
+                given.bodies.push(closure);
+                if tcx.fn_trait_kind_from_def_id(trait_id).is_none() {
+                    for upvar in closure_args.as_closure().upvar_tys() {
+                        bound_runs(recognition, impls, (upvar, trait_id), seen, given);
+                    }
+                }
+            }
+            ty::CoroutineClosure(closure, _) | ty::Coroutine(closure, _) => {
+                walk.skip_current_subtree();
+                match closure.is_local() {
+                    true => given.bodies.push(closure),
+                    false => given.any = true,
+                }
+            }
+            ty::FnDef(f, _) if f.is_local() && !is_binding(tcx, f) => given.bodies.push(f),
+            ty::Adt(..) if recognition.is_borrowed_cell(part) => given.cells.push(Borrow {
+                cell: Cell::Type(tcx.erase_and_anonymize_regions(part)),
+                mutable: !recognition.is_std_type(part, StdItem::RefCell),
+            }),
+            ty::Adt(adt, adt_args) if adt.did().is_local() => {
+                let all = impls.get(&adt.did()).into_iter().flatten();
+                let of: Vec<DefId> = (all.clone())
+                    .filter(|(t, _)| traits.contains(t))
+                    .map(|&(_, imp)| imp)
+                    .collect();
+                // One a blanket impl of std's meets by another it has,
+                // `ToString` by its `Display`: any of its impls but its
+                // `Drop`, which runs where it drops. Not one std derives,
+                // `Clone` or `Debug`, which only its own impl is.
+                let items = tcx.lang_items();
+                let derived = [
+                    items.clone_trait(),
+                    items.eq_trait(),
+                    items.partial_ord_trait(),
+                    Some(crate::lower::recognition::std_item(tcx, StdItem::Ord)),
+                    Some(crate::lower::recognition::std_item(tcx, StdItem::Debug)),
+                ];
+                let of = match of.is_empty() && !derived.contains(&Some(trait_id)) {
+                    true => all
+                        .filter(|(t, _)| Some(*t) != items.drop_trait())
+                        .map(|&(_, imp)| imp)
+                        .collect(),
+                    false => of,
+                };
+                for imp in of {
+                    // A derive reads its fields by the trait it derives.
+                    if crate::lower::recognition::known_derive(tcx, imp) {
+                        for field in adt.all_fields() {
+                            let field_ty = field.ty(tcx, adt_args).skip_normalization();
+                            for &t in &traits {
+                                bound_runs(recognition, impls, (field_ty, t), seen, given);
+                            }
+                        }
+                        continue;
+                    }
+                    given.bodies.extend(
+                        (tcx.associated_item_def_ids(imp).iter())
+                            .filter(|&&item| matches!(tcx.def_kind(item), DefKind::AssocFn)),
+                    );
+                }
+            }
+            // A library's, whose impls' bodies the crate can't see.
+            ty::Adt(adt, _) if recognition.foreign.in_library(adt.did()) => given.any = true,
+            ty::Adt(..)
+            | ty::Bool
+            | ty::Char
+            | ty::Int(_)
+            | ty::Uint(_)
+            | ty::Float(_)
+            | ty::Str
+            | ty::Never
+            | ty::Array(..)
+            | ty::Slice(_)
+            | ty::Ref(..)
+            | ty::Tuple(_)
+            | ty::Foreign(_)
+            | ty::FnDef(..) => {}
+            // A type parameter's, or a projection's, by a trait no impl of
+            // which is the program's, each std's: what std's code runs,
+            // `H: Hasher`'s, which runs nothing of the crate's.
+            ty::Param(_) | ty::Alias(..)
+                if traits.iter().all(|&t| {
+                    tcx.all_impls(t)
+                        .all(|imp| !imp.is_local() && recognition.in_sysroot(imp))
+                }) => {}
+            // A type parameter's, a `dyn`'s, a function pointer's.
+            _ => given.any = true,
+        }
     }
 }
 
@@ -318,6 +602,7 @@ fn called<'tcx>(
 /// it may drop, whose destructor runs.
 fn direct<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
+    impls: &Impls,
     thir: &Thir<'tcx>,
     drops: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Direct<'tcx> {
@@ -331,6 +616,12 @@ fn direct<'tcx>(
                         Called::Nothing => {}
                         Called::Cell(cell) => _ = found.own.cells.insert(cell),
                         Called::Body(body, args) => found.runs.push((body, Some(args))),
+                        Called::Std(id, args) => {
+                            let given = std_given(recognition, impls, id, args);
+                            found.any |= given.any;
+                            found.own.cells.extend(given.cells);
+                            found.runs.extend(given.bodies.into_iter().map(|body| (body, None)));
+                        }
                         Called::Any => found.any = true,
                     }
                 }
@@ -344,7 +635,9 @@ fn direct<'tcx>(
         // type parameter's, its caller's to say. A guard's releases its
         // borrow.
         let ty = tcx.erase_and_anonymize_regions(e.ty);
-        if recognition.is_guard(ty) || !ty.needs_drop(tcx, recognition.typing_env) {
+        // Nor what's behind a reference, `*state`, which no body owns.
+        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());
+        if behind_ref || recognition.is_guard(ty) || !ty.needs_drop(tcx, recognition.typing_env) {
             continue;
         }
         match ty.has_param() {
@@ -354,6 +647,27 @@ fn direct<'tcx>(
         }
     }
     found
+}
+
+/// May `a` and `b`, two cells' types, be one cell? As ADR 0852's `may_be`
+/// says of two types, a type parameter's any; and a `dyn`'s too, and a
+/// slice's an array's of its items, as one made the other, an
+/// `Rc<RefCell<Circle>>` an `Rc<RefCell<dyn Shape>>`, shares its cell
+/// (ADR 0397).
+pub(in crate::lower) fn may_be_cell<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>) -> bool {
+    match (a.kind(), b.kind()) {
+        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) => true,
+        (ty::Slice(x) | ty::Array(x, _), ty::Slice(y) | ty::Array(y, _)) => may_be_cell(tcx, *x, *y),
+        _ => match (
+            crate::lower::analysis::head(tcx, a),
+            crate::lower::analysis::head(tcx, b),
+        ) {
+            (Some((x, of_x)), Some((y, of_y))) => {
+                x == y && of_x.len() == of_y.len() && of_x.iter().zip(&of_y).all(|(&x, &y)| may_be_cell(tcx, x, y))
+            }
+            _ => true,
+        },
+    }
 }
 
 /// Whether a borrow asks of one `held`: of a cell that may be its, one of
@@ -369,7 +683,7 @@ fn overlap<'tcx>(tcx: TyCtxt<'tcx>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
         ty::Adt(_, args) => args.types().next().map(|cell| tcx.erase_and_anonymize_regions(cell)),
         _ => None,
     };
-    let alike = |x: Ty<'tcx>, y: Ty<'tcx>| x == y || x.has_param() || y.has_param();
+    let alike = |x: Ty<'tcx>, y: Ty<'tcx>| x == y || may_be_cell(tcx, x, y);
     match (a, b) {
         (Cell::Key(x), Cell::Key(y)) => x == y,
         (Cell::Key(key), Cell::Type(ty)) | (Cell::Type(ty), Cell::Key(key)) => {

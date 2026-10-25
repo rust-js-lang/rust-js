@@ -80,7 +80,7 @@ pub fn peek(bound: &Bound) -> usize {
     bound.values.borrow().len()
 }
 
-// One held while something may ask is counted.
+// One held while something may ask is counted, of what may ask.
 pub struct Asked {
     pub values: RefCell<Vec<u8>>,
 }
@@ -161,8 +161,16 @@ pub fn derived(n: i32) -> usize {
   expect(js).toContain("parent.children.push(node);");
   expect(js.slice(js.indexOf("export function nested"), js.indexOf("export function both"))).not.toContain("$borrow");
   expect(js).toContain("const shared = { values: [n] };");
-  // Each of the others is a cell: lent, bound, counted, held while asked, derived.
-  expect(js.match(/\{ values: \{ value: \[n\] \} \}/g)?.length).toBe(6);
+  // Each of the others is a cell: lent, bound, counted, held while asked,
+  // derived. A `RefCell` of an array is the array (ADR 0863), whose borrows
+  // are counted where one may meet another.
+  expect(js.match(/\{ values: \[n\] \}/g)?.length).toBe(7);
+  // One a `let` holds while what's called borrows it too, shared, asks
+  // only whether it's mutably borrowed, which no borrow of it is: none is
+  // checked (ADR 0863).
+  expect(js).toContain("const guard = asked.values;");
+  expect(js).toContain("$borrowMut(pushed.values, true)");
+  expect(js).toContain("$borrowMut(ticked.values, true)");
   const lib = await import(join(dir, "lib.js"));
   const items = [1, 2, 2, 3, 2].map((depth, i) => ({ depth, url: `#${i}` }));
   const root = lib.nested(items);
@@ -429,7 +437,10 @@ pub fn log_twice() -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const timerQueue = [];\nconst taskQueue = [];");
   expect(js).not.toMatch(/\$withBorrow(Mut)?\((timerQueue|taskQueue)/);
-  expect(js).toContain("const log = { value: [] };");
+  // A `RefCell` of an array is the array, borrowed while what it's given
+  // runs (ADR 0863).
+  expect(js).toContain("const log = [];");
+  expect(js).toContain("$withBorrowMut(\n    log,");
   const lib = await import(join(dir, "lib.js"));
   lib.schedule(1);
   lib.schedule(2);
@@ -761,7 +772,9 @@ pub fn emptied(bag: &Bag) -> u32 {
   expect(js).toContain("return task.callback == null;");
   expect(js).toContain("return { callback: (n) => (n + 1) >>> 0 };");
   // \`take\` runs a \`Default\` of the crate's while it holds the cell.
-  expect(js).toContain("$cellReplace($borrowMut(bag.items)");
+  // A `RefCell` of an object is the object, its contents taken in place
+  // (ADR 0863).
+  expect(js).toContain("$take($borrowMut(bag.items), { n: 0 })");
   const lib = await import(join(dir, "lib.js"));
   const t = lib.task();
   expect([lib.run(t, 1), lib.run(t, 3), lib.cancelled(t)]).toEqual([2, 6, false]);
@@ -805,7 +818,7 @@ pub fn clash() -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("let current;");
   expect(js).toContain("export function active() {\n  return current;\n}");
-  expect(js).toContain("$withBorrow(log, grow)");
+  expect(js).toContain("$withBorrow(log, grow, true)");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.active()).toBeUndefined();
   lib.start("a");
@@ -1265,7 +1278,7 @@ pub fn first() -> Option<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("let cache;\nif (Math.random() < 2) {\n  cache = { value: [] };\n}\n");
+  expect(js).toContain("let cache;\nif (Math.random() < 2) {\n  cache = [];\n}\n");
   expect(js).toContain("let noneFirst;\nif (!(Math.random() > 2)) {\n  noneFirst = 1;\n}\n");
   expect(js).not.toContain("= undefined;");
   const lib = await import(join(dir, "lib.js"));

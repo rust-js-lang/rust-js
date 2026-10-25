@@ -763,7 +763,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let primitive = !peeled.is_unit()
             && !Num::of(peeled).is_some_and(Num::float)
             && self.is_primitive_key(peeled)
-            && !self.has_user_impl(self.partial_eq_trait(), peeled)
+            // One the crate compares by its address alone is JS's key (ADR 0864).
+            && (!self.has_user_impl(self.partial_eq_trait(), peeled) || self.equal_only_to_itself(peeled))
             && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));
         primitive
             || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))

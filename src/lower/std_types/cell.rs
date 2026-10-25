@@ -13,16 +13,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `guard`, a `Ref`, a `RefMut` or a lock's guard of type `ty`,
     /// derefs to: its cell's `value`, or of a `&mut` to a number or text, the
     /// cell, the `{ value }` box that is; a `RefCell<dyn T>`'s the cell, its
-    /// pair (ADRs 0328, 0397).
+    /// pair (ADRs 0328, 0397); a `RefCell` of an object's, the cell, the
+    /// object itself (ADR 0863).
     pub(in crate::lower) fn guard_value(&self, guard: Expr, ty: Ty<'tcx>, mutable: bool) -> Expr {
         let ty::Adt(_, args) = ty.peel_refs().kind() else {
             unreachable!("a guard")
         };
         let guarded = args.types().next().expect("what it guards");
+        if self.guards_value_cell(ty.peel_refs()) {
+            return guard;
+        }
         match self.cell_dyn_trait(guarded).is_some() || (mutable && self.handles_mut(guarded)) {
             true => guard,
             false => Expr::held(guard),
         }
+    }
+
+    /// Whether `guard`, a guard's type, is a `Ref` or a `RefMut` of a
+    /// `RefCell` of an object, which is the object (ADR 0863).
+    pub(in crate::lower) fn guards_value_cell(&self, guard: Ty<'tcx>) -> bool {
+        let ty::Adt(_, args) = guard.kind() else { return false };
+        [StdItem::RefCellRef, StdItem::RefCellRefMut]
+            .into_iter()
+            .any(|item| self.is_std_type(guard, item))
+            && args
+                .types()
+                .next()
+                .is_some_and(|held| self.is_value_cell(self.ref_cell_of(held)))
     }
 
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
@@ -53,8 +70,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => value,
         };
         Ok(Some(match known {
-            // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
+            // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it
+            // sees a change; a `RefCell` of an object, the object (ADR 0863).
+            Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),
             Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
+            // `RefCell::into_inner`'s, of one that's its object, the object.
+            Std::CellGet if self.is_value_cell(tys[0]) => arg(),
             Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
             // Of a value with a destructor, the old dropped once the new is
             // in its place, as std's `replace` and drop (ADR 0519).
@@ -80,7 +101,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplaceWith => {
                 let item = generic_args.type_at(0);
                 let mut given = vec![arg(), arg()];
-                if !self.is_object(item) {
+                // Of a `RefCell` of an object, the object, given as the
+                // `&mut`, and changed in place (ADR 0863).
+                if self.is_value_cell(tys[0].peel_refs()) {
+                    given.extend([Expr::bool(false), Expr::bool(true)]);
+                } else if !self.is_object(item) {
                     given.push(Expr::bool(true));
                 }
                 Expr::call(Expr::helper("$replaceWith"), given)
@@ -99,7 +124,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                 );
                 let held = tys[0].peel_refs();
-                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) {
+                // A `RefCell` of an object is the object (ADR 0863): its
+                // contents taken in place, as a `&mut` to it would, borrowed
+                // to do it where it's counted.
+                if self.is_value_cell(held) {
+                    let cell = match self.quiet_ref_cell(held) {
+                        true => cell,
+                        false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
+                    };
+                    return Ok(Some(Expr::call(Expr::helper("$take"), vec![cell, next])));
+                }
+                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) && !self.quiet_ref_cell(held)
+                {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
                     return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
                 }
@@ -112,6 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
+            Std::CellGetMut if self.is_value_cell(tys[0].peel_refs()) => arg(),
             Std::CellGetMut => match self.is_boxable(generic_args.type_at(0)) {
                 true => arg(),
                 false => Expr::held(arg()),
@@ -126,7 +163,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A cell of each item, a handle on it (ADR 0152).
             Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
-                Expr::call(Expr::helper("$refCellSwap"), vec![arg(), arg()])
+                let mut given = vec![arg(), arg()];
+                // Of objects, their contents swapped in place (ADR 0863).
+                if self.is_value_cell(tys[0].peel_refs()) {
+                    given.push(Expr::bool(true));
+                }
+                Expr::call(Expr::helper("$refCellSwap"), given)
             }
             Std::CellSwap => Expr::call(Expr::helper("$cellSwap"), vec![arg(), arg()]),
             // `c.value = f(c.value)`.
@@ -147,6 +189,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // while it's held where something could ask (ADR 0328).
             // Of a field's `RefCell` never counted, the field itself, whose
             // check can't fail (ADR 0362).
+            // Of a `RefCell` no borrow of which can meet another, the cell
+            // itself, unchecked and uncounted (ADR 0863).
+            Std::Borrow { lock: false, .. } if self.quiet_ref_cell(tys[0].peel_refs()) => arg(),
             Std::Borrow { mutable, lock } => {
                 let name = match (lock, mutable) {
                     (false, false) => "$borrow",
@@ -273,14 +318,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];
+                // What it's given: the cell's value, or for a number or text
+                // the cell, the `{ value }` box a `&mut` to one is (ADR 0074);
+                // a `RefCell` of an object's, the cell, the object (ADR 0863).
+                let itself = self.is_value_cell(self.ref_cell_of(generic_args.type_at(0)));
                 let name = match mutable {
                     true => {
-                        if !self.is_object(generic_args.type_at(0)) {
+                        if itself || !self.is_object(generic_args.type_at(0)) {
                             given.push(Expr::bool(true));
                         }
                         "$withBorrowMut"
                     }
-                    false => "$withBorrow",
+                    false => {
+                        if itself {
+                            given.push(Expr::bool(true));
+                        }
+                        "$withBorrow"
+                    }
                 };
                 Expr::call(Expr::helper(name), given)
             }
@@ -295,16 +349,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// (ADR 0270). One `quiet`, whose borrows ask nothing of borrows, gives the
 /// closure of each what it holds, an object's, which it shares (ADR 0328).
 pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
+    // The module's `{ value }` cells; a `RefCell` of an object is the
+    // object (ADR 0863), given itself, as its `with_borrow`'s third
+    // argument says.
+    let boxes: HashSet<String> = (items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c)
+                if matches!(&c.value.kind, js::ExprKind::Object(props, ..)
+                    if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
+            {
+                Some(c.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
     js::each_item_expr_mut(items, &mut |e| {
         if let js::ExprKind::Call(callee, args) = &mut e.kind
             && matches!(callee.helper_name(), Some("$withBorrow" | "$withBorrowMut"))
-            && let [key, _] = args.as_slice()
-            && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()))
+            && let [key, _, rest @ ..] = args.as_slice()
+            && let js::ExprKind::Var(name) = &key.kind
+            && quiet.contains(name.as_str())
         {
+            let itself =
+                matches!(rest, [flag] if matches!(flag.kind, js::ExprKind::Bool(true))) && !boxes.contains(name);
+            if !rest.is_empty() && !itself {
+                return;
+            }
             let (key, f) = (args.remove(0), args.remove(0));
+            let given = match itself {
+                true => key,
+                false => Expr::held(key),
+            };
             *e = Expr {
                 span: e.span,
-                ..apply(f, vec![Expr::held(key)])
+                ..apply(f, vec![given])
             };
         }
     });

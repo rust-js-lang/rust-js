@@ -3,6 +3,9 @@
 Status: Accepted. Supersedes [0168](0168-user-hash.md)'s "never lowered";
 amends [0425](0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md).
 Extends [0121](0121-value-keys.md), [0141](0141-std-trait-objects.md).
+Extended by
+[0864](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md):
+`ptr::hash` writes its pointer's address.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same hash, bit for
 bit, as `wasm32`'s native Rust, rust-js's target (ADR 0090).

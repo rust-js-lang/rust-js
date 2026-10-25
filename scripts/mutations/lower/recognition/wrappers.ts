@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "ptr-eq-of-transparent-uncounted",
     breaks: "`Rc::ptr_eq` of a transparent struct, its number, is `1 === 1`, `true`, of two `Rc`s (ADR 0582, amended)",
     file: "src/lower/recognition/wrappers.rs",
-    find: "            && transparent_field(tcx, adt).is_none());\n",
-    replace: "            );\n",
+    find: "            && transparent_field(tcx, adt).is_none())\n",
+    replace: "            )\n",
     tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
   {
@@ -291,5 +291,13 @@ export const mutations: Mutation[] = [
     find: "        self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))\n",
     replace: "        self.views_as_itself(from, to)\n",
     tests: ["test/corpus.test.ts", "-t", "^box_as_mut_and_ref.rs$"],
+  },
+  {
+    name: "ptr-eq-of-refcell-counts",
+    breaks: "`Rc::ptr_eq` of an `Rc<RefCell<_>>` counts it, `$rcClone`, though what it points at is an object of its own (ADR 0863)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            if super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
+    replace: "            if false && super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
 ];

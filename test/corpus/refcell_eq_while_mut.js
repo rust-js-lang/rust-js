@@ -11,7 +11,7 @@ function main() {
   const b = { value: 1 };
   const writing = $borrowMut(a, true);
   try {
-    console.log(`${$eq(a, b)}`);
+    console.log(`${$eq(a, b, true)}`);
     console.log(`${writing.value}`);
   } finally {
     $unborrow(writing);

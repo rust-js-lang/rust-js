@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n                .filter(|exported| exported == \"default\")\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library's item its module exports by another name is imported by that"],
   },
+  {
+    name: "contract-ref-cells-unwritten",
+    breaks: "a library's contract says nothing of its `RefCell`s, so its consumer reads its plain field as a `{ value }` (ADR 0863)",
+    file: "src/lower/library.rs",
+    find: "        ref_cells: contracts.ref_cells.clone(),\n",
+    replace: "        ref_cells: Default::default(),\n",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
+  },
 ];

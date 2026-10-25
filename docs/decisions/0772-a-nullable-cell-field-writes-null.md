@@ -8,6 +8,8 @@ the storage says, so a `&Cell` to the field, a variable's or a helper's,
 writes `null` too, and the facts are the body's, read once. Extended by
 [0810](0810-an-optional-nullable-field-is-absent-until-set.md): an optional
 one's `None` is left out where it's made.
+Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): a nullable
+`RefCell` field, a plain one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: `null` and
 `undefined` are each `None` to the program, which reads either as one
