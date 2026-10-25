@@ -647,4 +647,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
   },
+  {
+    name: "deque-into-iter-unowned",
+    breaks: "a `VecDeque`'s `into_iter()` doesn't own its items: behind `fuse()` its drop reads std's `inner`, which throws, and what `take_while` leaves is never dropped (#203)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::collections::vec_deque::IntoIter\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
+  },
 ];

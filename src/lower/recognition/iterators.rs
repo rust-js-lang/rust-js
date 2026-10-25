@@ -135,6 +135,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     | "std::vec::Splice"
                     | "std::collections::vec_deque::Drain"
                     | "std::collections::binary_heap::Drain"
+                    // A deque's and a heap's `into_iter()`, the array it was
+                    // (ADR 0068), as a `Vec`'s is (#203).
+                    | "std::collections::vec_deque::IntoIter"
+                    | "std::collections::binary_heap::IntoIter"
                     | "std::collections::hash_map::Drain"
                     | "std::collections::hash_set::Drain"
                     // A map's or a set's `into_iter()`, the array of its

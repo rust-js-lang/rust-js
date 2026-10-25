@@ -566,3 +566,16 @@ closure made for the `let` does. Held by
 ## Amended by
 
 [ADR 0694](0694-four-refusals-of-drops-and-displays-lifted.md): `extend` by what holds nothing to drop, of items with a destructor, and a `match` of what a call gives, flushed before its switch, are kept.
+
+## Amendment: a deque's and a heap's `into_iter()` own their items
+
+A `VecDeque`'s and a `BinaryHeap`'s `into_iter()` are the array each was
+(ADR 0068), and own their items as a `Vec`'s does, but `array_source`
+didn't say so: behind an adapter the iterator was taken for std's
+compiled one, whose drop reads its `inner`, and `fuse().count()` threw,
+`take_while` left what it didn't take undropped (#203). They're array
+sources now, closed to drop what they don't give, `$closing(it,
+$dropEach(drop))` (`deque_into_iter_drops`, `deque-into-iter-unowned`),
+where it was `Iterator.from(items.slice())`. The readability measure's
+`$iter` share grows by that case's five, each a deque's or a heap's
+stepped where what it holds must be dropped, as a `Vec`'s is.
