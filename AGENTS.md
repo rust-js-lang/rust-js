@@ -188,6 +188,13 @@ only waits behind it. `bun run ci:check` is for another branch, or a
 run with other settings. Other workflows are
 [started by hand](DEVELOPMENT.md#workflows).
 
+**Keep the loop fast.** A slow step is paid on every change, by every
+agent. Check with `bun run check:fast`, whose timings warn when a step is
+slower than its usual, and read [DEVELOPMENT.md](DEVELOPMENT.md#keeping-the-loop-fast)
+before long work. When something is slower than it needs to be, fix it,
+or add it to that page's list of slow spots with its cost and what would
+fix it, so the next agent starts from what you learned.
+
 Keep [TESTS.md](TESTS.md) accurate in the same commit when suites, test files,
 workflow jobs, counts or CI times change noticeably. Update its table and
 date using its recount instructions. Local setup is documented in

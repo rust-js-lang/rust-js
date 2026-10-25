@@ -207,6 +207,62 @@ What keeps them there:
   `mutation-timings-<shard>`. A runtime helper's mutation, whose tests the
   checkout's `runtime/index.js` serves, runs alone after the others.
 
+## Keeping the loop fast
+
+The loop is part of the product: a slow step is paid on every change, by
+every agent at once. Noticing one and making it faster is everyone's job,
+as a wrong answer is.
+
+- **Use the loop's own tools, so its timings see you.** `bun run
+  check:fast` is the change's checks at once, timed against their usual;
+  hand-rolled runs (a corpus shard in the background, a build then a test)
+  are timed by nobody, and their slowness goes unseen.
+- **Read a `⚠ slower than usual` line before going on**: find what made
+  it slower, fix it or write it in the list below.
+- **When a step is slower than it needs to be**, fix it if it's yours to
+  fix: a cache, a stamp, a parallel run, a smaller test. Otherwise add it
+  to the list below, with what it costs and what would fix it, so the next
+  agent starts from it. A fix moves its line to "What keeps them there",
+  above, or out.
+- **Build what the tests use.** The tests, `check:fast` and an app built
+  from this checkout run the debug compiler, `target/debug/rust-js`
+  (`bun run build`); `cargo build --release` builds one nothing here runs.
+- **Run few agents at once.** Each worktree builds its own `target/`
+  (about 4 GB) and runs the corpus on every core; four or five at a time
+  made every one of them two or three times slower, and timed-out tests
+  look like failures. Three at a time kept each near its usual.
+- **Keep the Mac awake** while work runs unattended (`caffeinate -dims` in
+  a terminal): a sleeping Mac pauses every process, and `timeout` with
+  them, so a five-minute command took hours and its tests failed on time.
+
+### Landing a branch on a moving `main`
+
+Several agents land at once, so `main` often moves while a change is being
+checked:
+
+- **Rebase, never merge `main` in**: `git fetch`, `git rebase
+  origin/main`. If `main` was force-pushed (`forced update`, an author
+  rewrite), `git rebase --onto origin/main <old tip>`, so the old commits
+  don't come back.
+- **Regenerate what's generated on a conflict**, never merge it by hand:
+  `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`,
+  corpus snapshots with `bun run bless`; the decision index merges by
+  union, and the architecture test names a line left twice.
+- **After a rebase, check again only what the incoming commits touch**:
+  their `src/` changes need the change's checks again; docs and other
+  agents' tests don't. A full re-run for every commit that landed meanwhile
+  is a loop that never ends.
+- **ADR numbers**: `bun run adr:next`, and `bun run adr:renumber` when
+  `main` took yours.
+
+### Slow spots, still to fix
+
+| Step | What it costs | What would fix it |
+|---|---|---|
+| `test/snapshots.test.ts`'s `inbox` case under load | Times out at 5 s nearly every loaded run; a re-run each time | A timeout that fits its compile, or a smaller program |
+| `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
+| Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
+
 ## Working on `main`
 
 - **Each change is a commit on `main`, pushed directly**: no branches, no
