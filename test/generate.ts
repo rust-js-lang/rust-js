@@ -152,9 +152,30 @@ export type FnStep =
   | { op: "try"; name: string; how: "add" | "sub" | "mul" | "div"; a: Expr; b: Expr }
   | { op: "early"; c: Expr; value?: Expr };
 
-export type Step = { op: "map" | "filter"; x: string; body: Expr } | { op: "take" | "skip"; n: number };
+export type Step =
+  | { op: "map" | "filter"; x: string; body: Expr }
+  | { op: "take" | "skip"; n: number }
+  // The adapters whose order of steps, and of what they ask of their
+  // source, rust-js's fixes cluster in (an architecture review, 2026-10-25),
+  // each keeping its item's type: `step_by(n + 1)`, `fuse()`, `peekable()`;
+  // `skip_while`, `take_while` and `map_while` of a closure, which may
+  // `note`; `inspect`, which prints each item it sees; `enumerate()` kept
+  // by index, `.enumerate().filter(|&(i, _)| i % (n + 1) == 0).map(..)`;
+  // `chain(v.into_iter())`; `zip(v.into_iter())` of the two added, only
+  // first, where neither side has a closure std's specialization could
+  // leave uncalled (the guide's difference 15); and `flat_map` of each
+  // item and a value made of it.
+  | { op: "step_by"; n: number }
+  | { op: "fuse" | "peekable" }
+  | { op: "skip_while" | "take_while" | "map_while"; x: string; body: Expr }
+  | { op: "inspect"; tag: number }
+  | { op: "enumerate"; n: number }
+  | { op: "chain" | "zip"; other: Expr }
+  | { op: "flat_map"; x: string; body: Expr };
 export type End =
   | { op: "collect" | "sum" | "count" | "max" | "min" | "last" | "next" }
+  | { op: "nth"; n: number }
+  | { op: "find"; x: string; body: Expr }
   | { op: "any" | "all"; x: string; body: Expr }
   // A key made of each item as it comes, which may `note`: what's noted,
   // and when, says it's made between one step and the next (#179).
@@ -220,7 +241,27 @@ export type Stmt =
   // give up, and `if c { return .. }`, then its value. What it notes says
   // which steps ran before one gave up.
   | { kind: "fn"; name: string; ty: IntTy; result: "Option" | "Result"; params: [string, string]; steps: FnStep[]; tail: Expr }
-  | { kind: "labeled"; label: string; outer: string; inner: string; n: number; m: number; brk: Expr; cont: Expr; body: Stmt[] };
+  | { kind: "labeled"; label: string; outer: string; inner: string; n: number; m: number; brk: Expr; cont: Expr; body: Stmt[] }
+  // A chain of `D`s, `vec![D(3), D(4)].into_iter()`, each printing its tag
+  // as it's dropped, through adapters that drop some, keep some and hand
+  // some on, printed by its end: what's dropped, and when, as it's stepped,
+  // as it's left part-way, and once the chain is dropped (ADR 0092).
+  | { kind: "dchain"; tags: number[]; rev: boolean; steps: DStep[]; end: DEnd };
+
+// A `D` chain's adapter: `filter(|d| d.0 % k == m)`, `take`, `skip`,
+// `step_by(n + 1)`, `enumerate()` kept by index, `fuse()`, `peekable()`,
+// `skip_while(|d| d.0 < k)` and `take_while`, `inspect`, which prints the
+// tag it sees, and `chain` of more `D`s.
+export type DStep =
+  | { op: "filter"; k: number; m: number }
+  | { op: "take" | "skip" | "step_by" | "enumerate"; n: number }
+  | { op: "fuse" | "peekable" | "inspect" }
+  | { op: "skip_while" | "take_while"; k: number }
+  | { op: "chain"; tags: number[] };
+// Its end: the tags summed, counted, the last's, the `n`th's, the first's,
+// leaving the rest to drop with the chain, collected, or a `for` that may
+// `break` at a tag.
+export type DEnd = { op: "sum" | "count" | "last" | "next" | "collect" } | { op: "nth"; n: number } | { op: "for"; brk?: number };
 
 export type Program = Stmt[];
 
@@ -612,6 +653,13 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
     if (r.chance(0.3)) {
       const { x, body } = closure(elem, elem);
       end = { op: r.pick(["max_by_key", "min_by_key"] as const), x, body };
+    } else if (r.chance(0.3)) {
+      if (r.chance(0.5)) {
+        end = { op: "nth", n: r.int(5) };
+      } else {
+        const { x, body } = closure(elem, "bool");
+        end = { op: "find", x, body };
+      }
     } else {
       end = { op: r.pick(["max", "min", "last", "next"] as const) };
     }
@@ -637,12 +685,18 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
   // No `skip` before a `collect`: std's `Vec` of a chain it knows is empty
   // runs none of it, where the JS's steps through it (ADR 0055's B).
   const ops = end.op === "collect" ? (["map", "map", "filter", "filter", "take"] as const) : (["map", "map", "filter", "filter", "take", "skip"] as const);
-  const steps: Step[] = Array.from({ length: r.int(4) }, (): Step => {
-    const op = r.pick(ops);
-    if (op === "map" || op === "filter") {
-      const { x, body } = closure(elem, op === "map" ? elem : "bool");
+  const adapters = ["step_by", "fuse", "peekable", "skip_while", "take_while", "map_while", "inspect", "enumerate", "chain", "flat_map"] as const;
+  const steps: Step[] = Array.from({ length: r.int(5) }, (_, i): Step => {
+    // `zip` first alone: past a closure, std's may leave it uncalled.
+    if (i === 0 && r.chance(0.1)) return { op: "zip", other: expr(r, `Vec<${elem}>`, scope, depth - 1) };
+    const op = r.chance(0.4) ? r.pick(adapters) : r.pick(ops);
+    if (op === "map" || op === "filter" || op === "skip_while" || op === "take_while" || op === "map_while" || op === "flat_map") {
+      const { x, body } = closure(elem, op === "filter" || op === "skip_while" || op === "take_while" ? "bool" : elem);
       return { op, x, body };
     }
+    if (op === "fuse" || op === "peekable") return { op };
+    if (op === "inspect") return { op, tag: r.int(100) };
+    if (op === "chain") return { op, other: expr(r, `Vec<${elem}>`, scope, depth - 1) };
     return { op, n: r.int(4) };
   });
   if (elem === "i32" && r.chance(0.3)) {
@@ -678,7 +732,7 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(29);
+    const choice = r.int(30);
     if (choice < 3 || writable.length === 0) {
       const ty = r.chance(0.08) ? "Shapes" : r.chance(0.09) ? "Shared" : valueType(r);
       const name = `v${counter.n++}`;
@@ -863,6 +917,36 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
         cont: expr(r, "bool", counted, 2),
         body: block(r, counted, depth - 1, counter, 1 + r.int(3)),
       });
+    } else if (choice === 29) {
+      const tags = () => Array.from({ length: 1 + r.int(4) }, () => counter.n++);
+      const source = tags();
+      const all = [...source];
+      const steps: DStep[] = Array.from({ length: r.int(4) }, (): DStep => {
+        const op = r.pick(["filter", "take", "skip", "step_by", "enumerate", "fuse", "peekable", "inspect", "skip_while", "take_while", "chain"] as const);
+        if (op === "filter") {
+          const k = 2 + r.int(2);
+          return { op, k, m: r.int(k) };
+        }
+        if (op === "fuse" || op === "peekable" || op === "inspect") return { op };
+        // Where it stops is one of its tags, or past them all.
+        if (op === "skip_while" || op === "take_while") return { op, k: r.chance(0.8) ? r.pick(all) : counter.n };
+        if (op === "chain") {
+          const more = tags();
+          all.push(...more);
+          return { op, tags: more };
+        }
+        return { op, n: r.int(3) };
+      });
+      const end: DEnd = r.pick([
+        { op: "sum" },
+        { op: "count" },
+        { op: "last" },
+        { op: "next" },
+        { op: "collect" },
+        { op: "nth", n: r.int(4) },
+        { op: "for", brk: r.chance(0.5) ? r.pick(all) : undefined },
+      ] as DEnd[]);
+      stmts.push({ kind: "dchain", tags: source, rev: r.chance(0.3), steps, end });
     } else if (choice === 19) {
       const name = `d${counter.n++}`;
       const bound = r.chance(0.85);
@@ -1011,9 +1095,34 @@ function show(e: Expr): string {
     case "chain": {
       const t = e.elem;
       const steps = e.steps.map((step) => {
-        if ("n" in step) return `.${step.op}(id(${step.n}usize))`;
-        if (step.op === "map") return `.map(move |${step.x}: ${t}| -> ${t} { ${show(step.body)} })`;
-        return `.filter(move |&${step.x}: &${t}| ${show(step.body)})`;
+        switch (step.op) {
+          case "take":
+          case "skip":
+            return `.${step.op}(id(${step.n}usize))`;
+          case "step_by":
+            return `.step_by(id(${step.n + 1}usize))`;
+          case "enumerate":
+            return `.enumerate().filter(|&(i, _): &(usize, ${t})| i % id(${step.n + 1}usize) == 0).map(|(_, item): (usize, ${t})| item)`;
+          case "fuse":
+          case "peekable":
+            return `.${step.op}()`;
+          case "inspect":
+            return `.inspect(|seen: &${t}| println!("see ${step.tag} {seen}"))`;
+          case "chain":
+            return `.chain(${show(step.other)}.into_iter())`;
+          case "zip":
+            return `.zip(${show(step.other)}.into_iter()).map(|(a, b): (${t}, ${t})| a.wrapping_add(b))`;
+          case "map":
+            return `.map(move |${step.x}: ${t}| -> ${t} { ${show(step.body)} })`;
+          case "map_while":
+            return `.map_while(move |${step.x}: ${t}| -> Option<${t}> { (${show(step.body)}).checked_add(${step.x}) })`;
+          case "flat_map":
+            return `.flat_map(move |${step.x}: ${t}| -> [${t}; 2] { [${step.x}, ${show(step.body)}] })`;
+          case "filter":
+          case "skip_while":
+          case "take_while":
+            return `.${step.op}(move |&${step.x}: &${t}| ${show(step.body)})`;
+        }
       });
       const end = e.end;
       const tail =
@@ -1029,7 +1138,11 @@ function show(e: Expr): string {
                   ? `.${end.op}(move |&${end.x}: &${t}| -> ${t} { ${show(end.body)} })`
                 : end.op === "fold"
                   ? `.fold(${show(end.init)}, move |${end.acc}: ${t}, ${end.x}: ${t}| -> ${t} { ${show(end.body)} })`
-                  : `.${end.op}()`;
+                  : end.op === "nth"
+                    ? `.nth(id(${end.n}usize))`
+                    : end.op === "find"
+                      ? `.find(move |&${end.x}: &${t}| ${show(end.body)})`
+                      : `.${end.op}()`;
       const source = e.count ? `Count { at: 0, end: ${show(e.source)} }` : `${show(e.source)}.into_iter()`;
       return `(${source}${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
     }
@@ -1269,6 +1382,55 @@ function lines(stmts: Stmt[], indent: string): string[] {
         return [s.bound ? `${indent}let mut ${s.name} = D(id(${s.tag}u32));` : `${indent}let _ = D(id(${s.tag}u32));`];
       case "dset":
         return [`${indent}${s.name} = D(id(${s.tag}u32));`];
+      case "dchain": {
+        const ds = (tags: number[]) => `vec![${tags.map((tag) => `D(id(${tag}u32))`).join(", ")}].into_iter()`;
+        const steps = s.steps.map((step) => {
+          switch (step.op) {
+            case "filter":
+              return `.filter(|d: &D| d.0 % ${step.k} == ${step.m})`;
+            case "take":
+            case "skip":
+              return `.${step.op}(id(${step.n}usize))`;
+            case "step_by":
+              return `.step_by(id(${step.n + 1}usize))`;
+            case "enumerate":
+              return `.enumerate().filter(|(i, _): &(usize, D)| i % id(${step.n + 1}usize) == 0).map(|(_, d): (usize, D)| d)`;
+            case "fuse":
+            case "peekable":
+              return `.${step.op}()`;
+            case "inspect":
+              return `.inspect(|d: &D| println!("see {}", d.0))`;
+            case "skip_while":
+            case "take_while":
+              return `.${step.op}(|d: &D| d.0 < ${step.k})`;
+            case "chain":
+              return `.chain(${ds(step.tags)})`;
+          }
+        });
+        const it = `${ds(s.tags)}${s.rev ? ".rev()" : ""}${steps.join("")}`;
+        const end = s.end;
+        switch (end.op) {
+          case "sum":
+            return [`${indent}println!("{}", ${it}.map(|d: D| d.0).sum::<u32>());`];
+          case "count":
+            return [`${indent}println!("{}", ${it}.count());`];
+          case "collect":
+            return [`${indent}println!("{:?}", ${it}.map(|d: D| d.0).collect::<Vec<u32>>());`];
+          case "nth":
+            return [`${indent}println!("{:?}", ${it}.nth(id(${end.n}usize)).map(|d: D| d.0));`];
+          case "last":
+          case "next":
+            return [`${indent}println!("{:?}", ${it}.${end.op}().map(|d: D| d.0));`];
+          case "for":
+            return [
+              `${indent}for d in ${it} {`,
+              `${indent}    println!("got {}", d.0);`,
+              ...(end.brk === undefined ? [] : [`${indent}    if d.0 == ${end.brk} {`, `${indent}        break;`, `${indent}    }`]),
+              `${indent}}`,
+            ];
+        }
+        break;
+      }
       case "dmove":
         if (s.how === "drop") return [`${indent}drop(${s.name});`];
         if (s.how === "take") return [`${indent}println!("took {}", take(${s.name}));`];
@@ -1314,6 +1476,10 @@ function* smaller(program: Program): Generator<Program> {
       if (s.kind === "set" && s.op !== "=") yield put([{ ...s, op: "=" }]);
       if ("value" in s && s.value) for (const value of simpler(s.value)) yield put([{ ...s, value } as Stmt]);
       if (s.kind === "closure") for (const body of simpler(s.body)) yield put([{ ...s, body }]);
+      if (s.kind === "dchain") {
+        for (let j = 0; j < s.steps.length; j++) yield put([{ ...s, steps: [...s.steps.slice(0, j), ...s.steps.slice(j + 1)] }]);
+        if (s.rev) yield put([{ ...s, rev: false }]);
+      }
       if (s.kind === "call-mut") {
         if (s.twice) yield put([{ ...s, twice: false }]);
         for (const body of simpler(s.body)) yield put([{ ...s, body }]);
@@ -1333,6 +1499,11 @@ function* simpler(e: Expr): Generator<Expr> {
   yield e.ty === "bool" ? { kind: "lit", ty: e.ty, value: false } : isInt(e.ty) ? { kind: "lit", ty: e.ty, value: 0n } : { kind: "zero", ty: e.ty };
   if (e.kind === "vec") {
     for (let i = 0; i < e.items.length; i++) yield { ...e, items: [...e.items.slice(0, i), ...e.items.slice(i + 1)] };
+  }
+  // A chain of one step fewer, or not reversed: which adapter it needs.
+  if (e.kind === "chain") {
+    for (let i = 0; i < e.steps.length; i++) yield { ...e, steps: [...e.steps.slice(0, i), ...e.steps.slice(i + 1)] };
+    if (e.rev) yield { ...e, rev: false };
   }
   for (const [key, p] of parts) for (const q of simpler(p)) yield { ...e, [key]: q } as Expr;
 }

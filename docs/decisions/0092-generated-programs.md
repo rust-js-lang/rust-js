@@ -218,3 +218,36 @@ a difference the guide lists: seed 12449569's
 `(-id(f64::NAN)).is_sign_negative()`, `true` natively and `false` as JS
 (#193). `-0.0`'s sign is still compared. A test holds it of 2000 seeds'
 programs.
+
+## Amendment: the adapters the fixes cluster in, and chains of `D`s
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a program the
+generator makes runs as native Rust does, or the JS is wrong.
+
+Of 1,500 commits, 112 of the fixes were of iterator adapters and 45 of
+drops (an architecture review, 2026-10-25), and the generator made
+neither: its chains had `map`, `filter`, `take` and `skip`, and its `D`s
+were held, replaced and moved, never stepped.
+
+- **A chain's steps may be the adapters that keep its item's type**:
+  `step_by`, `fuse`, `peekable`, `skip_while`, `take_while` and `map_while`
+  of a closure that may `note`, `inspect`, which prints what it sees,
+  `enumerate` kept by index, `chain` of another `Vec`'s items, `zip` of
+  another's, the two added, and `flat_map` of each item and a value made
+  of it. `zip` is a chain's first step alone: past a closure, std's
+  specialization of a source that knows its length may leave the closure
+  uncalled, the guide's difference 15. Its end may be `nth` or `find`.
+- **A statement may be a chain of `D`s**, `vec![D(3), D(4)].into_iter()`,
+  reversed or not, through `filter`, `take`, `skip`, `step_by`,
+  `enumerate` kept by index, `fuse`, `peekable`, `inspect`, `skip_while`,
+  `take_while` and `chain` of more `D`s, ended by `sum` or `collect` of
+  their tags, `count`, `last`, `nth` or `next`, which leaves the rest to
+  drop with the chain, or a `for` that may `break` at a tag.
+- **The reducer takes a step out of a chain**, and a chain's `rev()`, so
+  what's left of a failure is the adapter it needs.
+
+The first 120 seeds it ran, 5000 to 5119, found three wrong answers, each
+a drop order: `chain(a, b).last()` (#232), a `take_while` that stops
+(#233), and a `Vec`'s items skipped from its back (#234). The nightly's
+seeds fail on them until they're fixed. `test/generate.test.ts` holds that
+each adapter, end and chain of `D`s is made, and that `zip` is first.

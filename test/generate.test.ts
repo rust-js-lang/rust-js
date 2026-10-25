@@ -29,6 +29,29 @@ test("what's appended to a text reads no text", () => {
   }
 });
 
+// The adapters rust-js's fixes clustered in, and chains of `D`s whose drops
+// print, are each made by some seed (ADR 0092, amended): a change that stops
+// making one fails here, not by finding nothing.
+test("each adapter, end and chain of `D`s is made", () => {
+  const text = Array.from({ length: 600 }, (_, seed) => print(generate(seed), seed)).join("\n");
+  const made = [
+    ".step_by(id(", ".fuse()", ".peekable()", ".skip_while(move", ".take_while(move", ".map_while(move", ".inspect(|seen",
+    ".enumerate().filter(|&(i, _)", ".zip(", ".flat_map(move", ".nth(id(", ".find(move",
+    "vec![D(id(", ".filter(|d: &D|", ".skip_while(|d: &D|", ".take_while(|d: &D|", ".inspect(|d: &D|", ".map(|d: D| d.0).sum::<u32>()",
+    ".map(|d: D| d.0).collect::<Vec<u32>>()", "for d in vec![D(id(",
+  ];
+  expect(made.filter((form) => !text.includes(form))).toEqual([]);
+  // `zip` is a chain's first step alone: past a closure, std's
+  // specialization may leave one uncalled (the guide's difference 15).
+  const zipsLater = (node: unknown): boolean => {
+    if (Array.isArray(node)) return node.some(zipsLater);
+    if (typeof node !== "object" || node === null) return false;
+    const { kind, steps } = node as { kind?: string; steps?: { op: string }[] };
+    return (kind === "chain" && (steps ?? []).findIndex((step) => step.op === "zip") > 0) || Object.values(node).some(zipsLater);
+  };
+  expect(Array.from({ length: 600 }, (_, seed) => seed).filter((seed) => zipsLater(generate(seed)))).toEqual([]);
+});
+
 // A NaN's sign isn't kept (the guide's differences, 4; ADR 0154), and a
 // NaN an operation makes has its sign set on x86: seed 12449569's
 // `(-id(f64::NAN)).is_sign_negative()` was `true` natively, `false` as JS.
@@ -42,7 +65,11 @@ test("a float's sign is asked only of a number", () => {
     asked += all.length;
   }
   expect(asked).toBeGreaterThan(20);
-  expect(print(generate(12449569), 12449569)).toContain("!f.is_nan() && f.is_sign_negative() }");
+  // As seed 12449569's program asked it, which the nightly failed on (#193),
+  // before the generator made chains of more adapters and that seed another
+  // program: of a value held, then tested.
+  const first = Array.from({ length: 2000 }, (_, seed) => print(generate(seed), seed)).find((text) => text.includes(".is_sign_negative()"))!;
+  expect(first).toMatch(/\{ let f: f(32|64) = .*; !f\.is_nan\(\) && f\.is_sign_negative\(\) \}/);
 });
 
 test("a program is `main` and `id`, which hides each literal from rustc", () => {
