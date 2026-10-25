@@ -696,4 +696,12 @@ export const mutations: Mutation[] = [
     replace: "                false => self.option(ty),\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
+  {
+    name: "opaque-fn-undeclared",
+    breaks: "an `impl Fn` a function gives is declared `any`, not the function it says",
+    file: "src/lower/declarations.rs",
+    find: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),\n",
+    replace: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => self.function_type(&inputs, output),\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+  },
 ];

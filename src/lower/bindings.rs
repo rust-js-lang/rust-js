@@ -872,6 +872,35 @@ pub(super) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     }
 }
 
+/// What rest arguments as a value, `ty`, a `&dyn js::Rest<T>`, are read as:
+/// the slice their `Deref` gives, `[Option<&Unknown>]` of any value's, which
+/// JS's rest parameter is the array of (ADR 0851). `None` of another type,
+/// or of rest arguments of a `T` no `js::RestItem` reads.
+pub(super) fn rest_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let ty::Ref(_, rest, _) = ty.kind() else { return None };
+    if !is_rest_value(tcx, ty) {
+        return None;
+    }
+    let target = tcx.lang_items().deref_target()?;
+    let projection = Ty::new_projection(tcx, ty::IsRigid::No, target, [tcx.erase_and_anonymize_regions(*rest)]);
+    let read: Ty<'tcx> = tcx
+        .try_normalize_erasing_regions(
+            ty::TypingEnv::fully_monomorphized(),
+            ty::Unnormalized::new_wip(projection),
+        )
+        .ok()?;
+    (!matches!(read.kind(), ty::Alias(..))).then_some(read)
+}
+
+/// Whether a call of `trait_id`'s method on `self_ty` reads rest arguments as
+/// a value, `dyn js::Rest<T>`, through the js crate's `Deref` of them, a
+/// closure's `args.iter()` (ADR 0851): the array itself, which JS's rest
+/// parameter is.
+pub(super) fn reads_rest_value<'tcx>(tcx: TyCtxt<'tcx>, trait_id: DefId, self_ty: Ty<'tcx>) -> bool {
+    tcx.is_lang_item(trait_id, LangItem::Deref)
+        && is_rest_value(tcx, Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, self_ty))
+}
+
 /// Each parameter of the crate's function or closure `owner` marked
 /// `#[rust_js::rest]`, JS's rest parameter (ADR 0664), by its index: read
 /// from its body, as a parameter's attributes are kept nowhere else.

@@ -6,7 +6,7 @@
 
 use super::recognition::Catching;
 
-use super::FnCx;
+use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, StmtKind};
 
@@ -74,6 +74,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0664), which its calls spread (`spread_rest`).
     pub(super) fn takes_rest(&self, def_id: DefId) -> bool {
         super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)
+    }
+
+    /// Refused, a call each owner says JS can't make as Rust does: of a
+    /// string's bytes' pointer (`pointers.rs`), rest arguments as a value
+    /// given as a type parameter's (`check_rest_unspread`), and a counted
+    /// `Rc` given to a binding (`std_types/rc.rs`).
+    pub(super) fn check_call(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        destination: rustc_middle::mir::Place<'tcx>,
+        span: Span,
+    ) -> R<()> {
+        self.check_text_pointer(body, (def_id, generic_args), destination, span)?;
+        self.check_rest_unspread(def_id, generic_args, span)?;
+        self.check_counted_given_to_js(def_id, generic_args, span)
+    }
+
+    /// Refused, a call giving rest arguments as a value, `&dyn js::Rest<T>`,
+    /// as a type parameter's value, `call::<&dyn Rest<T>, _>(f, args)`:
+    /// what its body calls with one, `f(a)` of an `F: Fn(A)`, gives JS's
+    /// rest parameter one array, where only a call through a type that says
+    /// so spreads it (ADR 0851). A binding's `impl Rest<T>` takes them spread.
+    fn check_rest_unspread(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<()> {
+        if !super::bindings::is_binding(self.tcx, def_id)
+            && generic_args
+                .types()
+                .any(|ty| super::bindings::is_rest_value(self.tcx, ty))
+        {
+            let refused = super::refusal::Refused::Because(
+                "rest arguments as a value, `&dyn js::Rest<T>`, as a type parameter's value",
+                "a call of an `F: Fn(A)` would give them as one array",
+            );
+            return Err(super::refusal::refuse(self.tcx, span, refused));
+        }
+        Ok(())
     }
 
     /// A call of `def_id`'s arguments, its rest's spread where it takes

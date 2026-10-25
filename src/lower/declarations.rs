@@ -1101,10 +1101,19 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// `(event: MouseEvent<Element>) => void`: a function type, each
     /// parameter named by its type, as a person names one.
+    /// Its last parameter of rest arguments as a value, `&dyn js::Rest<T>`,
+    /// a rest parameter of what each reads as, `...args: unknown[]` (ADR
+    /// 0851).
     fn function_type(&mut self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Value {
         let mut names: Vec<String> = Vec::new();
-        let params: Vec<Value> = (inputs.iter())
-            .map(|&input| {
+        let count = inputs.len();
+        let params: Vec<Value> = (inputs.iter().enumerate())
+            .map(|(i, &input)| {
+                if i + 1 == count
+                    && let Some(items) = super::bindings::rest_items(self.tcx, input)
+                {
+                    return json!({ "name": "args", "optional": false, "rest": true, "type": self.ts(items) });
+                }
                 let ty = self.ts(input);
                 let base = param_name(&ty);
                 let taken = names
@@ -1208,6 +1217,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             {
                 self.written(t, &declared, ty::List::empty())
             }
+            // An `impl Fn(A) -> R` a function gives: the function it says, as
+            // a parameter's is, `cache`'s `(...args: unknown[]) => unknown`.
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Opaque { .. },
+                    ..
+                },
+            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),
             // `(...args: any[]) => any`: a closure's own type, which no
             // signature names, or a `dyn` of another trait.
             ty::Closure(..) | ty::Dynamic(..) => json!({
@@ -1338,6 +1356,32 @@ impl<'tcx> Declarations<'_, 'tcx> {
             _ => keyword("any"),
         }
     }
+}
+
+/// What an `impl Fn(A, B) -> R` takes and gives, by its bounds, `Fn`'s and
+/// its `Output`, of `alias`'s arguments: `None` of another `impl Trait`.
+fn opaque_fn_signature<'tcx>(tcx: TyCtxt<'tcx>, alias: ty::AliasTy<'tcx>) -> Option<(Vec<Ty<'tcx>>, Ty<'tcx>)> {
+    let mut inputs = None;
+    let mut output = tcx.types.unit;
+    let ty::Opaque { def_id } = alias.kind else { return None };
+    let bounds = tcx
+        .explicit_item_bounds(def_id)
+        .iter_instantiated_copied(tcx, alias.args);
+    for (clause, _) in bounds.map(|bound| bound.skip_normalization()) {
+        if let Some(bound) = clause.as_trait_clause().map(|b| b.skip_binder())
+            && tcx.fn_trait_kind_from_def_id(bound.def_id()).is_some()
+            && let ty::Tuple(items) = bound.trait_ref.args.type_at(1).kind()
+        {
+            inputs = Some(items.to_vec());
+        }
+        if let Some(projection) = clause.as_projection_clause().map(|p| p.skip_binder())
+            && tcx.is_lang_item(projection.def_id(), LangItem::FnOnceOutput)
+            && let Some(given) = projection.term.as_type()
+        {
+            output = given;
+        }
+    }
+    Some((inputs?, output))
 }
 
 /// The JS names of `ty`'s fields, a flattened struct's, or one's it

@@ -4,6 +4,9 @@ Status: Accepted. Extends [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-sig
 and [0700](0700-typescripts-function-gives-any-value.md): what a JS
 function value has besides its call.
 
+Extended by [0848](0848-apply-is-functions-and-its-this-may-be-null.md):
+`function::apply`, its `this` `null` too.
+
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
 property itself, read of the function JS has.
 

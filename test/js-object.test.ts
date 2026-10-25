@@ -341,20 +341,23 @@ pub fn marked(by: &str) -> Vec<String> {
 });
 
 // ADR 0667: rest arguments as a value are a binding's, which a `fn`
-// pointer's call spreads; a Rust function or closure that takes them, or a
-// `dyn Fn` of them, whose call gives them as one array, is refused.
-test("rest arguments as a value are refused where a call wouldn't spread them", () => {
+// pointer's call spreads; a Rust function that takes them, whose `fn`
+// pointer would be given only the first, is refused: its rest is its last
+// slice marked `#[rust_js::rest]`. A `dyn Fn` of them is called spread, as
+// a closure's own type is (ADR 0851).
+test("rest arguments as a value are refused where a call wouldn't spread them", async () => {
   expect(refused("js-object-rest-fn", `use js::{IntoUnknown, Rest};
 pub fn mine(data: &'static dyn Rest<dyn IntoUnknown>) {
     webapi::console::log(data);
 }
-`)).toContain("rust-js does not support a `&dyn js::Rest<T>` parameter, rest arguments as a value, of a Rust function or closure yet");
-  expect(refused("js-object-rest-dyn", `use js::{IntoUnknown, Rest};
+`)).toContain("rust-js does not support a `&dyn js::Rest<T>` parameter, rest arguments as a value, of a Rust function yet: a function's rest parameter is its last slice marked `#[rust_js::rest]`");
+  const { js } = await compiled("js-object-rest-dyn", `use js::{IntoUnknown, Rest};
 pub fn held() {
     let log: &dyn Fn(&'static dyn Rest<dyn IntoUnknown>) = &webapi::console::log;
     log(&("a", 1));
 }
-`)).toContain("rust-js does not support values of type `dyn std::ops::Fn(&dyn js::Rest<dyn js::IntoUnknown>)` yet");
+`);
+  expect(js).toContain('log("a", 1);');
 });
 
 // ADR 0695: JS's `new` of a function value is the js crate's, of a value
@@ -702,6 +705,32 @@ pub fn own() -> (String, u32) {
   expect(lib.sameSource(function a(x: number) {}, function a(x: number, y: number) {})).toBe(false);
   expect(lib.ofSignature(function measure(text: string) { return text.length; })).toEqual(["measure", 1]);
   expect(lib.own()).toEqual(["add", 2]);
+});
+
+// ADR 0848: `Function.prototype.apply`, as TypeScript types it, its `this`
+// any value: `null` too, `Some(&Kind::Null)`, which a strict function sees
+// apart from `undefined`, `None`; its arguments an array, none of `None`.
+// React's `fn.apply(null, arguments)`.
+test("a function is applied to a this of any value and an array of arguments", async () => {
+  const { js, lib, warnings } = await compiled("js-object-function-apply", `use js::{Kind, Unknown, function};
+
+type AnyFunction = dyn Fn() -> Option<&'static Unknown>;
+
+pub fn applied(f: &AnyFunction, args: &[Option<&'static Unknown>]) -> [Option<&'static Unknown>; 3] {
+    [
+        function::apply(f, Some(&Kind::Null), Some(&args)),
+        function::apply(f, None, None),
+        function::apply(f, Some(&"self"), Some(&args)),
+    ]
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain('return [f.apply(null, args), f.apply(), f.apply("self", args)];');
+  // A module's function is strict: its `this` is what it's given.
+  const strict = function (this: unknown, ...args: unknown[]) {
+    return [this, ...args];
+  };
+  expect(lib.applied(strict, [1, "b"])).toEqual([[null, 1, "b"], [undefined], ["self", 1, "b"]]);
 });
 
 // ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes

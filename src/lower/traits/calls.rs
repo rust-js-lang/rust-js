@@ -282,6 +282,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // resolves to the impl's method, called directly.
         let generic_args = self.in_impl_terms(generic_args);
         let tr = ty::TraitRef::from_assoc(self.tcx, trait_id, generic_args);
+        // Rest arguments as a value read, `args.iter()` through the js
+        // crate's `Deref` of them: the array itself (ADR 0851).
+        if bindings::reads_rest_value(self.tcx, trait_id, tr.self_ty()) {
+            return Ok(values.into_iter().next());
+        }
         if matches!(tr.self_ty().kind(), ty::Dynamic(..)) && operational(self.tcx, self.krate.foreign, trait_id) {
             // A std trait's dictionary has only what it's given: `Error`'s, its
             // `source` (ADR 0141), and none of the methods std provides.

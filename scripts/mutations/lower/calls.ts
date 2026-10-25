@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "super::bindings::takes_rest(self.tcx, def_id)",
     tests: ["test/rest-parameters.test.ts", "-t", "library's rest function"],
   },
+  {
+    name: "rest-value-type-parameter-allowed",
+    breaks: "rest arguments as a value given as a type parameter's value are compiled, so `f(a)` of an `F: Fn(A)` gives the closure one array",
+    file: "src/lower/calls.rs",
+    find: "        self.check_rest_unspread(def_id, generic_args, span)?;\n",
+    replace: "",
+    tests: ["test/rest-parameters.test.ts", "-t", "refused: a type parameter's value"],
+  },
+  {
+    name: "rest-value-binding-refused",
+    breaks: "a variadic binding given rest arguments as a value, `function::call(f, None, args)`, is refused as a type parameter's value",
+    file: "src/lower/calls.rs",
+    find: "        if !super::bindings::is_binding(self.tcx, def_id)\n            && generic_args\n",
+    replace: "        if true\n            && generic_args\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+  },
 ];

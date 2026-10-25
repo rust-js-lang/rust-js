@@ -289,7 +289,11 @@ export function hasConfig(path) {
 - **`&JsError` is whatever was thrown**: `message()`, `name()`,
   `cause()` and `stack()` read an `Error`'s; `is_error()` says whether it
   is one, since JS may throw anything. Its `{:?}` is `String(error)`,
-  `TypeError: no file missing`, what an `expect` shows.
+  `TypeError: no file missing`, what an `expect` shows. `as_unknown()` is
+  it as a value of any shape, an `Option<&Unknown>`, the value itself,
+  `None` of `undefined` and `null`, which a parameter or a field of any
+  value takes, `node.v = error` of `node.v.set(error.as_unknown())`
+  ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md#amendment-what-was-caught-is-a-value-of-any-shape-as_unknown)).
   How V8 writes a `stack` is a hook of the node crate's,
   `Error.prepareStackTrace` ([`node`](../libraries/README.md#node-nodejs)).
 - **The crates say which JS calls may throw.** The `js` crate's

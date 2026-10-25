@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose JS `Map` was Rust's `HashMap` alone, and extends
-[0677](0677-a-weak-key-is-what-kind-holds.md)'s weak keys.
+[0677](0677-a-weak-key-is-what-kind-holds.md)'s weak keys. Amended by
+[0849](0849-a-map-takes-any-key.md): a `js::Map` takes any key, as
+TypeScript's does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 collection, keyed by the object itself.

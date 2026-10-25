@@ -640,6 +640,11 @@ result, which isn't an `Option` ``
   out, `f(code, a, b)`; it's the last parameter's and a shared slice's,
   and a compile error that says so anywhere else
   ([0664](../decisions/0664-a-functions-rest-slice-is-jss-rest-parameter.md)).
+  A closure's last parameter of rest arguments as a value, `&dyn
+  js::Rest<T>`, is one too, `(...args) =>`, which each call through a
+  type that says so spreads; given as a type parameter's value it's a
+  compile error, as that type's call would give one array
+  ([0851](../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)).
 - **A `pub use` of another module's item re-exports it,** `pub use
   shapes::area` being `export { area } from "./shapes.js";`
   ([0240](../decisions/0240-reexports.md)).

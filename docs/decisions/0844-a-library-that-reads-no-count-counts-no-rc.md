@@ -5,7 +5,9 @@ whose every library counted every `Rc`; and
 [0494](0494-a-generic-rc-is-counted-where-it-may-drop.md), whose generic
 `Rc` of any type parameter's value counted every one, and whose crate
 with no destructor of its own and no library took its type parameters to
-drop nothing, a library's too.
+drop nothing, a library's too. Extended by
+[0850](0850-an-rc-is-defined-as-what-it-points-at.md): an `Rc` is
+`js::Defined`, a counted one given to JS refused.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where neither the
 library nor a crate sharing its `Rc`s asks a count; D, refused, where a

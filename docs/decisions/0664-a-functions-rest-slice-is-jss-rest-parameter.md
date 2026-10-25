@@ -3,7 +3,10 @@
 Status: Accepted. Decided with the user, 2026-10-23. The defining side of
 [0640](0640-a-rest-parameter-is-a-tuple.md), whose `impl js::Rest<T>` is
 a binding's, the calling side; beside [0428](0428-c-variadic-functions.md),
-whose C-variadic `...` is rustc's own.
+whose C-variadic `...` is rustc's own. Amended by
+[0851](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md): a
+closure takes rest arguments as a value, `&dyn js::Rest<T>`, which its
+refusal of `#[rust_js::rest]` names.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, a function's shape
 to JS: the function is given the slice it would be in Rust, and a JS

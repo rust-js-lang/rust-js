@@ -346,6 +346,22 @@ pub mod function {
     ) -> Option<&'static super::Unknown> {
         unreachable!()
     }
+
+    /// [`f.apply(thisArg, argArray)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/apply):
+    /// `f` called with `this_arg` as its `this` and the items of
+    /// `arg_array`, an array, as its arguments, each any value, as
+    /// TypeScript types them: `None` of `undefined`, `Some(&Kind::Null)` of
+    /// `null`, and no arguments of `None`. What it gives, any value.
+    /// `fn.apply(null, args)` of `function::apply(r#fn, Some(&Kind::Null),
+    /// Some(&args))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "apply")]
+    pub fn apply<F: AnyFunction<M> + ?Sized, M>(
+        this: &F,
+        this_arg: Option<&dyn super::IntoUnknown>,
+        arg_array: Option<&dyn super::IntoUnknown>,
+    ) -> Option<&'static super::Unknown> {
+        unreachable!()
+    }
 }
 
 functions! {
@@ -709,6 +725,42 @@ impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a Vec<A> {}
 /// console.log` (ADR 0667).
 impl<'a, T: ?Sized> Rest<T> for &'a dyn Rest<T> {}
 
+/// Rest arguments as a value, read: the array of them, as a closure taking
+/// them as JS gives them, `|args: &dyn Rest<dyn IntoUnknown>|`, JS's
+/// `(...args) =>`, reads it, `for &arg in args.iter()` (ADR 0851). The array
+/// itself, of each argument as [`RestItem`] says a `T` reads.
+impl<'a, T: ?Sized + RestItem> core::ops::Deref for dyn Rest<T> + 'a {
+    type Target = [T::Item];
+
+    fn deref(&self) -> &[T::Item] {
+        // Never runs: rust-js compiles this `Deref` to the array itself.
+        unreachable!()
+    }
+}
+
+/// What one of rest arguments of `T`s is, read (ADR 0851): of `dyn
+/// IntoUnknown`, any value, an `Option<&Unknown>`; of `str`, text; of a
+/// number, its own type. Each is what JS gives, so of any lifetime.
+pub trait RestItem {
+    type Item;
+}
+
+impl RestItem for dyn IntoUnknown {
+    type Item = Option<&'static Unknown>;
+}
+impl RestItem for str {
+    type Item = &'static str;
+}
+
+/// A number, read as its own type.
+macro_rules! rest_number {
+    ($($t:ty),*) => {
+        $(impl RestItem for $t { type Item = $t; })*
+    };
+}
+
+rest_number!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
+
 /// A tuple of up to 12, each item one `T` takes.
 macro_rules! rest {
     ($(($($a:ident),*))*) => {
@@ -762,6 +814,10 @@ unsafe impl<T: StructuredClone + ?Sized> StructuredClone for &T {}
 unsafe impl<T: Defined + ?Sized> Defined for &T {}
 unsafe impl<T: StructuredClone + ?Sized> StructuredClone for Box<T> {}
 unsafe impl<T: Defined + ?Sized> Defined for Box<T> {}
+// An `Rc` is what it points at, where the crate counts none (ADR 0844);
+// rust-js refuses one counted where a binding is given it.
+unsafe impl<T: Defined + ?Sized> Defined for std::rc::Rc<T> {}
+unsafe impl<T: Defined + ?Sized> Defined for std::sync::Arc<T> {}
 unsafe impl<T: StructuredClone> StructuredClone for [T] {}
 unsafe impl<T> Defined for [T] {}
 unsafe impl<T: StructuredClone, const N: usize> StructuredClone for [T; N] {}
@@ -1586,6 +1642,14 @@ impl JsError {
     /// its kind, `"TypeError"`, of an `Error`.
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
     pub fn name(&self) -> String {
+        unreachable!()
+    }
+
+    /// What was thrown, as a value of any shape, `None` of `undefined` and
+    /// `null`: the value itself, which a parameter of any value takes, as
+    /// `node.v = error` stores it.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn as_unknown(&self) -> Option<&'static Unknown> {
         unreachable!()
     }
 

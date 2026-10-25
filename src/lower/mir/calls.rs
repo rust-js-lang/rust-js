@@ -46,6 +46,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(_, t)| t)
                 .collect();
             crate::lower::calls::units_left_out(&mut exprs, &tys);
+            // Rest arguments as a value, its last, spread (ADR 0851): what
+            // takes them is JS's rest parameter, a closure's or a binding's.
+            if tys
+                .last()
+                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty))
+            {
+                crate::lower::calls::spread_rest(&mut exprs);
+            }
         }
         // Not a closure of the crate's: a `dyn Fn`, a generic one or a
         // pointer, which may be JS's (ADR 0330).

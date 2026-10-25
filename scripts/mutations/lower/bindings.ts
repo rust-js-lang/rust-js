@@ -458,4 +458,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "an optional field that isn't nullable"],
   },
+  {
+    name: "rest-items-undeclared",
+    breaks: "a function type's rest arguments as a value are declared one parameter of `any`, not `...args: string[]`",
+    file: "src/lower/bindings.rs",
+    find: "    (!matches!(read.kind(), ty::Alias(..))).then_some(read)\n",
+    replace: "    (!matches!(read.kind(), ty::Alias(..))).then_some(read).filter(|_| false)\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+  },
 ];

@@ -330,7 +330,7 @@ pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
                 _ => None,
             };
             let refused = if tcx.is_closure_like(def_id) {
-                "a function's last parameter, not a closure's: a closure is given what its type says".to_string()
+                "a function's last parameter, not a closure's: a closure takes rest arguments as a value, `args: &dyn js::Rest<T>`, which its type says".to_string()
             } else if tcx.trait_of_assoc(def_id).is_some() || tcx.trait_impl_of_assoc(def_id).is_some() {
                 "a function's last parameter, not a trait method's, which each impl's call gives alike".to_string()
             } else if bindings::is_component(tcx, def_id) {

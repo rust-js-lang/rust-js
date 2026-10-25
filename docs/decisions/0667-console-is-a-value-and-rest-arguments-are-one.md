@@ -3,7 +3,10 @@
 Status: Accepted. Amends [0602](0602-a-binding-taken-as-a-fn-is-its-function.md),
 whose variadic binding taken as a `fn` stayed an arrow that read the
 global at each call, and extends [0640](0640-a-rest-parameter-is-a-tuple.md),
-whose rest arguments were a tuple, a slice or a `Vec`.
+whose rest arguments were a tuple, a slice or a `Vec`. Amended by
+[0851](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md): a
+closure's last parameter of rest arguments as a value is JS's rest
+parameter, and a call through a `dyn Fn` of them spreads them.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results would change:
 a `fn` is fixed where it's taken, so it's the function read there, and a

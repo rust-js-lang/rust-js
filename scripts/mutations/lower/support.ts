@@ -91,11 +91,11 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "test/jsx-types.test.ts", "-t", "member of any value|dyn ReactNode is the node"],
   },
   {
-    name: "rest-value-dyn-fn-allowed",
-    breaks: "a `dyn Fn` of rest arguments is a value, whose call gives them as one array",
+    name: "rest-value-dyn-fn-refused",
+    breaks: "a `dyn Fn` of rest arguments as a value, last, is refused, though its call spreads them",
     file: "src/lower/support.rs",
-    find: "                return rest.then_some(ty);\n",
-    replace: "                return None;\n",
+    find: "                        (items.iter().rev().skip(1)).any(|t| super::bindings::is_rest_value(self.tcx, t))\n",
+    replace: "                        items.iter().any(|t| super::bindings::is_rest_value(self.tcx, t))\n",
     tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
   },
 ];

@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md)'s
 `Promise`, as [0698](0698-a-catch-handler-gives-a-value-or-a-promise.md)
 amended its `catch`. Amended below: a promise of a `Copy` value is
-`Copy`; what rejects one takes any value.
+`Copy`; what rejects one takes any value. Amended again below: what was
+caught, a `&JsError`, is a value of any shape, `error.as_unknown()`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is a binding's
 Rust signature; the JS each call is, `new Promise(..)` and `p.then(f, g)`,
@@ -169,3 +170,63 @@ nothing a program sees. Of a value that isn't `Copy`, sharing would
   `Promise.reject(error)` of a `&JsError` and `Promise.reject()` of none,
   run in Node; and a `Promise<Vec<u32>>` given two handlers, rustc's
   E0382.
+
+## Amendment: what was caught is a value of any shape, `as_unknown()`
+
+React's `cache` stores the first error a function threw, and throws it
+again at each later call:
+
+```js
+} catch (error) {
+  erroredNode.s = ERRORED;
+  erroredNode.v = error;
+  throw error;
+}
+```
+
+The port's node keeps `v: Cell<Option<&'static Unknown>>`, any value,
+and what `catch_unwind` caught downcasts to a `&'static JsError`, what
+was thrown, which isn't `Defined`, as it may be `undefined` (above's
+Consequences): `.map(|error| js::unknown(*error))` was E0277. Those
+Consequences named the fix: one view of a `&JsError` as the
+`Option<&Unknown>` it is, which every parameter of any value takes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: the view is the
+value itself.
+
+### Decision
+
+**`JsError::as_unknown(&self) -> Option<&'static Unknown>` is what was
+thrown as a value of any shape, `None` of `undefined` and `null`: the
+value itself.** It's the one view; a parameter of any value, an
+`Option<&Unknown>`, takes it, and an `Option<&dyn IntoUnknown>` takes the
+`&JsError` as it is, `Some(error)`.
+
+```rust
+errored_node.v.set(error.downcast_ref::<&'static JsError>().and_then(|error| error.as_unknown()));
+panic::resume_unwind(error)
+```
+
+```js
+erroredNode.v = error;
+throw error;
+```
+
+- **Of a falsy value too**: `0`, `""`, `undefined` and `null` are stored
+  as they were thrown, as the closure of `and_then` is given what was
+  thrown (ADR 0710), and `js::throw` of the field throws it again.
+
+### Alternatives
+
+- **`JsError: AnyShape`, `js::unknown(error)`**: an `&Unknown` is never
+  `undefined` nor `null`, which what was thrown may be.
+- **`impl From<&JsError> for Option<&Unknown>`, `.into()`**: a
+  conversion no reader sees the meaning of at the call, `(*error).into()`.
+
+### What holds it
+
+- `test/js-builtins.test.ts`, "what was caught is a value of any shape":
+  an `Error`, an object, a string, `0`, `""`, `undefined` and `null`, each
+  stored in a field and thrown again, the same value.
+  `test/rest-parameters.test.ts`, React's `erroredNode.v = error`, run
+  against upstream's.

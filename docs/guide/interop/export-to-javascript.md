@@ -324,9 +324,10 @@ export function order(prices: number[]): number;
   a caller through a `fn` pointer or an `impl Fn` gives the slice.
 - **It's the last parameter's, and a shared slice's, `args: &[T]`**, of
   a function or an inherent method. Anywhere else it's an error that says
-  so: not the last, a `Vec<T>` or a `&mut [T]`, a pattern, a closure's, a
-  trait method's, a component's props, or a function given a dictionary,
-  whose dictionaries a rest can't come before:
+  so: not the last, a `Vec<T>` or a `&mut [T]`, a pattern, a closure's,
+  which takes rest arguments as a value ([below](#a-closure-js-calls-with-its-arguments)),
+  a trait method's, a component's props, or a function given a
+  dictionary, whose dictionaries a rest can't come before:
 
 ```rust
 pub fn count(#[cfg_attr(rust_js, rust_js::rest)] items: Vec<f64>) -> usize {
@@ -343,6 +344,84 @@ error: rust-js: `#[rust_js::rest]` is a slice's, `items: &[T]`, not a `Vec<f64>`
 
 error: aborting due to 1 previous error
 ```
+
+### A closure JS calls with its arguments
+
+A closure's last parameter of rest arguments as a value, `args: &dyn
+js::Rest<T>`, is JS's rest parameter, `(...args) =>`, which a JS caller
+gives its arguments one by one, as React's `cache` gives JS what it
+caches. It reads them as the slice they deref to, of what each `T` reads
+as, `Option<&Unknown>` of any value's, `&str` of `str`'s; and every call
+through a type that says so spreads them, its own, a `dyn Fn`, a `Box`,
+a `fn` pointer, an `impl Fn`
+([ADR 0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)):
+
+```rust
+use js::{IntoUnknown, Kind, Rest, Unknown, function};
+
+pub fn logged(
+    r#fn: &'static dyn Fn() -> Option<&'static Unknown>,
+) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
+    move |args: &dyn Rest<dyn IntoUnknown>| {
+        for &arg in args.iter() {
+            js::set(js::unknown(&r#fn), "last", arg);
+        }
+        function::apply(r#fn, Some(&Kind::Null), Some(&args))
+    }
+}
+
+pub fn joined() -> impl Fn(&dyn Rest<str>) -> String {
+    |names: &dyn Rest<str>| names.join(", ")
+}
+
+pub fn named(names: &[&str]) -> (String, String) {
+    let join = joined();
+    (join(&("a", "b")), join(&names))
+}
+```
+
+```js
+export function logged(fn) {
+  return (...args) => {
+    for (const arg of args) {
+      fn.last = arg;
+    }
+    return fn.apply(null, args);
+  };
+}
+
+export function joined() {
+  return (...names) => names.join(", ");
+}
+
+export function named(names) {
+  const join = joined();
+  return [join("a", "b"), join(...names)];
+}
+```
+
+```ts
+export function logged(fn: () => unknown | null | undefined): (...args: (unknown | null | undefined)[]) => unknown | null | undefined;
+
+export function joined(): (...args: string[]) => string;
+
+export function named(names: string[]): [
+    string,
+    string
+];
+```
+
+- **A JS caller gives its arguments**, `logged(f)(1, "a")`; a Rust one
+  gives a tuple of them, `join(&("a", "b"))`, `join("a", "b")`, or a
+  slice or a `Vec` held, spread, `join(...names)`, as a variadic
+  binding's call is given them.
+- **Its `.d.ts` is a rest parameter** of what each reads as, `(...args:
+  string[]) => string`.
+- **Refused, each with what to write**: rest arguments as a value before
+  a closure's last parameter; a Rust function's, whose rest is its last
+  slice marked `#[rust_js::rest]`; and rest arguments given as a type
+  parameter's value, `call::<&dyn Rest<T>, _>(f, args)`, whose call of an
+  `F: Fn(A)` would give them as one array.
 
 ## Structs, enums and their methods
 
@@ -738,7 +817,8 @@ export function parseURL(url: string): number | null | undefined;
 | a struct with named fields | an `interface` of its fields |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |
-| `impl Fn(u32) -> u32` | `(value: number) => number` |
+| `impl Fn(u32) -> u32`, taken or given | `(value: number) => number` |
+| a function of rest arguments as a value, `impl Fn(&dyn js::Rest<str>)` | `(...args: string[]) => void` |
 | `Box<T>`, an `Rc<T>` whose counts nothing reads | `T` |
 | its `Weak<T>` | `T \| null` ([ADR 0845](../../decisions/0845-an-rcs-declaration-is-what-it-points-at.md)) |
 | a type alias | `export type`, by its name |

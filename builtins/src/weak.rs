@@ -65,17 +65,20 @@ pub mod weak_map {
 }
 
 /// [`Map`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map)
-/// of what a [`WeakMap`] keys, an object by itself, held strongly: what a
-/// program keeps where the host has no `WeakMap`, as React's
-/// `typeof WeakMap === 'function' ? WeakMap : Map` does. TypeScript's
-/// `Map<K, V>`, which is a `WeakMap<K, V>` too, so it derefs to one: its
-/// `get`, `set`, `has` and `delete` are a `WeakMap`'s (ADR 0699). A map of
-/// what Rust hashes, text or a number, is a `HashMap`, a `Map` in JS.
+/// of a value of each key, held strongly, any JS value, as TypeScript's
+/// `Map<K, V>` takes any `K` (ADR 0849): a key is the one JS's
+/// `SameValueZero` says it is, an object by itself, text or a number by its
+/// value, `undefined` and `null` each, as React's cache keys a primitive
+/// argument, an `Option<&Unknown>`. One of what a [`WeakMap`] keys is a
+/// `WeakMap` too, as TypeScript's is, so it derefs to one: what a program
+/// keeps where the host has no `WeakMap`, as React's `typeof WeakMap ===
+/// 'function' ? WeakMap : Map` does (ADR 0699). A map a program keeps of
+/// what Rust hashes is a `HashMap`, a `Map` in JS too.
 #[cfg_attr(rust_js, rust_js::types = "Map<K, V>")]
-pub struct Map<K: WeakKey + ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
+pub struct Map<K: ?Sized, V: Defined>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
-/// A `Map` is a `WeakMap` of what it holds, as TypeScript's `Map<K, V>` is
-/// one: the map itself.
+/// A `Map` of what a `WeakMap` keys is a `WeakMap` of what it holds, as
+/// TypeScript's `Map<K, V>` is one: the map itself.
 impl<K: WeakKey + ?Sized, V: Defined> core::ops::Deref for Map<K, V> {
     type Target = WeakMap<K, V>;
 
@@ -85,7 +88,35 @@ impl<K: WeakKey + ?Sized, V: Defined> core::ops::Deref for Map<K, V> {
     }
 }
 
-impl<K: WeakKey + ?Sized, V: Defined> Map<K, V> {
+impl<K: ?Sized, V: Defined> Map<K, V> {
+    /// [`map.get(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/get):
+    /// its value of `key`, `None` of a key it doesn't have.
+    #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    pub fn get(&self, key: &K) -> Option<V> {
+        unreachable!()
+    }
+
+    /// [`map.set(key, value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/set):
+    /// `value` its value of `key`.
+    #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    pub fn set(&self, key: &K, value: V) {
+        unreachable!()
+    }
+
+    /// [`map.has(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/has):
+    /// whether it has a value of `key`.
+    #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    pub fn has(&self, key: &K) -> bool {
+        unreachable!()
+    }
+
+    /// [`map.delete(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/delete):
+    /// `key` and its value gone; whether it had them.
+    #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    pub fn delete(&self, key: &K) -> bool {
+        unreachable!()
+    }
+
     /// [`map.size`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/size):
     /// how many keys it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
@@ -107,7 +138,7 @@ pub mod map {
     /// [`new Map()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/Map):
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
-    pub fn new<K: WeakKey + ?Sized, V: Defined>() -> &'static Map<K, V> {
+    pub fn new<K: ?Sized, V: Defined>() -> &'static Map<K, V> {
         unreachable!()
     }
 }

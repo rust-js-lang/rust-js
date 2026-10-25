@@ -542,9 +542,9 @@ reordered, and git merges this file by keeping both sides' lines
 - [0658 A comment before a branch's value is before it in the conditional](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md)
 - [0659 Tidy is a list of stages, each with what it leaves a body with](0659-tidy-is-a-list-of-stages-with-contracts.md) *(amended: what finishes a body is a stage too; a stage read again is the runner's)*
 - [0660 `catch_unwind` catches what JS throws, a panic among it](0660-catch-unwind-catches-what-js-throws.md) *(amended by 0691: a payload drops nothing where no `dyn Any` does; 0692: a thrown `Error` is a `&JsError` too; 0706: what's caught read as it was thrown; 0830: a `let Err(x)`'s `catch` is what follows that reads it)*
-- [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](0664-a-functions-rest-slice-is-jss-rest-parameter.md)
+- [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](0664-a-functions-rest-slice-is-jss-rest-parameter.md) *(amended by 0851: a closure's error names rest arguments as a value)*
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
-- [0667 `console` is a value, and a `fn` of rest arguments is the JS function](0667-console-is-a-value-and-rest-arguments-are-one.md)
+- [0667 `console` is a value, and a `fn` of rest arguments is the JS function](0667-console-is-a-value-and-rest-arguments-are-one.md) *(amended by 0851: a closure of them is JS's rest parameter, a `dyn Fn` of them called spread)*
 - [0668 A `match` of what a value is is a `switch` of its `typeof`](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](0673-a-function-is-a-value-of-any-shape.md)
 - [0674 A struct literal's object lists its fields in the order written](0674-a-struct-literals-fields-are-in-the-order-written.md)
@@ -572,7 +572,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0696 A constructor is a `fn` item, declared where it's written](0696-a-constructor-is-a-fn-item-where-its-written.md)
 - [0697 `delete` of a property is JS's `delete`, `js::delete`](0697-delete-is-jss-delete.md) *(amended by 0776: of any value)*
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](0698-a-catch-handler-gives-a-value-or-a-promise.md)
-- [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](0699-a-map-of-objects-is-a-weak-map.md)
+- [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](0699-a-map-of-objects-is-a-weak-map.md) *(amended by 0849: a `js::Map` of any key)*
 - [0700 TypeScript's `Function` gives any value, `&dyn Fn() -> Option<&'static Unknown>`](0700-typescripts-function-gives-any-value.md)
 - [0701 A signed index tested not negative is a JS index as it is](0701-a-signed-index-tested-not-negative-is-a-js-index.md) *(extended by 0709: a signed counter below a length, past its loop and its `as`)*
 - [0702 A `while` is its test, and its `break` is where it was written](0702-a-while-is-its-test-and-its-break-where-written.md)
@@ -598,7 +598,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0735 A comment in a macro, before the `fn` it writes, is the function's](0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](0718-a-typed-array-is-rest-arguments-spread.md)
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md)
-- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md)
+- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too)*
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case)*
 - [0743 A part of a chain of tests an earlier test decides is left out](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
@@ -625,7 +625,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
 - [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
-- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value)*
+- [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value; what was caught is a value of any shape, `as_unknown()`)*
 - [0791 A `Cell`'s storage says what it stores, however it's reached](0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
 - [0800 A drop of what JS drops nothing of never unwinds](0800-a-drop-of-nothing-never-unwinds.md)
 - [0805 A case's `if` is as written, whatever its other branch ends with](0805-a-cases-if-is-as-written-whatever-ends-it.md)
@@ -638,9 +638,13 @@ reordered, and git merges this file by keeping both sides' lines
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
-- [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md)
+- [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)
+- [0851 A closure of rest arguments as a value is JS's rest parameter](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)
+- [0848 `function::apply` is `Function.prototype.apply`, and its `this` may be `null`](0848-apply-is-functions-and-its-this-may-be-null.md)
+- [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md)
+- [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*

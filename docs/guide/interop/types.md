@@ -220,8 +220,12 @@ export function middle(items) {
   runtime's `$KeyMap`.
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
   order.
-- **A `js::Map` is a `Map` of what a `WeakMap` keys**, an object by itself,
-  held strongly, and it's a `WeakMap` too, as TypeScript's `Map` is: a
+- **A `js::Map` is JS's `Map` of any key**, as TypeScript's `Map<K, V>`
+  is, each key the one JS's `SameValueZero` says, an object by itself,
+  `undefined` and `null` apart, `NaN` itself: `Map<Option<&Unknown>, V>`
+  keys a value of any shape, which no `HashMap` can
+  ([ADR 0849](../../decisions/0849-a-map-takes-any-key.md)). One of what
+  a `WeakMap` keys is a `WeakMap` too, as TypeScript's `Map` is: a
   `WeakMap` where the host has one, and a `Map` where it hasn't, is one
   value ([ADR 0699](../../decisions/0699-a-map-of-objects-is-a-weak-map.md)):
 
@@ -836,6 +840,12 @@ export function share(doc) {
   its the crate uses reach, an `Rc` in a function's parameters or result
   or a type's fields, not one of a `bool` static's
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
+- **An `Rc` is `js::Defined` as what it points at is**, as a `Box` is, so
+  a `WeakMap` or a `Map` holds one, `WeakMap<JsObject, Rc<CacheNode>>`,
+  the value itself, which its `get` gives back as a clone shares it. A
+  counted one given to a binding or taken from one is refused: JS would
+  hold its box, which counts no clone JS gives back
+  ([ADR 0850](../../decisions/0850-an-rc-is-defined-as-what-it-points-at.md)).
 
 ## Cell and RefCell
 
@@ -1299,9 +1309,14 @@ export function isMarked(log) {
   of a function of any signature, `js::AnyFunction`, as TypeScript types
   each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`
   `f.length`, `function::to_string(f)` its source,
-  `Function.prototype.toString.call(f)`, and `function::call(f, this_arg,
-  args)` `f.call(thisArg, ...args)`
-  ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md)):
+  `Function.prototype.toString.call(f)`, `function::call(f, this_arg,
+  args)` `f.call(thisArg, ...args)`, and `function::apply(f, this_arg,
+  arg_array)` `f.apply(thisArg, argArray)`, whose `this` is any value,
+  `None` of `undefined` and `Some(&Kind::Null)`, the variant that is it,
+  of `null`: `function::apply(r#fn, Some(&Kind::Null), Some(&args))` is
+  `fn.apply(null, args)`
+  ([ADRs 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md),
+  [0848](../../decisions/0848-apply-is-functions-and-its-this-may-be-null.md)):
 
 ```rust
 use js::{Kind, Unknown, function};

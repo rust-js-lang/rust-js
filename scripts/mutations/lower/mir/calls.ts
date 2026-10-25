@@ -276,4 +276,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
   },
+  {
+    name: "rest-value-closure-call-unspread",
+    breaks: "a call of a closure or a `dyn Fn` of rest arguments as a value gives them as one array, `count([1, 2])`",
+    file: "src/lower/mir/calls.rs",
+    find: "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty))\n",
+    replace: "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty) && false)\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+  },
 ];

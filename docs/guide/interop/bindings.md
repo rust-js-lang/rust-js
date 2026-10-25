@@ -134,8 +134,13 @@ export function report(error) {
 A variadic binding, of a TypeScript rest parameter, is a `fn` of rest
 arguments as a value, `&'static dyn js::Rest<T>`, so it's the function
 itself, and a call of it spreads them, as a variadic binding's call does.
-A Rust function or closure that takes one is refused: it takes a slice
-([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)).
+A closure that takes them last is JS's rest parameter, `(...args) =>`,
+and so is called spread, through a `dyn Fn` of them too
+([Rest parameters](export-to-javascript.md#rest-parameters)); a Rust
+function that takes them is refused: its rest is its last slice marked
+`#[rust_js::rest]`
+([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md),
+[0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)).
 `console` itself is `webapi::console`:
 
 ```rust

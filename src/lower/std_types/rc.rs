@@ -42,6 +42,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))
     }
 
+    /// Refused, a binding's call of a counted `Rc` or `Weak` among its type
+    /// arguments, `WeakMap<K, Rc<T>>::get` (ADR 0850): JS's value is the
+    /// counted box, which what JS gives back a Rust owner of, `get`'s
+    /// `Rc`, would drop without the clone that counted it. An uncounted one
+    /// is the value it points at, which JS holds as Rust shares it.
+    pub(in crate::lower) fn check_counted_given_to_js(
+        &self,
+        def_id: DefId,
+        generic_args: GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<()> {
+        if !crate::lower::bindings::is_binding(self.tcx, def_id) {
+            return Ok(());
+        }
+        let counted = (generic_args.types())
+            .flat_map(|ty| ty.walk())
+            .filter_map(|part| part.as_type())
+            .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());
+        match counted {
+            Some(rc) => Err(crate::lower::refusal::refuse(
+                self.tcx,
+                span,
+                crate::lower::refusal::Refused::Because(
+                    &format!("a counted `{rc}` given to JS or taken from it"),
+                    "JS holds the box that counts it, which counts no clone JS makes; an `Rc` is the value it points at where the crate reads no count and drops nothing it points at (ADR 0844)",
+                ),
+            )),
+            None => Ok(()),
+        }
+    }
+
     /// What an uncounted `Weak` points at, if `ty` is one (ADR 0843).
     pub(in crate::lower) fn uncounted_weak(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         weak_pointee(self.tcx, ty).filter(|&pointee| !self.krate.counted.counts(self.tcx, pointee))

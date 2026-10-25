@@ -632,16 +632,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (skip, formatter): (usize, Option<Local>),
         def_span: Span,
     ) -> R<()> {
+        let closure = self.tcx.is_closure_like(mir_body.source.def_id());
+        let last = mir_body.args_iter().last();
         for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
             let ty = mir_body.local_decls[local].ty;
-            // Rest arguments as a value are a binding's, which a `fn`
-            // pointer's call spreads (ADR 0667): a Rust function given them
-            // would be given only the first.
-            if super::bindings::is_rest_value(self.tcx, ty) {
-                return Err(self.unsupported(
-                    def_span,
-                    "a `&dyn js::Rest<T>` parameter, rest arguments as a value, of a Rust function or closure",
-                ));
+            // Rest arguments as a value are a closure's last parameter, JS's
+            // rest parameter, which each call through its type spreads (ADR
+            // 0851); a function's is its last slice marked `#[rust_js::rest]`
+            // (ADR 0664), which a call by its name spreads.
+            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {
+                let refused = match closure {
+                    true => super::refusal::Refused::Because(
+                        "a closure's `&dyn js::Rest<T>` parameter, rest arguments as a value, before its last",
+                        "JS's rest parameter is a function's last",
+                    ),
+                    false => super::refusal::Refused::Because(
+                        "a `&dyn js::Rest<T>` parameter, rest arguments as a value, of a Rust function",
+                        "a function's rest parameter is its last slice marked `#[rust_js::rest]`",
+                    ),
+                };
+                return Err(super::refusal::refuse(self.tcx, def_span, refused));
             }
             self.check_value_ty(ty, def_span)?;
         }
@@ -654,10 +664,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A C-variadic function's last parameter, its `VaList`, gathers what it's
     /// given past the rest, `...args`: the array of them (ADR 0428); and so
     /// does a function's slice marked `#[rust_js::rest]`, the array of what
-    /// JS gives it (ADR 0664).
+    /// JS gives it (ADR 0664); and a closure's last parameter of rest
+    /// arguments as a value, `&dyn js::Rest<T>`, the array of them (ADR 0851).
     fn gather_rest(&self, mir_body: &mir::Body<'tcx>, params: &mut Vec<js::Pattern>) {
         let def_id = mir_body.source.def_id();
-        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))
+        let rest_value = (mir_body.args_iter().last())
+            .is_some_and(|last| super::bindings::is_rest_value(self.tcx, mir_body.local_decls[last].ty));
+        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)
             && let Some(js::Pattern::Name(name)) = params.pop()
         {
             params.push(js::Pattern::Rest(name));

@@ -1152,3 +1152,147 @@ console.log(JSON.stringify([lib.cache.constructor.name, lib.cached(f, "a") ?? nu
     expect(ran.stdout).toBe(`["${made}",null,"a",[1,true,0]]\n`);
   }
 });
+
+// ADR 0849: a `Map` takes any key, as TypeScript's `Map<K, V>` does, each
+// the one JS's `SameValueZero` says: React's cache keys a primitive
+// argument, an `Option<&Unknown>`, `undefined` and `null` apart, `0` and
+// `-0` one, `NaN` itself, an object by itself.
+test("a Map takes any key, as TypeScript's does", async () => {
+  const dir = fixture("js-map-any-key");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Map, Unknown};
+
+pub fn first_seen(keys: &[Option<&'static Unknown>]) -> Vec<Option<u32>> {
+    let map: &Map<Option<&'static Unknown>, u32> = js::map::new();
+    for (i, &key) in keys.iter().enumerate() {
+        if !map.has(&key) {
+            map.set(&key, i as u32);
+        }
+    }
+    keys.iter().map(|key| map.get(key)).collect()
+}
+
+pub fn texts() -> (Option<f64>, bool, bool, u32) {
+    let map: &Map<str, f64> = js::map::new();
+    map.set("a", 1.0);
+    (map.get("a"), map.delete("b"), map.delete("a"), map.size())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("if (!map.has(key)) {\n      map.set(key, i);");
+  expect(js).toContain('map.set("a", 1);');
+  const lib = await import(join(dir, "lib.js"));
+  const object = {};
+  expect(lib.firstSeen([undefined, null, 0, -0, NaN, NaN, "0", object, object, {}])).toEqual([0, 1, 2, 2, 4, 4, 6, 7, 7, 9]);
+  expect(lib.texts()).toEqual([1, false, true, 0]);
+});
+
+// ADR 0850: an `Rc` is `Defined` as what it points at is: where the crate
+// counts none, the value itself, which a `WeakMap` holds and gives back as
+// Rust shares it, React's cache nodes; a counted one given to JS is
+// refused, as JS's value would count no clone it gives back.
+test("an uncounted Rc a WeakMap holds is the value, and a counted one is refused", async () => {
+  const dir = fixture("js-weak-map-rc");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{JsObject, weak_map};
+
+pub struct Node {
+    n: Cell<u32>,
+}
+
+unsafe impl js::Defined for Node {}
+
+pub fn shared(key: &JsObject) -> u32 {
+    let nodes = weak_map::new::<JsObject, Rc<Node>>();
+    let node = Rc::new(Node { n: Cell::new(1) });
+    nodes.set(key, Rc::clone(&node));
+    if let Some(held) = nodes.get(key) {
+        held.n.set(2);
+    }
+    node.n.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const node = { n: 1 };\n  nodes.set(key, node);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shared({})).toBe(2);
+  writeFileSync(join(dir, "counted.rs"), `use std::rc::Rc;
+
+use js::{JsObject, weak_map};
+
+pub struct Loud(pub u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+unsafe impl js::Defined for Loud {}
+
+pub fn held(key: &JsObject) -> usize {
+    let map = weak_map::new::<JsObject, Rc<Loud>>();
+    let loud = Rc::new(Loud(1));
+    map.set(key, Rc::clone(&loud));
+    drop(map.get(key));
+    Rc::strong_count(&loud)
+}
+`);
+  const counted = runSync([compiler, join(dir, "counted.rs"), "-o", join(dir, "counted.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(counted.code).not.toBe(0);
+  expect(counted.stderr).toContain(
+    "rust-js does not support a counted `std::rc::Rc<Loud>` given to JS or taken from it yet: JS holds the box that counts it, which counts no clone JS makes",
+  );
+});
+
+// ADR 0782's amendment: what was thrown, a `&JsError`, as a value of any
+// shape, `error.as_unknown()`, the value itself, which a field of any
+// value stores and `js::throw` throws again: of an `Error`, an object, a
+// string, and a falsy one, `0`, `""`, `undefined` and `null`.
+test("what was caught is a value of any shape", async () => {
+  const dir = fixture("js-error-as-unknown");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::panic::{self, AssertUnwindSafe};
+
+use js::{JsError, Unknown};
+
+pub struct Node {
+    pub v: Cell<Option<&'static Unknown>>,
+}
+
+pub fn caught(f: &dyn Fn(), node: &Node) -> bool {
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(()) => false,
+        Err(error) => {
+            node.v.set(error.downcast_ref::<&'static JsError>().and_then(|error| error.as_unknown()));
+            true
+        }
+    }
+}
+
+pub fn thrown_again(node: &Node) {
+    js::throw(node.v.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("node.v = error;");
+  const lib = await import(join(dir, "lib.js"));
+  for (const thrown of [new Error("e"), { at: 1 }, "x", 0, "", undefined, null]) {
+    const node: { v: unknown } = { v: "unset" };
+    expect(lib.caught(() => {
+      throw thrown;
+    }, node)).toBe(true);
+    expect(node.v).toBe(thrown);
+    let again: unknown = "none";
+    try {
+      lib.thrownAgain(node);
+    } catch (error) {
+      again = error;
+    }
+    expect(again).toBe(thrown);
+  }
+});

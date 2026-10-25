@@ -333,4 +333,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_mut_object_to_generic.rs$"],
   },
+  {
+    name: "rest-value-read-as-dyn",
+    breaks: "a closure's rest arguments read, `args.iter()`, through the js crate's `Deref` of a `dyn Rest`, is taken for the `dyn`'s dictionary's, refused",
+    file: "src/lower/traits/calls.rs",
+    find: "        if bindings::reads_rest_value(self.tcx, trait_id, tr.self_ty()) {\n",
+    replace: "        if false {\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
+  },
 ];

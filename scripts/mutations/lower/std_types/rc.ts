@@ -123,4 +123,20 @@ export const mutations: Mutation[] = [
     replace: "                    None if false && self.shows_inside(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_mut_ref_shown.rs$"],
   },
+  {
+    name: "counted-rc-given-to-js",
+    breaks: "a counted `Rc` a `WeakMap` holds is compiled: what its `get` gives back is dropped uncounted, its destructor run while the map holds it",
+    file: "src/lower/std_types/rc.rs",
+    find: "        if !crate::lower::bindings::is_binding(self.tcx, def_id) {\n            return Ok(());\n        }\n        let counted",
+    replace: "        if true {\n            return Ok(());\n        }\n        let counted",
+    tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
+  },
+  {
+    name: "uncounted-rc-given-to-js-refused",
+    breaks: "an uncounted `Rc`, the value itself, a `WeakMap` holds is refused, React's cache nodes",
+    file: "src/lower/std_types/rc.rs",
+    find: "            .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());\n",
+    replace: "            .find(|&part| crate::lower::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
+    tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
+  },
 ];
