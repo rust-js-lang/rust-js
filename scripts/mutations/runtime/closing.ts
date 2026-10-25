@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closing-own-nth-unsaid",
+    breaks: "a closed compiled `Peekable` doesn't say its `nth` is its own, so a `step_by` over it steps each item, dropping a reversed `Vec`'s back to front, not as one slice (#261)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.ownNth) closing.ownNth = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+  },
+  {
     name: "closing-drops-none",
     breaks: "a `take` of an iterator that owns items with a destructor drops none it hasn't given as it ends",
     file: "src/runtime/closing.js",

@@ -1886,8 +1886,11 @@ export function $closing(it, drop, slices = true) {
       if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
     };
   }
-  // Its `nth`, its iterator's, the crate's own where it writes one.
+  // Its `nth`, its iterator's, the crate's own where it writes one, or a
+  // compiled std struct's, which drops what it passes itself, `ownNth`, as
+  // a `step_by` over it asks it (#261).
   if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
+  if (it.ownNth) closing.ownNth = true;
   closing.fold = (init, f) => {
     const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
     if (it.ownFold) closed = true;

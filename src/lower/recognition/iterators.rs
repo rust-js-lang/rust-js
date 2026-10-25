@@ -130,8 +130,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether `ty`'s `nth` drops what it passes over as one slice: a `Rev`
     /// of one that does so from its back, a `Vec`'s, or a `StepBy`, a
-    /// `Skip` or a `Take` of one whose `nth` does, which ask it, or a
-    /// `Chain` with such a side (#234, #261).
+    /// `Skip`, a `Take`, a `Fuse` or a `Peekable` of one whose `nth` does,
+    /// which ask it, or a `Chain` with such a side (#234, #261).
     pub(in crate::lower) fn nths_a_slice(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if let Some(source) = self.reversed(ty) {
@@ -141,7 +141,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(adt, args)
                 if matches!(
                     std_path(self.tcx, adt.did()).as_str(),
-                    "std::iter::StepBy" | "std::iter::Skip" | "std::iter::Take"
+                    "std::iter::StepBy"
+                        | "std::iter::Skip"
+                        | "std::iter::Take"
+                        | "std::iter::Fuse"
+                        | "std::iter::Peekable"
                 ) =>
             {
                 self.nths_a_slice(args.type_at(0))

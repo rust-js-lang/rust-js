@@ -224,3 +224,23 @@ Held by `chain_sides_own_steps.rs` and the mutation
 `chain-side-advanced-undropped`. That line's two `Vec`s grow the
 readability baseline's `$iter` share by 0.2 in 10,000 lines and its
 renamed `x$1` share by 0.6.
+
+## Amendment: a `step_by` over a `Peekable` or a `Fuse` asks its `nth` (#261)
+
+`nths_a_slice` now also passes through `Fuse` and `Peekable`, whose
+`nth` std takes from their source. A `step_by` over one of a reversed
+`Vec` is now `$stepBy`, which asks its `nth`, not a `filter` that drops
+each item it passes back to front. `$closing` now passes on its
+iterator's `ownNth`, a compiled std struct's, so `$stepBy` asks it.
+Together with #276, the `nth` reaches the `Vec`'s `nth_back`, which
+drops what it passes as one slice, front to back (fuzz seeds 48170,
+46397, 45792, 47981 and 48433). This follows ADR 0262's "results change"
+case. `Enumerate` isn't on the list, because the JS `enumerate` is a
+`map` with no `nth` of its own (#277). The `step_by_compiled_source_nth`
+corpus case checks against native Rust. The mutations
+`nths-a-slice-not-through-peekable`, `nths-a-slice-not-through-fuse` and
+`closing-own-nth-unsaid` are caught.
+
+Readability: the case's `Vec`s of values with a destructor add `$iter`
+(77.8 to 77.9 in 10,000 lines) and renamed temporaries (716.7 to 718.3),
+as each such case does. The output reads no worse.

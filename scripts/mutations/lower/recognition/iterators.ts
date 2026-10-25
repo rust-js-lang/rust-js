@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nths-a-slice-not-through-fuse",
+    breaks: "a `step_by` of a `Fuse` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                        | \"std::iter::Fuse\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+  },
+  {
+    name: "nths-a-slice-not-through-peekable",
+    breaks: "a `step_by` of a `Peekable` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                        | \"std::iter::Peekable\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+  },
+  {
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition/iterators.rs",
@@ -46,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "skip-of-repeat-unclosed",
     breaks: "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: "            | \"std::iter::Skip\"\n",
-    replace: "",
+    find: "            \"std::iter::Take\"\n            | \"std::iter::Skip\"\n",
+    replace: "            \"std::iter::Take\"\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
   },
   {
