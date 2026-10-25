@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-fold-not-std",
+    breaks: "std's compiled `Map` folds by its `next`, never reaching the crate's own `fold` through a peekable (#264)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                Some((\"$mapFold\", args.type_at(0)))\n",
+    replace: "                None\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "inspect-fold-not-std",
+    breaks: "std's compiled `Inspect` folds by its `next`, never reaching the crate's own `fold` through a peekable (#264)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                Some((\"$inspectFold\", args.type_at(0)))\n",
+    replace: "                None\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "fuse-try-fold-fused-unsaid",
     breaks: "std's compiled `Fuse`'s `try_fold` isn't told its source is a `FusedIterator`, so it lets go of it at its end (#244)",
     file: "src/lower/iterators/knowing.rs",

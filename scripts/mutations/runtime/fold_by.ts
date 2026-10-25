@@ -5,6 +5,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-fold-unmapped",
+    breaks: "a held map's fold gives its source's items unmapped, so `map(|x| x * 2).peekable().sum()` sums the source's (#264)",
+    file: "src/runtime/fold_by.js",
+    find: "  return $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);\n",
+    replace: "  return $foldBy(map.iter, init, (acc, x) => g(acc, x), iterator);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
+  {
     name: "fuse-fused-try-fold-clears",
     breaks: "a `Fuse` of a `FusedIterator` lets go of its source when a `try_fold` runs it to its end, so `take(1).fuse().any(..)` drops what the take's source holds before `any` answers (#244)",
     file: "src/runtime/fold_by.js",

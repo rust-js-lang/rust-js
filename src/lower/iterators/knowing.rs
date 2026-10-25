@@ -648,10 +648,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a fuse's its source's while it has one, by the source's
         // dictionary, which has that impl's own `fold` (#162); a fuse's
         // source, which it lets go of, dropped by its drop after, as its
-        // `next` drops it at its end.
+        // `next` drops it at its end; a map's and an inspect's their
+        // source's, each item given its `f` (#264).
         let fold = match ty.peel_refs().kind() {
             ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableFold", args.type_at(0))),
             ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseFold", args.type_at(0))),
+            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("Map") => {
+                Some(("$mapFold", args.type_at(0)))
+            }
+            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("Inspect") => {
+                Some(("$inspectFold", args.type_at(0)))
+            }
             _ => None,
         };
         if let Some((helper, source)) = fold {
@@ -677,20 +684,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     tried.push(fused);
                 }
             }
-            let try_helper = match helper {
-                "$fuseFold" => "$fuseTryFold",
-                _ => "$peekableTryFold",
-            };
-            let try_fold = Expr::arrow(
-                vec!["it".into(), "init".into(), "f".into(), "broke".into()],
-                vec![StmtKind::Return(Some(Expr::call_helper(try_helper, tried))).at(js::Span::NONE)],
-            );
             let fold = Expr::arrow(
                 vec!["it".into(), "init".into(), "f".into()],
                 vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
             );
             props.push(crate::js::Prop::Field("fold".into(), fold));
-            props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
+            let try_helper = match helper {
+                "$fuseFold" => Some("$fuseTryFold"),
+                "$peekableFold" => Some("$peekableTryFold"),
+                _ => None,
+            };
+            if let Some(try_helper) = try_helper {
+                let try_fold = Expr::arrow(
+                    vec!["it".into(), "init".into(), "f".into(), "broke".into()],
+                    vec![StmtKind::Return(Some(Expr::call_helper(try_helper, tried))).at(js::Span::NONE)],
+                );
+                props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
+            }
         }
         // Of a kind dropped by closing, `Rev`'s, which an adapter over it
         // closes as it's closed: closing it drops what it holds, each field

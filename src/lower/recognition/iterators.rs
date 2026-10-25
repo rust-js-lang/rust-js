@@ -63,6 +63,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Fuse")
     }
 
+    /// Whether `ty` is std's `iter::Map` or `iter::Inspect`, whose fold is its
+    /// source's, each item given its `f` (#264): `"Map"`, `"Inspect"`.
+    pub(in crate::lower) fn mapping_adapter(&self, ty: Ty<'tcx>) -> Option<&'static str> {
+        let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+            return None;
+        };
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Map" => Some("Map"),
+            "std::iter::Inspect" => Some("Inspect"),
+            _ => None,
+        }
+    }
+
     /// What a `Rev`, std's, steps from its end: the `Range<u32>` of a
     /// `Rev<Range<u32>>`.
     pub(in crate::lower) fn reversed(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {

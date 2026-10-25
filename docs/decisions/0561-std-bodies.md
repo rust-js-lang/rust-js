@@ -352,3 +352,23 @@ is caught.
 Readability: the case's `Vec`s of values with a destructor add `$iter`
 (77.6 to 77.8 in 10,000 lines) and renamed temporaries (715.6 to 716.5),
 as each such case does. The output reads no worse.
+
+## Amendment: a compiled `Map`'s and `Inspect`'s fold is std's (#264)
+
+std's `Map::fold` is its source's `fold`, each item given its `f`, and
+`Inspect::fold` likewise. The compiled structs had no `fold` step,
+though: their compiled `fold` takes the call's own `B` and `F`, which the
+struct's steps can't name. So a `sum` through `map(..).peekable()` stepped
+`next`, and the crate's own `fold` never ran (fuzz seeds 47014, 51072 and
+53603). `Peekable` and `Fuse` already had std's `fold` by a runtime
+helper chosen in `std_iterator_steps`' table. `Map` and `Inspect` now
+join that table, `$mapFold` and `$inspectFold`, recognized by
+`mapping_adapter`. This follows ADR 0262's "results change" case. A
+dictionary that gives each compiled `fold` its call's own type parameters
+would serve every adapter. It remains open, and these helpers would go
+with it.
+
+`own_fold_through_adapters` folds a map and an inspect through a
+peekable, the crate's own `fold` reached and its value dropped once,
+against native Rust. The mutations `map-fold-unmapped`,
+`map-fold-not-std` and `inspect-fold-not-std` are caught.

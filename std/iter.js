@@ -9,8 +9,10 @@ import {
   $fuseFold,
   $fuseTryFold,
   $given,
+  $inspectFold,
   $lastDropping,
   $lent,
+  $mapFold,
   $nthBack,
   $nthDropping,
   $peekableFold,
@@ -950,6 +952,7 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
         mapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         mapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      fold: (it, init, f) => $mapFold(it, init, f, SelfIterator),
       close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);
@@ -966,6 +969,7 @@ export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSel
         inspectIterator_next(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         inspectIterator_sizeHint(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
+      fold: (it, init, f) => $inspectFold(it, init, f, SelfIterator),
       close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);

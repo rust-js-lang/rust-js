@@ -11985,6 +11985,27 @@ export function $peekableFold(peekable, init, f, iterator) {
   return $foldBy(peekable.iter, folded, f, iterator);
 }
 
+// A `Map`'s fold, std's: its source's, each item given its `f`, by the
+// source's dictionary, which has that impl's own `fold` (#264).
+export function $mapFold(map, init, g, iterator) {
+  const f = map.f;
+  return $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);
+}
+
+// An `Inspect`'s fold, std's: its source's, `f` given each item first.
+export function $inspectFold(inspect, init, g, iterator) {
+  const f = inspect.f;
+  return $foldBy(
+    inspect.iter,
+    init,
+    (acc, x) => {
+      f(x);
+      return g(acc, x);
+    },
+    iterator,
+  );
+}
+
 // A `Fuse`'s fold, std's: its source's, while it has one, which it lets go
 // of, dropped by `drop`, as its `next` does at its end.
 export function $fuseFold(fuse, init, f, iterator, drop) {

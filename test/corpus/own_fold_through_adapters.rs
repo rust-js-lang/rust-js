@@ -96,5 +96,19 @@ fn main() {
     let mut stepped = Plain("s", 0).peekable();
     stepped.peek();
     println!("{:?}", stepped.map(|x| x * 2).collect::<Vec<_>>());
+    // A held map's and inspect's fold, std's: their source's, the crate's
+    // own, through a peekable (#264).
+    println!("{}", Own("t", 0).map(|x| x * 2).peekable().sum::<u32>());
+    println!("{}", Own("u", 0).inspect(|_| ()).peekable().sum::<u32>());
+    println!(
+        "{}",
+        Own("w", 0)
+            .skip(1)
+            .inspect(|_| ())
+            .peekable()
+            .map(|x| x + 1)
+            .sum::<u32>()
+    );
+    println!("{}", Plain("v", 0).map(|x| x + 1).peekable().sum::<u32>());
     println!("end");
 }
