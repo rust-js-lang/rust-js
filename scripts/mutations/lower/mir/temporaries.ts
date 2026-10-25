@@ -265,4 +265,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx-children.test.ts", "-t", "a capture of an inlined closure leaves no const behind"],
   },
+  {
+    name: "if-let-alternatives-unwritten",
+    breaks: "an `if let`'s or-pattern isn't read, so its alternatives are tested as MIR orders them and none is where it's written (ADR 0444, amended)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                thir::ExprKind::Let { pat, .. } if e.span.contains(span) => Some((pat, e.span)),\n",
+    replace: "                thir::ExprKind::Let { pat, .. } if false => Some((pat, e.span)),\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
+  },
+  {
+    name: "deref-alternatives-unwritten",
+    breaks: "a pattern of a reference's alternatives, match ergonomics' `&`, isn't read, so `Shape::Line | Shape::Circle(_)` of a `&Shape` is tested as MIR orders it (ADR 0444, amended)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                thir::PatKind::Deref { subpattern, .. } => named(subpattern, found),\n",
+    replace: "",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
+  },
 ];

@@ -249,6 +249,7 @@ function main() {
       throw error;
     }
   }
+
   try {
     try {
       const value = make(5);

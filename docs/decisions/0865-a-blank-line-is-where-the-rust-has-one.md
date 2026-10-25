@@ -5,7 +5,9 @@ tells, and keeps its rule where it can't. Amends
 [0444](0444-a-comment-is-where-its-code-is.md)'s fifth rule, whose blank
 lines between top-level statements were rust-js's, and its "part" of an
 object, which had none. Amended: an `if let` chain made of a labeled
-block is where its first `if` is.
+block is where its first `if` is. Amended (2026-10-25): a guard's `let` too, whose
+`try` starts where its first statement does, and what's after the code,
+an `export default`, tells nothing of it.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): blank lines, which
 nothing runs.
@@ -119,3 +121,43 @@ first `if let`'s pattern, as the second's is its own.
 Held by `test/lowering-comments.test.ts`, "an if let chain made of a
 labeled block is where its first if is", run, and the mutation
 `labeled-chain-unplaced` (`tidy/branches.ts`).
+
+## Amended (2026-10-25): a guard's `let`, and what's after the code
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, blank lines alone.
+
+React's ports had a blank line lost and one added:
+
+1. **Before a guard's `let`.** startTransition sets `try {` apart from
+   `ReactSharedInternals.T = currentTransition;`, and its port the guard
+   whose drop is the `finally`, `let _finish = FinishTransition { .. };`,
+   which prints nothing. The `try` a run a value's drop ends is made of
+   (ADR 0437) was placed where the drop is, the scope's end, and the
+   blank line was before its first statement, inside its block, where
+   none is printed. **The `try` starts where its first statement does**,
+   of a call's own `try` its first statement's (`scoped_drops`,
+   `mir/tidy/unwinds.rs`): as rule 4 has it, a `let`
+   with no JS is no code between a blank line and the statement after it,
+   which is the `try`. What's before its first statement is before the
+   `try`, a comment too. The scheduler's `unstable_runWithPriority`,
+   `unstable_next` and `unstable_wrapCallback` and shared's
+   `describeNativeComponentFrame` set their `try` apart as upstream does.
+2. **After a literal, in ReactSharedInternalsClient.** Its `const
+   ReactSharedInternals = {..};` and the `if (enableGestureTransition)`
+   of its `js::on_load!` are right below each other, as the Rust's
+   `thread_local!` and the macro are, but the JS set them apart. What the
+   Rust tells of the code's statements, `Written::told`, was read of the
+   module's last statements, and its `export default`, written after the
+   code, was one more: each was read of the statement before, and the
+   literal's, which nothing is before, said nothing, so ADR 0303's rule
+   set the `if` apart. **What's after the code, an `export default` and
+   a `pub use`'s `export { .. }`, says it's told**, written apart already
+   (`to_oxc::emit`), so the rest is of the statement it's of.
+
+Held by `test/lowering-comments.test.ts`, "a blank line before a guard's
+let is before its try, and a default export tells nothing", run; and the
+mutations `guard-try-at-drop`, `guard-try-first-unwritten` and
+`guard-try-past-first` (`mir/tidy/unwinds.ts`; the corpus's
+`temporaries_taken_apart` sets its `try` apart where the
+Rust's `let` is), `default-export-told-untold` and
+`aliases-told-untold` (`to_oxc.ts`).

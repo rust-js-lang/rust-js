@@ -21,7 +21,10 @@ what it's before, and a `None` field a comment is written on keeps its key
 ([0280](0280-undefined-fields-left-out.md), amended). Amended
 (2026-10-25): a comment before a `let` read in place is the next
 statement's in its block, one in a `catch_unwind` closure is in the `try`,
-and one before a binary's right operand is after its operator.
+and one before a binary's right operand is after its operator. Amended
+(2026-10-25, again): an assignment that drops what its place held is
+where its Rust is, and an or-pattern's alternative and a let-chain's `&&
+let` are operands too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments and blank
 lines, which nothing runs.
@@ -270,3 +273,52 @@ and `operand-after-any-operator` (`to_oxc.ts`), `operand-first-unplaced`
 (`to_oxc/expressions.ts`) and `caught-call-at-match`
 (`prepare/catches.ts`). The corpus's `plain_data` keeps a comment it lost,
 before a `transmute` read in place.
+
+## Amended (2026-10-25): in an assignment that drops, before an alternative or a let-chain's `let`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+A line-by-line review of React's ports found three comments lost or moved:
+
+1. **In an assignment over a value it drops.** startTransition's port
+   writes `*current_transition.types.get_mut() = match prev_transition {
+   // If we're a nested transition .. \n Some(prev) =>
+   prev.types.borrow().clone(), None => None };`. What the place held, an
+   `Option<Rc<..>>`, has a drop, so MIR drops it and writes the new one,
+   each where the place is, `*current_transition.types.get_mut()`: the
+   statement, `currentTransition.types = prevTransition?.types ?? null`,
+   was placed there alone, and the arm's comments, read away into `?.`,
+   were in no statement, and lost. **An assignment is where its Rust is,
+   from its place to the end of the value it's given**
+   (`FnCx::assignment_span`, `mir/assign.rs`): where MIR's span is the
+   place's alone, the value a temporary written right after its `=`, to
+   the temporary's end. The comments are before the statement, as the
+   rule above has them.
+2. **Before an or-pattern's alternative.** React's cache writes `typeof
+   arg === 'function' || // $FlowFixMe[invalid-compare] \n (typeof arg ===
+   'object' && arg !== null)`; its port, `if let Kind::Function(_) //
+   $FlowFixMe[..] \n | Kind::Object(_) | Kind::Array(_) =
+   js::classify(arg)`. A pattern's `|` is no binary of rustc's tree, and
+   the JS's `||` was placed nowhere, so the comment was before the `if`.
+   **Each test of an or-pattern is where the first alternative it tests
+   is written** (`written` of `variants_test` and `untagged_test`, of
+   `FnCx::written_variants`), `Object | Array`'s one test where `Object`
+   is, so a comment before an alternative is before its operand, after
+   its `||`, as a binary's right operand's is. An `if let`'s pattern is
+   read as a `match` arm's is, and a reference's, match ergonomics' `&`,
+   so their alternatives are tested as written too (ADR 0780, amended).
+3. **Before a let-chain's `&& let`.** startTransition's `js::type_of(v) ==
+   "object" // $FlowFixMe[..] \n && let Some(v) = v`: the JS's operand,
+   `v != null`, is placed at the pattern, past `let`, which was code
+   between, so the comment was lost in one and before the inner `try` in
+   the other. **A let-chain's `let` is an operand's opening**, as `(` and
+   `&` are: what's between a comment and its operand may be `&& let`.
+
+Held by `test/lowering-comments.test.ts`, "a comment in a value assigned
+over one dropped is before its statement" and "a comment before an
+or-pattern's alternative or a let-chain's let is before its operand", run;
+and the mutations `dropping-assignment-at-place` (`mir/assign.ts`),
+`alternative-unplaced` (`untagged.ts`), `variant-alternative-unplaced`
+(`representation.ts`), `if-let-alternatives-unwritten` and
+`deref-alternatives-unwritten` (`mir/temporaries.ts`) and
+`let-chain-let-code` (`to_oxc.ts`).

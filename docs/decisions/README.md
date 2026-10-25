@@ -623,7 +623,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
-- [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)
+- [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md) *(amended: an `if let`'s and a reference's too)*
 - [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
 - [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value; what was caught is a value of any shape, `as_unknown()`)*
 - [0791 A `Cell`'s storage says what it stores, however it's reached](0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
@@ -648,8 +648,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0861 A function's own nullable parameter is `null` where it's given or set `None`](0861-a-functions-own-nullable-parameter-is-set-null.md)
 - [0862 A comment at a body's end is there, before its `None` or after its last code](0862-a-comment-at-a-bodys-end-is-there.md)
 - [0863 A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked](0863-a-refcell-of-an-object-is-the-object.md)
-- [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md)
 - [0864 A type equal only to itself keys a JS `Set` and `Map` by itself](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md) *(amended: `==` of two values is `===`, and its `PartialEq`'s dictionary is written only where it's reached)*
+- [0865 A blank line is where the Rust has one between the code of the JS](0865-a-blank-line-is-where-the-rust-has-one.md) *(amended: a guard's `let` too, its `try` where its first statement is; an `export default` tells nothing of the code)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -671,7 +671,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0441 A `()` given a function value is no argument](0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list)*
-- [0444 A comment is in the JS where its code is, and so is a blank line](0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is; amended: a run before a match arm is one, and none is lost; amended: past a `let` read in place, in a `catch_unwind` closure's `try`, and before a binary's right operand)*
+- [0444 A comment is in the JS where its code is, and so is a blank line](0444-a-comment-is-where-its-code-is.md) *(amended by 0658: a branch's comment is before its value; 0708: an argument's and a field's; 0733: a line comment ends the line of its code; extended by 0753: a branch of only comments keeps them; 0835: an object is across lines where its struct literal is; amended: a run before a match arm is one, and none is lost; amended: past a `let` read in place, in a `catch_unwind` closure's `try`, and before a binary's right operand; amended: in an assignment that drops, before an or-pattern's alternative and a let-chain's `&& let`)*
 - [0445 Generic code extends and collects into what it's given](0445-extend-and-collect-in-generic-code.md)
 - [0446 A `dyn fmt::Write` is a pair, and `fmt::write` is `write_fmt`](0446-a-dyn-fmt-write.md)
 - [0447 The clock: a `SystemTime` and an `Instant` are their nanoseconds](0447-the-clock.md)

@@ -24,21 +24,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,
     /// which MIR sends to one block: each one's test, `||`; of an untagged
     /// enum's, what they are together, `Object | Array`'s `typeof subject
-    /// === "object"` (ADR 0668); `present` as `variant_test`'s.
+    /// === "object"` (ADR 0668); `present` as `variant_test`'s. Each test
+    /// of one is where the first of `variants` it tests is `written`, where
+    /// that's given, an or-pattern's alternative: what a comment before it
+    /// is before (ADR 0444, amended).
     pub(in crate::lower) fn variants_test(
         &self,
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variants: &[VariantIdx],
+        written: &[js::Span],
         present: bool,
     ) -> Expr {
         if bindings::is_untagged(self.tcx, adt.did()) {
             let variants: Vec<&ty::VariantDef> = variants.iter().map(|&v| adt.variant(v)).collect();
-            return self.untagged_variant_test(ty, &variants, &subject, present);
+            return self.untagged_variant_test(ty, &variants, written, &subject, present);
         }
-        (variants.iter())
-            .map(|&variant| self.variant_test(subject.clone(), ty, adt, variant, present))
+        (variants.iter().enumerate())
+            .map(|(i, &variant)| {
+                let test = self.variant_test(subject.clone(), ty, adt, variant, present);
+                match written.get(i) {
+                    Some(&span) if test.span.is_none() => Expr { span, ..test },
+                    _ => test,
+                }
+            })
             .reduce(|either, test| Expr::bin(Op::Or, either, test))
             .expect("a variant to test")
     }
@@ -73,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
-            return self.untagged_variant_test(ty, &[def], &subject, present);
+            return self.untagged_variant_test(ty, &[def], &[], &subject, present);
         }
         // A discriminated union's `otherwise`: an object whose tag is none
         // of the others' (ADR 0284).

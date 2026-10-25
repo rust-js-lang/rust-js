@@ -218,17 +218,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// order it names them, `Pending | Uninitialized`'s: what its test
     /// tests in turn, as the program wrote them. Of a macro's `match`,
     /// `matches!`'s, where its call is: the program's pattern its first arm.
-    pub(super) fn written_variants(&self, span: Span, at: rustc_span::BytePos) -> Vec<VariantIdx> {
-        fn named(pattern: &thir::Pat<'_>, found: &mut Vec<VariantIdx>) {
+    pub(super) fn written_variants(&self, span: Span, at: rustc_span::BytePos) -> Vec<(VariantIdx, Span)> {
+        fn named(pattern: &thir::Pat<'_>, found: &mut Vec<(VariantIdx, Span)>) {
             match &pattern.kind {
                 thir::PatKind::Or { pats } => pats.iter().for_each(|p| named(p, found)),
-                thir::PatKind::Variant { variant_index, .. } => found.push(*variant_index),
+                // Of a reference, match ergonomics' `&`.
+                thir::PatKind::Deref { subpattern, .. } => named(subpattern, found),
+                thir::PatKind::Variant { variant_index, .. } => found.push((*variant_index, pattern.span)),
                 _ => {}
             }
         }
         let mut found = Vec::new();
         if let Some(arm) = self.written_arm(span, at, |arm| arm.span.source_callsite()) {
             named(&arm.pattern, &mut found);
+        // An `if let`'s, `if let Kind::Function(_) | Kind::Object(_) = ..`,
+        // whose switch is in its `let`, the innermost.
+        } else if let Some((pattern, _)) = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match &e.kind {
+                thir::ExprKind::Let { pat, .. } if e.span.contains(span) => Some((pat, e.span)),
+                _ => None,
+            })
+            .min_by_key(|(_, written)| written.hi() - written.lo())
+        {
+            named(pattern, &mut found);
         }
         found
     }

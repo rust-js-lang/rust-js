@@ -12,6 +12,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        let span = self.assignment_span(state, rvalue, span);
         // A writer's `Formatter`, which it writes to as `f`, and its
         // `fmt::Result`, `Ok(())` or what a write gave: nothing.
         if let Some((aliases, _)) = &state.writer {
@@ -221,6 +222,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `place` is a parameter of the function whose body this is
     /// that it names `#[rust_js::nullable(..)]`, TypeScript's `T | null`
     /// (ADRs 0275, 0861).
+    /// Where an assignment is written, `span`, MIR's, or of one that drops
+    /// what its place held, `*types.get_mut() = match ..`, whose MIR is
+    /// where its place is: from its place to the end of the value it's
+    /// given, the statement a comment inside it is in (ADR 0444, amended).
+    fn assignment_span(&self, state: &State<'_, 'tcx>, rvalue: &Rvalue<'tcx>, span: Span) -> Span {
+        let Rvalue::Use(Operand::Move(value), _) = rvalue else {
+            return span;
+        };
+        let made = state.body.local_decls[value.local].source_info.span;
+        let given = value.projection.is_empty() && made.eq_ctxt(span) && made.lo() >= span.hi();
+        let written = || self.tcx.sess.source_map().span_to_snippet(span.between(made)).ok();
+        match given && written().is_some_and(|between| between.trim() == "=") {
+            true => span.to(made),
+            false => span,
+        }
+    }
+
     fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
         let def_id = state.body.source.def_id();
         let arg = place.local.as_usize();

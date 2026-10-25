@@ -8,7 +8,7 @@ use super::bindings;
 use super::declarations::{Written, written_types};
 use super::recognition::{Recognition, StdItem, conversion_target, deref_target, serde_impl, std_item};
 use super::representation::{Num, is_string_enum};
-use crate::js::{Expr, Op, UnaryOp};
+use crate::js::{self, Expr, Op, UnaryOp};
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
@@ -348,42 +348,58 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// 0676). Of more than one, what they are together (`union_parts`):
     /// `Object | Array`'s `typeof value === "object" && value !== null`
     /// (ADR 0668).
+    ///
+    /// Each test of one is where the first of `variants` it tests is
+    /// `written`, where that's given, an or-pattern's alternative: what a
+    /// comment before it is before (ADR 0444, amended).
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn untagged_test(
         &self,
         adt: AdtDef<'tcx>,
         args: GenericArgsRef<'tcx>,
         variants: &[&VariantDef],
+        written: &[js::Span],
         value: &Expr,
         present: bool,
         class: &dyn Fn(&str) -> Expr,
     ) -> Expr {
+        let at = |i: usize, test: Expr| match written.get(i) {
+            Some(&span) if test.span.is_none() => Expr { span, ..test },
+            _ => test,
+        };
         let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
         // What the others aren't: none of their tests, but where that's one
         // kind, as it is of `js::Kind`'s `Object`.
-        if let Some(&variant) = (variants.iter()).find(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {
-            let none = (adt.variants().iter().filter(|v| !otherwise(v)))
-                .map(|v| Expr::unary(UnaryOp::Not, self.untagged_test(adt, args, &[v], value, present, class)));
+        if let Some(i) = (variants.iter()).position(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {
+            let none = (adt.variants().iter().filter(|v| !otherwise(v))).map(|v| {
+                Expr::unary(
+                    UnaryOp::Not,
+                    self.untagged_test(adt, args, &[v], &[], value, present, class),
+                )
+            });
             let none = none
                 .reduce(|all, test| Expr::bin(Op::And, all, test))
                 .unwrap_or(Expr::bool(true));
-            let others: Vec<&VariantDef> = (variants.iter().copied())
-                .filter(|v| v.def_id != variant.def_id)
-                .collect();
+            let (others, written): (Vec<&VariantDef>, Vec<js::Span>) = (variants.iter().copied().enumerate())
+                .filter(|&(j, _)| j != i)
+                .map(|(j, v)| (v, written.get(j).copied().unwrap_or(js::Span::NONE)))
+                .unzip();
             return match others.is_empty() {
-                true => none,
+                true => at(i, none),
                 false => Expr::bin(
                     Op::Or,
-                    self.untagged_test(adt, args, &others, value, present, class),
-                    none,
+                    self.untagged_test(adt, args, &others, &written, value, present, class),
+                    at(i, none),
                 ),
             };
         }
         let test = |kind: &Kind| self.kind_test(kind, value, class);
         (self.union_parts(adt, args, variants, present).iter())
-            .map(|(own, narrower)| {
-                narrower.iter().fold(test(own), |all, kind| {
+            .map(|&(i, ref own, ref narrower)| {
+                let tested = narrower.iter().fold(test(own), |all, kind| {
                     Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
-                })
+                });
+                at(i, tested)
             })
             .reduce(|either, test| Expr::bin(Op::Or, either, test))
             .expect("a variant to test")
@@ -405,7 +421,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         args: GenericArgsRef<'tcx>,
         variants: &[&VariantDef],
         present: bool,
-    ) -> Vec<(Kind, Vec<Kind>)> {
+    ) -> Vec<(usize, Kind, Vec<Kind>)> {
         let parts: Vec<(Kind, Vec<Kind>)> = (variants.iter())
             .map(|v| self.untagged_parts(adt, args, v, present))
             .collect();
@@ -420,9 +436,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let objects =
             |kind: &Kind| (parts.iter()).any(|(own, narrower)| *own == Kind::Object && !narrower.contains(kind));
         let (arrays, nulls) = (objects(&Kind::Array), objects(&Kind::Null));
-        (parts.iter())
-            .filter(|(own, _)| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))
-            .cloned()
+        (parts.into_iter().enumerate())
+            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))
+            .map(|(i, (own, narrower))| (i, own, narrower))
             .collect()
     }
 
@@ -538,7 +554,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let no_class = |_: &str| unreachable!("a `typeof` kind's test names no class");
         (self.union_parts(adt, args, variants, present).into_iter())
-            .map(|(own, narrower)| {
+            .map(|(_, own, narrower)| {
                 // What it leaves out is an array or `null`, or it's no case:
                 // an object no `Error` is, say, isn't one.
                 if narrower.iter().any(|kind| !matches!(kind, Kind::Array | Kind::Null)) {
@@ -576,12 +592,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         ty: Ty<'tcx>,
         variants: &[&VariantDef],
+        written: &[js::Span],
         value: &Expr,
         present: bool,
     ) -> Expr {
         let (adt, args) = self.untagged(ty).expect("an untagged enum");
         self.recognition()
-            .untagged_test(adt, args, variants, value, present, &|name| self.js_ref(name))
+            .untagged_test(adt, args, variants, written, value, present, &|name| self.js_ref(name))
     }
 }
 

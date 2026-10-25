@@ -22,7 +22,14 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
         if let Some(end) = scope_end(stmts, i) {
             let drop = stmts[end].clone();
             let mut body = unwound(stmts.drain(i..end).collect(), &drop);
-            let span = drop.span;
+            // From where its first statement is, as the Rust has nothing of
+            // its own there, a guard's `let` printing nothing, to its drop:
+            // what's before it, a blank line or a comment, is before the
+            // `try` (ADR 0865, amended).
+            let span = match body.first().and_then(written_at) {
+                Some(lo) if !drop.span.is_none() && lo < drop.span.lo => js::Span { lo, hi: drop.span.hi },
+                _ => drop.span,
+            };
             let rest = stmts.split_off(i + 1);
             stmts.truncate(i);
             // What a `try` of the run declared before it, `let x;`, and only
@@ -47,6 +54,28 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
         i += 1;
     }
     scoped
+}
+
+/// Where `stmt` is written: its own span's start, or of one placed nowhere,
+/// a temporary's `result = f()`, its value's, and a `try` a call's drops
+/// make, its first statement's.
+fn written_at(stmt: &Stmt) -> Option<u32> {
+    if !stmt.span.is_none() {
+        return Some(stmt.span.lo);
+    }
+    match &stmt.kind {
+        StmtKind::Try(body, _) | StmtKind::TryCatch(body, ..) => body.first().and_then(written_at),
+        StmtKind::Assign(_, value)
+        | StmtKind::Const(_, value)
+        | StmtKind::Let(_, Some(value))
+        | StmtKind::Expr(value)
+        | StmtKind::Return(Some(value))
+            if !value.span.is_none() =>
+        {
+            Some(value.span.lo)
+        }
+        _ => None,
+    }
 }
 
 /// `let result; try { ..; result = e; } finally { .. } return result;`, what

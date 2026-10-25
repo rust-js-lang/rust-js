@@ -175,9 +175,9 @@ function main() {
         .toArray();
       console.log(`rest [${rest.join(", ")}]`);
     }
+    // Collected by JS's own `new Set(..)`, which closes nothing at its end:
+    // each source closed as it's done, or as an adapter over it ends.
     try {
-      // Collected by JS's own `new Set(..)`, which closes nothing at its end:
-      // each source closed as it's done, or as an adapter over it ends.
       const value = (d) => {
         const result = d[0];
         dDrop_drop(d);

@@ -547,4 +547,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
+  {
+    name: "dropping-assignment-at-place",
+    breaks: "an assignment over a value it drops is where MIR writes it, its place, so a comment in its value, React's startTransition's, is in no statement and lost (ADR 0444, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "            true => span.to(made),\n",
+    replace: "            true => span,\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment in a value assigned over one dropped"],
+  },
 ];

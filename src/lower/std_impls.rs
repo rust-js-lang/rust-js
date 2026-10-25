@@ -448,7 +448,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     }
                     let copy = self.clone_value(place.clone(), payload, span, out)?;
-                    let test = self.untagged_variant_test(ty, &[variant], &place, false);
+                    let test = self.untagged_variant_test(ty, &[variant], &[], &place, false);
                     value = Expr::cond(test, copy, value);
                 }
                 Ok(value)
@@ -1233,14 +1233,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for variant in adt.variants().iter().rev() {
                     // One without fields, its name's string, is `b`'s the same.
                     let Some(field) = variant.fields.iter().next() else {
-                        let both = self.untagged_variant_test(ty, &[variant], &b, false);
-                        value = Expr::cond(self.untagged_variant_test(ty, &[variant], &a, false), both, value);
+                        let both = self.untagged_variant_test(ty, &[variant], &[], &b, false);
+                        value = Expr::cond(self.untagged_variant_test(ty, &[variant], &[], &a, false), both, value);
                         continue;
                     };
                     let payload = self.field_ty(field, args);
                     let same = self.eq_value(a.clone(), b.clone(), payload, span, out)?;
-                    let both = Expr::bin(Op::And, self.untagged_variant_test(ty, &[variant], &b, false), same);
-                    value = Expr::cond(self.untagged_variant_test(ty, &[variant], &a, false), both, value);
+                    let both = Expr::bin(
+                        Op::And,
+                        self.untagged_variant_test(ty, &[variant], &[], &b, false),
+                        same,
+                    );
+                    value = Expr::cond(self.untagged_variant_test(ty, &[variant], &[], &a, false), both, value);
                 }
                 Ok(value)
             }

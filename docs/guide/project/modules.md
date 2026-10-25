@@ -587,9 +587,11 @@ and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
 comment lines before a `match` arm is one, the arm's; a comment before a
 `let` the JS has no statement of, its value read where it's named, `let arg
 = unsafe { js::cast(arg) };`, is the next statement's in its block; one in
-the closure `catch_unwind` calls is in the `try`; and a comment before
-what the JS reads away, an arm of `prev?.types`, is before the statement
-it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
+the closure `catch_unwind` calls is in the `try`; one before a binary's
+right operand, an or-pattern's alternative, `// c\n | Kind::Object(_)`,
+or a let-chain's `&& let`, is before the operand the JS has of it, after
+its operator; and a comment before what the JS reads away, an arm of
+`prev?.types`, is before the statement it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
 amended). A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
@@ -609,8 +611,9 @@ lines, and nowhere else: two functions, or a `static` and the
 `js::on_load!` it's frozen in, written right below each other are right
 below each other in the JS, and one apart is apart, a type with no JS
 between too. An object's fields are apart where the struct literal's are;
-a `let` with no JS of its own, an erased cast's, is no code between a
-blank line and the statement after it. What the Rust can't tell of, what
+a `let` with no JS of its own, an erased cast's or a guard's whose drop
+is a `finally`, is no code between a blank line and the statement after
+it, the guard's `try`. What the Rust can't tell of, what
 rust-js writes of no code of its own or of one line, a derive's
 functions, is set apart as a person sets it ([ADR
 0865](../../decisions/0865-a-blank-line-is-where-the-rust-has-one.md)).

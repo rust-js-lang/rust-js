@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "mir-untagged-variant-tagged",
     breaks: "an untagged enum's variant is tested by a tag it has none of",
     file: "src/lower/representation.rs",
-    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &subject, present);\n",
-    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &subject, present);\n",
+    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &[], &subject, present);\n",
+    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, &[def], &[], &subject, present);\n",
     tests: ["test/corpus.test.ts","-t","untagged_enums"],
   },
   {
@@ -679,5 +679,13 @@ export const mutations: Mutation[] = [
     find: "            if is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
     replace: "            if false && is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_const_object.rs$"],
+  },
+  {
+    name: "variant-alternative-unplaced",
+    breaks: "an enum's or-pattern's alternative isn't where it's written, so a comment before it is before the `if` (ADR 0444, amended)",
+    file: "src/lower/representation.rs",
+    find: "                    Some(&span) if test.span.is_none() => Expr { span, ..test },\n",
+    replace: "                    Some(_) if false => test,\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
   },
 ];

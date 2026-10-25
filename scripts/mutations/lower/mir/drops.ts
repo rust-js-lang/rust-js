@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "mir-open-drop-other-variant",
     breaks: "an enum some of which has moved drops what's left of a variant when it's another",
     file: "src/lower/mir/drops.rs",
-    find: "                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], false),\n",
-    replace: "                None => Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], false)),\n",
+    find: "                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false),\n",
+    replace: "                None => Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false)),\n",
     tests: ["test/corpus.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
   },
   {

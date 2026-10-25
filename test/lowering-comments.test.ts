@@ -616,3 +616,207 @@ pub fn checked(value: Option<&'static Unknown>) -> u32 {
   const memo = { $$typeof: Symbol.for("react.memo"), b: 1 };
   expect([lib.checked(memo as never), lib.checked(undefined as never), lib.checked((() => 0) as never)]).toEqual([5, 2, 0]);
 });
+
+// React's startTransition: `*current.types.get_mut() = match prev { // If
+// we're a nested transition .. \n Some(prev) => prev.types.borrow().clone(),
+// None => None }`, which drops what the place held, so MIR writes it where
+// its place is, `*current.types.get_mut()`; read as `prev?.types ?? null`,
+// its arm's comment was in no statement and lost. The assignment is where
+// its Rust is, its place to its value (ADR 0444, amended).
+test("a comment in a value assigned over one dropped is before its statement", async () => {
+  const { js, lib } = await compiled("comment-in-dropping-assignment", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Transition {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub types: RefCell<Option<Rc<RefCell<Vec<u32>>>>>,
+}
+
+pub fn started(prev: Option<&Transition>) -> usize {
+    let mut current = Transition {
+        types: RefCell::new(None),
+    };
+    *current.types.get_mut() = match prev {
+        // A nested one shares the parent's,
+        // as they're entangled.
+        Some(prev) => prev.types.borrow().clone(),
+        None => None,
+    };
+    current
+        .types
+        .borrow()
+        .as_ref()
+        .map_or(0, |types| types.borrow().len())
+}
+`);
+  expect(js).toContain("  // A nested one shares the parent's,\n  // as they're entangled.\n  current.types = prev?.types ?? null;\n");
+  expect([lib.started({ types: [1, 2] } as never), lib.started(undefined as never)]).toEqual([2, 0]);
+});
+
+// React's cache: `if let Kind::Function(_) // $FlowFixMe[..] \n |
+// Kind::Object(_) | Kind::Array(_) = js::classify(arg)`, and its
+// startTransition's `js::type_of(v) == "object" // $FlowFixMe[..] \n && let
+// Some(v) = v`: neither `|` nor a let-chain's `&&` is a binary in rustc's
+// tree, but each is one in the JS, whose right operand a comment before it
+// is before, after its operator, as upstream's is (ADR 0444, amended). An
+// `if let`'s alternatives are tested as written, too.
+test("a comment before an or-pattern's alternative or a let-chain's let is before its operand", async () => {
+  const { js, lib } = await compiled("comment-before-alternative", `use js::{Kind, Unknown};
+
+pub fn objects(args: &[Option<&Unknown>]) -> u32 {
+    let mut objects = 0;
+    for &arg in args.iter() {
+        if let Kind::Function(_)
+        // Not null.
+        | Kind::Object(_)
+        | Kind::Array(_) = js::classify(arg)
+        {
+            objects += 1;
+        }
+    }
+    objects
+}
+
+pub fn numbers(args: &[Option<&Unknown>]) -> u32 {
+    let mut numbers = 0;
+    for &arg in args.iter() {
+        if let Kind::Number(_)
+        // Or a string.
+        | Kind::String(_) = js::classify(arg)
+        {
+            numbers += 1;
+        }
+    }
+    numbers
+}
+
+pub enum Shape {
+    Circle(f64),
+    Square(f64),
+    Line,
+}
+
+pub fn round(shape: &Shape) -> bool {
+    if let Shape::Line
+    // Or a circle.
+    | Shape::Circle(_) = shape
+    {
+        return true;
+    }
+    false
+}
+
+pub fn rounds() -> Vec<bool> {
+    vec![round(&Shape::Circle(1.0)), round(&Shape::Square(1.0)), round(&Shape::Line)]
+}
+
+pub fn chained(value: Option<&Unknown>, given: Option<u32>) -> u32 {
+    if js::type_of(value) == "object"
+        // Set.
+        && let Some(n) = given
+        && n > 2
+    {
+        return n;
+    }
+    0
+}
+`);
+  expect(js).toContain('      typeof arg === "function" ||\n      // Not null.\n      (typeof arg === "object" && arg !== null)\n');
+  expect(js).toContain('      typeof arg === "number" ||\n      // Or a string.\n      typeof arg === "string"\n');
+  expect(js).toContain('    typeof value === "object" &&\n    // Set.\n    given != null &&\n');
+  expect(js).toContain('    shape === "Line" ||\n    // Or a circle.\n    shape.TAG === "Circle"\n');
+  expect(js.match(/\/\/ (Not null|Or a string|Or a circle|Set)\./g)).toHaveLength(4);
+  const values = [() => 1, {}, [], null, 1, "a"];
+  expect([lib.objects(values as never), lib.numbers(values as never), lib.chained({} as never, 3 as never), lib.chained({} as never, undefined as never), lib.rounds()])
+    .toEqual([3, 2, 3, 0, [true, false, true]]);
+});
+
+// React's startTransition writes a blank line before `let _finish =
+// FinishTransition { .. };`, a guard whose drop is the `finally`, which has
+// no JS of its own: it's before the `try`, which starts where its first
+// statement does, as upstream's `try {` is set apart (ADR 0865, amended).
+// And ReactSharedInternalsClient's `export default`, written after the
+// code, made what the Rust tells of its statements off by one, so its `if`
+// right below its literal was set apart.
+test("a blank line before a guard's let is before its try, and a default export tells nothing", async () => {
+  const { js, lib } = await compiled("blank-before-guard", `use std::cell::Cell;
+
+pub struct Restore<'a> {
+    cell: &'a Cell<u32>,
+    prev: u32,
+}
+
+impl Drop for Restore<'_> {
+    fn drop(&mut self) {
+        self.cell.set(self.prev);
+    }
+}
+
+pub fn scoped(cell: &Cell<u32>, scope: impl FnOnce() -> u32) -> u32 {
+    let prev = cell.get();
+    cell.set(prev + 1);
+
+    let _restore = Restore { cell, prev };
+    let got = scope();
+    got + 1
+}
+
+pub fn returned(cell: &Cell<u32>, scope: impl FnOnce() -> u32) -> u32 {
+    let prev = cell.get();
+    cell.set(prev + 1);
+
+    let _restore = Restore { cell, prev };
+    scope()
+}
+
+pub fn glued(cell: &Cell<u32>, scope: impl FnOnce() -> u32) -> u32 {
+    let prev = cell.get();
+    cell.set(prev + 1);
+    let _restore = Restore { cell, prev };
+    scope()
+}
+`);
+  expect(js).toContain("  cell.value = (prev + 1) >>> 0;\n\n  try {\n    const got = scope();\n");
+  expect(js).toContain("  cell.value = (prev + 1) >>> 0;\n\n  try {\n    return scope();\n");
+  expect(js).toContain("  cell.value = (prev + 1) >>> 0;\n  try {\n    return scope();\n");
+  const cell = { value: 3 };
+  const read = (() => cell.value) as never;
+  expect([lib.scoped(cell as never, read), cell.value, lib.returned(cell as never, read), lib.glued(cell as never, read), cell.value])
+    .toEqual([5, 3, 4, 4, 3]);
+  const internals = await compiled("default-export-tells-nothing", `use std::cell::Cell;
+
+pub struct State {
+    pub a: Cell<Option<f64>>,
+    pub b: Cell<Option<f64>>,
+}
+
+thread_local! {
+    static STATE: State = State {
+        a: Cell::new(None),
+        b: Cell::new(None),
+    };
+}
+js::on_load! {
+    STATE.with(|state| {
+        if state.b.get().is_none() {
+            state.a.set(Some(1.0));
+        }
+
+        if state.a.get().is_some() {
+            state.b.set(Some(2.0));
+        }
+    });
+}
+
+pub fn total() -> f64 {
+    STATE.with(|state| state.a.get().unwrap_or(0.0) + state.b.get().unwrap_or(0.0))
+}
+
+pub use total as sum;
+
+js::export_default!(STATE);
+`);
+  expect(internals.js).toContain("};\nif (state.b == null) {\n  state.a = 1;\n}\n\nif (state.a != null) {\n");
+  expect(internals.js).toContain("\n\nexport default state;\n\nexport { total as sum };\n");
+  expect([internals.lib.default, internals.lib.sum()]).toEqual([{ a: 1, b: 2 }, 3]);
+});

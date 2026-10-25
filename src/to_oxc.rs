@@ -142,7 +142,7 @@ pub fn emit(
         ..CodegenOptions::default()
     };
     let generated = Codegen::new().with_options(options).build(&program);
-    let written = crate::format::Written {
+    let mut written = crate::format::Written {
         told,
         ..across_lines(&program, &cx)
     };
@@ -306,11 +306,14 @@ pub fn emit(
             pieces.insert(i, placed);
         }
     }
-    // After everything it maps, so the map's lines stay where they are.
+    // After everything it maps, so the map's lines stay where they are. Each
+    // is apart already, which `told` says of it: what it tells of the code's
+    // statements is of the ones before (ADR 0865, amended).
     if let Some(function) = &module.default_export
         && defaulted(module).is_none()
     {
         code.push_str(&format!("\nexport default {function};\n"));
+        written.told.push(true);
     }
     // Its own items by other names, `pub use`'s (ADR 0596).
     if !module.aliases.is_empty() {
@@ -321,6 +324,7 @@ pub fn emit(
             })
             .collect();
         code.push_str(&format!("\nexport {{ {} }};\n", named.join(", ")));
+        written.told.push(true);
     }
     let map = generated.map.expect("a source map, since source_map_path is set");
     // The sources the map points into, and only those, named from here.
@@ -527,8 +531,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                             between.is_some_and(|gap| gap.trim().is_empty())
                         })
                 };
-                // Of an operator and what opens its operand, `+ &(`, and
-                // comments.
+                // Of an operator and what opens its operand, `+ &(`, a
+                // let-chain's `&& let` (ADR 0444, amended), and comments.
                 let only_operators = |lo: u32, hi: u32| {
                     let mut code = lo;
                     (file.comments.iter())
@@ -538,7 +542,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                             let between = sources.text.get(code as usize..other.lo as usize);
                             code = other.hi;
                             between.is_some_and(|gap| {
-                                gap.chars().all(|c| c.is_whitespace() || "+-*/%&|^!=<>(".contains(c))
+                                (gap.split_whitespace())
+                                    .all(|word| word == "let" || word.chars().all(|c| "+-*/%&|^!=<>(".contains(c)))
                             })
                         })
                 };

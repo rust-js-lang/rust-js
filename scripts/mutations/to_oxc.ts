@@ -444,4 +444,28 @@ export const mutations: Mutation[] = [
     replace: "            let part = parts.contains_key(&at) && !spans.iter().any(|&(lo, _)| lo == at);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
   },
+  {
+    name: "let-chain-let-code",
+    breaks: "a let-chain's `&& let` is code between a comment and the operand it's before, so it's lost or before the statement (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                                    .all(|word| word == \"let\" || word.chars().all(|c| \"+-*/%&|^!=<>(\".contains(c)))\n",
+    replace: "                                    .all(|word| word.chars().all(|c| \"+-*/%&|^!=<>(\".contains(c)))\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
+  },
+  {
+    name: "default-export-told-untold",
+    breaks: "a module's `export default`, after its code, tells nothing of it, so what the Rust tells is of the statement before, and ReactSharedInternalsClient's `if` is set apart from its literal (ADR 0865, amended)",
+    file: "src/to_oxc.rs",
+    find: "        code.push_str(&format!(\"\\nexport default {function};\\n\"));\n        written.told.push(true);\n",
+    replace: "        code.push_str(&format!(\"\\nexport default {function};\\n\"));\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
+  },
+  {
+    name: "aliases-told-untold",
+    breaks: "a module's `export { .. as .. }` of its `pub use`s, after its code, tells nothing of it, so what the Rust tells is of the statement before (ADR 0865, amended)",
+    file: "src/to_oxc.rs",
+    find: "        code.push_str(&format!(\"\\nexport {{ {} }};\\n\", named.join(\", \")));\n        written.told.push(true);\n",
+    replace: "        code.push_str(&format!(\"\\nexport {{ {} }};\\n\", named.join(\", \")));\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
+  },
 ];

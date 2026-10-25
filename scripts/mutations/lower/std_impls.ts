@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "untagged-unit-eq-any",
     breaks: "a variant without fields equals any value of the enum",
     file: "src/lower/std_impls.rs",
-    find: "                        let both = self.untagged_variant_test(ty, &[variant], &b, false);",
+    find: "                        let both = self.untagged_variant_test(ty, &[variant], &[], &b, false);",
     replace: "                        let both = Expr::bool(true);",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
   },

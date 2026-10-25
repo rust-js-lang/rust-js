@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0689](0689-a-moves-decision-is-apart-from-the-move.md)'s
 moves: a temporary read more than once, by one statement's tests.
+Amended (2026-10-25): an `if let`'s pattern and a reference's are read too,
+and each test is where its alternative is written ([0444](0444-a-comment-is-where-its-code-is.md), amended).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: which of an
 or-pattern's pure tests runs first, and whether a field's read is held
@@ -81,3 +83,18 @@ value each time, stay held: `const state = thenable.state; return state
 - Mutations `or-pattern-declared-order` (`mir/structure.rs`),
   `or-pattern-macro-arm-unfound` (`mir/temporaries.rs`),
   `tested-field-held`, `tested-getter-in-place` (`mir/tidy/moves.rs`).
+
+## Amended (2026-10-25): an `if let`'s, and a reference's
+
+`written_variants` read a `match` arm's pattern alone, and of a
+reference, `if let Shape::Line | Shape::Circle(_) = shape` of a `&Shape`,
+saw match ergonomics' `&` and no alternative. **An `if let`'s pattern,
+the innermost `let` its switch is in, and a reference's alternatives are
+read too**, each with where it's written, which its test is placed at, a
+comment before it before its operand (ADR 0444, amended). React's
+cache's `Kind::Function(_) | Kind::Object(_) | Kind::Array(_)` was in
+the enum's order already; a `Kind::Number(_) | Kind::String(_)` is
+`typeof v === "number" || typeof v === "string"` now, as written. Held by
+`test/lowering-comments.test.ts`, "a comment before an or-pattern's
+alternative", and the mutations `if-let-alternatives-unwritten` and
+`deref-alternatives-unwritten` (`mir/temporaries.ts`).

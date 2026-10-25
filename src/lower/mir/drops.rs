@@ -603,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => failed,
                     }
                 }
-                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], false),
+                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false),
             };
             chain = Some(match (dropped.is_empty(), chain) {
                 (true, Some(rest)) if !rest.is_empty() => {

@@ -361,12 +361,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .map(|(variant, _)| variant)
                             .collect();
                         // In the order its arm's pattern names them, as the
-                        // program wrote them, not as the enum declares them.
-                        if let Some(at) = written_at(state.body, *target) {
-                            let written = self.written_variants(span, at);
-                            variants.sort_by_key(|v| written.iter().position(|w| w == v).unwrap_or(usize::MAX));
-                        }
-                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, *present);
+                        // program wrote them, not as the enum declares them,
+                        // each where it's written.
+                        let written =
+                            written_at(state.body, *target).map_or(Vec::new(), |at| self.written_variants(span, at));
+                        variants.sort_by_key(|v| written.iter().position(|(w, _)| w == v).unwrap_or(usize::MAX));
+                        let spans: Vec<js::Span> = (variants.iter())
+                            .map(|v| {
+                                written
+                                    .iter()
+                                    .find(|(w, _)| w == v)
+                                    .map_or(js::Span::NONE, |&(_, at)| self.js_span(at))
+                            })
+                            .collect();
+                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &spans, *present);
                     }
                 }
                 let mut cases: Vec<(Expr, BasicBlock)> =
@@ -613,7 +621,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Err(self.tcx.dcx().span_err(span, message));
                 }
-                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], *present))
+                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], *present))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -662,16 +670,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, as a pattern tests
     /// it (`variants_test`): a test function an untagged one's calls,
     /// `isValidElement(child)`, gives a `bool`, which tidy writes a test of
-    /// as one. `present`, as `variant_test` has it.
+    /// as one. `present`, as `variant_test` has it; each of `variants`
+    /// `written` where it's given.
     pub(in crate::lower) fn mir_variant_test(
         &mut self,
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variants: &[VariantIdx],
+        written: &[js::Span],
         present: bool,
     ) -> Expr {
-        let test = self.variants_test(subject, ty, adt, variants, present);
+        let test = self.variants_test(subject, ty, adt, variants, written, present);
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = tidy::call_path(e) {
