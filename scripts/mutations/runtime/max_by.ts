@@ -46,8 +46,16 @@ export const mutations: Mutation[] = [
     name: "extreme-folds-without-first",
     breaks: "`max()` of the crate's iterator folds it without first stepping it by `next`, as std's `reduce` does",
     file: "src/runtime/max_by.js",
-    find: "  const first = it.next();\n  if (first.done) return undefined;\n  const kept = it.reduce(",
+    find: "  const first = it.next();\n  // None, `reduce`'s `next()?`, which drops it (#242).\n  if (first.done) {\n    it.return?.();\n    return undefined;\n  }\n  const kept = it.reduce(",
     replace: "  const first = { done: false, value: undefined };\n  const kept = it.reduce(",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+  },
+  {
+    name: "extreme-by-empty-left-open",
+    breaks: "`max()` of none never drops what its source has left, its `next()?` not closing it (#242)",
+    file: "src/runtime/max_by.js",
+    find: "  if (first.done) {\n    it.return?.();\n    return undefined;\n  }\n",
+    replace: "  if (first.done) {\n    return undefined;\n  }\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
 ];

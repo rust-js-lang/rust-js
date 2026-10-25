@@ -15,7 +15,8 @@ function $lazyChain(a, b) {
         first = undefined;
       }
       const step = second.next();
-      if (step.done) second.return?.();
+      // `b` done, never let go by std's, which its owner drops, held (#243).
+      if (step.done && !chained.held) second.return?.();
       return step;
     },
     () => {
@@ -69,7 +70,7 @@ function $lazyChain(a, b) {
       first = undefined;
     }
     folded = $lent(second).tryFold(folded, f, broke);
-    if (!broke(folded)) second.return?.();
+    if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
   chained.from = [first, second];

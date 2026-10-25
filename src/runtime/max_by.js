@@ -8,7 +8,11 @@
 function $extremeBy(items, compare, max, boxed, drop) {
   const it = Iterator.from(items);
   const first = it.next();
-  if (first.done) return undefined;
+  // None, `reduce`'s `next()?`, which drops it (#242).
+  if (first.done) {
+    it.return?.();
+    return undefined;
+  }
   const kept = it.reduce((kept, item) => {
     if ((compare(kept, item) > 0) === max) {
       drop?.(item);

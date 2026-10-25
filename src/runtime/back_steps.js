@@ -180,8 +180,10 @@ function $chainEnds(a, b) {
 function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
-    // crate's own where it writes one (#162).
+    // crate's own where it writes one (#162); from the back, its `nth_back`,
+    // as std's `next_back` asks it (#245).
     if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
+    if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
@@ -224,7 +226,13 @@ function $stepBy(it, step, drop) {
     }
     return folded;
   };
-  stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
+  // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
+  // drops what it has left at its end (#242).
+  stepped.fold = (init, f) => {
+    const folded = stepped.tryFold(init, f, () => false);
+    stepped.return();
+    return folded;
+  };
   stepped.from = [it];
   return stepped;
 }

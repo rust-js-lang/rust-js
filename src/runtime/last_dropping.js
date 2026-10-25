@@ -1,7 +1,8 @@
 // `it.last()` of items with a destructor: its last item, each before it
 // dropped by `drop` as the next comes, as std's `last` drops each it passes
 // (ADR 0098), `boxed` where an item could look like `None`, `Some` of it
-// that is `$some`'s (ADR 0051). Of one given the crate's own `last`,
+// that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
+// it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
 function $lastDropping(it, drop, boxed) {
   const some = (item) => (boxed ? $some(item) : item);
@@ -16,5 +17,6 @@ function $lastDropping(it, drop, boxed) {
     last = item;
     seen = true;
   }
+  it.return?.();
   return seen ? some(last) : undefined;
 }

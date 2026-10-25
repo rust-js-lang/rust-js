@@ -743,11 +743,12 @@ export function $memchrIter(haystack, needles, at = 0, end = haystack.length) {
 }
 
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
-// `None` of none, where JS's `reduce` throws; boxed where it may look like
-// `None` (ADRs 0051, 0479).
+// `None` of none, where JS's `reduce` throws, closed, as std's `next()?`
+// drops it (#242); boxed where it may look like `None` (ADRs 0051, 0479).
 export function $reduce(it, f, boxed = false) {
   const first = it.next();
   if (first.done) {
+    it.return?.();
     return undefined;
   }
   const value = it.reduce(f, first.value);
@@ -1407,26 +1408,32 @@ export class $Steps extends Iterator {
       }
       if (n > 0) this.nth(n - 1);
       n = 0;
-      return this.return();
+      // Past its end, what it steps done with, unless it's held, whose
+      // owner drops it (#242).
+      return taken.held ? { done: true, value: undefined } : this.return();
     };
     // Its `try_fold`, std's: its source's, stopped once it's taken `n`;
-    // asked again there, its source done with, as its `next` closes it
-    // (ADR 0570, #225).
+    // asked again there, or stopped there by its limit, not by what it
+    // gave, which its caller still steps, its source done with, as its
+    // `next` closes it (ADR 0570, #225, #242).
     taken.tryFold = (init, g, broke) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
       }
       let full = false;
-      return this.tryFold(
+      let stopped = false;
+      const folded = this.tryFold(
         init,
         (a, x) => {
           n--;
           full = n === 0;
           return g(a, x);
         },
-        (a) => full || broke(a),
+        (a) => (stopped = broke(a)) || full,
       );
+      if (full && !stopped && !taken.held) this.return();
+      return folded;
     };
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
@@ -1468,11 +1475,16 @@ export class $Steps extends Iterator {
       () => this.return(),
     );
     skipped.from = [this];
+    // Its `fold`, then closed where its `nth(n - 1)` found none, as
+    // `fold(self)` drops what it has left at its end (#242).
     skipped.fold = (init, g) => {
       if (n > 0) {
         const k = n;
         n = 0;
-        if (this.nth(k - 1).done) return init;
+        if (this.nth(k - 1).done) {
+          this.return();
+          return init;
+        }
       }
       return this.fold(init, g);
     };
@@ -1660,7 +1672,8 @@ export function $mulAddF32(a, b, c) {
 // `it.last()` of items with a destructor: its last item, each before it
 // dropped by `drop` as the next comes, as std's `last` drops each it passes
 // (ADR 0098), `boxed` where an item could look like `None`, `Some` of it
-// that is `$some`'s (ADR 0051). Of one given the crate's own `last`,
+// that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
+// it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
 export function $lastDropping(it, drop, boxed) {
   const some = (item) => (boxed ? $some(item) : item);
@@ -1675,6 +1688,7 @@ export function $lastDropping(it, drop, boxed) {
     last = item;
     seen = true;
   }
+  it.return?.();
   return seen ? some(last) : undefined;
 }
 
@@ -2294,8 +2308,10 @@ export function $chainEnds(a, b) {
 export function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
-    // crate's own where it writes one (#162).
+    // crate's own where it writes one (#162); from the back, its `nth_back`,
+    // as std's `next_back` asks it (#245).
     if (by === "next" && drop === undefined && it.nth !== undefined) return it.nth(k);
+    if (by === "back" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);
     for (; k > 0; k--) {
       const at = it[by]();
       if (at.done) return at;
@@ -2338,7 +2354,13 @@ export function $stepBy(it, step, drop) {
     }
     return folded;
   };
-  stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);
+  // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
+  // drops what it has left at its end (#242).
+  stepped.fold = (init, f) => {
+    const folded = stepped.tryFold(init, f, () => false);
+    stepped.return();
+    return folded;
+  };
   stepped.from = [it];
   return stepped;
 }
@@ -3213,22 +3235,28 @@ export function $binarySearchBy(items, f) {
 // Rust's `cmp_by` steps them, the first `Ordering` of two that isn't
 // `Equal`, `undefined` where `partial_cmp` of two is `None`; else which
 // ended first, `a` stepped before `b` each time: `a` by its `tryFold`, as
-// std's `iter_compare` steps it by `try_for_each`, `b` by its `next`.
+// std's `iter_compare` steps it by `try_for_each`, `b` by its `next`. Each
+// closed at its end, `b` first, as std drops what it takes (#242).
 export function $iterCmp(a, b, cmp) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
-  let order = 0;
-  const stopped = $lent(x).tryFold(
-    false,
-    (_, p) => {
-      const q = y.next();
-      order = q.done ? 1 : cmp(p, q.value);
-      return order !== 0;
-    },
-    (stop) => stop,
-  );
-  if (stopped) return order;
-  return y.next().done ? 0 : -1;
+  try {
+    let order = 0;
+    const stopped = $lent(x).tryFold(
+      false,
+      (_, p) => {
+        const q = y.next();
+        order = q.done ? 1 : cmp(p, q.value);
+        return order !== 0;
+      },
+      (stop) => stop,
+    );
+    if (stopped) return order;
+    return y.next().done ? 0 : -1;
+  } finally {
+    y.return?.();
+    x.return?.();
+  }
 }
 
 // `v.rotate_left(n)`: its first `n` items moved to its end. More than it
@@ -10902,7 +10930,8 @@ export function $lazyChain(a, b) {
         first = undefined;
       }
       const step = second.next();
-      if (step.done) second.return?.();
+      // `b` done, never let go by std's, which its owner drops, held (#243).
+      if (step.done && !chained.held) second.return?.();
       return step;
     },
     () => {
@@ -10956,7 +10985,7 @@ export function $lazyChain(a, b) {
       first = undefined;
     }
     folded = $lent(second).tryFold(folded, f, broke);
-    if (!broke(folded)) second.return?.();
+    if (!broke(folded) && !chained.held) second.return?.();
     return folded;
   };
   chained.from = [first, second];
@@ -11184,12 +11213,16 @@ export function $lazySkipWhile(items, skip) {
     return $lent(source).tryFold(folded, f, broke);
   };
   // Its `fold`, std's: its first step, then its source's own fold, the
-  // crate's where it writes one (#214).
+  // crate's where it writes one (#214); then closed, as `fold(self)` drops
+  // what it has left at its end, though its first step found none (#242).
   skipped.fold = (init, f) => {
     let folded = init;
     if (skipping) {
       const step = skipped.next();
-      if (step.done) return folded;
+      if (step.done) {
+        skipped.return();
+        return folded;
+      }
       folded = f(folded, step.value);
     }
     return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);
@@ -11970,7 +12003,11 @@ export function $thenCmp(...orders) {
 export function $extremeBy(items, compare, max, boxed, drop) {
   const it = Iterator.from(items);
   const first = it.next();
-  if (first.done) return undefined;
+  // None, `reduce`'s `next()?`, which drops it (#242).
+  if (first.done) {
+    it.return?.();
+    return undefined;
+  }
   const kept = it.reduce((kept, item) => {
     if ((compare(kept, item) > 0) === max) {
       drop?.(item);

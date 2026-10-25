@@ -30,12 +30,16 @@ function $lazySkipWhile(items, skip) {
     return $lent(source).tryFold(folded, f, broke);
   };
   // Its `fold`, std's: its first step, then its source's own fold, the
-  // crate's where it writes one (#214).
+  // crate's where it writes one (#214); then closed, as `fold(self)` drops
+  // what it has left at its end, though its first step found none (#242).
   skipped.fold = (init, f) => {
     let folded = init;
     if (skipping) {
       const step = skipped.next();
-      if (step.done) return folded;
+      if (step.done) {
+        skipped.return();
+        return folded;
+      }
       folded = f(folded, step.value);
     }
     return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);

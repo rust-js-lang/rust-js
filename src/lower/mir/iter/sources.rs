@@ -149,7 +149,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// filtered on the way: the array it makes, `Array.from(nodes).map(f)`
     /// of a binding's list. Not of a generic
     /// value's, which may be an iterator with only a `next`, of which
-    /// `Array.from` makes an empty array (ADR 0140).
+    /// `Array.from` makes an empty array (ADR 0140). Nor of one dropped by
+    /// closing it, `$closing(..).take(n)`'s, whose listing drops what it
+    /// has left before the stages after it run, where Rust runs them as
+    /// each item comes, then drops it (#242).
     pub(super) fn collected_items(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
         let mut source = self.reveal(iter_ty);
         while let ty::Adt(_, args) = source.kind()
@@ -158,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             source = inner;
         }
-        if crate::lower::recognition::known_by_bounds(source) {
+        if crate::lower::recognition::known_by_bounds(source) || self.dropped_by_closing(iter_ty) {
             return None;
         }
         collected(it)

@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "  chained.nthUnused = (n) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "chain-second-closed-held-folded",
+    breaks: "a held chain's second, done in its `try_fold`, `all`'s, is dropped then, not with the chain at its statement's end (#243)",
+    file: "src/runtime/lazy_chain.js",
+    find: "    if (!broke(folded) && !chained.held) second.return?.();\n",
+    replace: "    if (!broke(folded)) second.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "chain-second-closed-held-stepped",
+    breaks: "a held chain's second, done as it's stepped, is dropped then, not with the chain at its scope's end (#243)",
+    file: "src/runtime/lazy_chain.js",
+    find: "      if (step.done && !chained.held) second.return?.();\n",
+    replace: "      if (step.done) second.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
 ];

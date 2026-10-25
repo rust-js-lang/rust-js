@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "step-by-fold-by-next",
     breaks: "step_by's fold is std's",
     file: "src/runtime/back_steps.js",
-    find: "  stepped.fold = (init, f) => stepped.tryFold(init, f, () => false);",
-    replace: "  stepped.foldUnused = (init, f) => stepped.tryFold(init, f, () => false);",
+    find: "  stepped.fold = (init, f) => {\n    const folded = stepped.tryFold(init, f, () => false);",
+    replace: "  stepped.foldUnused = (init, f) => {\n    const folded = stepped.tryFold(init, f, () => false);",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -297,5 +297,21 @@ export const mutations: Mutation[] = [
     find: "  for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);\n  it.return?.();\n",
     replace: "  for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_back_drops_what_it_takes.rs$"],
+  },
+  {
+    name: "step-by-fold-left-open",
+    breaks: "a `step_by`'s fold, `Count.step_by(2).sum()`, never drops the crate's iterator it took (#242)",
+    file: "src/runtime/back_steps.js",
+    find: "    const folded = stepped.tryFold(init, f, () => false);\n    stepped.return();\n    return folded;\n",
+    replace: "    const folded = stepped.tryFold(init, f, () => false);\n    return folded;\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
+  {
+    name: "step-by-back-each",
+    breaks: "`step_by(2).rev()` of the crate's iterator steps its back one item at a time, never asking its `nth_back` (#245)",
+    file: "src/runtime/back_steps.js",
+    find: "    if (by === \"back\" && drop === undefined && it.nthBack !== undefined) return it.nthBack(k);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
 ];

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    return $Steps.prototype.fold.call(skipped, folded, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "skip-while-fold-left-open",
+    breaks: "`take(1).skip_while(..).count()` never drops what the `take`'s source has left, its fold's first step finding none (#242)",
+    file: "src/runtime/lazy_skip_while.js",
+    find: "      if (step.done) {\n        skipped.return();\n        return folded;\n      }\n",
+    replace: "      if (step.done) {\n        return folded;\n      }\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
 ];

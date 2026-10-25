@@ -315,8 +315,14 @@ test("a generic iterator collected keeps an iterator with only a next", async ()
 fn plus_one<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
     items.map(|x| x + 1).collect()
 }
+fn listed<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
+    items.collect()
+}
 pub fn bumped() -> Vec<u32> {
     plus_one(counted())
+}
+pub fn all() -> Vec<u32> {
+    listed(counted())
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
@@ -324,6 +330,8 @@ pub fn bumped() -> Vec<u32> {
   let n = 0;
   (globalThis as any).counted = () => ({ next: () => (n < 2 ? { value: ++n, done: false } : { value: undefined, done: true }) });
   expect(lib.bumped()).toEqual([2, 3]);
+  n = 0;
+  expect(lib.all()).toEqual([1, 2]);
   delete (globalThis as any).counted;
 });
 

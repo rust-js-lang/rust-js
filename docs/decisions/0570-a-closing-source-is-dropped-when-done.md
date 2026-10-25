@@ -152,3 +152,49 @@ front to back (filed apart).
 hold it, with twelve mutations. The readability baseline's `$iter` share
 grows by 0.7 in 10,000 lines and `while (true)`'s by 0.1: the new cases'
 arrays stepped, and their `while let` loops.
+
+## Amendment: every consumer drops what it has left, and what an owner holds is held
+
+#206 left three gaps, found by fuzz seed 43991 and by a probe of 23
+adapters × 11 consumers × 3 sources, then 11 prefixes that stop early
+× 23 consumers:
+
+- **A consumer that takes a chain closes it at its end, on every path**
+  (#242). `$lazySkipWhile`'s `fold`, whose first step found none; `last`
+  (`$lastDropping`), `max`/`min` (`$extremeBy`) and `reduce` of none, as
+  std's `next()?` drops `self`; `Skip`'s fold when its `nth(n - 1)` finds
+  none; `step_by`'s fold; and `cmp`/`partial_cmp` (`$iterCmp`), `b` then
+  `a`, as `$iterEq` already did. Since #206 an un-held `take` closed only
+  when asked past its limit, so `take(1).skip_while(..).count()` never
+  dropped what was left.
+- **An un-held `take` stopped at its limit by its `try_fold` closes then**,
+  as its `next` does, unless what stopped it was its caller breaking on
+  the item it gave, which the caller still processes. A `filter` that
+  kept none, collected by JS's own `new Set(..)`, which closes nothing,
+  now drops what is left. A held `take` asked past its end by `nth`
+  closes nothing, as std's `Take::nth` doesn't.
+- **What a value the body drops holds is held** (#243). A call's value
+  moved into another call whose value the body drops, and whose type
+  contains it, `Peekable<Take<..>>`'s, is held (`owned_where_run`), since
+  that owner's drop glue closes it where Rust drops it. A held chain's
+  second side isn't closed as it's done: std's `Chain` lets go of `a`
+  when it ends, never `b`.
+- **A chain dropped by closing isn't listed** (`collected_items`).
+  `Array.from(it).map(f)` drained `it`, and its closing dropped what was
+  left before `f` ran on any item. Rust runs `f` on each item as it
+  comes, then drops the iterator.
+
+`step_by(n).rev()` of the crate's iterator asks its `nth_back` again, as
+std's `next_back` does. #231 had made it `$stepByEnds`, whose back
+stepped one item at a time (#245).
+
+All 759 + 253 probe programs agree but `take(1).fuse().any(..)` and
+`.position(..)`. std's `Fuse` of a `FusedIterator` keeps its inner
+iterator, and the compiled generic one clears it (#244). The droppable
+sweep's 2,100 programs agree. Held by `test/corpus/consumer_drops_what_is_left.rs`,
+28 mutations, and `test/lowering-iterators.test.ts`'s bare generic
+`collect`. A value moved into an adapter that is held itself isn't held
+again, since the adapter's `hold()` holds it. The readability baseline's
+`$iter` share grows by 1.5 and its renamed `x$1` share by 3.2 in 10,000
+lines. Both come from the new case alone: 20 `$iter(three())` sources,
+and its shadowing `let taken`s, renamed apart in the `try`s that drop each.

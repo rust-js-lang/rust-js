@@ -136,16 +136,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// done or an adapter in it ends (ADR 0570 amended, #206). Not one only
     /// moved, into a consumer that takes it, which drops it at its end.
     pub(super) fn holds_dropped_iterator(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        place.projection.is_empty()
+            && self.dropped_by_closing(state.body.local_decls[place.local].ty)
+            && self.owned_where_run(state, place.local, 0)
+    }
+
+    /// Whether the body drops `local` where it runs on, not only as a panic
+    /// unwinds past it; or moves it into a call whose value it drops so,
+    /// of a type holding it that its drop glue drops, `Peekable<Take<..>>`'s,
+    /// which drops it there (#243). Not one moved into a consumer,
+    /// `collect`'s, whose value holds no iterator; nor into an adapter
+    /// dropped by closing, held itself, whose `hold()` holds it.
+    fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local, depth: usize) -> bool {
         let Some(drops) = state.drops.as_ref() else {
             return false;
         };
-        // Dropped where it runs on, not only as a panic unwinds past it.
-        let dropped = (state.body.basic_blocks.iter_enumerated()).any(|(block, data)| {
+        let body = state.body;
+        let dropped = (body.basic_blocks.iter_enumerated()).any(|(block, data)| {
             !data.is_cleanup
                 && matches!(&data.terminator().kind, TerminatorKind::Drop { place: dropped, .. }
-                    if dropped.local == place.local && dropped.projection.is_empty() && drops.drops(block, *dropped))
+                    if dropped.local == local && dropped.projection.is_empty() && drops.drops(block, *dropped))
         });
-        place.projection.is_empty() && dropped && self.dropped_by_closing(state.body.local_decls[place.local].ty)
+        let moved = |arg: &mir::Operand<'tcx>| matches!(arg, mir::Operand::Move(p) if p.local == local && p.projection.is_empty());
+        dropped
+            || depth < 4
+                && body.basic_blocks.iter().any(|data| {
+                    !data.is_cleanup
+                        && matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, .. }
+                            if destination.projection.is_empty()
+                                && destination.local != local
+                                && args.iter().any(|arg| moved(&arg.node))
+                                && (body.local_decls[destination.local].ty.walk())
+                                    .any(|arg| arg.as_type() == Some(body.local_decls[local].ty))
+                                && !self.dropped_by_closing(body.local_decls[destination.local].ty)
+                                && self.owned_where_run(state, destination.local, depth + 1))
+                })
     }
 
     /// What `body`'s drops drop, `None` if none drops anything JS sees.

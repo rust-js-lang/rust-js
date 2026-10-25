@@ -253,26 +253,32 @@ class $Steps extends Iterator {
       }
       if (n > 0) this.nth(n - 1);
       n = 0;
-      return this.return();
+      // Past its end, what it steps done with, unless it's held, whose
+      // owner drops it (#242).
+      return taken.held ? { done: true, value: undefined } : this.return();
     };
     // Its `try_fold`, std's: its source's, stopped once it's taken `n`;
-    // asked again there, its source done with, as its `next` closes it
-    // (ADR 0570, #225).
+    // asked again there, or stopped there by its limit, not by what it
+    // gave, which its caller still steps, its source done with, as its
+    // `next` closes it (ADR 0570, #225, #242).
     taken.tryFold = (init, g, broke) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
       }
       let full = false;
-      return this.tryFold(
+      let stopped = false;
+      const folded = this.tryFold(
         init,
         (a, x) => {
           n--;
           full = n === 0;
           return g(a, x);
         },
-        (a) => full || broke(a),
+        (a) => (stopped = broke(a)) || full,
       );
+      if (full && !stopped && !taken.held) this.return();
+      return folded;
     };
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
@@ -314,11 +320,16 @@ class $Steps extends Iterator {
       () => this.return(),
     );
     skipped.from = [this];
+    // Its `fold`, then closed where its `nth(n - 1)` found none, as
+    // `fold(self)` drops what it has left at its end (#242).
     skipped.fold = (init, g) => {
       if (n > 0) {
         const k = n;
         n = 0;
-        if (this.nth(k - 1).done) return init;
+        if (this.nth(k - 1).done) {
+          this.return();
+          return init;
+        }
       }
       return this.fold(init, g);
     };

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  const stopped = new $Steps(() => x.next()).tryFold(",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
+  {
+    name: "iter-cmp-left-open",
+    breaks: "`cmp` never drops what either iterator has left, `iter_compare` not closing what it took (#242)",
+    file: "src/runtime/iter_cmp.js",
+    find: "  } finally {\n    y.return?.();\n    x.return?.();\n  }\n",
+    replace: "  } finally {\n  }\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+  },
 ];
