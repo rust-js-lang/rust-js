@@ -984,7 +984,7 @@ test("a Display impl's fmt returns the string it writes", async () => {
 // ADR 0055: an iterator of the crate's own is a JS iterator, with lazy helpers.
 test("an Iterator impl is a JS iterator, lazy until something wants all of it", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
-  expect(js).toContain("const iter = { n: 3 };\n  while (true) {\n    const x = countdownIterator_next(iter);");
+  expect(js).toContain("const iter = { n: 3 };\n  let x;\n  while ((x = countdownIterator_next(iter)) != null) {");
   expect(js).toContain("const first = countdownIterator_next(c) ?? 0;");
   // Endless, so only lazy helpers: `drop`, `take`, `find`.
   expect(js).toContain("$iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray()");
@@ -1153,7 +1153,7 @@ test("the report's JS: function values, case mapping, and plain array reads", as
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
   expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src)), { next: $next }),\n      line: 1,\n    };");
-  expect(js).toContain("const c = $peek(lexer.chars);");
+  expect(js).toContain("while ((c = $peek(lexer.chars)) != null) {");
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
   expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
   expect(js).toContain("const it = $iter(v);");
