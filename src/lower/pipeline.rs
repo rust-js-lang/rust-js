@@ -1085,7 +1085,7 @@ pub fn lower_crate<'tcx>(
             // A library's, by the name the module imports it as.
             let names = import_names.get(&module);
             let foreign_variables: HashSet<&str> = (foreign.all())
-                .filter(|item| item.calling.variable && item.member.is_none())
+                .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())
                 .filter_map(|item| names?.get(&(item.from.clone(), item.export.clone())))
                 .map(String::as_str)
                 .collect();

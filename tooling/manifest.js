@@ -26,8 +26,9 @@ export function parseManifest(text) {
     && (value.args === undefined || Array.isArray(value.args) && value.args.every(rcShape));
   // ADR 0100, amended: what a function asks of one of its type parameters,
   // by its index; each part absent where it asks none of it.
-  const flag = value => value === undefined || typeof value === "boolean";
-  const typeParam = value => object(value) && Number.isInteger(value.index) && flag(value.drop) && flag(value.no_drop)
+  // ADR 0906: a fact set, each by its name, of the names this ABI knows.
+  const facts = (value, known) => value === undefined || Array.isArray(value) && value.every(fact => known.includes(fact));
+  const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "no_drop"])
     && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped));
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
@@ -45,7 +46,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 5 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 6 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -61,8 +62,10 @@ export function parseManifest(text) {
           // What it asks of each type parameter it asks anything of, by its
           // index: a drop (ADR 0098), none (ADR 0190), type facts (ADR 0145),
           // and the traits it steps it by, each by its key (ADR 0548).
-          && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam)))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 5");
+          && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam))
+          // What else its calls give it or read of it (ADR 0906).
+          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"]))) {
+      throw new Error("Invalid rust-js library contract; expected library ABI 6");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

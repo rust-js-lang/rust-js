@@ -48,7 +48,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         def_id
             .as_local()
             .is_some_and(|local| self.krate.lazy_locals.contains(&local))
-            || self.krate.foreign.item(def_id).is_some_and(|item| item.calling.lazy)
+            || self
+                .krate
+                .foreign
+                .item(def_id)
+                .is_some_and(|item| item.calling.has(crate::library::ItemFact::Lazy))
     }
 
     pub(super) fn fn_ref(&self, def_id: DefId) -> Expr {

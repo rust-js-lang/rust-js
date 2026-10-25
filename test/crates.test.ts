@@ -359,8 +359,9 @@ test("a library's generic function takes the drops its body uses", () => {
   ]);
   const items = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).library.items;
   // Each type parameter a function takes a drop of, by its record in `params`.
-  type Item = { export: string; params?: { index: number; drop?: boolean }[] };
-  const dropsOf = (item: Item) => (item.params ?? []).filter((param) => param.drop).map((param) => param.index);
+  type Item = { export: string; params?: { index: number; marks?: string[] }[] };
+  const dropsOf = (item: Item) =>
+    (item.params ?? []).filter((param) => param.marks?.includes("drop")).map((param) => param.index);
   expect(Object.fromEntries(items.map((item: Item) => [item.export, dropsOf(item)]))).toEqual({
     keep: [], pick: [1], relay: [], discard: [0], apply: [], keepBy: [],
   });

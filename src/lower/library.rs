@@ -3,7 +3,7 @@
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
-use crate::library::{Dependencies, Held, HeldImport, Imported, Item, Library, RcShape, VERSION};
+use crate::library::{Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, RcShape, VERSION};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -69,7 +69,7 @@ pub(super) struct Contracts<'a, 'tcx> {
 /// by index, as its contract says them: a `dropT`, no destructor, type
 /// facts, and the traits it steps one by.
 fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec<crate::library::TypeParam> {
-    use crate::library::TypeParam;
+    use crate::library::{ParamFact, TypeParam};
     let mut params: std::collections::BTreeMap<u32, TypeParam> = Default::default();
     fn param(params: &mut std::collections::BTreeMap<u32, TypeParam>, index: u32) -> &mut TypeParam {
         params.entry(index).or_insert_with(|| TypeParam {
@@ -78,10 +78,10 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
         })
     }
     for &index in contracts.drop_params.get(&id).into_iter().flatten() {
-        param(&mut params, index).drop = true;
+        param(&mut params, index).marks.insert(ParamFact::Drop);
     }
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {
-        param(&mut params, index).no_drop = true;
+        param(&mut params, index).marks.insert(ParamFact::NoDrop);
     }
     for &(index, fact) in contracts.type_facts.get(&id).into_iter().flatten() {
         param(&mut params, index).facts.push(fact.word().to_string());
@@ -139,13 +139,20 @@ pub(super) fn exports<'tcx>(
                 .filter(|exported| *exported != info.name),
             calling: crate::library::Calling {
                 params: type_params(tcx, id, contracts),
-                fails: failing.contains(&id),
-                takes_location: caller_locations.contains(&id),
-                rest: super::bindings::takes_rest(tcx, id),
-                lazy: id
-                    .as_local()
-                    .is_some_and(|local| contracts.lazy_locals.contains(&local)),
-                variable: variables.contains(&id),
+                facts: [
+                    (ItemFact::Fails, failing.contains(&id)),
+                    (ItemFact::TakesLocation, caller_locations.contains(&id)),
+                    (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),
+                    (
+                        ItemFact::Lazy,
+                        id.as_local()
+                            .is_some_and(|local| contracts.lazy_locals.contains(&local)),
+                    ),
+                    (ItemFact::Variable, variables.contains(&id)),
+                ]
+                .into_iter()
+                .filter_map(|(fact, holds)| holds.then_some(fact))
+                .collect(),
             },
         })
         .collect();
@@ -405,7 +412,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
     pub(super) fn fails(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.calling.fails)
+        self.item(id).is_some_and(|item| item.calling.has(ItemFact::Fails))
     }
 
     /// Does a library's `id` step its type parameter `index` as it is, by
@@ -419,13 +426,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Does a library's `id` take its caller's location (ADR 0427)?
     pub(super) fn takes_location(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.calling.takes_location)
+        self.item(id)
+            .is_some_and(|item| item.calling.has(ItemFact::TakesLocation))
     }
 
     /// Does a library's `id` take JS's rest arguments, its last parameter
     /// `#[rust_js::rest]` (ADR 0664)?
     pub(super) fn takes_rest(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.calling.rest)
+        self.item(id).is_some_and(|item| item.calling.has(ItemFact::Rest))
     }
 
     /// Does any of the libraries make a `dyn Any` of what drops, which the
@@ -496,7 +504,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// May any of the libraries' items?
     pub(super) fn any_fails(&self) -> bool {
-        self.all().any(|item| item.calling.fails)
+        self.all().any(|item| item.calling.has(ItemFact::Fails))
     }
 
     /// Is `id` a library's trait impl, one its consumers call?

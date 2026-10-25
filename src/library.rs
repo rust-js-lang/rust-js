@@ -4,7 +4,7 @@
 
 use crate::manifest::{Compiler, Manifest};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
@@ -12,7 +12,7 @@ use std::path::Path;
 /// type parameters it's given an `Iterator` dictionary for, or an
 /// extension's (ADR 0548). 5: what an item asks of each of its type
 /// parameters is one record of it, `params` (ADR 0100, amended).
-pub const VERSION: u32 = 5;
+pub const VERSION: u32 = 6;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -50,35 +50,47 @@ pub struct Calling {
     /// their arguments, and check of what they give.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub params: Vec<TypeParam>,
-    /// Whether it may return `Err(fmt::Error)` (ADR 0187).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub fails: bool,
-    /// Whether it takes its caller's location, `#[track_caller]` (ADR
-    /// 0427), which its consumers' calls give it.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub takes_location: bool,
-    /// Whether its last parameter, a slice, is JS's rest parameter,
+    /// What else its calls give it or read of it, each a fact of a set, by
+    /// its name (ADR 0906).
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub facts: BTreeSet<ItemFact>,
+}
+
+/// A fact of a library's function its consumers' calls read (ADR 0906):
+/// each one of a set, so a new one is a variant here, written and read as
+/// the set is, and a manifest names it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemFact {
+    /// It may return `Err(fmt::Error)` (ADR 0187).
+    Fails,
+    /// It takes its caller's location, `#[track_caller]` (ADR 0427), which
+    /// its consumers' calls give it.
+    TakesLocation,
+    /// Its last parameter, a slice, is JS's rest parameter,
     /// `#[rust_js::rest]` (ADR 0664), which its consumers' calls spread.
     /// rustc's metadata keeps no parameter's attributes.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub rest: bool,
-    /// Whether it's a thread-local made where it's first used, read by
-    /// calling it, `START()` (ADR 0037, amended).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub lazy: bool,
-    /// Whether it's a thread-local that's its module's variable of what
-    /// its cell holds, `export let hasBadMapPolyfill`, read by its name,
-    /// which only its module sets (ADR 0270, amended).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub variable: bool,
+    Rest,
+    /// It's a thread-local made where it's first used, read by calling it,
+    /// `START()` (ADR 0037, amended).
+    Lazy,
+    /// It's a thread-local that's its module's variable of what its cell
+    /// holds, `export let hasBadMapPolyfill`, read by its name, which only
+    /// its module sets (ADR 0270, amended).
+    Variable,
 }
 
 impl Calling {
+    /// Whether it's `fact`.
+    pub fn has(&self, fact: ItemFact) -> bool {
+        self.facts.contains(&fact)
+    }
+
     /// The type parameters it takes a `dropT` of, by index.
     pub fn drop_params(&self) -> Vec<u32> {
         self.params
             .iter()
-            .filter(|param| param.drop)
+            .filter(|param| param.has(ParamFact::Drop))
             .map(|param| param.index)
             .collect()
     }
@@ -95,13 +107,10 @@ impl Calling {
 pub struct TypeParam {
     /// Which, by its index among the function's type parameters.
     pub index: u32,
-    /// It's given a `dropT`, what drops a value of it (ADR 0098).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub drop: bool,
-    /// It takes no destructor, which its consumers' calls are checked for
-    /// (ADR 0190).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub no_drop: bool,
+    /// What's given of it or checked of what's given, each a fact of a set,
+    /// by its name (ADR 0906).
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub marks: BTreeSet<ParamFact>,
     /// What it asks of it, `Size` and the like (ADR 0145), which its
     /// consumers' calls give it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -110,6 +119,25 @@ pub struct TypeParam {
     /// the trait's key: `Iterator`'s or an extension's (ADRs 0411, 0548).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub stepped: Vec<String>,
+}
+
+/// A fact of one of a library's function's type parameters its consumers'
+/// calls give or check (ADR 0906), one of a set, as `ItemFact`s are.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ParamFact {
+    /// It's given a `dropT`, what drops a value of it (ADR 0098).
+    Drop,
+    /// It takes no destructor, which its consumers' calls are checked for
+    /// (ADR 0190).
+    NoDrop,
+}
+
+impl TypeParam {
+    /// Whether it's `fact`.
+    pub fn has(&self, fact: ParamFact) -> bool {
+        self.marks.contains(&fact)
+    }
 }
 
 impl Item {

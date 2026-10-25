@@ -854,7 +854,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     // Another module's write of a thread-local of a value, its module's
     // variable, which JS lets only that module set (ADR 0270, amended).
-    let variable = |key: DefId| foreign.item(key).is_some_and(|item| item.calling.variable);
+    let variable = |key: DefId| {
+        foreign
+            .item(key)
+            .is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable))
+    };
     let refused = plain_locals::outside_writes(tcx, all_bodies, &variable, &quiet);
     for &(span, key) in &refused {
         let name = tcx.item_name(key);

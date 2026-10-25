@@ -1,7 +1,8 @@
 # 0893. A type parameter's evidence stays its own parameters, and the manifest's facts stay typed
 
-Status: Accepted, under the user's delegation of 2026-10-25 ("proceed as
-your recommendation"); open to their review. Answers the review's P4, past
+Status: Superseded in part by [0906](0906-a-librarys-facts-are-sets.md):
+the manifest's facts are sets. Accepted, under the user's delegation of
+2026-10-25 ("proceed as your recommendation"); open to their review. Answers the review's P4, past
 its first step ([0886](0886-a-functions-evidence-is-one-ordered-list.md)).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; this is the JS's

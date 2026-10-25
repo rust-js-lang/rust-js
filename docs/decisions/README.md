@@ -670,7 +670,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0889 An expression's facts are a set](0889-an-expressions-facts-are-a-set.md)
 - [0890 A binding's method is known as one, whatever its name](0890-a-bindings-method-is-known-as-one.md) *(extended by 0900: a dictionary's method too)*
 - [0892 What only reads, by Rust's types, does nothing](0892-what-only-reads-by-rusts-types-does-nothing.md)
-- [0893 A type parameter's evidence stays its own parameters, and the manifest's facts stay typed](0893-a-type-parameters-evidence-stays-its-own-parameters.md)
+- [0893 A type parameter's evidence stays its own parameters, and the manifest's facts stay typed](0893-a-type-parameters-evidence-stays-its-own-parameters.md) *(superseded in part by 0906: the manifest's facts are sets)*
 - [0891 A window's constructor is the window's: `window.new_error_event(..)`](0891-a-windows-constructor-is-the-windows.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
@@ -690,6 +690,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
 - [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md)
+- [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

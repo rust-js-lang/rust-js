@@ -69,9 +69,9 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 5, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: 6, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
-      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, drop: true }, { index: 1, stepped: ["9f0e"] }] }],
+      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, stepped: ["9f0e"] }], facts: ["takes_location"] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
   };
@@ -83,7 +83,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
   const item = library.items[0];
   for (const invalid of [null, { ...library, version: 2 }, { ...library, crate_hash: "" }, { ...library, inputs: [{ file: "relative.rs", hash: "bad" }] },
     { ...library, impls: [1] }, { ...library, libraries: "base" }, { ...library, items: [{ ...item, member: 5 }] }, { ...library, items: [{ ...item, params: [{ index: "T" }] }] },
-    { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, params: [{ index: 1, stepped: [0] }] }] }, { ...library, items: [{ ...item, params: [{ index: 0, drop: 1 }] }] },
+    { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, params: [{ index: 1, stepped: [0] }] }] }, { ...library, items: [{ ...item, params: [{ index: 0, marks: ["dropped"] }] }] }, { ...library, items: [{ ...item, facts: ["throws"] }] },
     { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] },
     { ...library, ref_cells: [] }, { ...library, ref_cells: { plain: {} } }, { ...library, ref_cells: { boxed: [{ of: 1 }] } }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");
