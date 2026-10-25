@@ -438,6 +438,89 @@ test("serde: numbers are written and read as serde_json does", async () => {
   expect((await compiled(dir)).report()).toBe(expected);
 }, 120_000);
 
+// serde_json's reader as a server's reads what a client sends it (ADR 0078):
+// each text, well formed or not, read as each of nine types, gives the value
+// serde_json gives, or its error, with its words, line and column. What's
+// malformed is where a port of the reader goes wrong unseen: its escapes,
+// surrogates, control characters, numbers at their bounds, depth, trailing
+// text, and a struct's missing, duplicate and unknown fields.
+test("serde: text, well formed or not, is read and refused as serde_json reads it", async () => {
+  const rust = (s: string) =>
+    `"${[...s].map((c) => (c === "\\" ? "\\\\" : c === '"' ? '\\"' : c.codePointAt(0)! < 0x20 || c === "\u{feff}" ? `\\u{${c.codePointAt(0)!.toString(16)}}` : c)).join("")}"`;
+  const texts = [
+    "", " ", "null", "true", "tru", "falsee", "nul", "1", " 1 ", "-0", "01", "-01", "1.", "1.e1", "1e", "1e+", "-", "-a", ".5",
+    "0.1", "1.0e+2", "1E2", "1e400", "-1e400", "1.5e-400", "123456789012345678901234567890",
+    "4294967295", "4294967296", "18446744073709551615", "18446744073709551616", "-9223372036854775808", "-9223372036854775809",
+    '"a"', '"\\u00e9"', '"\\ud83e\\udd80"', '"\\ud83e"', '"\\udd80"', '"\\ud83ex"', '"\\ud83e\\u0041"', '"\\uZZZZ"', '"\\u00"', '"\\q"', '"\\/\\b\\f"',
+    '"a\\tb"', '"\t"', '"\u0001"', '"abc', '"\\', "\u{feff}1",
+    "[1,2]", "[1,2,]", "[1 2]", "[", "[1,", "[]", "[ ]", "[1]\n x", "\n\n  [1, true]", "\t[1]\r\n",
+    '{"a":1}', '{"a":1,}', "{a:1}", '{"a" 1}', '{"a":1 "b":2}', '{"a":1,"a":2}', '{"b":"x"}', '{"a":1,"c":3}', '{"a":1,"b":null}',
+    "NaN", "Infinity", "1 2",
+    // What a visitor that stops before the end leaves: a tuple's, and an
+    // enum's, whose map has one key; and a number past f64's by its digits.
+    "[1,true]", "[1,true,]", "[1,true,3]", '{"A":1}', '{"A":1,}', '{"A":1,"B":2}', '"B"', '{"B":null}',
+    "2e308", "-2e308", "1.7976931348623157e308", "17976931348623159e292",
+  ];
+  const dir = fixture("serde-malformed");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct Strict { pub a: u32 }
+#[derive(serde::Deserialize, Debug)]
+pub struct Loose { pub a: u32, pub b: Option<String> }
+#[derive(serde::Deserialize, Debug)]
+pub enum Tagged { A(u32), B }
+// A visitor that stops at a map's first entry, as one written by hand may.
+#[derive(Debug)]
+pub struct First(pub Option<(String, u32)>);
+impl<'de> serde::Deserialize<'de> for First {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct V;
+        impl<'de> serde::de::Visitor<'de> for V {
+            type Value = First;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a map")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(self, mut map: A) -> Result<First, A::Error> {
+                Ok(First(map.next_entry()?))
+            }
+        }
+        d.deserialize_map(V)
+    }
+}
+macro_rules! read {
+    ($out:ident, $ty:ty, $text:expr) => {
+        match serde_json::from_str::<$ty>($text) {
+            Ok(v) => $out.push_str(&format!("ok {:?}\\n", v)),
+            Err(e) => $out.push_str(&format!("err {}\\n", e)),
+        }
+    };
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    let deep = format!("{}{}", "[".repeat(129), "]".repeat(129));
+    let shallow = format!("{}{}", "[".repeat(127), "]".repeat(127));
+    for text in [${texts.map(rust).join(", ")}, deep.as_str(), shallow.as_str()] {
+        out.push_str(&format!("{:?}\\n", text.len()));
+        read!(out, serde_json::Value, text);
+        read!(out, String, text);
+        read!(out, Vec<u32>, text);
+        read!(out, i64, text);
+        read!(out, u64, text);
+        read!(out, f64, text);
+        read!(out, Loose, text);
+        read!(out, Strict, text);
+        read!(out, (u8, bool), text);
+        read!(out, Option<u32>, text);
+        read!(out, Tagged, text);
+        read!(out, First, text);
+    }
+    out
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect((await compiled(dir)).report()).toBe(expected);
+}, 120_000);
+
 // A hand-written `Serialize` (ADR 0459): its serializer is the JSON writer,
 // a struct, a sequence or a map it begins the writer too, a value it hands
 // on written by its own writer, and an error it makes the codec's.

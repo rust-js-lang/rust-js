@@ -125,3 +125,28 @@ it, a round at a time, in the order they're declared.
   error.
 - `usize` is 32 bits, as on wasm32 (ADR 0025): `5000000000` is too big
   for it, as it would be there.
+
+## Amendment: what's malformed is held against serde_json
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a text's value, or
+its error with its words, line and column, is serde_json's.
+
+The reader is serde_json's `Deserializer`, ported step for step, 722
+lines, and one mutation held it: a float's rounding. No test named any of
+its errors (an architecture review, 2026-10-25), so a port of an escape,
+a surrogate, a bound or a position could go wrong unseen.
+
+- **`test/serde.test.ts`'s "text, well formed or not, is read and refused
+  as serde_json reads it"** reads 83 texts, and brackets 129 deep and 127,
+  each as eleven types: `Value`, `String`, `Vec<u32>`, `i64`, `u64`,
+  `f64`, a struct with an optional field, one that denies unknown fields,
+  a tuple, an `Option<u32>`, an enum, and a visitor of a map's first entry
+  alone, which a `Deserialize` written by hand may be. Each gives what
+  serde_json gives natively, value or error.
+- **Its 21 mutations** are each a rule of the reader, all caught: trailing
+  text, the depth of 128, an error's line and column and the byte a
+  `peek_error` is at, a leading zero, `-0` a float and `i64::MIN` an
+  integer, `1.` at the end, a float past `f64::MAX` by its digits, control
+  characters, `\q` and `\uZZZZ`, lone and unpaired surrogates, a trailing
+  comma in a list and in a map a visitor left early, the colon, tab and
+  carriage return as whitespace, and an ident cut short.
