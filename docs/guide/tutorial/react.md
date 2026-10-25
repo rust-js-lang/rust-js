@@ -319,7 +319,7 @@ function reduce(todos, action) {
   } else if (action.TAG === "Toggle") {
     const captured = action._0;
     const todo = next.items.find((todo) => todo.id === captured);
-    if (todo != null) {
+    if (todo) {
       todo.done = !todo.done;
     }
   } else {

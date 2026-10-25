@@ -692,7 +692,12 @@ export function hasSetImmediate() {
   binding is an npm package ([0118](../decisions/0118-bindings-on-npm-only.md)).
 - **A binding is trusted as declared.** One returning
   `Result<T, &JsError>` makes what JS throws an `Err`; any other lets it
-  propagate, as a panic. Declare `Option` where JS may give `null`.
+  propagate, as a panic. Declare `Option` where JS may give `null`. A
+  value JS gives is trusted to be of its type too: an `Option` of an
+  object or a function is tested by its truth, so a JS caller's `false`
+  where an exported function's `Option<&dyn Fn()>` is asked is `None`;
+  where JS may give any value, `Option<&js::Unknown>` is tested against
+  `null` ([0298](../decisions/0298-truthy-options.md), amended).
 - **A value of unknown shape is a `js::Unknown`**, which `js::classify`
   tells by `typeof` and `js::get` reads a property of by name, `value[key]`
   ([0225](../decisions/0225-unknown-values.md)). Its test of an array,

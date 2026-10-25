@@ -553,9 +553,13 @@ impl Expr {
     }
 
     pub fn unary(op: UnaryOp, arg: Expr) -> Expr {
-        // `!false` is `true`.
+        // `!false` is `true`, and so is `!null`, of any falsy constant: an
+        // `Option`'s `!o` of `None` (ADR 0298).
         if let (UnaryOp::Not, ExprKind::Bool(b)) = (op, &arg.kind) {
             return Expr::bool(!b);
+        }
+        if op == UnaryOp::Not && arg.is_falsy_constant() {
+            return Expr::bool(true);
         }
         // `!!!a` is `!a`, for every `a`: the inner two make a `bool` of it.
         if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)
@@ -663,7 +667,7 @@ impl Expr {
         // `null` or `undefined`. A chain after it, `&& ..`, is made from the
         // left, this first.
         if op == Op::And
-            && let Some(tested) = null_test(&lhs, true)
+            && let Some(tested) = presence_of(&lhs)
             && let ExprKind::Call(callee, args) = &rhs.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
             && matches!(&array.kind, ExprKind::Var(name) if name == "Array")
@@ -701,7 +705,7 @@ impl Expr {
         // `a != null ? a.b : undefined` is `a?.b`, as a person writes it. One
         // property only: `a?.b.c` would end the chain at `.c` too. Not of
         // `!!a`, which an empty string fails, `!s.is_empty()`'s: an
-        // `Option`'s presence is `a != null` (ADR 0298).
+        // `Option` never falsy's is lowered as one of `a != null` (ADR 0298).
         if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Member(object, property) = &then.kind

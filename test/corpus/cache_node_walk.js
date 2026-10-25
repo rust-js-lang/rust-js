@@ -17,13 +17,13 @@ function lookup(keys, start) {
   let node = start ?? createNode();
   for (const k of keys) {
     let cache = node.o;
-    if (cache == null) {
+    if (!cache) {
       cache = { value: k };
       node.o = cache;
     }
     cache.value = (cache.value + 1) >>> 0;
     const next = node.next;
-    if (next == null) {
+    if (!next) {
       node = createNode();
       node.v = k;
     } else {
@@ -81,13 +81,13 @@ function shown(a) {
   node$1.v = (show() + 7) >>> 0;
   node = node$1;
   let cache = node.o;
-  if (cache == null) {
+  if (!cache) {
     cache = { value: 1 };
     node.o = cache;
   }
   const found = node.next;
   let next;
-  if (found != null) {
+  if (found) {
     next = found;
   } else {
     next = createNode();

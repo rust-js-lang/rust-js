@@ -119,6 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
+            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
             // `error != null`, an `Option`'s test (ADR 0298, amended), reads as
             // `error` does.
             js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {
@@ -617,9 +618,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes it, `test && <b />` (ADR 0235): the test is `false` when it
     /// fails, which renders nothing, as `undefined` does, as each test is a
     /// boolean, a Rust condition's or a pattern's (`x != null`, `!!text`),
-    /// never `0` nor `""`, which render as text: an `Option` mapped, of a
-    /// JS object too, `variant.Icon != null && <variant.Icon />` (ADR 0298,
-    /// amended).
+    /// never `0` nor `""`, which render as text. An `Option` of a JS
+    /// object mapped is one when there, so it's its own test:
+    /// `variant.Icon && <variant.Icon />`.
     fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
         // Children are a tuple, of tuples too: each its own.
         if let ExprKind::Tuple { fields } = &self.frame.thir[self.strip(child)].kind
@@ -642,11 +643,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !matches!(none.kind, js::ExprKind::Undefined) {
             return value;
         }
+        let test = match &test.kind {
+            // `!!error` of a value never falsy (ADR 0298): `error`, which
+            // renders nothing when it isn't there.
+            js::ExprKind::Unary(js::UnaryOp::Not, not)
+                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind
+                    && self.maps_never_falsy(child) =>
+            {
+                (**x).clone()
+            }
+            _ => (**test).clone(),
+        };
         Expr {
             known: js::Known::Nothing,
-            kind: js::ExprKind::Binary(js::Op::And, test.clone(), shown.clone()),
+            kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
         }
+    }
+
+    /// Is `child` a call of an `Option` of a value never falsy, a JS
+    /// object's `variant.icon.map(..)` (ADR 0298, amended)?
+    fn maps_never_falsy(&self, child: ExprId) -> bool {
+        matches!(self.frame.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
+            if args.first().is_some_and(|&receiver| self
+                .option_of(self.frame.thir[receiver].ty)
+                .is_some_and(|inner| self.never_falsy(inner))))
     }
 
     /// A tuple of children is several, `("Count is ", count)`: `Count is {count}`.

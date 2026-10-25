@@ -96,7 +96,7 @@ function tAsDyn_asDyn(self, TError) {
 }
 
 function describe(e, EError) {
-  const value = EError.source(e) != null;
+  const value = !!EError.source(e);
   return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${value}`;
 }
 
@@ -126,7 +126,7 @@ function main() {
       console.log(`ok ${n}`);
     } else {
       const e = value._0;
-      const value$1 = e.impl.source(e.value) == null;
+      const value$1 = !e.impl.source(e.value);
       console.log(
         `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value$1}`,
       );
@@ -146,7 +146,7 @@ function main() {
   console.log(`${describe(err, $parseErrorDyn("ParseIntError"))}`);
   const value = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
   const receiver = tAsDyn_asDyn(err, $parseErrorDyn("ParseIntError"));
-  const value$1 = receiver.impl.source(receiver.value) == null;
+  const value$1 = !receiver.impl.source(receiver.value);
   console.log(`${value.impl.Display().fmt(value.value)} ${value$1}`);
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), $parseErrorDyn("TryFromIntError"))}`,

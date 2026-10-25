@@ -196,8 +196,7 @@ pub fn diff(prev: &Unknown, next: &Unknown, out: &mut Vec<String>, indent: usize
 // is where the macro is called, before its arm, so the arm is made the
 // `if`'s `else` and a `return;` its `then`: once each branch's `return;`
 // the program didn't write is gone, the emptied `then` is no branch, `if
-// (enqueueTaskImpl != null) { .. }`, not `if (enqueueTaskImpl == null) {}
-// else { .. }`.
+// (enqueueTaskImpl) { .. }`, not `if (!enqueueTaskImpl) {} else { .. }`.
 test("an if let a macro's function ends with is no empty then and an else", async () => {
   const { js, lib } = await compiled("macro-tail-if-let", `use std::cell::Cell;
 
@@ -219,7 +218,7 @@ js::export_default! {
     }
 }
 `);
-  expect(js).toContain("  if (enqueueTaskImpl != null) {\n    enqueueTaskImpl(task);\n  }\n}\n");
+  expect(js).toContain("  if (enqueueTaskImpl) {\n    enqueueTaskImpl(task);\n  }\n}\n");
   expect(js).not.toMatch(/\{\n\s*\} else \{/);
   const enqueueTask = lib.default as (task: () => void) => void;
   const ran: string[] = [];

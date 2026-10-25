@@ -573,7 +573,7 @@ function withOptionSerialize_serialize(withOption, json) {
   json.key("id");
   json.int(withOption.id);
   json.flat(withOption.meta, (value, json) => {
-    if (value == null) {
+    if (!value) {
       json.null();
     } else {
       metaSerialize_serialize(value, json);

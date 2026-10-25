@@ -10,7 +10,7 @@ const Slot = {
     slot.pending = undefined;
     let old$0$live = true;
     let result;
-    if (old != null) {
+    if (old) {
       old$0$live = false;
       const n = old;
       result = n[0];
@@ -18,7 +18,7 @@ const Slot = {
     } else {
       result = 0;
     }
-    if (old != null) {
+    if (old) {
       if (old$0$live) {
         console.log(`drop ${old[0]}`);
       }
@@ -40,7 +40,7 @@ function main() {
     const old = slot.pending;
     slot.pending = [2];
     try {
-      console.log(`old ${old != null}`);
+      console.log(`old ${!!old}`);
       const older = slot.pending;
       slot.pending = [3];
       try {
@@ -58,7 +58,7 @@ function main() {
       }
       const kept = taken;
       try {
-        console.log(`kept ${kept == null}`);
+        console.log(`kept ${!kept}`);
         let taken$1;
         if (slot.pending != null && slot.pending[0] === 3) {
           taken$1 = slot.pending;
@@ -67,9 +67,7 @@ function main() {
         const taken = taken$1;
         const map = taken?.[0];
         try {
-          console.log(
-            `taken ${map == null ? "None" : `Some(${map})`} left ${slot.pending == null}`,
-          );
+          console.log(`taken ${map == null ? "None" : `Some(${map})`} left ${!slot.pending}`);
           const noisy = [4];
           try {
             if (slot.pending != null) {

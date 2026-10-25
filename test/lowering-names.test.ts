@@ -633,7 +633,7 @@ pub fn guarded(noisy: Option<Noisy>, go: bool) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  if (params != null) {\n    if (params.code === "3") {\n      return;\n    }');
+  expect(js).toContain('  if (params) {\n    if (params.code === "3") {\n      return;\n    }');
   expect(js).toContain("export function cascade(n) {\n  return 1;\n}");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.pick({ code: "3" }), lib.pick({ code: "1" }), lib.pick({ code: "0" }), lib.popped([1, 2]), lib.doubled(2)]).toEqual([undefined, { code: "1" }, undefined, 1, 6]);
@@ -806,8 +806,8 @@ pub fn lent(a: &Counter, b: &Counter) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`if (raw != null && raw.message === "noisy") {`);
-  expect(js).toContain(`if (raw != null && raw.message.includes("Example Error:")) {`);
+  expect(js).toContain(`if (raw && raw.message === "noisy") {`);
+  expect(js).toContain(`if (raw && raw.message.includes("Example Error:")) {`);
   expect(js.match(/const e\b/g)?.length).toBe(4);
   expect(js).toContain("const c = raw;");
   expect(js.match(/const n = raw;/g)?.length).toBe(2);
@@ -1239,7 +1239,7 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  if (raw != null && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
+  expect(js).toContain('  if (raw && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
 });
@@ -1260,7 +1260,7 @@ pub fn lines(meta: &str) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  const find = globalThis.find(meta);\n  if (find == null) {");
+  expect(js).toContain("  const find = globalThis.find(meta);\n  if (!find) {");
   const lib = await import(join(dir, "mir.js"));
   (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
   expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);

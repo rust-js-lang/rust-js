@@ -45,11 +45,11 @@ function transform(s, withWord, boundary, options) {
     let init = 0;
     let mode = "Boundary";
     let value;
-    while ((value = $next(charIndices)) != null) {
+    while ((value = $next(charIndices))) {
       const i = value[0];
       const c = value[1];
       const peek = $peek(charIndices);
-      if (peek != null) {
+      if (peek) {
         const nextI = peek[0];
         const next = peek[1];
         let nextMode;

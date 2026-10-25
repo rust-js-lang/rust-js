@@ -158,7 +158,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`stopped ${tmp$1 == null}`);
+    console.log(`stopped ${!tmp$1}`);
   } catch (error) {
     if (tmp$1 != null) {
       noisyDrop_drop(tmp$1.x);
@@ -199,7 +199,7 @@ function main() {
     throw error;
   }
   let tmp$0$live = true;
-  if (tmp$2 != null) {
+  if (tmp$2) {
     tmp$0$live = false;
     const built = tmp$2;
     try {
@@ -231,7 +231,7 @@ function main() {
     try {
       console.log("none");
     } catch (error) {
-      if (tmp$2 != null) {
+      if (tmp$2) {
         noisyDrop_drop(tmp$2.x);
         noisyDrop_drop(tmp$2.y);
       }
@@ -245,7 +245,7 @@ function main() {
     }
   }
   try {
-    if (tmp$2 != null) {
+    if (tmp$2) {
       if (tmp$0$live) {
         noisyDrop_drop(tmp$2.x);
         noisyDrop_drop(tmp$2.y);

@@ -35,6 +35,15 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
+    name: "presence-truthy-unread",
+    breaks: "`!!o ? o[1] : undefined` isn't a presence test, so it isn't `o?.[1]`: env_vars' `option ? option[1] : undefined`",
+    file: "src/js/stmt_walk.rs",
+    find: "        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {\n            ExprKind::Unary(UnaryOp::Not, x) => Some(x),\n            _ => None,\n        },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
+    snapshots: true,
+  },
+  {
     name: "items-by-kind",
     breaks: "a module's items are its types, consts, statements, then functions, not where its Rust has them",
     file: "src/js/stmt_walk.rs",

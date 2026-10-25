@@ -22,7 +22,7 @@ function takeWord(input) {
   const end = $position(input.value, (b) => b === 32) ?? input.value.length;
   const split = $sliceSplitOff(input.value, end);
   input.value = split[0];
-  if (split[1] == null) {
+  if (!split[1]) {
     return;
   }
   const word = split[1];
@@ -69,7 +69,7 @@ function main() {
     const input = { value: text };
     const word = takeWord(input);
     text = input.value;
-    if (word == null) {
+    if (!word) {
       break;
     }
     $print(`${word.length} `);
@@ -81,7 +81,7 @@ function main() {
   const split$7 = $sliceSplitOffMut(rest, 2);
   rest = split$7[0];
   const head = split$7[1];
-  if (head != null) {
+  if (head) {
     head[$at(head, 0)] = 10;
   }
   const split$8 = $sliceSplitOffEndMut(rest, false, true);

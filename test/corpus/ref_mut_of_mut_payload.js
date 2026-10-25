@@ -18,7 +18,7 @@ const Unit = {
 };
 
 function opt(o) {
-  if (o.value != null) {
+  if (o.value) {
     o.value.x = (o.value.x + 10) >>> 0;
     return o.value.x;
   }
@@ -46,7 +46,7 @@ function main() {
   const o$1 = { value: o };
   const a = opt(o$1);
   o = o$1.value;
-  if (o != null) {
+  if (o) {
     o.x = (o.x + 100) >>> 0;
   }
   let u;

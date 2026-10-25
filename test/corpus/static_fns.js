@@ -37,7 +37,7 @@ function main() {
     const arg = f(5);
     console.log(`${name} ${arg}`);
   }
-  if (MAYBE != null) {
+  if (MAYBE) {
     console.log(`${MAYBE(1)}`);
   }
   const hi = GREETER.impl.hi(GREETER.value);

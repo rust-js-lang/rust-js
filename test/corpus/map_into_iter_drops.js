@@ -34,7 +34,7 @@ function firstOver(map, limit) {
       }
       throw error;
     }
-    if (tmp == null) {
+    if (!tmp) {
       for (const item of iter) {
         loudDrop_drop(item[1]);
       }
@@ -137,7 +137,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    found = find != null ? value(find) : undefined;
+    found = find ? value(find) : undefined;
   } finally {
     for (const item of value$2) {
       loudDrop_drop(item);

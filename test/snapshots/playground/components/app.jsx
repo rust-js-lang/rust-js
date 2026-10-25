@@ -70,8 +70,8 @@ export function App() {
     (async () => {
       const loaded = await load(stat);
       const e = loaded.examples[0];
-      const first = e != null ? [e.name, e.root, e.files.slice()] : undefined;
-      if (first != null) {
+      const first = e ? [e.name, e.root, e.files.slice()] : undefined;
+      if (first) {
         const [name, root, files] = first;
         if (!cancelled) {
           const texts = await loadExample(name, files);
@@ -124,10 +124,10 @@ export function App() {
 
   // Compile the crate, or with `test`, its tests too, and run it.
   const onCompile = (test) => {
-    const loaded$1 = loaded;
-    if (loaded$1 == null) {
+    if (!loaded) {
       return;
     }
+    const loaded$1 = loaded;
     if (compiling) {
       return;
     }
@@ -178,8 +178,8 @@ export function App() {
   };
 
   const onExample = (name) => {
-    const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
-    if (chosen != null) {
+    const chosen = loaded ? loaded.examples.find((e) => e.name === name) : undefined;
+    if (chosen) {
       const { root } = chosen;
       const files = chosen.files.slice();
       setExample(name);
@@ -216,7 +216,7 @@ export function App() {
         setProject(Project.adding(project, path, live()));
         const rsplitOnce = $rsplitOnce(path, "/");
         let file;
-        if (rsplitOnce != null) {
+        if (rsplitOnce) {
           file = rsplitOnce[1];
         } else {
           file = path;
@@ -240,14 +240,14 @@ export function App() {
   // editor only changes when it does.
   const blank = useMemo(() => sourceState(""), []);
   const state = Project.currentState(project);
-  const current = state ?? blank;
+  const current = state || blank;
   const shownState = useMemo(() => {
     if (output === "Nothing") {
       return outputState("", true);
     }
     if (output.TAG === "Files") {
       const find = output.files.find(([path]) => path === output.shown);
-      const text = find != null ? find[1] : "";
+      const text = find ? find[1] : "";
       return outputState(text, true);
     }
     return outputState(output._0, false);
@@ -256,7 +256,7 @@ export function App() {
   const [outputPaths, shown] =
     output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
-  const examples = loaded != null ? loaded.examples : [];
+  const examples = loaded ? loaded.examples : [];
   const submit = onCompile;
   const children =
     outputTree.length === 0 ? (
@@ -281,7 +281,7 @@ export function App() {
         examples={examples}
         example={example}
         onExample={onExample}
-        ready={loaded != null && !compiling}
+        ready={!!loaded && !compiling}
         compiling={compiling}
         onCompile={onCompile}
         status={status}

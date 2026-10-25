@@ -289,7 +289,7 @@ pub fn later(mut href: Option<&str>) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
   expect(js).toContain('return name ? name.toUpperCase() : "anon";');
-  expect(js).toContain("items = items != null && items.length !== 0 ? items : undefined;\n  if (items == null) {\n    return 0;\n  }\n  return $index(items, 0);");
+  expect(js).toContain("items = items != null && items.length !== 0 ? items : undefined;\n  if (!items) {\n    return 0;\n  }\n  return $index(items, 0);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);
   expect([lib.named("ann"), lib.named(""), lib.named(undefined)]).toEqual(["ANN", "anon", "anon"]);

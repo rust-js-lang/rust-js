@@ -48,7 +48,7 @@ const Node = {
     const me = $upgrade(node.me);
     let value$0$live = true;
     let result;
-    if (me != null) {
+    if (me) {
       value$0$live = false;
       try {
         const tryBorrowMut = $tryBorrow(me.value, true);
@@ -64,7 +64,7 @@ const Node = {
     } else {
       result = false;
     }
-    if (me != null) {
+    if (me) {
       if (value$0$live) {
         $rcDrop(me, (value) => {
           $weakDrop(value.value.me);

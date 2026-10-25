@@ -45,6 +45,19 @@ impl Module {
     }
 }
 
+/// What a presence test tests: `x` of `x != null`, or of `!!x`, an
+/// `Option` of a value never falsy (ADR 0298).
+pub(crate) fn presence_of(test: &Expr) -> Option<&Expr> {
+    match &test.kind {
+        _ if let Some(x) = null_test(test, true) => Some(x),
+        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {
+            ExprKind::Unary(UnaryOp::Not, x) => Some(x),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// `x` of `x != null`, whether `x` is set, or of `x == null` where `set`
 /// isn't: `undefined` as `null`, which `==` holds alike. The one answer to
 /// what a test of being set is.

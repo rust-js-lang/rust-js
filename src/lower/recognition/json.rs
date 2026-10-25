@@ -26,6 +26,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
+    /// serde_json's `Value`, whose `Null` is the string `"Null"` and each
+    /// other variant an object (ADR 0083).
+    pub(in crate::lower) fn is_json_value(&self, ty: Ty<'tcx>) -> bool {
+        self.json_type(ty) == Some(Json::Value)
+    }
+
     pub(in crate::lower) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Map)
     }

@@ -13,7 +13,7 @@ function textIn(root, path) {
   let part;
   while ((part = $next(parts)) != null) {
     const value = dir.get(part);
-    if (value == null) {
+    if (!value) {
       return;
     }
     const value$1 = $peek(parts) != null;

@@ -161,7 +161,7 @@ function directoryOf(sources) {
     let folder = top;
     const rsplitOnce = $rsplitOnce(path, "/");
     let name;
-    if (rsplitOnce != null) {
+    if (rsplitOnce) {
       const folders = rsplitOnce[0];
       name = rsplitOnce[1];
       for (const part of folders.split("/")) {

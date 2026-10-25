@@ -24,7 +24,7 @@ function climb(d) {
     dDrop_drop(d);
     throw error;
   }
-  if (tmp != null) {
+  if (tmp) {
     try {
       dDrop_drop(d);
     } catch (error) {
@@ -40,7 +40,7 @@ function climb(d) {
       dDrop_drop(d);
       throw error;
     }
-    if (tmp$1 != null) {
+    if (tmp$1) {
       try {
         dDrop_drop(d);
       } catch (error) {
@@ -61,7 +61,7 @@ function first(d) {
   let result;
   try {
     const e = step(d);
-    if (e != null) {
+    if (e) {
       result = (e[0] + d[0]) >>> 0;
       dDrop_drop(e);
       return result;
@@ -75,7 +75,7 @@ function first(d) {
 
 function discarded(d) {
   const value = step(d);
-  if (value == null) {
+  if (!value) {
     return;
   }
   dDrop_drop(value);
@@ -168,7 +168,7 @@ function main() {
   for (const start of [0, 2]) {
     const d = climb([start]);
     d$0$live = true;
-    if (d != null) {
+    if (d) {
       d$0$live = false;
       try {
         console.log(`climbed to ${d[0]}`);
@@ -179,13 +179,13 @@ function main() {
       try {
         console.log("stopped");
       } catch (error) {
-        if (d != null) {
+        if (d) {
           dDrop_drop(d);
         }
         throw error;
       }
     }
-    if (d != null && d$0$live) {
+    if (d && d$0$live) {
       dDrop_drop(d);
     }
     d$0$live = false;
@@ -216,7 +216,7 @@ function main() {
   for (const start of [1, 3]) {
     const d = twice([start], dCheckedDouble, dDrop_drop);
     d$0$live$1 = true;
-    if (d != null) {
+    if (d) {
       d$0$live$1 = false;
       try {
         console.log(`doubled to ${d[0]}`);
@@ -227,13 +227,13 @@ function main() {
       try {
         console.log("too big");
       } catch (error) {
-        if (d != null) {
+        if (d) {
           dDrop_drop(d);
         }
         throw error;
       }
     }
-    if (d != null && d$0$live$1) {
+    if (d && d$0$live$1) {
       dDrop_drop(d);
     }
     d$0$live$1 = false;

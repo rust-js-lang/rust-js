@@ -98,7 +98,7 @@ function main() {
     [0, 1],
   ]);
   let value$1;
-  while ((value$1 = $next(iter)) != null) {
+  while ((value$1 = $next(iter))) {
     const p = value$1.slice();
     if (p[0] === 0 && p[1] === 0) {
       console.log("origin");

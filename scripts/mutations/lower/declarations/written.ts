@@ -50,4 +50,28 @@ export const mutations: Mutation[] = [
     replace: "            (true, Written::Array { .. }) => {}",
     tests: ["test/declarations.test.ts", "-t", "a binding's object type"],
   },
+  {
+    name: "written-number-never-falsy",
+    breaks: "a binding written `number` is never falsy, so an `Option` of one is tested `!!n` and its `Some(0)` is `None`",
+    file: "src/lower/declarations/written.rs",
+    find: "            Written::Keyword(keyword) => !matches!(keyword.as_str(), \"object\" | \"symbol\" | \"never\"),",
+    replace: "            Written::Keyword(keyword) => !matches!(keyword.as_str(), \"object\" | \"symbol\" | \"never\" | \"number\"),",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "written type may be falsy"],
+  },
+  {
+    name: "written-union-every-falsy",
+    breaks: "a union is falsy only where each part may be, so `string | URL`'s `Some(\"\")` is `None`",
+    file: "src/lower/declarations/written.rs",
+    find: "            Written::Union(parts) => parts.iter().any(Written::may_be_falsy),",
+    replace: "            Written::Union(parts) => parts.iter().all(Written::may_be_falsy),",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "written type may be falsy"],
+  },
+  {
+    name: "written-empty-literal-truthy",
+    breaks: "the string literal `\"\"` is never falsy, so an `Option` of `\"\" | \"auto\"` is tested by its truth and its `Some(\"\")` is `None`",
+    file: "src/lower/declarations/written.rs",
+    find: "            Written::Literal(text) => text.is_empty(),",
+    replace: "            Written::Literal(text) => text.is_empty() && false,",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "written type may be falsy"],
+  },
 ];

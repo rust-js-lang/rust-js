@@ -41,7 +41,7 @@ function main() {
   const w = [1, 2, 3, 4, 5, 6, 7];
   const items$1 = $view(w, 0, 2);
   const all = items$1.length === 2 ? items$1 : undefined;
-  if (all != null) {
+  if (all) {
     $swap(all, 0, 1);
   }
   const [chunks$2, rest$2] = $asChunksMut(w, 3);

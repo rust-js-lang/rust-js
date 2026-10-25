@@ -29,7 +29,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    firstBig = find != null ? value$1(find) : undefined;
+    firstBig = find ? value$1(find) : undefined;
   } finally {
     value.return();
   }

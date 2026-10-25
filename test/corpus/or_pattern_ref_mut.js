@@ -42,7 +42,7 @@ function main() {
   ]);
   while (true) {
     const value = $next(iter);
-    if (value == null) {
+    if (!value) {
       return;
     }
     const p = [value[0], value[1]];

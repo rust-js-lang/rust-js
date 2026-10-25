@@ -40,7 +40,7 @@ function loudPartialOrd_partialCmp(loud, other) {
 function main() {
   const heap = $heapFrom([3, 8, 5, 1], $cmp);
   let top = $peekMut(heap, $cmp);
-  if (top != null) {
+  if (top) {
     try {
       $peekMutTop(top, true).value = 0;
     } finally {
@@ -65,7 +65,7 @@ function main() {
   $heapPush(loud, [7], loudOrd_cmp);
   console.log("read");
   top = $peekMut(loud, loudOrd_cmp);
-  if (top != null) {
+  if (top) {
     try {
       console.log(`top ${top.heap[0][0]}`);
     } finally {
@@ -74,7 +74,7 @@ function main() {
   }
   console.log("write");
   top = $peekMut(loud, loudOrd_cmp);
-  if (top != null) {
+  if (top) {
     try {
       $peekMutTop(top)[0] = 1;
     } finally {
@@ -83,7 +83,7 @@ function main() {
   }
   const peekMut = $peekMut([], $cmp);
   try {
-    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${peekMut == null}`);
+    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!peekMut}`);
   } finally {
     if (peekMut != null) {
       $peekMutDrop(peekMut);

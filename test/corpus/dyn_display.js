@@ -100,7 +100,7 @@ function main() {
   } else {
     const e = value$2._0;
     const value = e.impl.Display().fmt(e.value);
-    const value$1 = e.impl.source(e.value) == null;
+    const value$1 = !e.impl.source(e.value);
     console.log(
       `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$1}`,
     );

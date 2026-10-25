@@ -46,7 +46,7 @@ function main() {
     if (andThen.TAG === "Ok") {
       console.log(`ok ${andThen._0}`);
     } else {
-      const arg = $ioErrorDyn().source(andThen._0) != null;
+      const arg = !!$ioErrorDyn().source(andThen._0);
       console.log(
         `${$ioErrorDisplay(andThen._0)} | ${andThen._0.kind} | ${$ioErrorDebug(andThen._0)} | ${$ioKindText(andThen._0.kind)} | ${arg}`,
       );

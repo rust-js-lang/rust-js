@@ -81,7 +81,7 @@ function main() {
         console.log(`drop ${l[0]}`);
         return result;
       };
-      const value$1 = next != null ? value(next) : undefined;
+      const value$1 = next ? value(next) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       for (const item of it) {
@@ -102,7 +102,7 @@ function main() {
       console.log(`drop ${l[0]}`);
       return result;
     };
-    const value = o != null ? map(o) : undefined;
+    const value = o ? map(o) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const r = { TAG: "Ok", _0: [8] };
     if (r.TAG === "Ok") {

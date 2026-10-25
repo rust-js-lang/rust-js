@@ -23,7 +23,7 @@ function main() {
       noisyDrop_drop(n);
       return result;
     };
-    const value$1 = nthBack != null ? value(nthBack) : undefined;
+    const value$1 = nthBack ? value(nthBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(`left ${it.end - it.at}`);
   } finally {
@@ -39,7 +39,7 @@ function main() {
       noisyDrop_drop(n);
       return result;
     };
-    const value$1 = rfind != null ? value(rfind) : undefined;
+    const value$1 = rfind ? value(rfind) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(
       `${$foldBack($iter(noisy([7, 8])), 0, (sum, n) => {

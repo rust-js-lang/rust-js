@@ -182,7 +182,7 @@ export function Search() {
   const input = useRef(undefined);
   const focus = () => {
     const element = input.current;
-    if (element != null) {
+    if (element) {
       element.focus();
     }
   };

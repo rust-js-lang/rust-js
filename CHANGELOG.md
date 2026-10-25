@@ -798,12 +798,16 @@ released any more: `rust-js build` is the one way to build an app.
   where the field and its comment were left out; and **a comment before an
   `unsafe` block is its code's** (ADR 0444, amended), `// Will result in a
   null access error .. return dispatcher;`, where it was lost.
-- **An `Option` of an object or a function is tested `o != null`**, as
-  every `Option` is, not by its truth (ADR 0298, amended): React's
-  `useEffect` is `if (__DEV__ && create == null)`, where `create.is_none()`
-  was `!create`, which took a JS caller's `false` for `None`. `match o {
-  Some(s) => s, None => d }` is `o ?? d`, where it was `o || d`. An
-  `Option<bool>`'s `Some(true)` is still its truth, `if (flag)`.
+- **An `Option` is tested by what its payload may be** (ADR 0298,
+  amended): by its truth where it's never falsy, an object, an array, a
+  function, a class's instance or a symbol, `if (!componentInfo.owner)`
+  and `while (owner)` as React writes them; against `null` where it may
+  be, a value of any shape, a number, text or a bigint, whose `Some(0)`
+  and `Some("")` are there. `match o { Some(s) => s, None => d }` is `o ??
+  d` of text or a number, as it's `o || d` of an object. JSX tested
+  `js::Unknown` mapped by its truth, `value && <i />`, which rendered
+  `0`: it's `!!value && <i />`. An `Option<bool>`'s `Some(true)` is
+  still its truth, `if (flag)`.
 - **`js::encode_uri_component` takes a number or a `bool` too**, as
   TypeScript's `encodeURIComponent(uriComponent: string | number |
   boolean)` does (ADR 0229): `encode_uri_component(418.0)` is

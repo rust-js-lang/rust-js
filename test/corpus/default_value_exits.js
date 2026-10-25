@@ -9,7 +9,7 @@ export function entry() {
 // Some arms set the flag, one returns, the rest do nothing.
 function kind(value) {
   let invoke = false;
-  if (value == null) {
+  if (!value) {
     invoke = true;
   } else {
     const [kind, a, b] = value;

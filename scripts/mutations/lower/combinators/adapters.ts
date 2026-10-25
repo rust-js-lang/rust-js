@@ -19,6 +19,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
   },
   {
+    name: "filter-map-null-test",
+    breaks: "`filter_map` of a value never falsy keeps `(item) => item != null`, not `Boolean`",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                Some(kept) => self.present(Expr::var(\"item\"), kept),\n",
+    replace: "                Some(_) => Expr::bin(Op::LooseNe, Expr::var(\"item\"), Expr::null()),\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
+  },
+  {
     name: "items-never-cells",
     breaks: "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
     file: "src/lower/combinators/adapters.rs",
@@ -297,13 +305,5 @@ export const mutations: Mutation[] = [
     find: "                    || self.recognition().nths_its_own(receiver_ty)\n",
     replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "filter-map-truth",
-    breaks: "what `filter_map` keeps of an object is what's truthy, `.filter(Boolean)`, which drops a JS caller's `false`, Rust's `Some`",
-    file: "src/lower/combinators/adapters.rs",
-    find: "            let test = crate::lower::std_types::option::present(Expr::var(\"item\"));\n",
-    replace: "            let test = Expr::unary(js::UnaryOp::Not, Expr::unary(js::UnaryOp::Not, Expr::var(\"item\")));\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
   },
 ];

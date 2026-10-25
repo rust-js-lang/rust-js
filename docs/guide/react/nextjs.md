@@ -527,7 +527,7 @@ function Post({ title }) {
 }
 
 export async function getStaticProps({ params }) {
-  return params != null
+  return params
     ? {
         props: { title: params.slug },
       }

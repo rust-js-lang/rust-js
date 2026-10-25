@@ -34,7 +34,7 @@ function main() {
           }
           throw error;
         }
-        if (tmp != null) {
+        if (tmp) {
           const n = tmp;
           try {
             console.log(`got ${n[0]}`);

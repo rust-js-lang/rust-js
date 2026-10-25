@@ -36,9 +36,9 @@ function main() {
       console.log(`drop ${n[0]}`);
       return result;
     };
-    console.log(`replaced ${(old != null ? map(old) : undefined) ?? "none"}`);
+    console.log(`replaced ${(old ? map(old) : undefined) ?? "none"}`);
     const taken = $remove(sorted, 1);
-    const value$1 = taken != null;
+    const value$1 = !!taken;
     try {
       console.log(`took ${value$1} ${sorted.size}`);
     } finally {
@@ -47,7 +47,7 @@ function main() {
       }
     }
     const n = sorted.get(3);
-    if (n != null) {
+    if (n) {
       console.log(`has ${n[0]}`);
     }
   } finally {
@@ -68,7 +68,7 @@ function main() {
     console.log(`${byName.size} ${byName.has("y")}`);
     const x = $remove(byName, "x");
     try {
-      console.log(`${x != null}`);
+      console.log(`${!!x}`);
 
       const shared = { value: 5, strong: 1, weak: 0 };
       try {

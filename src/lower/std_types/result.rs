@@ -29,10 +29,10 @@ impl Conversion {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `?` of `subject`, an `Option` or a `Result`, returns early:
-    /// it's `None`, `o == null` (ADR 0298, amended), or an `Err`.
+    /// it's `None`, of a value never falsy `!o` (ADR 0298), or an `Err`.
     pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
         match self.option_of(ty) {
-            Some(_) => super::option::absent(subject),
+            Some(inner) => self.absent(subject, inner),
             None => is(subject, false),
         }
     }

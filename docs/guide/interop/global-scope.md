@@ -237,11 +237,11 @@ pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u3
 ```js
 export function debugTask(name) {
   const createTask = console.createTask;
-  return createTask != null ? createTask(name) : undefined;
+  return createTask ? createTask(name) : undefined;
 }
 
 export function renderIn(task, render) {
-  return task != null ? task.run(render) : render();
+  return task ? task.run(render) : render();
 }
 ```
 

@@ -239,6 +239,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
+| Whether an Option's payload may be falsy in JS, and so whether it's there, by its truth or against `null` (ADR 0298), and what `#[rust_js::types]` says may be | `std_types/option.rs`; `declarations.rs` | `never_falsy`, `present`, `absent`; `written_falsy` |
 | Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |

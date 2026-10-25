@@ -414,7 +414,7 @@ const Env = {
     let result;
     try {
       const v = scope.value.vars.get(name);
-      if (v != null) {
+      if (v) {
         result = v;
       } else {
         result = scope.value.parent != null ? Env.get(scope.value.parent, name) : undefined;
@@ -446,7 +446,7 @@ function len(args) {
 
 function upper(args) {
   const other = args[0];
-  if (other != null) {
+  if (other) {
     if (other.TAG === "Str") {
       return { TAG: "Ok", _0: { TAG: "Str", _0: other._0.toUpperCase() } };
     }

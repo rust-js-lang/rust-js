@@ -84,7 +84,7 @@ export function separator(windows) {
 export function folderAndFile(path) {
   const splitOnce = $splitOnce(path, "/");
   let first;
-  if (splitOnce != null) {
+  if (splitOnce) {
     const top = splitOnce[0];
     first = top;
   } else {
@@ -92,7 +92,7 @@ export function folderAndFile(path) {
   }
   const rsplitOnce = $rsplitOnce(path, "/");
   let file;
-  if (rsplitOnce != null) {
+  if (rsplitOnce) {
     const name = rsplitOnce[1];
     file = name;
   } else {

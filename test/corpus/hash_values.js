@@ -414,7 +414,7 @@ function main() {
   console.log(
     `${digest(9, {
       hash: (value, state, H) => {
-        if (value != null) {
+        if (value) {
           H.writeIsize(state, 1);
           H.writeU32(state, value);
         } else {
@@ -423,7 +423,7 @@ function main() {
       },
       hashSlice: (items, state, H) => {
         for (const item of items) {
-          if (item != null) {
+          if (item) {
             H.writeIsize(state, 1);
             H.writeU32(state, item);
           } else {
@@ -454,7 +454,7 @@ function main() {
       hash: (value, state, H) => {
         H.writeLengthPrefix(state, value.length);
         for (const item of value) {
-          if (item != null) {
+          if (item) {
             H.writeIsize(state, 1);
             pointHash.hash(item, state, H);
           } else {
@@ -466,7 +466,7 @@ function main() {
         for (const item of items) {
           H.writeLengthPrefix(state, item.length);
           for (const item$1 of item) {
-            if (item$1 != null) {
+            if (item$1) {
               H.writeIsize(state, 1);
               pointHash.hash(item$1, state, H);
             } else {

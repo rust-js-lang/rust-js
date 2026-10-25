@@ -22,7 +22,7 @@ function main() {
       const taken = c;
       c = undefined;
       try {
-        console.log(`taken ${taken == null}`);
+        console.log(`taken ${!taken}`);
         const old = c;
         c = [3];
         if (old != null) {
@@ -30,7 +30,7 @@ function main() {
         }
         let o;
         try {
-          console.log(`${o == null}`);
+          console.log(`${!o}`);
           o = [4];
           const set = { TAG: "Ok" };
           if (set.TAG === "Err") {
@@ -48,7 +48,7 @@ function main() {
             console.log(`drop ${l[0]}`);
             return result;
           };
-          const value$1 = l != null ? map(l) : undefined;
+          const value$1 = l ? map(l) : undefined;
           console.log(`again ${value$1 == null ? "None" : `Some(${value$1})`}`);
           const l$1 = o;
           const value$2 = l$1?.[0];
@@ -69,7 +69,7 @@ function main() {
                 console.log(`drop ${l[0]}`);
                 return result;
               };
-              const value$1 = old != null ? map(old) : undefined;
+              const value$1 = old ? map(old) : undefined;
               console.log(`took ${value$1 == null ? "None" : `Some(${value$1})`}`);
               console.log("end");
             } finally {

@@ -99,7 +99,7 @@ function main() {
   }
   let map;
   try {
-    map = next != null ? tmp(next) : undefined;
+    map = next ? tmp(next) : undefined;
   } catch (error) {
     for (const item of p.iter) {
       dDrop_drop(item);

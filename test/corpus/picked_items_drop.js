@@ -51,7 +51,7 @@ function main() {
       console.log(`got ${y?.[0] ?? "none"}`);
       const z = third($iter([["s"]]), $dropEach(noisyDrop_drop));
       try {
-        console.log(`none ${z == null}`);
+        console.log(`none ${!z}`);
         const value = $iter([["e"], ["f"], ["g"]]);
         let f;
         try {

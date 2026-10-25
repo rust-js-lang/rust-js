@@ -102,7 +102,7 @@ export function optionCopyIsSeparate(x) {
   const p = option ?? fallback;
   p.x = (p.x + 1) | 0;
   let kept;
-  if (m.at != null) {
+  if (m.at) {
     const q = { ...m.at };
     kept = q.x;
   } else {

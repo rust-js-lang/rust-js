@@ -60,11 +60,11 @@ function splitWords(s) {
     let mode = "Boundary";
     while (true) {
       const value = $next(charIndices);
-      if (value != null) {
+      if (value) {
         const i = value[0];
         const c = value[1];
         const peek = $peek(charIndices);
-        if (peek != null) {
+        if (peek) {
           const nextI = peek[0];
           const next = peek[1];
           let nextMode;

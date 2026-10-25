@@ -66,7 +66,7 @@ function main() {
       dDrop_drop,
     );
     try {
-      console.log(`none ${o == null}`);
+      console.log(`none ${!o}`);
       const all = $collectResults(
         $closing($iter([{ TAG: "Ok", _0: [5] }]), (intoIter) => {
           for (const item of intoIter) {

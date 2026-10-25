@@ -124,7 +124,7 @@ function valueDisplay_fmt(value) {
   f += "{";
   const iter = $sortedEntries(value._0, $cmp).entries();
   let value$1;
-  while ((value$1 = $next(iter)) != null) {
+  while ((value$1 = $next(iter))) {
     const i = value$1[0];
     const k = value$1[1][0];
     const x = value$1[1][1];

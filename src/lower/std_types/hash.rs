@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.hash_writes(held, item, hasher, span, &mut some)?;
                 let none = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(0)])];
-                let present = super::option::present(value);
+                let present = self.present(value, item);
                 out.push(StmtKind::If(present, some, Some(none)).at(js::Span::NONE));
             }
             Hashed::Result(ok, err) => {

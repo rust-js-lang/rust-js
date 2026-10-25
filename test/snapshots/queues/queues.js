@@ -89,9 +89,7 @@ export function dijkstra(edges, n, src) {
   dist[$at(dist, src)] = 0;
   $heapPush(heap, [[0, src]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
   let pop;
-  while (
-    (pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]))) != null
-  ) {
+  while ((pop = $heapPop(heap, (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1])))) {
     const d = pop[0][0];
     const u = pop[0][1];
     const option = $index(dist, u);

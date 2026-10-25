@@ -46,7 +46,7 @@ function main() {
 
   let it = $iter($charIndices("aé😀b"));
   $print(String($charIndicesOffset(it)));
-  while ($next(it) != null) {
+  while ($next(it)) {
     $print(` ${$charIndicesOffset(it)}`);
   }
   console.log("");

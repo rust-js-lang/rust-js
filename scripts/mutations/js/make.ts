@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
     "file": "src/js/make.rs",
     "find": "        if let Some(tested) = null_test(&test, true)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    "replace": "        if let Some(tested) = null_test(&test, true).or(match &test.kind { ExprKind::Unary(UnaryOp::Not, n) => match &n.kind { ExprKind::Unary(UnaryOp::Not, x) => Some(&**x), _ => None }, _ => None })\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
+    "replace": "        if let Some(tested) = presence_of(&test)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
@@ -399,5 +399,14 @@ export const mutations: Mutation[] = [
     find: "        let outer_lines = layout.lines || layout.breaks.iter().any(|at| at.lines);\n",
     replace: "        let outer_lines = layout.lines || !layout.breaks.is_empty();\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+  },
+  {
+    name: "not-falsy-constant-kept",
+    breaks: "`!null`, a `None` tested by its truth, is kept, not `true`: `NonNull::new(null).is_none()` prints `${!null}`",
+    file: "src/js/make.rs",
+    find: "        if op == UnaryOp::Not && arg.is_falsy_constant() {\n",
+    replace: "        if op == UnaryOp::Not && arg.is_falsy_constant() && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+    snapshots: true,
   },
 ];

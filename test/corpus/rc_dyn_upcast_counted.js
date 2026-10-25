@@ -190,7 +190,7 @@ function main() {
   }
   let map;
   try {
-    map = upgrade != null ? tmp$4(upgrade) : undefined;
+    map = upgrade ? tmp$4(upgrade) : undefined;
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -269,7 +269,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$5 == null}`);
+    console.log(`${!tmp$5}`);
   } catch (error) {
     if (tmp$5 != null) {
       $rcDrop(tmp$5, (value) => {

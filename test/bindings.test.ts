@@ -695,7 +695,7 @@ pub fn linked(href: Option<&str>) -> String {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
   expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
-  expect(js).toContain('return cn("a", (error != null || ready) && "b");');
+  expect(js).toContain('return cn("a", (error || ready) && "b");');
   expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.className,\n  );\n');
   expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
   expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');

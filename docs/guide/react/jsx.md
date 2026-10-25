@@ -213,7 +213,7 @@ export function Editor() {
     <form action={save}>
       <div
         ref={(node) => {
-          if (node != null) {
+          if (node) {
             node.scrollIntoView();
           }
         }}

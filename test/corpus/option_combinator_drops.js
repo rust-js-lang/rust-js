@@ -165,7 +165,7 @@ function main() {
   }
   const kept = kept$1;
   try {
-    console.log(`kept ${kept != null}`);
+    console.log(`kept ${!!kept}`);
     const d = make(3);
     let kept$1;
     try {
@@ -179,7 +179,7 @@ function main() {
     }
     const dropped = kept$1;
     try {
-      console.log(`dropped ${dropped == null}`);
+      console.log(`dropped ${!dropped}`);
       const value = make(0);
       let kept;
       try {
@@ -193,7 +193,7 @@ function main() {
       }
       const filter = kept;
       try {
-        console.log(`none ${filter == null}`);
+        console.log(`none ${!filter}`);
       } finally {
         if (filter != null) {
           dDrop_drop(filter);
@@ -216,21 +216,17 @@ function main() {
         console.log(`closure ${closure?.[0] ?? 0}`);
         const value = keep(make(6), (d) => d[0] > 9, dDrop_drop);
         try {
-          console.log(`generic ${value == null}`);
+          console.log(`generic ${!value}`);
         } finally {
           if (value != null) {
             dDrop_drop(value);
           }
         }
-        const value$1 = keep(
-          $some(make(7)),
-          (d) => d != null,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        );
+        const value$1 = keep($some(make(7)), Boolean, (option) => {
+          if (option != null) {
+            dDrop_drop(option);
+          }
+        });
         try {
           console.log(`generic ${value$1 != null}`);
         } finally {
@@ -402,7 +398,7 @@ function main() {
                     ["22", "", false],
                   ]);
                   let value$2;
-                  while ((value$2 = $next(iter)) != null) {
+                  while ((value$2 = $next(iter))) {
                     const a = value$2[0];
                     const b = value$2[1];
                     const both = value$2[2];

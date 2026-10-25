@@ -701,7 +701,7 @@ export function stacks(render) {
     }
     render();
   } catch (sample) {
-    if (control != null) {
+    if (control) {
       const sampleStack = sample.stack;
       if (sampleStack != null) {
         return [sampleStack, control.stack];

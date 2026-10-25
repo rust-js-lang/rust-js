@@ -282,7 +282,7 @@ function main() {
           }
           throw error;
         }
-        if (tmp$1[0] != null) {
+        if (tmp$1[0]) {
           const z = tmp$1[0];
           try {
             try {
@@ -294,7 +294,7 @@ function main() {
             loudDrop_drop(tmp$1[1]);
           }
         } else {
-          if (tmp$1[0] != null) {
+          if (tmp$1[0]) {
             loudDrop_drop(tmp$1[0]);
           }
           loudDrop_drop(tmp$1[1]);

@@ -124,7 +124,7 @@ function main() {
   try {
     pair = $next(zipped);
     try {
-      const value = pair != null ? [pair[0][0], pair[1][0]] : undefined;
+      const value = pair ? [pair[0][0], pair[1][0]] : undefined;
       console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
       pair$live = false;
     } finally {
@@ -143,7 +143,7 @@ function main() {
       }
       return result;
     };
-    const value$1 = next != null ? value(next) : undefined;
+    const value$1 = next ? value(next) : undefined;
     console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     const value$2 = $next(zipped);
     const value$3 = ([a, b]) => {
@@ -155,7 +155,7 @@ function main() {
       }
       return result;
     };
-    const value$4 = value$2 != null ? value$3(value$2) : undefined;
+    const value$4 = value$2 ? value$3(value$2) : undefined;
     console.log(`zip ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
   } finally {
     zipped.return();
@@ -183,7 +183,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$1 = loud != null ? value(loud) : undefined;
+    const value$1 = loud ? value(loud) : undefined;
     console.log(`chain ${value$1 == null ? "None" : `Some(${value$1})`}`);
     chained$live = false;
   } finally {
@@ -217,7 +217,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`filter ${value$2 == null ? "None" : `Some(${value$2})`}`);
     kept$live = false;
   } finally {
@@ -233,7 +233,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`enumerate ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
     numbered$live = false;
   } finally {
@@ -259,7 +259,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`skip_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
     skipping$live = false;
   } finally {
@@ -283,10 +283,10 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`take_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
     const value$3 = $next(taking);
-    ended = value$3 == null;
+    ended = !value$3;
     if (value$3 != null) {
       loudDrop_drop(value$3);
     }
@@ -311,7 +311,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`step_by ${value$2 == null ? "None" : `Some(${value$2})`}`);
     const value$3 = $next(stepped);
     const value$4 = (l) => {
@@ -319,7 +319,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$5 = value$3 != null ? value$4(value$3) : undefined;
+    const value$5 = value$3 ? value$4(value$3) : undefined;
     console.log(`step_by ${value$5 == null ? "None" : `Some(${value$5})`}`);
     stepped$live = false;
   } finally {
@@ -358,7 +358,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     };
-    const value$2 = value != null ? value$1(value) : undefined;
+    const value$2 = value ? value$1(value) : undefined;
     console.log(`fuse ${value$2 == null ? "None" : `Some(${value$2})`}`);
     fused$live = false;
   } finally {
@@ -409,7 +409,7 @@ function main() {
       }
       throw error;
     }
-    if (tmp$2 != null) {
+    if (tmp$2) {
       const i = tmp$2[0];
       const l = tmp$2[1];
       if (i !== 1) {
@@ -802,7 +802,7 @@ function main() {
   }
   let tmp$7;
   try {
-    tmp$7 = tmp$5 != null ? tmp$6(tmp$5) : undefined;
+    tmp$7 = tmp$5 ? tmp$6(tmp$5) : undefined;
   } catch (error) {
     z.return();
     if (fused$live) {
@@ -1071,7 +1071,7 @@ function main() {
   }
   let tmp$12;
   try {
-    tmp$12 = tmp$10 != null ? tmp$11(tmp$10) : undefined;
+    tmp$12 = tmp$10 ? tmp$11(tmp$10) : undefined;
   } catch (error) {
     c.return();
     if (fused$live) {
@@ -1309,7 +1309,7 @@ function main() {
   }
   let tmp$16;
   try {
-    tmp$16 = tmp$14 != null ? tmp$15(tmp$14) : undefined;
+    tmp$16 = tmp$14 ? tmp$15(tmp$14) : undefined;
   } catch (error) {
     counted.return();
     if (fused$live) {
@@ -1545,7 +1545,7 @@ function main() {
   }
   let tmp$20;
   try {
-    tmp$20 = tmp$18 != null ? tmp$19(tmp$18) : undefined;
+    tmp$20 = tmp$18 ? tmp$19(tmp$18) : undefined;
   } catch (error) {
     own.return();
     if (fused$live) {
@@ -1774,7 +1774,7 @@ function main() {
   }
   let tmp$24;
   try {
-    tmp$24 = tmp$22 != null ? tmp$23(tmp$22) : undefined;
+    tmp$24 = tmp$22 ? tmp$23(tmp$22) : undefined;
   } catch (error) {
     t.return();
     if (fused$live) {

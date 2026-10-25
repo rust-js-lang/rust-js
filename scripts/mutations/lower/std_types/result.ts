@@ -11,11 +11,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
-    name: "question-truth-test",
-    breaks: "`?` of an Option of an object returns where it's falsy, `if (!item)`, not where it's `null` or `undefined`",
+    name: "question-null-test",
+    breaks: "`?` of an Option never falsy tests `item == null`, not `!item`",
     file: "src/lower/std_types/result.rs",
-    find: "            Some(_) => super::option::absent(subject),\n",
-    replace: "            Some(_) => Expr::unary(js::UnaryOp::Not, subject),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "of an Option tests it against null"],
+    find: "            Some(inner) => self.absent(subject, inner),\n",
+    replace: "            Some(_) => Expr::bin(js::Op::LooseEq, subject, Expr::null()),\n",
+    tests: ["test/lowering-options.test.ts", "-t", "of an Option never falsy tests its truth"],
   },
 ];

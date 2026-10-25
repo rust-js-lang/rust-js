@@ -102,7 +102,7 @@ function fromMaps() {
       ),
     );
     let value;
-    while ((value = $next(iter)) != null) {
+    while ((value = $next(iter))) {
       const k = value[0];
       const l = value[1];
       try {

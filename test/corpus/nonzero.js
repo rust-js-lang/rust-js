@@ -20,7 +20,7 @@ function yearDebug_fmt(year) {
 
 function year(n) {
   const value = n === 0 ? undefined : n;
-  return value != null ? [value] : undefined;
+  return value ? [value] : undefined;
 }
 
 // `new` of a number known only when it runs, shown as it is.

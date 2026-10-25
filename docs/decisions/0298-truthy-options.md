@@ -3,10 +3,14 @@
 Status: Accepted. Amends [0030](0030-option.md): how an `Option` is tested.
 Amended: an `Option<bool>`'s `is_some_and` of its truth is `!!o`, and a
 test reads `x ?? false` as `x`, and what `!` turns or a `while` tests as
-an `if`'s test. **Amended again, and its first decision reversed: an
-`Option` of an object, an array or a function is tested `o != null` and
-`o == null`, as every other `Option` is, never by its truth** (below,
-"An `Option` is `None` where it's nullish, whatever it holds").
+an `if`'s test. Amended again, and its first decision reversed: an
+`Option` of an object, an array or a function was tested `o != null`, as
+every other `Option` was (below, "An `Option` is `None` where it's
+nullish, whatever it holds"). **Amended a third time, which restores the
+first decision and keeps that one's readability: an `Option` is tested by
+what its payload's JS value may be, by its truth where that's never falsy,
+against `null` where it may be** (below, "An `Option` is tested by what
+its payload may be").
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -161,3 +165,100 @@ What a value's truth still is, `js::truthy(v)`'s `!!v`, is held where the
 value's truth or else a bool is a bool part by part", and
 `test/jsx-children.test.ts`, "a prop under a child's truth test is its
 value there".
+
+## Amendment: an `Option` is tested by what its payload may be
+
+The user decided it, refining the amendment above: React's ports read
+`componentInfo.owner != null`, `while (owner != null)` and
+`descriptor.get != null` where upstream writes `!componentInfo.owner`,
+`while (owner)` and `descriptor.get`, as JS is written of an object that
+may be missing. The test is what the payload's JS value may be:
+
+- **A payload that's never falsy, an object, an array, a function, a
+  class's instance or a symbol, is tested by its truth**, as the first
+  decision had it: `is_some()` is `!!o`, `is_none()` `!o`, and a test of
+  one, an `if let Some(..)`'s, a `while let Some(..)`'s, `?`'s, a `map`'s,
+  `o`; `filter_map` keeps it by `Boolean`; JSX shows it `o && <el />`.
+  A `NonZero`, never `0`, and a serde_json `Value`, an object or
+  `"Null"`, are never falsy too.
+- **A payload that may be falsy is tested against `null`**: a value of
+  any shape, `js::Unknown` or what a `dyn IntoUnknown` is given, a
+  number, text, a `char`, a bigint, a type parameter's `T`, and an
+  untagged enum one of whose variants may be. Its `Some(0)`, `Some("")`,
+  `Some(false)`, `Some(NaN)` and `Some(0n)` are there, which `!o` would
+  take for `None`: a wrong answer, never a reading.
+- **An `Option<bool>` keeps its truth** where a test asks for
+  `Some(true)` (the amendment of `Option<bool>`, above); its `is_some()`
+  is `o != null`.
+- **One owner says it**, `std_types/option.rs`'s `never_falsy`, which
+  `present` and `absent`, the test of being there, `filter_map`'s kept
+  item, `?`'s, a codec's, a `Hash`'s and JSX's shown child all ask. It
+  asks the representation's owners what a type is, `is_object`,
+  `is_callable` and `untagged`, and what `#[rust_js::types]` says of a JS
+  object's struct, `declarations::written_falsy`: a keyword's but
+  `object`'s and `symbol`'s, `""`'s, and a union's of one may be falsy
+  (`Written::may_be_falsy`), so `js::Unknown`, `PhantomData<JsObject>`
+  but written `unknown`, is tested against `null`. JSX asked
+  `is_js_object` beside it, which took `js::Unknown` for an object and
+  showed `filter(|v| js::truthy(Some(*v))).map(..)` as `value && <i />`,
+  rendering `0`: it asks `never_falsy` alone now, `!!value && <i />`.
+- **What the amendment above added that's still right is kept**: `x !=
+  null ? x : y` is `x ?? y` (`tidy/branches.rs::conditional`), of a
+  number's, text's or any value's `Option` now, as `x ? x : y` is `x ||
+  y` of an object's; and JSX reads `height != null` in place, as it reads
+  `!!error`, so neither is a `const condition` before the element.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)). A value never falsy
+is falsy only where it's `undefined` or `null`, so `!o` and `o == null`
+hold alike of every value its type has, and a payload that may be falsy
+keeps `o == null`, which is exact. A JS caller that gives `false` or `0`
+where an exported function's `Option<&dyn Fn()>` or `Option<&Item>` is
+asked gives a value its type doesn't have, as TypeScript's declaration
+says, `(() => number) | undefined`: it's taken for `None`, as a binding
+is trusted as declared (the guide's semantics, "The JavaScript
+boundary"); a value of any shape, `Option<&js::Unknown>`, is what's
+tested against `null` whatever JS gives. So React's `useEffect` port,
+`create: Option<&Create>` of a `dyn Fn`, is `if (__DEV__ && !create)`
+again where upstream writes `create == null`: they differ only for a
+caller giving `false`, `0` or `""` in place of the function its type asks,
+which upstream's Flow type, `() => (() => void) | void`, doesn't let it.
+
+### What it costs
+
+The amendment above's corpus, snapshot and guide changes are undone where
+a payload is never falsy, and kept where it may be: `o == null` of a
+number, text or any value is unchanged. React's ports go back to
+upstream's forms, `if (!componentInfo.owner)`, `while (owner)`. `!null`,
+a `None` constant tested by its truth, is `true`, as `!false` is
+(`js/make.rs`'s `unary`), where `null == null` was. `docs/readability.txt`
+is blessed for the corpus case below alone: its four `?`s are `return;`,
+a shape the gate counts, which its tests of `?` are. Its `while let
+Some(p) = stack.pop()` is `while ((p = stack.pop()))` of an object, and
+`while ((x = stack.pop()) != null)` of a number or text (ADR 0856).
+
+### What holds it
+
+`test/corpus/option_falsy_payloads.rs`, against native Rust: `Some(0)`,
+`Some("")`, `Some(false)`, `Some(NaN)` and `Some(0n)` of a value of any
+shape (`JSON.parse`'s, `Number`'s, `BigInt`'s), of numbers, text, bigints
+and `bool`s, and `None`, through `is_some()`, `is_none()`, `if let`,
+`match`, `?`, `filter_map`, `while let` of `pop`, beside objects, arrays
+and functions tested by their truth. `test/lowering-option-truth.test.ts`:
+"an Option of a value of any shape is tested against null, of an object
+by its truth", "an Option of a binding whose written type may be falsy is
+tested against null", "JSX shows an Option of a value of any shape where
+it's not null" and "JSX tests a number's Option against null in place",
+each run with those values given. The first decision's tests are back,
+`test/lowering-options.test.ts`'s "an Option of an object is tested by
+its truth" among them, and `test/lowering-branches.test.ts`'s "a match
+that only gives a value is one expression" has text's `name ?? blank`
+beside an object's `state || blank`. Mutations: the first decision's,
+back (`std_types/option.ts`, `combinators/adapters.ts`, `jsx.ts`,
+`js/stmt_walk.ts`, `std_types/result.ts`); `truthy-unknown`,
+`truthy-any-shape-corpus` and `truthy-written-unread`
+(`std_types/option.ts`); `written-number-never-falsy`,
+`written-union-every-falsy` and `written-empty-literal-truthy`
+(`declarations/written.ts`); `jsx-js-object-never-falsy`,
+`jsx-null-test-captured` and `negation-spilled` (`jsx.ts`);
+`not-falsy-constant-kept` (`js/make.ts`); and
+`present-value-coalesce-kept` (`mir/tidy/branches.ts`).

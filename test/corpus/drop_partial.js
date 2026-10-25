@@ -85,14 +85,14 @@ function main() {
   }
   const opt = ["o"];
   let opt$0$live = true;
-  if (opt != null) {
+  if (opt) {
     opt$0$live = false;
     consume(opt);
   }
   try {
     console.log("matched");
   } finally {
-    if (opt != null) {
+    if (opt) {
       if (opt$0$live) {
         noisyDrop_drop(opt);
       }
