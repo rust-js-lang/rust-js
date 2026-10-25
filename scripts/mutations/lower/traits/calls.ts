@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "identity-eq-impl-called",
+    breaks: "`a == b` of two values of a type equal only to itself calls its `eq`, `fiberPartialEq_eq(a, b)`, not `a === b` as of references to them (ADR 0864, amended)",
+    file: "src/lower/traits/calls.rs",
+    find: "            && self.equal_only_to_itself(tr.self_ty());\n",
+    replace: "            && false;\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+  },
+  {
     name: "dyn-mut-self-given-value",
     breaks: "`d.bump()` of a `&mut dyn Counter` gives the `&mut self` method the pair's `value`, a number with no box to write",
     file: "src/lower/traits/calls.rs",

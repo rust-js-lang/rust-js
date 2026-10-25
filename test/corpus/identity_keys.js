@@ -6,11 +6,6 @@ export function entry() {
   main();
 }
 
-export const fiberPartialEq = { eq: fiberPartialEq_eq };
-function fiberPartialEq_eq(fiber, other) {
-  return fiber === other;
-}
-
 function fiberHash_hash(fiber, state, HHasher) {
   HHasher.writeUsize(state, $addr($ptrTo(fiber), 4));
 }
@@ -29,8 +24,8 @@ function main() {
   const updated = new Set();
   console.log(`${$add(updated, a)} ${$add(updated, a)}`);
   updated.add(b);
-  console.log(`${updated.size} ${updated.has(a)} ${fiberPartialEq_eq(a, b)}`);
-  console.log(`${fiberPartialEq_eq(a, a)}`);
+  console.log(`${updated.size} ${updated.has(a)} ${a === b}`);
+  console.log(`${a === a}`);
   updated.delete(a);
   console.log(`${updated.size} ${updated.has(b)}`);
   const lanes = new Map();

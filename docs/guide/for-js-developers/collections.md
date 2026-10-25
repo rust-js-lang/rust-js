@@ -687,7 +687,9 @@ export function at(b, row, col) {
 - **A key equal only to itself is keyed by itself,** as a JS `Set` keys an
   object. Say so in its own `PartialEq` and `Hash`, of its address,
   `ptr::eq` and `ptr::hash`, and a set of references to it is a `Set` of
-  the objects, React's set of the fibers a transition updated
+  the objects, React's set of the fibers a transition updated, and `==`
+  of two is `===`. Its `PartialEq` is then written only where generic
+  code is given it, `T: PartialEq`
   ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)):
 
 ```rust
@@ -721,14 +723,13 @@ pub fn updated(fibers: &[&'static Fiber]) -> usize {
     updated.clear();
     count
 }
+
+pub fn same(a: &Fiber, b: &Fiber) -> bool {
+    a == b
+}
 ```
 
 ```js
-export const fiberPartialEq = { eq: fiberPartialEq_eq };
-function fiberPartialEq_eq(fiber, other) {
-  return fiber === other;
-}
-
 export function updated(fibers) {
   const updated = new Set();
   for (const fiber of fibers) {
@@ -737,6 +738,10 @@ export function updated(fibers) {
   const count = updated.size;
   updated.clear();
   return count;
+}
+
+export function same(a, b) {
+  return a === b;
 }
 ```
 

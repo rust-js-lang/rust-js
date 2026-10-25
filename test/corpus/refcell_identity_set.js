@@ -4,11 +4,6 @@ export function entry() {
   main();
 }
 
-export const fiberPartialEq = { eq: fiberPartialEq_eq };
-function fiberPartialEq_eq(fiber, other) {
-  return fiber === other;
-}
-
 function update(transition, fiber) {
   if (transition.updatedFibers) {
     transition.updatedFibers.add(fiber);

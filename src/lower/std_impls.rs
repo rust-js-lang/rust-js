@@ -21,6 +21,37 @@ pub(super) enum JsEq {
     Strict,
     SameValue,
 }
+
+/// Whether `ty` is a type of the crate's whose `PartialEq` is its address's,
+/// `fn eq(&self, other: &Self) -> bool { ptr::eq(self, other) }`, and whose
+/// `Hash` is too, `ptr::hash(self, state)`, its `ne` std's: equal only to
+/// itself, as JS's `===` of an object is (ADR 0864). Of a value JS holds as
+/// an object: a struct of fields or a JS object's binding. The one answer,
+/// which `==`, a set's and a map's keys ask, and the pipeline of which
+/// impls' dictionaries are written only where they're reached.
+pub(super) fn equal_only_to_itself<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    ty: Ty<'tcx>,
+) -> bool {
+    let ty::Adt(adt, _) = ty.kind() else { return false };
+    if !adt.is_struct() || !adt.did().is_local() {
+        return false;
+    }
+    let Some((eq, hash)) = recognition.eq_and_hash(adt.did()) else {
+        return false;
+    };
+    let calls = |id: DefId, known: super::recognition::Std| {
+        (bodies.get(&id))
+            .and_then(|body| super::body_queries::forwards_to(&body.thir))
+            .is_some_and(|(callee, args)| recognition.classify(callee, args) == Some(known))
+    };
+    calls(eq, super::recognition::Std::PtrEq)
+        && calls(
+            hash,
+            super::recognition::Std::Hash(super::std_types::hash::HashOp::Address),
+        )
+}
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn clone_trait(&self) -> DefId {
         self.tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP)
@@ -797,30 +828,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Whether `ty` is a type of the crate's whose `PartialEq` is its
-    /// address's, `fn eq(&self, other: &Self) -> bool { ptr::eq(self,
-    /// other) }`, and whose `Hash` is too, `ptr::hash(self, state)`, its
-    /// `ne` std's: equal only to itself, as JS's `===` of an object is
-    /// (ADR 0864). Of a value JS holds as an object: a struct of fields or
-    /// a JS object's binding.
+    /// Whether `ty` is equal only to itself (ADR 0864), as
+    /// `equal_only_to_itself` answers.
     pub(super) fn equal_only_to_itself(&self, ty: Ty<'tcx>) -> bool {
-        let ty::Adt(adt, _) = ty.kind() else { return false };
-        if !adt.is_struct() || !adt.did().is_local() {
-            return false;
-        }
-        let Some((eq, hash)) = self.recognition().eq_and_hash(adt.did()) else {
-            return false;
-        };
-        let calls = |id: DefId, known: super::recognition::Std| {
-            (self.krate.bodies.get(&id))
-                .and_then(|body| super::body_queries::forwards_to(&body.thir))
-                .is_some_and(|(callee, args)| self.recognition().classify(callee, args) == Some(known))
-        };
-        calls(eq, super::recognition::Std::PtrEq)
-            && calls(
-                hash,
-                super::recognition::Std::Hash(super::std_types::hash::HashOp::Address),
-            )
+        equal_only_to_itself(&self.recognition(), self.krate.bodies, ty)
     }
 
     /// Whether `ty`, through its references, is a JS value of any shape,

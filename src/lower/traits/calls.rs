@@ -400,10 +400,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let called = Expr::cond(fact, fused, selected_call);
             return Ok(Some(self.fmt_result_value(selected, args, called)));
         }
+        // `a == b` of a type equal only to itself is `===`, as of references
+        // to one, not a call of its `eq` (ADR 0864, amended).
+        let identity = matches!(
+            self.recognition().trait_call(id, trait_id),
+            Some(TraitCall::Equality { .. })
+        ) && tr.args.type_at(1) == tr.self_ty()
+            && self.equal_only_to_itself(tr.self_ty());
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
         // is a function over `Self` (ADR 0185, 0561).
-        if let Some(instance) = self.resolve_self_instance(id, generic_args)?
+        if !identity
+            && let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
                 || self.krate.foreign.item(instance.def_id()).is_some())
@@ -437,8 +445,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `a != b` is `!(a == b)`, as Rust requires them to agree (ADR 0053).
         if let Some(TraitCall::Equality { negate }) = known {
             let [a, b]: [Expr; 2] = values.try_into().map_err(|_| self.unsupported(span, "this `==`"))?;
-            // A hand-written `PartialEq<Rhs>` is its own `eq`, whatever `Rhs` is.
-            let eq = if self.is_user_impl(tr) {
+            // A hand-written `PartialEq<Rhs>` is its own `eq`, whatever `Rhs`
+            // is; but not one of a type equal only to itself.
+            let eq = if self.is_user_impl(tr) && !identity {
                 let eq = self.tcx.associated_item_def_ids(trait_id)[0];
                 self.impl_call(eq, tr.args, vec![a, b], span)?
             } else {

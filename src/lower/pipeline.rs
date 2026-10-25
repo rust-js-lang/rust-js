@@ -411,9 +411,25 @@ pub fn lower_crate<'tcx>(
     // a marker trait's dictionaries, which only a `dyn` reads (ADR 0307),
     // a `Hash`'s and a `Hasher`'s, which a map never calls (ADR 0463),
     // and those only generic code reads, their methods called as they are
-    // anywhere else (`read_only_generically`).
+    // anywhere else (`read_only_generically`); and a `PartialEq` of a type
+    // equal only to itself, whose `==` is `===` and whose sets and maps
+    // are JS's (ADR 0864, amended).
     // Adjacency lists rather than scanning every edge again for every reached
     // function.
+    let recognition = super::recognition::Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    let identity_eq = |id: DefId, trait_id: DefId| {
+        tcx.is_lang_item(trait_id, rustc_hir::attrs::lang_items::LangItem::PartialEq)
+            && super::std_impls::equal_only_to_itself(
+                &recognition,
+                &function_bodies,
+                tcx.type_of(id).instantiate_identity().skip_normalization(),
+            )
+    };
     let derived: HashSet<DefId> = trait_impls
         .iter()
         .filter(|&&id| {
@@ -425,6 +441,7 @@ pub fn lower_crate<'tcx>(
             super::recognition::known_derive(tcx, id)
                 || super::traits::is_marker(tcx, &foreign, trait_id)
                 || super::recognition::is_hashing(tcx, trait_id)
+                || identity_eq(id, trait_id)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .chain(trait_impls.iter().copied().filter(|&id| {

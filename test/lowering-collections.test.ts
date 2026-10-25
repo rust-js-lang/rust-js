@@ -450,10 +450,13 @@ pub fn queued(queue: &mut VecDeque<u32>) {
 // ADR 0864: React's `Transition` keeps the fibers it updated in a
 // `Set<Fiber>`, each by itself. A type whose `PartialEq` is `ptr::eq` and
 // whose `Hash` is `ptr::hash` is equal only to itself, as JS's `===` of an
-// object is, so a set of it is JS's `Set`, keyed by the object. One whose
-// `ne` is its own, or whose `eq` compares another's address, isn't.
+// object is, so a set of it is JS's `Set`, keyed by the object, and `==` of
+// two is `===`, of the values as of references to them. Nothing reads its
+// `PartialEq`'s dictionary then, which isn't written (ADR 0864, amended),
+// but where generic code is given it. One whose `ne` is its own, or whose
+// `eq` compares another's address, isn't.
 test("a type equal only to itself keys a JS Set by itself", () => {
-  const source = (eq: string, ne: string) => `use std::collections::HashSet;
+  const source = (eq: string, ne: string, more = "") => `use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 pub struct Fiber {
@@ -478,15 +481,38 @@ pub fn count(fibers: &[&'static Fiber]) -> usize {
     let set: HashSet<&'static Fiber> = fibers.iter().copied().collect();
     set.len()
 }
-`;
-  const compile = (name: string, eq: string, ne = "") => {
+
+pub fn same(a: &Fiber, b: &Fiber) -> bool {
+    a == b
+}
+
+pub fn differ(a: Fiber, b: Fiber) -> bool {
+    a != b
+}
+${more}`;
+  const compile = (name: string, eq: string, ne = "", more = "") => {
     const dir = fixture(name);
-    writeFileSync(join(dir, "lib.rs"), source(eq, ne));
+    writeFileSync(join(dir, "lib.rs"), source(eq, ne, more));
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
     return readFileSync(join(dir, "lib.js"), "utf8");
   };
   const js = compile("identity-set", "std::ptr::eq(self, other)");
   expect(js).toContain("const set = new Set(fibers);");
+  expect(js).toContain("  return a === b;\n");
+  expect(js).toContain("  return a !== b;\n");
+  expect(js).not.toContain("fiberPartialEq");
+  // Given to generic code, its dictionary is what it's given.
+  const generic = compile("identity-set-generic", "std::ptr::eq(self, other)", "", `
+fn equal<T: PartialEq>(a: &T, b: &T) -> bool {
+    a == b
+}
+
+pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
+    equal(a, b)
+}
+`);
+  expect(generic).toContain("export const fiberPartialEq = { eq: fiberPartialEq_eq };");
+  expect(generic).toContain("  return equal(a, b, fiberPartialEq);\n");
   expect(() => compile("identity-set-ne", "std::ptr::eq(self, other)", "\n\n    #[allow(clippy::partialeq_ne_impl)]\n    fn ne(&self, other: &Self) -> bool {\n        self.tag != other.tag\n    }"))
     .toThrow("values of type");
   expect(() => compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toThrow("values of type");

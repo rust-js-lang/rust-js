@@ -1,6 +1,8 @@
 # 0864. A type equal only to itself keys a JS `Set` and `Map` by itself
 
-Status: Accepted. Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
+Status: Accepted. Amended: `==` of two values of one is `===` too, and
+its `PartialEq`'s dictionary is written only where it's reached.
+Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and
 [0562](0562-a-pointer-is-a-place-and-an-address.md)'s address to a hash.
@@ -111,3 +113,48 @@ currentTransition._updatedFibers = new Set();
 - Mutations `identity-key-refused`, `identity-eq-unseen`,
   `ne-override-trusted`, `forwards-args-unchecked`, `ptr-hash-unrecognized`,
   `ptr-hash-of-pointee`, `copied-pointee-peeled`.
+
+## Amendment: `==` of two is `===`, and its dictionary is written where it's read
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: `===` is what its
+own `eq` does, and nothing reads a dictionary that isn't written.
+
+React's `ReactStartTransition.js` began with what upstream hasn't:
+
+```js
+export const fiberPartialEq = { eq: fiberPartialEq_eq };
+
+function fiberPartialEq_eq(fiber, other) {
+  return fiber === other;
+}
+```
+
+Its `Fiber`'s `PartialEq` is read by no code but a `HashSet`'s, a JS
+`Set`. And `==` of two `Fiber`s was `===` only of references to them:
+of two values, `a == b` resolved to the impl's own `eq` and called it,
+`fiberPartialEq_eq(a, b)`, as the corpus's `identity_keys` printed.
+
+- **`a == b` and `a != b` of two values of a type equal only to itself
+  are `a === b` and `a !== b`**, as of references to them: a trait call
+  of its `PartialEq`'s `eq` is `eq_values`', never resolved to the impl.
+- **Its `PartialEq`'s impl is written only where it's reached**, as a
+  `Hash`'s and a marker trait's are (ADRs 0307, 0463): where generic code
+  is given it, `equal(a, b, fiberPartialEq)`, it's written, and its `eq`
+  where a function value names it. The pipeline asks `std_impls.rs`'s
+  `equal_only_to_itself`, the one answer, of each impl.
+- **A library writes it for its consumers still**, as every impl it has
+  (ADR 0100): another crate doesn't know the type is equal only to
+  itself, whose `eq` and `hash` bodies it can't see, so its `==` calls
+  `fiberPartialEq_eq` and its generic code is given `fiberPartialEq`; its
+  `HashSet<&dep::Fiber>` is refused, "values of type `&dep::Fiber`". A
+  manifest fact of it would let a consumer write `===` and a `Set`, and
+  the library leave both out; until then, a library keeps them.
+
+### What holds it
+
+- `test/lowering-collections.test.ts`, "a type equal only to itself keys
+  a JS Set by itself": `a === b` of references and `a !== b` of values,
+  no `fiberPartialEq` written, and one written where generic code is
+  given it; corpus `identity_keys` and `refcell_identity_set`.
+- Mutations `identity-eq-impl-called` (`scripts/mutations/lower/traits/calls.ts`)
+  and `identity-eq-written-unreached` (`lower/pipeline.ts`).
