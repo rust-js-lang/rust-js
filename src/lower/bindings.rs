@@ -930,23 +930,17 @@ pub(super) fn marked_rest<'tcx>(
         .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))
 }
 
-/// The `#[rust_js::name = ".."]` of each of `owner`'s parameters that has
-/// one, a parameter's JS name where it isn't the camelCase one, React's
-/// `useContext(Context)` (ADR 0855): read from its body, as `marked_rest`
-/// reads `rest`.
+/// Each of `owner`'s parameters' `#[rust_js::name = ".."]`, its JS name, React's
+/// `useContext(Context)` (ADR 0855), read from its body as `marked_rest` is.
 pub(super) fn named_parameters<'tcx>(
     tcx: TyCtxt<'tcx>,
     owner: LocalDefId,
 ) -> impl Iterator<Item = (&'tcx rustc_hir::Param<'tcx>, &'tcx rustc_hir::Attribute)> {
     let path = [Symbol::intern("rust_js"), sym::name];
     let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
-    params.iter().filter_map(move |param| {
-        let attr = tcx
-            .hir_attrs(param.hir_id)
-            .iter()
-            .find(|attr| attr.path_matches(&path))?;
-        Some((param, attr))
-    })
+    let attr =
+        move |param: &'tcx rustc_hir::Param<'tcx>| tcx.hir_attrs(param.hir_id).iter().find(|a| a.path_matches(&path));
+    params.iter().filter_map(move |param| Some((param, attr(param)?)))
 }
 
 /// The JS name `#[rust_js::name = ".."]` gives `owner`'s parameter that
