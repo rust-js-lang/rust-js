@@ -12,6 +12,8 @@ its type, before `value`. Extended by
 a guarded arm's guard reads isn't written in the arm. Amended by
 [0800](0800-a-drop-of-nothing-never-unwinds.md): a drop of what JS drops
 nothing of never unwinds, so the cleanup it would unwind to drops nothing.
+Amended: a value a block gives last is given first only where nothing can
+tell (issue #219, below).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -188,3 +190,43 @@ Tidy's rewrites, which a body's JS goes through in order, are one list of
 stages, each a run of named passes and what it leaves a body with, checked
 in a debug build; `--tidy-until` shows what each does
 ([ADR 0659](0659-tidy-is-a-list-of-stages-with-contracts.md)).
+
+## Amendment: a default is given first only where nothing can tell
+
+A block MIR made of a value, `bb7: { if (c) { x = 1; break bb7; } x = 0;
+}`, `matches!`'s, gives its last value first, `x = 0;` before it, as a
+person writes a default. Porting React's `mapIntoArray`, it gave
+`invokeCallback = true` before testing `$$typeof`, so every object called
+back (issue #219): the rule counted the assignments just before a `break`
+of the block, but not the `break`s with none, an arm `_ => {}`'s, which
+went on past the block holding the default. It reads now as what can see
+the value:
+
+- **Each other way out of the block gives its own**, just before a
+  `break` of it. A `break` of it after anything else keeps the block.
+- **A variable declared in the block's list**, `let v;`, which nothing
+  names after it but the block: nothing sees it before the block ends, and
+  a way out of the block another way, a `return`, a `throw`, a jump to
+  past it, leaves its scope. Given first, as before: `let v = if let ..
+  { q } else { 0 }`'s `let v = 0;`.
+- **Any other**, a variable from before, a closure's captured one, a
+  loop's: what the block runs before its end neither runs code nor throws
+  (`Expr::may_throw`, `Stmt::only_makes_values`), and leaves only by a
+  `break` of the block, of its own loop or `switch`, or its end. A call
+  could read it through a closure; a `continue`, a `break` of a loop
+  around it, a `return` from a closure, or a panic `catch_unwind` takes
+  would see it given.
+
+Case: results change ([0262](0262-when-rust-and-js-disagree.md)), Rust's
+kept. `test/corpus/default_value_exits.rs` runs each against native Rust:
+the arm that does nothing, a loop's `break` and `continue`, a closure's
+`return`, a panic in `catch_unwind`, a call and a guard's call reading the
+variable through a closure; and a `let`'s value still given first.
+React's shape is upstream's `switch (children.$$typeof) { case
+REACT_ELEMENT_TYPE: case REACT_PORTAL_TYPE: invokeCallback = true; break;
+case REACT_LAZY_TYPE: .. }` (`test/lowering-switches.test.ts`). A mutation
+of each condition is caught.
+The case's `(1, _) | (_, 1)`, an `|` of two values' tests, keeps the
+labeled blocks MIR made of it, which `docs/readability.txt` counts: a
+`match` tree tidy doesn't yet make a chain of, the default no longer
+hiding one of its blocks.

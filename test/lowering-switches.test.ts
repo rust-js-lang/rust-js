@@ -920,3 +920,63 @@ pub fn kind(values: &[Option<&Unknown>]) -> u32 {
   expect([lib.kind([["a", 1], 3, "x"]), lib.kind([[1, 2]]), lib.kind([{}]), lib.kind([() => {}]), lib.kind([null, undefined])])
     .toEqual([21, 100, 100, 200, 20]);
 });
+
+// ADR 0364, amended: a value some arms give, `invoke = true`, isn't given
+// first where an arm that does nothing, `_ => {}`, goes on past the match
+// without it. React's `mapIntoArray` (ReactChildren.js) set `invokeCallback
+// = true` before testing `$$typeof`, so every object called back (issue
+// #219); it's upstream's `switch (children.$$typeof)` now.
+test("React's mapIntoArray's invokeCallback is set in its cases of $$typeof", async () => {
+  const dir = fixture("invoke-callback");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+pub const REACT_ELEMENT_TYPE: SymbolFor = SymbolFor("react.transitional.element");
+pub const REACT_PORTAL_TYPE: SymbolFor = SymbolFor("react.portal");
+pub const REACT_LAZY_TYPE: SymbolFor = SymbolFor("react.lazy");
+
+pub fn kind(children: Option<&'static Unknown>) -> u32 {
+    let r#type = js::type_of(children);
+    let mut invoke_callback = false;
+    if children.is_none() {
+        invoke_callback = true;
+    } else {
+        match r#type.as_str() {
+            "bigint" | "string" | "number" => invoke_callback = true,
+            "object" => match SymbolFor::from_value(js::get(children, "$$typeof")) {
+                Some(REACT_ELEMENT_TYPE | REACT_PORTAL_TYPE) => invoke_callback = true,
+                Some(REACT_LAZY_TYPE) => return 2,
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+    if invoke_callback {
+        return 1;
+    }
+    0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`    switch (type) {
+      case "bigint":
+      case "string":
+      case "number":
+        invokeCallback = true;
+        break;
+      case "object":
+        switch (children.$$typeof) {
+          case REACT_ELEMENT_TYPE:
+          case REACT_PORTAL_TYPE:
+            invokeCallback = true;
+            break;
+          case REACT_LAZY_TYPE:
+            return 2;
+        }
+    }`);
+  const lib = await import(join(dir, "lib.js"));
+  const of = (name: string) => ({ $$typeof: Symbol.for(name) });
+  const values = [undefined, null, "a", 1, 2n, of("react.transitional.element"), of("react.portal"), of("react.lazy")];
+  expect(values.map((v) => lib.kind(v))).toEqual([1, 1, 1, 1, 1, 1, 1, 2]);
+  expect([{}, of("react.memo"), [], true, () => {}].map((v) => lib.kind(v))).toEqual([0, 0, 0, 0, 0]);
+});
