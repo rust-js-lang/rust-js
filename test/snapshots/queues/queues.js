@@ -99,7 +99,7 @@ export function dijkstra(edges, n, src) {
       const nd = (d + w) >>> 0;
       const option = $index(dist, v);
       if (option == null || nd < option) {
-        dist[$at(dist, v)] = nd;
+        dist[v] = nd;
         $heapPush(heap, [[nd, v]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
       }
     }

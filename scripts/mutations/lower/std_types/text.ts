@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "drain-in-bounds-checked",
+    breaks: "a `drain(0..i)` the body's ranges show in bounds is `$drain(queue, 0, i)`, not `queue.splice(0, i)`",
+    file: "src/lower/std_types/text.rs",
+    find: "        if op == TextOp::Drain && in_bounds {\n",
+    replace: "        if op == TextOp::Drain && in_bounds && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
+    name: "drain-from-zero-subtracted",
+    breaks: "`drain(0..i)` in bounds is `queue.splice(0, i - 0)`",
+    file: "src/lower/std_types/text.rs",
+    find: "                (Some(0), Some(end)) => Some(end),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
     name: "whole-slice-copied",
     breaks: "`&v[..]` is `$slice(v, 0)`, a copy of all of it",
     file: "src/lower/std_types/text.rs",

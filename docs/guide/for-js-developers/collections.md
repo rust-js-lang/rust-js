@@ -65,9 +65,13 @@ Every item has the same type. An array of mixed values is a `Vec` of an
 An index out of bounds panics, as Rust's does, `$index(keys, 0)`. One the
 code before it shows in bounds is JS's own, `keys[0]`: below a length
 tested, `i < xs.len()`, past a test of the length, `!xs.is_empty()` or
-`n == 1` of an `n` that's `xs.len()`, or after a `push`
+`n == 1` of an `n` that's `xs.len()`, after a `push`, or after an
+index of it read, `xs[i]` then `xs[j]` of a `j <= i`. A `Vec` a
+`RefCell` holds, `i < queue.borrow().len()`, is known so until anything
+may change it: a call but its reads, or a drop of what runs code
 ([ADR 0292](../../decisions/0292-known-bounds.md),
-[ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)):
+[ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md),
+[ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)):
 
 ```rust
 pub fn only_children(keys: &[String]) -> bool {
@@ -332,6 +336,9 @@ export function at(v, i) {
   3`, or held in a `bool`, `let truncated = v.len() > 3;`, while nothing
   the test reads has changed. Any other is `$slice`, which panics as
   Rust's does ([ADR 0806](../../decisions/0806-a-slices-range-in-bounds-is-js-slice.md)).
+  A `drain` of one in bounds is JS's `splice`, `queue.drain(0..i)`
+  nothing steps `queue.splice(0, i)`; any other `$drain`
+  ([ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)).
 
 ## Sorting
 

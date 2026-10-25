@@ -969,13 +969,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// A map's or a set's call whose answer nothing reads, `$insert(m, k, v);`,
 /// a statement: JS's own, `m.set(k, v)`, which gives nothing of what Rust's
-/// gives, the old value or whether it was new (ADR 0059). Of the module's
-/// JS once it's lowered, a closure inlined into it too.
+/// gives, the old value or whether it was new (ADR 0059); and an iterator
+/// of an array made here nothing steps, the array's making alone
+/// (`iterators::discarded_iterator`, ADR 0881). Of the module's JS once
+/// it's lowered, a closure inlined into it too.
 pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
     for item in items.iter_mut() {
         for function in item.functions_mut() {
             js::each_block_mut(&mut function.body, &mut |stmts| {
                 for stmt in stmts.iter_mut() {
+                    if let StmtKind::Expr(e) = &mut stmt.kind {
+                        crate::lower::iterators::discarded_iterator(e);
+                    }
                     if let StmtKind::Expr(e) = &mut stmt.kind
                         && let js::ExprKind::Call(callee, args) = &mut e.kind
                         && let js::ExprKind::Var(helper) = &callee.kind

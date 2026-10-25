@@ -71,17 +71,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             let index = exprs.pop().expect("an index");
             let items = exprs.pop().expect("the items");
-            self.flush(state, out)?;
+            // A variable that reads the same wherever it's read, a parameter,
+            // read where it's set too; or any variable, where the place is
+            // written at once, `queue[i] = callback`, nothing run between to
+            // set it (ADR 0881).
+            let at_once = written_through_at_once(state.body, state.at);
+            let index_kept = index.is_constant()
+                || matches!(&index.kind, js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));
+            if checked || !index_kept || !items.reads_same() {
+                self.flush(state, out)?;
+            }
             let items = if items.reads_same() {
                 items
             } else {
                 self.spill("items", items, out)
             };
-            // A variable that reads the same wherever it's read, a parameter,
-            // read where it's set too.
-            let index = if index.is_constant()
-                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))
-            {
+            let index = if index_kept {
                 index
             } else {
                 self.spill("index", index, out)
@@ -118,4 +123,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => Expr::call(Expr::member(items, "pop"), Vec::new()),
         }))
     }
+}
+
+/// Whether the `&mut` the call that ends `block` gives is written through
+/// once, by the first statement of the block it goes on to, its storage's
+/// aside, of a value made
+/// before: `(*_9) = move _5;`, MIR's `queue.borrow_mut()[i] = callback`.
+/// Nothing runs between the call and the write, so what its items and its
+/// index are read as there is what they were (ADR 0881).
+fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool {
+    let Some(mir::Terminator {
+        kind:
+            mir::TerminatorKind::Call {
+                destination,
+                target: Some(target),
+                ..
+            },
+        ..
+    }) = &body.basic_blocks[block].terminator
+    else {
+        return false;
+    };
+    let r = destination.local;
+    let Some(mir::Statement {
+        kind: mir::StatementKind::Assign(assign),
+        ..
+    }) = (body.basic_blocks[*target].statements.iter()).find(|s| {
+        !matches!(
+            s.kind,
+            mir::StatementKind::StorageLive(_) | mir::StatementKind::StorageDead(_) | mir::StatementKind::Nop
+        )
+    })
+    else {
+        return false;
+    };
+    let (place, value) = &**assign;
+    let made_before = match value {
+        mir::Rvalue::Use(mir::Operand::Copy(p) | mir::Operand::Move(p), _) => p.projection.is_empty() && p.local != r,
+        mir::Rvalue::Use(mir::Operand::Constant(_), _) => true,
+        _ => false,
+    };
+    struct Uses(Local, usize);
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            if local == self.0 && context.is_use() {
+                self.1 += 1;
+            }
+        }
+    }
+    let mut uses = Uses(r, 0);
+    uses.visit_body(body);
+    destination.projection.is_empty()
+        && place.local == r
+        && place.projection.as_slice() == [mir::ProjectionElem::Deref]
+        && made_before
+        && uses.1 == 2
 }

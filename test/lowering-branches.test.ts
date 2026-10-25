@@ -1411,7 +1411,9 @@ pub fn first_big(items: &[u32]) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("      } else {\n        $swap(heap, index, left);");
+  // Each index read is below the length once it's read (ADR 0881): its
+  // swap JS's own.
+  expect(js).toContain("      } else {\n        [heap[index], heap[left]] = [heap[left], heap[index]];");
   expect(js).toContain("    } else if (right < length && ");
   expect(js).toContain("    } else {\n      // Neither child is smaller.\n      return index;\n    }\n  }");
   expect(js).not.toContain("continue;");

@@ -837,14 +837,15 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
 /// a `Vec`, `swap(i, j)`, `swap_remove(i)`; or what it does to it, a
 /// `Vec`'s `push` one more, its `pop` one fewer where it has one; or that
 /// the range it's given ends at most at it, `&v[a..b]` of a `Vec`, a slice
-/// or an array. What knows an index in bounds reads these (ADRs 0292,
-/// 0576, 0806).
+/// or an array, and a `Vec`'s `drain(a..b)`, which takes them out. What
+/// knows an index in bounds reads these (ADRs 0292, 0576, 0806, 0881).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceLength {
     Len,
     IsEmpty,
     Index,
     Range,
+    Drain,
     Swap,
     SwapRemove,
     Push,
@@ -894,6 +895,7 @@ pub(in crate::lower) fn slice_length<'tcx>(
         "swap" => Some(SliceLength::Swap),
         "swap_remove" => Some(SliceLength::SwapRemove),
         "push" if vec(owner) => Some(SliceLength::Push),
+        "drain" if vec(owner) => Some(SliceLength::Drain),
         "pop" if vec(owner) => Some(SliceLength::Pop),
         _ => None,
     }
@@ -921,6 +923,47 @@ pub(in crate::lower) fn makes_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId
 fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
         && tcx.item_name(adt.did()).as_str() == "EncodeUtf16")
+}
+
+/// What a `RefCell`'s call makes of what it holds, as long as it is: a
+/// guard on it, `borrow()` or `borrow_mut()`, or a guard's `deref` or
+/// `deref_mut`, the value itself (ADR 0881).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum CellView {
+    Guard { mutable: bool },
+    Value,
+}
+
+pub(in crate::lower) fn cell_view<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<CellView> {
+    let of = |ty: Ty<'tcx>, item| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), item));
+    if let Some(trait_) = tcx.trait_of_assoc(def_id) {
+        let deref = tcx.is_lang_item(trait_, LangItem::Deref) || tcx.is_lang_item(trait_, LangItem::DerefMut);
+        let guard = args
+            .types()
+            .next()
+            .is_some_and(|ty| of(ty, StdItem::RefCellRef) || of(ty, StdItem::RefCellRefMut));
+        return (deref && guard).then_some(CellView::Value);
+    }
+    let owner = tcx
+        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
+        .instantiate_identity()
+        .skip_normalization();
+    match tcx.item_name(def_id).as_str() {
+        "borrow" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: false }),
+        "borrow_mut" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),
+        _ => None,
+    }
+}
+
+/// Whether `ty` is a `RefCell`'s guard, `Ref` or `RefMut`, whose drop
+/// gives the borrow back and drops nothing of what it's of.
+pub(in crate::lower) fn is_cell_guard<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if is_std_def(tcx, adt.did(), StdItem::RefCellRef) || is_std_def(tcx, adt.did(), StdItem::RefCellRefMut))
 }
 
 /// What a `Vec`'s `Deref`, `DerefMut` or `IndexMut` makes of it, as long

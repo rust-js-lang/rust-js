@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "drain-not-asked",
+    breaks: "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
+    file: "src/lower/recognition/types.rs",
+    find: "        \"drain\" if vec(owner) => Some(SliceLength::Drain),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
+    name: "cell-borrow-mut-unrecognized",
+    breaks: "`queue.borrow_mut()[i] = item` isn't the queue's, and is checked, `queue[$at(queue, i)]`, below its loop's test",
+    file: "src/lower/recognition/types.rs",
+    find: "        \"borrow_mut\" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
     name: "js-object-itself-unknown",
     breaks: "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
     file: "src/lower/recognition/types.rs",

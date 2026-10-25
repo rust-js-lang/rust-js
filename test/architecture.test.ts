@@ -487,6 +487,7 @@ test("each group of a function's state is read and written by its owner", () => 
 // fields are private there: any module reads them, none changes them (the
 // review's P3).
 const mirState: Record<string, string[]> = {
+  "src/lower/mir/bounds.rs": ["at", "body"],
   "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "locals", "maps", "named", "parts", "pending", "places", "refs", "writer"],
   "src/lower/mir/closures.rs": ["at", "body", "locals"],
   "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps"],

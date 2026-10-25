@@ -9,15 +9,19 @@
 
 use super::*;
 use crate::lower::bindings::reads_string_length;
-use crate::lower::recognition::{VecView, counts_utf16_units, makes_utf16_units, once_method, vec_view};
+use crate::lower::recognition::{VecView, counts_utf16_units, once_method, vec_view};
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
 
+mod cells;
 mod empty;
 mod known;
+mod reads;
 
+use cells::reads_a_cell;
 use known::{Below, Known, Range, either};
+use reads::{pure, read_vars};
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
@@ -92,6 +96,10 @@ struct Walk<'a, 'tcx> {
     /// is told of them where this body calls it.
     callees: &'a HashMap<DefId, Vec<Option<Param>>>,
     told: HashMap<DefId, Option<Known>>,
+    /// The body's root, and each scope's, whether what it drops where it
+    /// ends may run code, once a scope's asked (`cells::scope_drops`).
+    root: ExprId,
+    scope_drops: Option<HashMap<ExprId, bool>>,
 }
 
 /// A body to walk: what it is, its THIR and its root.
@@ -168,6 +176,8 @@ pub(in crate::lower) fn ranges<'tcx>(
             lost: false,
             callees: &callees,
             told: HashMap::new(),
+            root,
+            scope_drops: None,
         };
         let mut known = entry.map(|mut k| {
             k.vars.retain(|var, _| !walk.volatile.contains(var));
@@ -343,80 +353,10 @@ fn reads_utf16_length<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::
     (generic_args.types().next()).is_some_and(|iter_ty| counts_utf16_units(tcx, def_id, iter_ty))
 }
 
-/// Whether `e` reads without changing anything, so its value where a
-/// condition is tested is its value after: `i < xs.len()`.
-fn pure<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
-    read_vars(tcx, thir, e).is_some()
-}
-
-/// The variables `e` reads, where it reads without changing anything
-/// (`pure`): `i` and `xs` of `i < xs.len()`.
-fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Option<Vec<LocalVarId>> {
-    fn reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId, vars: &mut Vec<LocalVarId>) -> bool {
-        match thir[e].kind {
-            ExprKind::Scope { value: inner, .. }
-            | ExprKind::Use { source: inner }
-            | ExprKind::Deref { arg: inner }
-            | ExprKind::Field { lhs: inner, .. }
-            | ExprKind::Unary { arg: inner, .. }
-            | ExprKind::Cast { source: inner }
-            | ExprKind::Borrow {
-                borrow_kind: BorrowKind::Shared,
-                arg: inner,
-            } => reads(tcx, thir, inner, vars),
-            ExprKind::Binary { lhs, rhs, .. } => reads(tcx, thir, lhs, vars) && reads(tcx, thir, rhs, vars),
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
-                vars.push(id);
-                true
-            }
-            ExprKind::Literal { .. }
-            | ExprKind::NonHirLiteral { .. }
-            | ExprKind::NamedConst { .. }
-            | ExprKind::ConstParam { .. } => true,
-            ExprKind::Call { fun, ref args, .. } => {
-                fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
-                    matches!(
-                        slice_length(tcx, def_id, generic_args),
-                        Some(SliceLength::Len | SliceLength::IsEmpty)
-                    ) || reads_string_length(tcx, def_id)
-                        // A string's `encode_utf16()`, std's, which reads it, and
-                        // its `count()`, its `length` (ADR 0632).
-                        || makes_utf16_units(tcx, def_id, thir[e].ty)
-                        || reads_utf16_length(tcx, def_id, generic_args)
-                }) && args.iter().all(|&arg| reads(tcx, thir, arg, vars))
-            }
-            _ => false,
-        }
-    }
-    let mut vars = Vec::new();
-    reads(tcx, thir, e, &mut vars).then_some(vars)
-}
-
 impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// The slice a place is, through references: `heap` of `*heap`.
-    fn slice(&self, mut e: ExprId) -> Option<Slice> {
-        let thir = self.thir;
-        let mut path = Vec::new();
-        loop {
-            e = strip(thir, e);
-            match thir[e].kind {
-                ExprKind::Borrow { arg, .. } => e = arg,
-                ExprKind::Deref { arg } if matches!(thir[arg].ty.kind(), ty::Ref(..)) || thir[arg].ty.is_box() => {
-                    e = arg
-                }
-                // A `Vec`'s slice, `deref` or `deref_mut`, is as long.
-                ExprKind::Call { fun, ref args, .. } if self.vec_view(fun) == Some(VecView::Slice) => e = args[0],
-                ExprKind::Field { lhs, name, .. } => {
-                    path.push(name.as_usize());
-                    e = lhs;
-                }
-                ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } if !self.volatile.contains(&id) => {
-                    path.reverse();
-                    return Some((path, id));
-                }
-                _ => return None,
-            }
-        }
+    fn slice(&self, e: ExprId) -> Option<Slice> {
+        self.slice_through(e).map(|(slice, _)| slice)
     }
 
     /// What a call asks of a slice's length, and of which.
@@ -460,6 +400,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         if !thir[test].ty.is_bool() {
             return None;
         }
+        // Not one through a `RefCell`, which other code may change while
+        // the variable holds it (ADR 0881).
+        if reads_a_cell(self.tcx, thir, test) {
+            return None;
+        }
         read_vars(self.tcx, thir, test).filter(|reads| reads.iter().all(|var| !self.volatile.contains(var)))
     }
 
@@ -482,7 +427,22 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         match thir[e].kind {
             ExprKind::Scope {
                 region_scope, value, ..
-            } => self.scoped(region_scope, top(), known, |walk, known| walk.expr(value, known)),
+            } => {
+                let value_range = self.scoped(region_scope, top(), known, |walk, known| walk.expr(value, known));
+                // What it drops where it ends may change what a `RefCell`
+                // holds (ADR 0881).
+                if let Some(k) = known.as_mut()
+                    && k.knows_cells()
+                {
+                    let root = self.root;
+                    let drops = (self.scope_drops)
+                        .get_or_insert_with(|| cells::scope_drops(self.tcx, self.typing_env, thir, root));
+                    if drops.get(&e).copied().unwrap_or(true) {
+                        k.cells_changed(None);
+                    }
+                }
+                value_range
+            }
             ExprKind::Use { source }
             | ExprKind::NeverToAny { source }
             | ExprKind::ValueTypeAscription { source, .. }
@@ -557,6 +517,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             ExprKind::Assign { lhs, rhs } => {
                 let value = self.expr(rhs, known);
                 self.assign(lhs, value, known);
+                // The value it replaces is dropped, which may change what a
+                // `RefCell` holds, but one whose guard is held (ADR 0881).
+                if let Some(k) = known.as_mut()
+                    && k.knows_cells()
+                    && cells::drop_may_change_cells(self.tcx, self.typing_env, thir[lhs].ty)
+                {
+                    k.cells_changed(self.cell_of(lhs).as_ref());
+                }
                 None
             }
             ExprKind::AssignOp { op, lhs, rhs } => {
@@ -578,9 +546,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }
             ExprKind::Borrow { arg, borrow_kind } => {
                 self.place(arg, known);
-                // A `&mut` kept: what changes through it isn't seen.
+                // A `&mut` kept: what changes through it isn't seen, a
+                // `RefCell`'s value's too (ADR 0881).
                 if matches!(borrow_kind, BorrowKind::Mut { .. }) {
-                    self.forget(root_var(thir, arg), known);
+                    self.forget(self.changed_place(arg), known);
                 }
                 None
             }
@@ -761,10 +730,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             Some((SliceLength::Pop, items)) => self.slice(items).map(|slice| (slice, -1)),
             _ => None,
         };
-        let keeps = self.vec_view(fun).is_some() || grows.is_some();
+        let keeps = self.vec_view(fun).is_some() || self.cell_view(fun).is_some() || grows.is_some();
         for &arg in args {
             if let Some(place) = lent(arg)
-                && let (Some(var), Some(k)) = (root_var(thir, place), known.as_mut())
+                && let (Some(var), Some(k)) = (self.changed_place(place), known.as_mut())
             {
                 // A slice's `&mut` can't change its length, nor what a test
                 // of it reads.
@@ -778,15 +747,38 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         if let (Some((slice, by)), Some(k)) = (grows, known.as_mut()) {
             k.grown(&slice, by);
         }
+        // Any call but one that only reads or views what a `RefCell` holds
+        // may change it, by another reference to it (ADR 0881).
+        let views = self.vec_view(fun).is_some()
+            || self.cell_view(fun).is_some()
+            || matches!(
+                asked,
+                Some((
+                    SliceLength::Len
+                        | SliceLength::IsEmpty
+                        | SliceLength::Index
+                        | SliceLength::Range
+                        | SliceLength::Swap,
+                    _
+                ))
+            );
+        if !views && let Some(k) = known.as_mut() {
+            k.cells_changed(None);
+        }
         match asked {
             // Its indexes where it's called, the length as it was.
             Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove, items)) => {
                 for index in ranges.into_iter().skip(1) {
                     self.judge_index(fun, items, index, &before);
                 }
+                // An index it's given is below the length once it's given
+                // back, where it panics otherwise (ADR 0881).
+                if matches!(asked, Some((SliceLength::Index, _))) {
+                    self.indexed(items, args.get(1).copied(), known);
+                }
                 None
             }
-            Some((SliceLength::Range, items)) => {
+            Some((SliceLength::Range | SliceLength::Drain, items)) => {
                 self.judge_range(fun, items, args[1], &before);
                 None
             }
@@ -879,7 +871,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         // An item of a slice set keeps its length.
         if !matches!(thir[strip(thir, lhs)].kind, ExprKind::Index { .. }) {
-            self.forget(root_var(thir, lhs), known);
+            self.forget(self.changed_place(lhs), known);
         }
     }
 

@@ -3,6 +3,39 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "call-keeps-cells",
+    breaks: "a call between a loop's test and `queue.borrow()[i]`, which may empty the queue, leaves its length known, and the index read unchecked",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if !views && let Some(k) = known.as_mut() {\n",
+    replace: "        if false && !views && let Some(k) = known.as_mut() {\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+  },
+  {
+    name: "assign-drop-keeps-cells",
+    breaks: "`slots.borrow_mut()[0] = other`, whose old value's drop empties the queue, leaves the queue's length known, and `queue.borrow()[0]` read unchecked",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    && cells::drop_may_change_cells(self.tcx, self.typing_env, thir[lhs].ty)\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+  },
+  {
+    name: "held-test-of-a-cell",
+    breaks: "`let there = !queue.borrow().is_empty();` is held past a call that empties the queue, and `queue.borrow()[0]` read unchecked",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if reads_a_cell(self.tcx, thir, test) {\n",
+    replace: "        if false && reads_a_cell(self.tcx, thir, test) {\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+  },
+  {
+    name: "drain-range-unjudged",
+    breaks: "`queue.drain(0..i)` below the loop's `i < queue.len()` is `$drain(queue, 0, i)`, not React's `queue.splice(0, i)`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            Some((SliceLength::Range | SliceLength::Drain, items)) => {\n",
+    replace: "            Some((SliceLength::Range, items)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
     name: "labeled-block-not-a-target",
     breaks: "a labeled block's `break 'desc` is a jump the walk can't follow, so nothing its body's ranges show holds, and `indent + 1` of `indent < 3` is `(indent + 1) >>> 0`",
     file: "src/lower/body_queries/ranges.rs",
@@ -168,14 +201,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                        if was.join(&r) == *was {\n",
     replace: "                        if *was == r {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
-  },
-  {
-    name: "string-length-impure",
-    breaks: "a test of a JS string's `length` isn't read, so `i + 1 < length(s)` shows nothing of `i`",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                ) || reads_string_length(tcx, def_id)\n",
-    replace: "                ) || false\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
   },
   {
@@ -376,14 +401,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                    reads_string_length(self.tcx, def_id) || reads_utf16_length(self.tcx, def_id, generic_args)\n",
     replace: "                    reads_string_length(self.tcx, def_id)\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
-  },
-  {
-    name: "utf16-count-impure",
-    breaks: "a test of `s.encode_utf16().count()` narrows nothing, as if it changed what it reads, so a counter below it keeps its wrap",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                        || makes_utf16_units(tcx, def_id, thir[e].ty)\n",
-    replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
   },
   {

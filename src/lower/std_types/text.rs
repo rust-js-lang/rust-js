@@ -813,6 +813,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ..sliced
             };
         }
+        // `v.drain(a..b)` the body's ranges show in bounds, which can't
+        // panic: JS's own, `v.splice(a, b - a)`, what it takes out (ADR
+        // 0881).
+        if op == TextOp::Drain && in_bounds {
+            let count = match (start.as_int(), end) {
+                (_, None) => None,
+                (Some(0), Some(end)) => Some(end),
+                (_, Some(end)) => Some(Expr::bin(Op::Sub, end, start.clone())),
+            };
+            return Expr::call(
+                Expr::member(items, "splice"),
+                std::iter::once(start).chain(count).collect(),
+            );
+        }
         let mut list = vec![items, start];
         list.extend(end);
         Expr::call_helper(name, list)

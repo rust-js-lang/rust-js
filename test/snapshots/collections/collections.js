@@ -192,7 +192,7 @@ export function words(s) {
 export function indexed(i) {
   const v = [10, 20, 30];
   const read = $index(v, i);
-  v[$at(v, i)] = (read + 1) >>> 0;
+  v[i] = (read + 1) >>> 0;
   v[$at(v, 0)] = (v[0] + 5) >>> 0;
   const slice = v;
   const value = (slice[$at(slice, 2)] * 2) >>> 0;
@@ -205,10 +205,10 @@ export function elementFields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
   const cell2 = $index(cells, i);
   cell2.hits = (cell2.hits + 1) >>> 0;
-  const before = { ...$index(cells, i) };
-  const r = $index(cells, i);
+  const before = { ...cells[i] };
+  const r = cells[i];
   r.hits = 10;
-  return [before.hits, $index(cells, i).hits, $index(cells, (1 - i) >>> 0).hits];
+  return [before.hits, cells[i].hits, $index(cells, (1 - i) >>> 0).hits];
 }
 
 /** An array changed in place is copied when it's copied. */

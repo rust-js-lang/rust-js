@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cells-changed-forgets-nothing",
+    breaks: "a call that empties the queue between its loop's test and `queue.borrow()[i]` is no change, and the index read unchecked, `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        self.lengths.retain(|s, _| !celled(s));\n",
+    replace: "        return;\n        #[allow(unreachable_code)]\n        self.lengths.retain(|s, _| !celled(s));\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+  },
+  {
+    name: "knows-cells-never",
+    breaks: "a scope that drops what empties the queue is asked nothing, so `queue.borrow()[0]` after it is read unchecked",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        self.lengths.keys().any(|s| s.0.contains(&CELL))\n",
+    replace: "        false && self.lengths.keys().any(|s| s.0.contains(&CELL))\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+  },
+  {
     name: "join-unbound-forgets",
     breaks: "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
     file: "src/lower/body_queries/ranges/known.rs",

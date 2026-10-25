@@ -568,3 +568,37 @@ pub fn changed() -> (u32, u32) {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.copied(["a", undefined]), lib.nested(), lib.changed()]).toEqual([["a", undefined, "x"], "[Some(None)] [Some(Some(1))]", [2, 1]]);
 });
+
+// ADR 0881: an item's place an index gives, written at once, `v[i] = x`,
+// reads its index where it's written, nothing run between to change it;
+// one held while its index changes is of the index it had.
+test("an item's place held while its index changes is of the index it had", async () => {
+  const dir = fixture("held-item-place");
+  writeFileSync(join(dir, "lib.rs"), `pub fn set_at(v: &mut Vec<u32>, mut i: usize, x: u32) -> usize {
+    v[i] = x;
+    i += 1;
+    i
+}
+
+pub fn held(v: &mut Vec<u32>, mut i: usize) -> usize {
+    let item = &mut v[i];
+    i += 1;
+    *item = 5;
+    i
+}
+
+pub fn written_twice(v: &mut Vec<u32>, mut i: usize) -> usize {
+    let item = &mut v[i];
+    *item = 5;
+    i += 1;
+    *item += 1;
+    i
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function setAt(v, i, x) {\n  v[$at(v, i)] = x;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const v = [0, 0, 0];
+  expect([lib.setAt(v, 0, 7), lib.held(v, 1), lib.writtenTwice(v, 2), v]).toEqual([1, 2, 3, [7, 5, 6]]);
+});

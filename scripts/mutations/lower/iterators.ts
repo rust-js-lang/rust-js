@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "discarded-iterator-kept",
+    breaks: "a discarded `drain(0..i)` in bounds is `$iter(queue.splice(0, i));`, an iterator nothing steps",
+    file: "src/lower/iterators.rs",
+    find: "        && callee.helper_name() == Some(\"$iter\")\n        && let [items] = args.as_mut_slice()\n",
+    replace: "        && callee.helper_name() == Some(\"$none\")\n        && let [items] = args.as_mut_slice()\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
     "name": "made-array-helper-lazy",
     "breaks": "`v.windows(2).map(f).collect()` from MIR stays `Iterator.from($windows(v, 2)).map(f).toArray()`",
     "file": "src/lower/iterators.rs",

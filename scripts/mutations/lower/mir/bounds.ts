@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-at-once-never",
+    breaks: "`queue.borrow_mut()[i] = item` of a variable `i` spills it, `const index = i; queue[index] = item;`, though nothing runs before the write",
+    file: "src/lower/mir/bounds.rs",
+    find: "            let at_once = written_through_at_once(state.body, state.at);\n",
+    replace: "            let at_once = false && written_through_at_once(state.body, state.at);\n",
+    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
+    snapshots: true,
+  },
+  {
     name: "mir-known-bounds-checked",
     breaks: "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
     file: "src/lower/mir/bounds.rs",
@@ -46,8 +55,8 @@ export const mutations: Mutation[] = [
     "name": "mir-checked-index-copied",
     "breaks": "a parameter MIR checks an element's place at is copied first, `const index = i;`",
     "file": "src/lower/mir/bounds.rs",
-    "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))\n",
-    "replace": "",
+    "find": "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));\n",
+    "replace": "js::ExprKind::Var(v) if at_once);\n",
     "tests": ["test/lowering-numbers.test.ts", "-t", "checked element set is one statement"]
   },
   {

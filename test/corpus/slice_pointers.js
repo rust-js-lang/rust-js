@@ -19,7 +19,7 @@ export function entry() {
 function drained(v, start, end) {
   const range = $slice(v, start, end);
   const taken = range.slice();
-  $iter($drain(v, start, end));
+  $drain(v, start, end);
   return taken;
 }
 

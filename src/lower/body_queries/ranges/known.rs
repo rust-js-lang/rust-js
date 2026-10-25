@@ -7,6 +7,10 @@ use super::Slice;
 use rustc_middle::thir::{ExprId, LocalVarId};
 use std::collections::{HashMap, HashSet};
 
+/// The step of a slice's path into a `RefCell`, to the value it holds:
+/// `queue.borrow()`'s `Vec`, `([CELL], queue)` (ADR 0881).
+pub(super) const CELL: usize = usize::MAX;
+
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
 /// half.
@@ -237,6 +241,25 @@ impl Known {
             let at = self.lengths.entry(slice.clone()).or_insert(0);
             *at = (*at).max(least);
         }
+    }
+
+    /// What's known after any code may have changed what a `RefCell`
+    /// holds, by another reference to it: nothing of a slice in one, but
+    /// `except`'s, whose cell a guard holds (ADR 0881).
+    pub(super) fn cells_changed(&mut self, except: Option<&Slice>) {
+        let celled = |s: &Slice| s.0.contains(&CELL) && Some(s) != except;
+        self.lengths.retain(|s, _| !celled(s));
+        for range in self.vars.values_mut() {
+            if range.below.as_ref().is_some_and(|(s, _)| celled(s)) {
+                range.below = None;
+            }
+        }
+    }
+
+    /// Whether anything is known of a slice in a `RefCell`.
+    pub(super) fn knows_cells(&self) -> bool {
+        self.lengths.keys().any(|s| s.0.contains(&CELL))
+            || (self.vars.values()).any(|r| r.below.as_ref().is_some_and(|(s, _)| s.0.contains(&CELL)))
     }
 
     /// What's known after `var` may have changed, as an integer or as what

@@ -608,3 +608,19 @@ pub(in crate::lower) fn enumeration_source(e: &Expr) -> Option<&Expr> {
         _ => None,
     }
 }
+
+/// A statement of an iterator of an array made here, `$iter(v.splice(0,
+/// i));` of a `drain(..i)` nothing steps: the array's making alone, as
+/// what's made of it does nothing more (ADR 0881).
+pub(in crate::lower) fn discarded_iterator(e: &mut Expr) {
+    if let js::ExprKind::Call(callee, args) = &mut e.kind
+        && callee.helper_name() == Some("$iter")
+        && let [items] = args.as_mut_slice()
+        && fresh(items)
+    {
+        *e = Expr {
+            span: e.span,
+            ..std::mem::replace(items, Expr::undefined())
+        };
+    }
+}
