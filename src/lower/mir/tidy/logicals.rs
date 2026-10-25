@@ -578,3 +578,102 @@ pub(super) fn made_where(span: js::Span, body: &[Stmt]) -> js::Span {
         _ => span,
     }
 }
+
+/// A test the program wrote `!(a && b)`, which MIR's branches made `!a ||
+/// !b`, as it wrote it: `!(a && b)`, where every test of the chain is in
+/// what a `!` the program wrote negates, the innermost `&&` or `||` it
+/// wrote around them, and the chain is the other of the two
+/// (`Written::negations`). Of a test whose truth alone is read, an `if`'s,
+/// a `while`'s or a conditional's, which De Morgan's laws make the same
+/// either way (ADR 0879, amended).
+pub(super) fn written_negations(body: &mut Vec<Stmt>, negations: &[(js::Span, bool)], logicals: &[js::Span]) {
+    if negations.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::If(test, ..) | StmtKind::While { cond: test, .. } = &mut stmt.kind {
+                negated_as_written(test, negations, logicals);
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Cond(test, ..) = &mut e.kind {
+            negated_as_written(test, negations, logicals);
+        }
+    });
+}
+
+/// `written_negations` of one test, or of the chains inside it: of the
+/// parts of a chain of one operator, `a && !b && !c`, each run of them
+/// written as one negation, `a && !(b || c)`, which MIR's chain joined.
+fn negated_as_written(test: &mut Expr, negations: &[(js::Span, bool)], logicals: &[js::Span]) {
+    let ExprKind::Binary(op @ (Op::And | Op::Or), ..) = test.kind else {
+        return;
+    };
+    // Whether `parts`, joined with `op`, are a negation the program wrote.
+    let written = |parts: &[Expr]| {
+        let mut spans = Vec::new();
+        let within = |outer: js::Span, s: &js::Span| outer.lo <= s.lo && s.hi <= outer.hi;
+        parts.iter().all(|part| tests_of(part, &mut spans))
+            && (logicals.iter())
+                .filter(|&&l| spans.iter().all(|s| within(l, s)))
+                .min_by_key(|l| l.hi - l.lo)
+                .is_some_and(|&inner| negations.contains(&(inner, op == Op::Or)))
+    };
+    let joined = |parts: Vec<Expr>| {
+        parts
+            .into_iter()
+            .reduce(|all, next| Expr::bin(op, all, next))
+            .expect("parts")
+    };
+    let mut parts = Vec::new();
+    operands(std::mem::replace(test, Expr::undefined()), op, &mut parts);
+    let mut kept = Vec::new();
+    let mut at = 0;
+    while at < parts.len() {
+        // The longest run from here the program wrote as one `!( .. )`.
+        let run = (at + 2..=parts.len()).rev().find(|&end| written(&parts[at..end]));
+        match run {
+            Some(end) => {
+                let chain = joined(parts[at..end].to_vec());
+                kept.push(Expr::unary(UnaryOp::Not, chain.negated_test()));
+                at = end;
+            }
+            None => {
+                let mut part = parts[at].clone();
+                negated_as_written(&mut part, negations, logicals);
+                kept.push(part);
+                at += 1;
+            }
+        }
+    }
+    *test = joined(kept);
+}
+
+/// The parts of a chain of `op`, `a && b && c`'s `a`, `b` and `c`, in order.
+fn operands(e: Expr, op: Op, parts: &mut Vec<Expr>) {
+    match e.kind {
+        ExprKind::Binary(o, a, b) if o == op => {
+            operands(*a, op, parts);
+            operands(*b, op, parts);
+        }
+        kind => parts.push(Expr { kind, ..e }),
+    }
+}
+
+/// Where each test of a chain of `&&` and `||` is written, a negation's
+/// where its operand is: whether each is.
+fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
+    match &e.kind {
+        ExprKind::Binary(Op::And | Op::Or, a, b) => tests_of(a, spans) && tests_of(b, spans),
+        _ if !e.span.is_none() => {
+            spans.push(e.span);
+            true
+        }
+        ExprKind::Unary(UnaryOp::Not, x) if !matches!(x.kind, ExprKind::Binary(Op::And | Op::Or, ..)) => {
+            tests_of(x, spans)
+        }
+        _ => false,
+    }
+}

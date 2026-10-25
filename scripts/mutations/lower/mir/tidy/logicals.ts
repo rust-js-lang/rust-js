@@ -3,6 +3,30 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-negation-de-morganed",
+    breaks: "`if (.. && !(DISABLE && root.tag === 0))` is MIR's `(!DISABLE || root.tag !== 0)` (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if negations.is_empty() {\n        return;\n    }\n",
+    replace: "    if true {\n        return;\n    }\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a written negation of an && or an || stays one"],
+  },
+  {
+    name: "written-negation-of-the-same-chain",
+    breaks: "a written `!(a || b)` is taken for MIR's `a !== 1 && b !== 0` only where that's an `||` too, so it's never restored",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                .is_some_and(|&inner| negations.contains(&(inner, op == Op::Or)))\n",
+    replace: "                .is_some_and(|&inner| negations.contains(&(inner, op == Op::And)))\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a written negation of an && or an || stays one"],
+  },
+  {
+    name: "written-negation-of-a-whole-chain-only",
+    breaks: "a written `!(disabled || tag == 7)` whose parts MIR joined into the chain around it stays `!disabled && tag !== 7`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        let run = (at + 2..=parts.len()).rev().find(|&end| written(&parts[at..end]));\n",
+    replace: "        let run = (parts.len()..=parts.len()).filter(|_| at == 0).find(|&end| written(&parts[at..end]));\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a written negation of an && or an || stays one"],
+  },
+  {
     name: "implied-part-kept",
     breaks: "`x != null && typeof x === \"number\"` keeps the test the later one implies",
     file: "src/lower/mir/tidy/logicals.rs",

@@ -64,7 +64,25 @@ function lowerEventPriority(a, b) {
   return a === 0 || a > b ? a : b;
 }
 
+const DISABLE_LEGACY_MODE = false;
+
+function upgraded(lanes, tag, disabled) {
+  if ((lanes & 2) !== 0 && !(DISABLE_LEGACY_MODE && tag === 0) && !(disabled || tag === 7)) {
+    return true;
+  }
+  return false;
+}
+
 function priorities() {
+  for (const [lanes, tag, disabled] of [
+    [2, 0, false],
+    [3, 7, false],
+    [2, 1, true],
+    [4, 1, false],
+  ]) {
+    const arg = upgraded(lanes, tag, disabled);
+    console.log(`upgraded ${lanes} ${tag} ${disabled}: ${arg}`);
+  }
   const all = [0, 2, 8, -2147483648];
   for (const a of all) {
     for (const b of all) {

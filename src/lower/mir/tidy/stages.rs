@@ -518,6 +518,11 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
+            // A test the program wrote `!(a && b)`, MIR's `!a || !b`: as
+            // written (ADR 0879, amended).
+            pass("written negations", |b, h| {
+                logicals::written_negations(b, &h.written.negations, &h.written.logicals)
+            }),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`.
             pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
             // An `if` of `false`, a check that can't fail once what it reads

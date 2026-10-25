@@ -99,7 +99,7 @@ const Stack = {
   },
 
   insert(stack, index, value, CAP) {
-    if (!(index <= stack.len) || !(stack.len < CAP)) {
+    if (!(index <= stack.len && stack.len < CAP)) {
       throw new Error("assertion failed: index <= self.len && self.len < CAP");
     }
     const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);

@@ -67,7 +67,19 @@ fn lower_event_priority(a: EventPriority, b: EventPriority) -> EventPriority {
     if a.0 == 0 || a > b { a } else { b }
 }
 
+const DISABLE_LEGACY_MODE: bool = false;
+
+fn upgraded(lanes: i32, tag: u32, disabled: bool) -> bool {
+    if lanes & 2 != 0 && !(DISABLE_LEGACY_MODE && tag == 0) && !(disabled || tag == 7) {
+        return true;
+    }
+    false
+}
+
 fn priorities() {
+    for (lanes, tag, disabled) in [(2, 0, false), (3, 7, false), (2, 1, true), (4, 1, false)] {
+        println!("upgraded {lanes} {tag} {disabled}: {}", upgraded(lanes, tag, disabled));
+    }
     let all = [EventPriority(0), EventPriority(2), EventPriority(8), EventPriority(i32::MIN)];
     for a in all {
         for b in all {

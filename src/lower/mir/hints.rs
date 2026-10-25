@@ -20,6 +20,9 @@ pub(super) struct Written {
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
+    /// Each `!( .. )` the program wrote of an `&&` or `||`: where what it
+    /// negates is, and whether that's an `&&` (`written_negations`).
+    pub negations: Vec<(js::Span, bool)>,
     /// Each `if` of a `continue`, alone or ending what it does: where its
     /// condition is, and where the `continue` is, which its comment is
     /// before (ADR 0684).
@@ -194,6 +197,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
             .map(|e| self.js_span(e.span))
             .collect();
+        // Where each `!( .. )` of an `&&` or `||` is, `!(a && b)`'s `a && b`.
+        let negations: Vec<(js::Span, bool)> = (self.frame.thir.exprs.iter())
+            .filter_map(|e| {
+                let thir::ExprKind::Unary { op: UnOp::Not, arg } = e.kind else {
+                    return None;
+                };
+                let arg = &self.frame.thir[crate::lower::body_queries::strip(self.frame.thir, arg)];
+                match arg.kind {
+                    thir::ExprKind::LogicalOp { op, .. } => {
+                        Some((self.js_span(arg.span), matches!(op, thir::LogicalOp::And)))
+                    }
+                    _ => None,
+                }
+            })
+            .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
         let continues: Vec<(js::Span, js::Span)> = (self.frame.thir.exprs.iter())
@@ -280,6 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ifs,
             elses,
             logicals,
+            negations,
             continues,
             loops,
             blocks: self.labeled_blocks(),

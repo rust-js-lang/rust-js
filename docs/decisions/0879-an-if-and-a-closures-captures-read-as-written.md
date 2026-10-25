@@ -157,3 +157,30 @@ Held by `test/lowering-written-branches.test.ts`, "a returned value of an
 if of an || keeps its test and its branches' order", `lane_bits.rs`
 against native Rust, and the mutation
 `written-turned-value-returned-as-mir-has-it` (`tidy/jumps/tails.ts`).
+
+## Amendment: a written negation of a chain stays one
+
+ReactFiberLane writes `.. && !(disableLegacyMode && root.tag ===
+LegacyRoot)`; its port printed `(!DISABLE_LEGACY_MODE || root.tag !==
+0)`, and `if !(a == 1 || b == 0)` printed `a !== 1 && b !== 0`: MIR
+tests each part of a condition apart, so `!` of a chain is a chain of
+each part's negation, De Morgan's. **A test's chain of `&&` and `||` is
+`!( .. )` of the other operator where the program wrote that `!`**
+(`Written::negations`, `logicals.rs`'s `written_negations`, in the
+`written` stage before `turned`): where each of the chain's tests is
+written inside the `!`'s operand, that operand is the innermost `&&` or
+`||` written around them, and the chain is of the other operator; of a
+run of a longer chain's parts too, which MIR joined into the chain around
+the `!`, `.. && !disabled && tag !== 7` of `.. && !(disabled || tag ==
+7)`. Only
+of a test, an `if`'s, a `while`'s or a conditional's, whose truth is all
+that's read. Case N: De Morgan's laws make the two the same test. A
+chain the program wrote of negations, `a != 1 || b != 0`, has no `!` and
+stays. `signed_counter.rs`'s `if !(s >= 1 && c >= 0)` reads so, where
+it read `s < 1 || c < 0`, and so does an `assert!` of a chain, whose
+expansion is `if !(cond)`: `array_vec_raw.rs`'s `!(index <= stack.len &&
+stack.len < CAP)`. Held by `test/lowering-written-branches.test.ts`, "a written
+negation of an && or an || stays one", run in JS, `lane_bits.rs`
+against native Rust, and the mutations `written-negation-de-morganed`,
+`written-negation-of-the-same-chain` and
+`written-negation-of-a-whole-chain-only` (`tidy/logicals.ts`).

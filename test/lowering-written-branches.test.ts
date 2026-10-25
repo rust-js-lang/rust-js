@@ -427,3 +427,61 @@ pub fn unless_greater(a: i32, b: i32) -> i32 {
   expect(pairs.map(([a, b]) => lib.higherEventPriority(a as never, b as never))).toEqual([2, 0, 2, 2, 3]);
   expect(pairs.map(([a, b]) => lib.unlessGreater(a as never, b as never))).toEqual([0, 0, 2, 2, 3]);
 });
+
+// React's ReactFiberLane: `if (... && !(disableLegacyMode && root.tag ===
+// LegacyRoot))`. MIR's branches test each part, so the chain came back
+// De Morgan'd, `(!DISABLE || root.tag !== 0)`; a `!( .. )` the program
+// wrote of an `&&` or an `||` stays one, in an `if`, a `while` and a
+// conditional, and a chain it wrote of negations stays that (ADR 0879,
+// amended).
+test("a written negation of an && or an || stays one", async () => {
+  const { js, lib } = await compiled("written-negations", `pub const DISABLE_LEGACY_MODE: bool = false;
+
+pub struct Root {
+    pub tag: u32,
+}
+
+pub fn upgraded(root: &Root, lanes: i32) -> bool {
+    if lanes & 2 != 0 && !(DISABLE_LEGACY_MODE && root.tag == 0) {
+        return true;
+    }
+    false
+}
+
+pub fn neither(a: u32, b: u32) -> u32 {
+    if !(a == 1 || b == 0) { a } else { b }
+}
+
+pub fn counted(mut n: u32, limit: u32) -> u32 {
+    while !(n >= limit || n == 7) {
+        n += 1;
+    }
+    n
+}
+
+pub fn joined(lanes: i32, tag: u32, disabled: bool) -> bool {
+    if lanes & 2 != 0 && !(disabled || tag == 7) {
+        return true;
+    }
+    false
+}
+
+pub fn as_written(a: u32, b: u32) -> bool {
+    if a != 1 || b != 0 {
+        return true;
+    }
+    false
+}
+`);
+  expect(js).toContain("  if ((lanes & 2) !== 0 && !(DISABLE_LEGACY_MODE && root.tag === 0)) {\n");
+  expect(js).toContain("  return !(a === 1 || b === 0) ? a : b;\n");
+  expect(js).toContain("  while (!(n >= limit || n === 7)) {\n");
+  expect(js).toContain("  if (a !== 1 || b !== 0) {\n");
+  // MIR joins the negation's parts into the chain around it, `.. && !disabled && tag !== 7`.
+  expect(js).toContain("  if ((lanes & 2) !== 0 && !(disabled || tag === 7)) {\n");
+  expect([lib.joined(2 as never, 1 as never, false as never), lib.joined(2 as never, 7 as never, false as never)]).toEqual([true, false]);
+  expect([lib.upgraded({ tag: 0 } as never, 2 as never), lib.upgraded({ tag: 1 } as never, 4 as never)]).toEqual([true, false]);
+  expect([lib.neither(2 as never, 3 as never), lib.neither(1 as never, 3 as never), lib.neither(2 as never, 0 as never)]).toEqual([2, 3, 0]);
+  expect([lib.counted(0 as never, 10 as never), lib.counted(8 as never, 10 as never), lib.counted(12 as never, 10 as never)]).toEqual([7, 10, 12]);
+  expect([lib.asWritten(1 as never, 0 as never), lib.asWritten(2 as never, 0 as never)]).toEqual([false, true]);
+});
