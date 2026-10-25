@@ -670,6 +670,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0889 An expression's facts are a set](0889-an-expressions-facts-are-a-set.md)
 - [0890 A binding's method is known as one, whatever its name](0890-a-bindings-method-is-known-as-one.md)
 - [0892 What only reads, by Rust's types, does nothing](0892-what-only-reads-by-rusts-types-does-nothing.md)
+- [0893 A type parameter's evidence stays its own parameters, and the manifest's facts stay typed](0893-a-type-parameters-evidence-stays-its-own-parameters.md)
 - [0891 A window's constructor is the window's: `window.new_error_event(..)`](0891-a-windows-constructor-is-the-windows.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
 - [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
