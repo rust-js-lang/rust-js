@@ -389,4 +389,20 @@ export const mutations: Mutation[] = [
     replace: "                let reversed = self.user_iterator(receiver, iter_ty, back, \"next_back\", span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
+  {
+    name: "rev-of-own-unclosed",
+    breaks: "`rev()` of the crate's iterator with a destructor isn't closed to drop it, so its temporary is never dropped (#223)",
+    file: "src/lower/mir/iter.rs",
+    find: "                return Ok(Some(self.closing(reversed, receiver_ty, span)?));\n",
+    replace: "                return Ok(Some(reversed));\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
+  },
+  {
+    name: "rev-of-own-closed-through-mut-ref",
+    breaks: "`rev()` of a `&mut` of the crate's iterator drops what it borrows (#223)",
+    file: "src/lower/mir/iter.rs",
+    find: "                return Ok(Some(self.closing(reversed, receiver_ty, span)?));\n",
+    replace: "                return Ok(Some(self.closing(reversed, iter_ty, span)?));\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
+  },
 ];

@@ -454,6 +454,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (back, len): (bool, bool),
         span: Span,
     ) -> R<Expr> {
+        // One made a JS iterator already, closed to drop it,
+        // `$closing($iterator(value, next), drop)`: made knowing them inside,
+        // still closed to drop it, not stepped as the crate's itself (#223).
+        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value) {
+            let it = stepped_value(it).unwrap_or_else(|| it.clone());
+            let drop = drop.clone();
+            let knowing = self.user_iterator_knowing(it, ty, (back, len), span)?;
+            return Ok(Expr::call_helper("$closing", vec![knowing, drop]));
+        }
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let (next, boxed) = self.user_next(ty, iterator, "next", span)?;
         let hint = self.own_size_hint(ty, span)?;

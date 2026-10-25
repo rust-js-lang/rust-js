@@ -353,4 +353,12 @@ export const mutations: Mutation[] = [
     replace: "        let parameter = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
   },
+  {
+    name: "enumerate-back-own-unclosed",
+    breaks: "an `enumerate()` of the crate's iterator with a destructor stepped from its back isn't closed to drop it (#223)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                        let knowing = self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?;\n                        self.closing(knowing, iter_ty, span)?\n",
+    replace: "                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
+  },
 ];

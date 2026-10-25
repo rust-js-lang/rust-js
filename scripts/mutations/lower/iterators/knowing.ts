@@ -314,4 +314,12 @@ export const mutations: Mutation[] = [
     replace: "        let own = self.own_methods(ty, false, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
+  {
+    name: "user-iterator-knowing-closed-rewrapped",
+    breaks: "the crate's iterator closed to drop it, made knowing its back, is wrapped as if it were the crate's value, whose methods it's then given: a wrong value (#223)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value) {\n",
+    replace: "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
+  },
 ];

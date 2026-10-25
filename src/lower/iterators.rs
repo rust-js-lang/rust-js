@@ -130,6 +130,18 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
     matches!(callee.helper_name(), Some("$iterator" | "$given")).then(|| args.first().cloned())?
 }
 
+/// What a JS iterator closed to drop it is made of, `it` and `drop` of
+/// `$closing(it, drop)`, as `closing` makes it: the one reader of its form.
+pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match args.as_slice() {
+        [it, drop] if callee.helper_name() == Some("$closing") => Some((it, drop)),
+        _ => None,
+    }
+}
+
 /// Whether a bound of `tr` reads its value as its own type, `Clone`'s or
 /// `Debug`'s, or the crate's trait that extends `Iterator` (ADR 0511): not
 /// a marker's, nor `Iterator`'s or std's extension of it, whose methods

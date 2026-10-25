@@ -219,8 +219,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
                     None if self.explicit_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
+                    // Closed to drop it, as a map's is (#223).
                     None if self.is_user_iterator(iter_ty) => {
-                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
+                        let knowing = self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?;
+                        self.closing(knowing, iter_ty, span)?
                     }
                     None => receiver.clone(),
                 };
