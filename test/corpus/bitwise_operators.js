@@ -39,15 +39,15 @@ function flagsShrU32_shr(flags, by) {
 }
 
 function flagsBitOrAssign_bitorAssign(flags, other) {
-  flags[0] = flags[0] | other[0];
+  flags[0] |= other[0];
 }
 
 function flagsBitAndAssign_bitandAssign(flags, other) {
-  flags[0] = flags[0] & other[0];
+  flags[0] &= other[0];
 }
 
 function flagsBitXorAssign_bitxorAssign(flags, other) {
-  flags[0] = flags[0] ^ other[0];
+  flags[0] ^= other[0];
 }
 
 function flagsShlAssignU8_shlAssign(flags, by) {
@@ -55,7 +55,7 @@ function flagsShlAssignU8_shlAssign(flags, by) {
 }
 
 function flagsShrAssignU32_shrAssign(flags, by) {
-  flags[0] = flags[0] >>> (by & 7);
+  flags[0] >>>= by & 7;
 }
 
 function refFlagsBitOr_bitor(flags, other) {

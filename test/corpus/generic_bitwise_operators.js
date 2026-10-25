@@ -85,7 +85,7 @@ function main() {
   c = (c & b) >>> 0;
   c = (c | 0x100) >>> 0;
   c = (c ^ 1) >>> 0;
-  c = c >>> 1;
+  c >>>= 1;
   c = (c << 3) >>> 0;
   const far = 33n;
   console.log(`${c} ${(a << Number(far & 63n)) >>> 0}`);

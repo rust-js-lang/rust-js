@@ -27,6 +27,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-numbers.test.ts", "-t", "stepping by one"],
   },
   {
+    name: "bitwise-and-assign-printed-or",
+    breaks: "a compound `lanes &= ~lane` is printed `lanes |= ~lane`",
+    file: "src/to_oxc/statements.rs",
+    find: "                    Op::BitAnd => AssignmentOperator::BitwiseAnd,\n",
+    replace: "                    Op::BitAnd => AssignmentOperator::BitwiseOR,\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "assignment is its compound"],
+  },
+  {
     name: "step-down-incremented",
     breaks: "a statement `t -= 1.0` is `t++`",
     file: "src/to_oxc/statements.rs",

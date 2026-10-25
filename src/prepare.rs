@@ -385,8 +385,11 @@ fn read_together(module: &mut js::Module) {
 }
 
 /// `target = target op value` as JS writes it, `target op= value`: `s += t`
-/// of a string built up, `r *= 2`, `x ??= d`. Of every statement, a
-/// closure's in a constant too.
+/// of a string built up, `r *= 2`, `x ??= d`, `lanes &= ~lane`, `flags <<=
+/// 1`. Of every statement, a closure's in a constant too. The target is a
+/// path (`same_path`), so reading it once where it was read twice reads
+/// the same value: JS evaluates its object and its key before the value,
+/// in either form.
 fn compound(module: &mut js::Module) {
     let mut each = |stmts: &mut Vec<Stmt>| {
         for stmt in stmts.iter_mut() {
@@ -396,7 +399,8 @@ fn compound(module: &mut js::Module) {
             let ExprKind::Binary(op, lhs, rhs) = &mut value.kind else {
                 continue;
             };
-            let compounds = matches!(op, Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce);
+            let compounds = matches!(op, Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce)
+                || matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor | Op::Shl | Op::Shr | Op::UShr);
             if compounds && js::same_path(lhs, target) {
                 let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::undefined()));
                 let target = std::mem::replace(target, Expr::undefined());

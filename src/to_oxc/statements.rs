@@ -411,6 +411,12 @@ impl<'a> Cx<'a> {
                     Op::Div => AssignmentOperator::Division,
                     Op::Rem => AssignmentOperator::Remainder,
                     Op::Coalesce => AssignmentOperator::LogicalNullish,
+                    Op::BitAnd => AssignmentOperator::BitwiseAnd,
+                    Op::BitOr => AssignmentOperator::BitwiseOR,
+                    Op::BitXor => AssignmentOperator::BitwiseXOR,
+                    Op::Shl => AssignmentOperator::ShiftLeft,
+                    Op::Shr => AssignmentOperator::ShiftRight,
+                    Op::UShr => AssignmentOperator::ShiftRightZeroFill,
                     _ => unreachable!("preparation compounds these alone"),
                 };
                 let assign = Expression::new_assignment_expression(

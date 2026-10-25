@@ -26,9 +26,9 @@ function fnv1a(text) {
 
 // xorshift, as small random number generators are written.
 function xorshift(x) {
-  x = x ^ BigInt.asUintN(64, x << 13n);
-  x = x ^ (x >> 7n);
-  x = x ^ BigInt.asUintN(64, x << 17n);
+  x ^= BigInt.asUintN(64, x << 13n);
+  x ^= x >> 7n;
+  x ^= BigInt.asUintN(64, x << 17n);
   return x;
 }
 

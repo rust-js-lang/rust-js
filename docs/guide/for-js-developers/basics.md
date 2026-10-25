@@ -344,6 +344,37 @@ export function fits(str, substr) {
   return substr.length < 10 && str.length + substr.length < 40;
 }
 ```
+- **A bit set is written with JS's operators,** each assignment its
+  compound, `lanes &= ~lane`, of a field or a `Cell`'s too
+  ([ADR 0890](../../decisions/0890-a-bitwise-assignment-is-its-compound.md)):
+
+```rust
+use std::cell::Cell;
+
+pub struct Root {
+    pub pending_lanes: Cell<i32>,
+}
+
+pub fn remove_lane(mut lanes: i32, lane: i32) -> i32 {
+    lanes &= !lane;
+    lanes
+}
+
+pub fn mark_updated(root: &Root, lane: i32) {
+    root.pending_lanes.set(root.pending_lanes.get() | lane);
+}
+```
+
+```js
+export function removeLane(lanes, lane) {
+  lanes &= ~lane;
+  return lanes;
+}
+
+export function markUpdated(root, lane) {
+  root.pendingLanes |= lane;
+}
+```
 - **A literal keeps its base and its exponent**, `0xff`, `0b1010`, `1e4`,
   without Rust's type suffix, separators and a decimal's leading zeros;
   any other is JS's digits,

@@ -390,11 +390,19 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
   },
   {
+    name: "bitwise-assign-spelled-out",
+    breaks: "`lanes = lanes & ~lane`, not `lanes &= ~lane`",
+    file: "src/prepare.rs",
+    find: "                || matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor | Op::Shl | Op::Shr | Op::UShr);\n",
+    replace: "                || false;\n",
+    tests: ["test/lowering-bits.test.ts", "-t", "assignment is its compound"],
+  },
+  {
     name: "coalesce-assign-spelled-out",
     breaks: "`SEEN = SEEN ?? n`, not `SEEN ??= n`",
     file: "src/prepare.rs",
-    find: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce);",
-    replace: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem);",
+    find: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce)\n",
+    replace: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem)\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
