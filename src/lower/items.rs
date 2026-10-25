@@ -284,14 +284,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does this body read `def_id`, an item rust-js compiled that's made
     /// where its module loads, a `const` or a numbered enum's variant (ADRs
     /// 0031, 0722), by its name? Each body does but one run where its own
-    /// module loads (`CrateFacts::loads`), of another of the crate's
-    /// modules: an import cycle may load this one first, before that one
-    /// has made it, so it reads the value. A library's is made before the
-    /// crate loads, and its own module's before what reads it
-    /// (`js::in_load_order`).
+    /// module loads (`CrateFacts::loads`) that reads another of the crate's
+    /// modules' that may load after its own, an import cycle's
+    /// (`CrateFacts::loads_in_cycles`): it would read it before that module
+    /// made it, so it reads the value. A library's is made before the crate
+    /// loads, its own module's before what reads it (`js::in_load_order`),
+    /// and a module it imports, of no cycle, before it (ADR 0031, amended).
     pub(super) fn reads_by_name(&self, def_id: DefId) -> bool {
         let module = self.krate.fns.get(&def_id).map(|info| info.module);
-        !self.krate.loads.contains(&self.item) || module.is_none_or(|module| module == self.module)
+        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)
     }
 
     /// Is `def_id` a trait's function that a call of runs through the trait:

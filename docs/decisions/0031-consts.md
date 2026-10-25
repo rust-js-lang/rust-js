@@ -175,9 +175,6 @@ thread-local's `TransitionLane1`, each read by its name.
   of a type no one JS value can be every use's is refused, as before.
 - **Where rustc needs the value, a pattern or an array's length**, it's
   rustc's still: `case SyncUpdateLanes:`, `[0, 0].length`.
-- **Not yet**: another of the crate's modules' constant read where a
-  module loads is its value, not its name, where no import cycle would
-  load this module first.
 
 Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
 same either way, rustc having worked it out, and a library's flag is
@@ -189,3 +186,42 @@ written", run; `cross-crate-items`'s "a const written of a library's
 consts imports them by name", run. Mutations `const-of-consts-folded`,
 `const-of-library-consts-folded` (`lower/pipeline.ts`),
 `const-calling-crate-code-as-code` (`lower/body_queries.ts`).
+
+## Amendment: another module's constant is read by its name where its module loads first
+
+React's ReactFiberHiddenContext makes its cursors where it loads, of
+ReactFiberLane's lanes, which it imports:
+
+```js
+export const prevEntangledRenderLanesCursor = createCursor(NoLanes);
+```
+
+Its port read `createCursor(0)`: what a module runs where it loads read
+another of the crate's modules' constant as its value (ADR 0722), as an
+import cycle might load it before the other had made it, and the amendment
+above left that "not yet".
+
+**What a module runs where it loads reads another module's constant by
+its name, where that module can't load after it: it doesn't reach this
+one by what the crate's modules import of each other.** Of ES modules, one
+another imports, of no cycle, has run before it. Where the two may import
+each other, the value is read, as before.
+
+- **Which is decided once the crate's bodies are lowered**, by what each
+  imports of the others, `pipeline::load_cycles`: each body run where its
+  module loads, reading by name another module's constant or numbered
+  variant that reaches its module back, is lowered again reading their
+  values (`CrateFacts::loads_in_cycles`, `FnCx::reads_by_name`). What it
+  imported by name is an edge too, so the cycles found are each one that
+  may be; reading values only takes edges away.
+- **Of the imports `refuse_dictionaries_in_load_cycles` reads too**: each
+  body's references of another module's items and its held bindings.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
+same either way; read by its name, its module has made it.
+
+Test: `lowering-constants`'s "a constant another module makes is read by
+its name where its module loads first", run, a cycle's value too; the
+corpus's `load_cycle_values`. Mutations `load-cycle-unseen`,
+`load-relowered-twice` (`lower/pipeline.ts`), `load-reads-values`,
+`load-reads-by-name` (`lower/items.ts`).

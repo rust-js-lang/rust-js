@@ -98,10 +98,12 @@ export function banner(count) {
 ```
 
 - What a module makes where it loads, a `thread_local!`'s or a `static`'s
-  value, reads another module's `const` as its value, `{ value: 100 }`:
-  two modules may import each other, and the one loaded first runs before
-  the other has made its `const`s. A function reads it by its name
-  ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md)).
+  value, reads another module's `const` by its name, `createCursor(NoLanes)`,
+  as that module, which it imports, loads first; but where the two import
+  each other, its value, `{ value: 100 }`, as the one loaded first runs
+  before the other has made its `const`s. A function reads it by its name
+  ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md),
+  [ADR 0031](../../decisions/0031-consts.md), amended).
 - A `const` of literals is the value rustc computed, `4 * 1024` is
   `4096`. One written of other constants, the crate's or a library's, is
   as it's written, each read by its name, after what it reads; one that

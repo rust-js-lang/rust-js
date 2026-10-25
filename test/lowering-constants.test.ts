@@ -87,3 +87,73 @@ pub fn named(lane: Lane) -> i32 {
   expect([lib.SyncUpdateLanes, lib.SomeTransitionLane, lib.HALF, lib.NoEventPriority]).toEqual([42, 256, 2048, [2]]);
   expect([lib.next(), lib.next(), lib.named(42), lib.named(256), lib.named(7)]).toEqual([256, 512, 1, 2, 4]);
 });
+
+// React's ReactFiberHiddenContext makes its cursors where it loads,
+// \`createCursor(NoLanes)\`, of ReactFiberLane's lane, which it imports: a
+// module it imports, of no import cycle, loads first, so its constant is
+// read by its name (ADR 0031, amended). Where the two import each other,
+// either may load first, so the value is read, as before.
+test("a constant another module makes is read by its name where its module loads first", async () => {
+  const dir = fixture("load-reads-by-name");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub mod lane {
+    pub type Lanes = u32;
+    #[cfg_attr(rust_js, rust_js::name = "NoLanes")]
+    pub const NO_LANES: Lanes = 0;
+    #[cfg_attr(rust_js, rust_js::name = "SyncLane")]
+    pub const SYNC_LANE: Lanes = 2;
+}
+
+pub mod hidden {
+    use super::lane::{Lanes, NO_LANES, SYNC_LANE};
+    use std::cell::RefCell;
+
+    pub struct StackCursor<T> {
+        pub current: RefCell<T>,
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./stack.js#createCursor")]
+    fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+        StackCursor { current: RefCell::new(default_value) }
+    }
+
+    thread_local! {
+        pub static ENTANGLED: StackCursor<Lanes> = create_cursor(NO_LANES);
+    }
+
+    pub static BOTH: [Lanes; 2] = [NO_LANES, SYNC_LANE];
+
+    pub fn read() -> Lanes {
+        ENTANGLED.with(|cursor| *cursor.current.borrow()) | BOTH[1]
+    }
+}
+
+pub mod first {
+    #[cfg_attr(rust_js, rust_js::name = "Base")]
+    pub const BASE: u32 = 7;
+
+    pub fn twice() -> u32 {
+        super::second::LOADED[0] * 2
+    }
+}
+
+pub mod second {
+    pub static LOADED: [u32; 1] = [super::first::BASE];
+}
+`,
+  );
+  writeFileSync(join(dir, "stack.js"), "export function createCursor(defaultValue) {\n  return { current: defaultValue };\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const hidden = readFileSync(join(dir, "hidden.js"), "utf8");
+  expect(hidden).toContain("export const entangled = createCursor(NoLanes);\n");
+  expect(hidden).toContain("export const BOTH = [NoLanes, SyncLane];\n");
+  // \`first\` imports \`second\`, which reads its constant where it loads: its
+  // value, as either may load first.
+  const second = readFileSync(join(dir, "second.js"), "utf8");
+  expect(second).toContain("export const LOADED = [7];\n");
+  const { read } = await import(join(dir, "hidden.js"));
+  expect(read()).toBe(2);
+  const { twice } = await import(join(dir, "first.js"));
+  expect(twice()).toBe(14);
+});

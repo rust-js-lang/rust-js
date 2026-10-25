@@ -569,4 +569,20 @@ export const mutations: Mutation[] = [
     replace: "        let by_name = |id: DefId| fns.contains_key(&id);\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a const written of a library's consts imports them by name"],
   },
+  {
+    name: "load-cycle-unseen",
+    breaks: "a module's load reads another's constant by its name though they import each other, which may load it first, before it's made",
+    file: "src/lower/pipeline.rs",
+    find: "                .any(|&(from, read)| from == own && made_where_loaded(read) && reaches(fns[&read].module, own))\n",
+    replace: "                .any(|&(from, read)| from == own && made_where_loaded(read) && false)\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
+  },
+  {
+    name: "load-relowered-twice",
+    breaks: "a body lowered again, its values read, is a second item beside the first",
+    file: "src/lower/pipeline.rs",
+    find: "                    Some(earlier) => earlier.1 = lowered,\n",
+    replace: "                    Some(_) => lowered_items.push((def_id, lowered)),\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
+  },
 ];

@@ -376,10 +376,13 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions written in a function's body, by the block they're
     /// in, each a function declaration there (ADR 0308).
     local_functions: &'a HashMap<DefId, rustc_span::Span>,
-    /// The bodies run where their module loads: a thread-local's value, a
-    /// static's or constant's initializer lowered as code, a `js::on_load!`
-    /// (`FnCx::reads_by_name`).
-    loads: &'a HashSet<DefId>,
+    /// Each body run where its module loads, a thread-local's value, a
+    /// static's or constant's initializer lowered as code, a `js::on_load!`,
+    /// that reads another of the crate's modules' `const` that may load
+    /// after its own, an import cycle's: it reads their values
+    /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
+    /// Lowered again once it's known.
+    loads_in_cycles: std::cell::RefCell<HashSet<DefId>>,
 }
 
 impl CrateFacts<'_, '_> {

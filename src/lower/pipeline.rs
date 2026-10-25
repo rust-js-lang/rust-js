@@ -245,7 +245,8 @@ pub fn lower_crate<'tcx>(
     let mut drops_observed = super::drops::DropsObserved::default();
     let ref_cells = std::cell::OnceCell::new();
     // What runs where its module loads, which reads another module's
-    // `const`s as their values (`FnCx::reads_by_name`).
+    // `const`s as their values where that module may load after its own
+    // (`load_cycles`).
     // A thread-local made where it's first used runs nothing as its module
     // loads (ADR 0037, amended).
     let loads: HashSet<DefId> = (thread_local_inits.iter())
@@ -302,7 +303,7 @@ pub fn lower_crate<'tcx>(
         lazy_locals: &lazy_locals,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
-        loads: &loads,
+        loads_in_cycles: Default::default(),
     };
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();
@@ -346,10 +347,26 @@ pub fn lower_crate<'tcx>(
                 })
                 .map(|&id| (id, None))
                 .collect();
-            if round.is_empty() {
-                break;
+            if !round.is_empty() {
+                work.extend(round);
+            } else {
+                // Each body run where its module loads that read another
+                // module's `const` by its name, where that module may load
+                // after its own: lowered again, reading its values, once
+                // (ADR 0031, amended).
+                if !crate_facts.loads_in_cycles.borrow().is_empty() {
+                    break;
+                }
+                let again = load_cycles(tcx, &lowered_items, &fns, &loads);
+                if again.is_empty() {
+                    break;
+                }
+                let bodies: Vec<_> = (again.iter())
+                    .filter_map(|&id| work.iter().find(|(at, _)| *at == id).copied())
+                    .collect();
+                crate_facts.loads_in_cycles.borrow_mut().extend(again);
+                work.extend(bodies);
             }
-            work.extend(round);
         }
         let (def_id, body) = work[next];
         next += 1;
@@ -416,7 +433,11 @@ pub fn lower_crate<'tcx>(
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
-                lowered_items.push((def_id, lowered));
+                // One lowered again, its values read: in its place.
+                match lowered_items.iter_mut().find(|(id, _)| *id == def_id) {
+                    Some(earlier) => earlier.1 = lowered,
+                    None => lowered_items.push((def_id, lowered)),
+                }
             }
             Err(_) => failed = true,
         }
@@ -1298,6 +1319,61 @@ fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
         }
         at = tcx.parent_module_from_def_id(at.to_local_def_id());
     }
+}
+
+/// Each body run where its module loads, of `loads`, that reads another of
+/// the crate's modules' `const` or numbered enum's variant by its name,
+/// where that module may load after its own: one it reaches by what the
+/// crate's modules import of each other, `lowered`'s references and held
+/// bindings, an import cycle. JS would read it before its module made it,
+/// so that body reads its value (`FnCx::reads_by_name`, ADR 0031, amended).
+/// What it imports by name is an edge, so the cycles found are each one's
+/// that may be.
+fn load_cycles(
+    tcx: TyCtxt<'_>,
+    lowered: &[(DefId, super::LoweredFn)],
+    fns: &HashMap<DefId, FnInfo>,
+    loads: &HashSet<DefId>,
+) -> Vec<DefId> {
+    let mut imports: HashMap<LocalModId, HashSet<LocalModId>> = HashMap::new();
+    for (_, item) in lowered {
+        for &(from, id) in &item.dependencies.references {
+            imports.entry(from).or_default().insert(fns[&id].module);
+        }
+        for &(from, holder, ..) in &item.dependencies.held {
+            imports.entry(from).or_default().insert(holder);
+        }
+    }
+    let reaches = |from: LocalModId, to: LocalModId| {
+        let mut seen = HashSet::from([from]);
+        let mut pending = vec![from];
+        while let Some(at) = pending.pop() {
+            for &next in imports.get(&at).into_iter().flatten() {
+                if next == to {
+                    return true;
+                }
+                if seen.insert(next) {
+                    pending.push(next);
+                }
+            }
+        }
+        false
+    };
+    let made_where_loaded = |id: DefId| {
+        matches!(
+            tcx.def_kind(id),
+            DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Variant | DefKind::Ctor(..)
+        )
+    };
+    (lowered.iter())
+        .filter(|(id, _)| loads.contains(id))
+        .filter(|(id, item)| {
+            let own = fns[id].module;
+            (item.dependencies.references.iter())
+                .any(|&(from, read)| from == own && made_where_loaded(read) && reaches(fns[&read].module, own))
+        })
+        .map(|&(id, _)| id)
+        .collect()
 }
 
 /// A dictionary that's its module's `const` (ADR 0592) is made when its
