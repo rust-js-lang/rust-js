@@ -294,22 +294,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {
             return Ok(knowing);
         }
-        // A flatten made here, `src.flatMap(each)`, of items that are arrays,
-        // which know their backs: `$flattenEnds` of its source made knowing
-        // its back, as std's `Flatten` steps from either end.
+        // A flatten made here, `src.flatMap(each)`: `$flattenEnds` of its
+        // source made knowing its back, as std's `Flatten` steps from either
+        // end. Of items that are arrays, which know their backs, as they
+        // are; of items that are iterators, an `Option`'s slice's iterator
+        // say, each made knowing its back as it's taken (#260).
         if let Some((source, made)) = crate::lower::recognition::flattened_source(self.tcx, ty)
             && let js::ExprKind::Call(callee, args) = &value.kind
             && let js::ExprKind::Member(source_value, method) = &callee.kind
             && method == "flatMap"
             && let [each] = args.as_slice()
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
-            && {
-                let inner = inner.peel_refs();
-                inner.is_array() || inner.is_slice() || self.is_vec_like(inner)
-            }
         {
-            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-            return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each.clone()]));
+            let inner = inner.peel_refs();
+            let each = match inner.is_array() || inner.is_slice() || self.is_vec_like(inner) {
+                true => Some(each.clone()),
+                // What `each` gives of its item, `(item) => $iterator(item,
+                // next)`, made knowing its back where it's given.
+                false
+                    if self.implements_iterator(inner)
+                        && let Some((item, taken)) = returned_of(each) =>
+                {
+                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;
+                    Some(Expr::arrow(
+                        vec![item.as_str().into()],
+                        vec![StmtKind::Return(Some(knowing)).at(js::Span::NONE)],
+                    ))
+                }
+                false => None,
+            };
+            if let Some(each) = each {
+                let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+                return Ok(Expr::call_helper("$flattenEnds", vec![source_value, each]));
+            }
         }
         // A chain made here, `$lazyChain(a, b)`: each made knowing its back,
         // `$chainEnds` of them, which steps `b`'s then `a`'s from the back, as
@@ -961,4 +978,19 @@ fn exact_len_by(hint: &Option<Expr>) -> Expr {
         vec!["it".into()],
         vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
     )
+}
+
+/// Of `f`, a function of one item that gives one value, `(item) =>
+/// value`: its item's name and what it gives.
+fn returned_of(f: &Expr) -> Option<(&String, &Expr)> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let ([js::Pattern::Name(param)], [stmt]) = (params.as_slice(), body.as_slice()) else {
+        return None;
+    };
+    match &stmt.kind {
+        StmtKind::Return(Some(value)) => Some((param, value)),
+        _ => None,
+    }
 }

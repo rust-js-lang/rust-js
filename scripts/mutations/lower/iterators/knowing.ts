@@ -421,4 +421,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|own_back_through_adapters).rs$"],
   },
+  {
+    name: "flatten-of-iterators-unknowing",
+    breaks: "a flatten of an `Option`'s slice iterator, stepped from its back, is a JS `flatMap` that has no back: it throws (#260)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    if self.implements_iterator(inner)\n",
+    replace: "                    if false && self.implements_iterator(inner)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
+  },
+  {
+    name: "flatten-of-iterators-each-called",
+    breaks: "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;\n",
+    replace: "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(item)]), inner, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
+  },
 ];

@@ -600,4 +600,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(adapter_source_drops|std_inspect).rs$"],
   },
 
+  {
+    name: "in-place-made-unmarked",
+    breaks: "a `map()` a closure gives `flat_map` in place, reversed past it, is given `Map`'s compiled back, which reads the JS iterator as a `Map`'s fields: nothing (#260)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            Value::Expr(made) if self.adapter_in_place(callee.0, span) => Value::Expr(made.in_place()),\n",
+    replace: "            Value::Expr(made) if false => Value::Expr(made.in_place()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
+  },
 ];

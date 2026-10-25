@@ -309,3 +309,28 @@ different result. They stay the recognizers' until specialization is
 decided where it's used, the same gap as `Fuse`'s (#244); #260, a
 `flatten()` of an `Option`'s iterator stepped from its back, is fixed in
 the recognizers.
+
+## Amendment: a flatten of iterators knows its back (#260)
+
+`Some(v.iter()).into_iter().flatten().rfold(..)` threw `it.back is not a
+function`: the recognizers made a flatten stepped from its back,
+`$flattenEnds`, only of items that are arrays. **A flatten of items that
+are iterators is `$flattenEnds` too, each item made knowing its back as
+it's taken**: what `each` gives, `(item) => $iterator(item, $rangeNext)`
+or the closure `flat_map` is given, read as its own form and made so by
+`as_double_ended`, so a range's is its bounds' back, a slice's its `$iter`,
+std's struct held in an `Option` its compiled back, and a `map()` made in
+place `$mapEnds`.
+
+**What an in-place maker makes is marked too** (`mir_call_values`), as
+well as what a std method is given: a `map()` a closure gives `flat_map`
+leaves the closure by its `return`, which no call is given, and the
+flatten takes it apart past it. Unmarked, it was given `Map`'s compiled
+back and gave nothing. The amendment above that dropped this mark as
+redundant had no program that returned one.
+
+Tested by `flatten_of_iterators_from_back.rs` against native Rust: an
+`Option`'s slice iterator, range, `Enumerate` and `Rev`, a `Vec` of
+iterators from both ends, and a `flat_map` reversed. The readability
+baseline is blessed with it, `$iter` 76.3 to 77.1, the case's own slices'
+iterators; no other program's JS changed.

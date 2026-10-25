@@ -521,11 +521,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }) || self.frame.facts.registered_equalities.contains(&span))
     }
 
+    /// A call, `mir_call_values_given`'s, what a `rev()`, an `enumerate()`,
+    /// a `map()` or an `inspect()` made in place makes marked so,
+    /// `Known::InPlace`, as this call is where that's known: what a closure
+    /// gives `flat_map` leaves it by its `return`, which no call is given,
+    /// and is taken apart past it (`made_in_place`, #260).
+    fn mir_call_values(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        callee: (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        given: (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let made = self.mir_call_values_given(state, callee, given, output, span, out)?;
+        Ok(match made {
+            Value::Expr(made) if self.adapter_in_place(callee.0, span) => Value::Expr(made.in_place()),
+            made => made,
+        })
+    }
+
     /// A call, `mir_call_values_of`'s; of std's, each function or value it's
     /// given by value with a destructor, dropped where std drops it (ADRs
     /// 0469, 0470, 0490): as it returns, or where it's left unused, by its
     /// subject's variant, both held in variables first.
-    fn mir_call_values(
+    fn mir_call_values_given(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
