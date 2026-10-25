@@ -244,3 +244,11 @@ corpus case checks against native Rust. The mutations
 Readability: the case's `Vec`s of values with a destructor add `$iter`
 (77.8 to 77.9 in 10,000 lines) and renamed temporaries (716.7 to 718.3),
 as each such case does. The output reads no worse.
+
+## Note: a zip's sides, stepped after its first end (#279)
+
+`restarting_iterators` now zips its flaky iterator with a `Vec` of values
+with a destructor, collected twice, which holds `zip-closed-at-end`: a
+zip closes its sides only as it's closed. Readability: the `Vec`'s
+`$iter` adds to that share (77.5 to 77.6 in 10,000 lines), as each such
+case does.
