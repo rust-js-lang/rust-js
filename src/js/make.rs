@@ -924,6 +924,23 @@ impl Expr {
         }
     }
 
+    /// This again, where what it stores is known better than where it was
+    /// made: a nullable place's `made ?? null` (`Storage::written`) of what's
+    /// now never `undefined` (`may_be_undefined`), a `Drop` guard's field
+    /// read where it's dropped as the variable it was made of, is `made`, as
+    /// `Storage::written` would have stored it (ADR 0841, amended). Anything
+    /// else is as it is.
+    pub fn store_again(&mut self) {
+        if let ExprKind::Binary(Op::Coalesce, made, null) = &mut self.kind
+            && matches!(null.kind, ExprKind::Null)
+            && !made.may_be_undefined()
+        {
+            let made = std::mem::replace(made.as_mut(), Expr::null());
+            let span = self.span;
+            *self = made.or_at(span);
+        }
+    }
+
     /// A constant JS tests as false: `false`, `0`, `""`, `undefined` or
     /// `null`.
     pub fn is_falsy_constant(&self) -> bool {

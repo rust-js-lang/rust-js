@@ -624,6 +624,171 @@ pub fn lazy(n: Option<f64>) -> Lazy {
   (console as any).createTask = original;
 });
 
+// React's `startTransition`: `ReactSharedInternals.T`, a nullable getter's
+// `null` or a Transition, kept in a `let` and given back to its nullable
+// setter, through a copy and through the field of the `Drop` guard that
+// restores it, is written as it is, `ReactSharedInternals.T =
+// prevTransition;` (ADR 0841, amended). A `let` set again to what may be
+// `undefined`, and a guard's field set again, are coalesced still; so is
+// what a trait's method marked `#[rust_js::nullable]` gives, whose impl
+// may give `undefined`.
+test("a nullable function's result is written to a nullable place as it is", async () => {
+  const dir = fixture("nullable-result-written");
+  writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
+
+use js::JsObject;
+
+pub struct Internals(PhantomData<JsObject>);
+
+pub struct Transition(PhantomData<JsObject>);
+
+#[cfg_attr(rust_js, rust_js::link_name = "get T")]
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn t(this: &Internals) -> Option<&'static Transition> {
+    let _ = this;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set T")]
+#[cfg_attr(rust_js, rust_js::nullable(transition))]
+pub fn set_t(this: &Internals, transition: Option<&Transition>) {
+    let _ = (this, transition);
+    unreachable!()
+}
+
+pub fn restore(internals: &Internals, next: &Transition) -> bool {
+    let prev_transition = t(internals);
+    set_t(internals, Some(next));
+    set_t(internals, prev_transition);
+    prev_transition.is_some()
+}
+
+pub fn copied(internals: &Internals) -> bool {
+    let prev_transition = t(internals);
+    let again = prev_transition;
+    set_t(internals, again);
+    prev_transition.is_some()
+}
+
+pub fn replaced(internals: &Internals, other: Option<&'static Transition>, replace: bool) {
+    let mut prev_transition = t(internals);
+    if replace {
+        prev_transition = other;
+    }
+    set_t(internals, prev_transition);
+}
+
+struct Restore<'a> {
+    internals: &'a Internals,
+    prev: Option<&'static Transition>,
+}
+
+impl Drop for Restore<'_> {
+    fn drop(&mut self) {
+        set_t(self.internals, self.prev);
+    }
+}
+
+pub fn scoped(internals: &Internals, next: &Transition, scope: impl FnOnce()) {
+    let prev_transition = t(internals);
+    set_t(internals, Some(next));
+    let _restore = Restore {
+        internals,
+        prev: prev_transition,
+    };
+    scope();
+}
+
+pub fn scoped_again(internals: &Internals, other: Option<&'static Transition>, scope: impl FnOnce()) {
+    let prev_transition = t(internals);
+    let mut restore = Restore {
+        internals,
+        prev: prev_transition,
+    };
+    scope();
+    restore.prev = other;
+}
+
+unsafe extern "Rust" {
+    #[link_name = "sharedInternals"]
+    safe static SHARED_INTERNALS: &'static Internals;
+}
+
+struct Reset(Option<&'static Transition>);
+
+impl Drop for Reset {
+    fn drop(&mut self) {
+        set_t(SHARED_INTERNALS, self.0);
+    }
+}
+
+pub fn reset(next: &Transition, scope: impl FnOnce()) {
+    let prev_transition = t(SHARED_INTERNALS);
+    set_t(SHARED_INTERNALS, Some(next));
+    let _reset = Reset(prev_transition);
+    scope();
+}
+
+pub trait Peek {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    fn peek(&self) -> Option<&'static Transition>;
+}
+
+pub struct Queue(pub Vec<&'static Transition>);
+
+impl Peek for Queue {
+    fn peek(&self) -> Option<&'static Transition> {
+        self.0.first().copied()
+    }
+}
+
+pub fn peeked<P: Peek>(internals: &Internals, queue: &P) {
+    set_t(internals, queue.peek());
+}
+
+pub fn peeked_queue(internals: &Internals, queue: &Queue) -> bool {
+    let first = queue.peek();
+    set_t(internals, first);
+    first.is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  internals.T = next;\n  internals.T = prevTransition;\n");
+  expect(js).toContain("  const again = prevTransition;\n  internals.T = again;\n");
+  expect(js).toContain("    prevTransition = other;\n  }\n  internals.T = prevTransition ?? null;\n}");
+  expect(js).toContain("  } finally {\n    internals.T = prevTransition;\n  }");
+  expect(js).toContain("    prev = other;\n  } finally {\n    internals.T = prev ?? null;\n");
+  expect(js).toContain("  } finally {\n    sharedInternals.T = reset;\n");
+  expect(js).toContain("  internals.T = PPeek.peek(queue) ?? null;\n");
+  expect(js).toContain("  internals.T = first ?? null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const [a, b] = [{}, {}];
+  const internals = { T: a as unknown };
+  expect(lib.restore(internals, b)).toBe(true);
+  expect(internals.T).toBe(a);
+  internals.T = null;
+  expect(lib.copied(internals)).toBe(false);
+  expect(internals.T).toBe(null);
+  lib.replaced(internals, undefined, true);
+  expect(internals.T).toBe(null);
+  internals.T = a;
+  lib.scoped(internals, b, () => expect(internals.T).toBe(b));
+  expect(internals.T).toBe(a);
+  lib.scopedAgain(internals, undefined, () => {});
+  expect(internals.T).toBe(null);
+  (globalThis as any).sharedInternals = internals;
+  lib.reset(b, () => expect(internals.T).toBe(b));
+  expect(internals.T).toBe(null);
+  delete (globalThis as any).sharedInternals;
+  internals.T = a;
+  lib.peeked(internals, [[]], lib.queuePeek);
+  expect(internals.T).toBe(null);
+  internals.T = a;
+  expect(lib.peekedQueue(internals, [[]])).toBe(false);
+  expect(internals.T).toBe(null);
+});
+
 // ADR 0861: a function's own parameter it names `#[rust_js::nullable(..)]`
 // is `T | null`, a `None` given it or set in its body `null`, as React's
 // `mapIntoArray` sets `children = null` and calls the callback with it,

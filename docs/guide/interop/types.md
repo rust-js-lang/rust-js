@@ -646,7 +646,10 @@ export function ratio(a, b) {
   What's never `undefined` is stored as it is, an object made there or a
   `Some`'s value, `context.Consumer = { $$typeof: REACT_CONSUMER_TYPE,
   _context: context }`, and a `map`'s `None` is `null` where it's made,
-  `createTask ? createTask("lazy()") : null`
+  `createTask ? createTask("lazy()") : null`; so is a nullable
+  function's result, a binding's too, kept in a variable or a `Drop`
+  guard's field, `ReactSharedInternals.T = prevTransition;`, but not a
+  trait's method's, whose impl may give `undefined`
   ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md));
   on anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):

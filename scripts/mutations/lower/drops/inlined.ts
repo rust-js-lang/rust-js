@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "guard-field-known-lost",
+    breaks: "a guard's field read as the variable it was made of loses that it's never `undefined`: `internals.T = prevTransition ?? null` in its `finally` (ADR 0841, amended)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            *e = match field.1.known == js::Known::Defined && !written.contains(key) {\n                true => read.defined(),\n",
+    replace: "            *e = match field.1.known == js::Known::Defined && !written.contains(key) {\n                true => read,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
+    name: "guard-field-set-again-known",
+    breaks: "a guard's field set again, to what may be `undefined`, is taken as what it was made of, `internals.T = prev`, which stores `undefined` (ADR 0841, amended)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            *e = match field.1.known == js::Known::Defined && !written.contains(key) {\n",
+    replace: "            *e = match field.1.known == js::Known::Defined {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
+    name: "one-field-guard-known-lost",
+    breaks: "a one-field guard read as what it was made of loses that it's never `undefined`: `sharedInternals.T = reset ?? null` (ADR 0841, amended)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            *e = match known == js::Known::Defined {\n                true => read.defined(),\n",
+    replace: "            *e = match known == js::Known::Defined {\n                true => read,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
     name: "drop-inlined-where-not-each",
     breaks: "a `Drop` with a drop that isn't a call, or of another module, is gone where that one still calls it",
     file: "src/lower/drops/inlined.rs",

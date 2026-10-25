@@ -710,11 +710,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             AggregateKind::Adt(did, variant_index, args, _, _) => {
                 let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);
-                let exprs = values
-                    .into_iter()
-                    .map(|v| self.value_expr(v, span))
-                    .collect::<R<Vec<_>>>()?;
                 let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
+                // What's `nulled` is never `undefined`, which a field of a
+                // guard its `Drop` gives a nullable place, read where it's
+                // dropped as what it was made of, says (ADR 0841, amended).
+                let exprs = (values.into_iter().zip(&nulled))
+                    .map(|(v, &nulled)| match nulled {
+                        true => self.value_expr(v, span).map(Expr::defined),
+                        false => self.value_expr(v, span),
+                    })
+                    .collect::<R<Vec<_>>>()?;
                 let value = self.adt_value(ty, *variant_index, exprs, &nulled, order.as_deref(), span)?;
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable`, is the JS iterator it is where
@@ -812,7 +817,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
     /// (ADR 0275): such a field, moved where it's read, or bound to a
-    /// variable, or a `Some(..)`.
+    /// variable, or a `Some(..)`, or a `#[rust_js::nullable]` function's
+    /// result (ADR 0841, amended).
     pub(super) fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
         let Some(place) = operand.place() else {
             return false;
@@ -841,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let itself = self
             .option_of(state.body.local_decls[place.local].ty)
             .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item));
-        let cloned = (state.body.basic_blocks.iter()).find_map(|b| match &b.terminator().kind {
+        let call = (state.body.basic_blocks.iter()).find_map(|b| match &b.terminator().kind {
             mir::TerminatorKind::Call {
                 func,
                 args,
@@ -850,8 +856,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } if *destination == place.local.into() => Some((func, args)),
             _ => None,
         });
+        // What a `#[rust_js::nullable]` function gives, a binding's too, its
+        // `None` `null` (ADRs 0578, 0638): `ReactSharedInternals.T` kept in
+        // `prevTransition` (ADR 0841, amended).
+        if let Some((func, _)) = call
+            && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
+            && crate::lower::calls::gives_null_for_none(self.tcx, def_id)
+        {
+            return true;
+        }
         if itself
-            && let Some((func, args)) = cloned
+            && let Some((func, args)) = call
             && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
             && let [arg] = &args[..]

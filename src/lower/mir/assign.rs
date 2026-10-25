@@ -259,7 +259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (place != Place::from(mir::RETURN_PLACE)
                 || state.writer.is_some()
                 || !bindings::nullable_result(self.tcx, state.body.source.def_id()))
-            || made_by.is_some_and(|made_by| bindings::nullable_result(self.tcx, made_by))
+            || made_by.is_some_and(|made_by| crate::lower::calls::gives_null_for_none(self.tcx, made_by))
         {
             return Ok(value);
         }

@@ -242,14 +242,22 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     {
         return;
     }
+    // Each read of a field the value it was made of, never `undefined`
+    // where that's what was known of it and nothing sets it again: what a
+    // nullable place it's given stores as it is (ADR 0841, amended).
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && matches!(&of.kind, ExprKind::Var(v) if v == guard)
             && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
-            *e = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
+            let read = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
+            *e = match field.1.known == js::Known::Defined && !written.contains(key) {
+                true => read.defined(),
+                false => read,
+            };
         }
     });
+    js::each_expr_mut(body, &mut Expr::store_again);
     js::each_block_mut(body, &mut |stmts| {
         // A copy of a field the variable it reads as, `const prevProps =
         // prevProps;`, is that variable.
@@ -329,16 +337,21 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
 /// reads is `guard[0]`, none written: `const guard = x;`, read as `guard`,
 /// the field it's of (ADR 0608).
 fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
-    let mut made = false;
+    let mut made = None;
     js::each_block_mut(body, &mut |stmts| {
-        made |= stmts.iter().any(|s| {
-            matches!(&s.kind, StmtKind::Const(n, value)
-                if n == guard && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
-        });
+        for s in stmts.iter() {
+            if let StmtKind::Const(n, value) = &s.kind
+                && n == guard
+                && let ExprKind::Array(items) = &value.kind
+                && let [item] = items.as_slice()
+            {
+                made.get_or_insert(item.known);
+            }
+        }
     });
-    if !made {
+    let Some(known) = made else {
         return;
-    }
+    };
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
             if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
@@ -364,11 +377,18 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
         free if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
         _ => guard.to_string(),
     };
+    // Never `undefined` where that's what was known of it (ADR 0841,
+    // amended), as `fields_of` reads one.
     js::each_expr_mut(body, &mut |e| {
         if field(e) {
-            *e = Expr::var(&read).or_at(e.span);
+            let read = Expr::var(&read).or_at(e.span);
+            *e = match known == js::Known::Defined {
+                true => read.defined(),
+                false => read,
+            };
         }
     });
+    js::each_expr_mut(body, &mut Expr::store_again);
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter_mut() {
             if let StmtKind::Const(n, value) = &mut s.kind

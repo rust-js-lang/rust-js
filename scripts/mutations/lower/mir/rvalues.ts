@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nullable-result-not-nulled",
+    breaks: "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            && crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n        {\n            return true;\n",
+    replace: "            && false\n        {\n            return true;\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
+    name: "aggregate-nulled-unmarked",
+    breaks: "a `Drop` guard's field made of a nullable getter's result is written where it's dropped `?? null`, `internals.T = prevTransition ?? null` (ADR 0841, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        true => self.value_expr(v, span).map(Expr::defined),\n",
+    replace: "                        true => self.value_expr(v, span),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
     name: "spread-fields-as-declared",
     breaks: "an update's fields after its base's spread are listed as declared, `{ ...logs, log: 2, warn: 1 }` of `Logs { warn: .., log: .., ..logs }`",
     file: "src/lower/mir/rvalues.rs",

@@ -376,6 +376,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
   {
+    name: "stored-again-unasked",
+    breaks: "a nullable place's `made ?? null` isn't asked again once `made` is known never `undefined`, a guard's field read as its variable: `internals.T = prevTransition ?? null` (ADR 0841, amended)",
+    file: "src/js/make.rs",
+    find: "            && !made.may_be_undefined()\n        {\n            let made = std::mem::replace(made.as_mut(), Expr::null());\n",
+    replace: "            && false\n        {\n            let made = std::mem::replace(made.as_mut(), Expr::null());\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
+    name: "stored-again-of-undefined",
+    breaks: "a `made ?? null` is `made` whatever it may be, `internals.T = prev`, which stores `undefined` (ADR 0841, amended)",
+    file: "src/js/make.rs",
+    find: "            && !made.may_be_undefined()\n        {\n            let made = std::mem::replace(made.as_mut(), Expr::null());\n",
+    replace: "        {\n            let made = std::mem::replace(made.as_mut(), Expr::null());\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
     name: "defined-may-be-undefined",
     breaks: "what lowering knows is never `undefined` is asked of its form alone, `createTask(..)` a call that may be",
     file: "src/js/make.rs",

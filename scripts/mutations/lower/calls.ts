@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "trait-nullable-result-trusted",
+    breaks: "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
+    file: "src/lower/calls.rs",
+    find: "    super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()\n",
+    replace: "    super::bindings::nullable_result(tcx, def_id)\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
     name: "apply-pattern-called",
     breaks: "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
     file: "src/lower/calls.rs",
