@@ -136,8 +136,8 @@ export const mutations: Mutation[] = [
     name: "cell-set-keeps-old",
     breaks: "a `Cell`'s `set` drops none of the value it replaces",
     file: "src/lower/std_types/cell.rs",
-    find: "                    self.drop_value(old, item, span, out)?;\n                    return Ok(Some(Expr::undefined()));\n",
-    replace: "                    let _ = old;\n                    return Ok(Some(Expr::undefined()));\n",
+    find: "                    self.drop_value(old, item, span, out_set)?;\n",
+    replace: "                    let _ = old;\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
@@ -292,5 +292,21 @@ export const mutations: Mutation[] = [
     find: "            let itself =\n                matches!(rest, [flag] if matches!(flag.kind, js::ExprKind::Bool(true))) && !boxes.contains(name);\n",
     replace: "            let itself = false;\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
+  },
+  {
+    name: "lazy-set-runs-init",
+    breaks: "`LocalKey::set` of a thread-local not made yet runs its initializer and drops what it made",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let unmade = match FnCx::lazy_key_getter(&cell).cloned() {",
+    replace: "                let unmade = match FnCx::lazy_key_getter(&cell).cloned().filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
+  },
+  {
+    name: "lazy-cell-before-given",
+    breaks: "a lazy thread-local's call is made before what it's given, `replace(made(9))` its initializer first",
+    file: "src/lower/std_types/cell.rs",
+    find: "        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter)\n",
+    replace: "        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
 ];

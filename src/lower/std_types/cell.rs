@@ -56,6 +56,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             span,
             ..
         } = call;
+        // Of a thread-local made where it's first used, `key()`, what the
+        // call is given made first, as Rust makes it before its key's
+        // initializer runs (`Known::LocalRead`).
+        // Each named for its key, `countValue` of `count()`.
+        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter)
+            && let js::ExprKind::Var(key) = &key.kind
+        {
+            let base = format!("{key}Value");
+            let mut given: Vec<Expr> = values.by_ref().collect();
+            for value in given.iter_mut().skip(1) {
+                if value.has_effects() {
+                    *value = self.spill(&base, value.clone(), out);
+                }
+            }
+            *values = given.into_iter();
+        }
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says
@@ -81,16 +97,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {
                 let cell = arg();
-                let value = written(&cell, arg());
+                let mut value = written(&cell, arg());
                 let item = generic_args.type_at(0);
+                // Of a thread-local made where it's first used, `key()`
+                // (`Known::LocalRead`): one not made yet is made of the cell
+                // of what's given, its initializer never run and nothing
+                // dropped, as std's `LocalKey::set` (#252);
+                // `key.initWith(cell)` says it was.
+                let mut set = Vec::new();
+                let unmade = match FnCx::lazy_key_getter(&cell).cloned() {
+                    Some(getter) => {
+                        if !value.reads_same() {
+                            let base = match &getter.kind {
+                                js::ExprKind::Var(key) => format!("{key}Value"),
+                                _ => "value".into(),
+                            };
+                            value = self.spill(&base, value, out);
+                        }
+                        // The `{ value }` this writes the `value` of.
+                        let made = Expr::object(vec![Prop::Field(js::HELD.into(), value.clone())]);
+                        Some(Expr::call(Expr::member(getter, "initWith"), vec![made]))
+                    }
+                    _ => None,
+                };
+                let out_set = match unmade {
+                    Some(_) => &mut set,
+                    None => &mut *out,
+                };
                 if self.drops(item) != crate::lower::drops::Drops::Nothing {
-                    let cell = self.spill("cell", cell, out);
-                    let old = self.spill("old", Expr::held(cell.clone()), out);
-                    out.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
-                    self.drop_value(old, item, span, out)?;
-                    return Ok(Some(Expr::undefined()));
+                    let cell = self.spill("cell", cell, out_set);
+                    let old = self.spill("old", Expr::held(cell.clone()), out_set);
+                    out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                    self.drop_value(old, item, span, out_set)?;
+                } else {
+                    out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
                 }
-                out.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                if let Some(unmade) = unmade {
+                    out.push(StmtKind::If(unmade.negated_test(), set, None).at(js_span));
+                }
                 Expr::undefined()
             }
             // What it held, and the new value in its place: `v`, its type's

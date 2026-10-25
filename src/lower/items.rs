@@ -23,8 +23,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn item_read(&self, def_id: DefId) -> Expr {
         let place = self.fn_ref(def_id);
         match self.made_where_used(def_id) {
-            true => Expr::call(place, Vec::new()),
+            true => Expr {
+                known: js::Known::LocalRead,
+                ..Expr::call(place, Vec::new())
+            },
             false => place,
+        }
+    }
+
+    /// Of a read of a thread-local made where it's first used, `key()`,
+    /// `item_read`'s: what it calls, `key`, which `initWith(cell)` makes of
+    /// the cell given, its initializer never run, where it isn't made yet
+    /// (ADR 0037, amended, #252).
+    pub(in crate::lower) fn lazy_key_getter(read: &Expr) -> Option<&Expr> {
+        match &read.kind {
+            ExprKind::Call(getter, args) if read.known == js::Known::LocalRead && args.is_empty() => Some(getter),
+            _ => None,
         }
     }
 

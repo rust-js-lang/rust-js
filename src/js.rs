@@ -488,6 +488,13 @@ pub enum Known {
     /// `make(context)` of `set(Some(make(context)))`. A nullable place
     /// stores it as it is (`Storage::written`, ADR 0841).
     Defined,
+    /// A read of a thread-local made where it's first used, `key()`
+    /// (ADR 0037, amended): making it runs its initializer, which Rust runs
+    /// inside the call that uses it, after what that call is given, so it's
+    /// read there, not before them; read again, it's what it made.
+    /// `LocalKey::set` of one not made yet makes it of the value given,
+    /// `key.initWith?.(cell)` (#252).
+    LocalRead,
     /// A test of an `Option` of a value never falsy by its truth, `!!o` or
     /// `!o` (`Expr::presence`, ADR 0298, amended): true exactly where `o`
     /// is set, or isn't, as `o != null` is, which `null_test` reads it as.

@@ -446,6 +446,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let context_member = crate::lower::recognition::is_context_member(self.tcx, ty);
         match &e.kind {
             js::ExprKind::Member(..) if context_member => true,
+            // A thread-local made where it's first used, `key()`, the same
+            // cell wherever it's read (`Known::LocalRead`): read where it's
+            // used, after what its call is given, as Rust makes it there.
+            js::ExprKind::Call(..) if e.known == js::Known::LocalRead => true,
             // A pointer, one handle for each place, of a place that's the same
             // anywhere (ADR 0407): `$ptr(COUNT, "value")`.
             js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$ptr" | "$ptrTo")) => {

@@ -281,4 +281,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
   },
+  {
+    name: "lazy-read-flushed",
+    breaks: "a lazy thread-local's read is written to a `const` where what its call is given is made by more statements, `set(vec![..])`, so its initializer runs",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            js::ExprKind::Call(..) if e.known == js::Known::LocalRead => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
+  },
 ];

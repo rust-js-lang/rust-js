@@ -164,10 +164,8 @@ function main() {
   console.log(`${LOWER}`);
   console.log(`${LOGGED}`);
   console.log(`${base(1)}`);
-  const value = scale();
-  console.log(`${value(5)}`);
-  const value$1 = scale();
-  console.log(`${value$1(6)}`);
+  console.log(`${scale()(5)}`);
+  console.log(`${scale()(6)}`);
   for (const [on, n] of [
     [true, 3],
     [true, 1],

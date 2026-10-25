@@ -156,3 +156,27 @@ TocContext = createContext([])`, made as the module loads.
   `const` read by its name; `test/lowering-structs-enums.test.ts`'s
   dictionary cycle, which compiles, and one of a binding's, refused; and
   the mutations `lazy-local-*`, `local-made-*`.
+
+## Amendment: made after what its call is given, and `set` before its first use (#252)
+
+A thread-local made where it's first used was read where its reference
+was, `key()`, before what the call that uses it is given:
+`COUNT.replace(made(9))` ran its initializer, then `made(9)`, where Rust
+runs `made(9)`, then the initializer, inside `replace`. And `LocalKey::set`
+of one not made yet read it, so its initializer ran and the `set` dropped
+what it made, where std's `set` makes it of the value given and never runs
+the initializer (#252).
+
+**Its read is `Known::LocalRead`, the same cell wherever it's read, read
+where its call uses it:** `reads_same`, and `reads_same_anywhere`, so a
+`flush` keeps it in place, and nothing a call's arguments are ordered
+against, `has_effects`; a `Cell`'s or a `RefCell`'s call of it makes what
+it's given first, then reads it. **`set` of one is `if
+(!key.initWith({ value })) { .. }`**: `$local`'s `initWith` makes it of the
+cell given where it isn't made, and says so; one made already is set as
+before, what it held dropped. `FnCx::lazy_key_getter` is the one answer to
+what a read of one calls. Tested by `thread_local_set_before_use.rs`,
+against native Rust, a `Cell`'s, a `RefCell`'s and one of a value with a
+destructor, set before and after it's made, and one given what `vec!`
+makes; a `RefCell` of an array, which `set` writes as a `{ value }`, is
+#249's.

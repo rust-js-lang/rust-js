@@ -367,9 +367,12 @@ can't
 made where it's first used**, as Rust makes each: `const source = $local(()
 => [..])`, read by its call, `source()`, so what its initializer prints, a
 panic in it, and another module it reads in an import cycle are where Rust
-has them. One that only makes a value, or calls std's or a binding's
-functions, React's `createContext([])`, is made as its module loads, as JS
-writes it
+has them: after what the call that first uses it is given,
+`COUNT.replace(made(9))` making 9 first. One `set` before it's used is made
+of what it's given, `if (!count.initWith({ value }))`, its initializer never
+run, as std's `LocalKey::set` is. One that only makes a value, or calls
+std's or a binding's functions, React's `createContext([])`, is made as its
+module loads, as JS writes it
 ([0037](../decisions/0037-thread-locals.md), amended).
 
 Differences:

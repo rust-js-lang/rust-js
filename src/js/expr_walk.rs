@@ -343,6 +343,12 @@ impl Expr {
         if self.known == Known::Getter {
             return false;
         }
+        // A thread-local made where it's first used, the same cell wherever
+        // it's read, made where it's first read, as Rust makes it where it's
+        // first used (`Known::LocalRead`).
+        if self.known == Known::LocalRead {
+            return true;
+        }
         match &self.kind {
             ExprKind::Var(_) | ExprKind::Symbol(_) => true,
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.reads_same(),
@@ -482,6 +488,12 @@ impl Expr {
         // A read a getter may answer, which may do anything (ADRs 0672, 0750).
         if self.known == Known::Getter {
             return true;
+        }
+        // A thread-local's made where it's first used, which runs nothing a
+        // call's arguments are ordered against: its initializer runs where
+        // the call uses it, after them, as Rust's does (`Known::LocalRead`).
+        if self.known == Known::LocalRead {
+            return false;
         }
         match &self.kind {
             ExprKind::Num(_)

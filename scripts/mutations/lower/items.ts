@@ -167,8 +167,8 @@ export const mutations: Mutation[] = [
     name: "lazy-local-read-bare",
     breaks: "a thread-local made where it's first used is read as its holder, not its call, `x.value` of `x()`",
     file: "src/lower/items.rs",
-    find: "            true => Expr::call(place, Vec::new()),\n",
-    replace: "            true => place,\n",
+    find: "                ..Expr::call(place, Vec::new())\n",
+    replace: "                ..place\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
   },
   {
@@ -187,5 +187,13 @@ export const mutations: Mutation[] = [
     find: "                None => reference.item(),\n",
     replace: "                None => reference,\n",
     tests: ["test/crates.test.ts", "-t", "a library's function returned past a guard's drop"],
+  },
+  {
+    name: "lazy-read-unmarked",
+    breaks: "a lazy thread-local's read is a call like any, made before what its call is given, and `set` runs its initializer",
+    file: "src/lower/items.rs",
+    find: "            true => Expr {\n                known: js::Known::LocalRead,\n",
+    replace: "            true => Expr {\n                known: js::Known::Nothing,\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
 ];

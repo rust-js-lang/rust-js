@@ -166,4 +166,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
     snapshots: true,
   },
+  {
+    name: "lazy-read-has-effects",
+    breaks: "a lazy thread-local's read is taken to do something, written to a `const` before what's read after it",
+    file: "src/js/expr_walk.rs",
+    find: "        if self.known == Known::LocalRead {\n            return false;\n        }\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(thread_local_set_before_use|thread_local_made_where_used|let_chain_values).rs$"],
+  },
+  {
+    name: "lazy-read-reads-other",
+    breaks: "a lazy thread-local's read is taken to read another value each time, written to a `const` where it's read",
+    file: "src/js/expr_walk.rs",
+    find: "        if self.known == Known::LocalRead {\n            return true;\n        }\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(thread_local_set_before_use|thread_local_made_where_used|let_chain_values).rs$"],
+  },
 ];

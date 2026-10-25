@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "    if (!made) {\n      made = true;\n      value = init();\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
   },
+  {
+    name: "local-init-with-remade",
+    breaks: "`set` of a thread-local made already makes it again, dropping nothing of what it held",
+    file: "src/runtime/local.js",
+    find: "    if (made) return false;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
+  },
 ];
