@@ -1761,7 +1761,7 @@ export function untilTag(words) {
       // A tag ends it.
       break;
     }
-    i = (i + 1) >>> 0;
+    i++;
   }
   return i;
 }

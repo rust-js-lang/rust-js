@@ -1190,3 +1190,68 @@ pub fn reversed_less(a: Reversed, b: Reversed) -> bool {
   expect([lib.isHigherEventPriority(2, 8), lib.isHigherEventPriority(8, 2), lib.isHigherEventPriority(0, 8), lib.atLeast(8, 8)]).toEqual([true, false, false, true]);
   expect([lib.before(1, 2), lib.before(NaN, 2), lib.reversedLess(1, 2), lib.reversedLess(2, 1)]).toEqual([true, false, false, true]);
 });
+
+// React's ReactPostPaintCallback, ported: `while let Some(callback) =
+// CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
+// Where an item at `i` is there, `i` is below a slice's length, so below
+// `usize`'s most, and `i += 1` can't wrap: `i++`, not `i = (i + 1) >>> 0`;
+// of a slice's own `get(i)` too (ADR 0881, amended). A count with no such
+// test still wraps.
+test("an index an item is there at counts on without its wrap", async () => {
+  const dir = fixture("present-index");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static CALLBACKS: RefCell<Vec<&'static dyn Fn(u32) -> u32>> = const { RefCell::new(Vec::new()) };
+}
+
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+pub fn flushed(n: u32) -> u32 {
+    CALLBACKS.with_borrow_mut(|callbacks| {
+        callbacks.push(&twice);
+        callbacks.push(&twice);
+    });
+    let mut total = 0;
+    let mut i = 0;
+    while let Some(callback) = CALLBACKS.with_borrow(|callbacks| callbacks.get(i).copied()) {
+        total += callback(n);
+        i += 1;
+    }
+    total + i as u32
+}
+
+pub fn summed(items: &[u32]) -> u32 {
+    let mut total = 0;
+    let mut i = 0;
+    while let Some(&item) = items.get(i) {
+        total += item;
+        i += 1;
+    }
+    total
+}
+
+pub fn counted(n: usize) -> usize {
+    let mut i = 0;
+    while i != n {
+        i += 1;
+    }
+    i
+}
+
+/// Where it isn't there, \`i\` may be any.
+pub fn skipped(items: &[u32], i: usize) -> usize {
+    if let Some(&item) = items.get(i) { item as usize } else { i + 1 }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js.match(/    i\+\+;\n/g)).toHaveLength(2);
+  expect(js).toContain("i = (i + 1) >>> 0;");
+  expect(js).toContain("?? (i + 1) >>> 0");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.flushed(3 as never), lib.summed([1, 2, 3] as never), lib.counted(4 as never)]).toEqual([14, 6, 4]);
+  expect([lib.skipped([7] as never, 0 as never), lib.skipped([7] as never, 4294967295 as never)]).toEqual([7, 0]);
+});

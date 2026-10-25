@@ -534,4 +534,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },
+  {
+    name: "present-index-unknown",
+    breaks: "`while let Some(x) = v.get(i) { ..; i += 1; }` keeps `i = (i + 1) >>> 0`, its index's bound unknown (ADR 0881, amended)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            ExprKind::Let { expr, ref pat } if holds && present::some_pattern(self.tcx, pat) => {\n",
+    replace: "            ExprKind::Let { expr, ref pat } if false && holds && present::some_pattern(self.tcx, pat) => {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index an item is there at counts on without its wrap"],
+  },
+  {
+    name: "present-index-where-it-isnt",
+    breaks: "where `v.get(i)` is `None`, `i` is taken to be an index too, and `i + 1` there loses its wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            ExprKind::Let { expr, ref pat } if holds && present::some_pattern(self.tcx, pat) => {\n",
+    replace: "            ExprKind::Let { expr, ref pat } if present::some_pattern(self.tcx, pat) => {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "an index an item is there at counts on without its wrap"],
+  },
 ];

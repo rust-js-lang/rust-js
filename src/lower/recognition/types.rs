@@ -922,6 +922,34 @@ pub(in crate::lower) fn slice_length<'tcx>(
     }
 }
 
+/// What a call of `def_id` gives of an item where it's there: a slice's
+/// `get(i)` of a `usize`, a `Vec`'s by its slice, the item at `i`, `Get`;
+/// or `Option`'s `copied()` or `cloned()`, `Some` where what it's given
+/// is, `Passed` (ADR 0881, amended).
+#[derive(Clone, Copy, PartialEq)]
+pub(in crate::lower) enum PresentItem {
+    Get,
+    Passed,
+}
+
+pub(in crate::lower) fn present_item<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<PresentItem> {
+    let owner = tcx
+        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
+        .instantiate_identity()
+        .skip_normalization();
+    match tcx.item_name(def_id).as_str() {
+        "get" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Some(PresentItem::Get),
+        "copied" | "cloned" if matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Option, adt.did())) => {
+            Some(PresentItem::Passed)
+        }
+        _ => None,
+    }
+}
+
 /// Whether `def_id`, of an iterator of type `iter_ty`, counts a string's
 /// UTF-16 units: `Iterator::count` of `str::EncodeUtf16`, what
 /// `s.encode_utf16().count()` calls, which is its JS `length` (ADR 0632).

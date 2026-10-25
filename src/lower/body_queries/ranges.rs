@@ -17,11 +17,12 @@ use rustc_middle::ty::TypeVisitableExt;
 mod cells;
 mod empty;
 mod known;
+mod present;
 mod reads;
 
 use cells::reads_a_cell;
 use known::{Below, Known, Range, either};
-use reads::{pure, read_vars};
+use reads::{calls, pure, read_vars};
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
@@ -100,6 +101,8 @@ struct Walk<'a, 'tcx> {
     /// ends may run code, once a scope's asked (`cells::scope_drops`).
     root: ExprId,
     scope_drops: Option<HashMap<ExprId, bool>>,
+    /// The crate's bodies, a closure's that a test calls (`present`).
+    bodies: &'a present::Bodies<'a, 'tcx>,
 }
 
 /// A body to walk: what it is, its THIR and its root.
@@ -150,6 +153,10 @@ pub(in crate::lower) fn ranges<'tcx>(
     let index: HashMap<DefId, usize> = (bodies.iter().enumerate())
         .map(|(i, (def_id, ..))| (*def_id, i))
         .collect();
+    let all: present::Bodies = bodies
+        .iter()
+        .map(|&(def_id, thir, root)| (def_id, (thir, root)))
+        .collect();
     let mut work: Vec<usize> = (0..bodies.len()).rev().collect();
     let mut queued: Vec<bool> = vec![true; bodies.len()];
     while let Some(i) = work.pop() {
@@ -178,6 +185,7 @@ pub(in crate::lower) fn ranges<'tcx>(
             told: HashMap::new(),
             root,
             scope_drops: None,
+            bodies: &all,
         };
         let mut known = entry.map(|mut k| {
             k.vars.retain(|var, _| !walk.volatile.contains(var));
@@ -229,14 +237,6 @@ pub(in crate::lower) fn ranges<'tcx>(
         }
     }
     found
-}
-
-/// The function each call of a body calls.
-fn calls<'a>(thir: &'a Thir<'_>) -> impl Iterator<Item = DefId> + 'a {
-    (thir.exprs.iter()).filter_map(move |e| match e.kind {
-        ExprKind::Call { fun, .. } => fn_def(thir[strip(thir, fun)].ty).map(|(callee, _)| callee),
-        _ => None,
-    })
 }
 
 impl Walk<'_, '_> {
@@ -1143,6 +1143,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let e = strip(thir, cond);
         match thir[e].kind {
             ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, !holds, known),
+            // Where an item's there, its index is below a length (`present`).
+            ExprKind::Let { expr, ref pat } if holds && present::some_pattern(self.tcx, pat) => {
+                if let Some(var) = present::present_index(self.tcx, thir, expr, self.bodies) {
+                    present::below_most(var, self.volatile.contains(&var), known);
+                }
+            }
             // A variable that holds a test, the test's (ADR 0806).
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. }
                 if let Some((test, _)) = known.as_ref().and_then(|k| k.tests.get(&id)) =>

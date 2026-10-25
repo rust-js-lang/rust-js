@@ -68,7 +68,10 @@ tested, `i < xs.len()`, past a test of the length, `!xs.is_empty()` or
 `n == 1` of an `n` that's `xs.len()`, after a `push`, or after an
 index of it read, `xs[i]` then `xs[j]` of a `j <= i`. A `Vec` a
 `RefCell` holds, `i < queue.borrow().len()`, is known so until anything
-may change it: a call but its reads, or a drop of what runs code
+may change it: a call but its reads, or a drop of what runs code. Where
+`v.get(i)` is `Some`, `while let Some(x) = v.get(i)`'s, a thread-local's
+`with_borrow(|v| v.get(i))` too, `i` is below a length, so its `i += 1`
+is `i++`, no wrap
 ([ADR 0292](../../decisions/0292-known-bounds.md),
 [ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md),
 [ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)):

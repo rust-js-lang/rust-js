@@ -673,7 +673,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0893 A type parameter's evidence stays its own parameters, and the manifest's facts stay typed](0893-a-type-parameters-evidence-stays-its-own-parameters.md) *(superseded in part by 0906: the manifest's facts are sets)*
 - [0891 A window's constructor is the window's: `window.new_error_event(..)`](0891-a-windows-constructor-is-the-windows.md)
 - [0880 `a ? b : a` is `a && b`](0880-a-test-of-truth-and-its-value-is-and.md)
-- [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md)
+- [0881 A `RefCell`'s `Vec` is indexed by its tests, and a drain in bounds is `splice`](0881-a-refcells-vec-is-indexed-by-its-tests.md) *(amended: an index an item is there at counts on without its wrap)*
 - [0875 A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with](0875-a-js-set-holds-any-value.md) *(amended by 0884: a `Map`'s value is any value, `Kind::Null` too; amended: a `Set`'s `forEach` and iterators, and a keyed collection's own methods run nothing)*
 - [0876 A `HashMap`'s declaration is a `Map`, a `HashSet`'s a `Set`](0876-a-maps-declaration-is-map.md)
 - [0884 A `js::Map`'s value is any value, and `get` tells a `None` from a missing key](0884-a-maps-value-is-any-value.md)

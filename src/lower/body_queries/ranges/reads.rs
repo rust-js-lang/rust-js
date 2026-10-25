@@ -65,3 +65,11 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
     let mut vars = Vec::new();
     reads(tcx, thir, e, &mut vars).then_some(vars)
 }
+
+/// The function each call of a body calls.
+pub(super) fn calls<'a>(thir: &'a Thir<'_>) -> impl Iterator<Item = rustc_span::def_id::DefId> + 'a {
+    (thir.exprs.iter()).filter_map(move |e| match e.kind {
+        ExprKind::Call { fun, .. } => fn_def(thir[strip(thir, fun)].ty).map(|(callee, _)| callee),
+        _ => None,
+    })
+}

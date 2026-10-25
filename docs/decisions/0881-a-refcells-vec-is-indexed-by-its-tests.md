@@ -91,3 +91,36 @@ guard's `deref`, which the walk didn't follow.
   never needs (a `let` reborrows it), so no mutation reaches it; nor
   does one reach a statement's value dropped, `x;`, which rustc warns
   of.
+
+## Amendment: an index an item is there at counts on without its wrap
+
+React's ReactPostPaintCallback flushes its callbacks, `for (let i = 0; i <
+callbacks.length; i++) { callbacks[i](endTime); }`; its port, `while let
+Some(callback) = CALLBACKS.with_borrow(|c| c.get(i).copied()) {
+callback(end_time); i += 1; }`, printed `i = (i + 1) >>> 0`, a `usize`'s
+wrap. **Where `let Some(x) = v.get(i)` holds, `i` is an index of a slice,
+below its length, which is at most `usize`'s most, so `i + 1` can't
+wrap**: `i++` (`ranges/present.rs`, of the test's `Let`). Through
+`Option`'s `copied()` and `cloned()`, and of a thread-local's
+`with_borrow(|v| v.get(i))`, its closure's body, which the crate's bodies
+walked have (`recognition::present_item`, `is_local_borrow`). Not where
+it doesn't hold, `else { i + 1 }`, where `i` may be any. Case N: the
+wrap can't happen. `present_index_counts.rs` runs it against native Rust,
+a callback scheduled while they run among them.
+
+What stays: the loop is the `while` the program wrote, `while ((callback
+= callbacks[i]))`. Its `for (..; i < callbacks.length; i++) {
+callbacks[i](endTime); }` was not taken: it calls each callback as a
+method of the array, `this` the array, which a JS function given as a
+callback sees, where Rust's call gives it none; and it's a second form of
+a `while` (0879). Nor is its `let callback` renamed, `callback$1`, where
+it shadows the parameter of the function it's in, `callback`: Rust's
+closure shadows it too, never reading the parameter, and JS's block
+scope reads the same, so a rename would be one the program didn't write.
+
+Held by `test/lowering-numbers.test.ts`, "an index an item is there at
+counts on without its wrap", run in JS, `present_index_counts.rs`
+against native Rust, and the mutations `present-index-unknown`,
+`present-index-where-it-isnt` (`body_queries/ranges.ts`),
+`present-not-through-a-closure` and `present-below-most-itself`
+(`body_queries/ranges/present.ts`).
