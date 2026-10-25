@@ -6,9 +6,9 @@
     "abi": 1
   },
   "library": {
-    "version": 7,
+    "version": 6,
     "name": "rust_js_std",
-    "crate_hash": "622d7ad06508e64b3196ac34669ce410",
+    "crate_hash": "6162c0660ee7db1216395888fac4e432",
     "items": [
       {
         "key": "608f92abc48d28da832aed8d16346cb9",
@@ -3557,7 +3557,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "9f1f10d4d3aa5759"
+      "hash": "a23e545b38d866a1"
     },
     {
       "file": "iter.js.map",
