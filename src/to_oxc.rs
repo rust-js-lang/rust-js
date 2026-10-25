@@ -1057,7 +1057,8 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
                 ExprKind::Call(_, args) | ExprKind::New(_, args) => (args.iter().map(|arg| arg.span).collect(), false),
                 ExprKind::Object(props, ..) => {
                     let values = props.iter().filter_map(|prop| match prop {
-                        js::Prop::Field(_, value) => Some(value.span),
+                        // A method's too, its arrow's (ADR 0882, amended).
+                        js::Prop::Field(_, value) | js::Prop::Method(_, value) => Some(value.span),
                         _ => None,
                     });
                     (values.collect(), true)

@@ -147,6 +147,58 @@ pub fn led() -> CacheNode {
   expect([Object.keys(lib.createCacheNode() as object), Object.keys(lib.led() as object)]).toEqual([["s", "v", "o"], ["s", "v", "o"]]);
 });
 
+// React's ReactNoopUpdateQueue: a field that's a closure of statements is
+// a method (ADR 0882), and the comment before it is before the method, a
+// blank line before it kept, as before a field of any other value.
+test("a comment before a field that's a method is before the method", async () => {
+  const { js, lib } = await compiled("commented-method-fields", `pub struct Updater {
+    pub is_mounted: fn(u32) -> bool,
+    pub enqueue_force_update: fn(u32, &str) -> u32,
+    pub enqueue_set_state: fn(u32) -> u32,
+}
+
+fn warn_noop(n: u32, name: &str) -> u32 {
+    n + name.len() as u32
+}
+
+pub static UPDATER: Updater = Updater {
+    // Checks whether or not this composite component is mounted.
+    is_mounted: |_| false,
+
+    // Forces an update.
+    //
+    // You may want to call this when you know that some deeper aspect of
+    // the component's state has changed.
+    enqueue_force_update: |n, name| {
+        let m = n + 1;
+        warn_noop(m, name)
+    },
+
+    enqueue_set_state: |n| {
+        let m = n * 2;
+        warn_noop(m, "setState")
+    },
+};
+`);
+  expect(js).toContain(`  // Checks whether or not this composite component is mounted.
+  isMounted: () => false,
+
+  // Forces an update.
+  //
+  // You may want to call this when you know that some deeper aspect of
+  // the component's state has changed.
+  enqueueForceUpdate(n, name) {
+    const m = (n + 1) >>> 0;
+`);
+  expect(js).toContain(`  },
+
+  enqueueSetState(n) {
+    const m = (n * 2) >>> 0;
+`);
+  const updater = lib.UPDATER as unknown as { enqueueForceUpdate: (n: number, name: string) => number; enqueueSetState: (n: number) => number };
+  expect([updater.enqueueForceUpdate(1, "ab"), updater.enqueueSetState(2)]).toEqual([4, 12]);
+});
+
 // React's resolveDispatcher: a comment before an `unsafe` block that's its
 // function's value, `unsafe { dispatcher.unwrap_unchecked() }`, is before
 // the `return` its code is, as one inside the block would be.

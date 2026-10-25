@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "method-field-comment-inside",
+    breaks: "a comment before a field that's a method, ReactNoopUpdateQueue's `// Forces an update.`, is in the method's body, and the blank line before it lost",
+    file: "src/to_oxc.rs",
+    find: "                        js::Prop::Field(_, value) | js::Prop::Method(_, value) => Some(value.span),\n",
+    replace: "                        js::Prop::Field(_, value) => Some(value.span),\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "field that's a method"],
+  },
+  {
     name: "concat-piece-no-start",
     breaks: "a `concat!`'s piece is no start a comment is before, so the comment goes after the strings (ADR 0641)",
     file: "src/to_oxc.rs",

@@ -76,3 +76,33 @@ value`, the colon form, sets the prototype.
   `get(target, key) { .. }`; the `async` snapshot a WebAssembly import's
   arrows of a value. Mutations: the rule left out, `this` not looked for,
   an arrow of a value made a method, and the printer's method flag.
+
+## Amendment: a method's comments and blank line are before it
+
+React's ReactNoopUpdateQueue writes a comment before each of its
+functions, and a blank line between them. Its port's `static
+REACT_NOOP_UPDATE_QUEUE: Updater = Updater { .. }` printed the comment
+before `enqueueForceUpdate` inside its body, and lost the blank line:
+
+```js
+  isMounted: (publicInstance) => false,
+  enqueueForceUpdate(publicInstance, callback, callerName) {
+    // Forces an update. ..
+```
+
+A comment before an object's field is before its value's start (ADR
+0708), which the printer asked of a `Field` alone: a method's value
+start wasn't one, so its comments went to the next start there was, its
+body's first statement, and its blank line with them. A method's is now
+a field's start as any other's:
+
+```js
+  isMounted: (publicInstance) => false,
+
+  // Forces an update. ..
+  enqueueForceUpdate(publicInstance, callback, callerName) {
+```
+
+Test: `lowering-comments`'s ReactNoopUpdateQueue's fields, a comment and
+a blank line before each. Mutation: a method's start left out.
+
