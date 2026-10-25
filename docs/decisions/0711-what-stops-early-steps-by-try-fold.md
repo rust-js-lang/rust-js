@@ -170,3 +170,18 @@ crate's iterator, std passes `nth` on, but its fold is the iterator's
 `nth` alone (#216). 2,254 more generated programs, of `filter_map`,
 `scan`, `map_while`, `flat_map`, `zip`, `by_ref()` and the consumers that
 stop early, agree.
+
+## Amendment: a `rev()` asks the crate's own back
+
+`rev()` of the crate's iterator, `$iterator` of its `next_back`, was
+given its forward own methods, so `rev().nth(1)` was its own `nth(1)`,
+counted from the front: `Some(2)` of what Rust gives `Some(8)` (#217).
+Std's `Rev` asks `nth_back` for its `nth` and `rfold` for its `fold`, and
+keeps std's `last`, a fold. `own_methods` is asked for the direction it
+steps: from its back, the impl's `nth_back` and `rfold`. Its `&mut` rule
+is `own_methods`' too, for `$iterator` and a dictionary alike: through a
+`&mut`, `nth` and `nth_back` are passed on, but no fold or `last`.
+`folds_its_own` and `nths_its_own` say a `rev()` of the crate's iterator
+reaches its `rfold` and `nth_back`. `rev_own_back_methods` holds them,
+with eight mutations. Through std's adapters, a `map`'s or a `take`'s
+`rfold` say, the crate's own back is still stepped by `next_back`.

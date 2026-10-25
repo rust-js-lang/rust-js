@@ -131,12 +131,4 @@ export const mutations: Mutation[] = [
     replace: "        let (fold, nth, last) = match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
-  {
-    name: "mut-ref-dictionary-own-fold",
-    breaks: "the dictionary of a `&mut` of the crate's iterator gives its own `fold`, which std's `&mut I` doesn't reach (#216)",
-    file: "src/lower/iterators/dictionaries.rs",
-    find: "            true if ty.is_ref() => (None, nth, None),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
 ];

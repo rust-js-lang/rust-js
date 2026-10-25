@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-own-next-back-unused",
     breaks: "`rev()` of an iterator of the crate's with its own `next_back` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                    Some(back) => self.user_iterator(receiver, iter_ty, back, \"next_back\", span).map(Some),\n                    None => Err(unsupported(self)),\n",
-    replace: "                    Some(_) | None => Err(unsupported(self)),\n",
+    find: "                let back = self.own_next_back(iter_ty)?.ok_or_else(|| unsupported(self))?;\n",
+    replace: "                let back = self.own_next_back(iter_ty)?.filter(|_| false).ok_or_else(|| unsupported(self))?;\n",
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
@@ -380,5 +380,13 @@ export const mutations: Mutation[] = [
     find: "        if crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
     replace: "        if false && crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
+  },
+  {
+    name: "rev-own-methods-peeled",
+    breaks: "`rev()` of a `&mut` of the crate's iterator is given its own `rfold`, which std's `&mut I` doesn't reach (#217)",
+    file: "src/lower/mir/iter.rs",
+    find: "                let reversed = self.user_iterator(receiver, receiver_ty, back, \"next_back\", span)?;\n",
+    replace: "                let reversed = self.user_iterator(receiver, iter_ty, back, \"next_back\", span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
 ];

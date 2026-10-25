@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (next, boxed) = self.user_next(ty, trait_id, method, span)?;
         let hint = self.own_size_hint(ty, span)?;
-        let own = self.own_methods(ty, span)?;
+        let own = self.own_methods(ty, method == "next_back", span)?;
         Ok(stepped_ends(value, next, boxed, None, None, hint, own))
     }
 
@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
             )
         });
-        let own = self.own_methods(ty, span)?;
+        let own = self.own_methods(ty, false, span)?;
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
 

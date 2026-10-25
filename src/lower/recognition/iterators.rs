@@ -334,13 +334,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The `Iterator` method `name` the impl of the crate's iterator `ty`
     /// writes, where it writes one.
     pub(in crate::lower) fn own_iterator_method(&self, ty: Ty<'tcx>, name: &str) -> Option<DefId> {
+        self.own_method(ty, std_item(self.tcx, StdItem::Iterator), name)
+    }
+
+    /// The `DoubleEndedIterator` method `name`, `rfold` or `nth_back`, the
+    /// impl of the crate's iterator `ty` writes, where it writes one: what
+    /// std's `Rev` asks for its `fold` and its `nth` (#217).
+    pub(in crate::lower) fn own_back_method(&self, ty: Ty<'tcx>, name: &str) -> Option<DefId> {
+        self.own_method(ty, self.double_ended_iterator()?, name)
+    }
+
+    /// The method `name` of the trait `tr` the crate's iterator `ty`'s impl
+    /// of it writes.
+    fn own_method(&self, ty: Ty<'tcx>, tr: DefId, name: &str) -> Option<DefId> {
         if !self.is_user_iterator(ty) {
             return None;
         }
-        let iterator = std_item(self.tcx, StdItem::Iterator);
-        let tr = ty::TraitRef::new(self.tcx, iterator, [ty.peel_refs()]);
-        let imp = self.user_impl(tr)?;
-        let method = trait_method(self.tcx, iterator, name);
+        let imp = self.user_impl(ty::TraitRef::new(self.tcx, tr, [ty.peel_refs()]))?;
+        let method = trait_method(self.tcx, tr, name);
         self.tcx.impl_item_implementor_ids(imp).get(&method).copied()
     }
 
@@ -352,6 +363,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         if self.is_user_iterator(ty) {
             return !ty.is_ref() && self.own_iterator_method(ty, "fold").is_some();
+        }
+        // A `rev()` of one, whose `fold` is its `rfold` (#217).
+        if let Some(reversed) = self.reversed_user_iterator(ty) {
+            return !reversed.is_ref() && self.own_back_method(reversed, "rfold").is_some();
         }
         self.folded_sources(ty).any(|source| self.folds_its_own(source))
     }
@@ -376,6 +391,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return true;
         }
         self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))
+    }
+
+    /// The crate's iterator, or a `&mut` of it, a `rev()` of type `ty`
+    /// steps from its back, its own `$iterator` of its `next_back`.
+    fn reversed_user_iterator(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let ty::Adt(adt, args) = ty.kind() else { return None };
+        let source = args.types().next()?;
+        (std_path(self.tcx, adt.did()) == "std::iter::Rev" && self.is_user_iterator(source.peel_refs()))
+            .then_some(source)
     }
 
     /// What std's `fold` of a `ty`, a std adapter, folds by: of each whose
@@ -412,6 +436,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         if self.is_user_iterator(ty) {
             return self.own_iterator_method(ty, "nth").is_some();
+        }
+        // A `rev()` of one, whose `nth` is its `nth_back`, through a `&mut`
+        // too (#217).
+        if let Some(reversed) = self.reversed_user_iterator(ty) {
+            return self.own_back_method(reversed, "nth_back").is_some();
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         // A chain's, its second side's, which std's `Chain::nth` asks once

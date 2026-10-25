@@ -222,4 +222,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Mutability::Mut => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^(into_iter_of_ref_param|iterables_given_to_generics).rs$"],
   },
+  {
+    name: "own-methods-mut-ref-folds",
+    breaks: "a `&mut` of the crate's iterator is given its own `fold` and `rfold`, which std's `&mut I` doesn't reach (#216, #217)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        let folds = !ty.is_ref();\n",
+    replace: "        let folds = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_own_nth_fold|rev_own_back_methods).rs$"],
+  },
+  {
+    name: "own-methods-back-forward",
+    breaks: "`rev()` of the crate's iterator is given its forward `nth`, so `rev().nth(1)` counts from the front (#217)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            true => (\"rfold\", \"nth_back\", None),\n",
+    replace: "            true => (\"fold\", \"nth\", None),\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
+  },
 ];

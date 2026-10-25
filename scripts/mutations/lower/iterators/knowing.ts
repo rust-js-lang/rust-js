@@ -306,4 +306,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "user-iterator-reversed-forward-own",
+    breaks: "`rev()` of the crate's iterator is given its forward `nth` and `fold` (#217)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let own = self.own_methods(ty, method == \"next_back\", span)?;\n",
+    replace: "        let own = self.own_methods(ty, false, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
+  },
 ];
