@@ -1247,9 +1247,12 @@ pub(crate) fn length_kept_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Optio
 }
 
 /// Whether `id` is std's iterator adapter, `iter::Map` and the like: the
-/// one answer, of a type and of a kind the crate holds (ADR 0542).
+/// one answer, of a type and of a kind the crate holds (ADR 0542). Not a
+/// compiled std struct's, `Peekable`'s, but one std's struct is only where
+/// it's held, `Map`'s, an adapter where it's made in place (ADR 0871).
 pub(crate) fn is_iter_adapter_def(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id).starts_with("std::iter::") && !is_compiled_std_type(tcx, id)
+    std_path(tcx, id).starts_with("std::iter::")
+        && (!is_compiled_std_type(tcx, id) || super::is_held_compiled_def(tcx, id))
 }
 
 /// Whether a call of `def_id`, an `Iterator` method of a compiled std

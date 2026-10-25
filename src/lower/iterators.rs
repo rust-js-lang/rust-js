@@ -579,11 +579,9 @@ fn enumerating() -> Expr {
     )
 }
 
-/// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>
-/// [i, x])`. The one reader of its form.
-/// Whether `e` is what the recognizers make of a `Rev` or an `Enumerate`
-/// stepped where it's made (ADR 0871): a JS chain, `$rev(it)`,
-/// `$enumerate(it)`, `xs.map((x, i) => [i, x])` or an array reversed, never
+/// Whether `e` is what the recognizers make of a `Rev`, an `Enumerate` or a
+/// `Map` stepped where it's made (ADR 0871): a JS chain, `$rev(it)`,
+/// `$enumerate(it)`, `it.map(f)`, `$mapEnds(it, f)` or an array reversed, never
 /// std's struct, which one held is. The one answer of which a value of such
 /// a type is, where a step past the call that made it asks.
 pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
@@ -591,10 +589,12 @@ pub(in crate::lower) fn made_in_place(e: &Expr) -> bool {
     let e = stepped.as_ref().unwrap_or(e);
     enumeration_source(e).is_some()
         || matches!(&e.kind, js::ExprKind::Call(callee, _)
-            if matches!(callee.helper_name(), Some("$rev" | "$enumerate"))
-                || matches!(&callee.kind, js::ExprKind::Member(_, method) if method == "toReversed"))
+            if matches!(callee.helper_name(), Some("$rev" | "$enumerate" | "$mapEnds"))
+                || matches!(&callee.kind, js::ExprKind::Member(_, method) if method == "toReversed" || method == "map"))
 }
 
+/// What `e`, an `enumerated` one, enumerates: `src` of `src.map((x, i) =>
+/// [i, x])`. The one reader of its form.
 pub(in crate::lower) fn enumeration_source(e: &Expr) -> Option<&Expr> {
     match &e.kind {
         js::ExprKind::Call(callee, args)

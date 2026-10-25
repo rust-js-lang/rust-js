@@ -378,4 +378,14 @@ export const mutations: Mutation[] = [
     replace: "        if self.compiled_struct_at(ty, span) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(enumerate_rev_drops).rs$"],
   },
+  {
+    name: "compiled-rfold-unasked",
+    breaks: "a held `Map` given to a compiled `fuse()` is folded from its back by each `next_back`, not its own `rfold`, which the crate's own passes on",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if !compiled {\n            return Ok(None);\n        }\n        let params = [\"iterator\", \"init\", \"f\"];\n",
+    replace: "        if true {\n            return Ok(None);\n        }\n        let params = [\"iterator\", \"init\", \"f\"];\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
+  },
+
 ];

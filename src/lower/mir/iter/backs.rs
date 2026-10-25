@@ -138,8 +138,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let adapter = build(self, Expr::var(&a), Expr::var(&b))?;
         let mut cloned = Vec::new();
         let clones = vec![
-            self.clone_value(Expr::var(&a), part_tys[0], span, &mut cloned)?,
-            self.clone_value(Expr::var(&b), part_tys[1], span, &mut cloned)?,
+            self.clone_in_place(Expr::var(&a), part_tys[0], span, &mut cloned)?,
+            self.clone_in_place(Expr::var(&b), part_tys[1], span, &mut cloned)?,
         ];
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let carried = Expr::call_helper("$cloning", vec![adapter, Expr::arrow(Vec::new(), cloned)]);

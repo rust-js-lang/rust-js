@@ -4,6 +4,8 @@ import {
   fuseDoubleEndedIterator_rfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
   $foldBack,
@@ -16,6 +18,7 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -54,11 +57,13 @@ const Counted = {
 };
 
 function lastSquare(n) {
-  const squares = $mapEnds(
-    $iterator({ start: 1, end: n }, $rangeNext, false, $rangeNextBack),
-    (x) => Math.imul(x, x) >>> 0,
-  );
-  return $nextBack(squares);
+  const squares = iterator_map({ start: 1, end: n }, (x) => Math.imul(x, x) >>> 0, {
+    next: $rangeNext,
+  });
+  return mapDoubleEndedIterator_nextBack(squares, {
+    next_back: $rangeNextBack,
+    nthBack: $rangeNthBack,
+  });
 }
 
 function main() {

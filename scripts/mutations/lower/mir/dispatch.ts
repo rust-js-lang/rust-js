@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "crate-impl-iterator-route",
     breaks: "a copied default's `self.next()` of the crate's iterator is stepped as a JS iterator",
     file: "src/lower/mir/dispatch.rs",
-    find: "        Ok(!self.resolves_to_crate(def_id, generic_args)? || self.adapter_in_place(def_id, span))\n",
-    replace: "        Ok(true || self.adapter_in_place(def_id, span))\n",
+    find: "        Ok(!self.resolves_to_crate(def_id, generic_args)?\n",
+    replace: "        Ok(true\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
@@ -581,5 +581,13 @@ export const mutations: Mutation[] = [
     replace: "        crate::lower::recognition::makes_held_compiled(self.tcx, def_id)\n            && self.frame.facts.in_place_adapters.contains(&span)\n            && false",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
+  },
+  {
+    name: "extension-step-of-in-place-compiled",
+    breaks: "an in-place `map()`'s `rfold`, which the recognizers' JS iterator is, calls std's compiled `rfold` of a struct it isn't",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            || self.steps_adapter_in_place(def_id, generic_args, span))\n",
+    replace: ")\n",
+    tests: ["test/corpus.test.ts", "-t", "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$"],
   },
 ];

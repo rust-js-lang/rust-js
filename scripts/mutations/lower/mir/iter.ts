@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     "name": "mir-user-len-refused",
     "breaks": "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
     "file": "src/lower/mir/iter.rs",
-    "find": "            if (self.is_user_iterator(iter_ty)\n                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))\n                && std_method == Some(IterMethod::Len)\n",
+    "find": "            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))\n                && std_method == Some(IterMethod::Len)\n",
     "replace": "            if false\n                && std_method == Some(IterMethod::Len)\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "an iterator's len from MIR"]
   },
@@ -405,5 +405,14 @@ export const mutations: Mutation[] = [
     replace: "            && !(false\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
+  {
+    name: "in-place-map-len-struct",
+    breaks: "`len()` of a `map()` made in place, the recognizers' JS iterator, is std's struct's hint, `$exactLen($sizeHint(..))`, not its own `len()`",
+    file: "src/lower/mir/iter.rs",
+    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))\n",
+    replace: "            if (self.is_user_iterator(iter_ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|exact_size_len).rs$"],
   },
 ];

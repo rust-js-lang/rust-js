@@ -152,10 +152,7 @@ function main() {
       .join(", ")}]`,
   );
   // Its own impl's, of what it's made into where it's made.
-  const value$8 = revDoubleEndedIterator_nextBack(
-    iterator_rev($iter(v), { next: $next }, { next_back: $nextBack }),
-    { next: $next },
-  );
+  const value$8 = $nextBack($iter(v.toReversed()));
   console.log(
     `${value$8 == null ? "None" : `Some(${value$8})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );

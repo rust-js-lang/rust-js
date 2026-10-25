@@ -432,7 +432,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and function, a `Chain` or a `Zip` of its two sources (#181), the
     /// crate clones, made by a function of them that its clone calls again
     /// with a clone of each, `$cloning`'s, as a closure cloned apart is (ADR
-    /// 0522). The one answer, of what's made and what's cloned.
+    /// 0522). The one answer, of what's made and what's cloned, of one made
+    /// in place: a `Map` held is std's struct (ADR 0871), whose clone is
+    /// its compiled `Clone` (`clone_value`'s).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
         // What an `impl Iterator` hides, a function's result.
         let ty = self.reveal(ty);

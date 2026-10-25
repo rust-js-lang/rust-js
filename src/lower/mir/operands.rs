@@ -173,10 +173,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A closure that captures nothing, which optimized MIR names as a
             // constant: made here, as one made of its captures is.
             Operand::Constant(c)
-                if let ty::Closure(def_id, _) = *c.ty().kind()
+                if matches!(c.ty().kind(), ty::Closure(..))
                     && matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _)) =>
             {
-                Ok(Value::Expr(self.mir_closure(state, def_id, Vec::new(), c.span, out)?))
+                Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
             }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]

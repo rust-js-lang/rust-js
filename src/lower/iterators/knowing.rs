@@ -711,6 +711,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((next.called_alone(), boxed))
     }
 
+    /// The compiled `rfold` of std's struct `ty`, a held `Map`'s (ADR 0871),
+    /// as a dictionary's entry, `(iterator, init, f) => ..`: given no drops
+    /// of what it folds into and by, as the crate's own is (#162), the
+    /// caller's fold dropping them, so its own `B` and `F` are `()` and a
+    /// function of it, which nothing drops. `None` where it isn't compiled.
+    pub(in crate::lower) fn compiled_rfold(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        trait_id: DefId,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        let Some(item) = self.iterator_item(ty) else {
+            return Ok(None);
+        };
+        let unit = tcx.types.unit;
+        let by = ty::Ty::new_fn_ptr(
+            tcx,
+            ty::Binder::dummy(tcx.mk_fn_sig(
+                [unit, item],
+                unit,
+                ty::FnSigKind::default().set_safety(rustc_hir::Safety::Safe),
+            )),
+        );
+        let rfold = trait_method(tcx, trait_id, "rfold");
+        let args = tcx.mk_args(&[ty.into(), unit.into(), by.into()]);
+        let compiled = self
+            .resolve_instance(rfold, args)?
+            .is_some_and(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()));
+        if !compiled {
+            return Ok(None);
+        }
+        let params = ["iterator", "init", "f"];
+        let call = self.impl_call(rfold, args, params.map(Expr::var).to_vec(), span)?;
+        Ok(Some(Expr::arrow(
+            params.map(Into::into).to_vec(),
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        )))
+    }
+
     /// The dictionary this function was given for `ty`, a type parameter
     /// given as it is, of its bound `trait_id`: `Iterator`'s (ADR 0411), or
     /// an extension's, `DoubleEndedIterator`'s or `ExactSizeIterator`'s

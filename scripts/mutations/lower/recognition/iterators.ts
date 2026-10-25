@@ -763,4 +763,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(\"Map\" | \"Filter\" | \"Enumerate\") => {\n                args.types().next().is_some_and(|source| self.rfolds_its_own(source))\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "held-compiled-no-adapter",
+    breaks: "a `map()` made in place, which a `rev()` steps from its back, isn't std's adapter, so it isn't made knowing its back",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        && (!is_compiled_std_type(tcx, id) || super::is_held_compiled_def(tcx, id))\n",
+    replace: "        && !is_compiled_std_type(tcx, id)\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(rev_of_closed_items|rev_lazy_drops|std_rev).rs$"],
+  },
 ];

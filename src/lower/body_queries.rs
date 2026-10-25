@@ -135,7 +135,7 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) held_guards: HashSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
     pub(super) present_calls: HashSet<Span>,
-    /// Where each `rev()` or `enumerate()` is whose adapter a std
+    /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, and where each such method
     /// is, `in_place_adapters`'s.
     pub(super) in_place_adapters: HashSet<Span>,
@@ -155,7 +155,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir);
+        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None);
         Self {
             kept_casts: whole_casts(tcx, thir),
             named_callbacks: named_callbacks(tcx, thir),
@@ -249,6 +249,39 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
 }
 
 /// Skip THIR's wrapper nodes that don't change meaning.
+/// What `e` gives, a block's of its value, `strip`ped.
+fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
+    let e = strip(thir, e);
+    match thir[e].kind {
+        ExprKind::Block { block } if let Some(value) = thir[block].expr => tail(thir, value),
+        _ => e,
+    }
+}
+
+/// Each closure the crate gives `flat_map`, which steps what it gives
+/// there as a JS iterator: what it gives is made in place
+/// (`in_place_adapters`), its facts made again so. Before lowering, of the
+/// crate's bodies.
+pub(super) fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>]) {
+    let mut given = HashSet::new();
+    for body in bodies.iter() {
+        for e in body.thir.exprs.iter() {
+            if let ExprKind::Call { fun, ref args, .. } = e.kind
+                && matches!(*body.thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::is_flat_map(tcx, id))
+                && let Some(&f) = args.get(1)
+                && let ExprKind::Closure(ref closure) = body.thir[strip(&body.thir, f)].kind
+            {
+                given.insert(closure.closure_id.to_def_id());
+            }
+        }
+    }
+    for body in bodies.iter_mut().filter(|body| given.contains(&body.def_id)) {
+        let (adapters, steps) = in_place_adapters(tcx, &body.thir, Some(body.expr));
+        body.facts.in_place_adapters = adapters;
+        body.facts.in_place_adapter_steps = steps;
+    }
+}
+
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
     loop {
         match thir[e].kind {
@@ -728,21 +761,27 @@ fn present_calls<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
         .collect()
 }
 
-/// Each `rev()` or `enumerate()`, `HELD_COMPILED`'s, whose adapter is given,
-/// as what's called or an argument, where it's stepped as a JS iterator, or
-/// a variable holds that it's stepped through alone: to another of them
-/// made in place, to a std function or method not
-/// compiled, `v.iter().rev().map(f)`'s `map`, a `for` loop's `into_iter`,
+/// Each `rev()`, `enumerate()` or `map()`, `HELD_COMPILED`'s, whose adapter
+/// is given, as what's called or an argument, where it's stepped as a JS
+/// iterator, or a variable holds that it's stepped through alone, or by
+/// another of them made in place of it: to another of them made in place,
+/// to a std function or method not
+/// compiled, `v.iter().rev().filter(f)`'s `filter`, an iterator trait's
+/// method on it, `rfold`, a `for` loop's `into_iter`,
 /// `zip(a, v.iter().rev())`, or to a type parameter of the crate's
 /// function given a JS iterator, not as it is (ADR 0061): its `fn_span`,
 /// and that call's. No one else holds it, so it's what the recognizers
 /// make of it, `v.toReversed()`; one held, by a `let`, a field, a
 /// parameter of its own type or one given as it is, or given to a compiled
 /// std body, `fuse()`'s, is std's struct, `{ iter }` (ADR 0871).
-fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Span>, HashSet<Span>) {
+fn in_place_adapters<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    stepped_result: Option<ExprId>,
+) -> (HashSet<Span>, HashSet<Span>) {
     use super::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
-    // Each call of a `rev()` or an `enumerate()` given, as what's called or
+    // Each call of a `rev()`, an `enumerate()` or a `map()` given, as what's called or
     // an argument, borrowed for it or not, to another call: its `fn_span`,
     // and the call's, its callee, and the argument's place.
     let mut given = Vec::new();
@@ -781,12 +820,12 @@ fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Spa
             return in_place.contains(&at);
         }
         let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
-        // A trait's method called on it, but `Iterator`'s or
-        // `IntoIterator`'s, which step it as a JS iterator: `next_back()`,
-        // `len()` or `clone()`, its own compiled impl's, of its struct.
+        // A trait's method called on it but an iterator trait's, which the
+        // recognizers step it by, `next_back()` and `len()` too: `clone()`
+        // or `fmt`, its own compiled impl's, of its struct.
         let on_it_by_its_impl = tcx
             .trait_of_assoc(callee)
-            .is_some_and(|tr| !iterator_traits.contains(&tr));
+            .is_some_and(|tr| !iterator_traits.contains(&tr) && !super::recognition::is_iterator_extension(tcx, tr));
         let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         let input = inputs.get(index).map(|input| input.peel_refs().kind());
         let its_self = matches!(input, Some(ty::Param(param)) if super::recognition::is_trait_self(*param));
@@ -795,6 +834,14 @@ fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Spa
         std && !(its_self && on_it_by_its_impl) || given_js
     };
     let (mut found, mut steps) = (HashSet::new(), HashSet::new());
+    // What a closure gives that's stepped where it's given, `flat_map`'s:
+    // made in place, as one given to it would be.
+    if let Some(result) = stepped_result.map(|e| tail(thir, e))
+        && let ExprKind::Call { fun, fn_span, .. } = thir[result].kind
+        && matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if super::recognition::makes_held_compiled(tcx, id))
+    {
+        found.insert(fn_span);
+    }
     // A variable a `let` binds one to, `let mut it = s.chars().enumerate()`,
     // read only where `Iterator`'s methods step it as a JS iterator, `next()`,
     // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
@@ -838,6 +885,7 @@ fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Spa
     // it's given.
     let mut js_steps: Vec<(ExprId, Span)> = Vec::new();
     let mut lent: Vec<(ExprId, ExprId)> = Vec::new();
+    let mut makers: Vec<(ExprId, Span)> = Vec::new();
     for e in thir.exprs.indices() {
         let ExprKind::Call {
             fun,
@@ -865,6 +913,9 @@ fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Spa
                 // `it.by_ref()`, lent where it's stepped as a JS iterator
                 // too, `for c in it.by_ref()`.
                 _ if by_ref => lent.push((e, arg)),
+                // Another of them made of it, `it.rev()`, which steps it as
+                // a JS iterator where that's made in place.
+                _ if super::recognition::makes_held_compiled(tcx, callee) => makers.push((arg, at)),
                 _ if by_iterator || super::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, at)),
                 _ => {}
             }
@@ -887,21 +938,36 @@ fn in_place_adapters<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<Spa
             note(arg, at);
         }
     }
-    for (var, at) in made {
-        let uses = stepped.remove(&var).unwrap_or_default();
-        if !uses.is_empty() && reads.get(&var) == Some(&uses.len()) {
-            found.insert(at);
-            steps.extend(uses);
+    let mut made_of: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
+    for &(arg, at) in &makers {
+        if let ExprKind::VarRef { id } = thir[arg].kind
+            && made.contains_key(&id)
+        {
+            made_of.entry(id).or_default().push(at);
         }
     }
-    // And each given to another made in place, through a chain of them,
-    // `rev().rev()`'s first.
+    // Each given to another made in place, through a chain of them,
+    // `rev().rev()`'s first, and each variable whose reads are all such
+    // steps, those of another made of it in place too, to the fixed point.
     loop {
         let before = found.len();
         for &(made, at, callee, index) in &given {
             if steps_as_js(callee, index, &found, at) {
                 found.insert(made);
                 steps.insert(at);
+            }
+        }
+        for (&var, &at) in &made {
+            let uses = stepped.get(&var).map_or(&[][..], Vec::as_slice);
+            let of = made_of.get(&var).map_or(&[][..], Vec::as_slice);
+            let all = uses.len() + of.len();
+            if !found.contains(&at)
+                && all > 0
+                && reads.get(&var) == Some(&all)
+                && of.iter().all(|maker| found.contains(maker))
+            {
+                found.insert(at);
+                steps.extend(uses.iter().chain(of).copied());
             }
         }
         if found.len() == before {

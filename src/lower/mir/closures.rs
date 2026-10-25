@@ -7,17 +7,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A closure made here, an arrow of its own MIR: what it captured, as
     /// it's read where it's made, the places it borrows themselves, as JS's
     /// closures read theirs, and a value it took a copy of where the
-    /// variable may change after.
+    /// variable may change after. Of its type `ty` as this body makes it, in
+    /// this body's terms: one std's MIR inlines, `map_fold`'s in `Map`'s
+    /// `fold`, holds `F` and `G` of the `fold`, not of `map_fold`.
     pub(super) fn mir_closure(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
+        ty: Ty<'tcx>,
         captured: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let closure = self.mir_closure_fn(state, def_id, captured, span, out)?;
-        let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
+        let Some((def_id, upvars)) = crate::lower::recognition::held_types(ty) else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
+        let closure = self.mir_closure_fn(state, def_id, upvars, captured, span, out)?;
         if !self.krate.closure_facts.clones_apart(def_id) {
             return self.closure_carrying_drop(closure, ty, span);
         }
@@ -73,6 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         def_id: rustc_span::def_id::DefId,
+        upvars: &'tcx ty::List<Ty<'tcx>>,
         captured: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -84,8 +89,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this closure, without its MIR"));
         };
         let mut captures = Vec::new();
-        let upvars = crate::lower::recognition::held_types(self.tcx.type_of(def_id).skip_binder())
-            .map_or_else(Vec::new, |(_, held)| held.to_vec());
         for (i, value) in captured.into_iter().enumerate() {
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
@@ -131,8 +134,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What its drop drops, where it's made: what it holds, `closure_made`
         // (ADR 0098); a reference it holds drops nothing.
-        let held: Vec<(Expr, Ty<'tcx>)> = (captures.iter().zip(&upvars))
-            .map(|((e, _), &ty)| (e.clone(), ty))
+        let held: Vec<(Expr, Ty<'tcx>)> = (captures.iter().zip(upvars))
+            .map(|((e, _), ty)| (e.clone(), ty))
             .collect();
         self.closure_made(def_id, held);
         // Its own THIR's shape hints, and what's known of it, where its body

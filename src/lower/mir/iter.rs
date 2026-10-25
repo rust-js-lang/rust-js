@@ -239,8 +239,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a value of `ty` the call at `span` takes is std's compiled
-    /// struct, a compiled std iterator's (ADR 0561): not a `Rev` or an
-    /// `Enumerate` it steps where it's made, which is what the recognizers
+    /// struct, a compiled std iterator's (ADR 0561): not a `Rev`, an
+    /// `Enumerate` or a `Map` it steps where it's made, which is what the recognizers
     /// make of it, a JS iterator that closes as it ends (ADR 0871).
     pub(in crate::lower) fn compiled_struct_at(&self, ty: Ty<'tcx>, span: Span) -> bool {
         crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
@@ -383,9 +383,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
             // One its impl writes itself is its own, never asked here (ADR
             // 0492). A compiled std iterator's whose `len` isn't compiled,
-            // `Peekable`'s, is its struct's hint (ADR 0561).
-            if (self.is_user_iterator(iter_ty)
-                || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))
+            // `Peekable`'s, is its struct's hint (ADR 0561), where it's
+            // std's struct, not one made in place (ADR 0871).
+            if (self.is_user_iterator(iter_ty) || self.compiled_struct_at(iter_ty, span))
                 && std_method == Some(IterMethod::Len)
             {
                 let mut made = Vec::new();

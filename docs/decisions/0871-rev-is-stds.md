@@ -176,3 +176,63 @@ baseline is blessed with it: a held `Enumerate` of the crate's iterator is
 std's struct, whose `next_back` and `rfold` are its compiled calls,
 `while (true)` 10 to 10.1, `return;` 9.4 to 9.6 and renames 720.9 to 721.2
 in ten thousand lines, of `std_enumerate.rs` itself mostly.
+
+## Amendment: `Map` is std's where it's held too
+
+P1's third adapter. **`Map` is std's struct where it's held, `{ iter, f }`,
+compiled as `Rev` and `Enumerate` are**: `Iterator::map`, `next`,
+`size_hint`, `fold`, `next_back`, `rfold`, `len`, its clone and its
+`Debug`; `try_fold` and `try_rfold` wait as theirs do. `HELD_COMPILED`
+gains it, and so does what's one of std's iterator adapters
+(`is_iter_adapter_def`): a held-compiled kind is an adapter where it's made
+in place, so a `map()` a `rev()` steps from its back is made knowing it,
+`$mapEnds`, as before.
+
+- **An iterator trait's method on one made in place is the recognizers'**:
+  `v.iter().map(f).rfold(..)` and `.len()`, `DoubleEndedIterator`'s and
+  `ExactSizeIterator`'s, step the JS iterator the recognizers made, not
+  std's compiled impl (`steps_adapter_in_place`); `clone()` and `fmt`, any
+  other trait's, are its struct's. `len()` asks `compiled_struct_at`, the
+  value's form, not the type's, as every such question now does.
+- **A variable read only by another made in place of it is in place**:
+  `let cs = text.chars().enumerate(); cs.map(f)` is `entries()` still, to
+  the fixed point; one read by another that's held is held, `let mut back
+  = cubes.rev()`'s `cubes`, std's struct the held `Rev` steps.
+- **What a closure gives `flat_map` is made in place**: `flat_map(|g|
+  g.iter().map(f))` steps the closure's `map()` where it's given, so it's
+  `g.map(f)`, as one given to a std adapter is (`results_in_place`, of the
+  crate's bodies before they're lowered).
+- **Cloned where it's held, by its compiled `Clone`; cloned apart where
+  it's made in place** (ADR 0525): a `Map` that's part of a `filter` or a
+  `chain` cloned apart, or what `cycle()` takes, is the JS iterator the
+  recognizers made, which its clone makes again (`clone_in_place`); one a
+  struct holds, std's `mapClone_clone`. `cycle()` asks which by
+  `compiled_struct_at`.
+- **Generic code given std's struct is given its compiled steps**: the
+  `DoubleEndedIterator` and `ExactSizeIterator` dictionaries of a compiled
+  struct, a held `Map`'s or `Rev`'s, are its compiled `next_back`, `rfold`,
+  `nth_back` and `len`, not a JS iterator's `$nextBack` it hasn't. Its
+  `rfold` is given no drops of what it folds into and by, as the crate's
+  own is (#162): its own `B` and `F` are `()` and a function of it
+  (`compiled_rfold`). A held `Rev` an enum holds, refused before, is
+  stepped from its back so.
+- **A closure std's MIR inlines holds its maker's caller's types**: rustc
+  inlines `map_fold` into `Map::rfold`, so its closure's captures are `F`
+  and `G` of the `rfold`, read from the closure's own type as the body
+  makes it, not from `map_fold`'s; its carried drop dropped `F`'s capture
+  by `Acc`'s drop before.
+- `held_hint_refused.rs` runs now: a held `Map`'s `len()` and `size_hint()`
+  are its compiled ones. `held_filter_map_back_refused.rs` is still
+  refused, by the dictionary a held `Map` asks of its `FilterMap`.
+
+Found on the way, older and filed: a closure a function makes, given to
+`fold`, is made again for each item and never dropped (#259); a
+`flatten()` of an `Option`'s iterator stepped from its back throws
+(#260), which `Flatten`, next, takes.
+
+Tested by `std_map.rs` against native Rust, its drops of what an `rfold`'s
+closures took too; the corpus's programs that map, as apps and libraries.
+The readability baseline is blessed with it: `while (true)` 10.3 to 10.2,
+`$iter` 75.4 to 76.2, `return;` 9.7 to 9.8, of `std_map.rs`'s own early
+returns, and renames 723.5 to 720.9 in ten thousand lines.
+Map's coverage 3 of 8 to 6 of 8.

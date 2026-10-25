@@ -195,6 +195,14 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Enumerate", Some("ExactSizeIterator"), "len"),
     ("Enumerate", Some("Clone"), "clone"),
     ("Enumerate", Some("Debug"), "fmt"),
+    ("Map", Some("Iterator"), "next"),
+    ("Map", Some("Iterator"), "size_hint"),
+    ("Map", Some("Iterator"), "fold"),
+    ("Map", Some("DoubleEndedIterator"), "next_back"),
+    ("Map", Some("DoubleEndedIterator"), "rfold"),
+    ("Map", Some("ExactSizeIterator"), "len"),
+    ("Map", Some("Clone"), "clone"),
+    ("Map", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -204,13 +212,14 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "fuse"),
     ("Iterator", "rev"),
     ("Iterator", "enumerate"),
+    ("Iterator", "map"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
 /// type and the `Iterator` method that makes one: one a std iterator's
 /// method steps where it's made is what the recognizers make of it,
 /// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871).
-const HELD_COMPILED: &[(&str, &str)] = &[("Rev", "rev"), ("Enumerate", "enumerate")];
+const HELD_COMPILED: &[(&str, &str)] = &[("Rev", "rev"), ("Enumerate", "enumerate"), ("Map", "map")];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
 /// adapters, `rev`: the one answer, of what's made in place.
@@ -231,6 +240,14 @@ pub(crate) fn is_by_ref(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.trait_of_assoc(id)
         .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))
         && tcx.item_name(id).as_str() == "by_ref"
+}
+
+/// Whether `id` is `Iterator::flat_map`, which steps what its function
+/// gives, there.
+pub(crate) fn is_flat_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id)
+        .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Iterator))
+        && tcx.item_name(id).as_str() == "flat_map"
 }
 
 /// Whether `param` is a trait's `Self`.

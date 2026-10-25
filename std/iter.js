@@ -33,6 +33,8 @@ const $revClone = new WeakMap();
 const $revDebug = new WeakMap();
 const $enumerateClone = new WeakMap();
 const $enumerateDebug = new WeakMap();
+const $mapClone = new WeakMap();
+const $mapDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -671,6 +673,106 @@ export function enumerateDebug_fmt(enumerate, options, IDebug) {
     : `Enumerate { iter: ${shown}, count: ${shown$1} }`;
 }
 
+export function mapIterator_next(map, IIterator, dropB, dropI, dropF, dropIItem) {
+  const option = IIterator.next(map.iter);
+  const f = map.f;
+  if (option != null) {
+    const x = $someValue(option);
+    const args = [x];
+    return $some(f(args[0]));
+  }
+}
+
+export function mapIterator_sizeHint(map, IIterator, dropB, dropI, dropF, dropIItem) {
+  return $sizeHint(map.iter, IIterator);
+}
+
+export function mapIterator_fold(
+  map,
+  init,
+  g,
+  IIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropG,
+  dropIItem,
+) {
+  const { iter, f } = map;
+  const f$1 = $dropping(
+    (acc, elt) => g(acc, f(elt)),
+    () => {
+      dropG?.(g);
+      dropF?.(f);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce((a, b) => f$1(a, b), init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f$1);
+  return value;
+}
+
+export function mapDoubleEndedIterator_nextBack(
+  map,
+  IDoubleEndedIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
+  const option = IDoubleEndedIterator.next_back(map.iter);
+  const f = map.f;
+  if (option != null) {
+    const x = $someValue(option);
+    const args = [x];
+    return $some(f(args[0]));
+  }
+}
+
+export function mapDoubleEndedIterator_rfold(
+  map,
+  init,
+  g,
+  IIterator,
+  IDoubleEndedIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropG,
+  dropIItem,
+) {
+  const iter = map.iter;
+  const f = map.f;
+  const f$1 = $dropping(
+    (acc, elt) => g(acc, f(elt)),
+    () => {
+      dropG?.(g);
+      dropF?.(f);
+    },
+  );
+  const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f$1);
+  $dispose(f$1);
+  return value;
+}
+
+export function mapExactSizeIterator_len(map, IExactSizeIterator, dropB, dropI, dropF, dropIItem) {
+  return IExactSizeIterator.len(map.iter);
+}
+
+export function mapClone_clone(map, IClone, FClone) {
+  return $stdIterator({ iter: IClone.clone(map.iter), f: FClone.clone(map.f) }, map.$steps);
+}
+
+export function mapDebug_fmt(map, options, IDebug, dropI, dropF) {
+  return options?.alternate
+    ? $pretty("Map {", [`iter: ${IDebug.fmt(map.iter, options)}`], "}")
+    : `Map { iter: ${IDebug.fmt(map.iter, options)} }`;
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -728,6 +830,22 @@ export function iterator_enumerate(self, SelfIterator, dropSelf, dropSelfItem) {
         enumerateIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
       close: (iterator) => {
         dropSelf?.(iterator.iter);
+      },
+    },
+  );
+}
+
+export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, f },
+    {
+      next: (iterator) =>
+        mapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      hint: (iterator) =>
+        mapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      close: (iterator) => {
+        dropSelf?.(iterator.iter);
+        dropF?.(iterator.f);
       },
     },
   );
@@ -798,6 +916,21 @@ export function enumerateClone(IClone) {
 export function enumerateDebug(IDebug) {
   return $traitImpl($enumerateDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => enumerateDebug_fmt(arg0, arg1, IDebug),
+  }));
+}
+
+export function mapClone(IClone, FClone) {
+  return $traitImpl($mapClone, [IClone, FClone], () => ({
+    clone: (arg0) => mapClone_clone(arg0, IClone, FClone),
+  }));
+}
+
+export function mapDebug(IDebug, dropI, dropF) {
+  return $traitImpl($mapDebug, [IDebug, dropI, dropF], () => ({
+    fmt: (arg0, arg1) => mapDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
+    $drop: (map) => {
+      map.return();
+    },
   }));
 }
 //# sourceMappingURL=iter.js.map

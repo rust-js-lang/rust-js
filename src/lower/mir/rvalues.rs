@@ -750,14 +750,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(Value::Expr(value))
             }
-            AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
+            AggregateKind::Closure(def_id, args) => {
+                let ty = ty::Ty::new_closure(self.tcx, *def_id, args);
+                Ok(Value::Expr(self.mir_closure(state, ty, values, span, out)?))
+            }
             // An `async` body, what it holds as a closure's environment.
-            AggregateKind::Coroutine(def_id, _) if self.tcx.coroutine_is_async(*def_id) => {
-                Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?))
+            AggregateKind::Coroutine(def_id, args) if self.tcx.coroutine_is_async(*def_id) => {
+                let ty = ty::Ty::new_coroutine(self.tcx, *def_id, args);
+                Ok(Value::Expr(self.mir_closure(state, ty, values, span, out)?))
             }
             // An `async` closure, which makes its body each call.
-            AggregateKind::CoroutineClosure(def_id, _) => {
-                Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?))
+            AggregateKind::CoroutineClosure(def_id, args) => {
+                let ty = ty::Ty::new_coroutine_closure(self.tcx, *def_id, args);
+                Ok(Value::Expr(self.mir_closure(state, ty, values, span, out)?))
             }
             _ => Err(self.unsupported(span, "this aggregate, from its MIR")),
         }

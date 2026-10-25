@@ -925,12 +925,12 @@
 - DoubleEndedIterator::try_rfold	spec
 # ExactSizeIterator 0 of 1; bodies: 1 safe, 0 spec, 0 opaque, 0 memory, 0 none
 - ExactSizeIterator::len	safe
-# Map 3 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Map 6 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Map::fold	safe
-- Map::len	safe
++ Map::len	safe
 + Map::next	safe
-- Map::next_back	safe
-- Map::rfold	safe
++ Map::next_back	safe
++ Map::rfold	safe
 + Map::size_hint	safe
 - Map::try_fold	safe
 - Map::try_rfold	safe

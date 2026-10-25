@@ -500,4 +500,12 @@ export const mutations: Mutation[] = [
     replace: "                }) && false;\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
   },
+  {
+    name: "inlined-closure-identity-captures",
+    breaks: "a closure std's MIR inlines, `map_fold`'s in `Map`'s `rfold`, drops what it took by its maker's type parameters, `F` by the `rfold`'s `Acc`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                let ty = ty::Ty::new_closure(self.tcx, *def_id, args);\n",
+    replace: "                let ty = self.tcx.type_of(*def_id).instantiate_identity().skip_normalization();\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
+  },
 ];

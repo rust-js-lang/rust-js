@@ -48,7 +48,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{ next_back }`, a range's `$rangeNextBack`, the crate's own its
     /// impl's, a JS iterator's that knows its back `$nextBack`; and
     /// `ExactSizeIterator`'s, `{ len }`, a range's `$rangeLen`, the crate's
-    /// own its impl's, a JS iterator's that knows it its own `len()`.
+    /// own its impl's, a JS iterator's that knows it its own `len()`; of
+    /// std's compiled struct, its compiled one.
     pub(in crate::lower) fn iterator_extension_dictionary(
         &mut self,
         trait_id: DefId,
@@ -69,6 +70,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, Some(kind)) => kind.step(true).map(Expr::helper),
             (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),
             (_, Some(_)) => None,
+            // Std's struct, which generic code given it as it is is given
+            // where it's held, a `Map`'s (ADR 0871): its compiled
+            // `next_back` or `len`.
+            (_, None) if self.compiled_step(ty, trait_id, name) => Some(self.user_next(ty, trait_id, name, span)?.0),
             (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
             (false, None) if self.is_user_iterator(ty) => {
                 let mut made = Vec::new();
@@ -93,7 +98,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which std's compiled code of it, a `fuse()`'s, asks (#224).
         // Of std's adapter over the crate's own, the JS iterator's, which
         // passes it on as std's does, `$foldBack`.
-        if double_ended {
+        // Of std's struct, a held `Map`'s, its compiled ones (ADR 0871).
+        if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            let rfold = self.compiled_rfold(ty, trait_id, span)?;
+            let nth_back = match self.compiled_step(ty, trait_id, "nth_back") {
+                true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),
+                false => None,
+            };
+            for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
+                if let Some(own) = own {
+                    props.push(js::Prop::Field(
+                        crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),
+                        own,
+                    ));
+                }
+            }
+        } else if double_ended {
             let rfold = match self.is_user_iterator(ty) {
                 true => self.own_methods(ty, false, span)?.rfold,
                 false => self.recognition().rfolds_its_own(ty).then(|| Expr::helper("$foldBack")),
@@ -154,7 +174,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Err(self.unsupported(span, &format!("`cycle()` of a `{ty}`"))),
             },
         };
-        let clone = self.clone_fn("iterator", ty, span)?.called_alone();
+        // Std's struct, a `Map` held (ADR 0871), cloned by its compiled
+        // `Clone`; another, the JS iterator it is.
+        let mut body = Vec::new();
+        let cloned = match self.compiled_struct_at(ty, span) {
+            true => self.clone_value(Expr::var("iterator"), ty, span, &mut body)?,
+            false => self.clone_in_place(Expr::var("iterator"), ty, span, &mut body)?,
+        };
+        body.push(StmtKind::Return(Some(cloned)).at(js::Span::NONE));
+        let clone = Expr::arrow(vec!["iterator".into()], body).called_alone();
         let drop = self.drop_function(ty, span)?;
         let mut args = vec![it, clone, next];
         if boxed || drop.is_some() {
