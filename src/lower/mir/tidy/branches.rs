@@ -283,7 +283,12 @@ pub(super) fn branch_values(
                 StmtKind::If(test.clone(), then.clone(), Some(vec![chained]))
             }
             StmtKind::If(test, ref then, Some(ref otherwise))
-                if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches)) =>
+                if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches))
+                    // Not the function's value each branch gives by a
+                    // `return` the program wrote, `if c { return a; }
+                    // return b;`, MIR's one `return`: an `if` of `return`s
+                    // (ADR 0657, amended).
+                    && !(one.target == result && written_returns((then, otherwise), returns)) =>
             {
                 // A value the program wrote with an `if`, not `&&` or `||`.
                 let written_if = written_branches(span, then, otherwise, elses);
@@ -437,6 +442,15 @@ pub(super) fn one_assignment(
         no: spanned(no, otherwise[0].span),
         no_first,
     })
+}
+
+/// Whether each branch's statements are of a `return` the program wrote,
+/// of `returns`: `if c { return a; } return b;`'s, whose returns MIR joins
+/// into one, each branch setting the function's value.
+fn written_returns((then, otherwise): (&[Stmt], &[Stmt]), returns: &[js::Span]) -> bool {
+    [then, otherwise]
+        .iter()
+        .all(|b| b.iter().all(|s| written(returns, s.span)))
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.

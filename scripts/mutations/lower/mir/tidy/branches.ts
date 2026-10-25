@@ -511,4 +511,12 @@ export const mutations: Mutation[] = [
     replace: "                    present_in(&mut stmts[j], test, holds, true);\n                    j += 1;\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an unwrap of a field a test says is there"],
   },
+  {
+    name: "written-returns-made-a-conditional",
+    breaks: "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && !(one.target == result && written_returns((then, otherwise), returns)) =>\n",
+    replace: "                    && true =>\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+  },
 ];

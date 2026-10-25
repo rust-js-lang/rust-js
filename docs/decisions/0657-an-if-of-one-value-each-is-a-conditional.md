@@ -100,3 +100,31 @@ let Some(x) = e { t } else { f }`, reads its binding first, `const x = a ?
 e : undefined;`, and is then a conditional by this rule, `x != null ? t :
 f`, as an `if let`'s is
 ([0870](0870-a-let-chains-value-reads-its-binding-first.md)).
+
+## Amendment: an `if` of `return`s the program wrote stays an `if`
+
+React's getComponentNameFromFiber writes its `OffscreenComponent` case
+`if (fiber.return !== null) { return getComponentNameFromFiber(fiber.return);
+} return null;`. Its port, `let return_fiber = fiber.r#return.borrow().clone();
+if let Some(r) = return_fiber { return get_component_name_from_fiber(&r); }
+return None;`, printed `return returnFiber != null ?
+getComponentNameFromFiber(returnFiber) : null;`: MIR joins the two
+`return`s into one, each branch setting the function's value, which this
+rule then made one value. **Where each branch's value is a `return` the
+program wrote (`Jumps::returns`), the `if` is of `return`s, as written**:
+`if (returnFiber != null) { return ..; } return null;`. An `if` the
+program wrote as a value, `if let Some(p) = .. { p.depth } else { 0 }`,
+is still `parent != null ? parent.depth : 0`, and a value MIR made of
+branches no `return` gives, a `match`'s, a conditional. Case N: the same
+branch runs and returns the same value.
+
+The `const returnFiber = fiber.return;` the port names stays, read once,
+as Rust reads it, by the name the program gave it; upstream reads
+`fiber.return` twice, which the port's Rust doesn't. Reading it in place
+was rejected: it drops the program's name and reads a place twice that
+Rust reads once, a second form of one `let` picked by whether its value
+is a property.
+
+Held by `test/lowering-written-branches.test.ts`, "an if of returns the
+program wrote stays an if", run in JS, and the mutation
+`written-returns-made-a-conditional` (`tidy/branches.ts`).

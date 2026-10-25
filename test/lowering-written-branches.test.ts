@@ -550,3 +550,47 @@ pub fn footer(href: Option<&str>) -> String {
   expect([lib.thrown({ kind: 1, parent: root } as never), lib.thrown({ kind: 1, parent: undefined } as never), lib.thrown({ kind: 2, parent: root } as never)]).toEqual([0, undefined, undefined]);
   expect([lib.footer(undefined as never), lib.footer("https://x" as never), lib.footer("/y" as never)]).toEqual(["none", "ext https://x", "next /y"]);
 });
+
+// React's getComponentNameFromFiber, its `OffscreenComponent` case: `if
+// (fiber.return !== null) { return getComponentNameFromFiber(fiber.return);
+// } return null;`. The port's `if let Some(r) = parent { return f(&r); }
+// return None;` is MIR's one `return` of a value each branch sets; it stays
+// the `if` of `return`s the program wrote, not `return parent != null ?
+// f(parent) : null;` (ADR 0657, amended). A value the program wrote with an
+// `if` is still a conditional.
+test("an if of returns the program wrote stays an if", async () => {
+  const { js, lib } = await compiled("written-if-of-returns", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub depth: u32,
+    pub parent: RefCell<Option<Rc<Fiber>>>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn root_name(fiber: &Fiber) -> Option<String> {
+    match fiber.depth {
+        0 => return Some("root".to_string()),
+        1 => {
+            let parent = fiber.parent.borrow().clone();
+            if let Some(parent) = parent {
+                return root_name(&parent);
+            }
+            return None;
+        }
+        2 => return Some("two".to_string()),
+        _ => {}
+    }
+    None
+}
+
+pub fn depth_or(fiber: &Fiber) -> u32 {
+    if let Some(parent) = &*fiber.parent.borrow() { parent.depth } else { 0 }
+}
+`);
+  expect(js).toContain("      const parent = fiber.parent;\n      if (parent != null) {\n        return rootName(parent);\n      }\n      return null;\n");
+  expect(js).toContain("  return parent != null ? parent.depth : 0;\n");
+  const root = { depth: 0, parent: null };
+  const leaf = { depth: 1, parent: root };
+  expect([lib.rootName(leaf as never), lib.rootName({ depth: 1, parent: null } as never), lib.rootName({ depth: 2, parent: root } as never), lib.depthOr(leaf as never), lib.depthOr(root as never)]).toEqual(["root", null, "two", 0, 0]);
+});
