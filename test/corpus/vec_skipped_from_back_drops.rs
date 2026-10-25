@@ -35,5 +35,7 @@ fn main() {
     println!("{:?}", deque.into_iter().rev().nth(2).map(|l| l.0));
     let mut drained = louds(24, 4);
     println!("{:?}", drained.drain(..).nth_back(2).map(|l| l.0));
+    println!("{}", louds(32, 4).into_iter().rev().skip(2).fold(0, |n, _| n + 1));
+    println!("{}", louds(36, 4).into_iter().rev().skip(2).any(|l| l.0 > 99));
     println!("end");
 }

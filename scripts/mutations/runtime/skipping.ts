@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n    skipping.nth = (k) => {",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
+  {
+    name: "skipping-fold-by-next",
+    breaks: "`rev().skip(2).fold(..)` of a `Vec` asks its source's `nth(2)`, one slice of both, where std's `Skip::fold` asks `nth(1)` and drops the one it gives after (#250)",
+    file: "src/runtime/skipping.js",
+    find: "    skipping.fold = (init, f) => {",
+    replace: "    skipping.foldUnused = (init, f) => {",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "skipping-try-fold-by-next",
+    breaks: "`rev().skip(2).any(..)` of a `Vec` asks its source's `nth(2)`, one slice of both, where std's `Skip::try_fold` asks `nth(1)` and drops the one it gives after (#250)",
+    file: "src/runtime/skipping.js",
+    find: "    skipping.tryFold = (init, f, broke) => {",
+    replace: "    skipping.tryFoldUnused = (init, f, broke) => {",
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
 ];

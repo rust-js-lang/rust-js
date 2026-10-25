@@ -173,3 +173,17 @@ arguments, whose `Iterator.from` share falls by 0.4, and the rest are
 the new case's sixteen `Vec`s. Its renamed `x$1` share grows by 2.8,
 the new case's temporaries, each a `Vec` made in a `try` that drops
 what came before.
+
+## Amendment: a `skip`'s fold and `try_fold` are std's (#250)
+
+std's `Skip::next` asks its source's `nth(n)`, while its `fold` and
+`try_fold` ask `nth(n - 1)` and then go on with their source's own,
+dropping the item that `nth` gives. For a reversed `Vec`, whose `nth`
+drops a slice, the order differs. `rev().skip(2).any(..)` of `[22, 23,
+24, 25]` drops 25, then 24, not 24 and 25 together (fuzz seeds 45192
+and 45321). `$skipping` gains both, where its source drops what it
+passes itself. Held by `vec_skipped_from_back_drops.rs`'s fold and
+`any`, and the mutations `skipping-fold-by-next` and
+`skipping-try-fold-by-next`. The readability baseline's `$iter` and
+renamed `x$1` shares each grow by 0.2 in 10,000 lines, from the two new
+lines' `Vec`s, each made in a `try` that drops what came before.

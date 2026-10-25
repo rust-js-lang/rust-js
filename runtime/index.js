@@ -1925,6 +1925,37 @@ export function $skipping(iter, n, drop) {
   );
   skipping.iter = iter;
   skipping.n = n;
+  // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
+  // that drops what it passes over itself, then its source's; its `fold`,
+  // consuming it, closed at its end (#250).
+  if (iter.ownNth) {
+    skipping.fold = (init, f) => {
+      if (skipping.n > 0) {
+        const k = skipping.n;
+        skipping.n = 0;
+        const step = skipping.iter.nth(k - 1);
+        if (step.done) {
+          skipping.return();
+          return init;
+        }
+        drop?.(step.value);
+      }
+      const folded = skipping.iter.fold(init, f);
+      skipping.return();
+      return folded;
+    };
+    // And its `try_fold`, the same first step, then its source's.
+    skipping.tryFold = (init, f, broke) => {
+      if (skipping.n > 0) {
+        const k = skipping.n;
+        skipping.n = 0;
+        const step = skipping.iter.nth(k - 1);
+        if (step.done) return init;
+        drop?.(step.value);
+      }
+      return skipping.iter.tryFold(init, f, broke);
+    };
+  }
   // What std's `Skip::last` steps after its `nth(n - 1)?`: its source, what
   // it skips dropped, or `undefined` where that found none (#232).
   skipping.skipped = () => {

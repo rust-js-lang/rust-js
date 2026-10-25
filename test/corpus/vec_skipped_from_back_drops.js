@@ -194,6 +194,28 @@ function main() {
           loudDrop_drop(item);
         }
       }
+      const value = (n, _3) => {
+        const result = (n + 1) | 0;
+        loudDrop_drop(_3);
+        return result;
+      };
+      console.log(
+        `${$skipping($rev($closing($iter(louds(32, 4)), $dropEach(loudDrop_drop))), 2, loudDrop_drop).reduce((a, b) => value(a, b), 0)}`,
+      );
+      const value$1 = $held(
+        $skipping($rev($closing($iter(louds(36, 4)), $dropEach(loudDrop_drop))), 2, loudDrop_drop),
+      );
+      try {
+        console.log(
+          `${$lent(value$1).some((l) => {
+            const result = l[0] > 99;
+            loudDrop_drop(l);
+            return result;
+          })}`,
+        );
+      } finally {
+        value$1.return();
+      }
       console.log("end");
     } finally {
       for (const item of drained) {
