@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "settle-before-branches-skipped",
     breaks: "a value read in place before a `match` whose one arm drops is assigned in that arm alone, and the others compare `undefined`: `*e > match .. { .. }` (#274)",
     file: "src/lower/mir/structure.rs",
-    find: "        self.settle_before_branches(state, block, &mut out);\n",
+    find: "                self.settle_before_branches(state, block, &mut out);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "read_past_dropping_arm"],
+    tests: ["test/corpus.test.ts", "-t", "read_past_dropping_arm|read_before_short_circuit"],
   },
   {
     name: "or-pattern-declared-order",

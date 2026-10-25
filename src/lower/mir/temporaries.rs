@@ -121,10 +121,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.settle(state, &[block], out);
     }
 
-    /// Before `block` branches, each value kept to be read in place that a
-    /// drop after it would settle: read here, where every branch has it,
-    /// not in the one branch that drops, past which the others would read
-    /// a variable that branch alone set (#274).
+    /// As `block`'s switch branches, its test made, each value kept to be
+    /// read in place that a drop after it would settle: read here, where
+    /// every branch has it, not in the one branch that drops, past which the
+    /// others would read a variable that branch alone set (#274). Once its
+    /// test is made, which keeps in place what's made before it (`flush`):
+    /// before, the value isn't there to settle, and a test further in, which
+    /// a way past this one skips, settles it instead, the second of
+    /// `p.to_string() + &(if a && (b || c) { .. } else { .. })` (ADR 0451,
+    /// amended). Only past a drop that drops what JS sees: one of what it
+    /// doesn't, a `String`'s, settles nothing, so React's `prefix + (key !=
+    /// null && .. ? .. : '') + childKey` reads `prefix` where it's joined.
     pub(super) fn settle_before_branches(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -137,11 +144,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let drops: Vec<BasicBlock> = (graph.rpo.iter().copied())
             .filter(|&d| d != block && graph.dominates(block, d))
-            .filter(|&d| {
-                matches!(
-                    state.body.basic_blocks[d].terminator().kind,
-                    TerminatorKind::Drop { .. }
-                )
+            .filter(|&d| match &state.body.basic_blocks[d].terminator().kind {
+                TerminatorKind::Drop { place, .. } => state.facts.drops().is_some_and(|e| e.drops(d, *place)),
+                _ => false,
             })
             .collect();
         self.settle(state, &drops, out);

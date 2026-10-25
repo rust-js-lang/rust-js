@@ -98,3 +98,28 @@ compares a reference's value past a `match` with a dropping arm, in a
 function and a `filter`, against native Rust. A mutation of the new
 settling is caught. A narrower form, only drops before the branches
 meet, changed no output in the corpus, so the rule doesn't have it.
+
+## Amendment: at the first test, once it's made, past a drop JS sees
+
+The settling before the branches ran before a block's test was made, so
+what `flush` keeps in place only as the test is made wasn't there to
+settle, and the next test in settled it instead. In React's
+`mapIntoArray`, `escapedPrefix.to_string() + &(if key.is_some() && (!c ||
+other) { .. } else { String::new() }) + &child_key` read `escapedPrefix`
+inside the first test's branch: past a missing key it was `undefined`,
+and the key `"undefined" + childKey`, which failed seven of
+ReactChildren's tests. Following ADR 0262's "results change" case,
+Rust's answer is kept: the value is settled at the switch, once its test
+is made and before its cases are, at the first test the value is there
+for, which every way past it goes through. And only a drop that drops
+what JS sees (the drop elaboration's `drops`) settles: a `String`'s,
+the only drops there, settle nothing, and the `if` reads as the one
+expression it was before ADR 0451's first amendment, `escapedPrefix +
+(mappedChild.key != null && (..) ? .. : '') + childKey`. The
+`read_before_short_circuit` corpus case joins a borrowed `&str`'s
+`to_string()` to such an `if`, of a `String` dropped in its branch and of
+a `Drop` type, on every way through its tests, against native Rust; with
+the old placement it printed `undefined.`. Mutations settling past any
+drop and skipping the settling are caught, and `kept_read_past_branch`
+now holds what the playground held for a read in a branch that's done
+with, which isn't settled again past a later test, `root.slice(0, -3);`.

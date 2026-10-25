@@ -48,7 +48,26 @@ fn dropped_each_pass() {
     }
 }
 
+// Read in the branch that uses it, then tested past where the branches
+// meet, before a drop: not read again there, as the playground's `stem`.
+fn out_file(root: &str, test: bool) -> String {
+    let loud = Loud(7);
+    let out = match root.strip_suffix(".rs") {
+        Some(stem) => format!("/out/{stem}.js"),
+        None => format!("/out/{root}"),
+    };
+    let mut args = vec![String::from("rust-js")];
+    if test {
+        args.push(String::from("--test"));
+    }
+    args.push(out);
+    println!("{}", loud.0);
+    args.join(" ")
+}
+
 fn main() {
     dropped_after();
     dropped_each_pass();
+    println!("{}", out_file("main.rs", true));
+    println!("{}", out_file("lib", false));
 }

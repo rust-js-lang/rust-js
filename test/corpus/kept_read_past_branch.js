@@ -58,8 +58,28 @@ function droppedEachPass() {
   }
 }
 
+// Read in the branch that uses it, then tested past where the branches
+// meet, before a drop: not read again there, as the playground's `stem`.
+function outFile(root, test) {
+  const loud = 7;
+  const out = root.endsWith(".rs") ? `/out/${root.slice(0, -3)}.js` : `/out/${root}`;
+  const args = ["rust-js"];
+  try {
+    if (test) {
+      args.push("--test");
+    }
+    args.push(out);
+    console.log(`${loud}`);
+    return args.join(" ");
+  } finally {
+    console.log(`drop ${loud}`);
+  }
+}
+
 function main() {
   droppedAfter();
   droppedEachPass();
+  console.log(`${outFile("main.rs", true)}`);
+  console.log(`${outFile("lib", false)}`);
 }
 //# sourceMappingURL=case.js.map

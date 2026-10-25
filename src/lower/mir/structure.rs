@@ -35,7 +35,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]);
         }
         let mut out = self.mir_statements(state, block)?;
-        self.settle_before_branches(state, block, &mut out);
         out.extend(self.mir_within(state, block, &merges)?);
         Ok(out)
     }
@@ -340,6 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(out);
                 }
                 let mut otherwise = Some(past(targets.otherwise())).filter(|&b| reached(b));
+                self.settle_before_branches(state, block, &mut out);
                 // Values that go to one block, an or-pattern's `'+' | '-'`:
                 // one test of either, the block once, as the program wrote it.
                 let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();
