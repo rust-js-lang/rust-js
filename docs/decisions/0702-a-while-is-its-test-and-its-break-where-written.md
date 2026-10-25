@@ -180,3 +180,89 @@ and the compiler panicked (fuzz seed 61706). Now `broken_after` appends
 no `break` after a `break`, `continue`, `return` or `throw`.
 `while_test_ends_in_throw` compiles such a loop and runs it against
 native Rust, and `broken-after-a-throw` is caught.
+
+## Amendment: the inner `while` is upstream's, with no label
+
+The amendment above left `findFirstSuspended` right, but not as upstream
+writes it:
+
+```js
+bb2: while (true) {
+  let result;
+  if (node.tag === 13) {
+    result = node;
+  } else {
+    // ..
+    while (true) {
+      if (node.sibling == null) {
+        // ..
+        result = undefined;
+        break;
+      }
+      // ..
+      continue bb2;
+    }
+  }
+  return result;
+}
+```
+
+The inner loop's `return None` reached the function's `return` through
+the inner loop's `break`, and what followed the loop, MIR's exit of its
+test, through a `continue` of the outer one. `returned_in_branches` made
+a branch's value a `return` only where it ends in an assignment or an
+`if`'s, not a `while (true)` left by a `break` once it's made, so the
+result stayed, and with it the loop's `break`; `while_heads` made a
+`while (c)` only of `if (c) { body; continue; } rest`, a body with no
+`continue` or `return` of its own inside, not of an `if` whose `else` is
+`rest`; and the outer loop's `continue`, past the inner loop now, stayed
+where its body ended.
+
+**A `while (true)` each of whose `break`s follows what makes the
+function's value makes it** (`made_at_ends`): each `break` then the
+`return` of that value (`returned_at_ends`). It's the one rule for a
+loop's `break`s to the function's end: `threaded_jumps`, which made each
+of a loop's own `break`s a block's `break` for `returned_where_made` to
+return, only ever did so of such a loop, and no longer does. **Of a
+`while` the program wrote, `while_heads` takes `while (true) { if (c) {
+body } else { rest } }`, and a `body` that goes round by a `continue` or
+leaves by a `return` inside it**, never by a `break`, which would run
+`rest` once it's outside: `while (c) { body } rest`. A `loop` the program
+wrote is left as it was. **`tail continues` runs once, after
+`while_heads`**, in the `written` stage, not in `chains`: what
+`while_heads` puts after a loop ends the body around it with a
+`continue` of it, which goes, and with it the loop's label, where that
+was its last jump. No other corpus case's or snapshot's JS changed with
+it in either place. Case N: what runs is Rust's; the JS is upstream's:
+
+```js
+while (true) {
+  if (node.tag === 13) {
+    return node;
+  }
+  // ..
+  while (node.sibling == null) {
+    const returnFiber = node.return;
+    if (returnFiber == null || returnFiber === row) {
+      return;
+    }
+    node = returnFiber;
+  }
+  // ..
+}
+```
+
+The port's own `findFirstSuspended`, whose first arm is an `if` of an
+`else if` chain, already printed so; the corpus case, whose first arm
+returns alone, didn't. A `while (true)` with a `break` that makes no
+value, or a `while`'s body with a `break` of its own, are guarded and
+left as they are, though no corpus case makes either.
+
+- `test/lowering-written-loops.test.ts`, "React's findFirstSuspended's
+  loops are upstream's, with no label", both shapes, run in JS; and
+  `test/corpus/while_exit_continues.rs` beside native Rust, its JS with
+  no label. Mutations `loop-breaks-not-returned`,
+  `broken-to-inner-loops` (now of `returned_breaks`), `while-heads-else-kept`,
+  `tail-continued-label-kept` and `tail-continues-unwritten-kept`.
+- `docs/readability.txt`: one labeled block and one `while (true)` fewer;
+  two `return;`s more, the program's `return None`s, where it wrote them.

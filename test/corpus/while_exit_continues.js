@@ -15,39 +15,30 @@ function fiber(name, tag) {
 
 function findFirstSuspended(row) {
   let node = row;
-  bb2: while (true) {
-    let result;
+  while (true) {
     if (node.tag === 13) {
-      result = node;
-    } else {
-      const child = node.child;
-      if (child != null) {
-        child.return = node;
-        node = child;
-        continue;
-      }
-      if (node === row) {
-        result = undefined;
-      } else {
-        while (true) {
-          if (node.sibling == null) {
-            const returnFiber = node.return;
-            if (returnFiber != null && returnFiber !== row) {
-              node = returnFiber;
-              continue;
-            }
-            result = undefined;
-            break;
-          }
-          const sibling = node.sibling;
-          const returnFiber = node.return;
-          sibling.return = returnFiber;
-          node = sibling;
-          continue bb2;
-        }
-      }
+      return node;
     }
-    return result;
+    const child = node.child;
+    if (child != null) {
+      child.return = node;
+      node = child;
+      continue;
+    }
+    if (node === row) {
+      return;
+    }
+    while (node.sibling == null) {
+      const returnFiber = node.return;
+      if (returnFiber == null || returnFiber === row) {
+        return;
+      }
+      node = returnFiber;
+    }
+    const sibling = node.sibling;
+    const returnFiber = node.return;
+    sibling.return = returnFiber;
+    node = sibling;
   }
 }
 

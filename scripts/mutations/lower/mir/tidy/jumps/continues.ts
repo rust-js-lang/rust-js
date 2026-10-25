@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tail-continued-label-kept",
+    breaks: "a loop's label whose last jump was a `continue` where its body ends stays, named by nothing",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {\n                *label = None;\n",
+    replace: "            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
+  },
+  {
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy/jumps/continues.rs",

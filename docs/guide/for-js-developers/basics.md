@@ -1672,6 +1672,10 @@ export function lastNamed(names) {
   a `continue` that ends an arm of a chain of `if`s too, `else if (..) {
   ..; continue; }`, with no label where the arms meet ([ADR
   0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)).
+- A `while` inside a `loop`, its `return`s where they're written and the
+  rest of the turn after it, is the two loops, `while (node.sibling ==
+  null) { .. }` in `while (true) { .. }`, with no label round either ([ADR
+  0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md)).
 - A `match` arm that returns one value, `Kind::Object(_) | Kind::Array(_)
   => return ArrayKind::Complex`, which an arm before it goes on to, a pair
   the guard of `Kind::Array(&[first, _]) if ..` refused, is `return

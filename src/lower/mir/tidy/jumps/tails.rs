@@ -101,9 +101,9 @@ fn returned_where_made(body: &mut Vec<Stmt>, label: &str, result: &str) {
 }
 
 /// A `break label` after a block: its statements in its place, its own
-/// `break`s that one; and where `branches`, after a loop, each of the
-/// loop's own `break`s that one, after an `if` of two branches, the end of
-/// each that goes on.
+/// `break`s that one; and where `branches`, after an `if` of two branches,
+/// the end of each that goes on. A `while (true)`'s own `break`s, after
+/// it, are `made_at_ends`', which returns where each makes the result.
 fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
     js::statement_lists(body, &mut |list| {
         for i in (0..list.len().saturating_sub(1)).rev() {
@@ -130,17 +130,6 @@ fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
                         }
                     }
                 }
-                StmtKind::While {
-                    label: looped, body, ..
-                }
-                | StmtKind::ForOf {
-                    label: looped, body, ..
-                }
-                | StmtKind::For {
-                    label: looped, body, ..
-                } => {
-                    broken_to(body, true, looped.as_deref(), label);
-                }
                 _ => continue,
             }
             if ends(&list[i]) {
@@ -148,37 +137,6 @@ fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
             }
         }
     });
-}
-
-/// Each `break` in `stmts` that leaves loop `looped`, `break to`: one of no
-/// label where `own`, not in a loop of their own, and one of its label.
-fn broken_to(stmts: &mut [Stmt], own: bool, looped: Option<&str>, to: &str) {
-    for stmt in stmts {
-        match &mut stmt.kind {
-            StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_deref() == looped) => {
-                *l = Some(to.to_string());
-            }
-            StmtKind::If(_, a, b) => {
-                broken_to(a, own, looped, to);
-                if let Some(b) = b {
-                    broken_to(b, own, looped, to);
-                }
-            }
-            StmtKind::Labeled(_, body) => broken_to(body, own, looped, to),
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                broken_to(a, own, looped, to);
-                broken_to(b, own, looped, to);
-            }
-            // Whose `break` of no label is its own (ADR 0629).
-            StmtKind::Switch { cases, default, .. } => {
-                js::case_lists_mut(cases, default).for_each(|body| broken_to(body, false, looped, to));
-            }
-            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-                broken_to(body, false, looped, to);
-            }
-            _ => {}
-        }
-    }
 }
 
 /// Where the first of `stmts` that says is written, inside a loop's or a
@@ -210,16 +168,43 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
     match stmts.last().map(|s| &s.kind) {
         Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r == result),
         Some(StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) | StmtKind::Break(_)) => true,
-        // Or that never goes on: a loop it never leaves.
+        // Or a `while (true)` left only once the result is made, where it
+        // goes on to what they end at, or never left.
         Some(StmtKind::While { cond, body, label }) => {
-            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_deref(), result)
         }
         Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
         _ => false,
     }
 }
 
-/// `stmts`, of `made_at_ends`, returning what they assign the result.
+/// Whether each `break` in `stmts` that leaves loop `looped` follows what
+/// makes `result`, as `made_at_ends` says: one of no label where `own`,
+/// not in a loop or a `switch` of their own, and one of its label.
+fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&str>, result: &str) -> bool {
+    stmts.iter().enumerate().all(|(i, stmt)| match &stmt.kind {
+        StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_deref() == looped) => {
+            made_at_ends(&stmts[..i], result)
+        }
+        StmtKind::If(_, a, b) => {
+            broken_made(a, own, looped, result) && b.as_deref().is_none_or(|b| broken_made(b, own, looped, result))
+        }
+        StmtKind::Labeled(_, body) => broken_made(body, own, looped, result),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+            broken_made(a, own, looped, result) && broken_made(b, own, looped, result)
+        }
+        StmtKind::Switch { cases, default, .. } => {
+            js::case_lists(cases, default).all(|body| broken_made(body, false, looped, result))
+        }
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            broken_made(body, false, looped, result)
+        }
+        _ => true,
+    })
+}
+
+/// `stmts`, of `made_at_ends`, returning what they assign the result; of
+/// a `while (true)`'s, where each of its `break`s is.
 pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
     let Some(last) = stmts.last_mut() else { return };
     match &mut last.kind {
@@ -231,7 +216,42 @@ pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
             returned_at_ends(then);
             returned_at_ends(otherwise);
         }
+        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_deref()),
         _ => {}
+    }
+}
+
+/// Each `break` of `broken_made`'s in `stmts`, the `return` of what makes
+/// the result before it.
+fn returned_breaks(stmts: &mut Vec<Stmt>, own: bool, looped: Option<&str>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        match &mut stmts[i].kind {
+            StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_deref() == looped) => {
+                returned_at_ends(&mut stmts[..i]);
+                stmts.remove(i);
+                continue;
+            }
+            StmtKind::If(_, a, b) => {
+                returned_breaks(a, own, looped);
+                if let Some(b) = b {
+                    returned_breaks(b, own, looped);
+                }
+            }
+            StmtKind::Labeled(_, body) => returned_breaks(body, own, looped),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                returned_breaks(a, own, looped);
+                returned_breaks(b, own, looped);
+            }
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists_mut(cases, default).for_each(|body| returned_breaks(body, false, looped));
+            }
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                returned_breaks(body, false, looped)
+            }
+            _ => {}
+        }
+        i += 1;
     }
 }
 

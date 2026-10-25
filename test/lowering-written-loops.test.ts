@@ -293,3 +293,161 @@ test("React's describeNativeComponentFrame's loops are upstream's", () => {
   expect(js).not.toContain("$index");
   expect(js).not.toMatch(/\bbb\d+/);
 });
+
+// ADR 0702, amended again: React's findFirstSuspended
+// (react-reconciler/src/ReactFiberSuspenseComponent.js), as react-in-rust
+// ports it. Its inner `while` walks up while a fiber has no sibling, the
+// `return None` of its `match` a `return`, and what follows the loop, a
+// `continue` of the outer one, after it: upstream's nested loops, with no
+// label round either.
+test("React's findFirstSuspended's loops are upstream's, with no label", async () => {
+  const node = buildNode();
+  const dir = fixture("find-first-suspended");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub tag: Cell<u32>,
+    pub flags: Cell<u32>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub child: RefCell<Option<Rc<Fiber>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub memoized_props: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+}
+
+pub struct SuspenseState {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub dehydrated: Option<&'static Unknown>,
+}
+
+const SUSPENSE_COMPONENT: u32 = 13;
+const SUSPENSE_LIST_COMPONENT: u32 = 19;
+const NO_FLAGS: u32 = 0;
+const DID_CAPTURE: u32 = 128;
+
+fn is_pending(instance: &Unknown) -> bool {
+    js::truthy(js::get(instance, "pending"))
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn find_first_suspended(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
+    let mut node = Rc::clone(row);
+    loop {
+        if node.tag.get() == SUSPENSE_COMPONENT {
+            let state: Option<&SuspenseState> = unsafe { js::cast(node.memoized_state.get()) };
+            if let Some(state) = state {
+                let dehydrated = state.dehydrated;
+                if dehydrated.is_none_or(is_pending) {
+                    return Some(node);
+                }
+            }
+        } else if node.tag.get() == SUSPENSE_LIST_COMPONENT
+            && !js::strict_equals(js::get(node.memoized_props.get(), "revealOrder"), "independent")
+        {
+            let did_suspend = (node.flags.get() & DID_CAPTURE) != NO_FLAGS;
+            if did_suspend {
+                return Some(node);
+            }
+        } else {
+            let child = node.child.borrow().clone();
+            if let Some(child) = child {
+                child.r#return.replace(Some(Rc::clone(&node)));
+                node = child;
+                continue;
+            }
+        }
+        if Rc::ptr_eq(&node, row) {
+            return None;
+        }
+        while node.sibling.borrow().is_none() {
+            let return_fiber = node.r#return.borrow().clone();
+            match return_fiber {
+                Some(return_fiber) if !Rc::ptr_eq(&return_fiber, row) => node = return_fiber,
+                _ => return None,
+            }
+        }
+        let sibling = node.sibling.borrow().clone().unwrap();
+        let return_fiber = node.r#return.borrow().clone();
+        sibling.r#return.replace(return_fiber);
+        node = sibling;
+    }
+}
+
+// Its first arm a return of its own, the tree walked as before: the
+// function's value made in the inner loop's way out, before the loop's
+// shape was, the label once left round the outer one.
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn find_first_list(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
+    let mut node = Rc::clone(row);
+    loop {
+        if node.tag.get() == SUSPENSE_LIST_COMPONENT {
+            return Some(node);
+        }
+        let child = node.child.borrow().clone();
+        if let Some(child) = child {
+            child.r#return.replace(Some(Rc::clone(&node)));
+            node = child;
+            continue;
+        }
+        if Rc::ptr_eq(&node, row) {
+            return None;
+        }
+        while node.sibling.borrow().is_none() {
+            let return_fiber = node.r#return.borrow().clone();
+            match return_fiber {
+                Some(return_fiber) if !Rc::ptr_eq(&return_fiber, row) => node = return_fiber,
+                _ => return None,
+            }
+        }
+        let sibling = node.sibling.borrow().clone().unwrap();
+        let return_fiber = node.r#return.borrow().clone();
+        sibling.r#return.replace(return_fiber);
+        node = sibling;
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+\b/);
+  expect(js.match(/\n    while \(node\.sibling == null\) \{\n/g)?.length).toBe(2);
+  expect(js).toContain(
+    "    while (node.sibling == null) {\n" +
+      "      const returnFiber = node.return;\n" +
+      "      if (returnFiber == null || returnFiber === row) {\n" +
+      "        return null;\n" +
+      "      }\n" +
+      "      node = returnFiber;\n" +
+      "    }\n" +
+      "    const sibling = node.sibling;\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const fiber = (tag: number): Record<string, unknown> => ({ tag, flags: 0, return: null, child: null, sibling: null, memoizedProps: null, memoizedState: null });
+  // row -> a -> b, b with no sibling, a's sibling c a list that suspended.
+  const [row, a, b, c] = [fiber(0), fiber(5), fiber(0), fiber(19)];
+  Object.assign(row, { child: a });
+  Object.assign(a, { child: b, sibling: c });
+  Object.assign(c, { flags: 128, memoizedProps: { revealOrder: "forwards" } });
+  expect(lib.findFirstSuspended(row)).toBe(c);
+  expect(b.return).toBe(a);
+  expect(c.return).toBe(row);
+  c.flags = 0;
+  expect(lib.findFirstSuspended(row)).toBeNull();
+  // A dehydrated boundary, pending: the one found.
+  Object.assign(b, { tag: 13, memoizedState: { dehydrated: { pending: true } } });
+  expect(lib.findFirstSuspended(row)).toBe(b);
+  [b.tag, c.tag] = [0, 0];
+  expect(lib.findFirstList(row)).toBeNull();
+  c.tag = 19;
+  expect(lib.findFirstList(row)).toBe(c);
+});

@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-while-heads-kept",
     breaks: "MIR's loop tested at its head stays `while (true)`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"while heads\", |b, _| js::statement_lists(b, &mut while_heads)),\n",
+    find: "            pass(\"while heads\", |b, h| {\n                js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))\n            }),\n",
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"tail continues\", |b, h| {\n                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))\n            }),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(interpreter|while_exit_continues).rs$"],
     snapshots: true,
   },
   {

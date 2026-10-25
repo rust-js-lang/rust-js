@@ -385,11 +385,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("early returns", |b, h| {
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),
-            // The `continue`s a loop's body ends with anyway, which the
-            // program didn't write, once those have each loop's shape.
-            pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
-            }),
             // A chain's arms, as statements, in the order written.
             pass("written chains", |b, _| {
                 js::statement_lists(b, &mut |s| written_chains(s))
@@ -475,9 +470,18 @@ pub(super) const STAGES: &[Stage] = &[
                 let mentions = mentions(b);
                 js::statement_lists(b, &mut |s| unread_made(s, &mentions))
             }),
-            pass("while heads", |b, _| js::statement_lists(b, &mut while_heads)),
+            pass("while heads", |b, h| {
+                js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
+            }),
             pass("written order steps", |b, _| {
                 js::statement_lists(b, &mut |s| written_order_steps(s))
+            }),
+            // The `continue`s a loop's body ends with anyway, which the
+            // program didn't write, once those have each loop's shape: of
+            // what was after a loop inside it, too, which `while heads` put
+            // after it, its label with it (ADR 0702, amended).
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
             }),
             pass("let else first", |b, _| js::statement_lists(b, &mut let_else_first)),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),

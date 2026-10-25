@@ -105,14 +105,19 @@ pub(in crate::lower::mir::tidy) fn written_continues(stmts: &mut [Stmt], continu
 /// either; one it wrote before more, `if (c) { continue; } return b;`, is
 /// kept, as written (ADR 0684): of `if (c) { a; continue; } else { b }`
 /// last, where `jumps into branches` made the rest its `else`, `if (c) {
-/// a; continue; } b` (ADR 0745).
+/// a; continue; } b` (ADR 0745). A loop's label those were the last jumps
+/// to goes with them.
 pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], continues: &[(js::Span, js::Span)]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
+            let named = label.as_deref().is_some_and(|l| js::names_jump(body, l));
             ends_going_on(body, label, continues);
+            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {
+                *label = None;
+            }
         }
     }
 }

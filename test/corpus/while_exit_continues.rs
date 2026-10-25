@@ -2,7 +2,9 @@
 // goes on with the loop, `node = return_fiber`, before the loop's test
 // again. That test's exit holds a `continue` of the inner loop, so it
 // stays in it, not after it, where the `continue` would go on with the
-// outer one (ADR 0702, amended).
+// outer one (ADR 0702, amended). Its `return None` a `return` there, the
+// loops are upstream's, `while (node.sibling == null) { .. }` inside the
+// outer one, what follows it after it, with no label round either.
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
