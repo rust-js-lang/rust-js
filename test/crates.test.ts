@@ -293,13 +293,18 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   counting(out, "use std::cell::RefCell;\n\npub fn main() {\n    let made = dep::Transition {\n        types: RefCell::new(None),\n        seen: None,\n    };\n    dep::add_type(&made, \"x\");\n    println!(\"{:?}\", dep::types(&made));\n}\n");
   expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  const made = {};\n");
   const facts = contract(out).ref_cells;
-  expect([facts.unchecked.length, facts.plain.length, facts.counted, facts.boxed]).toEqual([3, 1, undefined, undefined]);
+  expect([facts.unchecked.length, facts.quiet_fields.length, facts.counted, facts.boxed]).toEqual([3, 1, undefined, undefined]);
+  // A field it lists, borrowed for a moment, is the property its consumer
+  // reads, whatever the consumer's own borrows of its type count.
+  counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\npub struct Mine {\n    types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,\n}\n\nfn count(mine: &Mine) -> usize {\n    mine.types.borrow().as_ref().map_or(0, |types| types.borrow().len())\n}\n\nfn maybe(mine: &Mine, go: bool) -> usize {\n    if go {\n        count(mine)\n    } else {\n        0\n    }\n}\n\nfn twice(mine: &Mine) -> usize {\n    let held = mine.types.borrow_mut();\n    maybe(mine, false) + held.as_ref().map_or(0, |types| types.borrow().len())\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let mine = Mine { types: RefCell::new(None) };\n    let n = t.types.borrow().as_ref().map_or(0, |types| types.borrow().len());\n    println!(\"{n} {}\", twice(&mine));\n}\n");
+  const reads = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  expect([reads.includes("$borrowMut($fieldCell(mine, \"types\"), true)"), reads.includes("$fieldCell(t")]).toEqual([true, false]);
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let held = types.borrow_mut();\n    dep::add_type(&t, \"b\");\n    println!(\"{}\", held.len());\n}\n"))
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let n = types.borrow().len() + dep::types(&t).len();\n    println!(\"{n}\");\n}\n"))
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
   expect(() => counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn some(types: &RefCell<Option<Rc<RefCell<Vec<String>>>>>) -> bool {\n    types.borrow().is_some()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    println!(\"{}\", some(&t.types));\n}\n"))
-    .toThrow("`dep`, a rust-js library, has a field's");
+    .toThrow("`dep`, a rust-js library, borrows `dep::Transition::types` unchecked");
   expect(() => counting(out, "use std::cell::RefCell;\n\nfn get<T: Clone>(cell: &RefCell<T>) -> T {\n    cell.borrow().clone()\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    println!(\"{:?}\", get(&types));\n}\n"))
     .toThrow("as a `{ value }`");
   // One whose generic code has a `RefCell<T>` of any `T` boxes each, and

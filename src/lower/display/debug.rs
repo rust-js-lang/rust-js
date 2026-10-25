@@ -487,6 +487,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
                 let shown = match std(StdItem::RefCell) {
+                    // A handle on a struct's field that holds its value,
+                    // made only where no borrow of it is ever counted: what
+                    // it holds (ADR 0863, amended).
+                    true if matches!(value.kind, js::ExprKind::Handle(..)) => {
+                        self.debug_string_with(Expr::held(value), args.type_at(0), span, pretty)?
+                    }
                     // What it holds, shown while it's borrowed, or `<borrowed>`
                     // where it's mutably borrowed (ADR 0328).
                     true => {

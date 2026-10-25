@@ -222,6 +222,20 @@ pub(super) fn exports<'tcx>(
     }
 }
 
+/// What a library and its consumers both call `id`, an item or a field
+/// (`key`): a struct's `RefCell` field its contract names (ADR 0863,
+/// amended).
+pub(in crate::lower) fn item_key(tcx: TyCtxt<'_>, id: DefId) -> String {
+    key(tcx, id)
+}
+
+/// What a library's contract calls each of `ids`, sorted (`item_key`).
+pub(super) fn item_keys(tcx: TyCtxt<'_>, ids: impl IntoIterator<Item = DefId>) -> Vec<String> {
+    let mut keys: Vec<String> = ids.into_iter().map(|id| key(tcx, id)).collect();
+    keys.sort();
+    keys
+}
+
 /// What a library's contract calls each of `tys`, sorted, each once (ADR
 /// 0863): as it calls a type an `Rc` it counts points at (ADR 0852).
 pub(super) fn shapes<'tcx>(

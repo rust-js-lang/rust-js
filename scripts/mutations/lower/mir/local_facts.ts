@@ -26,4 +26,28 @@ export const mutations: Mutation[] = [
     replace: "            jsx_props: Default::default(),\n",
     tests: ["test/jsx-props.test.ts"],
   },
+  {
+    name: "quiet-field-calls-unseen",
+    breaks: "no call of a struct's quiet field is found, so each is checked by its type's borrows elsewhere (ADR 0863, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    quiet.calls.insert(block);\n                    if matches!(known, Std::Borrow { .. })",
+    replace: "                    if matches!(known, Std::Borrow { .. })",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+  },
+  {
+    name: "module-variable-set-unseen",
+    breaks: "a thread-local that's its module's variable is set as a cell, `$borrowMut(current)` (ADR 0270, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                Some(Std::CellSet) if quiet_local(&first.node) => _ = quiet.calls.insert(block),\n",
+    replace: "",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+  },
+  {
+    name: "quiet-guards-unmoved",
+    breaks: "a quiet field's guard moved to a variable, `let times = root.times.borrow(); .. drop(times);`, releases what it never counted, `$unborrow(times)` (ADR 0863, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "            quiet.guards.extend(more);\n",
+    replace: "            let _ = more;\n            break;\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+  },
 ];

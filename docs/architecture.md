@@ -201,7 +201,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Function contexts, assembly and source capture | `bodies.rs`, `pipeline.rs`, `reexports.rs`, `sources.rs`, `library.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
-| Value shape, copy policy, support and diagnostics | `representation.rs`, `copies.rs`, `support.rs`, `refusal.rs` |
+| Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
 | Values, patterns, calls and places | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs` |
 | Mutable references, pointers, plain-data layout and unions | `mut_refs.rs`, `pointers.rs`, `plain.rs`, `unions.rs` |
 | Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration |
@@ -261,8 +261,8 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884) | `binding_calls.rs`; `bindings.rs` | `gives_boxed_option`; `reads_a_key` |
 | Cells and plain module statics | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which thread-locals are their module's variables, exported ones `export let`, what other modules read of them, and which of their writes are refused (ADR 0270, amended) | `analysis/plain_locals.rs`; `std_types/cell.rs` | `plain_thread_locals`, `outside_writes`, `holds_a_value`; `imported_variables` |
-| A field that's the property its cell holds, a `Cell`'s, a `RefCell`'s never counted, a `OnceCell`'s | `representation.rs` | `property_cell`, `held`, `holding` |
-| Which `RefCell`s are the objects they hold, a field's plain one, which are never checked, and what a library's contract says of them (ADRs 0362, 0863) | `drops/ref_cells.rs` | `ref_cells`, `is_value_cell`, `plain_ref_cell`, `quiet_ref_cell`, `holds_itself` |
+| A field that's the property its cell holds, a `Cell`'s, a struct's `RefCell`'s by its declaration, a `OnceCell`'s; and the one cell of a `RefCell` field lent or checked, `$fieldCell` (ADR 0863, amended) | `representation.rs` | `property_cell`, `held`, `holding`, `uncounted` |
+| Which `RefCell`s are the objects they hold, which struct's fields hold their value by their declaration and which of those no borrow of which can meet another, which are never checked, and what a library's contract says of them (ADRs 0362, 0863) | `drops/ref_cells.rs` | `ref_cells`, `is_value_cell`, `holds_value`, `quiet_field`, `quiet_ref_cell`, `holds_itself` |
 | What a call, std's code's too, and a cell's own impls may borrow (ADRs 0580, 0863) | `analysis/cell_borrows.rs` | `call_asks`, `call_runs_unseen`, `impls_ask`, `may_be_cell` |
 | Which of the crate's functions never unwind, read from their MIR, and what a JS node throws only where its parts do (ADRs 0901, 0902) | `analysis/unwinding.rs`; `js/expr_walk.rs` | `never_unwinding`; `may_throw`, `never_throws` |
 | A type equal only to itself, a JS key by itself, a library's as its contract says (ADR 0864) | `std_impls.rs`; `library.rs` | `equal_only_to_itself` |

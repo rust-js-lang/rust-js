@@ -157,4 +157,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
     snapshots: true,
   },
+  {
+    name: "quiet-guard-released",
+    breaks: "a guard of a struct's field no borrow of which can meet another releases a borrow it never counted, `$unborrow(times)`, in a `try` of its own (ADR 0863, amended)",
+    file: "src/lower/mir/drops.rs",
+    find: "        if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+  },
 ];

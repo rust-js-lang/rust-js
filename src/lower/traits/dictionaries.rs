@@ -418,7 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 known,
                 into_iter,
                 tr.args,
-                (&[ty], &[]),
+                (&[ty], Default::default()),
                 vec![Expr::var("items")],
                 output,
                 span,

@@ -224,8 +224,8 @@ export const mutations: Mutation[] = [
     name: "defaulted-field-required",
     breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations.rs",
-    find: "                    field_default(self.tcx, field).is_some(),\n                    self.as_written(written, |out| out.field_ts(ty)),",
-    replace: "                    false,\n                    self.as_written(written, |out| out.field_ts(ty)),",
+    find: "                    field_default(self.tcx, field).is_some(),\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
+    replace: "                    false,\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
     tests,
   },
   {
@@ -448,8 +448,8 @@ export const mutations: Mutation[] = [
     name: "cell-field-declared-any",
     breaks: "a `Cell` field is declared `any`, where it's the number it holds",
     file: "src/lower/declarations.rs",
-    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || self.ref_cells.is_plain(self.tcx, ty)\n",
-    replace: "                if self.ref_cells.is_plain(self.tcx, ty)\n",
+    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
+    replace: "                if field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
   {
@@ -482,11 +482,9 @@ export const mutations: Mutation[] = [
     "name": "plain-refcell-declared-cell",
     "breaks": "a field's `RefCell` held as its value is declared `{ value }`",
     "file": "src/lower/declarations.rs",
-    "find": "                    || self.ref_cells.is_plain(self.tcx, ty)\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
+    "find": "                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
     "replace": "                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
-    "tests": [
-      "test/declarations.test.ts"
-    ]
+    "tests": ["test/declarations.test.ts", "test/lowering-field-cells.test.ts"]
   },
   {
     name: "declarations-private-type-any",

@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "mir-cell-handle-root-followed",
     breaks: "MIR's handle on a `Cell` field reads the field of what its reference is set to after",
     file: "src/lower/mir/rvalues.rs",
-    find: "                    && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))\n",
+    find: "                    && (self.is_std_type(pointee, StdItem::Cell)\n                        || self\n                            .place_field(state, *place)\n                            .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))\n",
     replace: "                    && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },

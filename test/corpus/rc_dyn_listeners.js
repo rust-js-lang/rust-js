@@ -5,6 +5,7 @@ import {
   $borrowMut,
   $downgrade,
   $dynCell,
+  $fieldCell,
   $index,
   $rcDrop,
   $unborrow,
@@ -38,14 +39,14 @@ function main() {
   } finally {
     $unborrow(receiver);
   }
-  const root = { value: { name: "root", parent: { value: $weakNone } }, strong: 1, weak: 0 };
-  const leaf = { value: { name: "leaf", parent: { value: $weakNone } }, strong: 1, weak: 0 };
+  const root = { value: { name: "root", parent: $weakNone }, strong: 1, weak: 0 };
+  const leaf = { value: { name: "leaf", parent: $weakNone }, strong: 1, weak: 0 };
   try {
     try {
       const value = $downgrade(root);
       let borrowMut;
       try {
-        borrowMut = $borrowMut(leaf.value.parent, true);
+        borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
       } catch (error) {
         $weakDrop(value);
         throw error;
@@ -59,14 +60,14 @@ function main() {
       } finally {
         $unborrow(borrowMut);
       }
-      const borrow = $borrow(leaf.value.parent, true);
+      const borrow = $borrow($fieldCell(leaf.value, "parent"), true);
       let parent;
       try {
         const upgrade = $upgrade(borrow.value);
         const value = (p) => {
           const result = p.value.name;
           $rcDrop(p, (value) => {
-            $weakDrop(value.parent.value);
+            $weakDrop(value.parent);
           });
           return result;
         };
@@ -82,12 +83,12 @@ function main() {
       }
     } finally {
       $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
+        $weakDrop(value.parent);
       });
     }
   } finally {
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
   }
 }

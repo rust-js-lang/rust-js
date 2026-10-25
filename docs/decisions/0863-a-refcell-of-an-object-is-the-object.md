@@ -14,7 +14,8 @@ field). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.m
 [0868](0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md)
 (what std's impls and derives run is what their bounds say); amended
 (a `#[repr(transparent)]` struct's `RefCell`, and a thread-local
-`RefCell`'s `set`, a field's plain one by its declaration, below).
+`RefCell`'s `set`, a field's plain one by its declaration, and each
+place's by that place, a struct's field by its declaration, below).
 Amended by [0897](0897-an-element-a-guard-reaches-is-its-place.md): a
 guard a temporary holds is its object where it's read, as `&mut guard`
 given to `deref_mut` writes only what it guards.
@@ -389,3 +390,147 @@ borrow it runs is still counted and checked.
 borrows is the value it holds", holds it, with mutations
 `field-refcell-plain-by-use` (`lower/drops/ref_cells.ts`) and
 `nullable-refcell-made-undefined` (`lower/aggregates.ts`).
+
+## Amendment: each place's `RefCell` is that place's, a struct's field by its declaration
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, the results
+changed. React's root, `FiberRootNode`, is made by React's JS, and its
+fibers by JS too; the port reads them. Which `RefCell`s were the value
+they hold was decided by type, so one use of a type anywhere changed
+every field of it:
+
+```rust
+pub struct Root { pub times: RefCell<Vec<f64>> }
+pub fn mark(root: &Root, index: usize) { let mut times = root.times.borrow_mut(); times[index] = 1.0; }
+pub struct Cursor<T> { pub current: RefCell<T> }
+pub fn read<T: Clone>(cursor: &Cursor<T>) -> T { cursor.current.borrow().clone() }
+```
+
+`Cursor`'s `RefCell<T>`, a cell of any value, boxed every `RefCell` of an
+object, and `root.times`, held by a `let`, wasn't a plain field: `mark`
+read `times.value[..]` of the array JS made, `undefined`, and React's
+code threw. And a `thread_local!` of a `Fiber`'s field's type,
+`RefCell<Option<Rc<Fiber>>>`, lent its type to std's `EagerStorage` field
+inside the macro, which made every field of it a cell: `fiber.return.value`,
+or, `#[rust_js::nullable]`, refused.
+
+**Each place's `RefCell` is decided by that place.**
+
+- **A struct's field holds its value by its declaration** (not a
+  `#[repr(transparent)]` struct's, which is its field, the cell): the
+  property is what the cell holds, a number, an `Option`, a fiber, the
+  array, whatever else has its type and however it's used. Of an object
+  the field holds the object, which is the cell (`is_value_cell` of the
+  type it's declared, so that each of a generic struct's is one or none).
+  A library's field the same, read of its declaration on both sides.
+- **A field none of whose borrows can meet another**, never lent, bound or
+  moved, and never borrowed while code that may borrow it runs, is never
+  checked, whatever its type's borrows elsewhere: its borrows are the
+  property, `times[..]`, its guards release nothing (`quiet_field`, MIR's
+  `QuietCells`). A library lists its own in its contract, `quiet_fields`;
+  a consumer that lends one, or holds a borrow of one while code that may
+  borrow it runs, is refused, naming it. A derive rust-js writes itself,
+  `Clone`, `PartialEq`, `Debug`, reads each `RefCell` field through the
+  `RefCell`'s own impl, which holds a borrow while what it holds runs its
+  own: of a type whose impls may borrow it, that field may meet another,
+  and is counted. (A `#[derive(Clone)]` has no body lowered, so before this
+  its `RefCell` field was a plain one whose clone's borrow went unseen, and
+  a `Clone` of what it holds that borrowed it mutably ran on where std's
+  panics: `refcell_field_derive_meets`.)
+- **Where a field's cell moves to another representation, the field's
+  owner converts it there**, naming the place in the JS. One lent, `&x.f`,
+  bound by a pattern, or borrowed while code that may borrow it runs, is
+  its one cell, `$fieldCell(x, "f")`, the same cell wherever it's asked,
+  kept beside the object JS made, its `value` the property: what it
+  counts is the field's. A nullable one's, `$fieldCell(x, "f", true)`,
+  writes its `None` `null`. A borrow of one where nothing's counted reads
+  the property, `$fieldCell(x, "f").value` being `x.f`. One moved out
+  whole, `let Wrap { n } = wrap;`, is a cell of its own of what it held,
+  `{ value: wrap.n }`, which the field written again doesn't change; one
+  written whole, `wrap.n = RefCell::new(9)`, is the property written,
+  `wrap.n = 9`, as a `Cell` field's now is too (it crashed the printer).
+- **A generic struct's `RefCell<T>` field doesn't box another place's.**
+  Its generic code reads it as a box of the property, whatever `T` is, so
+  it's no `RefCell<T>` of any value: only where some borrow of it may meet
+  another is each `RefCell` of an object it's made of, `Cursor<Vec<u8>>`'s
+  `RefCell<Vec<u8>>`, a box, so its generic code's `$fieldCell` and its
+  concrete code's read agree; of one none can, the object, which nothing
+  counts.
+- **A thread-local by its own uses** (ADR 0270): one that's its module's
+  variable, `quiet_locals`, is set as the variable, `current = fiber`, its
+  borrows never counted, whatever its type's are elsewhere. A local's
+  cell, ADR 0287's, by its own too.
+
+```js
+export function mark(root, index) {
+  const times = root.times;
+  times[$at(times, index)] = 1;
+}
+
+export function read(cursor, TClone) {
+  const borrow = $borrow($fieldCell(cursor, "current"), true);
+  try {
+    return TClone.clone(borrow.value);
+  } finally {
+    $unborrow(borrow);
+  }
+}
+
+export let current;
+
+export function setCurrentFiber(fiber) {
+  current = fiber;
+}
+```
+
+What stays a type's, as every place of it reads it so: whether a cell
+that isn't a struct's field, a `&RefCell<T>`'s, an `Rc`'s, a `Vec`'s
+item's, is the object or `{ value }` (one boxed reaches generic code and
+`dyn`), and whether a borrow of a type that may be lent is counted, as a
+guard's drop asks of its type.
+
+### Why
+
+- **JS made the object, and the declaration is its shape**, the one its
+  `.d.ts` says, `times: number[]`, `return?: Fiber | null`: a far body's
+  use can't change what JS must write.
+- **A conversion at the point it's needed is visible and correct**: the
+  field's one cell counts every borrow of it, from each place that has it,
+  so a borrow held while another's taken panics `already borrowed` as
+  std's does.
+- **Refusing every lent field** would refuse what compiled before, the
+  corpus's `refcell_bound_field_held` and `refcell_field_cells`; `{ value }`
+  in the field was the wrong answer.
+
+### Alternatives
+
+- **A field a cell where its own uses lend it** (the field's own uses,
+  not its type's): no other place changes it, but its own use still
+  changes its JS shape silently, a JS-made object's field read as a box.
+- **A count on the owner object**, a hidden `borrows` per key: as a stable
+  cell does, but every borrow helper would take an object and a key.
+
+### What holds it
+
+- Corpus: `refcell_field_places`, the root, the cursor, the fiber and its
+  thread-local, a field lent, borrowed, moved out and written whole,
+  against native Rust; and those that must panic `already borrowed`:
+  `refcell_field_lent_held`, a field lent while it's borrowed again,
+  `refcell_generic_field_held`, a generic field made of an array, and
+  `refcell_field_derive_meets`, a derived `Clone`'s; and
+  `refcell_bound_field_held`, `refcell_field_cells`,
+  `refcell_let_guard_quiet` and `rc_counts` as they are now.
+- `test/lowering-field-cells.test.ts`, "a struct's RefCell field holds
+  its value whatever else has its type" and "a struct's RefCell field lent
+  is its one cell, of the object JS made", given objects JS made, one of
+  which panics `already borrowed`; and "a transparent struct's nullable
+  RefCell field is refused".
+- `test/lowering-nullable.test.ts`, "a nullable RefCell field's None is
+  null where it's written": one lent is `$fieldCell(slot, "held", true)`.
+- `test/crates.test.ts`, "a library's RefCells are the values they hold,
+  and its consumer agrees or is refused": its `quiet_fields`, one read as
+  the property by a consumer that counts borrows of its type, and a lend
+  of one refused naming `dep::Transition::types`.
+- Mutations in `scripts/mutations/lower/drops/ref_cells.ts`,
+  `representation.ts`, `mir/local_facts.ts`, `std_types/cell.ts` and
+  `runtime/borrow.ts`.

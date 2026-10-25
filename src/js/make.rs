@@ -510,6 +510,17 @@ impl Expr {
             if let ExprKind::Handle(place, _) = object.kind {
                 return *place;
             }
+            // A struct's `RefCell` field's one cell, `$fieldCell(o, "f")`,
+            // holds `o.f`, which its `value` reads and writes; not a
+            // nullable one's, `$fieldCell(o, "f", true)`, which writes its
+            // `None` `null` (ADR 0863, amended).
+            if let ExprKind::Call(callee, args) = &object.kind
+                && callee.helper_name() == Some("$fieldCell")
+                && let [holder, key] = args.as_slice()
+                && let ExprKind::Str(key) = &key.kind
+            {
+                return Expr::member(holder.clone(), key.clone());
+            }
             // And of a handle through an `Option`'s box, `$someMut`, what
             // the box holds, `$someValue(o)` (ADR 0486).
             if let ExprKind::Call(callee, args) = &object.kind

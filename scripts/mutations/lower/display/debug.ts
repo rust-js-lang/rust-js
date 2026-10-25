@@ -386,4 +386,13 @@ export const mutations: Mutation[] = [
     replace: "                        if false && self.is_value_cell(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
+  {
+    name: "quiet-field-shown-borrowed",
+    breaks: "a derived `Debug` of a struct's quiet `RefCell` field borrows a handle on it, `$showBorrowed({ get value() .. })` (ADR 0863, amended)",
+    file: "src/lower/display/debug.rs",
+    find: "                    true if matches!(value.kind, js::ExprKind::Handle(..)) => {\n",
+    replace: "                    true if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_field_cells.rs$"],
+    snapshots: true,
+  },
 ];

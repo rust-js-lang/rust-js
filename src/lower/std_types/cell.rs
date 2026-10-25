@@ -72,6 +72,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             *values = given.into_iter();
         }
+        // A struct's `RefCell` field no borrow of which can meet another is
+        // never checked (ADR 0863, amended): one MIR says is (`quiet`), and
+        // one that holds its value, a handle on it only where none can, its
+        // own or its type's (`representation::held`).
+        let unchecked =
+            call.quiet || (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says
@@ -144,8 +150,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(_) => &mut set,
                     None => &mut *out,
                 };
-                let checked =
-                    ref_cell.is_some_and(|ref_cell| !self.plain_ref_cell(ref_cell) && !self.quiet_ref_cell(ref_cell));
+                // Not one of its module's variable's, whose borrows are
+                // never counted (`quiet`, ADR 0270, amended).
+                let checked = !call.quiet && ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell));
                 let target = match checked {
                     true => Expr::call(Expr::helper("$borrowMut"), vec![cell.clone()]),
                     false => cell.clone(),
@@ -213,22 +220,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = tys[0].peel_refs();
                 // A `RefCell` of an object is the object (ADR 0863): its
                 // contents taken in place, as a `&mut` to it would, borrowed
-                // to do it where it's counted.
-                if self.is_value_cell(held) {
+                // to do it where it's counted. Not a field's no borrow of
+                // which can meet another, which nothing else reaches: the
+                // object in the field replaced, as a property is.
+                if self.is_value_cell(held) && !call.quiet {
                     let cell = match self.quiet_ref_cell(held) {
                         true => cell,
                         false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
                     };
                     return Ok(Some(Expr::call(Expr::helper("$take"), vec![cell, next])));
                 }
-                if self.is_std_type(held, StdItem::RefCell) && !self.plain_ref_cell(held) && !self.quiet_ref_cell(held)
-                {
+                if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held) {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
                     return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
                 }
                 // Read and written, made once: `get(c).value`'s `get(c)`
-                // first, as a handle on it reads it each time.
-                let place = self.fixed_place_of(Expr::held(cell), out);
+                // first, as a handle on it reads it each time. Of an object
+                // a field holds, the field.
+                let place = match self.is_value_cell(held) {
+                    true => cell,
+                    false => self.fixed_place_of(Expr::held(cell), out),
+                };
                 let old = self.spill("old", place.clone(), out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
                 old
@@ -278,7 +290,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // check can't fail (ADR 0362).
             // Of a `RefCell` no borrow of which can meet another, the cell
             // itself, unchecked and uncounted (ADR 0863).
-            Std::Borrow { lock: false, .. } if self.quiet_ref_cell(tys[0].peel_refs()) => arg(),
+            Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs()) => {
+                let cell = arg();
+                self.uncounted(cell)
+            }
             Std::Borrow { mutable, lock } => {
                 let name = match (lock, mutable) {
                     (false, false) => "$borrow",
@@ -299,6 +314,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::GuardValue { mutable } => self.guard_value(arg(), generic_args.type_at(0), mutable),
             Std::Lock => result::ok(Expr::held(arg())),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
+            // Of a guard of a field's `RefCell` no borrow of which can meet
+            // another, which counted nothing, nothing (ADR 0863, amended).
+            Std::Drop if call.quiet => {
+                arg();
+                Expr::undefined()
+            }
             Std::Drop => {
                 let ty = tys[0];
                 let value = arg();

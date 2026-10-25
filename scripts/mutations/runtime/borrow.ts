@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
+  {
+    name: "field-cell-null-undefined",
+    breaks: "a nullable field's cell writes its `None` `undefined`, where JS's object's field is `null` (ADR 0863, amended)",
+    file: "src/runtime/borrow.js",
+    find: "        object[key] = nullable ? (value ?? null) : value;\n",
+    replace: "        object[key] = value;\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "lent is its one cell"],
+  },
+  {
+    name: "field-cell-made-each-time",
+    breaks: "a field's cell is made anew each time it's asked, so a borrow counted on one is never seen by the next (ADR 0863, amended)",
+    file: "src/runtime/borrow.js",
+    find: "    cells.set(key, cell);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_field_lent_held.rs$"],
+  },
 ];

@@ -20,6 +20,8 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
+mod cells;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,
     /// which MIR sends to one block: each one's test, `||`; of an untagged
@@ -554,6 +556,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Field `i` of `ty`, a struct, as rustc declares it, which `shape`
+    /// lists in its order: what `held` and `holding` ask of a struct's
+    /// field. `None` of a tuple's, or an enum's variant's.
+    pub(super) fn struct_field_def(&self, ty: Ty<'tcx>, i: usize) -> Option<&'tcx ty::FieldDef> {
+        match ty.kind() {
+            ty::Adt(adt, _) if adt.is_struct() => adt.non_enum_variant().fields.get(rustc_abi::FieldIdx::from_usize(i)),
+            _ => None,
+        }
+    }
+
     /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
     pub(super) fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
         // What's the value it holds: that field is it, a marker beside it
@@ -578,79 +590,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
             (Shape::Object(fields), _) => {
                 let field = Expr::member(base, fields[i].0.clone());
+                let def = self.struct_field_def(ty, i);
                 match self.nullable_cell_field(ty, (i, fields[i].1)) {
                     // One there where it's made, which stores `null` for
                     // `None`, so what's read of it is never `undefined`; not
                     // an optional one, absent until it's set (ADRs 0620,
                     // amended, 0810).
-                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined()),
-                    true => self.nullable_cell_handle(field),
-                    false => self.held(field, fields[i].1),
+                    true if self.null_where_made(ty, i) => self.nullable_cell_handle(field.defined(), def, fields[i].1),
+                    true => self.nullable_cell_handle(field, def, fields[i].1),
+                    false => self.held(field, def, fields[i].1),
                 }
             }
             (Shape::Other, _) => unreachable!("fields of a type without fields"),
-        }
-    }
-
-    /// Whether field `i` of `ty` is a `#[rust_js::nullable]` field's `Cell`
-    /// of an `Option`, whose `None` is `null`: the storage a handle on it
-    /// writes so, wherever it's written through (ADR 0772).
-    pub(super) fn nullable_cell_field(&self, ty: Ty<'tcx>, (i, field_ty): (usize, Ty<'tcx>)) -> bool {
-        let ty::Adt(adt, _) = ty.kind() else { return false };
-        adt.is_struct()
-            && bindings::is_nullable(
-                self.tcx,
-                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
-            )
-            && bindings::nullable_option(self.tcx, field_ty).is_some_and(|option| option != field_ty)
-    }
-
-    /// Whether field `i` of `ty`, a struct's, is `null` for `None` where
-    /// it's made, and so never `undefined` (`bindings::null_where_made`).
-    fn null_where_made(&self, ty: Ty<'tcx>, i: usize) -> bool {
-        let ty::Adt(adt, _) = ty.kind() else { return false };
-        adt.is_struct()
-            && bindings::null_where_made(
-                self.tcx,
-                &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)],
-            )
-    }
-
-    /// A handle on `place`, a `nullable_cell_field`'s, that stores what's
-    /// written to it as the field does: its `None`, `null` (ADR 0772).
-    pub(super) fn nullable_cell_handle(&self, place: Expr) -> Expr {
-        Expr::stored_handle(place, js::Storage::NullForNone)
-    }
-
-    /// What a field of type `ty` is, read where it's `field`: itself, or of
-    /// a cell that's the property it holds (`property_cell`), a `Cell`'s
-    /// say, set in place (ADR 0288), a handle on it. Every use of a cell,
-    /// `.value`, reads and writes the property through it.
-    pub(super) fn held(&self, field: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.property_cell(ty) {
-            Some(_) => Expr::handle(field),
-            None => field,
-        }
-    }
-
-    /// Of a field of type `ty` that's the property its cell holds, what
-    /// the property is: a `Cell`'s `T` (ADR 0288), a `RefCell`'s never
-    /// counted (ADR 0362), and a `OnceCell`'s or `OnceLock`'s `Option<T>`,
-    /// absent until it's set (ADR 0847). `None` of a field that's itself.
-    pub(super) fn property_cell(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(_, args) = ty.kind() else { return None };
-        if self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
-            return Some(args.type_at(0));
-        }
-        (self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))
-    }
-
-    /// What a field of type `ty` holds of `value`, a field's value made: of
-    /// a cell that's the property (`property_cell`), what the cell holds.
-    pub(super) fn holding(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.property_cell(ty) {
-            Some(_) => Expr::held(value),
-            None => value,
         }
     }
 

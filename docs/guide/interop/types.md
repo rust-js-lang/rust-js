@@ -1138,15 +1138,21 @@ export function shared() {
 
 - **A `Cell` in a field is the property it holds**: `counter.hits`, read and
   set in place ([ADR 0288](../../decisions/0288-cell-fields.md)).
-- **A `RefCell` in a field is the value it holds** where every borrow of it
-  in the crate lasts a moment, as `borrow_mut().push(..)`, `replace` and
-  `take` do, and where none is borrowed at all: what decides is the field
-  and its type, not whether some body borrows one
+- **A `RefCell` in a struct's field is the value it holds**, by the
+  field's declaration, as JS that makes the object writes it: whatever
+  else has its type, a generic struct's `RefCell<T>`, a thread-local, and
+  however the field itself is used
   ([ADR 0362](../../decisions/0362-refcell-fields-never-counted.md),
   [ADR 0585](../../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md),
   [ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
-  A `#[rust_js::nullable]` one's `None` is `null` where it's made,
-  `child: null`.
+  One whose every borrow lasts a moment, as `borrow_mut().push(..)`,
+  `replace` and `take` do, is never checked: its borrows are the property.
+  One lent, `&x.f`, bound by a pattern, or borrowed while code that may
+  borrow it runs is its one cell there, `$fieldCell(x, "f")`, whose `value`
+  is the property and which counts its borrows, beside the object whoever
+  made it; one moved out whole is a `{ value }` of what it held.
+  A `#[rust_js::nullable]` one's `None` is `null` where it's made and
+  written, `child: null`.
   A `#[repr(transparent)]` struct's field isn't a property: the struct is
   the cell.
 - **A `RefCell` of an array, a `Map`, a `Set` or a struct's object is that
@@ -1155,7 +1161,8 @@ export function shared() {
   Of a `#[repr(transparent)]` struct it's its field's: a `Vec`'s newtype's
   is the array.
   Generic code's `RefCell<T>` of any `T`, and one made a `RefCell<dyn T>`,
-  is `{ value }` too, for every `T`
+  is `{ value }` too, for every `T`; not a generic struct's field, which
+  holds its value
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
 - **A `RefCell` held across code counts its borrows**, as std's does: a
   second `borrow_mut()` while one is held panics

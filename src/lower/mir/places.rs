@@ -302,7 +302,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `Cell` it holds, as a struct's (ADR 0288): a handle on it.
                 let variant = adt.variant(variant);
                 let read = Expr::member(base, variant_field(self.tcx, variant, i));
-                Ok(self.held(read, self.field_ty(&variant.fields[field], args)))
+                Ok(self.held(
+                    read,
+                    Some(&variant.fields[field]),
+                    self.field_ty(&variant.fields[field], args),
+                ))
             }
             // A union's, what it holds there (ADR 0406).
             (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),

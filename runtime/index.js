@@ -5401,6 +5401,31 @@ export function $setBorrows(cell, borrows) {
   Object.defineProperty(cell, "borrows", { value: borrows, writable: true, configurable: true });
 }
 
+// A struct's `RefCell` field that holds its value, `object[key]`, some
+// borrow of which is checked (ADR 0863, amended): the one cell of it there
+// is, made where it's first asked, which counts its borrows as a
+// `{ value }` does, its `value` the property; of a nullable field, its
+// `None` `null` where it's written.
+export const $fieldCells = new WeakMap();
+
+export function $fieldCell(object, key, nullable) {
+  let cells = $fieldCells.get(object);
+  if (cells === undefined) $fieldCells.set(object, (cells = new Map()));
+  let cell = cells.get(key);
+  if (cell === undefined) {
+    cell = {
+      get value() {
+        return object[key];
+      },
+      set value(value) {
+        object[key] = nullable ? (value ?? null) : value;
+      },
+    };
+    cells.set(key, cell);
+  }
+  return cell;
+}
+
 // `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard held, or `Err` of
 // the error, which is its message.
 export function $tryBorrow(cell, mutable) {

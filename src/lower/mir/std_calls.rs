@@ -8,6 +8,19 @@ use super::*;
 use crate::lower::format_args::Piece;
 use crate::lower::std_types::once::OnceOp;
 
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What MIR says of the call being lowered's arguments, past their
+    /// values: which `Option`s are `null` already (`nulled`), and whether
+    /// the cell it's given is a place no borrow of which can meet another
+    /// (`QuietCells`, ADR 0863, amended).
+    pub(super) fn call_given<'n>(&self, state: &State<'_, 'tcx>, nulled: &'n [bool]) -> crate::lower::calls::Given<'n> {
+        crate::lower::calls::Given {
+            nulled,
+            quiet: state.facts.quiet_cells().calls.contains(&state.at),
+        }
+    }
+}
+
 /// What's called, a std function `classify` knows, and its type's parts.
 #[derive(Clone, Copy)]
 pub(super) struct StdCall<'c, 'tcx> {

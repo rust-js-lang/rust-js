@@ -133,6 +133,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     value => Ok(value),
                 }
             }
+            // A whole cell moved out of a field that's the property it
+            // holds (`property_cell`): a cell of its own, of what it held,
+            // which the field written again doesn't change.
+            Operand::Copy(place) | Operand::Move(place) if self.whole_property_cell(state, *place) => {
+                let span = state.body.local_decls[place.local].source_info.span;
+                let read = self.mir_place(state, *place, span, out)?;
+                Ok(Value::Expr(Expr::object(vec![js::Prop::Field(
+                    js::HELD.into(),
+                    Expr::held(read),
+                )])))
+            }
             Operand::Copy(place) | Operand::Move(place) => {
                 let span = state.body.local_decls[place.local].source_info.span;
                 let read = self.mir_place(state, *place, span, out)?;

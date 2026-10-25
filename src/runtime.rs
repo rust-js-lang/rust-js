@@ -382,6 +382,9 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 /// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
 /// else.
 const PURE: &[&str] = &[
+    // A struct's `RefCell` field's one cell, made where it's first asked
+    // (ADR 0863, amended).
+    "$fieldCell",
     // A thread-local's holder, whose initializer runs at its first use
     // (ADR 0037, amended).
     "$local",

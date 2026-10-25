@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             // And a `RefCell`'s that's the property it holds (ADR 0863).
-            let cell = self.is_std_type(field_ty, StdItem::Cell) || self.plain_ref_cell(field_ty);
+            let cell = self.property_cell(Some(field), field_ty).is_some();
             let made = std::mem::replace(value, Expr::undefined());
             let held = match cell {
                 true => Expr::held(made.clone()),
@@ -336,8 +336,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 commented = (self.commented_fields(&adt_def, variant_index, span).into_iter())
                     .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
                     .collect();
-                let mut items: Vec<Option<Expr>> = (names.iter().zip(fields))
-                    .map(|(&(_, field_ty), value)| Some(self.holding(value, field_ty)))
+                let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
+                    .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
                     .collect();
                 let declared: Vec<usize> = (0..names.len()).collect();
                 let order = order.unwrap_or(&declared);

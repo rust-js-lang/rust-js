@@ -237,11 +237,13 @@ pub struct RefCellFacts {
     /// a consumer holds no borrow of one while the library's code runs.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub unchecked: Vec<RcShape>,
-    /// Those a field of its types holds as its value (ADR 0362), each
-    /// field of one only ever borrowed for a moment: a consumer reads and
-    /// borrows one so.
+    /// Its structs' `RefCell` fields, by key, none of whose borrows its
+    /// code checks, as it only ever borrows each for a moment (ADR 0863,
+    /// amended): a consumer lends none, and holds no borrow of one while
+    /// code that may borrow it runs. What each holds, the value or the
+    /// object, both read of its declaration.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub plain: Vec<RcShape>,
+    pub quiet_fields: Vec<String>,
     /// Those its types' fields hold, and its exported functions take and
     /// give, which a consumer shares with it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

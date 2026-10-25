@@ -26,7 +26,19 @@ pub(super) struct Call<'c, 'tcx> {
     /// already, MIR's `nulled`, where it's asked: a binding's nullable
     /// parameter's, or what a `Cell` is written (ADR 0772); else empty.
     pub(super) nulled: &'c [bool],
+    /// Of a call of a `RefCell`'s, `x.f.borrow()`, or of `drop(guard)` of a
+    /// guard of one, whether it's a struct's field's no borrow of which can
+    /// meet another, never checked (ADR 0863, amended).
+    pub(super) quiet: bool,
     pub(super) span: Span,
+}
+
+/// What MIR says of a call's arguments that their values don't, as `Call`
+/// carries it: `nulled` and `quiet`.
+#[derive(Clone, Copy, Default)]
+pub(super) struct Given<'c> {
+    pub(super) nulled: &'c [bool],
+    pub(super) quiet: bool,
 }
 
 /// Arguments given to JS: a trailing `undefined` is one it's given, which

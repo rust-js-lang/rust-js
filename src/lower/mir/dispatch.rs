@@ -951,11 +951,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        let given = self.call_given(state, nulled);
         let value = self.mir_std_call(
             state,
             (known, def_id),
             generic_args,
-            (arg_tys, nulled),
+            (arg_tys, given),
             values,
             output,
             span,
@@ -1024,7 +1025,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Std,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
-        (arg_tys, nulled): (&[Ty<'tcx>], &[bool]),
+        (arg_tys, given): (&[Ty<'tcx>], crate::lower::calls::Given<'_>),
         values: Vec<Expr>,
         output: Ty<'tcx>,
         span: Span,
@@ -1035,7 +1036,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             def_id,
             generic_args,
             tys: arg_tys,
-            nulled,
+            nulled: given.nulled,
+            quiet: given.quiet,
             span,
         };
         self.std_values(known, call, values, boxed, output, out)
@@ -1076,7 +1078,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         (known, def_id): (Std, rustc_span::def_id::DefId),
         generic_args: ty::GenericArgsRef<'tcx>,
-        (arg_tys, nulled): (&[Ty<'tcx>], &[bool]),
+        (arg_tys, given): (&[Ty<'tcx>], crate::lower::calls::Given<'_>),
         mut values: Vec<Value<'tcx>>,
         output: Ty<'tcx>,
         span: Span,
@@ -1098,7 +1100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             let value = match known {
                 Std::ToString => {
-                    self.std_by_values(known, def_id, generic_args, (arg_tys, &[]), exprs, output, span, out)?
+                    self.std_by_values(known, def_id, generic_args, (arg_tys, given), exprs, output, span, out)?
                 }
                 _ => exprs.into_iter().next().expect("the text"),
             };
@@ -1200,11 +1202,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Panic | Std::PanicFmt | Std::PanicDisplay { .. } | Std::BeginPanic => {
                 self.flush(state, out)?;
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
+                self.std_by_values(known, def_id, generic_args, (arg_tys, given), exprs, output, span, out)?
             }
             _ if lowered_from_values(known) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.std_by_values(known, def_id, generic_args, (arg_tys, nulled), exprs, output, span, out)?
+                self.std_by_values(known, def_id, generic_args, (arg_tys, given), exprs, output, span, out)?
             }
             _ => {
                 let name = self.tcx.def_path_str(def_id);

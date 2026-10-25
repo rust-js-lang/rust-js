@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && false\n        {\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
   },
+  {
+    name: "whole-cell-moved-as-handle",
+    breaks: "a whole cell moved out of a field that's the property it holds is a handle on the field, which the field written again changes",
+    file: "src/lower/mir/operands.rs",
+    find: "            Operand::Copy(place) | Operand::Move(place) if self.whole_property_cell(state, *place) => {\n",
+    replace: "            Operand::Copy(place) | Operand::Move(place) if false && self.whole_property_cell(state, *place) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
+  },
 ];

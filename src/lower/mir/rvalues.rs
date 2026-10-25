@@ -152,7 +152,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `error` is set again, `error.title.get()`: the place it
                 // reads then is the one it was (ADR 0853).
                 if matches!(kind, BorrowKind::Shared)
-                    && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))
+                    && (self.is_std_type(pointee, StdItem::Cell)
+                        || self
+                            .place_field(state, *place)
+                            .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))
                     && place.projection.first() == Some(&PlaceElem::Deref)
                     && written_again(state, place.local)
                     && state.body.local_decls[place.local].ty.is_ref()
@@ -703,7 +706,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut props = vec![Prop::Spread(base)];
             for (i, value) in given.into_iter().zip(values) {
                 let value = self.value_expr(value, span)?;
-                props.push(Prop::Field(names[i].0.clone(), self.holding(value, names[i].1)));
+                let field = &self.tcx.adt_def(did).non_enum_variant().fields[FieldIdx::from_usize(i)];
+                props.push(Prop::Field(
+                    names[i].0.clone(),
+                    self.holding(value, Some(field), names[i].1),
+                ));
             }
             let mut made = Expr::object(props);
             if let js::ExprKind::Object(_, layout) = &mut made.kind {
@@ -813,6 +820,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         }
+    }
+
+    /// Whether `place` is a whole field that's the property its cell holds,
+    /// a `Cell`'s or a struct's `RefCell`'s (`property_cell`): read as a
+    /// handle on it, written and moved as what it holds.
+    pub(super) fn whole_property_cell(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let ty = place.ty(state.body, self.tcx).ty;
+        (self.is_std_type(ty, StdItem::Cell) || self.is_std_type(ty, StdItem::RefCell))
+            && self
+                .place_field(state, place)
+                .is_some_and(|field| self.property_cell(Some(field), ty).is_some())
     }
 
     /// The field `place`, `*r`, is where `r` is what a `RefCell`'s `get_mut`

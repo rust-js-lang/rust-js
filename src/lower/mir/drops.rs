@@ -369,6 +369,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(drops) = state.facts.drops() else {
             return Ok(());
         };
+        // A guard of a field's `RefCell` no borrow of which can meet another
+        // counted nothing, so its drop releases nothing (ADR 0863, amended).
+        if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {
+            return Ok(());
+        }
         match drops.move_data.rev_lookup.find(place.as_ref()) {
             LookupResult::Exact(path) => self.elaborate_drop(state, block, (place, path), cleanup, span, out),
             // Behind a pointer, which borrowck says is there.

@@ -148,10 +148,25 @@ pub struct Slot {
 pub fn lent(slot: &Slot) -> &RefCell<Option<u32>> {
     &slot.held
 }
+
+pub fn clear(slot: &Slot) {
+    *slot.held.borrow_mut() = None;
+}
 `);
-  expect(() => run([compiler, join(cell, "lib.rs"), "-o", join(cell, "lib.js")])).toThrow(
-    "`#[rust_js::nullable]` of a `RefCell` is of one a field holds as the value it holds",
-  );
+  // One lent is the field's one cell, its `value` the property, its `None`
+  // written `null`, whoever made the object (ADR 0863, amended).
+  run([compiler, join(cell, "lib.rs"), "-o", join(cell, "lib.js")]);
+  expect(readFileSync(join(cell, "lib.js"), "utf8")).toContain('  return $fieldCell(slot, "held", true);\n');
+  const slots = await import(join(cell, "lib.js"));
+  const slot = { held: 3 };
+  const lent = slots.lent(slot);
+  const read = lent.value;
+  lent.value = undefined;
+  expect([read, slot.held, slots.lent(slot) === lent]).toEqual([3, null, true]);
+  // And one written through its guard, where nothing counts its borrows.
+  const other: { held: number | null } = { held: 4 };
+  slots.clear(other);
+  expect(other.held).toBe(null);
 });
 
 // React's root's lane maps, `createLaneMap(null)`, whose items JS tests

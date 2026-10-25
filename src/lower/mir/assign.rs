@@ -671,6 +671,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.mir_place(state, place, span, out)?
         };
+        // A whole cell written to a field that's the property it holds, a
+        // `Cell`'s, a struct's `RefCell`'s (`property_cell`): the property
+        // what the cell holds, `wrap.n = 9` of `wrap.n = RefCell::new(9)`.
+        let (target, value) = match self.whole_property_cell(state, place) {
+            true => (Expr::held(target), Expr::held(value)),
+            false => (target, value),
+        };
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
         // name for it sees it.

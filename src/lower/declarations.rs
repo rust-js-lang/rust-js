@@ -933,7 +933,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 None => (
                     field_default(self.tcx, field).is_some(),
-                    self.as_written(written, |out| out.field_ts(ty)),
+                    self.as_written(written, |out| out.field_ts(ty, Some(field))),
                 ),
             };
             // One a caller may leave out takes `undefined` too, as leaving it
@@ -1020,7 +1020,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         }
                         let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
-                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
+                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);
                             let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
@@ -1078,7 +1078,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let fields: Vec<_> = self.tcx.adt_def(def_id).non_enum_variant().fields.iter().collect();
         let types: Vec<Value> = (fields.into_iter())
             .map(|field| {
-                let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization());
+                let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);
                 let member = json!({ "kind": "property", "name": field_key(self.tcx, field), "optional": false, "readonly": false, "type": ty });
                 json!({ "kind": "object", "members": [member] })
             })
@@ -1183,11 +1183,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `ty` as a TypeScript type.
-    /// A field's type: of a `Cell`, what it holds, as a `Cell` in a field
-    /// is the property set in place (ADR 0288), and of a `RefCell` never
-    /// counted (ADR 0362); of a `OnceCell`, what it holds or `undefined`
-    /// (ADR 0847).
-    fn field_ts(&mut self, ty: Ty<'tcx>) -> Value {
+    /// A field's type, a struct's `field`'s: of a `Cell`, what it holds, as
+    /// a `Cell` in a field is the property set in place (ADR 0288), and of
+    /// a struct's `RefCell`, which holds its value or the object it is by
+    /// its declaration (ADR 0863, amended); of a `OnceCell`, what it holds
+    /// or `undefined` (ADR 0847).
+    fn field_ts(&mut self, ty: Ty<'tcx>, field: Option<&ty::FieldDef>) -> Value {
         if let Some(item) = self.once_cell_item(ty) {
             let item = self.ts(item);
             return or_undefined(item);
@@ -1195,7 +1196,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         match ty.kind() {
             ty::Adt(adt, args)
                 if is_std_def(self.tcx, adt.did(), StdItem::Cell)
-                    || self.ref_cells.is_plain(self.tcx, ty)
+                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))
                     || self.ref_cells.is_value_cell(self.tcx, ty) =>
             {
                 self.ts(args.type_at(0))

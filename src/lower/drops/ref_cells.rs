@@ -1,21 +1,26 @@
 //! What the crate does with its `RefCell`s, found once over every body
 //! before any is lowered (ADRs 0362, 0863): which are the object they hold;
-//! a field's whose every borrow is held for a moment, the value itself in
-//! the field; and each type none of whose borrows is held while code that
-//! may borrow it runs, so that no borrow of it can meet another, and none
-//! is checked. A library's contract says each to its consumers, which agree
-//! or are refused.
+//! a struct's field's, the value it holds by its declaration, and of those
+//! each no borrow of which can meet another, its own uses all borrows of
+//! it for a moment; and each type none of whose borrows is held while code
+//! that may borrow it runs, so that no borrow of it can meet another, and
+//! none is checked. A library's contract says each to its consumers, which
+//! agree or are refused.
 
 use super::*;
 use crate::lower::analysis::{Borrow, Cell};
 
-/// What the crate's bodies do with its `RefCell`s, by type, each of its
-/// regions erased: those a field holds as its value (ADR 0362), and those
-/// some borrow of which is counted, held while code that may borrow it
-/// runs, or that may be one (ADR 0863).
+/// What the crate's bodies do with its `RefCell`s: by type, each of its
+/// regions erased, those some borrow of which is counted, held while code
+/// that may borrow it runs, or that may be one (ADR 0863); and by field,
+/// each of a struct's no borrow of which can meet another (ADR 0863,
+/// amended), a field being a place of its own whatever its type.
 #[derive(Default)]
 pub(in crate::lower) struct RefCells<'tcx> {
-    plain: HashSet<Ty<'tcx>>,
+    /// Each `RefCell` field of the crate's structs that's never lent, bound
+    /// or moved, and whose every borrow is held only where nothing that may
+    /// borrow it runs: none of its borrows can meet another.
+    quiet_fields: HashSet<DefId>,
     counted: HashSet<Ty<'tcx>>,
     /// Each the crate's bodies borrow.
     borrowed: HashSet<Ty<'tcx>>,
@@ -36,11 +41,33 @@ pub(in crate::lower) struct RefCells<'tcx> {
 }
 
 impl<'tcx> RefCells<'tcx> {
-    /// Whether `ty` is one of the crate's `RefCell`s held as their values
-    /// (ADR 0362), of its regions erased: a field's own type says `dyn
-    /// FnMut() + 'static`, a body's `'{erased}`.
-    pub(in crate::lower) fn is_plain(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-        self.plain.contains(&tcx.erase_and_anonymize_regions(ty)) || self.library_has(tcx, ty, |f| &f.plain).is_some()
+    /// Whether `field` is a struct's `RefCell` field that holds its cell's
+    /// value as the property, by its declaration alone, whatever its uses
+    /// (ADR 0863, amended): of a struct not `#[repr(transparent)]`, which
+    /// is its field, the cell (ADR 0584); and of what isn't an object the
+    /// cell is (`is_value_cell` of the type it's declared, so each of a
+    /// generic struct's is one or none), whose field holds that object.
+    /// The same in a library and its consumers, as each reads it of its
+    /// declaration.
+    pub(in crate::lower) fn holds_value(&self, tcx: TyCtxt<'tcx>, field: &ty::FieldDef) -> bool {
+        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::RefCell))
+            && struct_field(tcx, field.did)
+            && !self.is_value_cell(tcx, ty)
+    }
+
+    /// Whether `field`, a struct's `RefCell` field, is one no borrow of
+    /// which can meet another (ADR 0863, amended): never lent, bound or
+    /// moved, each of its borrows held only where nothing that may borrow
+    /// it runs, the crate's or, of a library's, as its contract says.
+    pub(in crate::lower) fn quiet_field(&self, tcx: TyCtxt<'tcx>, field: DefId) -> bool {
+        match field.as_local() {
+            Some(_) => self.quiet_fields.contains(&field),
+            None => {
+                let key = crate::lower::library::item_key(tcx, field);
+                (self.libraries.iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))
+            }
+        }
     }
 
     /// The library, if any, whose facts' `kind` names a type `ty` may be
@@ -61,8 +88,9 @@ impl<'tcx> RefCells<'tcx> {
     }
 
     /// What its contract says of its `RefCell`s (ADR 0863): those of an
-    /// object it boxes, those it counts, those it borrows unchecked, those
-    /// a field holds as its value, and those it shares with consumers.
+    /// object it boxes, those it counts, those it borrows unchecked, its
+    /// fields no borrow of which can meet another, and those it shares
+    /// with consumers.
     pub(in crate::lower) fn facts(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
@@ -82,22 +110,20 @@ impl<'tcx> RefCells<'tcx> {
             },
             counted: shapes(&self.counted),
             unchecked: shapes(&unchecked),
-            plain: shapes(&self.plain),
+            quiet_fields: crate::lower::library::item_keys(tcx, self.quiet_fields.iter().copied()),
             handed: shapes(&self.handed),
         }
     }
 
     /// Whether a `RefCell` of type `ty` is the object it holds, not a
     /// `{ value }` box (ADR 0863): one of what `holds_itself` says is an
-    /// object, but one that's still a box (`boxes`), or a field's that's
-    /// the property it holds, whose field's borrows can't meet another
-    /// (ADR 0362).
+    /// object, but one that's still a box (`boxes`). By its type alone,
+    /// wherever it is: a struct's field that holds one holds the object.
     pub(in crate::lower) fn is_value_cell(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         let ty::Adt(adt, args) = ty.kind() else { return false };
         crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::RefCell)
             && holds_itself(tcx, args.type_at(0))
             && !self.boxes(tcx, ty)
-            && !self.is_plain(tcx, ty)
     }
 
     /// Whether `ty`, a `RefCell` of an object, is still `{ value }` (ADR
@@ -219,14 +245,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.ref_cells.get_or_init(|| self.find_ref_cells())
     }
 
-    /// A `RefCell` type a field holds as its value (ADR 0362): each field of
-    /// one in the crate is only ever borrowed for a moment, where nothing can
-    /// ask, so no borrow of it is counted, its count stays 0, and its checks
-    /// can't fail; a library's too, where its contract says so (ADR 0863).
-    /// A field's cell lent, bound or moved, as a derive's code does, one of
-    /// generic code, and one a library shares as a cell, is a cell.
-    pub(in crate::lower) fn plain_ref_cell(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_type(ty, StdItem::RefCell) && self.ref_cells().is_plain(self.tcx, ty)
+    /// Whether `field`, a struct's, holds its `RefCell`'s value as the
+    /// property, by its declaration (`RefCells::holds_value`, ADR 0863,
+    /// amended).
+    pub(in crate::lower) fn holds_value(&self, field: &ty::FieldDef) -> bool {
+        self.ref_cells().holds_value(self.tcx, field)
+    }
+
+    /// Whether `field`, a struct's `RefCell` field, is one no borrow of
+    /// which can meet another (`RefCells::quiet_field`), so none is checked
+    /// (ADR 0863, amended).
+    pub(in crate::lower) fn quiet_field(&self, field: DefId) -> bool {
+        self.ref_cells().quiet_field(self.tcx, field)
     }
 
     /// A `RefCell` type no borrow of which can meet another (ADR 0863): none
@@ -249,8 +279,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn find_ref_cells(&self) -> RefCells<'tcx> {
         let tcx = self.tcx;
-        let mut plain = HashSet::new();
-        let mut cells: HashMap<Ty<'tcx>, rustc_span::Span> = HashMap::new();
+        // Each struct's `RefCell` field a body lends, binds or moves, where
+        // first; and each a borrow of which is counted (ADR 0863, amended).
+        let mut lent: HashMap<DefId, rustc_span::Span> = HashMap::new();
+        let mut counted_fields: HashMap<DefId, rustc_span::Span> = HashMap::new();
+        // Each a derive rust-js writes itself reads, `Clone`'s, `Debug`'s,
+        // which borrows it while what it holds runs its own.
+        let mut derived: HashMap<DefId, rustc_span::Span> = HashMap::new();
         let mut counted = HashSet::new();
         let mut borrowed = HashSet::new();
         let mut unseen: Vec<(Ty<'tcx>, rustc_span::Span)> = Vec::new();
@@ -279,57 +314,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 borrowed.insert(found.cell);
                 if found.counted {
                     counted.insert(found.cell);
+                    if let Some(field) = found.field {
+                        counted_fields.entry(field).or_insert(found.span);
+                    }
                     if !found.seen {
                         unseen.push((found.cell, found.span));
                     }
                 }
             }
-            // Of THIR's borrows, as MIR's are, whose guards of a field's
-            // handle tidy reads as the field (ADR 0364).
-            // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`,
-            // or to a write that holds it only while it swaps the value,
-            // `x.f.replace(v)`, whose old value drops after; `x.f.take()`
-            // runs `T::default()` too, which std's runs nothing of. And to
-            // `get_mut`, a `&mut` to what it holds, borrowing nothing, the
-            // cell lent exclusively (ADR 0863).
-            let writes_for_a_moment = |fun: rustc_middle::thir::ExprId| {
-                crate::lower::fn_def(thir[fun].ty).is_some_and(|(id, args)| match recognition.classify(id, args) {
-                    Some(crate::lower::Std::CellReplace | crate::lower::Std::CellGetMut) => true,
-                    Some(crate::lower::Std::CellTake) => {
-                        args.types().next().is_some_and(|held| recognition.std_default(held))
-                    }
-                    _ => false,
-                })
-            };
-            let mut for_a_moment = HashSet::new();
+            // A struct's field each of whose uses is a borrow of it, or a
+            // write that holds it only while it swaps what it holds: `x.f`
+            // of `x.f.borrow_mut()`, `x.f.replace(v)`, `x.f.take()` or
+            // `x.f.get_mut()`, whose borrows `counted_in` says are counted
+            // or not. Any other use, lent, `&x.f`, or moved, makes a
+            // reference to it or a cell of it elsewhere.
+            let mut borrowed_there = HashSet::new();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
-                    && (facts.momentary.contains(&fun) || writes_for_a_moment(fun))
+                    && crate::lower::fn_def(thir[fun].ty)
+                        .is_some_and(|(id, args)| borrows_its_cell(&recognition, id, args))
                     && let Some(&lent) = args.first()
                     && let ExprKind::Borrow { arg, .. } = thir[crate::lower::body_queries::strip(thir, lent)].kind
                 {
-                    for_a_moment.insert(crate::lower::body_queries::strip(thir, arg));
+                    borrowed_there.insert(crate::lower::body_queries::strip(thir, arg));
                 }
             }
+            let derive = (tcx.trait_impl_of_assoc(body.def_id))
+                .is_some_and(|imp| crate::lower::recognition::known_derive(tcx, imp));
             for (id, expr) in thir.exprs.iter_enumerated() {
-                if let ExprKind::Field { lhs, .. } = expr.kind
+                if let ExprKind::Field { .. } = expr.kind
                     && self.is_std_type(expr.ty, StdItem::RefCell)
+                    && let Some(field) = field_of(thir, id)
+                    && !borrowed_there.contains(&id)
                 {
-                    // A `#[repr(transparent)]` struct's is the struct itself
-                    // (ADR 0584), no property to hold its value: a cell.
-                    let transparent = matches!(thir[lhs].ty.kind(),
-                        ty::Adt(adt, _) if crate::lower::recognition::transparent_field(tcx, *adt).is_some());
-                    match for_a_moment.contains(&id) && !transparent {
-                        true => _ = plain.insert(expr.ty),
-                        false => _ = cells.entry(expr.ty).or_insert(expr.span),
+                    let uses = match derive {
+                        true => &mut derived,
+                        false => &mut lent,
                     };
+                    uses.entry(field.did).or_insert(expr.span);
                 }
             }
-            // One bound by a pattern is a value of its own, a cell.
+            // One bound by a pattern is a value of its own, lent.
             let mut bound = BoundRefCells {
                 recognition: self.recognition(),
                 thir,
-                found: &mut cells,
+                found: &mut lent,
             };
             for expr in thir.exprs.iter() {
                 if let ExprKind::Let { ref pat, .. } = expr.kind {
@@ -350,13 +379,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // Each of its regions erased, as `is_plain` asks.
+        // A derive rust-js writes itself, of which no body is lowered, a
+        // `Clone`'s, a `PartialEq`'s: it reads each `RefCell` field of its
+        // struct through the `RefCell`'s own impl. Not a `Default`'s, which
+        // makes them.
+        for impls in tcx.all_local_trait_impls(()).values() {
+            for &imp in impls {
+                let of = tcx
+                    .impl_trait_ref(imp)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .def_id;
+                let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+                if crate::lower::recognition::known_derive(tcx, imp.to_def_id())
+                    && !crate::lower::recognition::is_std_def(tcx, of, StdItem::Default)
+                    && let ty::Adt(adt, _) = self_ty.kind()
+                    && adt.is_struct()
+                {
+                    for field in adt.all_fields() {
+                        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                        if self.is_std_type(ty, StdItem::RefCell) {
+                            derived.entry(field.did).or_insert(tcx.def_span(imp));
+                        }
+                    }
+                }
+            }
+        }
+        // Each of its regions erased, as `quiet` asks.
         let erased = |set: HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
             set.into_iter().map(|ty| tcx.erase_and_anonymize_regions(ty)).collect()
         };
         let counted = erased(counted);
         let borrowed = erased(borrowed);
-        let (boxed_all, boxed, seen) = self.boxed_ref_cells();
+        // Whether a struct's field may be one some borrow of which meets
+        // another: not one no body lends, binds, moves or holds a borrow of,
+        // nor a library's its contract says is quiet.
+        let loud = |field: DefId| match field.as_local() {
+            Some(_) => lent.contains_key(&field) || counted_fields.contains_key(&field) || derived.contains_key(&field),
+            None => {
+                let key = crate::lower::library::item_key(tcx, field);
+                !(self.krate.foreign.ref_cell_facts().iter()).any(|(_, facts)| facts.quiet_fields.contains(&key))
+            }
+        };
+        let (boxed_all, boxed, seen) = self.boxed_ref_cells(&loud);
         let mut found = RefCells {
             counted,
             borrowed,
@@ -367,50 +432,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..RefCells::default()
         };
         found.agrees(tcx, &seen, &unseen);
-        // A library's that a field of its holds as its value, which a field
-        // of the crate's lent, bound, held or derived can't be (ADR 0863).
-        for (&ty, &span) in &cells {
-            if let Some(library) = found.library_has(tcx, ty, |f| &f.plain) {
+        // A derive's read borrows it for a moment, while what it holds runs
+        // its own impl, as `RefCell`'s does: of a type no borrow of which
+        // can meet another, one more such borrow; else one that may meet
+        // the borrow what it runs takes, counted (ADR 0863, amended).
+        let recognition = self.recognition();
+        for (field, span) in derived {
+            let ty = tcx.type_of(field).instantiate_identity().skip_normalization();
+            let quiet = found.quiet(&recognition, self.krate.cell_borrows, ty, &|t| {
+                super::drop_runs(
+                    recognition,
+                    (self.krate.library, self.krate.closure_facts),
+                    self.krate.counted,
+                    t,
+                )
+            });
+            if !quiet {
+                lent.entry(field).or_insert(span);
+            }
+        }
+        // A library's field none of whose borrows its code checks, which
+        // this crate can't lend, or hold a borrow of while code that may
+        // borrow it runs (ADR 0863, amended).
+        for (&field, &span) in lent.iter().chain(&counted_fields) {
+            if !field.is_local()
+                && let key = crate::lower::library::item_key(tcx, field)
+                && let Some((library, _)) =
+                    (found.libraries.iter()).find(|(_, facts)| facts.quiet_fields.contains(&key))
+            {
                 tcx.dcx().span_err(
                     span,
                     format!(
-                        "rust-js: `{library}`, a rust-js library, has a field's `{ty}` as the value it holds, each only ever borrowed for a moment (ADR 0362); this field is lent, bound, held while code that may borrow it runs, or read by a derive: borrow it for a moment, `x.f.borrow_mut().push(..)`, or replace it, `x.f.replace(v)` (ADR 0863)"
+                        "rust-js: `{library}`, a rust-js library, borrows `{}` unchecked, as it only ever borrows it for a moment (ADR 0863); this lends it, binds it, or holds a borrow of it while code that may borrow it runs: borrow it for a moment, `x.f.borrow_mut().push(..)`, or replace it, `x.f.replace(v)`",
+                        tcx.def_path_str(field)
                     ),
                 );
             }
         }
-        // A generic one may be any of them.
-        let generic = cells.keys().any(|ty| ty.has_param());
-        let cells = erased(cells.into_keys().collect());
-        let mut plain = erased(plain);
-        // A struct's field is the value it holds by its type and its
-        // declaration, whether or not a body borrows one of its type (ADR
-        // 0863, amended): of a type no body lends, binds or derives, which
-        // `cells` takes away below.
+        // Each field of the crate's structs that's a `RefCell` none of whose
+        // borrows can meet another: never lent, bound or moved, and never
+        // borrowed while code that may borrow it runs.
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    if self.is_std_type(ty, StdItem::RefCell) {
-                        plain.insert(tcx.erase_and_anonymize_regions(ty));
+                    if self.is_std_type(ty, StdItem::RefCell)
+                        && struct_field(tcx, field.did)
+                        && !lent.contains_key(&field.did)
+                        && !counted_fields.contains_key(&field.did)
+                    {
+                        found.quiet_fields.insert(field.did);
                     }
                 }
             }
         }
-        // Not one a library shares with the crate as its cell, which a
-        // field of the crate's can't hold as its value then (ADR 0863).
-        plain.retain(|&ty| {
-            !generic
-                && !cells.contains(&ty)
-                && !ty.has_param()
-                && (found.library_has(tcx, ty, |f| &f.handed).is_none()
-                    || found.library_has(tcx, ty, |f| &f.plain).is_some())
-        });
-        found.plain = plain;
         // A `#[rust_js::nullable]` field's `RefCell` is the value it holds,
-        // whose `None` is `null`, where it's plain: one that's a cell of
-        // its own holds `{ value }` (ADR 0863). Not one of a `Vec`'s, the
-        // array, whose items are nullable (ADR 0586, amended).
+        // whose `None` is `null`: not one of a `#[repr(transparent)]`
+        // struct, which is its field, the cell (ADR 0584). Not one of a
+        // `Vec`'s, the array, whose items are nullable (ADR 0586, amended).
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
@@ -418,11 +497,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if crate::lower::bindings::is_nullable(tcx, field)
                         && self.is_std_type(ty, StdItem::RefCell)
                         && crate::lower::bindings::nullable_option(tcx, ty).is_some()
-                        && !found.is_plain(tcx, ty)
+                        && !found.holds_value(tcx, field)
                     {
                         tcx.dcx().span_err(
                             tcx.def_span(field.did),
-                            "rust-js: `#[rust_js::nullable]` of a `RefCell` is of one a field holds as the value it holds, each of its fields only ever borrowed for a moment, `x.f.borrow().clone()` or `x.f.replace(v)` (ADR 0362); this one is lent, bound, held while code that may borrow it runs, or read by a derive, so it's a cell of its own (ADR 0863)",
+                            "rust-js: `#[rust_js::nullable]` of a `RefCell` is of a field that holds the value it holds, as a struct's does (ADR 0863); this one is a `#[repr(transparent)]` struct's, which is its field, the cell (ADR 0584)",
                         );
                     }
                 }
@@ -466,8 +545,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which nothing says it's an object; else each made a
     /// `RefCell<dyn T>` or of a slice, whose cell is shared with what it's
     /// made of, and each that may be one of those, to a fixed point, as
-    /// generic code's `RefCell<Node<T>>` stands for each `Node`'s.
-    fn boxed_ref_cells(&self) -> (bool, HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) {
+    /// generic code's `RefCell<Node<T>>` stands for each `Node`'s. Not a
+    /// generic struct's field that's a `RefCell<T>`, which holds its value
+    /// by its declaration (ADR 0863, amended): of each it's made of an
+    /// object, where it's `loud`, some borrow of it may meet another, so
+    /// that its generic code's `$fieldCell` is the cell each of its reads
+    /// borrows; of one none can, the object itself.
+    fn boxed_ref_cells(&self, loud: &dyn Fn(DefId) -> bool) -> (bool, HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) {
         let tcx = self.tcx;
         let recognition = self.recognition();
         let refcell = |ty: Ty<'tcx>| recognition.is_std_type(ty, StdItem::RefCell);
@@ -486,17 +570,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         let mut seen: HashSet<Ty<'tcx>> = HashSet::new();
+        // Those a body has or a field is declared, which may be one boxed.
+        let mut candidates: HashSet<Ty<'tcx>> = HashSet::new();
         let mut boxed: HashSet<Ty<'tcx>> = HashSet::new();
         let mut all = false;
+        // Of a type made of a generic struct, `Cursor<Vec<u8>>`, each
+        // `RefCell` of an object its loud generic field is made.
+        let of_objects = |ty: Ty<'tcx>, boxed: &mut HashSet<Ty<'tcx>>| {
+            for part in ty.walk().filter_map(|part| part.as_type()) {
+                let ty::Adt(adt, args) = part.kind() else { continue };
+                if !adt.is_struct() {
+                    continue;
+                }
+                for field in adt.all_fields() {
+                    let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    if refcell(declared) && declared.has_param() && struct_field(tcx, field.did) && loud(field.did) {
+                        let made = field.ty(tcx, args).skip_normalization();
+                        if let ty::Adt(_, held) = made.kind()
+                            && holds_itself(tcx, held.type_at(0))
+                            && !made.has_param()
+                        {
+                            boxed.insert(tcx.erase_and_anonymize_regions(made));
+                        }
+                    }
+                }
+            }
+        };
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
         for body in bodies {
             let thir = &body.thir;
-            let types = (thir.exprs.iter().map(|e| e.ty)).chain(thir.params.iter().map(|p| p.ty));
-            for ty in types {
+            // A read of a generic struct's field that holds its value, which
+            // reads it as `{ value }` of any type, and what's made of it
+            // there, its guard: not one of any value, which code given one
+            // reads, nor one of what may be boxed.
+            let reads = property_reads(tcx, thir);
+            let types = (thir.exprs.iter_enumerated())
+                .map(|(id, e)| (e.ty, reads.contains(&id)))
+                .chain(thir.params.iter().map(|p| (p.ty, false)));
+            for (ty, read) in types {
+                of_objects(ty, &mut boxed);
                 for part in ty.walk().filter_map(|part| part.as_type()) {
-                    all |= any_value(part);
+                    all |= !read && any_value(part);
                     if refcell(part) {
                         seen.insert(tcx.erase_and_anonymize_regions(part));
+                        if !read {
+                            candidates.insert(tcx.erase_and_anonymize_regions(part));
+                        }
                     }
                 }
             }
@@ -528,12 +647,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // A type of the crate's that holds one of what may be any value,
-        // which its derives and drops read as generic code does.
+        // which its derives and drops read as generic code does; not a
+        // struct's field that's one, which holds the value (ADR 0863,
+        // amended), whatever it is. And each its fields are declared, of
+        // which a field's is one or none, as each it may be.
         for id in tcx.hir_crate_items(()).definitions() {
             if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    all |= ty.walk().filter_map(|part| part.as_type()).any(any_value);
+                    of_objects(ty, &mut boxed);
+                    let holds_value = refcell(ty) && struct_field(tcx, field.did);
+                    for part in ty.walk().filter_map(|part| part.as_type()) {
+                        let its_own = holds_value && part == ty;
+                        all |= !its_own && any_value(part);
+                        if refcell(part) && !(its_own && ty.has_param()) {
+                            candidates.insert(tcx.erase_and_anonymize_regions(part));
+                        }
+                    }
                 }
             }
         }
@@ -548,7 +678,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return (true, HashSet::new(), seen);
         }
         loop {
-            let more: Vec<Ty<'tcx>> = (seen.iter())
+            let more: Vec<Ty<'tcx>> = (candidates.iter())
                 .filter(|&&ty| !boxed.contains(&ty))
                 .filter(|&&ty| (boxed.iter()).any(|&b| crate::lower::analysis::may_be_cell(tcx, b, ty)))
                 .copied()
@@ -634,8 +764,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => false,
             };
             if a_borrow && let Some(cell) = crate::lower::analysis::borrowed(recognition, thir, id).and_then(cell_of) {
+                // Of a struct's field, `x.f` of `x.f.borrow()`.
+                let field =
+                    args.first()
+                        .and_then(|&lent| match thir[crate::lower::body_queries::strip(thir, lent)].kind {
+                            ExprKind::Borrow { arg, .. } => {
+                                field_of(thir, crate::lower::body_queries::strip(thir, arg))
+                            }
+                            _ => None,
+                        });
                 found.push(Found {
                     cell,
+                    field: field.map(|field| field.did),
                     counted: held,
                     seen: matches!(kind, Some(Std::Borrow { .. })) && facts.held_while_seen.contains(&fun),
                     span: expr.span,
@@ -656,6 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),
                         tcx.mk_args(&[held.into()]),
                     ),
+                    field: None,
                     counted: true,
                     seen: false,
                     span: expr.span,
@@ -666,20 +807,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// A borrow of a `RefCell` of type `cell`, at `span`: whether it's
-/// counted, and whether only code rust-js sees runs while it's held.
+/// A borrow of a `RefCell` of type `cell`, at `span`, a struct's `field`'s
+/// where it's one: whether it's counted, and whether only code rust-js sees
+/// runs while it's held.
 struct Found<'tcx> {
     cell: Ty<'tcx>,
+    field: Option<DefId>,
     counted: bool,
     seen: bool,
     span: rustc_span::Span,
 }
 
-/// Each `RefCell` a pattern binds of a field, not as `_` (ADR 0362).
+/// Each struct's `RefCell` field a pattern binds, not as `_` (ADR 0362).
 struct BoundRefCells<'a, 'b, 'tcx> {
     recognition: crate::lower::recognition::Recognition<'a, 'tcx>,
     thir: &'b rustc_middle::thir::Thir<'tcx>,
-    found: &'b mut HashMap<Ty<'tcx>, rustc_span::Span>,
+    found: &'b mut HashMap<DefId, rustc_span::Span>,
 }
 
 impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_, 'b, 'tcx> {
@@ -688,14 +831,16 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
     }
 
     fn visit_pat(&mut self, pat: &'b Pat<'tcx>) {
-        if let rustc_middle::thir::PatKind::Variant { ref subpatterns, .. }
-        | rustc_middle::thir::PatKind::Leaf { ref subpatterns } = pat.kind
+        if let rustc_middle::thir::PatKind::Leaf { ref subpatterns } = pat.kind
+            && let ty::Adt(adt, _) = pat.ty.kind()
+            && adt.is_struct()
         {
             for field in subpatterns {
                 if !matches!(field.pattern.kind, rustc_middle::thir::PatKind::Wild)
                     && self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
                 {
-                    self.found.entry(field.pattern.ty).or_insert(field.pattern.span);
+                    let did = adt.non_enum_variant().fields[field.field].did;
+                    self.found.entry(did).or_insert(field.pattern.span);
                 }
             }
         }
@@ -737,4 +882,101 @@ pub(in crate::lower) fn holds_itself(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
         return holds_itself(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization());
     }
     !markers && !crate::lower::classes::is_class(tcx, adt.did())
+}
+
+/// Whether `field` is a struct's, not `#[repr(transparent)]`, which is its
+/// field (ADR 0584): one that's the property it holds, where a `RefCell`
+/// field holds its value (ADR 0863, amended). Not an enum's variant's, read
+/// by the pattern that binds it.
+pub(in crate::lower) fn struct_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
+    let owner = tcx.parent(field);
+    matches!(tcx.def_kind(owner), DefKind::Struct)
+        && crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none()
+}
+
+/// The struct's field `expr` reads, `x.f`, if it's one.
+fn field_of<'tcx>(
+    thir: &rustc_middle::thir::Thir<'tcx>,
+    expr: rustc_middle::thir::ExprId,
+) -> Option<&'tcx ty::FieldDef> {
+    let ExprKind::Field {
+        lhs,
+        variant_index,
+        name,
+    } = thir[expr].kind
+    else {
+        return None;
+    };
+    match thir[lhs].ty.kind() {
+        ty::Adt(adt, _) if adt.is_struct() => Some(&adt.variant(variant_index).fields[name]),
+        _ => None,
+    }
+}
+
+/// Whether a call of `id` is one of a `RefCell`'s that borrows it, or
+/// holds it only while it swaps what it holds, whose borrow `counted_in`
+/// counts where it may meet another: what a field's use may be and the
+/// field still have no reference to it elsewhere (ADR 0863, amended).
+fn borrows_its_cell<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    use crate::lower::Std;
+    matches!(
+        recognition.classify(id, args),
+        Some(
+            Std::Borrow { lock: false, .. }
+                | Std::TryBorrow { lock: false, .. }
+                | Std::CellReplace
+                | Std::CellTake
+                | Std::CellGetMut
+                | Std::CellReplaceWith
+        )
+    )
+}
+
+/// Of a body, each read of a generic struct's `RefCell<T>` field, which
+/// holds its value by its declaration whatever it is (`RefCells::holds_value`),
+/// and what's made of one there, a borrow of it, its guard, a call given it:
+/// a box of the property, whatever its type, not a `RefCell<T>` of any value
+/// that generic code is given (ADR 0863, amended).
+fn property_reads<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+) -> HashSet<rustc_middle::thir::ExprId> {
+    use crate::lower::body_queries::strip;
+    let mut reads = HashSet::new();
+    for _ in 0..2 {
+        for (id, expr) in thir.exprs.iter_enumerated() {
+            let read = match expr.kind {
+                ExprKind::Field { .. } => field_of(thir, id).is_some_and(|field| {
+                    let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    let ty::Adt(cell, args) = declared.kind() else {
+                        return false;
+                    };
+                    crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell)
+                        && struct_field(tcx, field.did)
+                        && crate::lower::analysis::head(tcx, args.type_at(0)).is_none()
+                }),
+                ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } | ExprKind::Deref { arg } => {
+                    reads.contains(&strip(thir, arg))
+                }
+                ExprKind::Call { fun, ref args, .. } => {
+                    let read = args.first().is_some_and(|&first| reads.contains(&strip(thir, first)));
+                    // And what it calls, `Deref::deref::<Ref<T>>`.
+                    if read {
+                        reads.insert(fun);
+                    }
+                    read
+                }
+                // A scope of one, as `strip` reads through.
+                _ => strip(thir, id) != id && reads.contains(&strip(thir, id)),
+            };
+            if read {
+                reads.insert(id);
+            }
+        }
+    }
+    reads
 }

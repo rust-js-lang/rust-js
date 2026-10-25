@@ -54,6 +54,22 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Of a closure: what it captured, each its environment's field, and
     /// whether each is the place a `&mut` it captured is to.
     captures: Vec<(Expr, bool)>,
+    /// What it does with struct's `RefCell` fields no borrow of which can
+    /// meet another (`quiet_cells`).
+    quiet_cells: QuietCells,
+}
+
+/// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
+/// can meet another, none of which is checked (ADR 0863, amended): of a
+/// struct's field (`RefCells::quiet_field`), `x.f.borrow()`'s, and
+/// `drop(guard)` of a guard of one, and of a thread-local that's its
+/// module's variable (`quiet_locals`, ADR 0270), `KEY.set(v)`'s: the block
+/// of each; and each local a guard of a field is, whose drop releases
+/// nothing.
+#[derive(Default)]
+pub(super) struct QuietCells {
+    pub(super) calls: HashSet<BasicBlock>,
+    pub(super) guards: HashSet<Local>,
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
@@ -119,6 +135,10 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 
     pub(super) fn captures(&self) -> &[(Expr, bool)] {
         &self.captures
+    }
+
+    pub(super) fn quiet_cells(&self) -> &QuietCells {
+        &self.quiet_cells
     }
 }
 
@@ -199,7 +219,137 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             held_arms,
             drops,
             captures,
+            quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
         };
         (facts, bindings)
+    }
+
+    /// Of `body`'s calls of a `RefCell`'s, those of a place no borrow of
+    /// which can meet another (`QuietCells`): of a struct's field,
+    /// `x.f.borrow()`, `x.f.replace(v)`, of `&x.f` made once, and the guard
+    /// each borrow makes, moved to a variable too, `let v = x.f.borrow();`;
+    /// and of a thread-local that's its module's variable, `KEY.set(v)`.
+    fn mir_quiet_cells(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
+    ) -> QuietCells {
+        let tcx = self.tcx;
+        let mut quiet = QuietCells::default();
+        // Each local assigned once, and what it's assigned.
+        let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && assign.0.projection.is_empty()
+                {
+                    let once = !assigned.contains_key(&assign.0.local);
+                    assigned.insert(assign.0.local, once.then_some(&assign.1));
+                }
+            }
+        }
+        // The field `operand` lends, `&x.f`, where it's one of a struct's.
+        let lent_field = |operand: &Operand<'tcx>| -> Option<&'tcx ty::FieldDef> {
+            let place = operand.place()?;
+            if !place.projection.is_empty() {
+                return None;
+            }
+            let Some(Some(Rvalue::Ref(_, _, lent))) = assigned.get(&place.local) else {
+                return None;
+            };
+            let (PlaceElem::Field(field, _), parent) = lent.projection.split_last()? else {
+                return None;
+            };
+            let parent = mir::PlaceRef {
+                local: lent.local,
+                projection: parent,
+            };
+            match parent.ty(body, tcx).ty.kind() {
+                ty::Adt(adt, _) if adt.is_struct() => Some(&adt.non_enum_variant().fields[*field]),
+                _ => None,
+            }
+        };
+        // The thread-local `operand` is, `&KEY`, a module's variable: a
+        // promoted reference to it, or one reborrowed, `&*r`.
+        let quiet_local = |operand: &Operand<'tcx>| -> bool {
+            let mut operand = operand.clone();
+            let constant = loop {
+                let Some(place) = operand.place() else {
+                    break operand.constant().copied();
+                };
+                match assigned.get(&place.local) {
+                    Some(Some(Rvalue::Use(Operand::Constant(c), _))) if place.projection.is_empty() => break Some(**c),
+                    Some(Some(Rvalue::Ref(_, _, lent)))
+                        if place.projection.is_empty() && lent.projection.as_slice() == [PlaceElem::Deref] =>
+                    {
+                        operand = Operand::Copy(lent.local.into());
+                    }
+                    _ => break None,
+                }
+            };
+            let referred = match constant.map(|c| c.const_) {
+                Some(mir::Const::Unevaluated(uv, _)) => match uv.promoted {
+                    Some(at) => queries::referred_constant(&promoted[at]).map(|c| c.const_),
+                    None => None,
+                },
+                _ => None,
+            };
+            matches!(referred, Some(mir::Const::Unevaluated(uv, _))
+                if uv.promoted.is_none() && uv.def.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)))
+        };
+        let mut drops = Vec::new();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            let TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &data.terminator().kind
+            else {
+                continue;
+            };
+            let Some((def_id, generic_args)) = fn_def(func.ty(body, tcx)) else {
+                continue;
+            };
+            let Some(first) = args.first() else { continue };
+            match self.recognition().classify(def_id, generic_args) {
+                Some(Std::Drop) => drops.push((block, first.node.place())),
+                Some(Std::CellSet) if quiet_local(&first.node) => _ = quiet.calls.insert(block),
+                Some(
+                    known @ (Std::Borrow { lock: false, .. }
+                    | Std::CellReplace
+                    | Std::CellTake
+                    | Std::CellGetMut
+                    | Std::CellReplaceWith),
+                ) if lent_field(&first.node).is_some_and(|field| self.quiet_field(field.did)) => {
+                    quiet.calls.insert(block);
+                    if matches!(known, Std::Borrow { .. }) && destination.projection.is_empty() {
+                        quiet.guards.insert(destination.local);
+                    }
+                }
+                _ => {}
+            }
+        }
+        // A guard moved to a variable, `let v = x.f.borrow(); .. drop(v);`.
+        loop {
+            let more: Vec<Local> = (assigned.iter())
+                .filter(|&(local, rvalue)| {
+                    !quiet.guards.contains(local)
+                        && matches!(rvalue, Some(Rvalue::Use(Operand::Move(from), _))
+                            if from.projection.is_empty() && quiet.guards.contains(&from.local))
+                })
+                .map(|(&local, _)| local)
+                .collect();
+            if more.is_empty() {
+                break;
+            }
+            quiet.guards.extend(more);
+        }
+        for (block, dropped) in drops {
+            if dropped.is_some_and(|place| place.projection.is_empty() && quiet.guards.contains(&place.local)) {
+                quiet.calls.insert(block);
+            }
+        }
+        quiet
     }
 }

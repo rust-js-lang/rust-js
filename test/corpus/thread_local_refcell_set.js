@@ -29,10 +29,10 @@ function firstPort() {
 }
 
 function main() {
-  $assign($borrowMut(ports), [1, 0]);
+  $assign(ports, [1, 0]);
   console.log(`${firstPort()}`);
   ports.push(7);
-  $assign($borrowMut(ports), [3]);
+  $assign(ports, [3]);
   console.log(`[${ports.slice().join(", ")}]`);
   count.value = 4;
   $withBorrowMut(

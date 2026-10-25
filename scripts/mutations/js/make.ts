@@ -458,4 +458,13 @@ export const mutations: Mutation[] = [
     replace: "            _ if self.facts.has(Known::Defined) => false,\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a function a nullable place is given"],
   },
+  {
+    name: "field-cell-value-unread",
+    breaks: "a field's kept cell's `value` is read through it, `$weakDrop($fieldCell(node, \"parent\").value)`, not as the property, `node.parent` (ADR 0863, amended)",
+    file: "src/js/make.rs",
+    find: "                && callee.helper_name() == Some(\"$fieldCell\")\n",
+    replace: "                && callee.helper_name() == Some(\"$fieldCell \")\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_dyn_listeners.rs$"],
+    snapshots: true,
+  },
 ];

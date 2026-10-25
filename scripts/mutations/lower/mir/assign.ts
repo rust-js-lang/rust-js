@@ -597,4 +597,12 @@ export const mutations: Mutation[] = [
     replace: "        Expr { facts: js::Facts::NONE, ..fixed }\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
   },
+  {
+    name: "whole-cell-written-as-cell",
+    breaks: "a whole cell written to a field that's the property it holds, `wrap.n = RefCell::new(9)`, assigns the handle, which the printer can't write",
+    file: "src/lower/mir/assign.rs",
+    find: "        let (target, value) = match self.whole_property_cell(state, place) {\n",
+    replace: "        let (target, value) = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
+  },
 ];
