@@ -447,14 +447,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-branches.test.ts", "-t", "a function.s too, is a conditional"],
   },
   {
-    name: "mir-tidy-and-chain-turned",
-    breaks: "`if a && b { s } else { t }` from MIR is `if (!a || !b) { t } else { s }`, its branches turned",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "                    (false, true) => StmtKind::If(test, otherwise, Some(then)),\n",
-    replace: "                    (false, true) => StmtKind::If(test.negated_test(), then, Some(otherwise)),\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of an && keeps its test"],
-  },
-  {
     name: "written-continue-guarded",
     breaks: "`if a && b { continue; } return false;` is a `let … else`'s guard, `if (!a || !b) { return false; }`, its `continue` and comment gone",
     file: "src/lower/mir/tidy/branches.rs",

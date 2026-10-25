@@ -129,3 +129,13 @@ Its `i = (i + 1) >>> 0` is a `usize`'s wrap where rust-js can't bound `i`,
   `variable-target-value-spilled` (`assign.ts`),
   `kept-captures-of-borrows-too` (`hints.ts`),
   `clone-alias-of-a-capture-kept` (`tidy/bindings.ts`).
+
+## Amendment: one authority on a chain's branch order (#262)
+
+`or_chain`'s `&&` branch in `tidy/branches.rs` picked its branches' order
+by which the program wrote first, as `written`'s stage now does for every
+`if` (above). The two answered one question, and the mutation that turned
+the chain's branches (`mir-tidy-and-chain-turned`) survived, since the
+`written` stage put them back. The chain now leaves the order to that
+stage. `test/lowering-written-branches.test.ts`'s `&&` of loops and
+`writer_callables.rs`, which reach it, read as before.

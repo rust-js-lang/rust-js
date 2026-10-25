@@ -296,20 +296,17 @@ pub(super) fn branch_values(
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
             // b) { t } else { s }`, where nothing else breaks to `l`; and `l:
             // { if (a) { if (b) { s; break l; } } t }`, `&&`'s, `if (a && b) {
-            // s } else { t }`: the branch the program wrote first, first, its
-            // test as written (ADR 0683).
+            // s } else { t }`, whose branches `written`'s stage puts back in
+            // the order the program wrote them (ADRs 0683, 0879).
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
                 span = made_where(span, &body);
                 let test = (tests.into_iter())
                     .rev()
                     .reduce(|b, a| Expr::bin(Op::And, a, b))
                     .expect("one");
-                let chain_first =
-                    matches!((first_written(&otherwise), first_written(&then)), (Some(s), Some(t)) if s < t);
-                match (then.is_empty(), chain_first) {
-                    (true, _) => StmtKind::If(test, otherwise, None),
-                    (false, true) => StmtKind::If(test, otherwise, Some(then)),
-                    (false, false) => StmtKind::If(test.negated_test(), then, Some(otherwise)),
+                match then.is_empty() {
+                    true => StmtKind::If(test, otherwise, None),
+                    false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {

@@ -64,6 +64,12 @@ pub fn flags(home: bool, index: bool, section: &str) -> (bool, bool) {
 pub fn guard(a: u32, s: &str) -> bool {
     if a > 1 { s == "x" } else { false }
 }
+pub fn matched(a: Option<u32>) -> bool {
+    match a {
+        Some(n) => n > 2,
+        None => false,
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
@@ -76,6 +82,8 @@ pub fn guard(a: u32, s: &str) -> bool {
   // A branch of `false` the program wrote with an `if`: the conditional
   // it wrote, not the `&&` MIR makes the same branches of (ADR 0879).
   expect(js).toContain('return a > 1 ? s === "x" : false;');
+  // One MIR made of a `match`'s arm of `false`: the `&&` a person writes.
+  expect(js).toContain("return a != null && a > 2;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
 });

@@ -45,10 +45,21 @@ test("a blank line before an item's attributes is kept", () => {
 pub const D: u32 = 4;
 #[cfg_attr(rust_js, rust_js::name = "eee")]
 pub const E: u32 = 5;
+
+pub fn grid(n: u32) -> [u32; 4] {
+    let first = n + 1;
+
+    #[rustfmt::skip]
+    let grid = [first, 0,
+                0, first];
+    grid
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const A = 1;\n\nexport const dee = 4;\nexport const eee = 5;\n");
+  // A statement's too, inside a function.
+  expect(js).toMatch(/const first = \(n \+ 1\) >>> 0;\n\n {2}/);
 });
 
 // ADR 0603: a comment before a `let` with no JS of its own, a variable
