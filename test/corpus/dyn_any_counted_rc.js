@@ -94,9 +94,7 @@ function main() {
     console.log("end");
   } else {
     if (tmp.TAG !== "Err") {
-      if (tmp.TAG === "Ok") {
-        $rcDrop(tmp._0);
-      }
+      $rcDrop(tmp._0);
       if (tmp.TAG === "Err") {
         $rcDrop(tmp._0, (value) => {
           value.impl.$drop?.(value.value);

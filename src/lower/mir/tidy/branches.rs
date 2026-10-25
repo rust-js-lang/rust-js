@@ -1193,10 +1193,14 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, w
 }
 
 /// Whether `test` can be decided by an earlier reading of it: it does
-/// nothing, reads no variable something assigns, and isn't a constant.
+/// nothing, isn't a constant, and reads no variable something assigns; or
+/// reads through a field, which anything that does something disturbs
+/// (`disturbs_any`), a closure's assignment too, as only a call runs it.
 fn decidable(test: &Expr, changing: &HashSet<String>) -> bool {
     let mut stable = !test.has_effects() && !test.is_constant();
-    test.visit_vars(&mut |v| stable &= !changing.contains(v));
+    if test.reads_only_vars() {
+        test.visit_vars(&mut |v| stable &= !changing.contains(v));
+    }
     stable
 }
 
@@ -1251,9 +1255,14 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
                 j += 1;
             }
             _ => match disturbs_any(std::slice::from_ref(&stmts[j]), test) {
-                true => return,
+                // What it reads first, before what it does, `const sibling =
+                // $unwrap(node.sibling)`, read where the test is known.
+                true => {
+                    present_in(&mut stmts[j], test, holds, true);
+                    return;
+                }
                 false => {
-                    present_in(&mut stmts[j], test, holds);
+                    present_in(&mut stmts[j], test, holds, false);
                     j += 1;
                 }
             },
@@ -1263,20 +1272,32 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
 
 /// Of `stmt`, where `test` is known to hold, or to fail, each `x ?? d` of
 /// a variable it says is there, `typeof x === "function"` holding or `x ==
-/// null` failing: `x`, which `d` never replaces (ADR 0620).
-fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool) {
+/// null` failing: `x`, which `d` never replaces (ADR 0620); and each
+/// `$unwrap(p)` of a `p` it says is there that reads the same, a field read
+/// again, `while (node.sibling != null) { .. $unwrap(node.sibling) }`: `p`
+/// (ADR 0620, amended). Of one that `disturbs`, `first`, only the value it
+/// reads before what it does, `const sibling = $unwrap(node.sibling)`.
+fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool, first: bool) {
     let known = match holds {
         true => test.clone(),
         false => test.clone().negated_test(),
     };
-    js::each_expr_mut(std::slice::from_mut(stmt), &mut |e| {
-        if let ExprKind::Binary(Op::Coalesce, x, _) = &e.kind
-            && matches!(x.kind, ExprKind::Var(_))
-            && implies(&known, &Expr::bin(Op::LooseNe, (**x).clone(), Expr::null()))
-        {
+    let there = |x: &Expr| implies(&known, &Expr::bin(Op::LooseNe, x.clone(), Expr::null()));
+    let mut present = |e: &mut Expr| match &e.kind {
+        ExprKind::Binary(Op::Coalesce, x, _) if !first && matches!(x.kind, ExprKind::Var(_)) && there(x) => {
             *e = (**x).clone().or_at(e.span);
         }
-    });
+        _ => match crate::lower::std_types::option::unwrap_tested(e) {
+            Some((_, option, _)) if option.reads_same() && there(option) => *e = option.clone().or_at(e.span),
+            _ => {}
+        },
+    };
+    match &mut stmt.kind {
+        _ if !first => js::each_expr_mut(std::slice::from_mut(stmt), &mut present),
+        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => present(value),
+        StmtKind::Assign(target, value) if matches!(target.kind, ExprKind::Var(_)) => present(value),
+        _ => {}
+    }
 }
 
 /// Of `t`, a chain of `&&` and `||`, where `test` is known to hold, or to

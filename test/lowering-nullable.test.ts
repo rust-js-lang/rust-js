@@ -1195,3 +1195,58 @@ pub fn show(props: &Props) {
   lib.show(props);
   expect(props.shown).toBe(null);
 });
+
+// React's \`findFirstSuspended\` takes a fiber's sibling once its loop's
+// test says it's there, \`while (node.sibling === null) { .. } node.sibling\`:
+// its port's \`node.sibling.borrow().clone().unwrap()\` reads the field
+// again, nothing between, so it's the field, no \`$unwrap\`; where a call
+// comes between, which may change it, the \`$unwrap\` stays (ADR 0620,
+// amended).
+test("an unwrap of a field a test says is there is the field", async () => {
+  const dir = fixture("unwrap-tested-field");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn fiber(name: &str, sibling: Option<Rc<Fiber>>, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { name: name.to_string(), sibling: RefCell::new(sibling), r#return: RefCell::new(parent) })
+}
+
+pub fn next(mut node: Rc<Fiber>) -> Option<String> {
+    while node.sibling.borrow().is_none() {
+        let parent = node.r#return.borrow().clone()?;
+        node = parent;
+    }
+    let sibling = node.sibling.borrow().clone().unwrap();
+    Some(sibling.name.clone())
+}
+
+pub fn changed(node: &Fiber, clear: &dyn Fn(&Fiber)) -> String {
+    if node.sibling.borrow().is_some() {
+        clear(node);
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.name.clone();
+    }
+    String::new()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const sibling = node.sibling;\n");
+  expect(js).toContain("const sibling = $unwrap(node.sibling);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const uncle = lib.fiber("uncle", null, null);
+  const parent = lib.fiber("parent", uncle, null);
+  expect([lib.next(lib.fiber("child", null, parent)), lib.next(lib.fiber("lone", null, null))]).toEqual(["uncle", undefined]);
+  expect(() => lib.changed(parent, (n: { sibling: unknown }) => (n.sibling = null))).toThrow("on a `None` value");
+});

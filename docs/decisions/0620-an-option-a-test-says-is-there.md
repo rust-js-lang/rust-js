@@ -114,3 +114,35 @@ JS's to keep.
   `optional-nullable-read-defined` (`lower/representation.ts`),
   `fixed-place-facts-dropped` (`lower/mir/assign.ts`),
   `nulled-kept-coalesced` (`lower/mir/tidy/values.ts`).
+
+## Amendment: an `unwrap()` of what a test says is there is its value
+
+React's `findFirstSuspended` takes a fiber's sibling once its loop's test
+says it's there, upstream's `node.sibling` read again:
+
+```rust
+while node.sibling.borrow().is_none() { .. }
+let sibling = node.sibling.borrow().clone().unwrap();
+```
+
+Its port's JS was `$unwrap(node.sibling)`, after `if (node.sibling ==
+null) { .. }`, whose branch leaves: the `unwrap()` never panics there.
+
+**Where a test is known to hold or to fail (`decided_tests`), a
+`$unwrap(p)` of a `p` it says is there, `p != null`, that reads the same,
+a variable or a field, is `p`**; of a statement that may change what the
+test reads, only the value it reads first, `const sibling =
+$unwrap(node.sibling)`. A test through a field is decided where the
+variables it reads change elsewhere too, as anything that does something
+disturbs it (`disturbs_any`): a `node` the loop assigns later is
+`node.sibling` still until then. Case N: the value is the same, and the
+panic can't happen.
+
+- Three corpus cases decide a test through a field's tag they couldn't
+  before, `if (tmp.TAG === "Ok")` after `tmp.TAG !== "Err"`, their drops
+  each once; `loop_assigned_tests`' `out.push(top)`.
+- `test/lowering-nullable.test.ts`, "an unwrap of a field a test says is
+  there is the field", run, a call between keeping its `$unwrap`.
+- Mutations `field-test-undecided-where-its-variable-changes`,
+  `unwrap-of-tested-kept`, `unwrap-past-a-call`
+  (`lower/mir/tidy/branches.ts`).
