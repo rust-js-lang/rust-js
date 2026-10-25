@@ -300,15 +300,28 @@ reverse or enumerate. The readability baseline is blessed with it, of
 `return;` 9.7 to 9.8, its `Countdown`'s `next`. Inspect's coverage 3 of
 8 to 6 of 8.
 
-`Flatten` and `FlatMap` are not compiled so: std's `FlattenCompat`
-specializes its `size_hint` for inner iterators of a constant size and its
-steps for one-shot ones, `Option`'s, and a body compiled once can't pick a
-specialization, which only a use site's types decide. Compiled, an array's
-items flattened would hint `(0, None)` where std's hint is exact: a
-different result. They stay the recognizers' until specialization is
-decided where it's used, the same gap as `Fuse`'s (#244); #260, a
-`flatten()` of an `Option`'s iterator stepped from its back, is fixed in
-the recognizers.
+`Flatten` and `FlatMap` are not compiled so, yet. Tried (and taken back)
+to find what it takes, past the catalog's entries:
+
+- `FlattenCompat`'s methods are `default fn`s that a `OneShot` inner
+  iterator's impl specializes, so rustc leaves them unresolved in a generic
+  body. That one's only an optimization, std's own comment says, so the
+  impl rustc selects could be compiled for every type, as `FuseImpl`'s are
+  chosen by `IFused` (ADR 0543), with the impls of a type std keeps private
+  found as its private functions are.
+- Its `size_hint` asks `<I::Item as ConstSizeIntoIterator>::size()`, which
+  std specializes on arrays: `N` of `[T; N]`, `None` else. Compiled once it
+  would be `None` for an array, its hint `(0, None)` where std's is exact,
+  so it must be a type fact a caller gives, as `TSize` is (ADR 0145).
+- rustc's MIR inlines std's nested `flatten::<U, Acc>` into `rfold`, so
+  the closure it makes is written in `flatten`'s generics but made in
+  `rfold`'s; what its body asks of `U`, `U: DoubleEndedIterator`, would be
+  looked up among `rfold`'s by the wrong parameter. A closure inlined so
+  needs its body read in its maker's terms, as its captures are (above).
+
+Each is its own decision; until they're made, a flatten is the
+recognizers', and #260, one of an `Option`'s iterator stepped from its
+back, is fixed there.
 
 ## Amendment: a flatten of iterators knows its back (#260)
 
