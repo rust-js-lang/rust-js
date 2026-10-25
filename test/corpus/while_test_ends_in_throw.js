@@ -35,7 +35,7 @@ function spans(round) {
       $rcDrop(shared);
       throw error;
     }
-    if (tmp$1 !== 0) {
+    if (tmp$1) {
       const next = {
         from: 1,
         to: 1,
