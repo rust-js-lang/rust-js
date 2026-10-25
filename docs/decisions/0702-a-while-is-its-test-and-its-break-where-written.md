@@ -266,3 +266,10 @@ left as they are, though no corpus case makes either.
   `tail-continued-label-kept` and `tail-continues-unwritten-kept`.
 - `docs/readability.txt`: one labeled block and one `while (true)` fewer;
   two `return;`s more, the program's `return None`s, where it wrote them.
+
+Note (#290): since ce4dbdce5 reordered the `names` stage's loop passes,
+no known program reaches `broken_after` with a `rest` that already
+leaves. The seed, its reductions and four other shapes compile without
+the guard, and `broken-after-a-throw` survived main's check. So the
+guard and its mutation are gone. `while_test_ends_in_throw` stays, and
+still holds the contract against the crash.

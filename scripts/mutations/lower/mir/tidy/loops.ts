@@ -3,14 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "broken-after-a-throw",
-    breaks: "a written `while` whose body ends with a panic's `throw` gets its loop's `break` after it, which tidy's contract refuses (#290)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "        if !left {\n",
-    replace: "        if !left || true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_test_ends_in_throw.rs$"],
-  },
-  {
     name: "mir-tidy-loops-kept",
     breaks: "`const iter = $iter(xs); while (true) { const t = $next(iter); … }` stays, not `for (const x of xs)`",
     file: "src/lower/mir/tidy/loops.rs",
