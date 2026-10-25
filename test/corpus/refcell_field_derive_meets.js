@@ -29,11 +29,9 @@ function countOf(item) {
 
 function count(holder) {
   const borrow = $borrow($fieldCell(holder, "item"), true);
-  try {
-    return countOf(borrow.value);
-  } finally {
-    $unborrow(borrow);
-  }
+  const result = countOf(borrow.value);
+  $unborrow(borrow);
+  return result;
 }
 
 function bump(holder) {

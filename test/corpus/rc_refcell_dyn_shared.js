@@ -5,6 +5,7 @@ import {
   $borrowMut,
   $downgrade,
   $dynCell,
+  $fieldCell,
   $index,
   $next,
   $rcClone,
@@ -93,30 +94,30 @@ function main() {
     $unborrow(borrow);
   }
 
-  const root = { value: { name: "root", parent: { value: $weakNone } }, strong: 1, weak: 0 };
-  const leaf = { value: { name: "leaf", parent: { value: $weakNone } }, strong: 1, weak: 0 };
+  const root = { value: { name: "root", parent: $weakNone }, strong: 1, weak: 0 };
+  const leaf = { value: { name: "leaf", parent: $weakNone }, strong: 1, weak: 0 };
   let tmp;
   try {
     tmp = $downgrade(root);
   } catch (error) {
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(leaf.value.parent, true);
+    borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
   } catch (error) {
     $weakDrop(tmp);
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -126,10 +127,10 @@ function main() {
     borrowMut.value = tmp;
     $unborrow(borrowMut);
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -138,22 +139,22 @@ function main() {
     $unborrow(borrowMut);
   } catch (error) {
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
   let tmp$1;
   try {
-    tmp$1 = $borrow(leaf.value.parent, true);
+    tmp$1 = $borrow($fieldCell(leaf.value, "parent"), true);
   } catch (error) {
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -164,17 +165,17 @@ function main() {
     tmp$2 = (p) => {
       const result = p.value.name;
       $rcDrop(p, (value) => {
-        $weakDrop(value.parent.value);
+        $weakDrop(value.parent);
       });
       return result;
     };
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -184,10 +185,10 @@ function main() {
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -196,10 +197,10 @@ function main() {
     $unborrow(tmp$1);
   } catch (error) {
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -212,10 +213,10 @@ function main() {
   } catch (error) {
     $rcDrop(counter);
     $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
     throw error;
   }
@@ -261,12 +262,12 @@ function main() {
       }
     } finally {
       $rcDrop(leaf, (value) => {
-        $weakDrop(value.parent.value);
+        $weakDrop(value.parent);
       });
     }
   } finally {
     $rcDrop(root, (value) => {
-      $weakDrop(value.parent.value);
+      $weakDrop(value.parent);
     });
   }
 }

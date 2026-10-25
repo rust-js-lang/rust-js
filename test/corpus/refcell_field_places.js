@@ -81,7 +81,7 @@ function main() {
   };
   const child = {
     tag: 5,
-    return: parent ?? null,
+    return: parent,
   };
   console.log(`${parentTag(child)} ${parentTag(parent)}`);
   setCurrentFiber(parent);
@@ -115,11 +115,8 @@ function main() {
   const borrow = $borrow(n, true);
   try {
     const value = $borrow($fieldCell(wrap, "n"), true);
-    try {
-      console.log(`${borrow.value} ${value.value}`);
-    } finally {
-      $unborrow(value);
-    }
+    console.log(`${borrow.value} ${value.value}`);
+    $unborrow(value);
   } finally {
     $unborrow(borrow);
   }
