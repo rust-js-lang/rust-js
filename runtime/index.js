@@ -1346,9 +1346,14 @@ export class $Steps extends Iterator {
       n = 0;
       return this.return();
     };
-    // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
+    // Its `try_fold`, std's: its source's, stopped once it's taken `n`;
+    // asked again there, its source done with, as its `next` closes it
+    // (ADR 0570, #225).
     taken.tryFold = (init, g, broke) => {
-      if (n === 0) return init;
+      if (n === 0) {
+        this.return();
+        return init;
+      }
       let full = false;
       return this.tryFold(
         init,
@@ -1689,7 +1694,7 @@ export function $findDropping(it, test, drop, boxed) {
 }
 
 // An iterator an adapter holds, closed when the adapter ends early, is
-// dropped, or is done: `drop`, its own drop, given what it hasn't given,
+// dropped, or is done, however it's stepped: `drop`, its own drop, given what it hasn't given,
 // once, as Rust drops it with the adapter (ADRs 0422, 0465, 0570); its back
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
@@ -1704,17 +1709,27 @@ export function $closing(it, drop) {
   };
   // Stepped to its end, it's done with, as a chain consumed to its end
   // drops what it holds where the statement or the loop ends (ADR 0570).
-  const closing = new $Steps(() => {
-    const step = it.next();
+  // Done, from its front, its back or by its `nth` or `nth_back`, it's
+  // done with, each way it's stepped (#225).
+  const done = (step) => {
     if (step.done) close();
     return step;
-  }, close);
-  closing.back = () => it.back();
+  };
+  const closing = new $Steps(() => done(it.next()), close);
+  closing.back = () => done(it.back());
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
+  // Its iterator's back and length, a use site's, given it where it's
+  // asked, as `$knowing` gives a compiled std iterator's (ADR 0561, #225).
+  if (it.knowing !== undefined) {
+    closing.knowing = (back, size) => {
+      it.knowing(back, size);
+      if (it.len !== undefined) closing.len = () => it.len();
+    };
+  }
   // Its `nth`, its iterator's, the crate's own where it writes one.
-  if (it.nth !== undefined) closing.nth = (k) => it.nth(k);
+  if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
   closing.fold = (init, f) => {
     const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
     if (it.ownFold) closed = true;
@@ -1723,7 +1738,7 @@ export function $closing(it, drop) {
   };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
-  if (it.nthBack !== undefined) closing.nthBack = (k) => it.nthBack(k);
+  if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
   if (it.rfold !== undefined) {
     closing.rfold = (init, f) => {
       const folded = it.rfold(init, f);
@@ -1770,7 +1785,9 @@ export function $skipping(iter, n, drop) {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
-  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
+  // Ended from its back, what it steps is done with, as a `take`'s at its
+  // limit is, so a temporary's is dropped (ADR 0570, #225).
+  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : $closed(skipping.iter));
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220).
@@ -1790,7 +1807,12 @@ export function $skipping(iter, n, drop) {
       if (left === 0) return init;
       return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a));
     };
-    skipping.rfold = (init, f) => skipping.tryRfold(init, f, () => false);
+    // Consumed, its source done with after (#225).
+    skipping.rfold = (init, f) => {
+      const folded = skipping.tryRfold(init, f, () => false);
+      $closed(skipping.iter);
+      return folded;
+    };
   }
   return skipping;
 }
@@ -1817,8 +1839,10 @@ export function $taking(iter, n, drop) {
   };
   // Std's `Take::next_back`: its source's `nth_back` past what it won't
   // give, the crate's own where it reaches it (#220).
+  // Ended from its back, what it steps is done with, as `$Steps`' `take`'s
+  // at its limit is, so a temporary's is dropped (ADR 0570, #225).
   taking.back = () => {
-    if (taking.n === 0) return { done: true, value: undefined };
+    if (taking.n === 0) return $closed(taking.iter);
     const past = Math.max(taking.iter.len() - taking.n, 0);
     taking.n--;
     return $nthBackOf(taking.iter, past, drop);
@@ -1842,7 +1866,12 @@ export function $taking(iter, n, drop) {
       const len = taking.iter.len();
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
-    taking.rfold = (init, f) => (taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f));
+    // Consumed, its source done with after (#225).
+    taking.rfold = (init, f) => {
+      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f);
+      $closed(taking.iter);
+      return folded;
+    };
     taking.tryRfold = (init, f, broke) =>
       taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke);
   }
@@ -2254,13 +2283,16 @@ export function $stepByEnds(it, step) {
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each
-// as it's reached (ADR 0526).
+// as it's reached (ADR 0526). Closing it closes its source (ADR 0465, #225).
 export function $filterEnds(it, p) {
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
     return { done: true, value: undefined };
   };
-  const filter = new $Steps(kept(() => it.next()));
+  const filter = new $Steps(
+    kept(() => it.next()),
+    () => $closed(it),
+  );
   if (it.back !== undefined) filter.back = kept(() => it.back());
   // Std's `Filter::next_back`, its source's `rfind`, a `try_rfold`, where
   // that reaches the crate's own (#220).

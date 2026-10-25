@@ -241,13 +241,16 @@ function $stepByEnds(it, step) {
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each
-// as it's reached (ADR 0526).
+// as it's reached (ADR 0526). Closing it closes its source (ADR 0465, #225).
 function $filterEnds(it, p) {
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) if (p(at.value)) return at;
     return { done: true, value: undefined };
   };
-  const filter = new $Steps(kept(() => it.next()));
+  const filter = new $Steps(
+    kept(() => it.next()),
+    () => $closed(it),
+  );
   if (it.back !== undefined) filter.back = kept(() => it.back());
   // Std's `Filter::next_back`, its source's `rfind`, a `try_rfold`, where
   // that reaches the crate's own (#220).

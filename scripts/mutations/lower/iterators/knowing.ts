@@ -322,4 +322,20 @@ export const mutations: Mutation[] = [
     replace: "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
   },
+  {
+    name: "user-iterator-knowing-lent-rewrapped",
+    breaks: "a `&mut` of the crate's iterator, lent, made knowing its back, is wrapped as if it were the crate's value: a wrong value (#225)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if super::in_place::is_lent(&value) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
+  {
+    name: "user-iterator-knowing-lent-folds",
+    breaks: "a `&mut` of the crate's iterator, lent, is given its own folds, which take it and drop it (#225)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return self.user_iterator_knowing(it, borrowed, (back, len), span);\n",
+    replace: "            return self.user_iterator_knowing(it, ty, (back, len), span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
 ];

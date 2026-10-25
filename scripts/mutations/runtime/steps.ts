@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     replace: "    for (let i = 0; i < m; i++) if (this.next().done) return m - i;\n    return 0;\n    return this.tryFold(\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "take-try-fold-limit-kept",
+    breaks: "a `take` asked again at its limit by `try_fold`, as a `filter` over it steps it, isn't done with its source (#225)",
+    file: "src/runtime/steps.js",
+    find: "      if (n === 0) {\n        this.return();\n        return init;\n      }\n",
+    replace: "      if (n === 0) {\n        return init;\n      }\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
 ];

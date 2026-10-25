@@ -178,4 +178,13 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n                    given.push(Expr::bool(true));\n",
     tests: ["test/corpus.test.ts", "-t", "^last_option_drops.rs$"],
   },
+  {
+    name: "closing-closed-again",
+    breaks: "what's closed already, an owning source `rev()` is given, is closed again, `$closing($closing(..))` (#225)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if crate::lower::iterators::closed_parts(&it).is_some() {\n            return Ok(it);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(rev_drops|rev_lazy_drops|rev_of_closed_items).rs$"],
+    snapshots: true,
+  },
 ];

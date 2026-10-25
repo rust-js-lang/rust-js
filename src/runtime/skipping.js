@@ -26,7 +26,9 @@ function $skipping(iter, n, drop) {
     const [low, high] = $sizeHint(skipping.iter);
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
-  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
+  // Ended from its back, what it steps is done with, as a `take`'s at its
+  // limit is, so a temporary's is dropped (ADR 0570, #225).
+  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : $closed(skipping.iter));
   skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220).
@@ -46,7 +48,12 @@ function $skipping(iter, n, drop) {
       if (left === 0) return init;
       return skipping.iter.tryRfold(init, (a, x) => (left--, f(a, x)), (a) => left === 0 || broke(a));
     };
-    skipping.rfold = (init, f) => skipping.tryRfold(init, f, () => false);
+    // Consumed, its source done with after (#225).
+    skipping.rfold = (init, f) => {
+      const folded = skipping.tryRfold(init, f, () => false);
+      $closed(skipping.iter);
+      return folded;
+    };
   }
   return skipping;
 }

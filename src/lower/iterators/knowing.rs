@@ -463,6 +463,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let knowing = self.user_iterator_knowing(it, ty, (back, len), span)?;
             return Ok(Expr::call_helper("$closing", vec![knowing, drop]));
         }
+        // One lent as a `&mut`, `$lent($iterator(value, next))`: what it
+        // lends made knowing them, given its own methods as std's `&mut I`
+        // passes them on, not its folds, which would take it; nothing
+        // closes it (#225).
+        if super::in_place::is_lent(&value) {
+            let lent = crate::lower::iterators::unlent(&value);
+            let it = stepped_value(lent).unwrap_or_else(|| lent.clone());
+            let borrowed = ty::Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, ty.peel_refs());
+            return self.user_iterator_knowing(it, borrowed, (back, len), span);
+        }
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let (next, boxed) = self.user_next(ty, iterator, "next", span)?;
         let hint = self.own_size_hint(ty, span)?;

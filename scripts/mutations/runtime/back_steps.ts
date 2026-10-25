@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "filter-ends-unclosed",
+    breaks: "closing a `filter` stepped from its back doesn't close its source (#225)",
+    file: "src/runtime/back_steps.js",
+    find: "    kept(() => it.next()),\n    () => $closed(it),\n",
+    replace: "    kept(() => it.next()),\n    () => {},\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
 ];

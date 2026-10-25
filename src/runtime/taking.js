@@ -20,8 +20,10 @@ function $taking(iter, n, drop) {
   };
   // Std's `Take::next_back`: its source's `nth_back` past what it won't
   // give, the crate's own where it reaches it (#220).
+  // Ended from its back, what it steps is done with, as `$Steps`' `take`'s
+  // at its limit is, so a temporary's is dropped (ADR 0570, #225).
   taking.back = () => {
-    if (taking.n === 0) return { done: true, value: undefined };
+    if (taking.n === 0) return $closed(taking.iter);
     const past = Math.max(taking.iter.len() - taking.n, 0);
     taking.n--;
     return $nthBackOf(taking.iter, past, drop);
@@ -45,7 +47,12 @@ function $taking(iter, n, drop) {
       const len = taking.iter.len();
       return !(len > taking.n && $nthBackOf(taking.iter, len - taking.n - 1, drop).done);
     };
-    taking.rfold = (init, f) => (taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f));
+    // Consumed, its source done with after (#225).
+    taking.rfold = (init, f) => {
+      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f);
+      $closed(taking.iter);
+      return folded;
+    };
     taking.tryRfold = (init, f, broke) =>
       taking.n === 0 || !trimmed() ? init : $tryRfoldOf(taking.iter, init, f, broke);
   }

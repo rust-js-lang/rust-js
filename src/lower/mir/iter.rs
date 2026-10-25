@@ -442,19 +442,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }));
         }
-        // `rev()`: of the crate's iterator, its own `next_back` and back
-        // methods, through a `&mut` as std passes them on (#217), closed to
-        // drop it where it's owned (#223); of a range, stepped from its end;
-        // of items made already, an array's, a `$iter` of them; not of a lazy
-        // one, whose closures would run in another order (ADR 0164).
+        // `rev()`: of the crate's iterator, `reversed_user`'s; of a range,
+        // stepped from its end; of items made already, an array's, a `$iter`
+        // of them; not of a lazy one, whose closures would run in another
+        // order (ADR 0164). What it steps is closed to drop it (#225).
         if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
             let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
             if self.is_user_iterator(iter_ty) {
-                let back = self.own_next_back(iter_ty)?.ok_or_else(|| unsupported(self))?;
-                let reversed = self.user_iterator(receiver, receiver_ty, back, "next_back", span)?;
-                return Ok(Some(self.closing(reversed, receiver_ty, span)?));
+                return self.reversed_user(receiver, receiver_ty, span).map(Some);
             }
+            let receiver = self.closing(receiver, receiver_ty, span)?;
             return Ok(Some(match self.range_kind(iter_ty) {
                 None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),

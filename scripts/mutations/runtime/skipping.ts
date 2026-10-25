@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
+  {
+    name: "skipping-back-end-kept",
+    breaks: "a `skip` ended from its back isn't done with what it steps, and a temporary's is never dropped (#225)",
+    file: "src/runtime/skipping.js",
+    find: "  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : $closed(skipping.iter));\n",
+    replace: "  skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
+  {
+    name: "skipping-rfold-kept",
+    breaks: "a `skip`'s `rfold`, which consumes it, isn't done with what it steps (#225)",
+    file: "src/runtime/skipping.js",
+    find: "      const folded = skipping.tryRfold(init, f, () => false);\n      $closed(skipping.iter);\n",
+    replace: "      const folded = skipping.tryRfold(init, f, () => false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+  },
 ];

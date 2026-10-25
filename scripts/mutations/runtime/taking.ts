@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "taking-rfold-untrimmed",
     breaks: "a `take`'s `rfold` folds its source untrimmed, not after its `nth_back` past what it won't give (#220)",
     file: "src/runtime/taking.js",
-    find: "    taking.rfold = (init, f) => (taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f));\n",
-    replace: "    taking.rfold = undefined;\n",
+    find: "      const folded = taking.n === 0 || !trimmed() ? init : $foldBack(taking.iter, init, f);\n",
+    replace: "      const folded = taking.n === 0 ? init : $foldBack(taking.iter, init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "    taking.nthBack = (k) => {\n",
     replace: "    taking.unused = (k) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+  },
+  {
+    name: "taking-back-end-kept",
+    breaks: "a `take` ended from its back isn't done with what it steps (#225)",
+    file: "src/runtime/taking.js",
+    find: "    if (taking.n === 0) return $closed(taking.iter);\n",
+    replace: "    if (taking.n === 0) return { done: true, value: undefined };\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
 ];

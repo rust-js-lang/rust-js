@@ -229,9 +229,14 @@ class $Steps extends Iterator {
       n = 0;
       return this.return();
     };
-    // Its `try_fold`, std's: its source's, stopped once it's taken `n`.
+    // Its `try_fold`, std's: its source's, stopped once it's taken `n`;
+    // asked again there, its source done with, as its `next` closes it
+    // (ADR 0570, #225).
     taken.tryFold = (init, g, broke) => {
-      if (n === 0) return init;
+      if (n === 0) {
+        this.return();
+        return init;
+      }
       let full = false;
       return this.tryFold(
         init,

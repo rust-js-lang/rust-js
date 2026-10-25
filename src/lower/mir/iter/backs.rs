@@ -167,6 +167,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (values, arg_tys): (&mut std::vec::IntoIter<Expr>, &[Ty<'tcx>]),
         span: Span,
     ) -> R<Option<Expr>> {
+        // What it's given, a `&mut` of what it steps or not: what's closed to
+        // drop it is what's owned.
+        let held = arg_tys.first().copied().unwrap_or(iter_ty);
         Ok(Some(match method {
             // One a struct holds, itself, which closing doesn't end (ADR 0542).
             Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),
@@ -188,7 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
-                        self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?
+                        self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?
                     }
                     None if back && !self.has_a_back(iter_ty) => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
@@ -219,12 +222,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
                     None if self.explicit_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
-                    // Closed to drop it, as a map's is (#223).
+                    // Closed to drop it, as a map's is, where it's owned, not
+                    // through a `&mut` (#223, #225).
                     None if self.is_user_iterator(iter_ty) => {
-                        let knowing = self.user_iterator_knowing(receiver.clone(), iter_ty, (back, len), span)?;
-                        self.closing(knowing, iter_ty, span)?
+                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?;
+                        self.closing(knowing, held, span)?
                     }
-                    None => receiver.clone(),
+                    None => self.closing(receiver.clone(), held, span)?,
                 };
                 Expr::call_helper("$enumerate", vec![it])
             }
@@ -257,8 +261,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let it = match self.given_stepped(receiver.clone(), iter_ty, true, false) {
                     Some(it) => it,
+                    // Closed to drop it, as a map's is (#225).
                     None if self.is_user_iterator(iter_ty) => {
-                        self.user_iterator_knowing(receiver.clone(), iter_ty, (true, false), span)?
+                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?;
+                        self.closing(knowing, held, span)?
                     }
                     None if !self.has_a_back(iter_ty) => self.as_double_ended(receiver.clone(), iter_ty, span)?,
                     None => receiver.clone(),
@@ -269,6 +275,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+
+    /// `rev()` of the crate's iterator, `receiver` of type `receiver_ty`:
+    /// its own `next_back` and back methods, through a `&mut` as std passes
+    /// them on (#217), closed to drop it where it's owned (#223); refused of
+    /// one with no `next_back` of its own.
+    pub(super) fn reversed_user(&mut self, receiver: Expr, receiver_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let iter_ty = receiver_ty.peel_refs();
+        let Some(back) = self.own_next_back(iter_ty)? else {
+            return Err(self.unsupported(span, &format!("`rev` of a `{iter_ty}`, from its MIR")));
+        };
+        let reversed = self.user_iterator(receiver, receiver_ty, back, "next_back", span)?;
+        self.closing(reversed, receiver_ty, span)
     }
 
     /// `it.nth_back(n)`, `it.rfold(init, f)` or `it.rfind(p)`, of its
