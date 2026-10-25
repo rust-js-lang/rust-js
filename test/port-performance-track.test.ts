@@ -38,7 +38,7 @@ test("ReactPerformanceTrackProperties holds no temporary of its own", () => {
 test("getArrayKind is a chain of returns, no block MIR made", () => {
   const js = of("ReactPerformanceTrackProperties.js");
   const kind = js.slice(js.indexOf("function getArrayKind("), js.indexOf("export function addObjectToProperties("));
-  expect(kind).not.toMatch(/bb\d+/);
+  expect(kind).not.toMatch(/\bbb\d+/);
   expect(kind).toContain('      if (typeof value === "object" && value !== null) {\n        return "Complex";\n      }\n');
 });
 

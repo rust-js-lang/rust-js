@@ -1185,3 +1185,13 @@ test("a test file is at most the cap", () => {
   expect(sizes.length).toBeGreaterThan(100);
   expect(sizes.filter(([, lines]) => lines > LARGE)).toEqual([]);
 });
+
+// A test that says the JS has no block label, `bb12`, asks for one at a
+// word's start, `/\bbb\d+/`: the header names the fixture's directory,
+// whose hash may hold `3bb5`, which a bare `/bb\d+/` matches (#296).
+test("a block label is matched at a word's start", () => {
+  const bare = readdirSync(join(root, "test"))
+    .filter((name) => name.endsWith(".ts") && name !== "architecture.test.ts")
+    .filter((name) => /\/bb\\d\+/.test(read(join("test", name))));
+  expect(bare).toEqual([]);
+});

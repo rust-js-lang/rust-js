@@ -259,7 +259,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
   expect(js).toContain("  if (a != null) {\n    if (b) {\n");
   expect(js).toContain("    if (node.seen && node.count != null && node.count > 1) {\n");
   expect(js).not.toContain("let iter");
-  expect(js).not.toMatch(/bb\d+:/);
+  expect(js).not.toMatch(/\bbb\d+:/);
   expect(js).toMatch(/r\.title != null && r\.path != null/);
   expect(js).toContain("    if (node.title != null && $byteLen(node.title) > 1) {\n      out.push(node.title);\n");
   const lib = await import(join(dir, "mir.js"));

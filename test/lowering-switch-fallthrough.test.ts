@@ -125,7 +125,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
   }
   log.push(0);
 `);
-  expect(js).not.toMatch(/bb\d+:/);
+  expect(js).not.toMatch(/\bbb\d+:/);
   expect(js).toMatch(/export function apart\(n, on\) \{\n  if \(/);
   const lib = await import(join(dir, "lib.js"));
   // Upstream's JS, as React writes it.

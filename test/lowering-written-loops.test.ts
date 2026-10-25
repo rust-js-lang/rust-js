@@ -262,7 +262,7 @@ pub fn args(tokens: &[i32]) -> Result<Vec<i32>, String> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    while (s >= 1) {\n");
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
   // A calculator's arguments: its `?` an early return, and no `continue`
   // where the loop's body ends anyway.
   expect(js).toContain("      args.push(result._0);\n    }\n  }\n");
@@ -291,5 +291,5 @@ test("React's describeNativeComponentFrame's loops are upstream's", () => {
   );
   expect(js).toContain("      while (s >= 1 && c >= 0) {\n");
   expect(js).not.toContain("$index");
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
 });

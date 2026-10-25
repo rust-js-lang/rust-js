@@ -165,7 +165,7 @@ pub fn diff(prev: &Unknown, next: &Unknown, out: &mut Vec<String>, indent: usize
     equal
 }
 `);
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain("        if (indent >= 3) {\n          // Deep: the two values.\n        } else if (\n");
   expect(js).toContain('        if (indent === 0 && key === "children") {\n          // The top level children prop.\n          out.push(key + " children");\n          equal = false;\n          continue;\n        }\n');
   expect(js).toContain("            if (!diffNested(prevValue, nextValue, out)) {\n              equal = false;\n            } else if (before === out.length) {\n");

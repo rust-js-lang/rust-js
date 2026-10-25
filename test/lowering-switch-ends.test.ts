@@ -159,7 +159,7 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // Its match of two arms, an `if` and its `else`, as upstream's (ADR 0745).
   expect(js).toContain('        if (typeof name === "string" && name) {\n          desc = name + "() {}";\n        } else {\n          desc = "() => {}";\n        }\n        break;\n');
-  expect(js.slice(0, js.indexOf("function scanned"))).not.toMatch(/bb\d+/);
+  expect(js.slice(0, js.indexOf("function scanned"))).not.toMatch(/\bbb\d+/);
   const lib = await import(join(dir, "lib.js"));
   const log: string[] = [];
   for (const value of [{}, null, function named() {}, () => {}, undefined, true, 5]) lib.described(value, log);

@@ -54,7 +54,7 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toMatch(/\n\s+desc: \{\n/);
   expect(js).toMatch(/desc = "deep";\n\s+break desc;\n/);
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
   const lib = await import(join(dir, "lib.js"));
   const out: string[] = [];
   const got = [{}, { abcdef: 1, ghijkl: 2 }, { a: 1, b: 2 }, { c: 1 }, null].map((v) => lib.describe(v, 5, out));
@@ -69,10 +69,10 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 test("React's addObjectDiffToProperties has no block MIR made", () => {
   const of = performanceTrack();
   const diff = of("addObjectDiffToProperties");
-  expect(diff).not.toMatch(/bb\d+/);
+  expect(diff).not.toMatch(/\bbb\d+/);
   expect(diff).toContain('          properties.push([REMOVED + line, "…"], [ADDED + line, "…"]);\n          isDeeplyEqual = false;\n          continue;\n        }\n');
   expect(diff).toContain("              if (!nestedEqual) {\n                isDeeplyEqual = false;\n              } else if (");
-  expect(of("addValueToProperties")).not.toMatch(/bb\d+|desc: \{/);
+  expect(of("addValueToProperties")).not.toMatch(/\bbb\d+|desc: \{/);
 });
 
 // React's getArrayKind (shared/ReactPerformanceTrackProperties.js) is a
@@ -119,7 +119,7 @@ pub fn get_array_kind(array: &[Option<&Unknown>]) -> ArrayKind {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain('      if (typeof value === "object" && value !== null) {\n        return "Complex";\n      }\n    } else if (value.length > 3) {\n      return "Complex";\n    }\n');
   const lib = await import(join(dir, "lib.js"));
   const kinds = [[], [1, "ab", true], [["a", 1], ["b", 2]], [1, ["a", 1]], [["a", 1], 1], [{}], [[1, 2]], [() => 1], ["abcd"], [1n], [null, undefined]];
@@ -232,7 +232,7 @@ pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).not.toMatch(/bb\d+/);
+  expect(js).not.toMatch(/\bbb\d+/);
   expect(js).not.toContain("typeof status");
   expect(js).toMatch(/\n\s+if \(status === "fulfilled"\) \{\n/);
   expect(js).toMatch(/\n\s+out\[idx\] = "Promise<" \+ out\[idx\] \+ ">";\n\s+return;\n/);
