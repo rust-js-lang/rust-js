@@ -252,3 +252,34 @@ tree did. `test/corpus/default_value_exits.rs` runs it against native
 Rust, `NaN` and three values' `|` too; of a slice's patterns, which these
 don't make a chain of, the blocks stay (issue #221). A mutation of each
 rule is caught.
+
+## Amendment: a value held out of a list is in its `try`
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the answer was
+wrong, a destructor not run as a panic unwound; it's Rust's now.
+
+A statement that runs a call made before, which may panic while something
+is there to drop, is the call's `try`. The statement path asked whether it
+ran one by whether a value that acts was no longer made and unread. A
+`format_args!` argument read out of the order it's made in, a named one,
+`println!("{total} {}", first(&v))`, holds each argument that does
+something first, `const _arg = first(v)` (`take_field`), and the list
+they're in stays made, its other items unread: the statement ran the call,
+and wasn't its `try`. A panic in `first` dropped nothing that was live, a
+guard's `drop outer` not printed. Found reading why an architecture
+review's example didn't make one `finally` of its guard's scope (ADR
+0437).
+
+- **What a statement ran is counted by what acts, a list's items each
+  one** (`acting_parts`), as `take_field` holds them: not movable, and
+  doing something. Fewer after it, it ran some, and is the `try`.
+- **The scope is one `finally` again**, as ADR 0437 makes of it, now that
+  each statement that may throw in it is wrapped; `refcell_eq_through_guard`'s
+  scope is too. `generic_drops_nothing` and `rc_counted_uses` hold a value
+  made of a call in a `try` of its own, each of which a panic in its call
+  dropped nothing before, the same bug.
+- **A held argument a `try` assigns is `arg`**, as one held in a `const`
+  is, `let arg; try { arg = .. }`, not MIR's lowering's `_arg`.
+- Held by `test/corpus/format_argument_unwinds.rs`, against native Rust,
+  and the mutations `held-format-argument-unwound-bare` and
+  `held-arg-let-unnamed`.

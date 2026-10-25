@@ -217,6 +217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // as something's there to drop, is that call's `try`.
             let unwind = state.unwind.take();
             let acting = self.acting(state);
+            let parts = self.acting_parts(state);
             let mut made = Vec::new();
             let at = mir::Location {
                 block,
@@ -246,7 +247,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "an intrinsic, from its MIR"));
                 }
             }
-            let ran = acting.iter().any(|l| !state.pending.iter().any(|(p, _)| p == l));
+            // It ran what it used up of what acts, or held of a list it
+            // read one item of, `format_args!`'s `_arg` (`take_field`).
+            let ran =
+                acting.iter().any(|l| !state.pending.iter().any(|(p, _)| p == l)) || self.acting_parts(state) < parts;
             self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;
             state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
         }

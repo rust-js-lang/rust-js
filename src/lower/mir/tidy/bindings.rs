@@ -654,6 +654,9 @@ pub(super) fn readable_temporaries(
                     };
                     renames.push((name.clone(), names, any));
                 }
+                // Held in a `try` that assigns it, `let _arg; try { _arg = .. }`,
+                // as what it's given as is: `arg`.
+                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), "arg")),
                 StmtKind::Let(name, _) if is_temporary(name) => {
                     renames.push((name.clone(), suggested.get(name).cloned().unwrap_or_default(), "tmp"));
                 }

@@ -239,6 +239,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         acting.map(|(local, _)| *local).collect()
     }
 
+    /// How many of the values made and not yet used act, a list's items
+    /// each one: fewer once a statement held one of a list it read an item
+    /// of, which stays made, its other items not read yet.
+    pub(super) fn acting_parts(&self, state: &State<'_, 'tcx>) -> usize {
+        // A list's item acts as `take_field` holds it: not movable, and
+        // doing something, which what it holds it by doesn't.
+        fn item(state: &State<'_, '_>, value: &Value<'_>) -> bool {
+            !movable(state, value) && matches!(value, Value::Expr(e) if e.has_effects())
+        }
+        (state.pending.iter())
+            .map(|(_, value)| match value {
+                Value::List(items) => items.iter().filter(|value| item(state, value)).count(),
+                value => usize::from(!movable(state, value)),
+            })
+            .sum()
+    }
+
     /// Whether a temporary made and not yet used may throw, so runs before
     /// a call that unwinds elsewhere, outside its `try`. A closure made,
     /// `cache => cache`, can't: it's made where it's read, `with`'s applied

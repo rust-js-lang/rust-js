@@ -468,4 +468,13 @@ export const mutations: Mutation[] = [
     replace: "            if !rebinds(rest, &a)",
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
+  {
+    name: "held-arg-let-unnamed",
+    breaks: "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), \"arg\")),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
+    snapshots: true,
+  },
 ];

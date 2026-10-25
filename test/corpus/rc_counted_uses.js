@@ -396,8 +396,27 @@ function main() {
       total = (total + item) & 255;
     }
   }
-  const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
+  let arg;
 
+  try {
+    arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
   try {
     console.log(`${total} ${arg}`);
   } catch (error) {
@@ -506,8 +525,28 @@ function main() {
   }
   const owned = tmp$6;
   const value$4 = other$1.value;
-  const arg$1 = count(other$1);
+  let arg$1;
 
+  try {
+    arg$1 = count(other$1);
+  } catch (error) {
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
   try {
     console.log(`[${owned.join(", ")}] [${value$4.join(", ")}] ${arg$1}`);
   } catch (error) {
@@ -751,7 +790,32 @@ function main() {
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
   const value$6 = { value: 5, strong: 1, weak: 0 };
-  const arg$2 = $cmp(value$6.value, defaulted.value) > 0;
+  let arg$2;
+  try {
+    arg$2 = $cmp(value$6.value, defaulted.value) > 0;
+  } catch (error) {
+    $rcDrop(value$6);
+    $rcDrop(defaulted);
+    $rcDrop(owner, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    throw error;
+  }
   try {
     console.log(`${defaulted.value} ${arg$2}`);
   } catch (error) {

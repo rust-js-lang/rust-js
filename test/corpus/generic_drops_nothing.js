@@ -73,7 +73,15 @@ function main() {
     }
     throw error;
   }
-  const arg = v.map((l) => l[0]).join("");
+  let arg;
+  try {
+    arg = v.map((l) => l[0]).join("");
+  } catch (error) {
+    for (const item of v) {
+      loudDrop_drop(item);
+    }
+    throw error;
+  }
   try {
     console.log(`${n} ${arg}`);
   } catch (error) {

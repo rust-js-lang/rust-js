@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     replace: "        if preds[block].len() < 200 || seen.contains(&block) {\n            return None;",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
+  {
+    name: "held-format-argument-unwound-bare",
+    breaks: "a `format_args!` argument held out of the order it's made in, `const arg = first(..)`, is outside the `try` of what's live, so a panic in it drops nothing",
+    file: "src/lower/mir/structure.rs",
+    find: " || self.acting_parts(state) < parts;\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_argument_unwinds.rs$"],
+  },
 ];

@@ -29,16 +29,10 @@ function main() {
   };
   console.log(`${advance(state, done)} ${advance(state, done)}`);
   const held = $borrowMut(state, true);
-  let same;
   try {
-    same = $eq(held, done);
-  } catch (error) {
-    $unborrow(held);
-    throw error;
-  }
-  held.step = 3;
-  const arg = $eq(held, done);
-  try {
+    const same = $eq(held, done);
+    held.step = 3;
+    const arg = $eq(held, done);
     console.log(`${same} ${arg}`);
   } finally {
     $unborrow(held);
