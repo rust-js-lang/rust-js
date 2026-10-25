@@ -8,8 +8,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `block`, and what it dominates (Ramsey's `doTree`): a loop of it if
     /// an edge goes back to it.
     pub(super) fn mir_tree(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
-        let merges = state.graph.merge_children(block);
-        if state.graph.headers.contains(&block) {
+        let merges = state.facts.graph().merge_children(block);
+        if state.facts.graph().headers.contains(&block) {
             self.flush(state, &mut Vec::new())?;
             state.labels.push(block);
             let mut body = self.mir_statements(state, block)?;
@@ -65,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.flush(state, &mut within)?;
         // Where the block the program labeled is, that MIR's breaks leave:
         // tidy names it its label (ADR 0742).
-        let span = (state.jumps.left.get(&merge)).map_or(js::Span::NONE, |&b| state.jumps.blocks[b].span);
+        let span = (state.left.get(&merge)).map_or(js::Span::NONE, |&b| state.facts.jumps().blocks[b].span);
         let mut out = vec![StmtKind::Labeled(label(merge), within).at(span)];
         out.extend(self.mir_tree(state, merge)?);
         Ok(out)
@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Going from `from` to `to`: on, back to a loop's start, or out to a
     /// block that follows.
     fn mir_branch(&mut self, state: &mut State<'_, 'tcx>, from: BasicBlock, to: BasicBlock) -> R<Vec<Stmt>> {
-        if state.graph.backward(from, to) {
+        if state.facts.graph().backward(from, to) {
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
             out.push(StmtKind::Continue(Some(label(to))).at(js::Span::NONE));
@@ -86,7 +86,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_return(state.body, to) {
             let mut out = self.mir_terminator(state, to)?;
             let written = (self.jumped_from(state, from).into_iter())
-                .filter_map(|s| (state.jumps.returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
+                .filter_map(|s| {
+                    (state.facts.jumps().returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi)
+                })
                 .next()
                 .copied();
             if let Some(written) = written
@@ -96,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(out);
         }
-        if state.graph.merges.contains(&to) {
+        if state.facts.graph().merges.contains(&to) {
             // A `break` the program wrote of a block it labeled: that block
             // ends at `to`, or at a block after it, past the drops at its
             // end, whose label is the one around it (ADR 0742).
@@ -105,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let left = (self.written_break(state, from, &mut Vec::new()))
                 .filter(|&found| !self.goes_on_to_break(state, to, found));
             if let Some((block, _)) = left {
-                state.jumps.left.entry(to).or_insert(block);
+                state.left.entry(to).or_insert(block);
             }
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
@@ -127,7 +129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seen: &mut Vec<BasicBlock>,
     ) -> Option<(usize, js::Span)> {
         let of = |s: js::Span| {
-            (state.jumps.blocks.iter().enumerate()).find_map(|(i, b)| {
+            (state.facts.jumps().blocks.iter().enumerate()).find_map(|(i, b)| {
                 (b.breaks.iter())
                     .find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi)
                     .map(|&w| (i, w))
@@ -168,7 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 TerminatorKind::Goto { target } | TerminatorKind::Drop { target, .. } => *target,
                 _ => return false,
             };
-            if state.graph.merges.contains(&next) {
+            if state.facts.graph().merges.contains(&next) {
                 return self.written_break(state, block, &mut Vec::new()) == Some(found);
             }
             block = next;
@@ -320,7 +322,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
                 let mut always = None;
                 // Past a guard that holds, to its arm (`held_arms`).
-                let past = |b: BasicBlock| state.held_arms.get(&b).copied().unwrap_or(b);
+                let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
                 for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
                     if reached(target) {
                         let test = self.switch_test(&subject, ty, value, span)?;
@@ -508,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(refuse(self.tcx, *fn_span, Refused::Because(&what, why)));
                 }
                 let mut called = Vec::new();
-                let value = match state.awaits.contains(&block) {
+                let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };

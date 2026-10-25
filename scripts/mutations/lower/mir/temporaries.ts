@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "pointed-local-value-whole",
     breaks: "a local a pointer's taken to is read as its cell where it's given",
     file: "src/lower/mir/temporaries.rs",
-    find: "            name if state.pointed.locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),\n",
+    find: "            name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },

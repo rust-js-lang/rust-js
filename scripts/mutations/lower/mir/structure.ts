@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     name: "mir-labeled-block-end-unrecorded",
     breaks: "a block the program labeled, `'desc: { .. }`, is MIR's `bb41: { .. }` where JS keeps a label (ADR 0742)",
     file: "src/lower/mir/structure.rs",
-    find: "                state.jumps.left.entry(to).or_insert(block);\n",
+    find: "                state.left.entry(to).or_insert(block);\n",
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
   },

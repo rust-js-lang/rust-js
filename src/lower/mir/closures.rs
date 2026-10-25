@@ -142,7 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer_facts = std::mem::replace(&mut self.frame.facts, &body.facts);
         let outer_owner = std::mem::replace(&mut self.frame.owner, def_id);
         // Given a place found, what it's told of it (ADR 0642).
-        let seed = state.offsets.seed(def_id).cloned();
+        let seed = state.facts.offsets().seed(def_id).cloned();
         let lowered = self.mir_function(mir, Some(captures), seed);
         self.frame.thir = outer;
         self.frame.facts = outer_facts;

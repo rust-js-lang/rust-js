@@ -24,6 +24,7 @@ mod entries;
 mod hints;
 mod iter;
 mod jsx_props;
+mod local_facts;
 mod locals;
 mod offsets;
 mod operands;
@@ -341,10 +342,11 @@ struct OptionWrites {
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
-    /// The blocks whose call is an `.await` (`awaits.rs`).
-    awaits: &'m std::collections::HashSet<BasicBlock>,
-    promoted: &'m IndexVec<Promoted, mir::Body<'tcx>>,
-    graph: cfg::Graph,
+    /// What it knows of the body before it writes any of it (`local_facts.rs`).
+    facts: local_facts::LocalFacts<'m, 'tcx>,
+    /// As its structure is made, the labeled block, of `facts`' jumps, each
+    /// MIR block a `break` of one goes to ends (ADR 0742).
+    left: HashMap<BasicBlock, usize>,
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
     pending: Vec<(Local, Value<'tcx>)>,
@@ -384,10 +386,6 @@ struct State<'m, 'tcx> {
     /// Each local holding an update's derived `Default` base, its fields'
     /// defaults, each read where its field is (`default_base_at`).
     defaults: std::collections::HashMap<Local, Vec<Expr>>,
-    /// The locals a `let`'s pattern binds a props' rest to, and whether a
-    /// variable is being given its value, a `match`'s binding, where a read
-    /// of a `Rest` is one taken apart there.
-    rests: std::collections::HashSet<Local>,
     binding_var: bool,
     /// Values made, each written where it's read: a constant, or what the
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
@@ -396,9 +394,6 @@ struct State<'m, 'tcx> {
     /// Each value read in place assigned before a drop instead, whose `let`
     /// the function's body declares first (ADR 0451).
     settled: Vec<Local>,
-    /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
-    /// whose `value` is the place it points to (ADR 0407).
-    pointed: super::pointers::Pointed,
     /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
     /// that, which `next_back` steps from its source's end.
     maps: std::collections::HashMap<Local, Expr>,
@@ -408,12 +403,6 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
-    /// The jumps the program wrote, of the body THIR has: each `return`,
-    /// and each labeled block's `break`s, and where the jumps of each leave.
-    jumps: hints::Jumps,
-    /// Where each range pattern is, `2..=5`, whose tests MIR writes bound
-    /// first, `2 <= k`.
-    ranges: Vec<Span>,
     /// Each shared reference to a place written where it's read, and each
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
@@ -426,26 +415,9 @@ struct State<'m, 'tcx> {
     /// it, its terminator's past the last.
     at: BasicBlock,
     statement: usize,
-    /// Each variable a pattern binds in an enum's variant, `Some(title)`: what
-    /// it's bound to, where that reads the same anywhere, is it.
-    payloads: std::collections::HashSet<Local>,
-    /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
-    /// f();`'s: kept, for tidy to destructure as the pattern reads.
-    patterned: std::collections::HashSet<Local>,
-    /// What its writes say of its `Option`s.
-    options: OptionWrites,
-    /// Each block that goes on to an arm past a guard that holds, and that
-    /// arm's first block (`held_arms`): the edges to it the arm's.
-    held_arms: HashMap<BasicBlock, BasicBlock>,
-    /// Which of its string offsets are only places in the string they were
-    /// found in, JS's units (ADR 0642).
-    offsets: offsets::Offsets,
     /// Each strip whose `Option` is read as a test and a cut (ADR 0642):
     /// its test, `s.startsWith(p)`, and what it gives, `s.slice(1)`.
     cuts: HashMap<Local, (Expr, Expr)>,
-    /// Each struct JSX gives a component as its props, and those of their
-    /// flattened fields: JSX takes them apart (ADR 0213).
-    jsx_props: std::collections::HashSet<Local>,
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
     writer: Option<(Vec<Local>, String)>,
@@ -461,9 +433,6 @@ struct State<'m, 'tcx> {
     /// the one its `Formatter` made, and what that's been given.
     builders: HashMap<Local, Local>,
     built: HashMap<Local, Built<'tcx>>,
-    /// Each variable a `let` binds: where the `let` is written, which its
-    /// declaration maps to.
-    let_spans: HashMap<Local, js::Span>,
 }
 
 impl<'tcx> State<'_, 'tcx> {
@@ -710,11 +679,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for &local in &dropped {
             locals.reads[local] += 2;
         }
+        let (facts, held_bindings) = self.local_facts(mir, &locals, seed.as_ref());
         let mut state = State {
             body: mir_body,
-            awaits: &mir.awaits,
-            promoted: &mir.promoted,
-            graph: cfg::Graph::of(mir_body, &Default::default()),
+            facts,
+            left: Default::default(),
             locals,
             pending: Vec::new(),
             taken: Vec::new(),
@@ -730,14 +699,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             boxes: Default::default(),
             branches: Default::default(),
             defaults: Default::default(),
-            rests: (self.let_pattern_bindings(mir_body).into_iter())
-                .filter_map(|(local, rest)| rest.then_some(local))
-                .collect(),
             binding_var: false,
             flattened: Default::default(),
             in_place: Default::default(),
             settled: Vec::new(),
-            pointed: self.pointed_locals(mir_body),
             maps: Default::default(),
             named: Default::default(),
             parts: Default::default(),
@@ -745,24 +710,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             deferred: Default::default(),
             at: BasicBlock::from_usize(0),
             statement: 0,
-            ranges: self.range_patterns(),
-            jumps: self.written_jumps(),
-            payloads: self.mir_payloads(mir_body),
-            patterned: self.mir_patterned(mir_body),
-            jsx_props: self.mir_jsx_props(mir_body),
-            options: Default::default(),
-            held_arms: Default::default(),
-            offsets: self.mir_offsets(mir_body, seed.as_ref()),
             cuts: Default::default(),
             writer: None,
             writes_captured: false,
             thrown_writes: None,
             builders: Default::default(),
             built: Default::default(),
-            let_spans: self.mir_let_spans(mir_body),
         };
-        state.options = self.mir_option_writes(mir_body, state.promoted, &state.locals);
-        self.mir_held_guards(&mut state);
+        self.mir_held_guards(&mut state, &held_bindings);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing. A
         // closure's, after its environment.
@@ -954,7 +909,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = state.locals.names[local].clone();
                 // One a pointer is taken to, its cell (ADR 0407).
                 out.push(
-                    match state.pointed.locals.contains(&local) {
+                    match state.facts.pointed().locals.contains(&local) {
                         true => StmtKind::Const(
                             name,
                             Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::undefined())]),
@@ -1027,7 +982,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 closure: (mir_body.args_iter().next())
                     .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
                 lets: &self.let_names(mir_body, &state),
-                returns: &state.jumps.returns,
+                returns: &state.facts.jumps().returns,
                 captured: &captured,
                 clones: &self.clone_names(mir_body, &state),
                 booleans: &booleans,

@@ -274,22 +274,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         thrown
     }
 
-    /// Of each guard that holds (`OptionWrites::held`): what it binds read
-    /// as the value it's the `Some` of, `value`, not a variable of its own;
-    /// and its arm's alternatives going on to the arm, past the guard's
-    /// test, as an arm's with no guard do: one case, `Object | Array`'s.
-    pub(super) fn mir_held_guards(&self, state: &mut State<'_, 'tcx>) {
-        let bindings = self.mir_held_bindings(state.body, &state.options.held);
-        for &(bound, of) in &bindings {
+    /// Of each guard that holds (`OptionWrites::held`): what it binds,
+    /// `bindings`, read as the value it's the `Some` of, `value`, not a
+    /// variable of its own. Its arm's alternatives go on to the arm, past
+    /// the guard's test, as an arm's with no guard do, one case, `Object |
+    /// Array`'s: `LocalFacts`'s `held_arms`, and its graph.
+    pub(super) fn mir_held_guards(&self, state: &mut State<'_, 'tcx>, bindings: &[(Local, Local)]) {
+        for &(bound, of) in bindings {
             let read = Expr::var(&state.locals.names[of]);
             state.in_place.insert(bound, read);
             state.locals.names[bound] = String::new();
             state.locals.declared[bound] = true;
-        }
-        let bound: std::collections::HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
-        state.held_arms = self.mir_held_arms(state.body, &state.options.held, &bound);
-        if !state.held_arms.is_empty() {
-            state.graph = cfg::Graph::of(state.body, &state.held_arms);
         }
     }
 
@@ -297,7 +292,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `if let Some(v) = value`, and the local it's the `Some` of: `value`,
     /// which it is wherever it's read, as a `Some(x)` of a reference is `x`
     /// (ADR 0030) and `value` never changes.
-    fn mir_held_bindings(&self, body: &mir::Body<'tcx>, held: &std::collections::HashSet<Span>) -> Vec<(Local, Local)> {
+    pub(super) fn mir_held_bindings(
+        &self,
+        body: &mir::Body<'tcx>,
+        held: &std::collections::HashSet<Span>,
+    ) -> Vec<(Local, Local)> {
         let user: std::collections::HashSet<Local> = (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
@@ -325,7 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`OptionWrites::held`), and the arm's first block: of what does
     /// nothing in JS, a fake borrow, the guard's test of a `Some` and what
     /// it binds (`bound`, read as the value it's of), and false edges.
-    fn mir_held_arms(
+    pub(super) fn mir_held_arms(
         &self,
         body: &mir::Body<'tcx>,
         held: &std::collections::HashSet<Span>,

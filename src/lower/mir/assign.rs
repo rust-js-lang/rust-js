@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty()
             && state.locals.user[place.local]
             && state.locals.writes[place.local] == 1
-            && !state.pointed.borrowed.contains(&place.local)
+            && !state.facts.pointed().borrowed.contains(&place.local)
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && target.projection.is_empty()
             && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
@@ -114,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty()
             && state.locals.user[place.local]
             && state.locals.writes[place.local] == 1
-            && !state.pointed.borrowed.contains(&place.local)
+            && !state.facts.pointed().borrowed.contains(&place.local)
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && !target.projection.is_empty()
             && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()
@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `None` only nullable fields read: `null` (ADR 0275).
         if place.projection.is_empty()
-            && state.options.null_nones.contains(&place.local)
+            && state.facts.options().null_nones.contains(&place.local)
             && let Rvalue::Aggregate(kind, _) = rvalue
             && let AggregateKind::Adt(_, variant, ..) = **kind
             && variant.as_u32() == 0
@@ -138,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // fields and the flattened one's (ADR 0204).
         if let Rvalue::Aggregate(kind, _) = rvalue
             && let AggregateKind::Adt(..) = **kind
-            && !state.jsx_props.contains(&place.local)
+            && !state.facts.jsx_props().contains(&place.local)
         {
             let ty = place.ty(&state.body.local_decls, self.tcx).ty;
             if bindings::has_flatten(self.tcx, ty) {
@@ -156,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         // A `let`'s pattern's rest, `let P { href, rest } = p` (ADR 0291).
-        if place.projection.is_empty() && state.rests.contains(&place.local) {
+        if place.projection.is_empty() && state.facts.rests().contains(&place.local) {
             return self.mir_let_rest(state, place.local, rvalue, span, out);
         }
         state.binding_var = place.projection.is_empty() && state.locals.user[place.local];
@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let read_nullable = place.projection.is_empty()
             && place.local != mir::RETURN_PLACE
-            && state.options.null_nones.contains(&place.local);
+            && state.facts.options().null_nones.contains(&place.local);
         if !read_nullable
             && (place != Place::from(mir::RETURN_PLACE)
                 || state.writer.is_some()
@@ -427,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A strip's cut given to a local read once: read there, `stack =
         // stack.slice(29)`.
         if place.projection.is_empty()
-            && state.offsets.taken_in_place(place.local)
+            && state.facts.offsets().taken_in_place(place.local)
             && let Value::Expr(cut) = &value
         {
             state.in_place.insert(place.local, cut.clone());
@@ -529,7 +529,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not one borrowed whole, `&r`, which is a value of its own then.
         if place.projection.is_empty()
             && state.locals.writes[local] == 1
-            && !state.pointed.borrowed.contains(&local)
+            && !state.facts.pointed().borrowed.contains(&local)
             && let Value::Ref(target) = &value
             && same_place(state, target)
         {
@@ -564,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_temporary = matches!(&value, Value::Place(target) if matches!(&target.kind, js::ExprKind::Var(name)
             if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])));
         let one = place.projection.is_empty()
-            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
+            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local];
         // Each item's type, a tuple's field's.
@@ -595,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         if place.projection.is_empty()
-            && !state.pointed.locals.contains(&local)
+            && !state.facts.pointed().locals.contains(&local)
             && self.foldable(state, local)
             && (state.locals.reads[local] == 1 || parts)
         {
@@ -612,8 +612,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
             if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l]));
         if place.projection.is_empty()
-            && !state.pointed.locals.contains(&local)
-            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
+            && !state.facts.pointed().locals.contains(&local)
+            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local]
             && !state.named.contains(&local)
@@ -631,9 +631,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A part borrowed mutably, `ref mut n` of an `Option<i32>`, may be
             // the variable itself in JS, written through the borrow: a `let`,
             // which tidy makes a `const` where nothing assigns it.
-            let js_span = state.let_spans.get(&local).copied().unwrap_or(js_span);
+            let js_span = state.facts.let_spans().get(&local).copied().unwrap_or(js_span);
             // One a pointer is taken to, a cell (ADR 0407).
-            if state.pointed.locals.contains(&local) {
+            if state.facts.pointed().locals.contains(&local) {
                 let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), expr)]);
                 out.push(StmtKind::Const(name, cell).at(js_span));
                 return Ok(());

@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "held-binding-a-variable",
     breaks: "what a guard that holds binds is a variable of its own, `value$1 = value`, set in each alternative (ADR 0790)",
     file: "src/lower/mir/patterns.rs",
-    find: "        for &(bound, of) in &bindings {\n            let read",
+    find: "        for &(bound, of) in bindings {\n            let read",
     replace: "        for &(bound, of) in &bindings[..0] {\n            let read",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },

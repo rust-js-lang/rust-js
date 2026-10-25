@@ -410,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let items = this.value_expr(values.next().expect("the items"), span)?;
                         let range = this.value_expr(values.next().expect("the range"), span)?;
                         // At places of the string in JS's units: `s.slice(a, b)` (ADR 0642).
-                        match state.offsets.call_in_units(state.at) {
+                        match state.facts.offsets().call_in_units(state.at) {
                             true => this.sliced_in_units(items, (range, arg_tys[1]), span, out)?,
                             false => {
                                 let in_bounds = this.indexes_in_bounds(def_id, span);
@@ -423,7 +423,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A strip whose `Option` is only tested and taken apart: its test
             // and its cut, of what holds its string and pattern there, or
             // of each held first (ADR 0642).
-            Std::StripPrefix | Std::StripSuffix if let Some(cut) = state.offsets.cut(state.at).cloned() => {
+            Std::StripPrefix | Std::StripSuffix if let Some(cut) = state.facts.offsets().cut(state.at).cloned() => {
                 lower(move |this, state, values, out| {
                     let holders = [cut.holders.clone(), cut.pattern_holders.clone()];
                     let units = cut.units;
@@ -500,7 +500,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(Value::Expr({
                         let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                         // Of places in JS's units: JS's own (ADR 0642).
-                        match state.offsets.call_in_units(state.at) {
+                        match state.facts.offsets().call_in_units(state.at) {
                             true => crate::lower::std_types::text::of_places(op, exprs).ok_or_else(|| {
                                 this.unsupported(span, "this string's method, of places in JS's units")
                             })?,
@@ -870,7 +870,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // one, before any other combinator's: `at !== -1 ? f(at) : -1` of `and_then`'s, `: undefined`
             // of `map`'s (ADR 0642).
             Std::Comb(crate::lower::combinators::Comb::AndThen) | Std::OptionMap
-                if state.offsets.call_in_units(state.at) =>
+                if state.facts.offsets().call_in_units(state.at) =>
             {
                 lower(move |this, state, values, out| {
                     Ok(Value::Expr({

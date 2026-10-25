@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (None, "") => Expr::undefined(),
                 (None, name) => {
                     state.named.insert(place.local);
-                    match state.pointed.locals.contains(&place.local) {
+                    match state.facts.pointed().locals.contains(&place.local) {
                         true => Expr::held(Expr::var(name)),
                         false => Expr::var(name),
                     }

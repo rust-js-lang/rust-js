@@ -483,7 +483,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let [Operand::Copy(subject) | Operand::Move(subject), _] = operands[..] else {
             return Ok(None);
         };
-        if !subject.projection.is_empty() || !state.options.thrown.contains_key(&subject.local) {
+        if !subject.projection.is_empty() || !state.facts.options().thrown.contains_key(&subject.local) {
             return Ok(None);
         }
         let values = self.take_operands(state, operands, out)?;
@@ -515,9 +515,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(TraitCall::Equality { .. })
             )
         }) && (operands.iter().any(|operand| {
-            operand
-                .place()
-                .is_some_and(|place| place.projection.is_empty() && state.options.made_some.contains(&place.local))
+            operand.place().is_some_and(|place| {
+                place.projection.is_empty() && state.facts.options().made_some.contains(&place.local)
+            })
         }) || self.frame.facts.registered_equalities.contains(&span))
     }
 

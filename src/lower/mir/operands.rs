@@ -143,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Operand::Constant(c)
                 if let Const::Unevaluated(uv, _) = c.const_
                     && let Some(promoted) = uv.promoted
-                    && let Some(referred) = referred_constant(&state.promoted[promoted])
+                    && let Some(referred) = referred_constant(&state.facts.promoted()[promoted])
                     && fn_def(referred.ty()).is_some() =>
             {
                 self.mir_operand_read(state, &Operand::Constant(Box::new(referred)), out)
@@ -241,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what it refers to, as the reference is (ADR 0023).
         if let Const::Unevaluated(uv, _) = c.const_
             && let Some(promoted) = uv.promoted
-            && let Some(referred) = referred_constant(&state.promoted[promoted])
+            && let Some(referred) = referred_constant(&state.facts.promoted()[promoted])
             && self.const_static(c).is_none()
         {
             // Of a named one rust-js compiled, the crate's or a library's,
@@ -261,13 +261,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADR 0771).
         if let Const::Unevaluated(uv, _) = c.const_
             && let Some(promoted) = uv.promoted
-            && let Some(inside) = promoted_some(tcx, &state.promoted[promoted])
+            && let Some(inside) = promoted_some(tcx, &state.facts.promoted()[promoted])
             && let Const::Unevaluated(named, _) = inside.const_
             && named.promoted.is_none()
             && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
             && self.is_rust_fn(named.def)
         {
-            return self.const_as_code(Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new()));
+            return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
         }
         // A named constant (ADR 0031); a `const { .. }` block, its value, or as
         // one (ADR 0127).
@@ -339,7 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if let Const::Unevaluated(uv, _) = c.const_
                 && let Some(promoted) = uv.promoted =>
             {
-                return self.const_as_code(Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new()));
+                return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
             }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };

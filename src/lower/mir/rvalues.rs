@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(flipped) = flipped
                     && let Operand::Constant(_) = l
                     && !matches!(r, Operand::Constant(_))
-                    && state.ranges.iter().any(|range| range.contains(span))
+                    && state.facts.ranges().iter().any(|range| range.contains(span))
                 {
                     let [r, l]: [Value<'tcx>; 2] =
                         self.take_operands(state, &[r, l], out)?.try_into().ok().expect("two");
@@ -268,14 +268,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (ADR 0642).
                 let in_units = |o: &Operand<'tcx>| {
                     o.place()
-                        .is_some_and(|p| p.projection.is_empty() && state.offsets.in_units(p.local))
+                        .is_some_and(|p| p.projection.is_empty() && state.facts.offsets().in_units(p.local))
                 };
                 if *op == BinOp::Add && (in_units(l) || in_units(r)) {
                     let at = mir::Location {
                         block: state.at,
                         statement_index: state.statement,
                     };
-                    let step = state.offsets.step(at);
+                    let step = state.facts.offsets().step(at);
                     let parts = self.take_operands(state, &[l, r], out)?;
                     let mut sum = Vec::new();
                     for (operand, part) in [l, r].into_iter().zip(parts) {
@@ -489,7 +489,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Some`, and `?` of it goes on (ADR 0710).
             Rvalue::Discriminant(place)
                 if place.projection.is_empty()
-                    && let Some(&discriminant) = state.options.thrown.get(&place.local) =>
+                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local) =>
             {
                 Expr::int(discriminant as i128)
             }
@@ -501,7 +501,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A place found, in units, whose `None` is `-1`; a strip's
             // `Option` read as its test (ADR 0642).
-            Rvalue::Discriminant(place) if place.projection.is_empty() && state.offsets.in_units(place.local) => {
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty() && state.facts.offsets().in_units(place.local) =>
+            {
                 let found = self.mir_place(state, *place, span, out)?;
                 return Ok(Value::Tested(crate::lower::std_types::text::found(found)));
             }
@@ -515,13 +517,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the registry's: a `Some`, its value compared by `===` to each
             // (ADR 0634).
             Rvalue::Discriminant(place)
-                if place.projection.is_empty() && state.options.registered.contains(&place.local) =>
+                if place.projection.is_empty() && state.facts.options().registered.contains(&place.local) =>
             {
                 Expr::int(1)
             }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
-                let present = place.projection.is_empty() && state.options.present.contains(&place.local);
+                let present = place.projection.is_empty() && state.facts.options().present.contains(&place.local);
                 let subject = self.mir_place(state, *place, span, out)?;
                 return Ok(Value::Discriminant(subject, ty, present));
             }
@@ -554,8 +556,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of what a reference made once of a whole local refers to, a
                 // pointer to that local.
                 if let [PlaceElem::Deref] = place.projection.as_slice()
-                    && let Some(&local) = state.pointed.refs.get(&place.local)
-                    && state.pointed.locals.contains(&local)
+                    && let Some(&local) = state.facts.pointed().refs.get(&place.local)
+                    && state.facts.pointed().locals.contains(&local)
                 {
                     let target = self.mir_place(state, Place::from(local), span, out)?;
                     return Ok(Value::Expr(self.pointer_to(
@@ -565,13 +567,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                     )?));
                 }
-                self.check_slice_item_pointer((state.body, &state.pointed.copies), *place, span)?;
+                self.check_slice_item_pointer((state.body, &state.facts.pointed().copies), *place, span)?;
                 let pointee = place.ty(decls, tcx).ty;
                 let target = self.mir_place(state, *place, span, out)?;
                 // Only read through, of what a reference or box refers to:
                 // where it is matters to nothing (`Pointed::read_only`).
                 if let [PlaceElem::Deref] = place.projection.as_slice()
-                    && state.pointed.read_only.contains(&place.local)
+                    && state.facts.pointed().read_only.contains(&place.local)
                 {
                     return Ok(Value::Expr(self.read_only_pointer_to(target, pointee, span)?));
                 }
@@ -876,7 +878,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !place.projection.is_empty() {
             return false;
         }
-        if state.options.null_nones.contains(&place.local) {
+        if state.facts.options().null_nones.contains(&place.local) {
             return true;
         }
         if state.locals.writes[place.local] != 1 {

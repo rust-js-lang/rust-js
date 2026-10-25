@@ -224,7 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[local] == 1
             && (state.locals.reads[local] == 1 || split(&state.locals, local))
             && !state.locals.borrowed[local]
-            && !state.patterned.contains(&local)
+            && !state.facts.patterned().contains(&local)
     }
 
     // ── Structure ───────────────────────────────────────────────────────

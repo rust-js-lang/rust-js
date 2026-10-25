@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
     name: "pointed-local-declared-plain",
     breaks: "a local a pointer's taken to, declared first, is no cell",
     file: "src/lower/mir.rs",
-    find: "                    match state.pointed.locals.contains(&local) {\n                        true => StmtKind::Const(\n",
+    find: "                    match state.facts.pointed().locals.contains(&local) {\n                        true => StmtKind::Const(\n",
     replace: "                    match false {\n                        true => StmtKind::Const(\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },

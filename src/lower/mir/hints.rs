@@ -43,13 +43,11 @@ pub(super) struct LabeledBlock {
     pub breaks: Vec<js::Span>,
 }
 
-/// The jumps the program wrote in a body: where each `return` is, each
-/// block it labeled; and, as its structure is made, the JS block of each
-/// MIR block a `break` of one goes to, which is its end (ADR 0742).
+/// The jumps the program wrote in a body: where each `return` is, and each
+/// block it labeled (ADR 0742).
 pub(super) struct Jumps {
     pub returns: Vec<js::Span>,
     pub blocks: Vec<LabeledBlock>,
-    pub left: std::collections::HashMap<BasicBlock, usize>,
 }
 
 /// The fewest cases a `match` of constants is a `switch` of, each constant
@@ -296,7 +294,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|e| self.js_span(e.span))
                 .collect(),
             blocks: self.labeled_blocks(),
-            left: Default::default(),
         }
     }
 

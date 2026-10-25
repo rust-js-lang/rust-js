@@ -172,7 +172,11 @@ Paths in this section are relative to `src/lower/` unless stated otherwise.
 
 State has three scopes: crate facts shared across functions; `FnCx` for a
 function's context; and `mir::State` for one body's temporaries, labels,
-captures and drop flags. `bodies.rs` manages nested-body entry and restoration.
+captures and drop flags. What a body's lowering knows of it before it writes
+any of it, its graph, patterns, `Option` writes, offsets and jumps, is its
+`LocalFacts` (`mir/local_facts.rs`, ADR 0872), made once before emission and
+read-only by type: `State` keeps what emission changes. `bodies.rs` manages
+nested-body entry and restoration.
 Concern-specific state (drops, trait evidence, formatting, cloning and type
 walks) is accessed only by the owners allowed in the architecture tests.
 

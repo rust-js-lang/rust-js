@@ -482,30 +482,34 @@ test("each group of a function's state is read and written by its owner", () => 
 // MIR's lowering of a body keeps its state in `State`, mir.rs's own: a
 // module of `mir/` that reads or changes a field of it is listed here, with
 // the fields it may (the second review). One unlisted is one whose reader
-// must hold all of mir.rs to know what it changes.
+// must hold all of mir.rs to know what it changes. Not its `facts`, what it
+// knows of the body before it writes any of it, `local_facts.rs`'s, whose
+// fields are private there: any module reads them, none changes them (the
+// review's P3).
 const mirState: Record<string, string[]> = {
-  "src/lower/mir/drops.rs": ["body", "drops", "flags", "branches", "pending", "locals"],
-  "src/lower/mir/writer.rs": ["body", "writer", "writes_captured", "builders", "built", "thrown_writes"],
-  "src/lower/mir/hints.rs": ["locals", "captures"],
-  "src/lower/mir/std_calls.rs": ["at", "body", "locals", "offsets"],
-  "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "offsets", "jsx_props", "let_spans", "locals", "maps", "named", "options", "parts", "payloads", "pending", "places", "pointed", "refs", "rests", "writer"],
-  "src/lower/mir/closures.rs": ["at", "body", "locals", "offsets"],
-  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps", "options"],
+  "src/lower/mir/assign.rs": ["binding_var", "body", "boxes", "branches", "builders", "copy_backs", "cuts", "in_place", "locals", "maps", "named", "parts", "pending", "places", "refs", "writer"],
+  "src/lower/mir/closures.rs": ["at", "body", "locals"],
+  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps"],
+  "src/lower/mir/drops.rs": ["body", "branches", "drops", "flags", "locals", "pending"],
   "src/lower/mir/entries.rs": ["body", "captures", "locals", "thrown_writes"],
+  "src/lower/mir/hints.rs": ["captures", "locals"],
   "src/lower/mir/jsx_props.rs": ["body"],
-  "src/lower/mir/locals.rs": ["body", "locals", "patterned"],
-  "src/lower/mir/operands.rs": ["body", "locals", "pending", "promoted", "taken"],
-  "src/lower/mir/patterns.rs": ["body", "graph", "held_arms", "in_place", "locals", "options"],
-  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "cuts", "defaults", "deferred", "in_place", "locals", "named", "pointed"],
+  "src/lower/mir/locals.rs": ["body", "locals"],
+  "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],
+  "src/lower/mir/patterns.rs": ["in_place", "locals"],
+  "src/lower/mir/places.rs": ["binding_var", "body", "branches", "captures", "cuts", "defaults", "deferred", "in_place", "locals", "named"],
   "src/lower/mir/queries.rs": ["body", "borrowed_names", "locals", "own_names"],
-  "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "offsets", "options", "pending", "pointed", "ranges", "statement", "writer"],
-  "src/lower/mir/structure.rs": ["at", "awaits", "body", "copy_backs", "deferred", "drops", "graph", "held_arms", "labels", "jumps", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
-  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "pointed", "refs", "settled", "unwind"],
+  "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
+  "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
+  "src/lower/mir/structure.rs": ["at", "body", "copy_backs", "deferred", "drops", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
+  "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
 };
 test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
   const mir = read("src/lower/mir.rs");
   const struct = mir.slice(mir.indexOf("struct State<"), mir.indexOf("\n}\n", mir.indexOf("struct State<")));
-  const fields = [...struct.matchAll(/^    ([a-z_]+):/gm)].map((m) => m[1]);
+  const fields = [...struct.matchAll(/^    ([a-z_]+):/gm)].map((m) => m[1]).filter((field) => field !== "facts");
+  expect(struct).toContain("    facts: local_facts::LocalFacts<'m, 'tcx>,");
   const found: Record<string, string[]> = {};
   for (const file of files("src/lower/mir")) {
     const used = fields.filter((field) => new RegExp(`\\bstate\\s*\\.\\s*${field}\\b`).test(read(file)));
@@ -700,7 +704,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 247],
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 140],
-  ["src/lower/mir.rs", "    fn mir_function(", 362], // The parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended).
+  ["src/lower/mir.rs", "    fn mir_function(", 348], // What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 245],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 599],
