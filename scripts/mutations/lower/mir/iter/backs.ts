@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(held_adapters_by_ref|held_enumerate).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
   },
   {
     name: "back-stepped-source-raw",
