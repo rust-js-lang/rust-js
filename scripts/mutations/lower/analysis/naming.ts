@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "renamed-static-not-camel-case",
     breaks: "`use …::hero_img as banner_img` is `import banner_img from \"./hero.png\"`, not an asset's camel case",
     file: "src/lower/analysis/naming.rs",
-    find: "Some((def_id, alias.unwrap_or_else(|| camel_case(ident.name.as_str()))))",
-    replace: "Some((def_id, alias.unwrap_or_else(|| ident.name.to_string())))",
+    find: "alias.unwrap_or_else(|| camel_case(ident.name.as_str())),",
+    replace: "alias.unwrap_or_else(|| ident.name.to_string()),",
     tests: ["test/jsx.test.ts", "-t", "use renames it"],
   },
   {
