@@ -123,44 +123,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a cell of a `{held}` given to generic code as a cell of a type parameter");
             return Err(self.unsupported(span, &what));
         }
-        // Where it's called first, of a function that tracks its caller, as
-        // `evidence_params` takes it (ADR 0427).
-        let mut values: Vec<Expr> = self.takes_caller_location(id).then_some(location).into_iter().collect();
-        for param in const_params(self.tcx, id) {
-            values.push(self.const_arg(args.const_at(param.index as usize), span)?);
-        }
-        for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
-            let bound = ty::EarlyBinder::bind(self.tcx, bound)
-                .instantiate(self.tcx, args)
-                .skip_normalization();
-            values.push(self.dictionary(bound, span)?);
-        }
-        // Each fact it asks of a type parameter, of the type given for it,
-        // a library's as its manifest says (ADR 0145).
-        for (index, fact) in self.facts_asked(id) {
-            let of = self.drop_slot_of(id, index, args);
-            // Of a `dyn`, generic code over a `T: ?Sized` resolves a blanket
-            // impl's method where rustc calls the `dyn`'s own, its value's
-            // type's (ADR 0145): refused, as its answer would be another's.
-            if matches!(of.kind(), ty::Dynamic(..)) {
-                return Err(self.unsupported(span, &format!("a type's fact of `{of}` given to generic code")));
-            }
-            values.push(self.type_fact_value(of, fact, span)?);
-        }
-        // Each drop function it takes: a type's with nothing to drop is none,
-        // left out at the end (ADR 0098).
-        let mut drops = Vec::new();
-        let given = self.drops_taken(id);
-        // One that takes only the drops it uses is given each as an argument
-        // the pipeline keeps or leaves out (ADR 0300).
+        // Each of `evidence_slots`', of what this call gives for it: its
+        // location; a const's value; a bound's dictionary; a fact of the
+        // type given, a library's as its manifest says (ADR 0145); a drop
+        // function, a type's with nothing to drop none, left out at the end
+        // (ADR 0098), or, of one that takes only the drops it uses, each an
+        // argument the pipeline keeps or leaves out (ADR 0300).
         let takes_used = self.krate.takes_used_drops.contains(id);
-        for index in given {
-            let ty = self.drop_slot_of(id, index, args);
-            let iterated = self.iterated_slot(id, index, args, ty);
-            drops.push(match takes_used {
-                true => Some(self.drop_argument(id, index, (ty, iterated), span)?),
-                false => self.held_drop_function(ty, iterated, span)?,
-            });
+        let (mut values, mut drops) = (Vec::new(), Vec::new());
+        let mut location = Some(location);
+        for slot in self.evidence_slots(id, Scope::Whole) {
+            match slot {
+                Slot::Location => values.extend(location.take()),
+                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),
+                Slot::Bound(bound) => {
+                    let bound = ty::EarlyBinder::bind(self.tcx, bound)
+                        .instantiate(self.tcx, args)
+                        .skip_normalization();
+                    values.push(self.dictionary(bound, span)?);
+                }
+                Slot::Fact(index, fact) => {
+                    let of = self.drop_slot_of(id, index, args);
+                    // Of a `dyn`, generic code over a `T: ?Sized` resolves a
+                    // blanket impl's method where rustc calls the `dyn`'s
+                    // own, its value's type's (ADR 0145): refused, as its
+                    // answer would be another's.
+                    if matches!(of.kind(), ty::Dynamic(..)) {
+                        return Err(self.unsupported(span, &format!("a type's fact of `{of}` given to generic code")));
+                    }
+                    values.push(self.type_fact_value(of, fact, span)?);
+                }
+                Slot::Drop(index) => {
+                    let ty = self.drop_slot_of(id, index, args);
+                    let iterated = self.iterated_slot(id, index, args, ty);
+                    drops.push(match takes_used {
+                        true => Some(self.drop_argument(id, index, (ty, iterated), span)?),
+                        false => self.held_drop_function(ty, iterated, span)?,
+                    });
+                }
+            }
         }
         Ok(Expr::optional_args(values, drops))
     }
@@ -171,17 +172,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// library's as its manifest says, the crate's own as found (ADR 0098).
     pub(in crate::lower) fn drops_taken(&self, id: DefId) -> Vec<u32> {
         match self.krate.foreign.item(id) {
-            Some(item) => item.calling.drop_params(),
-            None => self.krate.drop_params.get(&id).cloned().unwrap_or_default(),
+            Some(item) if !self.compiled_here(id) => item.calling.drop_params(),
+            _ => self.krate.drop_params.get(&id).cloned().unwrap_or_default(),
         }
+    }
+
+    /// Whether `id` is compiled with this crate: its own, or a std body
+    /// compiled with it (ADR 0561), whose facts are this compile's.
+    fn compiled_here(&self, id: DefId) -> bool {
+        id.is_local() || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
     }
 
     pub(in crate::lower) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
         // A std body compiled with this crate asks as the crate's own do
         // (ADR 0561).
-        match id.is_local()
-            || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
-        {
+        match self.compiled_here(id) {
             true => self.krate.type_facts.get(&id).cloned().unwrap_or_default(),
             false => self.krate.foreign.type_facts(id),
         }
@@ -551,42 +556,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         location: Option<Expr>,
         span: Span,
     ) -> R<Vec<Expr>> {
-        // Where it's called first, `location`, of a method whose entries take
-        // it, unless it's given none (ADR 0427).
-        let mut values: Vec<Expr> = match self.takes_caller_location(id) {
-            true => location.into_iter().collect(),
-            false => Vec::new(),
-        };
-        // Its own const parameters' values, `repeat::<3>`'s `3` (ADR 0135).
-        for index in own_const_params(self.tcx, id) {
-            values.push(self.const_arg(generic_args.const_at(index as usize), span)?);
-        }
-        for bound in own_bounds(self.tcx, self.krate.foreign, self.krate.given, id) {
-            values.push(
-                self.dictionary(
-                    ty::EarlyBinder::bind(self.tcx, bound)
-                        .instantiate(self.tcx, generic_args)
-                        .skip_normalization(),
-                    span,
-                )?,
-            );
-        }
-        // Then what it asks of its own type parameters, `KMap`, of the types
-        // given for them (ADR 0466).
-        let parent = self.tcx.generics_of(id).parent_count as u32;
-        for (index, fact) in self.facts_asked(id) {
-            if index >= parent {
-                let of = self.drop_slot_of(id, index, generic_args);
-                values.push(self.type_fact_value(of, fact, span)?);
+        // Each of its own `evidence_slots`', of the types given for them:
+        // where it's called, unless it's given none (ADR 0427); its own
+        // consts', `repeat::<3>`'s `3` (ADR 0135), bounds' and type
+        // parameters' facts (ADR 0466); and a drop for each of its own type
+        // parameters the trait declares one for, none, left out at the end,
+        // for one with nothing to drop (ADR 0163).
+        let (mut values, mut drops) = (Vec::new(), Vec::new());
+        let mut location = location;
+        for slot in self.evidence_slots(id, Scope::Own) {
+            match slot {
+                Slot::Location => values.extend(location.take()),
+                Slot::Const(index) => values.push(self.const_arg(generic_args.const_at(index as usize), span)?),
+                Slot::Bound(bound) => values.push(
+                    self.dictionary(
+                        ty::EarlyBinder::bind(self.tcx, bound)
+                            .instantiate(self.tcx, generic_args)
+                            .skip_normalization(),
+                        span,
+                    )?,
+                ),
+                Slot::Fact(index, fact) => {
+                    let of = self.drop_slot_of(id, index, generic_args);
+                    values.push(self.type_fact_value(of, fact, span)?);
+                }
+                Slot::Drop(index) => {
+                    let ty = self.drop_slot_of(id, index, generic_args);
+                    drops.push(self.drop_function(ty, span)?);
+                }
             }
-        }
-        // Then a drop for each of its own type parameters the trait declares
-        // one for, of the type given for it: none, left out at the end, for
-        // one with nothing to drop (ADR 0163).
-        let mut drops = Vec::new();
-        for index in own_drop_params(self.tcx, self.krate.foreign, id) {
-            let ty = self.drop_slot_of(id, index, generic_args);
-            drops.push(self.drop_function(ty, span)?);
         }
         Ok(Expr::optional_args(values, drops))
     }
@@ -605,46 +603,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Vec<Expr>> {
         let own = own_bounds(self.tcx, self.krate.foreign, self.krate.given, method);
-        // Where it's called first, of one that takes it, as `evidence_args`
-        // gives it (ADR 0427).
-        let mut values: Vec<Expr> = self
-            .takes_caller_location(method)
-            .then_some(location)
-            .into_iter()
-            .collect();
-        // Its const parameters' values, the impl's and its own (ADR 0135).
-        for param in const_params(self.tcx, method) {
-            values.push(self.const_arg(args.const_at(param.index as usize), span)?);
-        }
-        for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {
-            let here = ty::EarlyBinder::bind(self.tcx, bound)
-                .instantiate(self.tcx, args)
-                .skip_normalization();
-            let here = self.tcx.erase_and_anonymize_regions(here);
-            if own.contains(&bound) {
-                let at = declared
-                    .iter()
-                    .position(|&d| self.tcx.erase_and_anonymize_regions(d) == here)
-                    .ok_or_else(|| {
-                        self.unsupported(span, "a generic method whose bound isn't one its trait declares")
-                    })?;
-                values.push(Expr::var(&names[at]));
-            } else {
-                values.push(self.dictionary(here, span)?);
+        // Each of its `evidence_slots`': where it's called, as
+        // `evidence_args` gives it (ADR 0427); the impl's const parameters'
+        // values and its own (ADR 0135); a bound of its own, its caller's,
+        // passed on; what it asks of the impl's type parameters and its own
+        // (ADRs 0145, 0466); its drops, the impl's type parameters' (ADR
+        // 0098): its own, a caller through a dictionary gives none of, are
+        // refused (`validate`).
+        let (mut values, mut drops) = (Vec::new(), Vec::new());
+        let mut location = Some(location);
+        for slot in self.evidence_slots(method, Scope::Whole) {
+            match slot {
+                Slot::Location => values.extend(location.take()),
+                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),
+                Slot::Bound(bound) => {
+                    let here = ty::EarlyBinder::bind(self.tcx, bound)
+                        .instantiate(self.tcx, args)
+                        .skip_normalization();
+                    let here = self.tcx.erase_and_anonymize_regions(here);
+                    if own.contains(&bound) {
+                        let at = declared
+                            .iter()
+                            .position(|&d| self.tcx.erase_and_anonymize_regions(d) == here)
+                            .ok_or_else(|| {
+                                self.unsupported(span, "a generic method whose bound isn't one its trait declares")
+                            })?;
+                        values.push(Expr::var(&names[at]));
+                    } else {
+                        values.push(self.dictionary(here, span)?);
+                    }
+                }
+                Slot::Fact(index, fact) => {
+                    let of = self.drop_slot_of(method, index, args);
+                    values.push(self.type_fact_value(of, fact, span)?);
+                }
+                Slot::Drop(index) => {
+                    let ty = self.drop_slot_of(method, index, args);
+                    drops.push(self.drop_function(ty, span)?);
+                }
             }
-        }
-        // What it asks of its type parameters: of the impl's, this
-        // dictionary's, and of its own, its caller's (ADRs 0145, 0466).
-        for (index, fact) in self.facts_asked(method) {
-            let of = self.drop_slot_of(method, index, args);
-            values.push(self.type_fact_value(of, fact, span)?);
-        }
-        // Its drops are the impl's type parameters' (ADR 0098): its own, a
-        // caller through a dictionary gives none of, are refused (`validate`).
-        let mut drops = Vec::new();
-        for &index in self.krate.drop_params.get(&method).map_or(&[][..], Vec::as_slice) {
-            let ty = self.drop_slot_of(method, index, args);
-            drops.push(self.drop_function(ty, span)?);
         }
         Ok(Expr::optional_args(values, drops))
     }

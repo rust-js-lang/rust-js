@@ -635,7 +635,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if concrete != bound {
                     specialized.push((concrete, Expr::var(&name)));
                 }
-                own_params.push(name);
+                own_params.push((bound, name));
                 continue;
             }
             let concrete = ty::EarlyBinder::bind(self.tcx, bound)
@@ -723,7 +723,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for index in own_const_params(self.tcx, id) {
             let name = self.fresh(generics.param_at(index as usize, self.tcx).name.as_str());
             consts.push((index, Expr::var(&name)));
-            const_names.push(name);
+            const_names.push((index, name));
         }
         // And the impl's, which its type, `Self`, names: `CAP` of an
         // `ArrayVec<T, CAP>`. One numbered as one of the trait's is would
@@ -765,7 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if concrete != of {
                 facts.push((concrete, fact, Expr::var(&name)));
             }
-            fact_names.push(name);
+            fact_names.push((index, name));
         }
         // A method's, or a constant's initializer, a trait's default (ADR 0176).
         let body = match self.krate.bodies.get(&id) {
@@ -802,11 +802,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             Ok((signature, cx.used_drops()))
         })?;
+        // After its arguments, what its caller gives of its own, in
+        // `evidence_slots`' order, as `own_evidence` gives them: no drops,
+        // which its caller gives the impl's, made here.
         let (mut params, is_async) = signature;
-        params.extend(location.map(Into::into));
-        params.extend(const_names.into_iter().map(Into::into));
-        params.extend(own_params.into_iter().map(Into::into));
-        params.extend(fact_names.into_iter().map(Into::into));
+        let named = |names: &[(u32, String)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
+        for slot in self.evidence_slots(id, Scope::Own) {
+            let name = match slot {
+                Slot::Location => location.clone(),
+                Slot::Const(index) => named(&const_names, index),
+                Slot::Bound(bound) => own_params.iter().find(|&&(b, _)| b == bound).map(|(_, n)| n.clone()),
+                Slot::Fact(index, _) => named(&fact_names, index),
+                Slot::Drop(_) => continue,
+            };
+            params.push(name.expect("each of a default's own slots named").into());
+        }
         rest.splice(0..0, hoisted);
         let mut out: Vec<_> = made
             .into_iter()

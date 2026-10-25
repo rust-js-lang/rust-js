@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "default-own-unparameterized",
     breaks: "a copied generic default, `describe<T: Display>`, takes no `TDisplay`, which its body reads",
     file: "src/lower/traits/impls.rs",
-    find: "        params.extend(own_params.into_iter().map(Into::into));\n",
-    replace: "\n",
+    find: "                Slot::Bound(bound) => own_params.iter().find(|&&(b, _)| b == bound).map(|(_, n)| n.clone()),\n",
+    replace: "                Slot::Bound(_) => continue,\n",
     tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
   },
   {
@@ -329,8 +329,8 @@ export const mutations: Mutation[] = [
     name: "copied-default-location-param-lost",
     breaks: "a copied default that reads its caller's location takes no `location`, and reads one it wasn't given",
     file: "src/lower/traits/impls.rs",
-    find: "        params.extend(location.map(Into::into));\n",
-    replace: "",
+    find: "                Slot::Location => location.clone(),\n",
+    replace: "                Slot::Location => continue,\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
@@ -417,8 +417,8 @@ export const mutations: Mutation[] = [
     name: "default-own-facts-untaken",
     breaks: "a copied default takes none of the facts its caller gives",
     file: "src/lower/traits/impls.rs",
-    find: "        params.extend(fact_names.into_iter().map(Into::into));\n",
-    replace: "        let _ = fact_names;\n",
+    find: "                Slot::Fact(index, _) => named(&fact_names, index),\n",
+    replace: "                Slot::Fact(..) => continue,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {

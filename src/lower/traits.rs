@@ -5,12 +5,13 @@ mod calls;
 mod dictionaries;
 mod drop_params;
 mod dyns;
+mod evidence;
 mod given;
 mod impls;
 mod routes;
 mod words;
 
-pub(super) use self::{drop_params::*, given::*, routes::*, words::*};
+pub(super) use self::{drop_params::*, evidence::*, given::*, routes::*, words::*};
 
 use super::bindings;
 use super::display::Pretty;

@@ -186,53 +186,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || !self.facts_asked(id).is_empty()
     }
 
+    /// What a body takes after its own parameters, `evidence_slots`'
+    /// order, each named and given to what lowers it: its caller's
+    /// location, `location` (ADR 0427); a const parameter's value, `N` (ADR
+    /// 0107); a bound's dictionary, `IIterator`, `writeT` and `readT` of a
+    /// generic codec's (ADR 0081), `XConvertF64` of two impls of one trait;
+    /// a fact of a type parameter, `TSize` (ADR 0145); and a drop function,
+    /// `dropT` (ADR 0098), `dropIIntoIter` of a std trait's associated type
+    /// (ADR 0421).
     pub(in crate::lower) fn evidence_params(&mut self, id: DefId) -> Vec<js::Pattern> {
+        self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));
         let mut params: Vec<js::Pattern> = Vec::new();
-        // Its caller's location first, of a function that tracks it (ADR 0427).
-        if self.takes_caller_location(id) {
-            let name = self.fresh("location");
-            self.given.caller_location = Some((id, Expr::var(&name)));
-            params.push(name.into());
-        }
-        // Then each const parameter's value, `N`, in the order they're
-        // declared, the impl's before the method's (ADR 0107).
-        for param in const_params(self.tcx, id) {
-            let name = self.fresh(param.name.as_str());
-            self.given.const_params.push((param.index, Expr::var(&name)));
-            params.push(name.into());
-        }
-        params.extend(
-            bounds(self.tcx, self.krate.foreign, self.krate.given, id)
-                .into_iter()
-                .map(|tr| {
-                    // `writeT` and `readT`, as a generic codec's (ADR 0081).
+        for slot in self.evidence_slots(id, Scope::Whole) {
+            let name = match slot {
+                Slot::Location => {
+                    let name = self.fresh("location");
+                    self.given.caller_location = Some((id, Expr::var(&name)));
+                    name
+                }
+                Slot::Const(index) => {
+                    let param = self.tcx.generics_of(id).param_at(index as usize, self.tcx);
+                    let name = self.fresh(param.name.as_str());
+                    self.given.const_params.push((index, Expr::var(&name)));
+                    name
+                }
+                Slot::Bound(tr) => {
                     let name = match crate::lower::serde::serde_trait(self.tcx, tr.def_id) {
                         Some(true) => format!("write{}", tr.self_ty()),
                         Some(false) => format!("read{}", tr.self_ty()),
-                        // `XConvertF64` and `XConvertString`, of two impls of one trait.
                         None => format!("{}{}", evidence_word(self.tcx, tr.self_ty()), trait_word(self.tcx, tr)),
                     };
                     let name = self.fresh(&js_word(&name));
                     self.given.evidence.push((tr, Expr::var(&name)));
-                    js::Pattern::from(name)
-                }),
-        );
-        // Then each fact it asks of a type parameter, `TSize` (ADR 0145).
-        for &(index, fact) in self.krate.type_facts.get(&id).into_iter().flatten() {
-            let of = drop_slot(self.tcx, self.krate.foreign, id, index);
-            let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
-            self.given.type_facts.push((of, fact, Expr::var(&name)));
-            params.push(name.into());
-        }
-        // Then a drop function for each type parameter a caller gives a value
-        // with a destructor, `dropT` (ADR 0098).
-        // And one for each std trait's associated type of one, `dropIIntoIter`
-        // (ADR 0421).
-        self.give_drop_slots(drop_items(self.tcx, self.krate.foreign, id));
-        for &index in self.krate.drop_params.get(&id).into_iter().flatten() {
-            let ty = drop_slot(self.tcx, self.krate.foreign, id, index);
-            let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
-            self.give_drop_param(index, name.clone(), ty);
+                    name
+                }
+                Slot::Fact(index, fact) => {
+                    let of = drop_slot(self.tcx, self.krate.foreign, id, index);
+                    let name = self.fresh(&format!("{}{}", drop_word(self.tcx, of), fact.word()));
+                    self.given.type_facts.push((of, fact, Expr::var(&name)));
+                    name
+                }
+                Slot::Drop(index) => {
+                    let ty = drop_slot(self.tcx, self.krate.foreign, id, index);
+                    let name = self.fresh(&format!("drop{}", drop_word(self.tcx, ty)));
+                    self.give_drop_param(index, name.clone(), ty);
+                    name
+                }
+            };
             params.push(name.into());
         }
         params
