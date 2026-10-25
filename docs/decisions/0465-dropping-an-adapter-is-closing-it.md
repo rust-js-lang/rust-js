@@ -215,3 +215,12 @@ A `Chain` with such a side is `nths_a_slice` too, so its `step_by` is
 the mutation `chain-nths-no-slice`. That line's two `Vec`s grow the
 readability baseline's `$iter` share by 0.2 in 10,000 lines and its
 renamed `x$1` share by 0.5, each made in a `try` that drops the other.
+
+A chain's `nth` that advances a side with no `advance_by` of its own, a
+`skip`'s, drops what it passes by that side's `dropItem`. Before this,
+`skip(0).chain(..).nth(2)` dropped none of the two it passed (#269,
+fuzz seed 49156). A chain that's `ownNth` says its own `dropItem` too.
+Held by `chain_sides_own_steps.rs` and the mutation
+`chain-side-advanced-undropped`. That line's two `Vec`s grow the
+readability baseline's `$iter` share by 0.2 in 10,000 lines and its
+renamed `x$1` share by 0.6.

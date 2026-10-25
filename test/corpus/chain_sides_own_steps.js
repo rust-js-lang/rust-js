@@ -252,6 +252,37 @@ function main() {
   };
   const value$12 = stepped ? map$4(stepped) : undefined;
   console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
+  const skip = $skipping($closing($iter(louds(39, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
+  let tmp$10;
+  try {
+    tmp$10 = louds(43, 2);
+  } catch (error) {
+    skip.return();
+    throw error;
+  }
+  const value$13 = $held($lazyChain(skip, $closing($iter(tmp$10), $dropEach(loudDrop_drop))));
+  let skipped;
+  try {
+    skipped = $nthDropping($lent(value$13), 2, loudDrop_drop, false);
+  } catch (error) {
+    value$13.return();
+    throw error;
+  }
+  try {
+    value$13.return();
+  } catch (error) {
+    if (skipped != null) {
+      loudDrop_drop(skipped);
+    }
+    throw error;
+  }
+  const map$5 = (l) => {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  };
+  const value$14 = skipped ? map$5(skipped) : undefined;
+  console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

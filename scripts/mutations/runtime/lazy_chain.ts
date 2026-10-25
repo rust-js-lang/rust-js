@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "chain-own-nth-unset",
     breaks: "a `chain` of two `Vec`s doesn't say its `nth` drops what it passes, so `skip` steps each from a reversed side's back (#250)",
     file: "src/runtime/lazy_chain.js",
-    find: "  if (first.ownNth && second.ownNth) chained.ownNth = true;\n",
-    replace: "",
+    find: "    chained.ownNth = true;\n    chained.dropItem = first.dropItem ?? second.dropItem;\n",
+    replace: "    chained.dropItem = first.dropItem ?? second.dropItem;\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
@@ -72,6 +72,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  chained.advanceBy = (m, drop) => {",
     replace: "  chained.advanceByUnused = (m, drop) => {",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "chain-side-advanced-undropped",
+    breaks: "a chain's `nth` advances a `skip` side, which has no `advance_by` of its own, dropping none of what it passes (#269)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  const advanced = (it, m, drop = it.dropItem) =>\n",
+    replace: "  const advanced = (it, m, drop) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];

@@ -28,5 +28,7 @@ fn main() {
     println!("{:?}", nested.skip(3).map(|l| l.0).collect::<Vec<_>>());
     let stepped = louds(34, 4).into_iter().rev().chain(louds(38, 1)).step_by(3).nth(1);
     println!("{:?}", stepped.map(|l| l.0));
+    let skipped = louds(39, 4).into_iter().skip(1).chain(louds(43, 2)).nth(2);
+    println!("{:?}", skipped.map(|l| l.0));
     println!("end");
 }

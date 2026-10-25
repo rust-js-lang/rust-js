@@ -48,7 +48,9 @@ function $lazyChain(a, b) {
   // `n` of `b`'s own `nth`, where it has one (#214).
   chained.nth = (n) => {
     if (first !== undefined) {
-      const left = first.advanceBy !== undefined ? first.advanceBy(n) : $Steps.prototype.advanceBy.call($lent(first), n);
+      // What it passes over dropped, by its own `advance_by` or each by
+      // its item's drop (#269).
+      const left = advanced(first, n);
       if (left === 0) {
         const step = first.next();
         if (!step.done) return step;
@@ -75,7 +77,7 @@ function $lazyChain(a, b) {
   };
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250).
-  const advanced = (it, m, drop) =>
+  const advanced = (it, m, drop = it.dropItem) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
   chained.advanceBy = (m, drop) => {
     if (first !== undefined) {
@@ -88,7 +90,10 @@ function $lazyChain(a, b) {
   };
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
-  if (first.ownNth && second.ownNth) chained.ownNth = true;
+  if (first.ownNth && second.ownNth) {
+    chained.ownNth = true;
+    chained.dropItem = first.dropItem ?? second.dropItem;
+  }
   // Its sides, `a` let go as it's taken, as std's `last` takes them
   // (`$lastDropping`, #232).
   chained.sides = () => {
