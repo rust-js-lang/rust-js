@@ -173,3 +173,46 @@ pub fn held(slot: &Slot) -> Option<u32> {
     "this one is a `#[repr(transparent)]` struct's, which is its field, the cell",
   );
 });
+
+// React's getComponentNameFromFiber: a shared borrow of a nullable field
+// held across a call that only shares borrows of it meets none, so the
+// field is the fiber JS made, read as it is.
+test("a nullable RefCell field borrowed across a call that only shares it is its value", async () => {
+  const dir = fixture("refcell-field-shared-across");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn get_component_name_from_fiber(fiber: &Fiber) -> Option<String> {
+    if fiber.tag == 0 {
+        return None;
+    }
+    match &*fiber.r#return.borrow() {
+        Some(parent) if parent.tag == 9 => Some(parent.name.clone()),
+        _ => Some(fiber.name.clone()),
+    }
+}
+
+pub fn get_parent_name(fiber: &Fiber) -> Option<String> {
+    if let Some(r) = &*fiber.r#return.borrow() {
+        return get_component_name_from_fiber(r);
+    }
+    None
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const r = fiber.return;\n  if (r != null) {\n    return getComponentNameFromFiber(r);\n  }\n");
+  expect(js).not.toContain("$borrow");
+  const lib = await import(join(dir, "lib.js"));
+  const root = { tag: 9, name: "Root", return: null };
+  const app = { tag: 1, name: "App", return: root };
+  const child = { tag: 1, name: "Child", return: app };
+  expect([lib.getParentName(child), lib.getParentName(app), lib.getParentName(root)]).toEqual(["Root", "Root", undefined]);
+});
