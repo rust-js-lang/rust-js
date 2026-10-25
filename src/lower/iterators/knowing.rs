@@ -665,9 +665,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.push(dictionary.unwrap_or_else(Expr::undefined));
             }
             args.extend(drop);
-            // And its `try_fold`, std's, its source's too (#214).
+            // And its `try_fold`, std's, its source's too (#214). A fuse's
+            // of a `FusedIterator` keeps its source at its end, as std's
+            // specialization does, which its drop drops (#244).
             let mut tried = vec![Expr::var("it"), Expr::var("init"), Expr::var("f"), Expr::var("broke")];
             tried.extend(args.iter().skip(3).cloned());
+            if helper == "$fuseFold" {
+                let fused = self.type_fact_value(source, crate::lower::recognition::TypeFact::Fused, span)?;
+                if !matches!(fused.kind, js::ExprKind::Bool(false)) {
+                    tried.resize(6, Expr::undefined());
+                    tried.push(fused);
+                }
+            }
             let try_helper = match helper {
                 "$fuseFold" => "$fuseTryFold",
                 _ => "$peekableTryFold",

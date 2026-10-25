@@ -904,7 +904,8 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
         fuseIterator_nth(iterator, n, SelfIterator, SelfFused, dropSelf, dropSelfItem),
       last: (iterator) => fuseIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
       fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
-      tryFold: (it, init, f, broke) => $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf),
+      tryFold: (it, init, f, broke) =>
+        $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf, SelfFused),
     },
   );
 }

@@ -62,3 +62,24 @@ iterator shows what it peeked at, against native Rust.
 - Mutations make a held one peek at its array, refuse its `Debug` and its
   clone, read no bound's `Debug`, give `fuse()` no fact, ask an impl's,
   forget what it peeked at in a clone, and leave it out of the hint.
+
+## Amendment: a fuse's `try_fold` of a `FusedIterator` keeps its source (#244)
+
+`next` and `nth` were told the caller's `Fused` fact, but the compiled
+`Fuse`'s `try_fold`, `$fuseTryFold`, wasn't. It always ran std's generic
+`FuseImpl::try_fold`, which lets go of the source once it has run to its
+end. For a `FusedIterator`, std's specialization keeps the source, so
+it's dropped with the `Fuse`. The JS dropped it too early:
+`take(1).fuse().any(|_| false)` dropped the rest of a `Vec` of values
+with a destructor before `any` answered. `skip_while`'s and `find`'s
+searches did the same through it (fuzz seed 51474). Following ADR 0262's
+"results change" case, Rust's order is kept: `$fuseTryFold` takes the
+fact, `SelfFused` in std's compiled `Fuse`, and keeps the source where
+it's `true`.
+
+The `fuse_fused_try_fold` corpus case runs `any`, `position` and `find`
+against native Rust. The mutations `fuse-fused-try-fold-clears` (the
+runtime) and `fuse-try-fold-fused-unsaid` (the std package's lowering)
+are caught. Readability: the case's `Vec`s of values with a destructor
+add `$iter` (77.3 to 77.6 in 10,000 lines) and renamed temporaries
+(714.5 to 715.6) as each such case does. The output reads no worse.

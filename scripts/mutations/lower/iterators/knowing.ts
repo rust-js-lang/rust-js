@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fuse-try-fold-fused-unsaid",
+    breaks: "std's compiled `Fuse`'s `try_fold` isn't told its source is a `FusedIterator`, so it lets go of it at its end (#244)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                if !matches!(fused.kind, js::ExprKind::Bool(false)) {\n",
+    replace: "                if false {\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "iterator-evidence-of-any-param",
     breaks: "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
     file: "src/lower/iterators/knowing.rs",

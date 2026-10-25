@@ -91,12 +91,13 @@ function $peekableTryFold(peekable, init, f, broke, iterator) {
 }
 
 // A `Fuse`'s `try_fold`, std's: its source's, while it has one, which it
-// lets go of, dropped by `drop`, once that's run to its end (#214).
-function $fuseTryFold(fuse, init, f, broke, iterator, drop) {
+// lets go of, dropped by `drop`, once that's run to its end (#214); of a
+// `FusedIterator`, `fused`, kept, as std's specialization keeps it (#244).
+function $fuseTryFold(fuse, init, f, broke, iterator, drop, fused = false) {
   if (fuse.iter == null) return init;
   const iter = $someValue(fuse.iter);
   const folded = $tryFoldBy(iter, init, f, broke, iterator);
-  if (!broke(folded)) {
+  if (!fused && !broke(folded)) {
     fuse.iter = undefined;
     drop?.(iter);
   }
