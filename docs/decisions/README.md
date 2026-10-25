@@ -492,7 +492,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md)
 - [0609 A `let` that shadows a parameter read no more is the parameter assigned](0609-a-shadowed-parameter-is-assigned.md) *(extended by 0650: any binding of its block)*
 - [0610 A function that only calls a module variable's function is that variable](0610-a-forwarding-function-is-its-variable.md)
-- [0611 A default export the macro holds is the function's declaration](0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too)*
+- [0611 A default export the macro holds is the function's declaration](0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too; and one the naming form names)*
 - [0612 Two values of any shape are equal by JS's `===`](0612-unknown-equality-is-strict.md) *(amended: two `Option`s of them are std's, both `None` equal; extended by 0721: `js::strict_equals` is JS's `===`)*
 - [0613 `&&` and `||` mixed are one value, as written](0613-and-or-mixed-are-returned-as-written.md)
 - [0614 A match arm's pattern of parts is one test of each](0614-a-patterns-parts-are-one-test.md)

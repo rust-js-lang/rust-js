@@ -8,6 +8,6 @@
 
 import type { JSX } from "react";
 
-export function Home(): JSX.Element;
+declare function Home(): JSX.Element;
 
 export default Home;

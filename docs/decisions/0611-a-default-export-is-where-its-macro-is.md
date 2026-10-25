@@ -1,6 +1,6 @@
 # 0611. A default export the macro holds is the function's declaration
 
-Status: Accepted; amended (a `pub` one, below). Extends [0192](0192-next.md).
+Status: Accepted; amended (a `pub` one, below; and what the naming form names, the default alone too). Extends [0192](0192-next.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same function is
 the module's default.
@@ -71,3 +71,39 @@ as well.
   declared (`private-default-undeclared`) or not as the default
   (`private-default-exported`), a named one not declared
   (`named-default-undeclared`).
+
+## Amended (2026-10-25): what the naming form names is the default alone too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: no Rust program can
+tell; what JS can import of the module changes, to upstream's.
+
+React's `shared/reportGlobalError.js` is `const reportGlobalError = ..;
+export default reportGlobalError;`. Its port, a `pub` thread-local the
+react crate names, `js::export_default!(REPORT_GLOBAL_ERROR);`, was
+`export const reportGlobalError = ..;` and `export default
+reportGlobalError;`: one item exported twice, by two names, where every
+importer, of its crate and of another, imports it as the default (ADR
+0773, amended), and upstream exports it once.
+
+**What `js::export_default!` makes the default, of either form, is the
+module's default alone, whatever its visibility**: the naming form of a
+`pub` function or thread-local of the module's own is `function page()
+{ .. } export default page;`, `const reportGlobalError = ..; export
+default reportGlobalError;`, declared so in its `.d.ts`, `declare function
+page(): number; export default page;`. `pub` is how another crate names
+it in Rust, as for a binding a module holds (ADR 0773); the module's
+other items are as they were. The "as before" of the decision above, a
+`pub` one exported by its name as well, is gone: two exports of one item
+were two ways to import it, which [AGENTS.md](../../AGENTS.md) rules out.
+
+Consequences: `examples/next/app/page.jsx`'s `Home` and a Next.js
+`_app`'s `MyApp` are `function Home()`, exported as the default alone, as
+create-next-app writes them. JS that imported such a function by its name
+imports the default.
+
+Held by `test/declarations.test.ts`, "declarations declare a pub default
+export the naming form names as the default alone" (a `pub fn` and a `pub`
+thread-local, their JS, `.d.ts` and TypeScript's check), `test/modules.test.ts`'s
+Next.js route, and the mutations `named-default-exported-by-name`,
+`named-default-constant-exported-by-name` (`pipeline.rs`) and
+`pub-named-default-declared-by-name` (`declarations.rs`).

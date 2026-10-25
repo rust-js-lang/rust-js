@@ -841,6 +841,37 @@ export const version: string = VERSION;
   expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(3,10)"]);
 });
 
+// What the naming form names is the module's default alone too, a \`pub\`
+// function's or thread-local's, as React's \`shared/reportGlobalError.js\`
+// is \`const reportGlobalError = ..; export default reportGlobalError;\`
+// (ADR 0611, amended).
+test("declarations declare a pub default export the naming form names as the default alone", () => {
+  buildReact();
+  const dir = fixture("declarations-pub-named-default");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), "pub mod page;\npub mod report;\n");
+  writeFileSync(join(dir, "page.rs"), "pub fn page(x: f64) -> f64 {\n    x\n}\n\njs::export_default!(page);\n");
+  writeFileSync(join(dir, "report.rs"), `thread_local! {
+    pub static REPORT_GLOBAL_ERROR: fn(f64) -> f64 = |x| x + 1.0;
+}
+
+js::export_default!(REPORT_GLOBAL_ERROR);
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const [page, report] = [readFileSync(join(dir, "page.js"), "utf8"), readFileSync(join(dir, "report.js"), "utf8")];
+  expect([page.includes("\nfunction page(x) {\n"), page.includes("export function"), page.includes("\nexport default page;\n")]).toEqual([true, false, true]);
+  expect([report.includes("\nconst reportGlobalError = "), report.includes("export const"), report.includes("\nexport default reportGlobalError;\n")]).toEqual([true, false, true]);
+  expect(readFileSync(join(dir, "page.d.ts"), "utf8")).toContain("declare function page(x: number): number;\n\nexport default page;\n");
+  expect(readFileSync(join(dir, "report.d.ts"), "utf8")).not.toContain("export const");
+  writeFileSync(join(dir, "use.ts"), `import page from "./page.js";
+import reportGlobalError from "./report.js";
+import { page as named } from "./page.js";
+export const one: number = page(reportGlobalError(1));
+`);
+  const errors = typeChecked(dir, "use.ts");
+  expect(errors.map((error) => error.slice(0, error.indexOf(":")))).toEqual(["use.ts(3,10)"]);
+});
+
 // A type alias is TypeScript's, \`export type Toc = TocItem[];\`, which
 // TypeScript that imports it names, as react.dev's Toc imports \`Toc\`.
 test("declarations name a type alias", () => {

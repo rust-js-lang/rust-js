@@ -75,7 +75,7 @@ js::export_default!(About);
 import Image from "next/image";
 import Link from "next/link";
 
-export function Home() {
+function Home() {
   return (
     <main>
       <h1>Hello, Next.js</h1>
@@ -90,7 +90,7 @@ export default Home;
 
 ```jsx
 // app/about/page.jsx
-export async function About() {
+async function About() {
   return <h1>About</h1>;
 }
 
@@ -365,7 +365,7 @@ export function generateMetadata() {
   };
 }
 
-export function RootLayout({ children }) {
+function RootLayout({ children }) {
   const font = geist.variable ?? "";
   return (
     <html lang="en" className={font}>
@@ -522,7 +522,7 @@ pub async fn get_static_paths(_: GetStaticPathsContext) -> GetStaticPathsResult<
 
 ```jsx
 // pages/posts/[slug].jsx
-export function Post({ title }) {
+function Post({ title }) {
   return <h1>{title}</h1>;
 }
 

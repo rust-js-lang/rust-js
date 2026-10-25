@@ -256,7 +256,10 @@ export const keys: typeof Object.keys;
 ## The default export
 
 `js::export_default!` names the module's default export, a function of
-its own, which keeps its name too:
+its own, which keeps its name for the module's own code; it's exported as
+the default alone, a `pub` one too, and every importer imports it so
+([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md),
+amended):
 
 ```rust
 pub fn page() -> String {
@@ -267,7 +270,7 @@ js::export_default!(page);
 ```
 
 ```js
-export function page() {
+function page() {
   return "Hello, slug";
 }
 

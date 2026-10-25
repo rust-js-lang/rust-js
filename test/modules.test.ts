@@ -331,8 +331,9 @@ test("a root of modules alone writes no JS, and a module's `js::import!` alone d
 
 // `js::directive!("use client");` is the module's directive, its first
 // statement, and `js::export_default!(page);` its default export, of a
-// function that stays named for the crate's other modules (ADR 0192): what a
-// Next.js route is, `app/page.jsx`.
+// function that stays named for the crate's other modules (ADR 0192), and
+// exported as the default alone (ADR 0611, amended): what a Next.js route
+// is, `app/page.jsx`.
 test("js::directive! and js::export_default! make a module a Next.js route", async () => {
   const dir = fixture("js-route");
   writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\npub mod generic {\n    pub fn first<T>(items: Vec<T>) -> Option<T> {\n        items.into_iter().next()\n    }\n    js::export_default!(first);\n}\n');
@@ -345,7 +346,9 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect(top).toContain("export default page;");
   expect(top).not.toContain("const _");
   const [lib, sub] = [await import(join(dir, "lib.js")), await import(join(dir, "about.js"))];
-  expect([lib.default(), lib.page(), sub.default()]).toEqual([3, 3, 2]);
+  // The default alone, `pub` as it is (ADR 0611, amended).
+  expect([lib.default(), lib.page, sub.default()]).toEqual([3, undefined, 2]);
+  expect(top).not.toContain("export function page");
   // A generic function's too, which Rust can't name as a value unless it's
   // given its types.
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);

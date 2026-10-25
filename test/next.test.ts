@@ -975,7 +975,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   const built = (path: string) => existsSync(join(dir, `.next/server/pages/codes/${path}.html`));
   expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);
   expect(readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8")).toContain('<main class="app"><p>Code <!-- -->1</p></main>');
-  expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("export function MyApp({ Component, pageProps }) {");
+  expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("\nfunction MyApp({ Component, pageProps }) {");
   // Each page in the document's `<html>` and `<body>`.
   expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain('<Html lang="eo" dir="ltr">');
   const documented = readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8");

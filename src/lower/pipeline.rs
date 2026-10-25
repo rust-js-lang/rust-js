@@ -894,8 +894,14 @@ pub fn lower_crate<'tcx>(
             let read_default = default_export.filter(|&held| {
                 default_declared && tcx.def_kind(held) != DefKind::Fn && (read_at_home.contains(&held) || aliased(held))
             });
-            if let Some(held) = read_default {
-                let name = super::bindings::fn_name(tcx, held);
+            // What either form of `js::export_default!` makes the default, a
+            // function or a constant of the module's own, is its default
+            // alone, whatever its visibility: `const v = ..; export default
+            // v;`, never `export const v` too, as every importer imports it
+            // as the default (ADRs 0611, 0773, amended). A binding's is
+            // `HeldBinding::exported_by_name`'s.
+            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none()) {
+                let name = super::bindings::fn_name(tcx, own);
                 for constant in const_items
                     .entry(module)
                     .or_default()
@@ -903,6 +909,9 @@ pub fn lower_crate<'tcx>(
                     .filter(|c| c.name == name)
                 {
                     constant.export = false;
+                }
+                for function in (pass.functions.entry(module).or_default().iter_mut()).filter(|f| f.name == name) {
+                    function.export = false;
                 }
             }
             let no_plain = HashSet::new();

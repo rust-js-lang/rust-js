@@ -63,11 +63,14 @@ pub(super) fn module<'tcx>(
     // declared, then exported, `declare const v: string; export default
     // v;`, as TypeScript has no default `const` (ADRs 0611, 0625).
     let held_default = default_export.filter(|_| default_declared);
+    // What the naming form makes the default, `js::export_default!(page);`,
+    // is its default alone too, declared below (ADR 0611, amended).
+    let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         let held = held_default == Some(def_id);
-        if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) {
+        if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) || named_default == Some(def_id) {
             continue;
         }
         out.erased = out.erased(def_id);
@@ -113,14 +116,11 @@ pub(super) fn module<'tcx>(
         items.push(declared);
     }
     if let Some(def_id) = default_export {
-        // One the naming form only exports, `js::export_default!(recap);`,
-        // is declared, but exported by no name of its own, as `function
-        // Recap() {..}` is in JS; a binding's is its `const`'s, declared
-        // above.
-        if held_default.is_none()
-            && !tcx.visibility(def_id).is_public()
-            && super::bindings::held_path(tcx, def_id).is_none()
-        {
+        // One the naming form exports, `js::export_default!(recap);`, is
+        // declared, but exported by no name of its own, `pub` or not, as
+        // `function Recap() {..}` is in JS (ADR 0611, amended); a binding's
+        // is its `const`'s, declared above.
+        if named_default == Some(def_id) {
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),

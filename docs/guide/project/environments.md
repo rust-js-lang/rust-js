@@ -205,7 +205,7 @@ js::export_default!(About);
 // app/page.jsx
 import Link from "next/link";
 
-export function Home() {
+function Home() {
   return (
     <main>
       <h1>Hello, Next.js</h1>
@@ -223,7 +223,7 @@ export default Home;
 
 import { useState } from "react";
 
-export function About() {
+function About() {
   const [likes, setLikes] = useState(0);
   return <button onClick={() => setLikes((likes) => (likes + 1) | 0)}>Likes: {likes}</button>;
 }

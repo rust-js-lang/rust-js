@@ -497,6 +497,22 @@ export const mutations: Mutation[] = [
     tests: ["test/js-object.test.ts", "-t", "a constructor is a fn item"],
   },
   {
+    name: "named-default-exported-by-name",
+    breaks: "a `pub fn` `js::export_default!(page)` names is `export function page` as well as the default, two exports of one item",
+    file: "src/lower/pipeline.rs",
+    find: ".filter(|f| f.name == name) {\n                    function.export = false;\n",
+    replace: ".filter(|f| f.name == name) {\n",
+    tests: ["test/declarations.test.ts", "-t", "naming form names as the default alone"],
+  },
+  {
+    name: "named-default-constant-exported-by-name",
+    breaks: "a `pub` thread-local `js::export_default!(REPORT_GLOBAL_ERROR)` names is `export const reportGlobalError = ..;` as well as `export default reportGlobalError;`, where upstream has the default alone",
+    file: "src/lower/pipeline.rs",
+    find: "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none()) {\n",
+    replace: "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none() && default_declared) {\n",
+    tests: ["test/declarations.test.ts", "-t", "naming form names as the default alone"],
+  },
+  {
     name: "aliased-default-undeclared",
     breaks: "a default constant its module's `pub use` names by another name isn't declared, so `export { VERSION as RELEASE }` names nothing",
     file: "src/lower/pipeline.rs",

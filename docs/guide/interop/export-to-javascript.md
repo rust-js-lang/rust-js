@@ -774,7 +774,9 @@ from the module that defines it.
 ## The default export
 
 `js::export_default!` names the function that is the module's default
-export, as a Next.js page or a lazy component needs:
+export, as a Next.js page or a lazy component needs, exported as the
+default alone, a `pub` one too
+([ADR 0611](../../decisions/0611-a-default-export-is-where-its-macro-is.md)):
 
 ```rust
 pub fn page() -> String {
@@ -785,7 +787,7 @@ js::export_default!(page);
 ```
 
 ```js
-export function page() {
+function page() {
   return "home";
 }
 
