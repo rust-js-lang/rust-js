@@ -222,7 +222,23 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         false if leads(expr, name, guard, &passes) == Some(true) => Why::ReadFirst,
         false => return None,
     };
-    let replaced = expr.substitute(&|v| (v == name).then(|| value.clone()))?;
+    let mut replaced = expr.substitute(&|v| (v == name).then(|| value.clone()))?;
+    // A cell made in its place and read, `{ value: x }.value`, a struct's
+    // field made of one: what it holds, as `Expr::member` reads one where
+    // it's made, and its key then left out where that's `undefined` (ADR
+    // 0810, amended). Not an assignment's target, which is no read.
+    if read != Read::Target {
+        replaced.each_mut(&mut |e| {
+            if let ExprKind::Member(object, field) = &e.kind
+                && let ExprKind::Object(..) = object.kind
+            {
+                let read = Expr::member((**object).clone(), field.clone());
+                if !matches!(read.kind, ExprKind::Member(..)) {
+                    *e = read.or_at(e.span);
+                }
+            }
+        });
+    }
     Some((Moved { at, read, replaced }, why))
 }
 

@@ -141,4 +141,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^returned_references.rs$"],
   },
+  {
+    name: "made-cell-read-unfolded",
+    breaks: "an optional field's cell made in its temporary's place is read `{}.value` where its struct is made, a key that's there",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if read != Read::Target {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "drop glue is left out"],
+  },
+  {
+    name: "made-cell-target-folded",
+    breaks: "an assignment to a cell made in its temporary's place, `{ value: x }.value = v`, is `x = v`",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if read != Read::Target {\n",
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_borrows.rs$"],
+  },
 ];

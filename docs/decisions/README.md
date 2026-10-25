@@ -630,7 +630,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0800 A drop of what JS drops nothing of never unwinds](0800-a-drop-of-nothing-never-unwinds.md)
 - [0805 A case's `if` is as written, whatever its other branch ends with](0805-a-cases-if-is-as-written-whatever-ends-it.md)
 - [0806 A slice's range in bounds is JS's `slice`, and a test held in a `bool` shows what it tests](0806-a-slices-range-in-bounds-is-js-slice.md)
-- [0810 An optional nullable field is absent until it's set](0810-an-optional-nullable-field-is-absent-until-set.md)
+- [0810 An optional nullable field is absent until it's set](0810-an-optional-nullable-field-is-absent-until-set.md) *(amended: one of what has drop glue is left out too)*
 - [0811 `console.createTask` is a property the host may lack](0811-console-create-task-may-be-absent.md) *(amended: `#[rust_js::types]` is a TypeScript type, read into the declaration model, one it can't read an error)*
 - [0830 What follows a `let Err(x)` of a closure that never returns is its `catch`](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md)
 - [0835 An object is across lines where its struct literal is](0835-an-object-is-across-lines-where-its-literal-is.md)

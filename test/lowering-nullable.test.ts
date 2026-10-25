@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, installRuntime, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -606,4 +606,52 @@ pub fn each(children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'stati
   expect(calls(true)).toStrictEqual([null, null, undefined, null]);
   expect(calls(null)).toStrictEqual([null, null, null, null]);
   expect(calls(5)).toStrictEqual([5, null, 5, 5]);
+});
+
+// React's `ReactSharedInternalsClient`, a library: its DEV-only `actQueue`,
+// an optional nullable `Cell` of `RendererTask`s, each a `Box<dyn FnMut>`,
+// whose drop glue made its `Cell::new(None)` a temporary of its own, read
+// `{}.value` where the literal was made (ADR 0810, amended). It's left out,
+// as the other optional fields are. Its `set(None)` drops what it held:
+// a library's consumer may make a `RendererTask` of a closure holding what
+// has a destructor (ADR 0521), so the drop stays, `$dispose` of each.
+test("an optional nullable field of what has drop glue is left out where it's made", async () => {
+  const dir = fixture("nullable-optional-drops");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct SharedStateClient {
+    #[cfg_attr(rust_js, rust_js::name = "H")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub h: Cell<Option<&'static str>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub act_queue: Cell<Option<Vec<RendererTask>>>,
+    pub async_transitions: Cell<Option<f64>>,
+}
+
+#[repr(transparent)]
+pub struct RendererTask(pub Box<dyn FnMut(bool) -> Option<RendererTask>>);
+
+pub fn make(dev: bool) -> SharedStateClient {
+    let internals = SharedStateClient {
+        h: Cell::new(None),
+        act_queue: Cell::new(None),
+        async_transitions: Cell::new(None),
+    };
+    if dev {
+        internals.act_queue.set(None);
+        internals.async_transitions.set(Some(0.0));
+    }
+    internals
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const internals = {\n    H: null,\n  };");
+  expect(js).not.toContain("{}.value");
+  expect(js).toContain("$dispose(item);");
+  installRuntime(dir);
+  const lib = await import(join(dir, "lib.js"));
+  const prod = lib.make(false);
+  const dev = lib.make(true);
+  expect(["actQueue" in prod, "asyncTransitions" in prod, dev.actQueue, dev.asyncTransitions]).toEqual([false, false, null, 0]);
 });

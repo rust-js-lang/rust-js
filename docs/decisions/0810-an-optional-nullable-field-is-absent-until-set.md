@@ -141,3 +141,33 @@ if (__DEV__) {
   `null-none-given-optional` (`mir/patterns.rs`),
   `nullable-assigned-undefined`, `nullable-assigned-some-coalesced`
   (`mir/assign.rs`).
+
+## Amendment: an optional field of what has drop glue is left out too
+
+React's `ReactSharedInternalsClient`, a library, made its DEV-only
+`actQueue: Cell<Option<Vec<RendererTask>>>`, each task a `Box<dyn
+FnMut>`, `actQueue: {}.value`: drop glue gave its `Cell::new(None)` a
+temporary of its own, a drop flag with it, and the struct's field read
+that temporary's `value`, which tidy then read in place, past where the
+cell made there would have been read as what it holds.
+
+**A cell made in its place and read is what it holds**, `{ value: x
+}.value` `x`, wherever tidy moves a temporary's value to be read
+(`moves.rs`), as `Expr::member` reads one where it's made; then the
+field's `undefined` is no key (ADR 0280). Not an assignment's target,
+which is no read. Case N.
+
+**Its `set(None)` drops what it held, as Rust does**: of a library, a
+consumer may make a `RendererTask` of a closure that holds what has a
+destructor, which `$dispose` runs (ADR 0521), so the drop stays, `const
+old = ..actQueue; ..actQueue = null; if (old != null) { for (const item
+of old) { $dispose(item); } }`. Of a crate no closure of which with a
+destructor is made a `dyn Fn`, a binary's, it's `actQueue = null;` alone.
+Case C: results change where a destructor runs. Knowing the field is
+still `None` where the module's `on_load!` sets it, as it is in React's,
+would drop nothing there: not yet.
+
+- `test/lowering-nullable.test.ts`, "an optional nullable field of what
+  has drop glue is left out where it's made".
+- Mutations `made-cell-read-unfolded`, `made-cell-target-folded`
+  (`tidy/moves.rs`).

@@ -37,6 +37,6 @@ function main() {
   }
   const slots = [{ value: 1 }, { value: 2 }];
   slots[1].value = 7;
-  console.log(`${slots[0].value} ${slots[1].value} ${{ value: 2 }.value}`);
+  console.log(`${slots[0].value} ${slots[1].value} ${2}`);
 }
 //# sourceMappingURL=case.js.map
