@@ -2,6 +2,7 @@
 import type { Mutation } from "../../../mutations";
 
 const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
+const toDefault = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"];
 export const mutations: Mutation[] = [
   {
     name: "switch-last-name-an-if-chain",
@@ -327,6 +328,22 @@ export const mutations: Mutation[] = [
     find: "                                    .filter(|(_, value)| !before.contains(value))\n",
     replace: "",
     tests: fallthrough,
+  },
+  {
+    name: "switch-guard-to-default-no-fall",
+    breaks: "a guarded arm just before a last `_` that does something isn't a case, so React's `describeFiber` is an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "                                || (i + 1 == last\n",
+    replace: "                                || (false && i + 1 == last\n",
+    tests: toDefault,
+  },
+  {
+    name: "switch-default-after-fall-unvalued",
+    breaks: "the `_` a guarded arm falls to is asked the values of its constants, which it has none of, so the `match` is an `if` chain",
+    file: "src/lower/mir/hints.rs",
+    find: "                            true if constants.is_empty() => constants,\n",
+    replace: "",
+    tests: toDefault,
   },
   {
     name: "mir-loop-breaks-of-blocks",

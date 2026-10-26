@@ -308,4 +308,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: twoGuards,
   },
+  {
+    name: "switch-default-fallen-refused",
+    breaks: "a guarded case whose chain goes on to the `_`'s statements isn't one that falls to the `default`, so React's `describeFiber` is an `if` chain",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            ) if then.last().is_some_and(js::ends) => Some(stmt.clone()),\n",
+    replace: "            ) if false => Some(stmt.clone()),\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"],
+  },
 ];

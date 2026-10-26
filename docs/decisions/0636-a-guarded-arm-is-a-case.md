@@ -5,7 +5,8 @@ whose `switch` had no arm with a guard. Amended by
 [0905](0905-a-guarded-arm-falls-to-the-next.md): a guarded arm whose
 next arm names each of its constants falls through to that arm's case;
 and an or-pattern of a guard, which MIR tests by each alternative, is one
-case.
+case. Amended below: a guarded arm just before a last `_` that does
+something falls through to the `default`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the case runs the guard where the arm did, after its
@@ -117,3 +118,61 @@ switch (kind) {
   of the same constant, each run for the guard true and false.
 - Mutations in `scripts/mutations/lower/mir/hints.ts` and
   `scripts/mutations/lower/mir/tidy/switches.ts`.
+
+## Amendment: a guarded arm just before a last `_` that does something falls through to the `default`
+
+React's `describeFiber` is a `switch` that's its function's answer, its
+last case falling through to its `default`:
+
+```js
+case ViewTransitionComponent:
+  if (enableViewTransition) {
+    return describeBuiltInComponentFrame('ViewTransition');
+  }
+// Fallthrough
+default:
+  return '';
+```
+
+Its port writes the `match` that's its value, `VIEW_TRANSITION_COMPONENT
+if ENABLE_VIEW_TRANSITION => .., _ => String::new()`. A failed guard went
+on to an arm that does something, which this ADR's case couldn't, so the
+whole `match` was an `if` chain, `if (tag === HostComponent) { return ..;
+} .. return "";`.
+
+**A guarded arm just before a last `_`, or a last name alone, that does
+something falls through to the `default`**: its case is the guard's `if`,
+`// Fallthrough` before `default:`, as ADR 0905's case falls to the next
+arm's. What Rust tries where the guard fails is that `_`, which takes
+every value, and JS's fall-through runs the `default`'s statements, the
+next clause's. Of a guarded arm with an arm between it and the `_`, which
+JS can't fall past, the `match` stays an `if` chain; of a `_ => {}`, the
+case is as above, `if (g) { .. }` then nothing.
+
+- **Which arm falls is the hint's** still, `hints::written_switches`:
+  `falls` of a guarded arm whose next arm is the last, a catch-all with no
+  guard, where it doesn't fail to nothing (`fails_to_nothing`). The `_`'s
+  case is the `default`, of no constant.
+- **The case is what MIR made**: MIR tests `tag === C && g`, and where
+  that fails goes on in the chain's list to the `_`'s statements; tidy
+  (`tidy/switches.rs`, `fallen`) takes the guard's `if` alone, which
+  leaves where it holds, as the case that falls to the `default`, its
+  next clause.
+- **Printing**: `// Fallthrough` before `default:`, at its first
+  statement's start, as before a case's first value
+  (`to_oxc/cases.rs`, `default_fallen_to`); a comment written before the
+  `_` arm is before it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each value runs the
+guard Rust runs, once, after its constant matched, and then what the arm
+Rust takes does.
+
+- No corpus case's or snapshot's JS but the new ones changed.
+- `test/lowering-switch-fallthrough.test.ts`, "a guarded arm before a
+  last _ that does something falls through to the default", run;
+  `test/corpus/switch_guard_to_default.rs` against native Rust, of a value
+  `match` and of a statement one whose last arm is a name.
+- Mutations `switch-guard-to-default-no-fall`,
+  `switch-default-after-fall-unvalued` (`hints.ts`),
+  `switch-default-fallen-refused` (`tidy/switches.ts`) and
+  `default-fallthrough-unsaid` (`to_oxc/cases.ts`).

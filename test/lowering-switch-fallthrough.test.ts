@@ -319,3 +319,65 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
     }
   }
 });
+
+// React's describeFiber, ported: a `match` that's its function's value,
+// whose guarded arm just before a last `_` that does something goes on to
+// it where the guard fails, as upstream's case falls through to its
+// `default` (ADR 0636, amended).
+test("a guarded arm before a last _ that does something falls through to the default", async () => {
+  const dir = fixture("switch-guard-to-default");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub const HOST_COMPONENT: u8 = 5;
+pub const LAZY_COMPONENT: u8 = 16;
+pub const VIEW_TRANSITION_COMPONENT: u8 = 30;
+
+pub fn describe(tag: u8, view_transitions: bool) -> String {
+    match tag {
+        HOST_COMPONENT => "host".to_string(),
+        LAZY_COMPONENT => "Lazy".to_string(),
+        VIEW_TRANSITION_COMPONENT if view_transitions => "ViewTransition".to_string(),
+        // Anything else.
+        _ => format!("<{tag}>"),
+    }
+}
+
+/// An arm between: no case falls to the \`default\`, an \`if\` chain.
+pub fn between(tag: u8, view_transitions: bool) -> u32 {
+    match tag {
+        HOST_COMPONENT => 1,
+        VIEW_TRANSITION_COMPONENT if view_transitions => 2,
+        LAZY_COMPONENT => 3,
+        _ => 4,
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  switch (tag) {
+    case HOST_COMPONENT:
+      return "host";
+    case LAZY_COMPONENT:
+      return "Lazy";
+    case VIEW_TRANSITION_COMPONENT:
+      if (viewTransitions) {
+        return "ViewTransition";
+      }
+    // Anything else.
+    // Fallthrough
+    default:
+      return \`<\${tag}>\`;
+  }
+`);
+  expect(js).toMatch(/export function between\(tag, viewTransitions\) \{\n  if \(/);
+  const lib = await import(join(dir, "lib.js"));
+  for (const tag of [0, 5, 16, 30]) {
+    for (const on of [false, true]) {
+      const upstream = tag === 5 ? "host" : tag === 16 ? "Lazy" : tag === 30 && on ? "ViewTransition" : `<${tag}>`;
+      expect([tag, on, lib.describe(tag, on)]).toEqual([tag, on, upstream]);
+      const between = tag === 5 ? 1 : tag === 30 && on ? 2 : tag === 16 ? 3 : 4;
+      expect([tag, on, lib.between(tag, on)]).toEqual([tag, on, between]);
+    }
+  }
+});

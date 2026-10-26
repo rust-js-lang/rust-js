@@ -13,8 +13,9 @@ pub(super) const FALLTHROUGH: &str = "// Fallthrough";
 /// (`fallen_to`), its comment `FALLTHROUGH` before it.
 pub(super) fn fallthrough_starts(module: &Module) -> Vec<u32> {
     let mut starts = Vec::new();
-    each_switch(module, &mut |cases| {
+    each_switch(module, &mut |cases, default| {
         starts.extend((0..cases.len()).filter_map(|k| fallen_to(cases, k)));
+        starts.extend(default_fallen_to(cases, default));
     });
     starts
 }
@@ -25,6 +26,14 @@ pub(crate) fn fallen_to(cases: &[js::Case], k: usize) -> Option<u32> {
     let before = cases.get(k.checked_sub(1)?)?;
     let first = cases.get(k)?.values.first()?;
     (before.falls && !first.span.is_none()).then_some(first.span.lo)
+}
+
+/// Where the `default` is printed, `default`, where the last case falls
+/// through to it (ADR 0636, amended): its first statement's start,
+/// `FALLTHROUGH` before it.
+pub(crate) fn default_fallen_to(cases: &[js::Case], default: Option<&[js::Stmt]>) -> Option<u32> {
+    let first = default?.first()?;
+    (cases.last()?.falls && !first.span.is_none()).then_some(first.span.lo)
 }
 
 /// Where each case the one before falls through to starts, in order: a
@@ -38,13 +47,16 @@ pub(super) fn case_starts(module: &Module) -> Vec<u32> {
     starts
 }
 
-/// Each `switch` of `module`'s bodies, its cases.
-fn each_switch(module: &Module, f: &mut dyn FnMut(&[js::Case])) {
+/// What's asked of each `switch`: its cases, and its `default`.
+type EachSwitch<'f> = dyn FnMut(&[js::Case], Option<&[js::Stmt]>) + 'f;
+
+/// Each `switch` of `module`'s bodies, its cases and its `default`.
+fn each_switch(module: &Module, f: &mut EachSwitch<'_>) {
     for mut body in bodies(module) {
         js::each_block_mut(&mut body, &mut |stmts| {
             for stmt in stmts.iter() {
-                if let StmtKind::Switch { cases, .. } = &stmt.kind {
-                    f(cases);
+                if let StmtKind::Switch { cases, default, .. } = &stmt.kind {
+                    f(cases, default.as_deref());
                 }
             }
         });

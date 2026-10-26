@@ -1281,7 +1281,10 @@ fails does nothing: each later arm that could match its constants is a
 constants and more, a case that falls through to the next's, `// Fallthrough`,
 a comment written before that next arm before it and its labels, as React
 writes one
-([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended). Any other `match`, of a range, a binding of a
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
+or where it's a last `_` that does something, a case that falls through
+to the `default`
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended). Any other `match`, of a range, a binding of a
 pattern's part or before the last arm, a guard a later arm goes on from, or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
@@ -1451,6 +1454,47 @@ export function name(tag, ty, viewTransitions, legacyOff) {
     // Fallthrough
     case CLASS:
       return ty;
+  }
+}
+```
+
+A guarded arm just before a last `_` that does something falls through to
+the `default`, which Rust tries next, as React writes `describeFiber`
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended):
+
+```rust
+pub const HOST: u8 = 1;
+pub const LAZY: u8 = 2;
+pub const VIEW_TRANSITION: u8 = 3;
+
+pub fn frame(tag: u8, view_transitions: bool) -> String {
+    match tag {
+        HOST => "host".to_string(),
+        LAZY => "Lazy".to_string(),
+        VIEW_TRANSITION if view_transitions => "ViewTransition".to_string(),
+        _ => String::new(),
+    }
+}
+```
+
+```js
+export const HOST = 1;
+export const LAZY = 2;
+export const VIEW_TRANSITION = 3;
+
+export function frame(tag, viewTransitions) {
+  switch (tag) {
+    case HOST:
+      return "host";
+    case LAZY:
+      return "Lazy";
+    case VIEW_TRANSITION:
+      if (viewTransitions) {
+        return "ViewTransition";
+      }
+    // Fallthrough
+    default:
+      return "";
   }
 }
 ```

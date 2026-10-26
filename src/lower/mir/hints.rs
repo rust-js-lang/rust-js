@@ -449,11 +449,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // arm, which names each constant it does and more (ADR 0905):
                 // its case falls through to the next's, which is a case as
                 // any arm is, guarded or not.
+                // And a guarded arm just before a last `_` that does
+                // something, which takes each value it does: its case falls
+                // through to the `default` (ADR 0636, amended).
+                let catch_all = |arm: &thir::Arm<'tcx>| {
+                    arm.guard.is_none()
+                        && matches!(
+                            arm.pattern.kind,
+                            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
+                        )
+                };
                 let falls: Vec<bool> = (0..arms.len())
                     .map(|i| {
                         guards[i].is_some()
                             && i < last
-                            && self.falls_to(&arms[i].pattern, &arms[i + 1].pattern, present)
+                            && (self.falls_to(&arms[i].pattern, &arms[i + 1].pattern, present)
+                                || (i + 1 == last
+                                    && catch_all(arms[last])
+                                    && !self.fails_to_nothing(&arms[i].pattern, &arms[i + 1..])))
                     })
                     .collect();
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
@@ -472,6 +485,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // Of an arm the one before falls to, the constants it
                         // names alone: the others are that arm's case's.
                         let constants = match i.checked_sub(1).is_some_and(|before| falls[before]) {
+                            true if constants.is_empty() => constants,
                             true => {
                                 let before = self.constant_values(&arms[i - 1].pattern, present)?;
                                 let values = self.constant_values(&arm.pattern, present)?;

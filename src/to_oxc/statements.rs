@@ -503,7 +503,10 @@ impl<'a> Cx<'a> {
                     ));
                 }
                 if let Some(default) = default {
-                    clauses.push(SwitchCase::new(SPAN, None, self.case_body(default, false, true), b));
+                    // Where the last case falls through to it, where its
+                    // comment says so is (ADR 0636, amended).
+                    let at = super::default_fallen_to(cases, Some(default)).map_or(SPAN, |lo| Span::new(lo, lo));
+                    clauses.push(SwitchCase::new(at, None, self.case_body(default, false, true), b));
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }

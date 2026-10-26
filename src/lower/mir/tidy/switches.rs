@@ -421,7 +421,22 @@ fn fallen(cases: &mut [Case], arms: &[&SwitchArm]) -> Option<Vec<bool>> {
         let next = cases
             .get(c + 1)
             .filter(|next| arms.get(k + 1).is_some_and(|arm| arm.span == next.3))?;
-        own.push((c, guard_alone(&case.1, &next.1)?));
+        // Of the `default` next, a last `_`'s, the guard's `if` alone,
+        // which leaves where it holds, is one the chain goes on from to the
+        // `_`'s statements, as the case falls to them (ADR 0636, amended).
+        let alone = match (&case.1[..], next.2) {
+            (
+                [
+                    stmt @ Stmt {
+                        kind: StmtKind::If(_, then, None),
+                        ..
+                    },
+                ],
+                true,
+            ) if then.last().is_some_and(js::ends) => Some(stmt.clone()),
+            _ => guard_alone(&case.1, &next.1),
+        };
+        own.push((c, alone?));
         falls[c] = true;
     }
     for (c, stmt) in own {
