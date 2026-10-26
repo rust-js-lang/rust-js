@@ -337,4 +337,20 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
   },
 
+  {
+    name: "returned-logicals-unchained",
+    breaks: "`return a && b && c;` in an `if` is `if (a) { if (b) { return c; } }`, its failing tests going on to the `return false` after (ADR 0947)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            [inner] => chain(inner, tests),\n",
+    replace: "            [_inner] => None,\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
+  },
+  {
+    name: "returned-logicals-of-written-returns-refused",
+    breaks: "`return a || !b;` is `if (a) { return true; } return !b;`, its two `return`s taken for two the program wrote (ADR 0947)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    (returns.iter()).filter(|r| around(r, at)).all(|r| around(r, test))\n",
+    replace: "    (returns.iter()).filter(|r| around(r, at)).all(|_| false)\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
+  },
 ];

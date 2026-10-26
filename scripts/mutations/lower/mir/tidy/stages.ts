@@ -671,4 +671,12 @@ export const mutations: Mutation[] = [
     replace: "                js::statement_lists(b, &mut |_| {})\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
   },
+  {
+    name: "returned-logicals-unrun",
+    breaks: "React's isLegacyActEnvironment's `return a && b && c;` in `if (__DEV__)` is nested `if`s (ADR 0947)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                returned_logicals(b, &h.written.logicals, h.returns, h.booleans)\n",
+    replace: "                let _ = (b, h);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
+  },
 ];

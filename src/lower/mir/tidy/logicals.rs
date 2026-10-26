@@ -27,8 +27,8 @@ pub(super) fn logical_returns(
             },
         ] = then.as_slice()
         && within(last_if.span)
-        && !written(returns, last.span)
-        && !written(returns, *yes_span)
+        && returned_as_written(returns, last.span, last_if.span)
+        && returned_as_written(returns, *yes_span, last_if.span)
     {
         let returned = StmtKind::Return(Some(conditional(
             test.clone(),
@@ -40,6 +40,104 @@ pub(super) fn logical_returns(
         let span = last_if.span;
         stmts.splice(stmts.len() - 2.., [returned.at(span)]);
     }
+}
+
+/// Whether a `return` at `at` isn't one the program wrote, or is the
+/// `return` of the logical whose test is at `test`: `return a || !b;`, its
+/// two `return`s of one the program wrote around the test (ADR 0947).
+fn returned_as_written(returns: &[js::Span], at: js::Span, test: js::Span) -> bool {
+    let around = |r: &js::Span, s: js::Span| !s.is_none() && r.lo <= s.lo && s.hi <= r.hi;
+    (returns.iter()).filter(|r| around(r, at)).all(|r| around(r, test))
+}
+
+/// `if (a) { if (b) { return c; } }`, MIR's of a `return a && b && c;` the
+/// program wrote, where each test that fails goes on to a `return d` after
+/// the list, a branch's of an `if` before it too, MIR's copy of what the
+/// function returns past it: `return a && b && c;`, as written, each test
+/// folded as `conditional` folds one (ADR 0947). React's
+/// `isLegacyActEnvironment`, whose `return false` is after its `if
+/// (__DEV__)`.
+pub(super) fn returned_logicals(
+    body: &mut [Stmt],
+    logicals: &[js::Span],
+    returns: &[js::Span],
+    booleans: &HashSet<String>,
+) {
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+    // The tests of a chain of `if`s with no `else`, each the next's only
+    // statement, the last's a `return` of a value: the tests, the value and
+    // where its `return` is.
+    fn chain(stmt: &Stmt, tests: &mut Vec<(Expr, js::Span)>) -> Option<(Expr, js::Span)> {
+        let StmtKind::If(test, then, None) = &stmt.kind else {
+            return None;
+        };
+        tests.push((test.clone(), stmt.span));
+        match then.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(value)),
+                    span,
+                },
+            ] => Some((value.clone(), *span)),
+            [inner] => chain(inner, tests),
+            _ => None,
+        }
+    }
+    fn walk(stmts: &mut [Stmt], after: Option<&Expr>, fold: &dyn Fn(&Stmt, &Expr) -> Option<Expr>) {
+        let n = stmts.len();
+        for i in 0..n {
+            let next = match stmts.get(i + 1).map(|s| &s.kind) {
+                Some(StmtKind::Return(Some(value))) => Some(value.clone()),
+                Some(_) => None,
+                None => after.cloned(),
+            };
+            if i + 1 == n
+                && let Some(no) = after
+                && let Some(value) = fold(&stmts[i], no)
+            {
+                let span = stmts[i].span;
+                stmts[i] = StmtKind::Return(Some(value)).at(span);
+                continue;
+            }
+            match &mut stmts[i].kind {
+                StmtKind::If(_, a, b) => {
+                    walk(a, next.as_ref(), fold);
+                    if let Some(b) = b {
+                        walk(b, next.as_ref(), fold);
+                    }
+                }
+                StmtKind::Labeled(_, body) => walk(body, next.as_ref(), fold),
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    walk(body, None, fold)
+                }
+                StmtKind::Switch { cases, default, .. } => {
+                    js::case_lists_mut(cases, default).for_each(|case| walk(case, None, fold))
+                }
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    walk(a, None, fold);
+                    walk(b, None, fold);
+                }
+                _ => {}
+            }
+        }
+    }
+    let fold = |stmt: &Stmt, no: &Expr| {
+        let mut tests = Vec::new();
+        let (yes, at) = chain(stmt, &mut tests)?;
+        // The `return` the program wrote, around each test: its value's.
+        let written = returns
+            .iter()
+            .find(|r| !at.is_none() && r.lo <= at.lo && at.hi <= r.hi)?;
+        let inside = |s: js::Span| !s.is_none() && written.lo <= s.lo && s.hi <= written.hi;
+        if !tests.iter().all(|&(_, s)| within(s) && inside(s)) || inside(no.span) {
+            return None;
+        }
+        let value = (tests.into_iter().rev()).fold(yes, |yes, (test, _)| {
+            conditional(test, yes, no.clone(), booleans, false)
+        });
+        Some(value)
+    };
+    walk(body, None, &fold);
 }
 
 /// `l: { if (a) { if (b) { break l; } return true; } } return d;`, MIR's

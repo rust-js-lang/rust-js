@@ -553,7 +553,7 @@ pub fn reset() {
     failedBoundaries &&
     (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
   ) {`);
-  expect(js).toContain("  if (failedBoundaries) {\n    if (!failedBoundaries.has(fiber)) {\n      return false;\n    }\n    return checked(failedBoundaries, fiber);\n");
+  expect(js).toContain("  if (failedBoundaries) {\n    return failedBoundaries.has(fiber) && checked(failedBoundaries, fiber);\n  }\n");
   expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1) {\n    before.call();\n");
   const lib = await import(join(dir, "lib.js"));
   const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];

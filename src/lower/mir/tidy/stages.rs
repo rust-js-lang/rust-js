@@ -140,6 +140,11 @@ pub(super) const STAGES: &[Stage] = &[
                 let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
                 js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))
             }),
+            // A `return a && b && c;` the program wrote, whose tests' failing
+            // `return` is after the list (ADR 0947).
+            pass("returned logicals", |b, h| {
+                returned_logicals(b, &h.written.logicals, h.returns, h.booleans)
+            }),
             pass("falsy values", |b, h| falsy_values(b, h.falsy, h.tested)),
             pass("filtered guards", |b, _| {
                 let changing = changing(b);

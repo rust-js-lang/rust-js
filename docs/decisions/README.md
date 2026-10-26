@@ -731,6 +731,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)
 - [0946 An `if` of `&&`, `||` and `!` mixed is its one test, not `if`s that leave a block MIR made](0946-an-if-of-mixed-logicals-is-its-one-test.md)
+- [0947 A `return` of a logical the program wrote is that `return`, wherever its tests' `false` goes on](0947-a-returned-logical-is-returned-as-written.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

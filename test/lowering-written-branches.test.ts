@@ -982,3 +982,41 @@ pub fn pop(tag: u8, r#type: &str, out: &mut Vec<String>) {
     }
   }
 });
+
+// ADR 0947: React's isLegacyActEnvironment, `if (__DEV__) { ..; return a
+// && b && c; } return false;`: the `return` the program wrote is its value,
+// as written, not `if`s whose failing tests go on to the `return false`
+// after the `if`.
+test("a returned && chain in an if is returned as written", async () => {
+  const { js, lib } = await compiled(
+    "returned-and-chain",
+    `pub fn legacy(dev: bool, a: bool, b: bool, c: u32) -> bool {
+    if dev {
+        let b_is_defined = b;
+        return a && b_is_defined && c != 0;
+    }
+    false
+}
+
+pub fn either(dev: bool, a: bool, b: bool) -> bool {
+    if dev {
+        return a || !b;
+    }
+    true
+}
+`,
+  );
+  expect(js).toContain("  if (dev) {\n    const bIsDefined = b;\n    return a && bIsDefined && c !== 0;\n  }\n  return false;\n");
+  expect(js).toContain("  if (dev) {\n    return a || !b;\n  }\n  return true;\n");
+  const bools = [false, true];
+  for (const dev of bools) {
+    for (const a of bools) {
+      for (const b of bools) {
+        for (const c of [0, 1]) {
+          expect([dev, a, b, c, lib.legacy(dev as never, a as never, b as never, c as never)]).toEqual([dev, a, b, c, !dev ? false : a && b && c !== 0]);
+        }
+        expect([dev, a, b, lib.either(dev as never, a as never, b as never)]).toEqual([dev, a, b, !dev ? true : a || !b]);
+      }
+    }
+  }
+});
