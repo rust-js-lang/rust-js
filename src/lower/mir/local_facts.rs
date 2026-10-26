@@ -49,6 +49,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each block that goes on to an arm past a guard that holds, and that
     /// arm's first block (`held_arms`): the edges to it the arm's.
     held_arms: HashMap<BasicBlock, BasicBlock>,
+    /// Each block whose test that an `Option` is `Some` is its payload's
+    /// test's, in that block (`mir_payload_tests`): its edges that test's.
+    payload_tests: HashMap<BasicBlock, BasicBlock>,
     /// What each `Drop` drops (`drops.rs`), of a body that drops something.
     drops: Option<drops::Elaboration<'tcx>>,
     /// Of a closure: what it captured, each its environment's field, and
@@ -133,6 +136,10 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.held_arms
     }
 
+    pub(super) fn payload_tests(&self) -> &HashMap<BasicBlock, BasicBlock> {
+        &self.payload_tests
+    }
+
     pub(super) fn drops(&self) -> Option<&drops::Elaboration<'tcx>> {
         self.drops.as_ref()
     }
@@ -204,10 +211,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bindings = self.mir_held_bindings(body, &options.held);
         let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
         let held_arms = self.mir_held_arms(body, &options.held, &bound);
+        let payload_tests = self.mir_payload_tests(body);
         let facts = LocalFacts {
             awaits: &mir.awaits,
             promoted: &mir.promoted,
-            graph: cfg::Graph::of(body, &held_arms),
+            graph: cfg::Graph::of(body, &held_arms, &payload_tests),
             rests: (self.let_pattern_bindings(body).into_iter())
                 .filter_map(|(local, rest)| rest.then_some(local))
                 .collect(),
@@ -221,6 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let_spans: self.mir_let_spans(body),
             options,
             held_arms,
+            payload_tests,
             drops,
             captures,
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),

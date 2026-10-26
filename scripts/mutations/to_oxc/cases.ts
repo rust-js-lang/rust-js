@@ -26,4 +26,13 @@ export const mutations: Mutation[] = [
     replace: "    let mut starts = Vec::new();\n    each_switch(module, &mut |cases, _| starts.extend(cases.iter().filter_map(|c| c.values.first()).filter(|v| !v.span.is_none()).map(|v| v.span.lo)));\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each by its name, its comments in its arms"],
   },
+  {
+    name: "fallthrough-said-twice",
+    breaks: "a case the program's `// falls through` is before gets `// Fallthrough` beside it too",
+    file: "src/to_oxc/cases.rs",
+    find: "        .any(|said| text.contains(said))\n",
+    replace: "        .any(|said| said.is_empty() && text.contains(said))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
+  },
 ];

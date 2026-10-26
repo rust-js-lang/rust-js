@@ -308,3 +308,43 @@ constants and a name, `0 => .., 1 => .., n => ..`, is three cases, a
 - `test/port-scheduler.test.ts`'s snapshot holds `unstable_next`.
 - Mutation `switch-last-name-an-if-chain` (`hints.ts`).
 
+
+## Amendment: an `Option`'s constants are the value's test, and a last clause's jump the switch's (2026-10-26)
+
+React's createFiberFromTypeAndProps, ported, matches an `Option` of
+constants inside a labeled block its arms leave, `'get_tag: { match sub {
+Some(7) => { ..; break 'get_tag; } Some(8) => { ..; break 'get_tag; } _ =>
+{} } tag = "throw"; }`. MIR tests it twice, its `Some` and then its
+payload, and its `None` and its payload's other values both go to the
+`_` arm: a block two edges reach, so a labeled block, `bb1: { if (sub !=
+null) { switch (sub) { .. default: break bb1; } return tag; } } tag =
+"throw";`. A JS label is never what a person writes where the program
+wrote none (the user's rule).
+
+- **A test that an `Option` of a number, a `char` or text is `Some` whose
+  `Some` goes on to a test of its payload alone, and whose `None` goes
+  where that test's `otherwise` does, is that test, of the value itself**
+  (`patterns.rs`'s `mir_payload_tests`, a body's `LocalFacts`): its graph
+  goes on where the payload's test does (`cfg::Graph::of`), and its
+  terminator is that test's, `sub === 7`, which no `None` passes, as no
+  `null` or `undefined` is `7`. The `_` arm is reached once, as a match
+  of a number's is: `switch (sub) { case 7: ..; break; case 8: ..; break;
+  default: tag = "throw"; }`. Not of a `bool`, which JS tests by its
+  truth, `!b`, which `None` passes; nor where `None` has its own arm.
+- **A `switch`'s last clause that ends with the jump the `switch` is
+  followed by ends without it**, as its end goes on to it
+  (`breaks_past_switches`): `default: tag = "throw";` before `return
+  tag;`, where MIR copied the tail into it. Only a jump, which ends what
+  runs either way; a statement that isn't one would run twice, which no
+  body MIR makes has, so no test reaches that check.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests and
+the same statements run of each value.
+
+Held by the corpus's `option_constants_switch.rs`, against native Rust:
+a labeled block left from an `Option`'s arms, a `char`'s through a
+reference, one whose `None` has its own arm, a `bool`'s; and mutations
+`payload-test-unfolded`, `payload-test-of-none-elsewhere`,
+`payload-test-of-a-bool` (`mir/patterns.rs`), `facts-held-arms-unjoined`
+(`mir/local_facts.rs`, its find moved) and `last-clause-tail-kept`
+(`mir/tidy/switches.rs`).

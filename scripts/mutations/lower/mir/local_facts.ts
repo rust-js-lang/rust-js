@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "facts-held-arms-unjoined",
     breaks: "a guard that holds still tests in each alternative of its arm, its graph made without the arms it goes on to (ADR 0790)",
     file: "src/lower/mir/local_facts.rs",
-    find: "            graph: cfg::Graph::of(body, &held_arms),\n",
-    replace: "            graph: cfg::Graph::of(body, &Default::default()),\n",
+    find: "            graph: cfg::Graph::of(body, &held_arms, &payload_tests),\n",
+    replace: "            graph: cfg::Graph::of(body, &Default::default(), &payload_tests),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
   },
   {

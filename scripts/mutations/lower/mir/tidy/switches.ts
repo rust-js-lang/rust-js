@@ -316,4 +316,13 @@ export const mutations: Mutation[] = [
     replace: "            ) if false => Some(stmt.clone()),\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"],
   },
+  {
+    name: "last-clause-tail-kept",
+    breaks: "a `switch`'s last clause keeps the jump it's followed by, `default: tag = \"throw\"; return tag;` before `return tag;`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                last.pop();\n            }\n            if default.as_deref().is_some_and(does_nothing) {\n",
+    replace: "            }\n            if default.as_deref().is_some_and(does_nothing) {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
+  },
 ];

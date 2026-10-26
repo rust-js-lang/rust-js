@@ -8,6 +8,38 @@ use super::*;
 /// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).
 pub(super) const FALLTHROUGH: &str = "// Fallthrough";
 
+/// Before each case a case falls through to, `// Fallthrough` (ADR 0905),
+/// in `text`, each one of `found`: but where the program's comment says it
+/// already, `said`'s.
+pub(super) fn fallthroughs(
+    module: &Module,
+    said: &std::collections::HashSet<u32>,
+    text: &mut String,
+    found: &mut Vec<oxc_ast::Comment>,
+) {
+    for at in fallthrough_starts(module).into_iter().filter(|at| !said.contains(at)) {
+        let lo = text.len() as u32;
+        text.push_str(FALLTHROUGH);
+        let mut made = oxc_ast::Comment::new(lo, text.len() as u32, oxc_ast::CommentKind::Line);
+        made.attached_to = at;
+        made.position = oxc_ast::CommentPosition::Leading;
+        made.set_preceded_by_newline(true);
+        made.set_followed_by_newline(true);
+        found.push(made);
+    }
+}
+
+/// Whether a comment the program wrote says a case falls through, as
+/// ESLint's `no-fallthrough` reads one, `/falls?\s?through/i`: `// falls
+/// through`, `// Fall through`; then it's said, and `FALLTHROUGH` isn't
+/// written beside it (ADR 0905, amended).
+pub(super) fn says_fallthrough(comment: &str) -> bool {
+    let text = comment.to_lowercase();
+    ["fall through", "falls through", "fallthrough", "fallsthrough"]
+        .iter()
+        .any(|said| text.contains(said))
+}
+
 /// Where each case a case falls through to starts, of `module`'s
 /// `switch`es: its first value's, which the case is printed at
 /// (`fallen_to`), its comment `FALLTHROUGH` before it.

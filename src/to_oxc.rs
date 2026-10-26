@@ -30,7 +30,6 @@ mod trailing;
 
 use self::trailing::{Inside, Trailing, own_line_before_value, with_inside_comments};
 
-use self::cases::{FALLTHROUGH, fallthrough_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
 pub(crate) use self::expressions::*;
 pub(crate) use self::loads::loaded_modules;
@@ -395,6 +394,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
+    // The cases whose comments the program wrote say they're fallen to.
+    let mut said_fallen = std::collections::HashSet::new();
     let mut tops = std::collections::HashMap::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
@@ -907,6 +908,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
             for (lo, hi) in pieces {
                 let written = &text[lo as usize..hi as usize];
+                if case.is_some() && cases::says_fallthrough(written) {
+                    said_fallen.insert(attached_to);
+                }
                 let kind = match (written.starts_with("/*"), written.contains('\n')) {
                     (false, _) => CommentKind::Line,
                     (true, false) => CommentKind::SingleLineBlock,
@@ -927,17 +931,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         }
     }
-    // Before each case a case falls through to, `// Fallthrough` (ADR 0905).
-    for at in fallthrough_starts(module) {
-        let lo = text.len() as u32;
-        text.push_str(FALLTHROUGH);
-        let mut made = oxc_ast::Comment::new(lo, text.len() as u32, CommentKind::Line);
-        made.attached_to = at;
-        made.position = CommentPosition::Leading;
-        made.set_preceded_by_newline(true);
-        made.set_followed_by_newline(true);
-        found.push(made);
-    }
+    cases::fallthroughs(module, &said_fallen, &mut text, &mut found);
     Commented {
         text,
         comments: found,

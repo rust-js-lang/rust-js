@@ -449,6 +449,74 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arms
     }
 
+    /// Each block whose test is that an `Option` of a number, a `char` or
+    /// text, never boxed, is `Some`, `Some(7) => ..`, which goes on to a test of its
+    /// payload alone, and whose `None` goes where that test's `otherwise`
+    /// does: that test's block, whose test of the payload is the `Option`'s
+    /// own, `sub === 7`, which no `None` passes, as no `null` is `7`; no
+    /// `sub != null` before it, and its `otherwise` reached once.
+    pub(super) fn mir_payload_tests(&self, body: &mir::Body<'tcx>) -> HashMap<BasicBlock, BasicBlock> {
+        let nothing = |statement: &mir::Statement<'tcx>| {
+            matches!(
+                statement.kind,
+                StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop
+            )
+        };
+        let predecessors = body.basic_blocks.predecessors();
+        let mut tests = HashMap::new();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            let TerminatorKind::SwitchInt {
+                discr: Operand::Copy(d) | Operand::Move(d),
+                targets,
+            } = &data.terminator().kind
+            else {
+                continue;
+            };
+            let Some(option) = data.statements.iter().find_map(|s| match &s.kind {
+                StatementKind::Assign(assign) if assign.0 == *d => match assign.1 {
+                    Rvalue::Discriminant(option) => Some(option),
+                    _ => None,
+                },
+                _ => None,
+            }) else {
+                continue;
+            };
+            let option_ty = option.ty(&body.local_decls, self.tcx).ty;
+            let Some(payload_ty) = self.option_of(option_ty) else {
+                continue;
+            };
+            let told = payload_ty.is_integral() || payload_ty.is_char() || payload_ty.peel_refs().is_str();
+            if !told {
+                continue;
+            }
+            let (some, none) = (targets.target_for_value(1), targets.target_for_value(0));
+            let payload = &body.basic_blocks[some];
+            let TerminatorKind::SwitchInt {
+                discr: Operand::Copy(read) | Operand::Move(read),
+                targets: payload_targets,
+            } = &payload.terminator().kind
+            else {
+                continue;
+            };
+            let of_payload = read.local == option.local
+                && read.projection.len() == option.projection.len() + 2
+                && read.projection[..option.projection.len()] == option.projection[..]
+                && matches!(
+                    read.projection[option.projection.len()..],
+                    [mir::ProjectionElem::Downcast(_, variant), mir::ProjectionElem::Field(field, _)]
+                        if variant.as_u32() == 1 && field.as_u32() == 0
+                );
+            if of_payload
+                && payload.statements.iter().all(nothing)
+                && payload_targets.otherwise() == none
+                && predecessors[some].len() == 1
+            {
+                tests.insert(block, some);
+            }
+        }
+        tests
+    }
+
     /// The locals `OptionWrites::present` says: each a call
     /// `body_queries::present_calls` says gives what's there.
     fn mir_present(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {

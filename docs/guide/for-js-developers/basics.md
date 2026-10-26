@@ -1283,7 +1283,8 @@ fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
 constants and more, a case that falls through to the next's, `// Fallthrough`,
 a comment written before that next arm before it and its labels, as React
-writes one
+writes one, and no `// Fallthrough` where that comment says it, `//
+falls through`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
 or where it's a last `_` that does something, a case that falls through
 to the `default`
@@ -1328,9 +1329,10 @@ export function timeout(level) {
 }
 ```
 
-A `match` of an `Option`'s text, `Some("fulfilled")`, is a `switch` of
-the value: no case takes `None`, which goes to the `default`, as it does
-in Rust. A last `_`'s statements are the `default`'s, and what follows the
+A `match` of an `Option`'s text, `Some("fulfilled")`, or of its number
+or `char`, `Some(7)`, is a `switch` of the value: no case takes `None`,
+which goes to the `default`, as it does in Rust, with no test that it's
+there before it, and no labeled block where an arm leaves one early. A last `_`'s statements are the `default`'s, and what follows the
 `match` follows the `switch`
 ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended):
 

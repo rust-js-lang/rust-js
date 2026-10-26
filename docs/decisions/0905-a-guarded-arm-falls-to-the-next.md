@@ -270,3 +270,21 @@ the cases Rust's arms are, its guards run in Rust's order, each once; a
   `switch-failing-guard-goes-after`, `switch-case-ending-break-kept`
   (`tidy/switches.ts`) and `tail-jump-branch-left-empty`
   (`tidy/jumps/tails.ts`).
+
+## Amendment: a fall-through the program says is said once (2026-10-26)
+
+React's createFiberFromTypeAndProps writes `// falls through` before a
+case fallen to, and its port writes it before the arm. rust-js wrote its
+own `// Fallthrough` too, two comments saying one thing:
+
+```js
+    // falls through
+    // Fallthrough
+    case REACT_VIEW_TRANSITION_TYPE:
+```
+
+**Where a comment the program wrote before the arm says it falls through,
+as ESLint's `no-fallthrough` reads one, `/falls?\s?through/i`, no
+`// Fallthrough` is written beside it** (`to_oxc/cases.rs`'s
+`says_fallthrough`, `fallthroughs`). Held by the corpus's
+`option_constants_switch.rs` and mutation `fallthrough-said-twice`.

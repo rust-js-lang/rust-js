@@ -269,7 +269,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where a block goes.
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
-        let terminator = state.body.basic_blocks[block].terminator();
+        // An `Option`'s test that it's `Some` whose `Some` tests its payload
+        // alone: that test, of the value itself (`mir_payload_tests`).
+        let tested = state.facts.payload_tests().get(&block).copied().unwrap_or(block);
+        let terminator = state.body.basic_blocks[tested].terminator();
         state.at = block;
         state.statement = state.body.basic_blocks[block].statements.len();
         // What's made that may panic runs before a branch, in its own `try`.

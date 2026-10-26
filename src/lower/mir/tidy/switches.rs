@@ -1271,7 +1271,20 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
             let switch = switch.clone();
             stmts[i] = switch;
         }
+        // The jump its last clause ends with that the `switch` is followed
+        // by: the clause's end, which goes on to it, `default: tag =
+        // "throw";` before `return tag;` (ADR 0629, amended).
+        let next = stmts.get(i + 1).filter(|next| ends_alike(next)).cloned();
         if let StmtKind::Switch { cases, default, .. } = &mut stmts[i].kind {
+            let last = match default.as_mut() {
+                Some(default) => Some(default),
+                None => cases.last_mut().map(|case| &mut case.body),
+            };
+            if let (Some(next), Some(last)) = (next, last)
+                && last.last().is_some_and(|end| end.kind == next.kind)
+            {
+                last.pop();
+            }
             if default.as_deref().is_some_and(does_nothing) {
                 *default = None;
             }
@@ -1316,6 +1329,15 @@ fn ending_breaks(stmts: &mut Vec<Stmt>) {
     if let Some(kind) = super::branches::emptied_branch(last.kind) {
         stmts.push(kind.at(last.span));
     }
+}
+
+/// Whether `stmt` is a jump, `return tag;`, `break;`: what a clause's end
+/// that goes on to it does once, as the clause's own did, in its place.
+fn ends_alike(stmt: &Stmt) -> bool {
+    matches!(
+        stmt.kind,
+        StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_)
+    )
 }
 
 /// Whether a `default`'s statements do nothing: none, or the `break` that

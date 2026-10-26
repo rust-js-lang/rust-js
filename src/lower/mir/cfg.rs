@@ -41,13 +41,20 @@ pub(super) fn successors(body: &Body<'_>, block: BasicBlock) -> Vec<BasicBlock> 
 
 impl Graph {
     /// Of `body`, each edge to a block of `through` going on to where it
-    /// leads instead: a guard's that holds, to its arm (`held_arms`).
-    pub(super) fn of(body: &Body<'_>, through: &HashMap<BasicBlock, BasicBlock>) -> Graph {
+    /// leads instead: a guard's that holds, to its arm (`held_arms`); and
+    /// each block of `tested` going on where its block there does: an
+    /// `Option`'s test that's its payload's (`mir_payload_tests`).
+    pub(super) fn of(
+        body: &Body<'_>,
+        through: &HashMap<BasicBlock, BasicBlock>,
+        tested: &HashMap<BasicBlock, BasicBlock>,
+    ) -> Graph {
         let n = body.basic_blocks.len();
         let succ: Vec<Vec<BasicBlock>> = (0..n)
             .map(|i| {
                 let mut seen = HashSet::new();
-                (successors(body, BasicBlock::from_usize(i)).into_iter())
+                let block = BasicBlock::from_usize(i);
+                (successors(body, tested.get(&block).copied().unwrap_or(block)).into_iter())
                     .map(|b| through.get(&b).copied().unwrap_or(b))
                     .filter(|b| seen.insert(*b))
                     .collect()
