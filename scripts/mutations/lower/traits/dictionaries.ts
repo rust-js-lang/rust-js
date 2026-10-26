@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "identity-copy-param-refused",
+    breaks: "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                && !self.krate.given.copied.contains(&(item, param.index))\n            {\n                return Ok(Expr::undefined());\n",
+    replace: "                && false\n            {\n                return Ok(Expr::undefined());\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^heap_pop_of_a_param with"],
+  },
+  {
     name: "mut-ref-extension-of-evidence-unseen",
     breaks: "a `&mut R`'s `DoubleEndedIterator`, of a type parameter given one, isn't of the dictionary `R` was given: `self.inner.by_ref().map(f).rfold(..)` is refused, `the DoubleEndedIterator of a R` (ADR 0937)",
     file: "src/lower/traits/dictionaries.rs",

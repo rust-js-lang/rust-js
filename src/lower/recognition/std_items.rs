@@ -242,6 +242,21 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Filter", Some("DoubleEndedIterator"), "try_rfold"),
     ("Filter", Some("Clone"), "clone"),
     ("Filter", Some("Debug"), "fmt"),
+    ("Copied", Some("Iterator"), "next"),
+    ("Copied", Some("Iterator"), "size_hint"),
+    ("Copied", Some("Iterator"), "fold"),
+    ("Copied", Some("Iterator"), "try_fold"),
+    ("Copied", Some("Iterator"), "nth"),
+    ("Copied", Some("Iterator"), "last"),
+    ("Copied", Some("Iterator"), "count"),
+    ("Copied", Some("Iterator"), "advance_by"),
+    ("Copied", Some("DoubleEndedIterator"), "next_back"),
+    ("Copied", Some("DoubleEndedIterator"), "rfold"),
+    ("Copied", Some("DoubleEndedIterator"), "try_rfold"),
+    ("Copied", Some("DoubleEndedIterator"), "advance_back_by"),
+    ("Copied", Some("ExactSizeIterator"), "len"),
+    ("Copied", Some("Clone"), "clone"),
+    ("Copied", Some("Debug"), "fmt"),
     ("FilterMap", Some("Iterator"), "next"),
     ("FilterMap", Some("Iterator"), "size_hint"),
     ("FilterMap", Some("Iterator"), "fold"),
@@ -363,6 +378,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "enumerate"),
     ("Iterator", "map"),
     ("Iterator", "filter"),
+    ("Iterator", "copied"),
     ("Iterator", "filter_map"),
     ("Iterator", "take_while"),
     ("Iterator", "skip_while"),
@@ -388,6 +404,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Enumerate", "enumerate", true),
     ("Map", "map", true),
     ("Filter", "filter", false),
+    ("Copied", "copied", true),
     ("FilterMap", "filter_map", false),
     ("TakeWhile", "take_while", false),
     ("SkipWhile", "skip_while", false),
@@ -407,7 +424,15 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
 /// struct in the build of std's structs alone, the differential build (ADR
 /// 0908), and what the recognizers make wherever the crate makes one in
 /// any other, as before it was compiled.
-const MEANING_ONLY: &[&str] = &["Filter", "FilterMap", "TakeWhile", "SkipWhile", "MapWhile", "Scan"];
+const MEANING_ONLY: &[&str] = &[
+    "Filter",
+    "FilterMap",
+    "TakeWhile",
+    "SkipWhile",
+    "MapWhile",
+    "Scan",
+    "Copied",
+];
 
 thread_local! {
     /// Whether this session's build is one of std's structs as their

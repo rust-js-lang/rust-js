@@ -29,6 +29,7 @@ import {
   $revAdvanceBy,
   $sizeHint,
   $some,
+  $someAt,
   $someMut,
   $someValue,
   $stdIterator,
@@ -347,6 +348,8 @@ const $mapClone = new WeakMap();
 const $mapDebug = new WeakMap();
 const $filterClone = new WeakMap();
 const $filterDebug = new WeakMap();
+const $copiedClone = new WeakMap();
+const $copiedDebug = new WeakMap();
 const $filterMapClone = new WeakMap();
 const $filterMapDebug = new WeakMap();
 const $takeWhileClone = new WeakMap();
@@ -1855,6 +1858,197 @@ export function filterDebug_fmt(filter, options, IDebug, dropI, dropP) {
   return options?.alternate
     ? $pretty("Filter {", [`iter: ${IDebug.fmt(filter.iter, options)}`], "}")
     : `Filter { iter: ${IDebug.fmt(filter.iter, options)} }`;
+}
+
+export function copiedIterator_next(copied, IIterator, TCopy, dropI) {
+  const option = IIterator.next(copied.it);
+  if (option != null) {
+    const value = $someValue(option);
+    const v = TCopy ? TCopy.copy(value) : value;
+    return $some(TCopy ? TCopy.copy(v) : v);
+  }
+}
+
+export function copiedIterator_sizeHint(copied, IIterator, TCopy, dropI) {
+  return $sizeHint(copied.it, IIterator);
+}
+
+export function copiedIterator_fold(copied, init, f, IIterator, TCopy, dropI, dropAcc, dropF) {
+  const iter = copied.it;
+  const f$1 = $dropping(
+    (acc, _3) => {
+      const elt = TCopy ? TCopy.copy(_3) : _3;
+      return f(acc, TCopy ? TCopy.copy(elt) : elt);
+    },
+    () => {
+      dropF?.(f);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce(f$1, init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f$1);
+  return value;
+}
+
+export function copiedIterator_tryFold(
+  copied,
+  init,
+  f,
+  IIterator,
+  TCopy,
+  RTry,
+  dropI,
+  dropB,
+  dropF,
+  dropR,
+) {
+  const f$1 = $dropping(
+    (acc, _3) => {
+      const elt = TCopy ? TCopy.copy(_3) : _3;
+      return f(acc, TCopy ? TCopy.copy(elt) : elt);
+    },
+    () => {
+      dropF?.(f);
+    },
+  );
+  const value = $tryFoldInto($given(copied.it, IIterator, true), init, (a, b) => f$1(a, b), RTry);
+  $dispose(f$1);
+  return value;
+}
+
+export function copiedIterator_nth(copied, n, IIterator, TCopy, dropI) {
+  const option = $lent($given(copied.it, IIterator, true))
+    .drop(n)
+    .take(1)
+    .map($some)
+    .toArray()[0];
+  if (option != null) {
+    const value = $someValue(option);
+    const v = TCopy ? TCopy.copy(value) : value;
+    return $some(TCopy ? TCopy.copy(v) : v);
+  }
+}
+
+export function copiedIterator_last(copied, IIterator, TCopy, dropI) {
+  const iter = copied.it;
+  const items = $given(iter, IIterator, true).toArray();
+  const option = $someAt(items, items.length - 1);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  if (option != null) {
+    const value = $someValue(option);
+    const v = TCopy ? TCopy.copy(value) : value;
+    return $some(TCopy ? TCopy.copy(v) : v);
+  }
+}
+
+export function copiedIterator_count(copied, IIterator, TCopy, dropI) {
+  const iter = copied.it;
+  const result = $count($given(iter, IIterator, true));
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  return result;
+}
+
+export function copiedIterator_advanceBy(copied, n, IIterator, TCopy, dropI) {
+  return $advanceBy($lent($given(copied.it, IIterator, true)), n);
+}
+
+export function copiedDoubleEndedIterator_nextBack(copied, IDoubleEndedIterator, TCopy, dropI) {
+  const option = IDoubleEndedIterator.next_back(copied.it);
+  if (option != null) {
+    const value = $someValue(option);
+    const v = TCopy ? TCopy.copy(value) : value;
+    return $some(TCopy ? TCopy.copy(v) : v);
+  }
+}
+
+export function copiedDoubleEndedIterator_rfold(
+  copied,
+  init,
+  f,
+  IIterator,
+  IDoubleEndedIterator,
+  TCopy,
+  dropI,
+  dropAcc,
+  dropF,
+) {
+  const it = copied.it;
+  const f$1 = $dropping(
+    (acc, _3) => {
+      const elt = TCopy ? TCopy.copy(_3) : _3;
+      return f(acc, TCopy ? TCopy.copy(elt) : elt);
+    },
+    () => {
+      dropF?.(f);
+    },
+  );
+  const value = $foldBack($given(it, IIterator, true, IDoubleEndedIterator), init, f$1);
+  $dispose(f$1);
+  return value;
+}
+
+export function copiedDoubleEndedIterator_tryRfold(
+  copied,
+  init,
+  f,
+  IIterator,
+  IDoubleEndedIterator,
+  TCopy,
+  RTry,
+  dropI,
+  dropB,
+  dropF,
+  dropR,
+) {
+  const f$1 = $dropping(
+    (acc, _3) => {
+      const elt = TCopy ? TCopy.copy(_3) : _3;
+      return f(acc, TCopy ? TCopy.copy(elt) : elt);
+    },
+    () => {
+      dropF?.(f);
+    },
+  );
+  const value = $tryFoldInto(
+    $rev($given(copied.it, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+  );
+  $dispose(f$1);
+  return value;
+}
+
+export function copiedDoubleEndedIterator_advanceBackBy(
+  copied,
+  n,
+  IIterator,
+  IDoubleEndedIterator,
+  TCopy,
+  dropI,
+) {
+  return $advanceBackBy($given(copied.it, IIterator, true, IDoubleEndedIterator), n);
+}
+
+export function copiedExactSizeIterator_len(copied, IExactSizeIterator, TCopy, dropI) {
+  return IExactSizeIterator.len(copied.it);
+}
+
+export function copiedClone_clone(copied, IClone) {
+  return $stdIterator({ it: IClone.clone(copied.it) }, copied.$steps);
+}
+
+export function copiedDebug_fmt(copied, options, IDebug) {
+  const shown = IDebug.fmt(copied.it, options);
+  return options?.alternate
+    ? $pretty("Copied {", [`it: ${shown}`], "}")
+    : `Copied { it: ${shown} }`;
 }
 
 export function filterMapIterator_next(filterMap, IIterator, dropB, dropI, dropF, dropIItem) {
@@ -5289,6 +5483,29 @@ export function iterator_filter(self, predicate, SelfIterator, dropSelf, dropP, 
   );
 }
 
+export function iterator_copied(self, SelfIterator, TCopy, dropSelf) {
+  return $stdIterator(
+    { it: self },
+    {
+      next: (iterator) => copiedIterator_next(iterator, SelfIterator, TCopy, dropSelf),
+      hint: (iterator) => copiedIterator_sizeHint(iterator, SelfIterator, TCopy, dropSelf),
+      nth: (iterator, n) => copiedIterator_nth(iterator, n, SelfIterator, TCopy, dropSelf),
+      advance: (iterator, n) =>
+        copiedIterator_advanceBy(iterator, n, SelfIterator, TCopy, dropSelf),
+      last: (iterator) => copiedIterator_last(iterator, SelfIterator, TCopy, dropSelf),
+      fold: (iterator, init, f) =>
+        copiedIterator_fold(iterator, init, f, SelfIterator, TCopy, dropSelf),
+      tryFold: (iterator, init, f, broke) =>
+        copiedIterator_tryFold(iterator, init, f, SelfIterator, TCopy, $tryOf(broke), dropSelf),
+      count: (iterator) => copiedIterator_count(iterator, SelfIterator, TCopy, dropSelf),
+      takes: ["fold", "count"],
+      close(iterator) {
+        dropSelf?.(iterator.it);
+      },
+    },
+  );
+}
+
 export function iterator_filterMap(self, f, SelfIterator, dropSelf, dropB, dropF, dropSelfItem) {
   return $stdIterator(
     { iter: self, f },
@@ -7334,6 +7551,18 @@ export function filterDebug(IDebug, dropI, dropP) {
     $drop(filter) {
       filter.return();
     },
+  }));
+}
+
+export function copiedClone(IClone) {
+  return $traitImpl($copiedClone, [IClone], () => ({
+    clone: (arg0) => copiedClone_clone(arg0, IClone),
+  }));
+}
+
+export function copiedDebug(IDebug) {
+  return $traitImpl($copiedDebug, [IDebug], () => ({
+    fmt: (arg0, arg1) => copiedDebug_fmt(arg0, arg1, IDebug),
   }));
 }
 

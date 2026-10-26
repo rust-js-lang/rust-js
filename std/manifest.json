@@ -8,7 +8,7 @@
   "library": {
     "version": 9,
     "name": "rust_js_std",
-    "crate_hash": "19a0e4576ca58c33ae9d17a524470402",
+    "crate_hash": "e45f9c3992e32c9790fb43fde2d87491",
     "items": [
       {
         "key": "608f92abc48d28dac5a4dece6c13d6e7",
@@ -579,6 +579,459 @@
             "index": 2,
             "marks": [
               "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da7692f8f24be8775",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dac095402120785d5f",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da988f827baafbc70b",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDebug",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28daaa24b237cb1d757e",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDebug_fmt",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da46bf16a04a5a69ba",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da10d05f1d32a71c78",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da6a8395e06947ea0d",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDoubleEndedIterator_rfold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dadbcf817451d2eb2f",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dac0bf5441dd22cd43",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::ExactSizeIterator>::len",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedExactSizeIterator_len",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa3c16b9a6a126433",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da28515b683050cc2c",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da509f659cdc208f96",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da1f6b1210d594a2e0",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_last",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da7bdeeff213f50d4b",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da20f74b92c8d23b6d",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da17a6b9e76153beea",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da57834c19edc2ad7d",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
             ]
           },
           {
@@ -8762,6 +9215,32 @@
         ]
       },
       {
+        "key": "608f92abc48d28da76d215f6abe4b997",
+        "rust_path": "rust_js_std::core::iter::Iterator::copied",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_copied",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da628932985af920dd",
         "rust_path": "rust_js_std::core::iter::Iterator::enumerate",
         "module": [
@@ -9703,6 +10182,7 @@
       "608f92abc48d28da3e5edc2e363066bd",
       "608f92abc48d28da43758fc72cefdaa5",
       "608f92abc48d28da496d1a9f623b4574",
+      "608f92abc48d28da52f7eabb5e1c8b40",
       "608f92abc48d28da544c1b126646f0ad",
       "608f92abc48d28da58e24fcc247e29aa",
       "608f92abc48d28da59a8f7b541c500a7",
@@ -9718,6 +10198,7 @@
       "608f92abc48d28da7243376338849ce",
       "608f92abc48d28da7574c01aae3103cb",
       "608f92abc48d28da76651f85008d245d",
+      "608f92abc48d28da7692f8f24be8775",
       "608f92abc48d28da78a5b2c09981211b",
       "608f92abc48d28da7ad7049d4f31a105",
       "608f92abc48d28da7b476087361baa1",
@@ -9728,10 +10209,13 @@
       "608f92abc48d28da8a70f1bcc13556f9",
       "608f92abc48d28da8b6cb71f181dcea3",
       "608f92abc48d28da8c052be0d8cd1126",
+      "608f92abc48d28da8d23a92be325f535",
       "608f92abc48d28da93e94dc63d84f50",
+      "608f92abc48d28da988f827baafbc70b",
       "608f92abc48d28da9a302ce30bb36f1",
       "608f92abc48d28da9c027b36f4e70558",
       "608f92abc48d28da9e25d7d0dc005ec0",
+      "608f92abc48d28daa1175dd65f7f2b3c",
       "608f92abc48d28daa79dd9d70cde8ae6",
       "608f92abc48d28daa7a89bfc86d0be9b",
       "608f92abc48d28daabb079570380ce0c",
@@ -9890,6 +10374,21 @@
         "filterDoubleEndedIterator_tryRfold",
         "filterClone_clone",
         "filterDebug_fmt",
+        "copiedIterator_next",
+        "copiedIterator_sizeHint",
+        "copiedIterator_fold",
+        "copiedIterator_tryFold",
+        "copiedIterator_nth",
+        "copiedIterator_last",
+        "copiedIterator_count",
+        "copiedIterator_advanceBy",
+        "copiedDoubleEndedIterator_nextBack",
+        "copiedDoubleEndedIterator_rfold",
+        "copiedDoubleEndedIterator_tryRfold",
+        "copiedDoubleEndedIterator_advanceBackBy",
+        "copiedExactSizeIterator_len",
+        "copiedClone_clone",
+        "copiedDebug_fmt",
         "filterMapIterator_next",
         "filterMapIterator_sizeHint",
         "filterMapIterator_fold",
@@ -10010,6 +10509,7 @@
         "iterator_enumerate",
         "iterator_map",
         "iterator_filter",
+        "iterator_copied",
         "iterator_filterMap",
         "iterator_takeWhile",
         "iterator_skipWhile",
@@ -10065,6 +10565,8 @@
         "mapDebug",
         "filterClone",
         "filterDebug",
+        "copiedClone",
+        "copiedDebug",
         "filterMapClone",
         "filterMapDebug",
         "takeWhileClone",
@@ -10092,7 +10594,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "0c2eef2304229d1b"
+      "hash": "a2deffe6d8f2455b"
     },
     {
       "file": "iter.js.map",

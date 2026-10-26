@@ -50,6 +50,8 @@ const few = [
   "scan_lazy_drops.rs",
   "flat_map_drops.rs",
   "held_enumerate.rs",
+  "copied_structs_apart.rs",
+  "heap_pop_of_a_param.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -62,7 +64,6 @@ const differs: Record<string, string> = {
   "asked_length_overflow.rs": "runs on: prints without end",
   "boxed_array_iter.rs": "refused: a std::boxed::BoxedArrayIntoIter<u8, 2> as a DoubleEndedIterator, which rust-js can't step from its back",
   "cloned_chains_and_cycles.rs": "throws: a zip cloned apart clones its part, std's `Chain` here, as its maker made it, `$clone`",
-  "copied_structs_apart.rs": "refused: the DoubleEndedIterator of a Copied<slice::Iter>",
   "escape_iterators.rs": "throws: std's struct steps a value that isn't a JS iterator",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
   "result_given_as_items.rs": "throws: std's `Chain` given `&mut held`, a `Result`, as its `U: IntoIterator`, as it is, whose dictionary takes the box generic code has of a `&mut C`",

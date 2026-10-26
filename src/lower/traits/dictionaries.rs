@@ -677,6 +677,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.tcx.is_lang_item(tr.def_id, LangItem::Copy) {
             let ty = tr.self_ty();
+            // A type parameter whose `Copy` bound takes no copy function, as
+            // each value its callers give is its own copy (ADR 0289): none,
+            // as one of a type known so is given, to std's compiled
+            // `Copied` too (ADR 0938).
+            let item = self.tcx.typeck_root_def_id(self.item);
+            if let ty::Param(param) = ty.kind()
+                && crate::lower::analysis::copies_by_callers(self.tcx, self.krate.foreign, item)
+                && !self.krate.given.copied.contains(&(item, param.index))
+            {
+                return Ok(Expr::undefined());
+            }
             if self.is_unknown(ty) {
                 return Err(self.unsupported(span, "Copy without representation evidence"));
             }

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copied-back-uncompiled",
+    breaks: "std's `Copied`'s `next_back` isn't compiled: the build of std's structs alone refuses a `copied()` stepped from its back, `the DoubleEndedIterator of a Copied<slice::Iter>` (ADR 0938)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Copied\", Some(\"DoubleEndedIterator\"), \"next_back\"),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^copied_structs_apart with"],
+  },
+  {
     name: "meaning-only-made-everywhere",
     breaks: "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",
     file: "src/lower/recognition/std_items.rs",
