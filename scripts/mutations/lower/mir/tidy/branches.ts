@@ -4,7 +4,7 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "flag-given-first",
-    breaks: "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0928)",
+    breaks: "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0929)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            && yes != no\n",
     replace: "            && yes == no\n",
