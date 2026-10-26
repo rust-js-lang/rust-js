@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     "name": "local-add-discarded-helper",
     "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
     "file": "src/lower/std_types/map.rs",
-    "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
+    "find": "                    (\"$add\", 2) => Some(\"add\"),\n",
     "replace": "",
     "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
   },
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     "name": "local-insert-discarded-helper",
     "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
     "file": "src/lower/std_types/map.rs",
-    "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
+    "find": "                    (\"$insert\", 3) => Some(\"set\"),\n",
     "replace": "",
     "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
   },
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     name: "discarded-remove-helper",
     breaks: "a map's `remove` nothing reads is `$remove(m, k)`, not `m.delete(k)`",
     file: "src/lower/std_types/map.rs",
-    find: "                            (\"$remove\", 2) => Some(\"delete\"),\n",
+    find: "                    (\"$remove\", 2) => Some(\"delete\"),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
     snapshots: true,
@@ -521,5 +521,13 @@ export const mutations: Mutation[] = [
     find: "                self.room_for((None, count), bucket, span, out);\n",
     replace: "                let _ = (count, bucket);\n",
     tests: ["test/bound-maps.test.ts", "-t", "indexmap"],
+  },
+  {
+    name: "discarded-calls-of-functions-alone",
+    breaks: "a set's insert nothing reads, in a closure `js::on_load!` sets, is `$add(set, x)` (ADR 0951)",
+    file: "src/lower/std_types/map.rs",
+    find: "    js::each_item_block_mut(items, &mut |stmts| {\n",
+    replace: "    js::each_item_block_mut(&mut items[..0], &mut |stmts| {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "closure set at load"],
   },
 ];

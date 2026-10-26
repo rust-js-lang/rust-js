@@ -984,35 +984,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// gives, the old value or whether it was new (ADR 0059); and an iterator
 /// of an array made here nothing steps, the array's making alone
 /// (`iterators::discarded_iterator`, ADR 0881). Of the module's JS once
-/// it's lowered, a closure inlined into it too.
+/// it's lowered, a closure inlined into it too, and its code that runs
+/// where it loads, a closure `js::on_load!` sets (ADR 0951).
 pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
-    for item in items.iter_mut() {
-        for function in item.functions_mut() {
-            js::each_block_mut(&mut function.body, &mut |stmts| {
-                for stmt in stmts.iter_mut() {
-                    if let StmtKind::Expr(e) = &mut stmt.kind {
-                        crate::lower::iterators::discarded_iterator(e);
-                    }
-                    if let StmtKind::Expr(e) = &mut stmt.kind
-                        && let js::ExprKind::Call(callee, args) = &mut e.kind
-                        && let js::ExprKind::Var(helper) = &callee.kind
-                        && let Some(method) = match (helper.as_str(), args.len()) {
-                            ("$add", 2) => Some("add"),
-                            ("$insert", 3) => Some("set"),
-                            ("$remove", 2) => Some("delete"),
-                            _ => None,
-                        }
-                    {
-                        let object = args.remove(0);
-                        *e = Expr {
-                            span: e.span,
-                            ..Expr::call(Expr::member(object, method), std::mem::take(args))
-                        };
-                    }
+    js::each_item_block_mut(items, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Expr(e) = &mut stmt.kind {
+                crate::lower::iterators::discarded_iterator(e);
+            }
+            if let StmtKind::Expr(e) = &mut stmt.kind
+                && let js::ExprKind::Call(callee, args) = &mut e.kind
+                && let js::ExprKind::Var(helper) = &callee.kind
+                && let Some(method) = match (helper.as_str(), args.len()) {
+                    ("$add", 2) => Some("add"),
+                    ("$insert", 3) => Some("set"),
+                    ("$remove", 2) => Some("delete"),
+                    _ => None,
                 }
-            });
+            {
+                let object = args.remove(0);
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::call(Expr::member(object, method), std::mem::take(args))
+                };
+            }
         }
-    }
+    });
 }
 
 /// `$orInsert(m, k, 0); const h = $mutGet(m, k); h.value = f(h.value);`,

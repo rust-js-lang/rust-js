@@ -975,3 +975,46 @@ pub fn has_value(data: &Map<str, Option<&'static Unknown>>, key: &str) -> bool {
   expect([lib.cached(data, "one"), lib.cached(data, "null") ?? null, lib.cached(data, "undefined") ?? null, lib.cached(data, "none") ?? null]).toEqual([one, null, null, null]);
   expect(["one", "null", "undefined", "none"].map((key) => lib.hasValue(data, key))).toEqual([true, false, false, false]);
 });
+
+// ADR 0951: React's ReactStrictModeWarnings, `uniqueNames.add(..)` in a
+// closure `js::on_load!` sets: a set's `insert` whose answer nothing reads
+// is JS's own `add`, in code that runs where the module loads too.
+test("a discarded insert in a closure set at load is the set's add", async () => {
+  const dir = fixture("on-load-discarded-insert");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+use std::collections::HashSet;
+
+pub struct Warnings {
+    pub flush: Cell<fn(&[u32]) -> usize>,
+}
+
+thread_local! {
+    pub static WARNINGS: Warnings = Warnings { flush: Cell::new(|_| 0) };
+}
+
+js::on_load! {
+    WARNINGS.with(|warnings| {
+        warnings.flush.set(|ids| {
+            let mut unique_names = HashSet::new();
+            for id in ids {
+                unique_names.insert(id % 3);
+            }
+            unique_names.len()
+        });
+    });
+}
+
+pub fn flush(ids: &[u32]) -> usize {
+    WARNINGS.with(|warnings| (warnings.flush.get())(ids))
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    uniqueNames.add(id % 3);\n");
+  expect(js).not.toContain("$add");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.flush([]), lib.flush([1, 4, 2, 3])]).toEqual([0, 3]);
+});
