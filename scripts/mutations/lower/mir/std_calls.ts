@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "wrapping-assigned-to-its-ref",
+    breaks: "a `Wrapping`'s `op=` through a `&mut` a variable holds assigns the variable, not what it points at: a caller's never changes, and MIR's borrow is a `const` assigned (#309)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            (place, reference)\n",
+    replace: "                            (place, false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^wrapping_assigned_through_a_ref.rs$"],
+  },
+  {
     name: "mir-comb-subject-dropped",
     breaks: "an `Option`'s combinator from MIR is given its argument where its subject goes",
     file: "src/lower/mir/std_calls.rs",

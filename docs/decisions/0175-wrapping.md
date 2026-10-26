@@ -44,3 +44,21 @@ number's, wrapped as release Rust wraps them (ADR 0011):**
   `==` through generic code's bounds, with native Rust.
 - **It's the JS a person writes:** the number's arithmetic, wrapped, in the
   one-item array every tuple struct is.
+
+## Amendment: an `op=` through a `&mut` writes what it points at (#309)
+
+`w += x` assigned the `Wrapping`'s place, `w = [(w[0] + x[0]) >>> 0]`, and
+took a variable holding a `&mut` to it for the place. A parameter's, `fn
+bump(r: &mut Wrapping<u32>) { *r += Wrapping(1); }`, was `r = [..]`, so the
+caller's never changed; and MIR's borrow taken before an operand that's a
+call, `b0 += b1 << 4`'s, `const _18 = b0; _18 = [..]`, which tidy made an
+assignment of a `const`: TheAlgorithms/rust's TEA cipher threw as its
+module loaded. **Through a variable that's a `&mut`, it's written as any
+`*r = v` is**, `$assign(r, [..])`, the array the `Wrapping` is changed in
+place; of the place itself, as before. Held by the corpus case
+`wrapping_assigned_through_a_ref` and the mutation
+`wrapping-assigned-to-its-ref`.
+
+MIR's borrow before a call still reads `$assign(b0, [..])` where the same
+`op=` without one reads `b0 = [..]`: #310.
+

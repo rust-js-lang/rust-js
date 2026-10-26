@@ -193,7 +193,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0172 Bytes to text, as Rust validates UTF-8](0172-utf8-decoding.md)
 - [0173 A path is its text](0173-paths-as-text.md)
 - [0174 `{:x}` and `{:p}` of a generic `T`: its dictionary's](0174-generic-fmt-traits.md)
-- [0175 `std::num::Wrapping` is a number in a `[x]`, its arithmetic wrapped](0175-wrapping.md)
+- [0175 `std::num::Wrapping` is a number in a `[x]`, its arithmetic wrapped](0175-wrapping.md) *(amended: an `op=` through a `&mut` writes what it points at)*
 - [0176 A generic impl's constant of its parameters is its dictionary's getter](0176-generic-impl-consts.md)
 - [0177 A `NonZero` integer is its number](0177-nonzero.md)
 - [0178 An impl's dictionary has its associated types' drops](0178-associated-type-drops.md)

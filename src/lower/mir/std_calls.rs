@@ -1353,13 +1353,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.non_zero_new(n, arg_tys[0], span, out)?
                 }))
             }),
-            // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`.
+            // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`: assigned
+            // to the place itself, or through a `&mut` to it a variable holds,
+            // a parameter's or MIR's borrow taken before an operand that's a
+            // call, `w += x << 4`'s, as any `*r = v` is written (`assign`).
             Std::WrappingOp(op, assign) => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
-                    let target = match (assign, values.next().expect("the `Wrapping`")) {
-                        (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => place,
+                    let (target, through) = match (assign, values.next().expect("the `Wrapping`")) {
+                        (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => {
+                            let reference = matches!(&place.kind, js::ExprKind::Var(name)
+                                if (state.locals.names.iter_enumerated())
+                                    .any(|(l, n)| n == name && state.body.local_decls[l].ty.is_ref()));
+                            if reference && !this.written_in_place(arg_tys[0].peel_refs()) {
+                                return Err(this.unsupported(span, "assigning a whole value through a `&mut`"));
+                            }
+                            (place, reference)
+                        }
                         (true, _) => return Err(this.unsupported(span, "this assignment, from its MIR")),
-                        (false, value) => this.value_expr(value, span)?,
+                        (false, value) => (this.value_expr(value, span)?, false),
                     };
                     let target = match op.is_ok() && !target.reads_same() {
                         true => {
@@ -1370,7 +1381,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let rhs = values.next().map(|v| this.value_expr(v, span)).transpose()?;
                     this.flush(state, out)?;
-                    this.wrapping_values(op, assign, arg_tys[0].peel_refs(), target, rhs, span, out)?
+                    let value = this.wrapping_value(op, arg_tys[0].peel_refs(), target.clone(), rhs, span)?;
+                    if !assign {
+                        value
+                    } else {
+                        let js_span = this.js_span(span);
+                        out.push(match through {
+                            true => StmtKind::Expr(Expr::call_helper("$assign", vec![target, value])).at(js_span),
+                            false => StmtKind::Assign(target, value).at(js_span),
+                        });
+                        Expr::undefined()
+                    }
                 }))
             }),
             // rustc's name for the type; of a type parameter, the one its

@@ -327,35 +327,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// A `Wrapping`'s operator, of its type, its value, or its place where
-    /// it's assigned, `assign`, read the same each time, and the operand.
-    #[allow(clippy::too_many_arguments)]
-    pub(in crate::lower) fn wrapping_values(
+    /// A `Wrapping`'s operator's value, `[a[0] op rhs]`, of its type, read
+    /// the same each time, and the operand.
+    pub(in crate::lower) fn wrapping_value(
         &mut self,
         op: Result<BinOp, UnOp>,
-        assign: bool,
         wrapping: Ty<'tcx>,
         target: Expr,
         rhs: Option<Expr>,
         span: Span,
-        out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
         self.num(inner, span)?;
-        let op = match op {
-            Err(op) => {
-                let result = self.unary(op, Expr::index(target, Expr::int(0)), inner, span)?;
-                return Ok(Expr::array(vec![result]));
+        let result = match op {
+            Err(op) => self.unary(op, Expr::index(target, Expr::int(0)), inner, span)?,
+            Ok(op) => {
+                let rhs = rhs.expect("a binary operator's operand");
+                self.wrapping_result(op, Expr::index(target, Expr::int(0)), rhs, inner, span)?
             }
-            Ok(op) => op,
         };
-        let rhs = rhs.expect("a binary operator's operand");
-        let result = self.wrapping_result(op, Expr::index(target.clone(), Expr::int(0)), rhs, inner, span)?;
-        if !assign {
-            return Ok(Expr::array(vec![result]));
-        }
-        out.push(StmtKind::Assign(target, Expr::array(vec![result])).at(self.js_span(span)));
-        Ok(Expr::undefined())
+        Ok(Expr::array(vec![result]))
     }
 
     /// `a op rhs` of a `Wrapping`'s number `a`, its `inner`: the result's
