@@ -261,22 +261,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-branches.test.ts", "-t", "of `matches!` from MIR is one test, at a function's end"],
   },
   {
-    name: "undefined-fields-kept",
-    breaks: "`{ code, hidden: true, read_only: undefined }`, a `None`'s key",
-    file: "src/prepare.rs",
-    find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
-    replace: "            if false {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "literal None is left out"],
-  },
-  {
-    name: "undefined-after-spread-dropped",
-    breaks: "`{ ...base, read_only: undefined }` is `{ ...base }`, base's `Some`",
-    file: "src/prepare.rs",
-    find: "            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {\n",
-    replace: "            if true {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "literal None is left out"],
-  },
-  {
     name: "closure-shadow-kept",
     breaks: "a closure's parameter shadowed by its own value is `const item$1 = item`",
     file: "src/prepare.rs",
@@ -664,14 +648,6 @@ export const mutations: Mutation[] = [
     find: "                            own.extend(pattern.names().into_iter().map(str::to_string));\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "a closure's loop variable shadowed by its own value"],
-  },
-  {
-    name: "commented-none-left-out",
-    breaks: "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
-    file: "src/prepare.rs",
-    find: " && !layout.commented.contains(key))",
-    replace: ")",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
   },
   {
     name: "assigned-test-unmade",

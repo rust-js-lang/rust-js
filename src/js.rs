@@ -668,6 +668,11 @@ pub struct ObjectLayout {
     /// // why`, whose `undefined` is kept, `v: undefined, // why`: the
     /// comment's place (ADR 0280, amended).
     pub commented: Vec<String>,
+    /// The keys a comment on lines of their own is before: whose `undefined`
+    /// is left out as any is, the comment before the next key kept, and
+    /// kept only where no key after it is, the comment's place then (ADR
+    /// 0280, amended again).
+    pub led: Vec<String>,
 }
 
 /// A piece of a template as its format string is written, `concat!`'s

@@ -1,7 +1,8 @@
 # 0280. A field that's `undefined` is no key
 
-Status: Accepted. Amended: a `None` field a comment is written on, or that
-one before a field heads, keeps its key, `undefined`, the comment's place.
+Status: Accepted. Amended: a `None` field a comment is written after on
+its line keeps its key, `undefined`, the comment's place; a comment before a
+field changes no key, but where no key follows it.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -89,6 +90,9 @@ and `commented-field-leading-unread` (`lower/aggregates.ts`).
 
 ## Amendment: a comment before a field speaks of the `None`s after it
 
+Superseded the same day by the amendment below: it wrote keys upstream
+leaves out.
+
 React's `CacheContext` heads two fields with one comment:
 
 ```js
@@ -121,3 +125,49 @@ alone, as before.
 Held by the same test, which adds a run ended by another field and one
 ended by a blank line, and the mutations `commented-run-unread`,
 `commented-run-past-a-value` and `commented-run-past-a-blank-line`.
+
+## Amendment: a comment changes which keys are written only where it has no other place (2026-10-26)
+
+The amendment above wrote keys React's committed files don't have.
+createContext's object, `// These are circular` before `Provider` and
+`Consumer`, gained `_currentRenderer: undefined, _currentRenderer2:
+undefined`, which upstream sets only in DEV; ReactElement's, `// Record
+the component responsible for creating this element.` before `_owner`,
+gained `_store: undefined`, which upstream defines only in DEV, by
+`Object.defineProperty`. Each is a key `Object.keys` sees, in production
+too: a shape at the JS boundary that changed. And before it, a comment on
+lines of their own before a `None` kept that one key and not its
+sibling's, `_currentValue` and not `_currentValue2`, so a comment decided
+what the object is.
+
+**A comment changes which `None` keys are written only where it has no
+other place.** A comment after a field's value on its line, or in it, is
+that field's alone: it keeps its key, `v: undefined, // value ..`, as
+before, as React's createCacheNode has it. A comment on lines of their own
+before a field heads what follows: the keys are what they are without it,
+and it's before the next key the object has, `// We'll initialize these at
+the root.` before `_threadCount`, `_currentValue` and `_currentValue2` left
+out alike. Only where no key follows does the `None` it's before keep its
+key, the comment's place then, as it would otherwise be outside the
+object.
+
+- **Which comments are where is the literal's** (`aggregates.rs`,
+  `commented_fields`): the keys a comment is on, `ObjectLayout::commented`,
+  and the keys one is before, `ObjectLayout::led`; **which keys are left
+  out is preparation's** (`src/prepare/undefined_keys.rs`), which alone
+  sees each value as it ends, and keeps a led `None` only where no key
+  after it is kept.
+- **What this undoes**: the amendment above, and the first amendment's
+  `None` a comment is before keeping its key, which it said put the
+  comment "before the next field"; it does, and now that's the rule, as the
+  comment heads what follows.
+- Case A still: what reads a key reads `undefined` either way; `in` and
+  `Object.keys` see what upstream's do.
+
+Held by `test/lowering-comment-fields.test.ts`, "a comment before a field
+changes no key but where it has no other place", of createContext's,
+ReactElement's and the cache context's shapes and a comment before a last
+`None`, run in Bun, and "a None field a comment is written on keeps its
+key and its comment"; and the mutations `commented-field-leading-unread`,
+`commented-field-leading-as-on` (`lower/aggregates.ts`),
+`led-none-always-kept` and `led-none-last-left-out` (`prepare/undefined_keys.ts`).

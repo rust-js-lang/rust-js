@@ -757,12 +757,11 @@ rust-js writes of no code of its own or of one line, a derive's
 functions, is set apart as a person sets it ([ADR
 0865](../../decisions/0865-a-blank-line-is-where-the-rust-has-one.md)).
 
-A comment written on a struct literal's field is the field's, after its
-value on its line or on lines of their own before it, and a field that's
-`None`, which JS leaves out, keeps its key for it, `v: undefined, // why`;
-one on lines of their own speaks of the `None`s written right after its
-field too, up to another field or a blank line, `// We'll initialize these
-at the root.` of two, and each keeps its key
+A comment after a struct literal's field's value on its line is the
+field's, and a field that's `None`, which JS leaves out, keeps its key for
+it, `v: undefined, // why`. One on lines of their own before a field heads
+what follows: it changes no key, and is before the next key the object
+has, but where none follows, where the `None` it's before keeps its key
 ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 One before an `unsafe` block is its code's
 ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):

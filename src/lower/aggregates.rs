@@ -42,7 +42,7 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
     let after = code.find('{').map_or("", |brace| &code[brace + 1..]);
     js::ObjectLayout {
         lines: after[..after.len() - after.trim_start().len()].contains('\n'),
-        commented: Vec::new(),
+        ..Default::default()
     }
 }
 
@@ -126,21 +126,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The fields of the struct literal made at `span`, by their declared
     /// index, a comment is written on: after its value on its line, `v:
-    /// Cell::new(None), // why`, in it, or on lines of their own right
-    /// before it. A `None`'s keeps its key there, the comment's place (ADR
-    /// 0280, amended). One on lines of their own speaks of the `None`s
-    /// written right after its field too, `written_none` of their declared
-    /// index, as `// We'll initialize these at the root.` does of
-    /// `current_value` and `current_value2`: each keeps its key with it, up
-    /// to another field, a blank line or another comment (ADR 0280,
-    /// amended again).
+    /// Cell::new(None), // why`, or in it, whose `None` keeps its key, the
+    /// comment's only place (ADR 0280, amended); and those a comment on lines
+    /// of their own is right before, which heads what follows: a `None`'s
+    /// key is left out, the comment before the next key, but where none is
+    /// (ADR 0280, amended again).
     fn commented_fields(
         &self,
         adt: &ty::AdtDef<'tcx>,
         variant_index: VariantIdx,
         span: Span,
-        written_none: &dyn Fn(usize) -> bool,
-    ) -> Vec<usize> {
+    ) -> (Vec<usize>, Vec<usize>) {
         use rustc_lexer::TokenKind;
         let Some(made) = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Adt(made)
@@ -150,13 +146,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         }) else {
-            return Vec::new();
+            return Default::default();
         };
         if adt.variant(variant_index).ctor_kind().is_some() || span.from_expansion() {
-            return Vec::new();
+            return Default::default();
         }
         let Ok(text) = self.tcx.sess.source_map().span_to_snippet(span) else {
-            return Vec::new();
+            return Default::default();
         };
         let at = |s: Span| (s.lo().0 - span.lo().0) as usize..(s.hi().0 - span.lo().0) as usize;
         let mut fields: Vec<_> = (made.fields.iter())
@@ -174,42 +170,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .and_then(|(_, first)| text[..first.start].rfind('{'))
             .map_or(0, |brace| brace + 1);
         let close = text.rfind('}').unwrap_or(text.len());
-        // What's written between a field's value and the one before.
-        let between = |k: usize| {
-            let before = if k == 0 { open } else { fields[k - 1].1.end };
-            text.get(before..fields[k].1.start)
+        let index = |k: usize| fields[k].0.as_usize();
+        // From its value to its line's end.
+        let after = |k: usize| {
+            let value = &fields[k].1;
+            let next = fields.get(k + 1).map_or(close, |(_, next)| next.start);
+            let end = text
+                .get(value.end..next)
+                .map(|tail| tail.find('\n').map_or(next, |n| value.end + n));
+            end.and_then(|end| text.get(value.start..end)).is_some_and(commented)
         };
-        // Whether a comment on lines of their own is right before it.
-        let headed =
-            |k: usize| (between(k).and_then(|lead| lead.find('\n').map(|n| &lead[n..]))).is_some_and(commented);
-        let mut at: Vec<usize> = (0..fields.len())
-            .filter(|&k| {
-                let value = &fields[k].1;
-                // From the line after what's before it, to its line's end.
-                let before = if k == 0 { open } else { fields[k - 1].1.end };
-                let next = fields.get(k + 1).map_or(close, |(_, next)| next.start);
-                let (Some(lead), Some(tail)) = (text.get(before..value.start), text.get(value.end..next)) else {
-                    return false;
-                };
-                let start = lead.find('\n').map_or(value.start, |n| before + n);
-                let end = tail.find('\n').map_or(next, |n| value.end + n);
-                text.get(start..end).is_some_and(commented)
-            })
-            .collect();
-        // The `None`s right after a field a comment heads, each on the line
-        // after the one before it, with no comment between.
-        for k in (0..fields.len()).filter(|&k| headed(k)) {
-            for (j, (name, _)) in fields.iter().enumerate().skip(k + 1) {
-                let next_line = between(j).is_some_and(|gap| !commented(gap) && gap.matches('\n').count() <= 1);
-                if !next_line || !written_none(name.as_usize()) {
-                    break;
-                }
-                at.push(j);
-            }
-        }
-        at.sort_unstable();
-        at.dedup();
-        at.into_iter().map(|k| fields[k].0.as_usize()).collect()
+        // From the line after what's before it to its value.
+        let before = |k: usize| {
+            let from = if k == 0 { open } else { fields[k - 1].1.end };
+            let lead = text.get(from..fields[k].1.start);
+            lead.and_then(|lead| lead.find('\n').map(|n| &lead[n..]))
+                .is_some_and(commented)
+        };
+        let on = (0..fields.len()).filter(|&k| after(k)).map(index).collect();
+        let led = (0..fields.len()).filter(|&k| before(k)).map(index).collect();
+        (on, led)
     }
 
     /// How the struct or variant literal made at `span` is written, which
@@ -361,15 +341,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The keys a comment is written on, whose `undefined`, a `None`'s,
         // is kept: the comment's place (ADR 0280, amended).
-        let mut commented = Vec::new();
+        let (mut commented, mut led) = (Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
-                let written_none = |i: usize| given.get(i) == Some(&Given::WrittenNone);
-                let at = self.commented_fields(&adt_def, variant_index, span, &written_none);
-                commented = (at.into_iter())
-                    .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
-                    .collect();
+                let (on, before) = self.commented_fields(&adt_def, variant_index, span);
+                let keys = |at: Vec<usize>| -> Vec<String> {
+                    (at.into_iter())
+                        .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
+                        .collect()
+                };
+                commented = keys(on);
+                led = keys(before);
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
                     .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
                     .collect();
@@ -388,6 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
             *layout = js::ObjectLayout {
                 commented,
+                led,
                 ..self.object_layout(&adt_def, variant_index, span)
             };
         }

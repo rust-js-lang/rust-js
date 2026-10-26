@@ -1,6 +1,9 @@
-// Where the compiler writes a comment on a struct literal's field: a
-// `None`'s key kept for it, `undefined`, the comment's place (ADR 0280,
-// amended). Each test is a program of its own, compiled and run.
+// Where the compiler writes a comment on a struct literal's field, and
+// which `None` keys it keeps for one: a comment after a value on its line
+// keeps it, `undefined`, its only place (ADR 0280, amended); one on lines
+// of their own before a field is before the next key, which keys there are
+// as without it (amended again). Each test is a program of its own,
+// compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -21,8 +24,8 @@ async function compiled(name: string, rust: string): Promise<{ js: string; lib: 
 
 // React's createCacheNode: `v: undefined, // value, either the cached
 // result or an error, depending on s`. A `None` field is no key (ADR 0280),
-// but one a comment is written on keeps it, `undefined`, the comment's
-// place, after it or before it (amended); one without stays out.
+// but one a comment is written after on its line keeps it, `undefined`, the
+// comment's place (amended); one without stays out.
 test("a None field a comment is written on keeps its key and its comment", async () => {
   const { js, lib } = await compiled("commented-none-field", `use std::cell::Cell;
 
@@ -42,66 +45,108 @@ pub fn create_cache_node() -> CacheNode {
         p: Cell::new(None),
     }
 }
-
-pub fn led() -> CacheNode {
-    CacheNode {
-        s: Cell::new(0),
-        // a value, before it
-        v: Cell::new(None),
-        o: Cell::new(None),
-        p: Cell::new(None),
-    }
-}
-
-pub fn ended() -> CacheNode {
-    CacheNode {
-        // these at the root
-        v: Cell::new(None),
-        s: Cell::new(0),
-        p: Cell::new(None),
-        o: Cell::new(None),
-    }
-}
-
-pub fn parted() -> CacheNode {
-    CacheNode {
-        s: Cell::new(0),
-        // these at the root
-        v: Cell::new(None),
-
-        p: Cell::new(None),
-        o: Cell::new(None),
-    }
-}
 `);
   expect(js).toContain(`  return {
     s: 0, // status
     v: undefined, // value, either the cached result or an error, depending on s
     o: null, // object cache
   };`);
-  // A comment before a field speaks of the \`None\`s written right after
-  // it too, as React's CacheContext's \`// We'll initialize these at the
-  // root.\` does of \`_currentValue\` and \`_currentValue2\` (amended again),
-  // up to another field or a blank line.
+  expect(Object.keys(lib.createCacheNode() as object)).toEqual(["s", "v", "o"]);
+});
+
+// A comment on lines of their own before a field heads what follows: it
+// changes no key (amended again). React's createContext, `// These are
+// circular` before `Provider` and `Consumer`, leaves out its DEV-only
+// `_currentRenderer`s, as upstream sets them only in DEV; ReactElement's
+// `// Record the component responsible for creating this element.` before
+// `_owner` leaves out `_store`; and ReactFiberCacheComponent's `// We'll
+// initialize these at the root.` before two `None`s writes them alike,
+// the comment before `_threadCount`. Where no key follows, the `None` it's
+// before keeps its key, the comment's place.
+test("a comment before a field changes no key but where it has no other place", async () => {
+  const { js, lib } = await compiled("comment-before-fields", `use std::cell::Cell;
+
+pub struct Context {
+    #[cfg_attr(rust_js, rust_js::name = "_currentValue")]
+    pub current_value: Cell<Option<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "_currentValue2")]
+    pub current_value2: Cell<Option<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "_threadCount")]
+    pub thread_count: Cell<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "Provider")]
+    pub provider: Cell<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "Consumer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub consumer: Cell<Option<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "_currentRenderer")]
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub current_renderer: Cell<Option<u32>>,
+    #[cfg_attr(rust_js, rust_js::name = "_currentRenderer2")]
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub current_renderer2: Cell<Option<u32>>,
+}
+
+pub fn create_context() -> Context {
+    Context {
+        // We'll initialize these at the root.
+        current_value: Cell::new(None),
+        current_value2: Cell::new(None),
+        thread_count: Cell::new(0.0),
+        // These are circular
+        provider: Cell::new(1),
+        consumer: Cell::new(None),
+        current_renderer: Cell::new(None),
+        current_renderer2: Cell::new(None),
+    }
+}
+
+pub struct Element {
+    pub props: u32,
+    #[cfg_attr(rust_js, rust_js::name = "_owner")]
+    pub owner: u32,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#ref: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::name = "_store")]
+    pub store: Cell<Option<u32>>, // 0: not validated, 1: validated, 2: force fail
+}
+
+pub fn element(props: u32, owner: u32) -> Element {
+    Element {
+        props,
+        // Record the component responsible for creating this element.
+        owner,
+        r#ref: None,
+        store: Cell::new(None),
+    }
+}
+
+pub fn last(props: u32) -> Element {
+    Element {
+        props,
+        owner: 0,
+        r#ref: None,
+        // Set where it's validated.
+        store: Cell::new(None),
+    }
+}
+`);
   expect(js).toContain(`  return {
-    s: 0,
-    // a value, before it
-    v: undefined,
-    o: null,
-    p: undefined,
+    // We'll initialize these at the root.
+    _threadCount: 0,
+    // These are circular
+    Provider: 1,
+    Consumer: null,
   };`);
   expect(js).toContain(`  return {
-    // these at the root
-    v: undefined,
-    s: 0,
-    o: null,
+    props,
+    // Record the component responsible for creating this element.
+    _owner: owner,
+    ref: null,
   };`);
-  expect(js).toContain(`  return {
-    s: 0,
-    // these at the root
-    v: undefined,
-    o: null,
+  expect(js).toContain(`    ref: null,
+    // Set where it's validated.
+    _store: undefined,
   };`);
-  const keys = [lib.createCacheNode(), lib.led(), lib.ended(), lib.parted()].map((made) => Object.keys(made as object));
-  expect(keys).toEqual([["s", "v", "o"], ["s", "v", "o", "p"], ["v", "s", "o"], ["s", "v", "o"]]);
+  const keys = [lib.createContext(), lib.element(1 as never, 2 as never), lib.last(1 as never)].map((made) => Object.keys(made as object));
+  expect(keys).toEqual([["_threadCount", "Provider", "Consumer"], ["props", "_owner", "ref"], ["props", "_owner", "ref", "_store"]]);
 });

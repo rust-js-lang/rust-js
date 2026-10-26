@@ -12,6 +12,7 @@ mod catches;
 mod initializers;
 mod reclaim;
 mod truths;
+mod undefined_keys;
 
 /// A closure's parameter given its name back, preparation's, which a body
 /// lowered from its MIR asks before it's linked, as an import's alias is
@@ -1454,16 +1455,8 @@ fn expr(e: &mut Expr) {
         }
         ExprKind::Array(items) => items.iter_mut().for_each(expr),
         ExprKind::Object(props, layout) => {
-            // A field that's `undefined`, a `None` say, is no key, `{ code }`,
-            // as JS leaves it out: what reads it reads `undefined` either way
-            // (ADR 0280). Not after a spread, whose field it would then be,
-            // nor one a comment is written on, the comment's place (amended).
-            if !props.iter().any(|p| matches!(p, Prop::Spread(_))) {
-                props.retain(|p| {
-                    !matches!(p, Prop::Field(key, value)
-                        if matches!(value.kind, ExprKind::Undefined) && !layout.commented.contains(key))
-                });
-            }
+            // A field that's `undefined` is no key, `{ code }` (ADR 0280).
+            undefined_keys::left_out(props, layout);
             for prop in props.iter_mut() {
                 let (Prop::Field(_, value)
                 | Prop::Getter(_, value)
