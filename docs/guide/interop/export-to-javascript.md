@@ -234,6 +234,9 @@ console.log(await fetchCount()); // 1
   nothing, so `createContext(defaultValue)` is how JS calls
   `create_context<T: Copy>`, a library's or a program's alike; a Rust
   caller gives one only for a value that needs it ([ADR 0289](../../decisions/0289-copy-bounds.md)).
+  A library's takes one only where its own crate's calls give one, so its
+  JS is its program's; another crate whose call needs one compiles its
+  own of the function ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
 
 ## Optional parameters
 

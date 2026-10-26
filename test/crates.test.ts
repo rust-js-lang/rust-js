@@ -194,7 +194,7 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   const out = chain(pairs, "rc_uncounted", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   expect(dep).toContain("  context.provider = context;\n  context.consumer = {\n    context,\n  };\n  return context;\n");
-  expect(dep).toContain("export function sharedCell(value, TCopy) {\n  return { value: TCopy ? TCopy.copy(value) : value };\n}");
+  expect(dep).toContain("export function sharedCell(value) {\n  return { value };\n}");
   expect(dep).not.toContain("strong");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("strong");
   expect(contract(out).counted_rcs).toBeUndefined();
@@ -212,7 +212,7 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
 test("a library counts each type's Rcs apart, and its consumer as it does", () => {
   const out = chain(pairs, "rc_per_type", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n  const context = {\n    value: TCopy ? TCopy.copy(defaultValue) : defaultValue,\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
+  expect(dep).toContain("export function createContext(defaultValue) {\n  const context = {\n    value: defaultValue,\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
   expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
   expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
@@ -227,17 +227,21 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
     .toThrow("this crate counts an `Rc<std::string::String>`");
 }, 300_000);
 
-// ADR 0289, amended: a library's generic function of a `T: Copy` takes a
-// copy only from a caller whose value may not be its own copy. JS, whose
-// values are, calls it as its declarations say, as React's JS calls
-// `createContext(defaultValue)`, and gets what the program's would give;
-// its consumer gives a `Point` it changes a copy, and a number none.
+// ADRs 0289, amended, 0914: a library's generic function of a `T: Copy`
+// takes the copies its own crate's calls give it, none here: its JS is
+// the program's, which JS calls as its declarations say, as React's JS
+// calls `createContext(defaultValue)`. Its consumer, which gives it a
+// `Point` it changes, compiles its own from the library's MIR, given a
+// copy where it gives one, and none of a number, its own copy.
 test("a library's Copy bound takes a copy only where one is given, and JS calls it as declared", () => {
   const out = chain(pairs, "copy_given", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("export function createContext(defaultValue, TCopy) {\n");
-  expect(dep).toContain("    currentValue: TCopy ? TCopy.copy(defaultValue) : defaultValue,\n");
+  expect(dep).toContain("export function createContext(defaultValue) {\n");
+  expect(dep).toContain("    currentValue: defaultValue,\n");
+  expect(dep).not.toContain("TCopy");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("\nfunction createContext(defaultValue, TCopy) {\n");
+  expect(app).not.toMatch(/import \{[^}]*createContext/);
   expect(app).toContain("createContext({ x: 1 }, { copy: (value) => ({ ...value }) })");
   expect(app).toContain("createContext(7)");
   expect(app).toContain("twice(8)");
@@ -249,6 +253,75 @@ console.log(context.currentValue === object, context.currentValue2 === object);
 const [a, b] = dep.twice(object);
 console.log(a === object, b === object, dep.first([object]) === object, dep.first([]));`;
   expect(run([node ?? "node", "--input-type=module", "--eval", called])).toBe("true true\ntrue true true undefined\n");
+}, 300_000);
+
+// ADR 0914: a library's generic function takes the copies and drops its own
+// crate's calls give it, as a program's does, so a crate's JS is the same
+// built alone or as another's dependency: React's `createContext(
+// defaultValue)` and `useState(initialState)`, which its JS calls as
+// declared. Its consumer, which gives a `Point` it changes and a value with
+// a destructor a panic drops, compiles its own of each from the library's
+// MIR, and of the private function one calls, beside its own code: not
+// exported, its JS against native Rust's.
+test("a library's generic function is its program's, alone or a dependency, and its consumer compiles what it gives more of", () => {
+  const out = chain(pairs, "program_form", ["dep", "app"]);
+  const alone = fixture("program-form-alone");
+  run([compiler, join(pairs, "program_form", "dep.rs"), "-o", join(alone, "lib.js"), "--", "--crate-name", "dep", "--crate-type=lib"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toBe(readFileSync(join(alone, "lib.js"), "utf8"));
+  expect(dep).toContain("export function createContext(defaultValue) {\n  return {\n    currentValue: defaultValue,\n");
+  expect(dep).toContain("export function useState(initialState, dispatcher) {\n  dispatcher = resolveDispatcher(dispatcher);\n");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("\nfunction createContext(defaultValue, TCopy) {\n");
+  expect(app).toContain("\nfunction useState(initialState, dispatcher, dropS) {\n");
+  expect(app).toContain("\nfunction resolveDispatcher(dispatcher) {\n");
+  expect(app).toContain("useState([2], undefined, loudDrop_drop)");
+  expect(app).toContain("\nfunction pairOf(value, dropped, dropD) {\n");
+  // One that takes the copy its consumer gives, as its own crate's calls give
+  // one, is the library's.
+  expect(app).toContain('import { marks, twice } from "../dep/lib.js";');
+  expect(app).toContain("twice({ x: 3 }, { copy: (value) => ({ ...value }) })");
+  const lib = JSON.stringify(join(out, "dep", "lib.js"));
+  const called = `const dep = await import(${lib});
+const object = { name: "default" };
+const context = dep.createContext(object);
+console.log(context.currentValue === object, context.currentValue2 === object);
+console.log(JSON.stringify(dep.useState(object, "client")));
+try { dep.useState(object); } catch (error) { console.log(error.message); }`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", called])).toBe(
+    'true true\n[{"name":"default"},"client"]\nInvalid hook call.\n',
+  );
+}, 300_000);
+
+// ADR 0914: a library's function its consumer compiles itself has only
+// what's public of its library to read: one that reads its library's
+// private thread-local or static, of which its library's code has the one
+// there is, is refused, naming it; a public one is imported. So is one that
+// calls a binding its library names by a path relative to its own file.
+test("a library's function its consumer compiles is refused where it reads its library's private state", () => {
+  const dir = fixture("instance-private-state");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n";
+  writeFileSync(join(dir, "dep.rs"), dep);
+  writeFileSync(join(lib, "stack.js"), "export function size() {\n  return 1;\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  const app = (main: string) => {
+    writeFileSync(join(dir, "app.rs"), `struct Loud(u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!("dropped {}", self.0);\n    }\n}\npub fn main() {\n    ${main}\n}\n`);
+    run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+      "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+    return printed(join(dir, "app.js"));
+  };
+  expect(() => app("println!(\"{}\", dep::discard(Loud(1)));")).toThrow(
+    "this crate gives `dep::discard` a value to copy or drop that its library's JS takes nothing for, as its own crate's calls give it none, so it's compiled here; but it reads `dep::COUNT`, private to its library",
+  );
+  expect(app("println!(\"{}\", dep::named(Loud(2)));")).toBe("dropped 2\ndep\n");
+  // Nor one that calls a binding its library names by a path relative to
+  // its own file, which isn't the consumer's.
+  expect(() => app("println!(\"{}\", dep::sized(Loud(3)));")).toThrow(
+    "but it calls `dep::size`, which its library binds to `./stack.js`, a module by a path relative to that library's own file",
+  );
 }, 300_000);
 
 // ADR 0864, amended: a library's type equal only to itself, as its
@@ -359,37 +432,45 @@ test("a library that starts reading a count is what its consumers share once reb
   chain(cases, "rc_shared", ["dep", "mid", "app"]);
 }, 300_000);
 
-// A library's generic function is given a drop for a type parameter only
-// where its body drops one, itself or through what it calls (ADR 0300): one
-// that moves its value first, or passes it on to one that does, takes none.
-// `two crates: drops_by_need` runs it against native Rust.
+// A generic function is given a drop for a type parameter only where its
+// body drops one, itself or through what it calls (ADR 0300): one that
+// moves its value first, or passes it on to one that does, takes none. A
+// library's takes those its own crate's calls give it, none here, so its JS
+// is the program's; its consumer, which gives values with destructors,
+// compiles itself those that may drop one, from the library's MIR, and calls
+// the library's others (ADR 0914). `two crates: drops_by_need` runs it
+// against native Rust.
 test("a library's generic function takes the drops its body uses", () => {
-  const dir = fixture("drops-by-need");
-  run([compiler, join(pairs, "drops_by_need", "dep.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
-    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = chain(pairs, "drops_by_need", ["dep", "app"]);
+  const js = readFileSync(join(out, "dep", "lib.js"), "utf8");
   const signatures = js.split("\n").filter((line) => line.startsWith("export function"));
   expect(signatures).toEqual([
     "export function keep(value) {",
-    "export function pick(a, b, dropB) {",
+    "export function pick(a, b) {",
     "export function relay(value) {",
-    "export function discard(value, dropT) {",
+    "export function discard(value) {",
     "export function apply(f, a) {",
     "export function keepBy(value) {",
   ]);
-  const items = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).library.items;
+  const items = JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library.items;
   // Each type parameter a function takes a drop of, by its record in `params`.
   type Item = { export: string; params?: { index: number; marks?: string[] }[] };
   const dropsOf = (item: Item) =>
     (item.params ?? []).filter((param) => param.marks?.includes("drop")).map((param) => param.index);
   expect(Object.fromEntries(items.map((item: Item) => [item.export, dropsOf(item)]))).toEqual({
-    keep: [], pick: [1], relay: [], discard: [0], apply: [], keepBy: [],
+    keep: [], pick: [], relay: [], discard: [], apply: [], keepBy: [],
   });
   // What each call gives: only the drops its callee takes, and a function
   // given as a value is itself.
   expect(js).toContain("return keep(value);");
-  expect(js).toContain("pick(undefined, value, dropT);");
+  expect(js).toContain("pick(undefined, value);");
   expect(js).toContain("return apply(keep, value);");
+  // The consumer's own of those that drop what it gives, and the library's
+  // of those that drop none.
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain('import { apply, keep, keepBy, relay } from "../dep/lib.js";');
+  expect(app).toContain("\nfunction pick(a, b, dropB) {\n  dropB?.(b);\n  return a;\n}");
+  expect(app).toContain("\nfunction discard(value, dropT) {\n  pick(undefined, value, dropT);\n}");
 }, 300_000);
 
 // A library's generic trait method is given a drop for its own type
@@ -425,7 +506,7 @@ test("a library's generic function drops a consumer's iterator where Rust does",
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
   const js = readFileSync(join(lib, "lib.js"), "utf8");
-  expect(js).toContain("export function first(items, dropIIntoIter) {");
+  expect(js).toContain("export function first(items) {");
   // A trait's of the crate's, whose dictionary has its drop (ADR 0178), takes none.
   expect(js).toContain("export function hold(zone, ZZone) {");
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),

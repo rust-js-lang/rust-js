@@ -190,30 +190,28 @@ fn ref_mut_holders<'tcx>(
 }
 
 /// The type parameters whose `Copy` bound takes a copy function, `TCopy`
-/// (ADR 0289): every one of a function another crate or a dictionary may
-/// call, a trait's and a public one of a library's, and of the crate's own
-/// others those a caller gives a value whose copy may not be the value
-/// itself, or a type parameter of its own that is one. A reference, a
-/// number, text, a function, and an `Option` of one is its own copy.
+/// (ADR 0289): every one of a function a dictionary may call, a trait's,
+/// and of the crate's own others those a caller of the crate's gives a
+/// value whose copy may not be the value itself, or a type parameter of its
+/// own that is one: a library's public one too, whose consumer that gives
+/// one more compiles it itself (ADR 0914). A reference, a number, text, a
+/// function, and an `Option` of one is its own copy.
 pub(in crate::lower) fn copied_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
-    library: bool,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> HashSet<(DefId, u32)> {
     let mut given = HashSet::new();
     for &id in fns.keys() {
-        if !copies_by_callers(tcx, id) || (library && crate::lower::library::reachable(tcx, id)) {
+        if !copies_by_callers(tcx, foreign, id) {
             given.extend(copy_bounded(tcx, id).into_iter().map(|index| (id, index)));
         }
     }
     let mut passed = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                continue;
-            };
+        for (callee, args, _) in crate::lower::instances::calls_of(body) {
             if !fns.contains_key(&callee) {
                 continue;
             }
@@ -246,10 +244,15 @@ pub(in crate::lower) fn copied_params<'tcx>(
 /// Is `id` one only its crate's callers call, whose `Copy` bounds take a
 /// copy function only where they give one (ADR 0289)? A trait's method, an
 /// impl's, and their closures are called through dictionaries, and a trait
-/// impl's own bounds are its dictionary's.
-pub(in crate::lower) fn copies_by_callers(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// impl's own bounds are its dictionary's. A library's function the crate
+/// compiles itself is its own (ADR 0914).
+pub(in crate::lower) fn copies_by_callers(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    id: DefId,
+) -> bool {
     let id = tcx.typeck_root_def_id(id);
-    id.is_local()
+    (id.is_local() || foreign.is_instance(id))
         && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
         && tcx.trait_of_assoc(id).is_none()
         && tcx.trait_impl_of_assoc(id).is_none()
@@ -257,7 +260,7 @@ pub(in crate::lower) fn copies_by_callers(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// The type parameters of `id` bound by `Copy`, by their indices, an
 /// impl's with its own.
-fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+pub(in crate::lower) fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
     let Some(copy) = tcx.lang_items().copy_trait() else {
         return Vec::new();
     };
@@ -277,7 +280,7 @@ fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
 /// Is a copy of `ty` the value itself, whatever changes: a shared
 /// reference, a number, `bool`, text, a function, a closure that changes
 /// nothing it captured, and an `Option` of one?
-fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub(in crate::lower) fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     match ty.kind() {
         ty::Ref(_, _, Mutability::Not) => true,
         ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str | ty::Never => true,

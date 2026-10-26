@@ -28,7 +28,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drop_state.used_drops.extend(through);
         }
         let drop = drop?.unwrap_or_else(Expr::undefined);
-        Ok(Expr::drop_argument(callee.index.as_u32(), index, drop))
+        Ok(Expr::drop_argument(
+            (callee.krate.as_u32(), callee.index.as_u32()),
+            index,
+            drop,
+        ))
     }
 
     /// Note which drops `id`, which takes only those it uses, used, and the
@@ -52,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// The type parameters a value of `ty` holds, not behind a reference: what
 /// it drops of a caller's (ADR 0190).
-pub(super) fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<u32> {
+pub(in crate::lower) fn owned_params<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<u32> {
     let mut params = Vec::new();
     let mut walker = ty.walk();
     while let Some(part) = walker.next() {
@@ -75,14 +79,19 @@ pub(in crate::lower) struct TakesUsed(HashSet<DefId>);
 impl TakesUsed {
     /// Each function given drops that's called where it's named, whose
     /// callers are all seen or told by its manifest: not a trait's method,
-    /// which a dictionary's callers call, nor an impl's.
-    pub(in crate::lower) fn new(tcx: TyCtxt<'_>, drop_params: &HashMap<DefId, Vec<u32>>) -> TakesUsed {
+    /// which a dictionary's callers call, nor an impl's. The crate's own,
+    /// and a library's it compiles itself (ADR 0914).
+    pub(in crate::lower) fn new(
+        tcx: TyCtxt<'_>,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        drop_params: &HashMap<DefId, Vec<u32>>,
+    ) -> TakesUsed {
         TakesUsed(
             drop_params
                 .keys()
                 .copied()
                 .filter(|&id| {
-                    id.is_local()
+                    (id.is_local() || foreign.is_instance(id))
                         && tcx.trait_of_assoc(id).is_none()
                         && tcx.trait_impl_of_assoc(id).is_none()
                         && !matches!(tcx.def_kind(id), DefKind::Impl { .. })
@@ -168,9 +177,9 @@ impl DropsObserved {
 /// that only passes its parameters on is, which is then its callee,
 /// `(arg0) => keep(arg0)` being `keep`.
 fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
-    let local = |item: u32| DefId {
-        krate: rustc_span::def_id::LOCAL_CRATE,
-        index: rustc_span::def_id::DefIndex::from_u32(item),
+    let local = |(krate, index): (u32, u32)| DefId {
+        krate: rustc_span::def_id::CrateNum::from_u32(krate),
+        index: rustc_span::def_id::DefIndex::from_u32(index),
     };
     // One left last, `undefined`, is no argument: prepare leaves it out.
     let keep = |args: &mut Vec<Expr>| {

@@ -423,7 +423,7 @@ impl OutputPlan {
     /// file imports it: `./greet.js` is `../greet.js` one down. A package's
     /// name stays as it is.
     fn linked_specifier(&self, from: &[String], specifier: &str) -> String {
-        if !crate::paths::is_relative_specifier(specifier) {
+        if !crate::program::is_relative_specifier(specifier) {
             return specifier.to_string();
         }
         let dir = parent_dir(&self.output);
@@ -705,7 +705,7 @@ fn links(artifacts: &[Artifact], file: &std::path::Path, declarations: bool) -> 
     let code = std::str::from_utf8(&artifact.bytes).map_err(|e| e.to_string())?;
     to_oxc::module_specifiers(code, declarations)?
         .into_iter()
-        .filter(|(_, _, specifier)| crate::paths::is_relative_specifier(specifier))
+        .filter(|(_, _, specifier)| crate::program::is_relative_specifier(specifier))
         .map(|(start, end, specifier)| {
             let file = specifier_file(parent_dir(file), &specifier)?;
             Ok(manifest::Link { start, end, file })
@@ -939,7 +939,7 @@ fn stem(file: &Path) -> String {
 /// modules, of `stems` (`LocalJs::loaded`), by its file or its directory's
 /// `index`; else a file, as Node and bundlers find one.
 fn imported<'s>(dir: &Path, specifier: &str, stems: &'s HashMap<String, HashSet<usize>>) -> Imported<'s> {
-    if !crate::paths::is_relative_specifier(specifier) {
+    if !crate::program::is_relative_specifier(specifier) {
         return match specifier.starts_with(['#', '/']) || specifier.starts_with("file:") {
             true => Imported::Unknown,
             false => Imported::Package,

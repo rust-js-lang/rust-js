@@ -457,6 +457,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.clone_value(place.clone(), inner, span, out)?
                 };
+                // Of a payload whose clone is itself, the `Option` itself,
+                // not `key == null ? key : key`.
+                if some == place {
+                    return Ok(place);
+                }
                 let none = Expr::bin(Op::LooseEq, place.clone(), Expr::null());
                 Ok(Expr::cond(none, place, some))
             }

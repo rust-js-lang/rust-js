@@ -165,4 +165,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
   },
+  {
+    name: "cleanup-flag-refused",
+    breaks: "a drop flag optimized MIR's cleanup tests, another crate's, is refused, `this cleanup, from its MIR`, so a library's function that drops what it's given after asking its dispatcher can't be compiled by its consumer (ADR 0914)",
+    file: "src/lower/mir/drops.rs",
+    find: "                    if discr.ty(&state.body.local_decls, self.tcx).is_bool()\n",
+    replace: "                    if false && discr.ty(&state.body.local_decls, self.tcx).is_bool()\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+  },
 ];

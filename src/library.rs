@@ -14,8 +14,11 @@ use std::path::Path;
 /// parameters is one record of it, `params` (ADR 0100, amended). 6: each
 /// yes-or-no fact of an item is one of a set (ADR 0906). 7: each of its
 /// structs' fields its consumers read a fact of is one of `fields`, its
-/// facts a set too (ADRs 0863, amended, 0906).
-pub const VERSION: u32 = 7;
+/// facts a set too (ADRs 0863, amended, 0906). 8: a function takes the
+/// copies and drops its own crate's calls give it, each type parameter's
+/// copy a fact of it, `copy`, and a consumer compiles what more it needs
+/// of it from its MIR (ADR 0914).
+pub const VERSION: u32 = 8;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -132,6 +135,9 @@ pub struct TypeParam {
 pub enum ParamFact {
     /// It's given a `dropT`, what drops a value of it (ADR 0098).
     Drop,
+    /// It's given a `TCopy`, what copies a value of it where one may not be
+    /// its own copy (ADRs 0289, 0914).
+    Copy,
     /// It takes no destructor, which its consumers' calls are checked for
     /// (ADR 0190).
     NoDrop,

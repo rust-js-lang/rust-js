@@ -761,8 +761,10 @@ pub enum ExprKind {
     Import(ImportFrom),
     /// A drop function given to one of the crate's functions for its type
     /// parameter, `(item, index, drop)`: until the pipeline keeps it, where
-    /// that function uses it, or leaves it out (ADR 0300).
-    DropArgument(u32, u32, Box<Expr>),
+    /// that function uses it, or leaves it out (ADR 0300). The item is its
+    /// crate's number and its index there, one of a library's the crate
+    /// compiles itself too (ADR 0914).
+    DropArgument((u32, u32), u32, Box<Expr>),
     /// `await p`: `.await` (ADR 0029).
     Await(Box<Expr>),
     /// `<div className="hero">..</div>`, `<Counter initial={1} />` or `<>..</>` (ADR 0040).

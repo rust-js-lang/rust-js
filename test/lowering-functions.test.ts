@@ -462,10 +462,11 @@ pub fn shared<T: Copy>(value: T) -> T {
   expect(js).toContain("function kept(value, TCopy) {");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named("a"), lib.moved({ x: 1 }), lib.relayed({ x: 1 }), lib.held({ x: 1 }), lib.duped(), lib.got()]).toEqual([["a", "a"], 3, 3, 3, ["a", "a"], 4]);
-  // A library's public one may be given anything by its consumers.
+  // A library's public one takes what its own crate's calls give it, as a
+  // program's does; a consumer that gives it more compiles its own (ADR 0914).
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "library", "lib.js"), "--library", "--manifest", join(dir, "library", "lib.manifest.json"),
     "--", "--crate-name", "shared", `--emit=metadata=${join(dir, "library", "libshared.rmeta")}`]);
-  expect(readFileSync(join(dir, "library", "lib.js"), "utf8")).toContain("export function shared(value, TCopy) {");
+  expect(readFileSync(join(dir, "library", "lib.js"), "utf8")).toContain("export function shared(value) {");
 });
 
 // ADR 0577: a function no JS caller sees, called and never named as a value,

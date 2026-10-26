@@ -2,6 +2,10 @@
 
 Status: Accepted. Amends [0098](0098-destructors.md) and
 [0100](0100-separate-crates.md): which generic functions take a drop.
+Amended by [0914](0914-a-librarys-generic-function-is-its-programs.md): a
+library's public function takes the drops its own crate's calls give it;
+a consumer that gives more compiles its own, which takes those its body
+uses.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -61,3 +65,13 @@ export function discard(value, dropT) { pick(undefined, value, dropT); }
 ## Amended by
 
 [ADR 0712](0712-what-lowering-finds-of-drops-is-returned-with-it.md): what a function's lowering finds of drops is returned with it, `DropsObserved`, and gathered by the pipeline, not written into the crate's facts.
+
+## Amendment: a library's function takes what its own crate's calls give it ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A library's public generic function was given a drop of each type
+parameter a consumer could give a value with a destructor, narrowed to
+those its body uses. It's given those its own crate's calls give it, as a
+program's is; a consumer whose call gives one more compiles its own of it,
+from its MIR, given what the consumer's calls give it, narrowed to those
+its body uses as the crate's own functions are: `pick(a, b, dropB)` in the
+consumer beside the library's `pick(a, b)`.

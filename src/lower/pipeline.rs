@@ -1,6 +1,7 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
 mod holes;
+mod load_cycles;
 
 use self::holes::{Holes, fill_hole, fill_holes};
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
@@ -57,16 +58,24 @@ pub struct Built<'a> {
     pub js_modules: &'a dyn crate::program::JsModules,
 }
 
+/// What lowering the crate gave: its JS, none where it failed; or the
+/// library functions it must compile itself first, which the crate's calls
+/// give more than they take (ADR 0914), each with the module it's placed in.
+pub enum Lowered {
+    Crate(Option<Box<Unlinked>>),
+    Instances(Vec<(DefId, LocalModId)>),
+}
+
 /// Lower every function, grouped by module. Reports all unsupported
-/// features as rustc errors.
+/// features as rustc errors. `instances` are the library functions the
+/// crate compiles itself, whose bodies `all_bodies` has (ADR 0914).
 pub fn lower_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[Body<'tcx>],
-    initializers: &[Body<'tcx>],
+    (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]),
     serde_attrs: &super::SerdeAttributes,
-    dependencies: &crate::library::Dependencies,
+    (dependencies, instances): (&crate::library::Dependencies, &super::Instances),
     built: Built<'_>,
-) -> Option<Unlinked> {
+) -> Lowered {
     let Built {
         library: export_library,
         std_bodies,
@@ -121,7 +130,17 @@ pub fn lower_crate<'tcx>(
         local_functions,
         local_consts,
         held,
-    } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library, std_bodies)?;
+    } = match analyze_crate(
+        tcx,
+        all_bodies,
+        initializers,
+        dependencies,
+        (export_library, std_bodies),
+        instances,
+    ) {
+        Some(analyzed) => analyzed,
+        None => return Lowered::Crate(None),
+    };
     // Each module's default export, which a module of the crate imports as
     // its default, not by a name of its own (ADR 0251), as every importer
     // does (`default_exports::exported_as`).
@@ -133,7 +152,21 @@ pub fn lower_crate<'tcx>(
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
 
-    let foreign = super::library::Foreign::new(tcx, dependencies);
+    let foreign = super::library::Foreign::new(tcx, dependencies, instances);
+    // The library functions the crate's calls give more than they take,
+    // compiled here first, before anything is lowered (ADR 0914).
+    let analyzed = super::instances::Analyzed {
+        trait_impls: &trait_impls,
+        drops: (export_library, &closure_facts, &counted),
+        drop_params: &drop_params,
+        copied: &copied,
+        bodies: bodies.iter().copied().chain(closures.values().copied()).collect(),
+    };
+    match super::instances::needed(&foreign, instances, analyzed) {
+        _ if tcx.dcx().has_errors().is_some() => return Lowered::Crate(None),
+        more if !more.is_empty() => return Lowered::Instances(more),
+        _ => {}
+    }
     let mut const_items: HashMap<LocalModId, Vec<js::Const>> = HashMap::new();
     // Each `const` written in a function's body, its function's (ADR 0031,
     // amended).
@@ -273,7 +306,7 @@ pub fn lower_crate<'tcx>(
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
     let keeps_capacity = asks_capacity || foreign.keeps_capacity();
-    let takes_used_drops = super::drops::TakesUsed::new(tcx, &drop_params);
+    let takes_used_drops = super::drops::TakesUsed::new(tcx, &foreign, &drop_params);
     // What each function's lowering found of drops, gathered in the order
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
@@ -403,7 +436,7 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.package_uses),
                 );
                 let imports = module_imports(&places, &fns, edges, &imported, js_modules);
-                let again = load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
+                let again = load_cycles::load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
                 if again.is_empty() {
                     break;
                 }
@@ -492,7 +525,7 @@ pub fn lower_crate<'tcx>(
     let checks = std::mem::take(&mut drops_observed.checks);
     failed |= super::drops::check_no_drops(tcx, &mut drops_observed.no_drops, &checks);
     if failed {
-        return None;
+        return Lowered::Crate(None);
     }
     let no_drops = std::mem::take(&mut drops_observed.no_drops);
     // Only the drops each function uses (ADR 0300).
@@ -769,7 +802,7 @@ pub fn lower_crate<'tcx>(
         }
     }
     if failed {
-        return None;
+        return Lowered::Crate(None);
     }
     for (module, consts) in pass.local_consts.drain() {
         const_items.entry(module).or_default().extend(consts);
@@ -902,7 +935,7 @@ pub fn lower_crate<'tcx>(
         .collect();
     let edges = (pass.references.iter(), pass.held.iter(), pass.package_uses.iter());
     let imports = module_imports(&places, &fns, edges, &imported, js_modules);
-    refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
+    load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
     // The exported thread-locals and `static mut`s their modules made
     // their variables.
     let mut variables: HashSet<DefId> = HashSet::new();
@@ -1303,36 +1336,39 @@ pub fn lower_crate<'tcx>(
                 super::drops::drop_runs(recognition, (export_library, &closure_facts), &counted, t)
             })
     };
-    tcx.dcx().has_errors().is_none().then_some(Unlinked {
-        library: export_library.then(|| {
-            super::library::exports(
-                tcx,
-                &fns,
-                &super::library::Contracts {
-                    drop_params: &drop_params,
-                    failing: &failing,
-                    no_drops: &no_drops,
-                    type_facts: &type_facts,
-                    caller_locations: &caller_locations,
-                    stepped: &stepped,
-                    keeps_capacity,
-                    writers_take_options,
-                    makes_dropping_anys: closure_facts.any_dyns_drop,
-                    counted: &counted,
-                    ref_cells: ref_cell_facts(),
-                    fields: ref_cells.get().map(|found| found.fields(tcx)).unwrap_or_default(),
-                    lazy_locals: &lazy_locals,
-                    variables: &variables,
-                    identities: &identities,
-                },
-                (&trait_impls, &held.modules),
-                dependencies,
-            )
-        }),
-        sources: sources.output,
-        modules: lowered,
-        tests,
-    })
+    Lowered::Crate(tcx.dcx().has_errors().is_none().then(|| {
+        Box::new(Unlinked {
+            library: export_library.then(|| {
+                super::library::exports(
+                    tcx,
+                    &fns,
+                    &super::library::Contracts {
+                        drop_params: &drop_params,
+                        copied: &copied,
+                        failing: &failing,
+                        no_drops: &no_drops,
+                        type_facts: &type_facts,
+                        caller_locations: &caller_locations,
+                        stepped: &stepped,
+                        keeps_capacity,
+                        writers_take_options,
+                        makes_dropping_anys: closure_facts.any_dyns_drop,
+                        counted: &counted,
+                        ref_cells: ref_cell_facts(),
+                        fields: ref_cells.get().map(|found| found.fields(tcx)).unwrap_or_default(),
+                        lazy_locals: &lazy_locals,
+                        variables: &variables,
+                        identities: &identities,
+                    },
+                    (&trait_impls, &held.modules),
+                    dependencies,
+                )
+            }),
+            sources: sources.output,
+            modules: lowered,
+            tests,
+        })
+    }))
 }
 
 /// `module`'s own items it exports by other names, `export { getCurrentTime
@@ -1419,73 +1455,4 @@ fn module_imports<'d>(
     let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
     let bound = used.chain(users).chain(effects);
     super::load_order::ModuleImports::new(&laid_out, referenced.chain(held), bound, js_modules)
-}
-
-/// Each body run where its module loads, of `loads`, that reads another of
-/// the crate's modules' `const` or numbered enum's variant by its name,
-/// where that module may load after its own: one it reaches by what the
-/// crate's modules import of each other, `imports`, an import cycle, through
-/// a JS file of the program's own too. JS would read it before its module
-/// made it, so that body reads its value (`FnCx::reads_by_name`, ADR 0031,
-/// amended). What it imports by name is an edge, so the cycles found are
-/// each one's that may be.
-fn load_cycles(
-    tcx: TyCtxt<'_>,
-    lowered: &[(DefId, super::LoweredFn)],
-    fns: &HashMap<DefId, FnInfo>,
-    loads: &HashSet<DefId>,
-    imports: &super::load_order::ModuleImports,
-) -> Vec<DefId> {
-    let made_where_loaded = |id: DefId| {
-        matches!(
-            tcx.def_kind(id),
-            DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Variant | DefKind::Ctor(..)
-        )
-    };
-    (lowered.iter())
-        .filter(|(id, _)| loads.contains(id))
-        .filter(|(id, item)| {
-            let own = fns[id].module;
-            (item.dependencies.references.iter())
-                .any(|&(from, read)| from == own && made_where_loaded(read) && imports.reaches(fns[&read].module, own))
-        })
-        .map(|&(id, _)| id)
-        .collect()
-}
-
-/// A dictionary that's its module's `const` (ADR 0592) is made when its
-/// module loads. Where its module and one whose load runs code, a
-/// `js::on_load!` or a value made by a call, import each other, the other
-/// may load first and reach it before it's made: refused, naming both, as
-/// JS's would throw where Rust's runs.
-fn refuse_dictionaries_in_load_cycles(
-    tcx: TyCtxt<'_>,
-    pass: &Pass,
-    const_items: &HashMap<LocalModId, Vec<js::Const>>,
-    (modules, imports): (&[LocalModId], &super::load_order::ModuleImports),
-) {
-    // A dictionary, its cache and what its entries share run nothing of the
-    // program's where they're made: not code a cycle's load runs.
-    let runs_code = |module: &LocalModId| {
-        pass.statements.get(module).is_some_and(|stmts| !stmts.is_empty())
-            || const_items.get(module).is_some_and(|consts| {
-                (consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())
-            })
-    };
-    let reaches = |from, to| imports.reaches(from, to);
-    let loaders: Vec<LocalModId> = modules.iter().copied().filter(runs_code).collect();
-    for &(module, impl_id) in &pass.dictionary_consts {
-        if let Some(&other) = loaders
-            .iter()
-            .find(|&&other| other != module && reaches(module, other) && reaches(other, module))
-        {
-            let what = format!(
-                "this impl's dictionary, made where `{}` loads, in an import cycle with `{}`, which runs code where it loads",
-                tcx.def_path_str(module.to_def_id()),
-                tcx.def_path_str(other.to_def_id()),
-            );
-            let why = "that code may reach the dictionary before it's made: move one out of the cycle (ADR 0592)";
-            super::refusal::refuse(tcx, tcx.def_span(impl_id), super::refusal::Refused::Because(&what, why));
-        }
-    }
 }

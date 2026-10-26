@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
   },
+  {
+    name: "instance-exported",
+    breaks: "a library's function the crate compiles itself is exported, `export function createContext`, as if JS or another crate could call it (ADR 0914)",
+    file: "src/lower/mir.rs",
+    find: "                    && !self.krate.foreign.is_instance(def_id)\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
 ];

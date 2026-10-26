@@ -83,4 +83,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
     snapshots: true,
   },
+  {
+    name: "cleanup-flag-unread",
+    breaks: "the drop flag optimized MIR's cleanup tests isn't counted a read, so its writes are left out and a panic drops nothing of what a library's function its consumer compiles was given (ADR 0914)",
+    file: "src/lower/mir/locals.rs",
+    find: "                if let TerminatorKind::SwitchInt { discr, .. } = &data.terminator().kind {\n                    count_operand(&mut locals, discr);\n                }\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+  },
 ];

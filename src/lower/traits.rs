@@ -231,7 +231,7 @@ fn bound_of<'tcx>(
     // A `Copy` bound only the crate's callers give, none of them a value
     // whose copy isn't itself, takes no copy function (ADR 0289).
     if tcx.is_lang_item(tr.def_id, LangItem::Copy)
-        && super::analysis::copies_by_callers(tcx, id)
+        && super::analysis::copies_by_callers(tcx, foreign, id)
         && let ty::Param(param) = tr.self_ty().kind()
         && !given.copied.contains(&(tcx.typeck_root_def_id(id), param.index))
     {

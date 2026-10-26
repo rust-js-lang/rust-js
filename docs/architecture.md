@@ -199,6 +199,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
 | Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
+| Which of a library's functions the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914) | `instances.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
@@ -256,6 +257,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
 | Which std functions and constants are JS's `Math`'s, for a call, a `fn`, `js::is_defined` and a constant's read (ADR 0887) | `std_types/number/math.rs` | `function`, `math_function`, `constant`, `written_constant` |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
+| Which library functions the crate compiles itself, given more than they take, their bodies and modules, and which of a library's are the crate's own (ADR 0914) | `instances.rs`; `library.rs` | `Instances`, `needed`, `instance_bodies`, `calls_of`; `is_instance` |
 | Which thread-locals are made where they're first used, and a read of one, its call (ADR 0037, amended) | `analysis/lazy_locals.rs`; `items.rs` | `lazy_locals`; `made_where_used`, `item_read` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884) | `binding_calls.rs`; `bindings.rs` | `gives_boxed_option`; `reads_a_key` |

@@ -69,9 +69,9 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 7, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: 8, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
-      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, stepped: ["9f0e"] }], facts: ["takes_location"] }],
+      { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, marks: ["copy"], stepped: ["9f0e"] }], facts: ["takes_location"] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
     fields: [{ key: "gh78", facts: ["quiet"] }],

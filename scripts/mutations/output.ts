@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "package-specifier-linked",
     breaks: "a package's specifier, `@rust-js/runtime`, is a link to a file beside the module that isn't there",
     file: "src/output.rs",
-    find: "        .filter(|(_, _, specifier)| crate::paths::is_relative_specifier(specifier))\n",
+    find: "        .filter(|(_, _, specifier)| crate::program::is_relative_specifier(specifier))\n",
     replace: "",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
   },

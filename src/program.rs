@@ -7,6 +7,13 @@ use std::path::{Path, PathBuf};
 
 /// A module of the crate's, as its JS is laid out: its module path, its
 /// Rust file, and whether a `#[path]` placed it (ADR 0273).
+/// Whether a module specifier names a file, `./util.js`, `../lib.js`, and
+/// not a package, `react`: what lowering asks of a binding's module too
+/// (ADR 0914), and planning and printing of an import's.
+pub(crate) fn is_relative_specifier(specifier: &str) -> bool {
+    specifier.starts_with("./") || specifier.starts_with("../")
+}
+
 pub type ModuleAt<'a> = (&'a [String], Option<&'a Path>, bool);
 
 /// What a JS module a crate's module imports, as its binding names it,

@@ -666,9 +666,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a panic drops as it unwinds from a terminator: its cleanup
     /// blocks' drops, in order, nothing if it has none.
     pub(super) fn mir_unwind(&mut self, state: &mut State<'_, 'tcx>, unwind: UnwindAction) -> R<Vec<Stmt>> {
-        let UnwindAction::Cleanup(mut block) = unwind else {
+        let UnwindAction::Cleanup(block) = unwind else {
             return Ok(Vec::new());
         };
+        self.mir_cleanup(state, block)
+    }
+
+    /// What cleanup `block` and those after it drop, in order. A test of a
+    /// drop flag optimized MIR keeps, another crate's (ADRs 0561, 0914),
+    /// `switchInt(copy _4) -> [0: bb3, otherwise: bb4]`, is an `if` of what
+    /// each way drops, each to its end.
+    fn mir_cleanup(&mut self, state: &mut State<'_, 'tcx>, mut block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
         loop {
             let data = &state.body.basic_blocks[block];
@@ -705,6 +713,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 TerminatorKind::Goto { target } => block = target,
                 TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return Ok(out),
+                TerminatorKind::SwitchInt { ref discr, ref targets }
+                    if discr.ty(&state.body.local_decls, self.tcx).is_bool()
+                        && let [(0, unset)] = targets.iter().collect::<Vec<_>>()[..] =>
+                {
+                    let flag = self.mir_operand(state, discr, &mut out)?;
+                    let flag = self.value_expr(flag, span)?;
+                    let set = self.mir_cleanup(state, targets.otherwise())?;
+                    let unset = self.mir_cleanup(state, unset)?;
+                    let js_span = self.js_span(span);
+                    out.push(match (set.is_empty(), unset.is_empty()) {
+                        (true, true) => return Ok(out),
+                        (false, true) => StmtKind::If(flag, set, None).at(js_span),
+                        (true, false) => StmtKind::If(Expr::unary(js::UnaryOp::Not, flag), unset, None).at(js_span),
+                        (false, false) => StmtKind::If(flag, set, Some(unset)).at(js_span),
+                    });
+                    return Ok(out);
+                }
                 _ => return Err(self.unsupported(span, "this cleanup, from its MIR")),
             }
         }

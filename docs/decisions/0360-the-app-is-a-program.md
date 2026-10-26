@@ -1,7 +1,9 @@
 # 0360. The app's crate is a program: `RUST_JS_APP`, recorded for Cargo
 
 Status: Accepted. Amends [0100](0100-separate-crates.md) and
-[0101](0101-cargo-workspace-wrapper.md).
+[0101](0101-cargo-workspace-wrapper.md). Amended by
+[0914](0914-a-librarys-generic-function-is-its-programs.md): a library's
+generic function is its program's.
 
 ## Context
 
@@ -75,3 +77,15 @@ built, so its JS is the same built alone as through what uses it.
   Rust does as one.
 - Cargo builds a used crate again where `RUST_JS_APP` changes, which it
   records; the JS it writes is the same.
+
+## Amendment: a library's function takes what its own crate's calls give it ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A crate used by another is a library, its JS the same whichever package
+is built (above), but its JS changed the day another crate started using
+it: React's `createContext(defaultValue, TCopy)` and `useState(
+initialState, dropS)`, where they had been React's own. Its generic
+functions now take what its own crate's calls give them, as a program's
+do, so they're the same with a consumer as without, and a consumer that
+gives one more compiles its own. What a library still writes that its
+program wouldn't, its consumers' trait impls and copies of what they may
+change in place, ADR 0914 lists.

@@ -228,6 +228,12 @@ impl Callbacks for RustJs {
         // abort is told it can't unwind (ADR 0660).
         self.panics_abort = config.opts.cg.panic == Some(rustc_target::spec::PanicStrategy::Abort);
         config.opts.cg.panic = Some(rustc_target::spec::PanicStrategy::Unwind);
+        // A library's metadata keeps its functions' MIR, which a consumer
+        // that gives one of them more than its own crate's calls do compiles
+        // itself (ADR 0914).
+        if self.export_library {
+            config.opts.unstable_opts.always_encode_mir = true;
+        }
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
@@ -271,22 +277,37 @@ impl Callbacks for RustJs {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
 
-        // 3. Only a program rustc accepts becomes JavaScript.
-        if tcx.dcx().has_errors().is_none()
-            && let Some(unlinked) = lower::lower_crate(
+        // 3. Only a program rustc accepts becomes JavaScript. A library's
+        // function its calls give more than it takes is compiled here, from
+        // the MIR its library's metadata keeps, and the crate lowered again
+        // with it (ADR 0914).
+        let mut instances = lower::Instances::default();
+        let lowered = loop {
+            if tcx.dcx().has_errors().is_some() {
+                break None;
+            }
+            let built = lower::Built {
+                library: self.export_library,
+                std_bodies: self.std_bodies,
+                panics_abort: self.panics_abort,
+                tidy_until: self.tidy_until.as_deref(),
+                js_modules: &self.local_js,
+            };
+            match lower::lower_crate(
                 tcx,
-                &bodies,
-                &initializers,
+                (&bodies, &initializers),
                 &serde_attrs,
-                &self.dependencies,
-                lower::Built {
-                    library: self.export_library,
-                    std_bodies: self.std_bodies,
-                    panics_abort: self.panics_abort,
-                    tidy_until: self.tidy_until.as_deref(),
-                    js_modules: &self.local_js,
-                },
-            )
+                (&self.dependencies, &instances),
+                built,
+            ) {
+                lower::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
+                lower::Lowered::Instances(more) => {
+                    bodies.extend(lower::instance_bodies(tcx, &more));
+                    instances.extend(more);
+                }
+            }
+        };
+        if let Some(unlinked) = lowered
             && tcx.dcx().has_errors().is_none()
         {
             let linked = link::link(unlinked);

@@ -52,12 +52,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
-    name: "component-given-library-drops",
-    breaks: "a library's generic component takes a drop of its type parameter, which React never gives: `Card({ title, children }, dropC)`",
+    name: "library-takes-every-drop",
+    breaks: "a library's public generic function takes a drop of each type parameter a consumer could give one of, `useState(initialState, dispatcher, dropS)`, where its own crate's calls give none, so its JS isn't its program's (ADR 0914)",
     file: "src/lower/analysis/drops.rs",
-    find: "            if crate::lower::bindings::is_component(tcx, id)\n",
-    replace: "            if false\n",
-    tests: ["test/jsx-types.test.ts", "-t", "take no drop of their type parameters"],
+    find: "            if !crate::lower::recognition::is_compiled_std(tcx, id)\n",
+    replace: "            if !crate::lower::library::reachable(tcx, id)\n",
+    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
   },
   {
     name: "component-destructor-not-refused",

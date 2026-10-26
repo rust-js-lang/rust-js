@@ -2,10 +2,9 @@
 //! and the derives that drop nothing (ADR 0098).
 
 use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
-use crate::lower::{Body, FnInfo, fn_def};
+use crate::lower::{Body, FnInfo};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
-use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
@@ -93,18 +92,18 @@ pub(super) fn drop_params<'tcx>(
             }
         }
     }
-    // A library's consumers are callers it never sees (ADR 0100): a function
-    // of it they can reach is given a drop for each type parameter they could
-    // give a value with a destructor, one that isn't `Copy`.
+    // `@rust-js/std`'s bodies, compiled once, are given a drop for each type
+    // parameter a consumer could give a value with a destructor, one that
+    // isn't `Copy` (ADR 0561). A library's own function is given what its
+    // crate's calls give it; a consumer that gives one more compiles it
+    // itself (ADR 0914).
     if library {
         for &id in fns.keys() {
-            // A trait impl's, and its methods, are decided above, and a
-            // component is given none: React calls it (ADR 0199).
-            if crate::lower::bindings::is_component(tcx, id)
+            // A trait impl's, and its methods, are decided above.
+            if !crate::lower::recognition::is_compiled_std(tcx, id)
                 || tcx.trait_of_assoc(id).is_some()
                 || tcx.trait_impl_of_assoc(id).is_some()
                 || matches!(tcx.def_kind(id), DefKind::Impl { .. })
-                || !crate::lower::library::reachable(tcx, id)
             {
                 continue;
             }
@@ -125,10 +124,7 @@ pub(super) fn drop_params<'tcx>(
     let mut items: HashMap<DefId, Vec<Ty<'tcx>>> = HashMap::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                continue;
-            };
+        for (callee, args, span) in crate::lower::instances::calls_of(body) {
             if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {
                 continue;
             }
@@ -142,7 +138,7 @@ pub(super) fn drop_params<'tcx>(
                         let (name, param) = (tcx.item_name(callee), tcx.generics_of(callee).param_at(index, tcx).name);
                         let what = format!("giving component `{name}`'s `{param}` a type with a destructor");
                         let refused = crate::lower::refusal::Refused::Because(&what, "React gives a component no drop");
-                        crate::lower::refusal::refuse(tcx, expr.span, refused);
+                        crate::lower::refusal::refuse(tcx, span, refused);
                     }
                 }
                 continue;

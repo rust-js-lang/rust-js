@@ -186,4 +186,20 @@ export const mutations: Mutation[] = [
     replace: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
+  {
+    name: "instance-imported",
+    breaks: "a library's function the crate compiles itself is still the library's item, imported where it's called, `import { createContext }`, so its own is never called (ADR 0914)",
+    file: "src/lower/library.rs",
+    find: "        if id.is_local() || self.is_instance(id) {\n",
+    replace: "        if id.is_local() {\n",
+    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
+  {
+    name: "library-copy-unlisted",
+    breaks: "a library's contract says none of its functions takes a copy, so its consumer compiles its own `twice`, which its library's takes (ADR 0914)",
+    file: "src/lower/library.rs",
+    find: "        param(&mut params, index).marks.insert(ParamFact::Copy);\n",
+    replace: "        let _ = (&mut params, index);\n",
+    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
+  },
 ];

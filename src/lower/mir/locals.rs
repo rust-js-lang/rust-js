@@ -126,7 +126,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         for (block, data) in body.basic_blocks.iter_enumerated() {
+            // Of a cleanup, only the drop flag it tests, which optimized MIR
+            // keeps, another crate's (ADRs 0561, 0914): read where it unwinds.
             if data.is_cleanup {
+                if let TerminatorKind::SwitchInt { discr, .. } = &data.terminator().kind {
+                    count_operand(&mut locals, discr);
+                }
                 continue;
             }
             let _ = block;

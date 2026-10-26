@@ -30,7 +30,12 @@ pub(super) struct JsUses {
     pub(super) named: HashMap<Export, String>,
 }
 
-pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], held: &bindings::Held) -> JsUses {
+pub(super) fn js_uses<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    held: &bindings::Held,
+    instances: &crate::lower::Instances,
+) -> JsUses {
     let mut uses = JsUses {
         globals: HashSet::new(),
         imported: BTreeMap::new(),
@@ -49,7 +54,7 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], held:
         }
     }
     for body in all_bodies {
-        let module = crate::lower::body_module(tcx, body.def_id);
+        let module = crate::lower::body_module(tcx, instances, body.def_id);
         // What `js::import!` imports when it's asked for, which nothing
         // imports statically (ADR 0304).
         let dynamic: HashSet<ExprId> = (body.thir.exprs.iter())
@@ -65,19 +70,26 @@ pub(super) fn js_uses<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], held:
                 _ => None,
             })
             .collect();
-        for (id, expr) in body.thir.exprs.iter_enumerated() {
-            if dynamic.contains(&id) {
-                continue;
-            }
-            let def_id = match (&expr.kind, expr.ty.kind()) {
+        // Each binding a body names, but one read through the module that
+        // holds it, which is that module's (ADR 0633); of a body of MIR
+        // alone, a library's the crate compiles (ADR 0914), each its MIR
+        // names.
+        let named: Vec<DefId> = (body.thir.exprs.iter_enumerated())
+            .filter(|(id, _)| !dynamic.contains(id))
+            .filter(|(_, expr)| !held.reads.contains_key(&expr.span))
+            .filter_map(|(_, expr)| match (&expr.kind, expr.ty.kind()) {
                 (ExprKind::ZstLiteral { .. }, ty::FnDef(def_id, _)) | (ExprKind::StaticRef { def_id, .. }, _) => {
-                    *def_id
+                    Some(*def_id)
                 }
-                _ => continue,
-            };
-            // One read through the module that holds it is that module's
-            // (ADR 0633).
-            if !is_binding(tcx, def_id) || held.reads.contains_key(&expr.span) {
+                _ => None,
+            })
+            .chain(match body.root() {
+                Some(_) => Vec::new(),
+                None => crate::lower::instances::named(body),
+            })
+            .collect();
+        for def_id in named {
+            if !is_binding(tcx, def_id) {
                 continue;
             }
             match js_path(tcx, def_id).as_deref().map(|path| (path, js_import(path))) {
@@ -431,6 +443,7 @@ pub(super) fn name_items(
     globals: &HashSet<String>,
     trait_impls: &[DefId],
     named_expressions: &HashSet<DefId>,
+    instances: &crate::lower::Instances,
 ) -> (HashMap<LocalModId, HashSet<String>>, HashMap<DefId, FnInfo>, bool) {
     let mut failed = false;
     let mut taken: HashMap<LocalModId, HashSet<String>> = modules.iter().map(|&m| (m, globals.clone())).collect();
@@ -438,7 +451,7 @@ pub(super) fn name_items(
     let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
     let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
     for &def_id in items {
-        let module = crate::lower::body_module(tcx, def_id);
+        let module = crate::lower::body_module(tcx, instances, def_id);
         let names = taken.entry(module).or_default();
         let js_name = item_js_name(tcx, def_id, trait_impls);
         if trait_impls.contains(&def_id) && names.contains(&js_name) {
@@ -479,10 +492,19 @@ pub(super) fn exported_across_modules<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     fns: &HashMap<DefId, FnInfo>,
+    instances: &crate::lower::Instances,
 ) -> HashSet<DefId> {
     let mut exported = HashSet::new();
     for body in all_bodies {
-        let from = crate::lower::body_module(tcx, body.def_id);
+        let from = crate::lower::body_module(tcx, instances, body.def_id);
+        // A body of MIR alone, a library's the crate compiles (ADR 0914).
+        if body.root().is_none() {
+            for def_id in crate::lower::instances::named(body) {
+                if fns.get(&def_id).is_some_and(|target| target.module != from) {
+                    exported.insert(def_id);
+                }
+            }
+        }
         for expr in body.thir.exprs.iter() {
             let def_id = match (&expr.kind, expr.ty.kind()) {
                 (ExprKind::ZstLiteral { .. }, ty::FnDef(def_id, _))

@@ -720,9 +720,12 @@ pub fn linked(href: Option<&str>) -> String {
 
 // ADR 0301: a binding that can't throw, `#[rust_js::cannot_throw]`, as reading
 // React's `ref.current` can't, read before a value is moved leaves it nothing
-// to drop: a library's function takes no drop for it, and has no `try`, as
-// react.dev's `useEvent` reads its ref, then calls with its arguments. So
-// does `unwrap_unchecked`, which can't panic. One unmarked keeps both.
+// to drop, as react.dev's `useEvent` reads its ref, then calls with its
+// arguments. So does `unwrap_unchecked`, which can't panic. A library's
+// function takes the drops its own crate's calls give it, none here (ADR
+// 0914); a consumer that gives one a value with a destructor calls it as it
+// is, and compiles itself the one unmarked, which drops it where the binding
+// throws, by the drop it's given there.
 test("a binding that can't throw, read before a move, leaves nothing to drop", async () => {
   const dir = fixture("cannot-throw");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get globalThis.calls")] #[rust_js::cannot_throw] fn calls() -> u32 { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "get globalThis.calls")] fn calls_unmarked() -> u32 { unreachable!() }
@@ -750,10 +753,16 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
   expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
   expect(js).toContain("export function call(value, given) {\n  const f = given;\n  return f(value);\n}");
-  expect(js).toContain("export function countUnmarked(value, dropT) {");
+  expect(js).toContain("export function countUnmarked(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
   (globalThis as { calls?: number }).calls = 3;
   const lib = await import(join(dir, "mir.js"));
   expect([lib.count("a"), lib.countUnmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
+  writeFileSync(join(dir, "app.rs"), "pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub fn both() -> u32 {\n    counted::count(Loud(1)).0 + counted::count_unmarked(Loud(2)).0\n}\n");
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(dir, "mir.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `counted=${join(dir, "libcounted.rmeta")}`]);
+  const app = readFileSync(join(dir, "app.js"), "utf8");
+  expect(app).toContain('import { count } from "./mir.js";');
+  expect(app).toContain("function countUnmarked(value, dropT) {\n  let n;\n  try {\n    n = globalThis.calls;\n  } catch (error) {\n    dropT?.(value);\n    throw error;\n  }\n");
 });
 
 // ADR 0304: `js::import!(item)` loads the module that has it when it's asked

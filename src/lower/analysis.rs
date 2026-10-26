@@ -41,6 +41,7 @@ use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::copies_by_callers;
 use mutation::{copied_params, mutated_types};
+pub(super) use mutation::{copies_itself, copy_bounded};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names,
@@ -124,9 +125,15 @@ pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initia
 /// each from the optimized MIR the toolchain ships, with no THIR beside it,
 /// as a dictionary has none (`pipeline.rs`'s `no_body`).
 pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+    foreign_bodies(tcx, super::recognition::compiled_std(tcx).to_vec())
+}
+
+/// The bodies of `ids`, another crate's, from the optimized MIR its
+/// metadata keeps, with no THIR beside them: std's (ADR 0561), and a
+/// library's a consumer compiles itself (ADR 0914).
+pub(super) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> Vec<Body<'_>> {
     // Each body named, and each closure a body makes, which its MIR names
     // as it's made: a body of its own, as the crate's closures are.
-    let mut ids: Vec<DefId> = super::recognition::compiled_std(tcx).to_vec();
     let mut at = 0;
     while at < ids.len() {
         let def_id = ids[at];
@@ -565,10 +572,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     all_bodies: &'a [Body<'tcx>],
     initializers: &[Body<'tcx>],
     dependencies: &crate::library::Dependencies,
-    library: bool,
-    std_bodies: bool,
+    (library, std_bodies): (bool, bool),
+    instances: &super::Instances,
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
-    let foreign = super::library::Foreign::new(tcx, dependencies);
+    let foreign = super::library::Foreign::new(tcx, dependencies, instances);
     if !bindings::validate(tcx)
         || !super::declarations::validate_types(tcx)
         || !traits::validate(tcx, &foreign)
@@ -665,7 +672,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A static's or a constant's initializer, lowered as code, `static F:
     // fn() -> f64 = toast`, imports what it reads as a function does.
     let with_initializers: Vec<&Body<'tcx>> = all_bodies.iter().copied().chain(initializers).collect();
-    let mut uses = js_uses(tcx, &with_initializers, &held);
+    let mut uses = js_uses(tcx, &with_initializers, &held, instances);
     // What the crate's libraries export (ADR 0100) is named before lowering,
     // after its name there, a module's default too, `import noop from
     // "../shared/noop.js"` (ADR 0773), and imported by the modules that turn
@@ -921,7 +928,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut modules = Vec::new();
     let mut seen_modules = HashSet::new();
     for &def_id in &items {
-        let module = super::body_module(tcx, def_id);
+        let module = super::body_module(tcx, instances, def_id);
         if seen_modules.insert(module) {
             modules.push(module);
         }
@@ -957,7 +964,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &consts,
         &local_functions,
     );
-    let (mut taken, fns, failed) = name_items(tcx, &items, &modules, &uses.globals, &trait_impls, &named_expressions);
+    let (mut taken, fns, failed) = name_items(
+        tcx,
+        &items,
+        &modules,
+        &uses.globals,
+        &trait_impls,
+        &named_expressions,
+        instances,
+    );
     let failed = failed | refuse_two_names(tcx, &modules);
     let import_names = name_imports(tcx, &uses, &taken, &foreign);
     for (module, names) in taken.iter_mut() {
@@ -965,7 +980,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     let imported = uses.imported;
     let required = uses.required;
-    let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns);
+    let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns, instances);
     let tests = collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
 
     let paths: HashMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
@@ -991,7 +1006,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
     };
     let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
-    let copied = copied_params(tcx, all_bodies, &fns, library);
+    let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     let given = crate::lower::traits::Given {
         copied: &copied,

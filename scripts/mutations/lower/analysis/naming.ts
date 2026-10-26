@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "held-read-imported-too",
     breaks: "a module that reads a binding through the module that holds it imports what the binding reads as well, `import * as react from \"react\"`, unused",
     file: "src/lower/analysis/naming.rs",
-    find: "            if !is_binding(tcx, def_id) || held.reads.contains_key(&expr.span) {\n",
-    replace: "            if !is_binding(tcx, def_id) {\n",
+    find: "            .filter(|(_, expr)| !held.reads.contains_key(&expr.span))\n",
+    replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
@@ -201,8 +201,8 @@ export const mutations: Mutation[] = [
     name: "dynamic-import-static-too",
     breaks: "a binding `js::import!` loads is imported statically too, and its local renamed",
     file: "src/lower/analysis/naming.rs",
-    find: "            if dynamic.contains(&id) {\n",
-    replace: "            if false && dynamic.contains(&id) {\n",
+    find: "            .filter(|(id, _)| !dynamic.contains(id))\n",
+    replace: "            .filter(|(id, _)| true || !dynamic.contains(id))\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
   {

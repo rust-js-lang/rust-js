@@ -1,6 +1,9 @@
 # 0098. A destructor runs where rustc runs it, in a `finally`
 
 Status: Accepted. Extends [0020](0020-structs-and-tuples.md) and [0052](0052-std-trait-impls.md).
+Amended by [0914](0914-a-librarys-generic-function-is-its-programs.md): a
+library's public generic function is given the drops its own crate's
+calls give it.
 Amended by [0660](0660-catch-unwind-catches-what-js-throws.md): what a panic
 unwinds through is dropped before `catch_unwind` returns, and a `drop` that
 panics as another unwinds replaces it there too.
@@ -633,3 +636,10 @@ parent links are upgraded, its labels dropped in Rust's order) and
 The trie's `insert` reads worse than a person's JS, its drop function
 declared in each `catch` and its `for` a `while (true)`, which grew
 `docs/readability.txt`'s `while (true)` share: filed as #306.
+
+## Amendment: a library's function takes what its own crate's calls give it ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A library's function a consumer could reach was given a drop of each
+type parameter, for consumers it never sees. It's given those its own
+crate's calls give it; a consumer that gives a value with a destructor to
+one that takes no drop for it compiles its own, from the library's MIR.

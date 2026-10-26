@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "copy-bound-always-kept",
     breaks: "every `Copy` bound takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
     file: "src/lower/traits.rs",
-    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, id)",
-    replace: "    if false\n        && super::analysis::copies_by_callers(tcx, id)",
+    find: "    if tcx.is_lang_item(tr.def_id, LangItem::Copy)\n        && super::analysis::copies_by_callers(tcx, foreign, id)",
+    replace: "    if false\n        && super::analysis::copies_by_callers(tcx, foreign, id)",
     tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {

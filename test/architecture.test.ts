@@ -975,7 +975,7 @@ test("crate analysis cannot emit functions or invoke linking", () => {
 
 test("lowering returns symbolic output and leaves linking to the driver", () => {
   expect(read("src/lower/pipeline.rs")).not.toMatch(/crate::link|link::|runtime::resolve/);
-  expect(read("src/lower/pipeline.rs")).toContain("Option<Unlinked>");
+  expect(read("src/lower/pipeline.rs")).toMatch(/Option<(Box<)?Unlinked>/);
   expect(read("src/main.rs")).toContain("link::link(unlinked)");
 });
 

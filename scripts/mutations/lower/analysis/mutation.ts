@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
-    name: "library-public-copy-lost",
-    breaks: "a library's public function takes no copy function, though a consumer may give it a struct that changes",
-    file: "src/lower/analysis/mutation.rs",
-    find: " || (library && crate::lower::library::reachable(tcx, id))",
-    replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
-  },
-  {
     name: "trait-method-copies-by-callers",
     breaks: "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
     file: "src/lower/analysis/mutation.rs",
@@ -146,5 +138,13 @@ export const mutations: Mutation[] = [
     find: "if adt.is_enum()) && object_like(tcx, ty)",
     replace: "if adt.is_enum())",
     tests: ["test/lowering-collections.test.ts", "-t", "an option written through a &mut is no object changed in place"],
+  },
+  {
+    name: "instance-copies-unasked",
+    breaks: "a library's function the crate compiles itself takes a copy of each `Copy` type parameter, as one a dictionary calls, `pairOf(value, dropped, TCopy, dropD)` where its callers give its own copy (ADR 0914)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "    (id.is_local() || foreign.is_instance(id))\n",
+    replace: "    id.is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
   },
 ];

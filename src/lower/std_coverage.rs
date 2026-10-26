@@ -53,7 +53,8 @@ impl Body {
 /// of, under `# Vec 35 of 160; bodies: 20 safe, 1 spec, 3 opaque, 10
 /// memory, 2 none`.
 pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &crate::library::Dependencies) -> String {
-    let foreign = super::library::Foreign::new(tcx, dependencies);
+    let instances = super::Instances::default();
+    let foreign = super::library::Foreign::new(tcx, dependencies, &instances);
     let mut bodies = Bodies::default();
     let mut out = String::new();
     for (name, measured) in registry::measured(tcx) {

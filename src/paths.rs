@@ -44,12 +44,6 @@ pub(crate) fn specifier(from: &Path, to: &Path) -> String {
     }
 }
 
-/// Whether a module specifier names a file, `./util.js`, `../lib.js`, and
-/// not a package, `react`.
-pub(crate) fn is_relative_specifier(specifier: &str) -> bool {
-    specifier.starts_with("./") || specifier.starts_with("../")
-}
-
 /// The file a relative `specifier`, `../util.js`, names from `dir`: each
 /// `.` and `..` of it taken as written, as JS resolves it, then `absolute`.
 pub(crate) fn specifier_file(dir: &Path, specifier: &str) -> Result<PathBuf, String> {

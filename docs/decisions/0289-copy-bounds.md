@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0052](0052-std-trait-impls.md): a `T: Copy`
 copies with its dictionary only where it may be given a value whose copy
 is another object. Amended: a caller whose value is its own copy, JS
-among them, gives none, and the copy is the value.
+among them, gives none, and the copy is the value. Amended by
+[0914](0914-a-librarys-generic-function-is-its-programs.md): a library's
+public function takes a copy only where its own crate's calls give one.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -127,3 +129,13 @@ getting the object itself. The corpus's in-crate callers that gave
 `$someValue(value)`, is taken once, as every copy of one is, its `const`
 named after the copy's parameter, `value`: `value$1` beside a `value`,
 which `docs/readability.txt`'s renames count, blessed for it.
+
+## Amendment: a library's function takes what its own crate's calls give it ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A library's public function its consumers can reach took a copy function
+of each `Copy` bound (above), so its JS changed when a crate started
+using it. It takes one only where its own crate's calls give one, as a
+program's does, which its contract says, `copy`; a consumer whose call
+gives a value whose copy isn't itself to one that takes none compiles its
+own of it, which takes the copy. A trait's method and an impl's still take
+one, a dictionary's callers being unseen.

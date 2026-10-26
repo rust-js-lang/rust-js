@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        let drop = drop.map(|_| Expr::undefined())?;\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },
+  {
+    name: "instance-takes-unused-drops",
+    breaks: "a library's function the crate compiles itself takes every drop its callers give, used or not, `pick(a, b, dropA, dropB)` (ADRs 0300, 0914)",
+    file: "src/lower/drops/uses.rs",
+    find: "                    (id.is_local() || foreign.is_instance(id))\n",
+    replace: "                    id.is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
+  },
 ];

@@ -463,7 +463,7 @@ impl Expr {
         Expr::call(Expr::helper(name), args)
     }
 
-    pub fn drop_argument(item: u32, index: u32, drop: Expr) -> Expr {
+    pub fn drop_argument(item: (u32, u32), index: u32, drop: Expr) -> Expr {
         Expr::new(ExprKind::DropArgument(item, index, Box::new(drop)))
     }
 

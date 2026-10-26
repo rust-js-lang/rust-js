@@ -522,9 +522,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 params,
                 body: out,
                 // A constant's initializer, its module's `const`'s value, isn't
-                // a function anyone calls.
+                // a function anyone calls; a library's function the crate
+                // compiles itself is its own, which no other crate or JS
+                // calls (ADR 0914).
                 export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
                     && self.tcx.visibility(def_id).is_public()
+                    && !self.krate.foreign.is_instance(def_id)
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,

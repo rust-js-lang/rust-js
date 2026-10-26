@@ -116,7 +116,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place)*
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](0097-deref-and-marker-impls.md)
-- [0098 A destructor runs where rustc runs it, in a `finally`](0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing; amended: which type is inside itself is the drop query's)*
+- [0098 A destructor runs where rustc runs it, in a `finally`](0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing; amended: which type is inside itself is the drop query's; amended by 0914: a library's function is given the drops its crate's calls give it)*
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says; extended by 0897: a parameter's index, and a `RefCell` guard's element)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
@@ -307,7 +307,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
 - [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used)*
 - [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md) *(extended by 0847: a `OnceCell`'s too, absent until it's set)*
-- [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md) *(amended: a caller whose value is its own copy, JS among them, gives none)*
+- [0289 A `Copy` bound takes a copy only where a copy isn't the value](0289-copy-bounds.md) *(amended: a caller whose value is its own copy, JS among them, gives none; amended by 0914: a library's takes one only where its crate's calls give one)*
 - [0290 A pattern names a variable set again while nothing sets it](0290-steady-bindings.md)
 - [0291 A `let` taking a variable apart is JS's destructuring](0291-let-destructures-places.md)
 - [0292 An index a condition shows in bounds is read as it is](0292-known-bounds.md)
@@ -318,7 +318,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0297 A closure a `let` names for a hook is the hook's named function](0297-named-hook-functions.md)
 - [0298 An Option of a value never falsy is tested by its truth](0298-truthy-options.md) *(amended: an `Option<bool>`'s `Some(true)` is tested by its truth, `x ?? false` as `x`; amended again, reversed: every `Option` is tested `o != null`; amended a third time: by what its payload may be, its truth where it's never falsy, `o != null` where it may be; amended: that truth is a test of being set, `p ? p.x : undefined` is `p?.x`)*
 - [0299 A return of `undefined` is a bare `return;`](0299-bare-return.md)
-- [0300 A function takes the drops its body uses](0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it)*
+- [0300 A function takes the drops its body uses](0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it; amended by 0914: a library's takes those its crate's calls give it)*
 - [0301 A read that can't throw comes before a move](0301-reads-that-cannot-throw.md)
 - [0302 An `f64` known to be a whole number in range is cast as it is](0302-whole-number-casts.md)
 - [0303 Top-level statements that span lines are set apart](0303-blank-lines.md) *(superseded by 0865 where the source tells: a blank line is where the Rust has one)*
@@ -378,7 +378,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0357 A local reuses a name where JS's scopes keep each read its own](0357-scoped-local-names.md)
 - [0358 A number from a `bool` or a `char` is its cast](0358-numbers-from-bool-and-char.md)
 - [0359 next/font: each Google Font a function, generated](0359-next-font.md)
-- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built)*
+- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built; amended by 0914: its generic functions are its program's)*
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
@@ -698,6 +698,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md) *(extended by 0912: std's struct folds by its compiled `fold`; a `&mut I` steps by what std passes on)*
 - [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md) *(extended by 0913: std's generic `Try` compiles, held `Skip` and `Take` are std's)*
 - [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
+- [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

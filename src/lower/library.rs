@@ -37,6 +37,9 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// its type parameters (ADR 0145).
 pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
+    /// The type parameters whose `Copy` bound takes a copy function (ADRs
+    /// 0289, 0914).
+    pub(super) copied: &'a HashSet<(DefId, u32)>,
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
@@ -82,6 +85,9 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     for &index in contracts.drop_params.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::Drop);
     }
+    for &(_, index) in contracts.copied.iter().filter(|&&(of, _)| of == id) {
+        param(&mut params, index).marks.insert(ParamFact::Copy);
+    }
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::NoDrop);
     }
@@ -111,6 +117,7 @@ pub(super) fn exports<'tcx>(
     let Contracts {
         // What each type parameter is asked, `type_params`'s.
         drop_params: _,
+        copied: _,
         no_drops: _,
         type_facts: _,
         stepped: _,
@@ -354,11 +361,33 @@ pub(super) struct Reached<'tcx> {
 pub(super) struct Foreign<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     dependencies: &'a Dependencies,
+    /// The libraries' functions the crate compiles itself (ADR 0914), which
+    /// are its own, no item of theirs it imports.
+    instances: &'a super::instances::Instances,
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
-    pub(super) fn new(tcx: TyCtxt<'tcx>, dependencies: &'a Dependencies) -> Self {
-        Foreign { tcx, dependencies }
+    pub(super) fn new(
+        tcx: TyCtxt<'tcx>,
+        dependencies: &'a Dependencies,
+        instances: &'a super::instances::Instances,
+    ) -> Self {
+        Foreign {
+            tcx,
+            dependencies,
+            instances,
+        }
+    }
+
+    /// The crate's type context, which its queries are asked in.
+    pub(super) fn tcx(&self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    /// Whether `id`, a library's function or a closure of one, is compiled
+    /// in this crate (ADR 0914).
+    pub(super) fn is_instance(&self, id: DefId) -> bool {
+        self.instances.contains(self.tcx, id)
     }
 
     /// Is each library's JS from the crate rustc loaded the metadata of? A
@@ -403,7 +432,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {
-        if id.is_local() {
+        // An instance is the crate's own (ADR 0914).
+        if id.is_local() || self.is_instance(id) {
             return None;
         }
         let library = self
@@ -428,7 +458,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Why `id` can't be used, if it's a library's its manifest doesn't list.
     pub(super) fn unlisted(&self, id: DefId) -> Option<String> {
-        (self.in_library(id) && self.item(id).is_none()).then(|| {
+        (self.in_library(id) && self.item(id).is_none() && !self.is_instance(id)).then(|| {
             format!(
                 "rust-js: `{}` isn't one of the items `{}`'s manifest exports",
                 self.tcx.def_path_str(id),

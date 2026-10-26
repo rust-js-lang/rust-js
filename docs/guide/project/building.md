@@ -246,8 +246,24 @@ frontend/src/lib.js   import { MAX_LENGTH, validEmail } from "../../models/src/l
 
 The package built is compiled as a program only where no crate of the
 workspace uses it; one another crate uses is a library, whichever package
-is built, so its JS is the same built alone as through what uses it
-([ADR 0360](../../decisions/0360-the-app-is-a-program.md)).
+is built ([ADR 0360](../../decisions/0360-the-app-is-a-program.md)). A
+library's generic function takes the copies and drops its own crate's
+calls give it, as a program's does, so a crate's JS is the same whether
+another crate uses it or not, the one its JS callers call:
+`createContext(defaultValue)`, `useState(initialState)`. A crate whose call
+gives one a value to copy or drop that it takes nothing for, a struct it
+changes in place, a value with a destructor, compiles its own of it from
+the library's MIR, beside its first caller, and calls that; the library's
+private functions it calls too. One that reads its library's private
+`static` or thread-local, or calls a binding its library names by a path
+relative to its own file, is refused, naming it
+([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)):
+
+```
+models/src/lib.rs     pub fn pick<A, B>(a: A, _b: B) -> A
+models/src/lib.js     export function pick(a, b) { return a; }
+frontend/src/lib.js   function pick(a, b, dropB) { dropB?.(b); return a; }
+```
 
 The same `models` crate builds natively for a Rust server. See
 [Testing](testing.md#test-shared-logic-natively).

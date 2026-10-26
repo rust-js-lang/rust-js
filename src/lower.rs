@@ -47,6 +47,7 @@ mod display;
 mod drops;
 mod format_args;
 mod format_spec;
+mod instances;
 mod items;
 mod iterators;
 mod jsx;
@@ -90,7 +91,8 @@ use bindings::{Export, is_binding};
 /// Whether each `#[rust_js::types]` is a TypeScript type rust-js reads, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;
-pub use pipeline::{Built, lower_crate};
+pub use instances::{Instances, instance_bodies};
+pub use pipeline::{Built, Lowered, lower_crate};
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
 pub fn tidy_pass_names() -> Vec<String> {
@@ -136,9 +138,14 @@ struct FnInfo {
 /// module it's in; a std body's (ADR 0561), the crate's
 /// module named as std's is, `iter` of `core::iter::Peekable`'s. The one
 /// answer to where a body goes.
-pub(crate) fn body_module(tcx: TyCtxt<'_>, def_id: DefId) -> LocalModId {
+pub(crate) fn body_module(tcx: TyCtxt<'_>, instances: &Instances, def_id: DefId) -> LocalModId {
     if let Some(local) = def_id.as_local() {
         return tcx.parent_module_from_def_id(local);
+    }
+    // A library's function the crate compiles itself is beside its first
+    // caller (ADR 0914).
+    if let Some(module) = instances.module(tcx, def_id) {
+        return module;
     }
     recognition::std_home_module(tcx, def_id).unwrap_or_else(|| {
         panic!(
@@ -1063,14 +1070,16 @@ fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> Strin
     let Some(unmarked) = named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) else {
         return named;
     };
-    let Some(root) = tcx.typeck_root_def_id(function).as_local() else {
-        return named;
+    // Another crate's body, read from its MIR alone, a library's the crate
+    // compiles (ADR 0914) or std's: its bindings, its MIR's.
+    let names = match tcx.typeck_root_def_id(function).as_local() {
+        Some(root) => binding_names(tcx, root, function),
+        None if tcx.is_mir_available(function) => (tcx.optimized_mir(function).var_debug_info.iter())
+            .map(|info| info.name)
+            .collect(),
+        None => return named,
     };
-    let taken = || {
-        binding_names(tcx, root, function)
-            .iter()
-            .any(|other| camel_case(other.as_str()) == unmarked)
-    };
+    let taken = || names.iter().any(|other| camel_case(other.as_str()) == unmarked);
     match crate::names::js_ident(unmarked) == unmarked && !taken() {
         true => unmarked.to_string(),
         false => named,
