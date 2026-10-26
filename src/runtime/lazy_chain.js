@@ -45,7 +45,8 @@ function $lazyChain(a, b) {
     return b.done ? a : b;
   };
   // Std's `Chain::nth`: `a` advanced, then its next, or what's left of
-  // `n` of `b`'s own `nth`, where it has one (#214).
+  // `n` of `b`'s own `nth`, where it has one (#214), what it passes over
+  // dropped as `a`'s is (ADR 0925).
   chained.nth = (n, drop) => {
     if (first !== undefined) {
       // What it passes over dropped, by its own `advance_by` or each by
@@ -61,7 +62,8 @@ function $lazyChain(a, b) {
       first.return?.();
       first = undefined;
     }
-    return second.nth !== undefined ? second.nth(n) : $lent(second).nth(n);
+    const dropping = second.dropItem ?? drop;
+    return second.nth !== undefined ? second.nth(n, dropping) : $lent(second).nth(n, dropping);
   };
   chained.tryFold = (init, f, broke) => {
     let folded = init;
@@ -86,10 +88,9 @@ function $lazyChain(a, b) {
     return counted + $count(second, drop);
   };
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
-  // go once it's run out (#250).
-  // Each side's item drop is the other's too, as they give one type of item:
-  // a compiled struct's, which has none of its own, the other's (#285).
-  const advanced = (it, m, drop = it.dropItem ?? first?.dropItem ?? second.dropItem) =>
+  // go once it's run out (#250), each given the items' drop its caller
+  // gives (ADR 0925).
+  const advanced = (it, m, drop) =>
     it.advanceBy !== undefined ? it.advanceBy(m, drop) : $Steps.prototype.advanceBy.call($lent(it), m, drop);
   chained.advanceBy = (m, drop) => {
     if (first !== undefined) {

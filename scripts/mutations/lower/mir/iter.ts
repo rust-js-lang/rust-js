@@ -366,14 +366,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
-    name: "rev-source-unclosed",
-    breaks: "what `rev()` steps, a compiled `fuse()`, isn't closed to drop it (#225)",
-    file: "src/lower/mir/iter.rs",
-    find: "            let receiver = self.closing(receiver, receiver_ty, span)?;\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
-  },
-  {
     name: "identity-map-dropped-over-own-steps",
     breaks: "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "src/lower/mir/iter.rs",
@@ -415,14 +407,6 @@ export const mutations: Mutation[] = [
     find: "            .map(|(i, value)| match arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
     replace: "            .map(|(i, value)| match false && arg_tys.get(i).is_some_and(|&ty| in_place(ty)) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
-  },
-  {
-    name: "slice-count-folded",
-    breaks: "`rev().take(2).count()` of a `Vec` is a `reduce`, dropping what it counts one at a time from the back, not std's `Take::count`, its source's `advance_by`, one slice (#261)",
-    file: "src/lower/mir/iter.rs",
-    find: "            || (self.recognition().nths_a_slice(iter_ty)\n",
-    replace: "            || (false && self.recognition().nths_a_slice(iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
     name: "param-count-reduced",

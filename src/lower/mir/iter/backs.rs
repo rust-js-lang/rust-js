@@ -222,7 +222,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let len = self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
                 let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
                     Some(it) => it,
-                    None if self.explicit_adapter(output) => self.held_source(receiver.clone(), iter_ty, span)?,
                     // Closed to drop it, as a map's is, where it's owned, not
                     // through a `&mut` (#223, #225).
                     None if self.is_user_iterator(iter_ty) => {
@@ -232,25 +231,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => self.closing(receiver.clone(), held, span)?,
                 };
                 Expr::call_helper("$enumerate", vec![it])
-            }
-            // A take or a skip of a kind explicit, which keeps its source and
-            // how many it has left, `n`, `$taking` and `$skipping` (ADR 0542),
-            // given its items' drop, of what it skips past.
-            Some(method @ (IterMethod::Take | IterMethod::Skip)) if self.explicit_adapter(output) => {
-                let (back, len) = (self.knows_its_back(iter_ty), self.knows_its_length(iter_ty));
-                let it = match self.given_js_iterator(receiver.clone(), iter_ty, back, len) {
-                    Some(it) => it,
-                    None => self.held_source(receiver.clone(), iter_ty, span)?,
-                };
-                let mut args = vec![it, values.next().expect("how many")];
-                if let Some(item) = self.iterator_item(output) {
-                    args.extend(self.std_drop_function(item, span)?);
-                }
-                let helper = match method {
-                    IterMethod::Take => "$taking",
-                    _ => "$skipping",
-                };
-                Expr::call_helper(helper, args)
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it
@@ -358,19 +338,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => "$findBack",
         };
         Ok(Expr::call_helper(helper, given))
-    }
-
-    /// The source of an adapter a struct holds (ADR 0542), `receiver` of type
-    /// `iter_ty`, as capable as its type is: a range's knowing its back, and
-    /// an exclusive one's its length; another's, its JS iterator.
-    pub(in crate::lower) fn held_source(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        match self.range_kind(iter_ty) {
-            Some(crate::lower::std_types::range::RangeKind::Exclusive) => {
-                self.as_exact_size(receiver, iter_ty, true, span)
-            }
-            Some(_) => self.as_double_ended(receiver, iter_ty, span),
-            None => self.as_js_iterator(receiver, iter_ty, span),
-        }
     }
 
     /// Whether `iter_ty` is an array's items under `Rev`s, `Filter`s and

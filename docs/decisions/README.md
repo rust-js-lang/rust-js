@@ -709,6 +709,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0921 A `&mut` to a generic iterator an `Option` holds is the iterator, whichever method gives it](0921-an-option-slot-gives-its-iterator.md)
 - [0924 A held `Flatten`'s `try_fold` is std's, a parameter an associated type equals is bound as it is, and a map's, a range's and a combinator's call is lowered of its values in one place](0924-flatten-s-try-fold-is-std-s.md)
 - [0923 A `Result` given as an `IntoIterator` is its `Ok` value, as its `into_iter()` is](0923-a-result-given-as-items-is-its-ok-value.md)
+- [0925 A chain's `nth` drops what `b` passes over, and a compiled struct drops what it holds itself, never closed again](0925-a-compiled-struct-drops-itself.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -828,7 +829,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0539 A closure writes to its maker's `Formatter`, and `try_for_each`](0539-a-closure-writes-its-makers-formatter.md)
 - [0540 A copied default's types are put in its impl's terms once](0540-a-copied-defaults-types-in-its-impls-terms-once.md)
 - [0541 A copied default's `Self: Sized` is its impl's](0541-a-defaults-sized-is-its-impls.md)
-- [0542 An adapter a struct holds keeps its source and its state](0542-a-held-adapter-keeps-its-source-and-state.md)
+- [0542 An adapter a struct holds keeps its source and its state](0542-a-held-adapter-keeps-its-source-and-state.md) *(amended by 0925: an explicit counted adapter is none now, each std's struct)*
 - [0543 A `Peekable` a struct holds keeps what it peeked at](0543-a-held-peekable-keeps-what-it-peeked-at.md) *(superseded in part by 0561; extended by 0899: a specialization a fact picks, `OneShot`'s too)*
 - [0544 A `Cycle` a struct holds keeps both it cycles](0544-a-held-cycle-keeps-both-it-cycles.md)
 - [0545 A map the crate steps from its back is made knowing it](0545-a-map-stepped-from-its-back-is-made-knowing-it.md) *(amended: what a function gives behind an `impl DoubleEndedIterator`)*

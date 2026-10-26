@@ -116,16 +116,11 @@ function main() {
     ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${$closing(
-      iterator_fuse(
-        ["d", 0],
-        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-        false,
-        ownDrop_drop,
-      ),
-      (it) => {
-        it.return();
-      },
+    `${iterator_fuse(
+      ["d", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      false,
+      ownDrop_drop,
     )
       .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
@@ -135,12 +130,7 @@ function main() {
   iter.return();
   console.log(`${result}`);
   console.log(
-    `${$closing(
-      iterator_fuse(["f", 0], { next: plainIterator_next }, false, plainDrop_drop),
-      (it) => {
-        it.return();
-      },
-    )
+    `${iterator_fuse(["f", 0], { next: plainIterator_next }, false, plainDrop_drop)
       .map((x) => (x * 2) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
@@ -186,81 +176,49 @@ function main() {
     throw error;
   }
   console.log(
-    `[${$closing(peeked, (it) => {
-      it.return();
-    })
+    `[${peeked
       .map((x) => (x * 2) >>> 0)
       .toArray()
       .join(", ")}]`,
   );
   console.log(
-    `${$closing(
-      iterator_peekable(
-        ["m", 0],
-        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-        ownDrop_drop,
-      ),
-      (it) => {
-        it.return();
-      },
+    `${iterator_peekable(
+      ["m", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      ownDrop_drop,
     )
       .map((x) => (x * 2) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${$closing(
-      iterator_fuse(
-        ["n", 0],
-        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-        false,
-        ownDrop_drop,
-      ),
-      (it) => {
-        it.return();
-      },
+    `${iterator_fuse(
+      ["n", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      false,
+      ownDrop_drop,
     )
       .map((x) => (x * 2) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${$closing(
-      iterator_peekable(
-        ["o", 0],
-        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-        ownDrop_drop,
-      ),
-      (it) => {
-        it.return();
-      },
+    `${iterator_peekable(
+      ["o", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      ownDrop_drop,
     )
       .filter((x) => x % 2 === 1)
       .reduce((n) => n + 1, 0)}`,
   );
   console.log(
-    `${$closing(iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop), (it) => {
-      it.return();
-    })
+    `${iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop)
       .map((x) => (x * 2) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `[${$closing(
-      iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop),
-      (it) => {
-        it.return();
-      },
-    )
-      .take(1)
-      .toArray()
-      .join(", ")}]`,
+    `[${iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop).take(1).toArray().join(", ")}]`,
   );
   console.log(
-    `[${$closing(
-      iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop),
-      (it) => {
-        it.return();
-      },
-    )
+    `[${iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop)
       .map((x) => (x + 1) >>> 0)
       .toArray()
       .join(", ")}]`,
@@ -273,9 +231,7 @@ function main() {
     throw error;
   }
   console.log(
-    `[${$closing(stepped, (it) => {
-      it.return();
-    })
+    `[${stepped
       .map((x) => (x * 2) >>> 0)
       .toArray()
       .join(", ")}]`,
@@ -311,28 +267,23 @@ function main() {
     ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${$closing(
-      iterator_peekable(
-        iterator_inspect(
-          iterator_skip(
-            ["w", 0],
-            1,
-            { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-            ownDrop_drop,
-          ),
-          () => {},
-          { next: $next, fold: $foldOf, nth: $nth },
-          (skip) => {
-            skip.return();
-          },
+    `${iterator_peekable(
+      iterator_inspect(
+        iterator_skip(
+          ["w", 0],
+          1,
+          { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+          ownDrop_drop,
         ),
-        { next: $next, fold: $foldOf },
-        (inspect) => {
-          inspect.return();
+        () => {},
+        { next: $next, fold: $foldOf, nth: $nth },
+        (skip) => {
+          skip.return();
         },
       ),
-      (it) => {
-        it.return();
+      { next: $next, fold: $foldOf },
+      (inspect) => {
+        inspect.return();
       },
     )
       .map((x) => (x + 1) >>> 0)

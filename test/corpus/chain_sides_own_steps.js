@@ -311,14 +311,7 @@ function main() {
     fuse.return();
     throw error;
   }
-  const value$17 = $held(
-    $lazyChain(
-      $closing(fuse, (it) => {
-        it.return();
-      }),
-      $closing($iter(tmp$12), $dropEach(loudDrop_drop)),
-    ),
-  );
+  const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
   let fused;
   try {
     fused = $nthDropping($lent(value$17), 2, loudDrop_drop, false);
@@ -343,25 +336,20 @@ function main() {
   console.log(`${value$18 == null ? "None" : `Some(${value$18})`}`);
   // Std's `advance_by` through a `take` of a held `fuse()` of a `rev()`:
   // a `Vec`'s `advance_back_by`, one slice, front to back (#286).
-  const value$19 = $closing(
-    iterator_fuse(
-      iterator_rev(
-        $iter($iter(louds(55, 3))),
-        { next: $next },
-        { next_back: $nextBack },
-        $dropEach(loudDrop_drop),
-        loudDrop_drop,
-      ),
-      { next: $next, fold: $foldOf },
-      true,
-      (rev) => {
-        rev.return();
-      },
+  const value$19 = iterator_fuse(
+    iterator_rev(
+      $iter($iter(louds(55, 3))),
+      { next: $next },
+      { next_back: $nextBack },
+      $dropEach(loudDrop_drop),
       loudDrop_drop,
     ),
-    (it) => {
-      it.return();
+    { next: $next, fold: $foldOf },
+    true,
+    (rev) => {
+      rev.return();
     },
+    loudDrop_drop,
   ).take(2);
   let tmp$13;
   try {
@@ -423,16 +411,7 @@ function main() {
     value$22.return();
     throw error;
   }
-  const value$23 = $held(
-    $lazyChain(
-      $closing(value$22, (it) => {
-        it.return();
-      }),
-      $closing(Iterator.from(tmp$16), (it) => {
-        it.return();
-      }),
-    ),
-  );
+  const value$23 = $held($lazyChain(value$22, tmp$16));
   let both;
   try {
     both = $nthDropping($lent(value$23), 2, loudDrop_drop, false);
@@ -472,12 +451,7 @@ function main() {
   }
   const last = $lastDropping(
     $skipping(
-      $lazyChain(
-        $closing(value$25, (it) => {
-          it.return();
-        }),
-        $closing($iter(tmp$17), $dropEach(loudDrop_drop)),
-      ),
+      $lazyChain(value$25, $closing($iter(tmp$17), $dropEach(loudDrop_drop))),
       2,
       loudDrop_drop,
     ),

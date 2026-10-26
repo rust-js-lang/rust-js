@@ -34,12 +34,4 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
   },
-  {
-    name: "lent-struct-field-hidden",
-    breaks: "a lent struct's `count` is `$Steps`' helper of that name, not its field",
-    file: "src/runtime/lent.js",
-    find: "    const of = (target, key) => (Object.hasOwn(target, key) || !Object.hasOwn(it, key) ? target : it);\n",
-    replace: "    const of = (target, key) => (key in target ? target : it);\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
-  },
 ];

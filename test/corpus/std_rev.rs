@@ -75,4 +75,6 @@ fn main() {
     println!("{:?}", mapped.rev().map(|l| l.0).collect::<Vec<_>>());
     // Its own impl's, of what it's made into where it's made.
     println!("{:?} {}", v.iter().rev().next_back(), Countdown(5).rev().size_hint().0);
+    // Shown or cloned where it's made, by its own compiled impl.
+    println!("{:?} {:?}", v.iter().rev(), (1..4).rev().clone().collect::<Vec<_>>());
 }

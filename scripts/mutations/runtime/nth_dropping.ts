@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/nth_dropping.js",
     find: "  const step = it.nth(n, drop);\n",
     replace: "  const step = it.nth(n);\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
   },
 ];

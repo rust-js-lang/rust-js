@@ -483,14 +483,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `rev()`: of the crate's iterator, `reversed_user`'s; of a range,
         // stepped from its end; of items made already, an array's, a `$iter`
         // of them; not of a lazy one, whose closures would run in another
-        // order (ADR 0164). What it steps is closed to drop it (#225).
+        // order (ADR 0164). What it steps is closed with it, which drops
+        // it: a compiled struct, a `fuse()`, by its own `return` (#225).
         if std_method == Some(IterMethod::Rev) {
             let receiver = values.into_iter().next().expect("the receiver");
             let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
             if self.is_user_iterator(iter_ty) {
                 return self.reversed_user(receiver, receiver_ty, span).map(Some);
             }
-            let receiver = self.closing(receiver, receiver_ty, span)?;
             return Ok(Some(match self.range_kind(iter_ty) {
                 None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
                 Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
@@ -703,18 +703,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its own `count` where it may have one, `$count`'s: std's compiled
         // one, a `Take`'s, which advances its source and asks no `nth`
-        // (#213, ADR 0913), and a type parameter's, which its caller's
-        // iterator may have, `Take`'s in std's `Skip::count`; and a `Skip`'s
-        // whose `nth` drops a reversed `Vec`'s as one slice, as its `count`
-        // does (#261).
+        // (#213, ADR 0913), a `Skip`'s, whose `nth` drops a reversed `Vec`'s
+        // as one slice (#261), and a type parameter's, which its caller's
+        // iterator may have, `Take`'s in std's `Skip::count`.
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let own_count = matches!(self.reveal(iter_ty).kind(), ty::Param(_))
             || self.compiled_step(self.reveal(iter_ty), iterator, "count");
-        if own_count
-            || (self.recognition().nths_a_slice(iter_ty)
-                && self.recognition().reversed(iter_ty).is_none()
-                && crate::lower::recognition::stepped_by_source(self.tcx, self.reveal(iter_ty)).is_none())
-        {
+        if own_count {
             let mut given = vec![it];
             if let Some(item) = item
                 && let Some(drop) = self.drop_function(item, span)?

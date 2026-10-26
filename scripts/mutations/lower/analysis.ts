@@ -255,14 +255,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "reads no count|two crates: assoc_drop"],
   },
   {
-    name: "cloned-counted-not-explicit",
-    breaks: "an `enumerate`, a `take` or a `skip` the crate clones isn't explicit, and its clone is refused",
-    file: "src/lower/analysis.rs",
-    find: "    explicit_adapters.extend(\n        cloned\n",
-    replace: "    drop(\n        cloned\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
-  },
-  {
     name: "fn-given-always-quiet",
     breaks: "a function given to `with_borrow` that borrows its own key mutably is taken as borrowing nothing, so its `with_borrow_mut` doesn't throw where Rust panics",
     file: "src/lower/analysis.rs",

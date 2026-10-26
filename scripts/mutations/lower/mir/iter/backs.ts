@@ -193,11 +193,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cloned-apart-unbound-shared",
-    breaks: "generic code clones a `map`'s source it has no `Clone` of",
+    breaks: "generic code clones a `filter`'s source it has no `Clone` of",
     file: "src/lower/mir/iter/backs.rs",
     find: "        if let Some(ty) = unbound {\n",
     replace: "        if let Some(ty) = unbound.filter(|_| false) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a map cloned where its source isn't bound by Clone"],
+    tests: ["test/diagnostics.test.ts", "-t", "a filter cloned where its source isn't bound by Clone"],
   },
   {
     name: "filter-ends-not-made",
@@ -241,14 +241,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
 
-  {
-    name: "held-source-range-unknowing",
-    breaks: "a held adapter's exclusive range isn't made knowing its length, which its back asks",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                self.as_exact_size(receiver, iter_ty, true, span)\n",
-    replace: "                self.as_double_ended(receiver, iter_ty, span)\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
-  },
   {
     name: "held-by-ref-lent",
     breaks: "`by_ref()` of a held adapter is lent, which keeps none of its back",

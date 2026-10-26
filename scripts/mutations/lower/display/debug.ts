@@ -323,14 +323,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
-    name: "take-debug-as-enumerate",
-    breaks: "an explicit `Take` shows its count as `count`, not std's `n`",
-    file: "src/lower/display/debug.rs",
-    find: "                    crate::lower::recognition::Counted::Take => (\"Take\", \"n\"),\n",
-    replace: "                    crate::lower::recognition::Counted::Take => (\"Take\", \"count\"),\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
-  },
-  {
     name: "debug-without-cells",
     breaks: "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display/debug.rs",

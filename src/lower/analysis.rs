@@ -778,15 +778,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The types the crate clones (ADRs 0522, 0525).
     let cloned = clones::cloned_types(tcx, all_bodies);
     // The kinds of adapters explicit wherever the crate makes one: those its
-    // types hold (ADR 0542), and those that keep a count it clones.
+    // types hold (ADR 0542). Not one std's struct is where it's held,
+    // `Enumerate`, `Take` or `Skip`, compiled (ADRs 0871, 0913): its own
+    // kind of held, a clone of one too.
     let mut explicit_adapters = held_adapters::held_adapters(tcx);
-    explicit_adapters.extend(
-        cloned
-            .iter()
-            .filter_map(|&ty| super::recognition::counted_adapter(tcx, ty).map(|(_, id, _)| id)),
-    );
-    // Not one std's struct is where it's held, `Enumerate`, compiled (ADR
-    // 0871): its own kind of held.
     explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);

@@ -532,40 +532,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 Ok(self.applied(show, value))
             }
-            // An explicit `Enumerate`, `Take` or `Skip`, which keeps what it
-            // steps and its count (ADR 0542): `Enumerate { iter: .., count: n
-            // }`, `Take { iter: .., n: n }`.
-            ty::Adt(..)
-                if self.explicit_adapter(ty)
-                    && let Some((kind, _, inner)) = crate::lower::recognition::counted_adapter(self.tcx, ty) =>
-            {
-                let (name, kept) = match kind {
-                    crate::lower::recognition::Counted::Enumerate => ("Enumerate", "count"),
-                    crate::lower::recognition::Counted::Take => ("Take", "n"),
-                    crate::lower::recognition::Counted::Skip => ("Skip", "n"),
-                };
-                let it = Expr::var(&crate::lower::lower_first(name));
-                let stepped = Expr::call_helper("$iteratorValue", vec![Expr::member(it.clone(), "iter")]);
-                let shown = self.debug_string_with(stepped, inner, span, pretty)?;
-                let count = Expr::member(it, kept);
-                let plain = join(vec![
-                    Expr::str(format!("{name} {{ iter: ")),
-                    shown.clone(),
-                    Expr::str(format!(", {kept}: ")),
-                    count.clone(),
-                    Expr::str(" }"),
-                ]);
-                let fields = vec![
-                    join(vec![Expr::str("iter: "), shown]),
-                    join(vec![Expr::str(format!("{kept}: ")), count]),
-                ];
-                let shown = self.pretty_or(pretty, plain, &format!("{name} {{"), Expr::array(fields), "}");
-                let show = Expr::arrow(
-                    vec![crate::lower::lower_first(name).as_str().into()],
-                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                );
-                Ok(self.applied(show, value))
-            }
             // An empty iterator, std's `Empty`, which shows no state.
             ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),
             // A `Cycle` a struct holds, which keeps what it started with and

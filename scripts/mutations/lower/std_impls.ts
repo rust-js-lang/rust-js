@@ -587,14 +587,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
-    name: "counted-clone-from-start",
-    breaks: "a clone of an explicit `enumerate`, `take` or `skip` starts its count again, not where it is",
-    file: "src/lower/std_impls.rs",
-    find: "                let mut args = vec![it, Expr::member(place, kept)];\n",
-    replace: "                let mut args = vec![it, Expr::int(0)];\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
-  },
-  {
     name: "clone-value-opaque-unrevealed",
     breaks: "a clone of a value returned as `impl Trait + Clone` is written of its opaque type, which rust-js refuses to clone",
     file: "src/lower/std_impls.rs",

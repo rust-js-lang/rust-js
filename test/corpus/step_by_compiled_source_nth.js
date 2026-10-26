@@ -65,15 +65,7 @@ function main() {
     throw error;
   }
   const step = $step(tmp);
-  const stepBy = $held(
-    $stepBy(
-      $closing(value, (it) => {
-        it.return();
-      }),
-      step,
-      loudDrop_drop,
-    ),
-  );
+  const stepBy = $held($stepBy(value, step, loudDrop_drop));
   let nth;
   try {
     nth = $nthDropping($lent(stepBy), id(3), loudDrop_drop, false);
@@ -180,15 +172,7 @@ function main() {
     throw error;
   }
   const step$1 = $step(tmp$2);
-  const value$5 = $held(
-    $stepBy(
-      $closing(value$4, (it) => {
-        it.return();
-      }),
-      step$1,
-      loudDrop_drop,
-    ),
-  );
+  const value$5 = $held($stepBy(value$4, step$1, loudDrop_drop));
   try {
     nth = $nthDropping($lent(value$5), id(1), loudDrop_drop, false);
   } catch (error) {

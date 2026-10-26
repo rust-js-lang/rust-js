@@ -129,6 +129,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n",
     replace: "        let (fold, nth, last) = match true {\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
   {

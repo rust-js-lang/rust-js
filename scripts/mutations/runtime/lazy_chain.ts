@@ -3,12 +3,20 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "chain-nth-b-undropped",
+    breaks: "a chain's `nth` past its `a` steps `b` by its `nth` given no drop: what `b` passes over, the crate's iterator's items, is never dropped (ADR 0925)",
+    file: "src/runtime/lazy_chain.js",
+    find: "    const dropping = second.dropItem ?? drop;\n",
+    replace: "    const dropping = undefined;\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_nth_drops_what_it_passes.rs$"],
+  },
+  {
     name: "chain-nth-given-drop-unused",
     breaks: "a chain's `nth` past a compiled `fuse()`'s items, which has no item drop of its own, never drops them (#285)",
     file: "src/runtime/lazy_chain.js",
     find: "      const left = advanced(first, n, first.dropItem ?? drop);\n",
     replace: "      const left = advanced(first, n, first.dropItem);\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^chain_nth_drops_what_it_passes.rs$"],
   },
   {
     name: "chain-count-stepped",
@@ -88,14 +96,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  chained.advanceBy = (m, drop) => {",
     replace: "  chained.advanceByUnused = (m, drop) => {",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
-  },
-  {
-    name: "chain-side-advanced-undropped",
-    breaks: "a chain's `nth` advances a `skip` side, which has no `advance_by` of its own, dropping none of what it passes (#269)",
-    file: "src/runtime/lazy_chain.js",
-    find: "  const advanced = (it, m, drop = it.dropItem ?? first?.dropItem ?? second.dropItem) =>\n",
-    replace: "  const advanced = (it, m, drop) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];

@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    if (this.ownNth) {\n      taken.ownNth = true;\n",
     replace: "    if (this.ownNth && this.dropItem !== undefined) {\n      taken.ownNth = true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_skipped_in_place.rs$"],
   },
   {
     name: "steps-map-ended",

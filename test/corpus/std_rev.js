@@ -152,5 +152,18 @@ function main() {
   console.log(
     `${value$6 == null ? "None" : `Some(${value$6})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );
+  // Shown or cloned where it's made, by its own compiled impl.
+  const rev = iterator_rev($iter(v), { next: $next }, { next_back: $nextBack });
+  const value$7 = revClone_clone(
+    iterator_rev(
+      { start: 1, end: 4 },
+      { next: $rangeNext },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    ),
+    { clone: (value) => ({ start: value.start, end: value.end }) },
+  ).toArray();
+  console.log(
+    `${revDebug_fmt(rev, undefined, { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` })} [${value$7.join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

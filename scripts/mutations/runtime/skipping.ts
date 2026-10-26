@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);\n",
     replace: "  skipping.len = () => skipping.iter.len();\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_in_place_through_adapters.rs$"],
   },
   {
     name: "skipping-nth-back-by-next",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "  if (iter.ownNth) {\n    skipping.nth = (k) => {",
     replace: "  if (false) {\n    skipping.nth = (k) => {",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_nth_skipped_in_place.rs$"],
   },
   {
     name: "skipping-fold-by-next",

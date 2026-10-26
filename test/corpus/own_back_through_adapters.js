@@ -526,12 +526,7 @@ function main() {
   console.log(
     `${$rev(
       $knowing(
-        $closing(
-          iterator_fuse({ left: 2 }, { next: loudIterator_next }, false, loudDrop_drop),
-          (it) => {
-            it.return();
-          },
-        ),
+        iterator_fuse({ left: 2 }, { next: loudIterator_next }, false, loudDrop_drop),
         (iterator) =>
           fuseDoubleEndedIterator_nextBack(
             iterator,

@@ -97,20 +97,11 @@ function main() {
     `${$rev(
       $mapEnds(
         $knowing(
-          $closing(
-            iterator_fuse(
-              count(),
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              false,
-              countDrop_drop,
-            ),
-            (it) => {
-              it.return();
-            },
+          iterator_fuse(
+            count(),
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            false,
+            countDrop_drop,
           ),
           (iterator) =>
             fuseDoubleEndedIterator_nextBack(
@@ -172,20 +163,11 @@ function main() {
     `${$rev(
       $skipping(
         $knowing(
-          $closing(
-            iterator_fuse(
-              count(),
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              false,
-              countDrop_drop,
-            ),
-            (it) => {
-              it.return();
-            },
+          iterator_fuse(
+            count(),
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            false,
+            countDrop_drop,
           ),
           (iterator) =>
             fuseDoubleEndedIterator_nextBack(
@@ -326,69 +308,56 @@ function main() {
   }
   const value = $held(
     $filterEnds(
-      $closing(
-        $knowing(
-          iterator_fuse(
-            count(),
-            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+      $knowing(
+        iterator_fuse(
+          count(),
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          false,
+          countDrop_drop,
+        ),
+        (iterator) =>
+          fuseDoubleEndedIterator_nextBack(
+            iterator,
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
             false,
             countDrop_drop,
           ),
-          (iterator) =>
-            fuseDoubleEndedIterator_nextBack(
-              iterator,
-              {
-                next_back: countDoubleEndedIterator_nextBack,
-                rfold: countDoubleEndedIterator_rfold,
-                nthBack: countDoubleEndedIterator_nthBack,
-              },
-              false,
-              countDrop_drop,
-            ),
-          (iterator) =>
-            fuseExactSizeIterator_len(
-              iterator,
-              { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
-              countDrop_drop,
-            ),
-          (it, init, f) =>
-            $fuseRfold(
-              it,
-              init,
-              f,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              {
-                next_back: countDoubleEndedIterator_nextBack,
-                rfold: countDoubleEndedIterator_rfold,
-                nthBack: countDoubleEndedIterator_nthBack,
-              },
-              countDrop_drop,
-            ),
-          (iterator, k) =>
-            fuseDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              {
-                next_back: countDoubleEndedIterator_nextBack,
-                rfold: countDoubleEndedIterator_rfold,
-                nthBack: countDoubleEndedIterator_nthBack,
-              },
-              false,
-              countDrop_drop,
-            ),
-        ),
-        (it) => {
-          it.return();
-        },
+        (iterator) =>
+          fuseExactSizeIterator_len(
+            iterator,
+            { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+            countDrop_drop,
+          ),
+        (it, init, f) =>
+          $fuseRfold(
+            it,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
+          ),
+        (iterator, k) =>
+          fuseDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            false,
+            countDrop_drop,
+          ),
       ),
       (x) => x % 2 === 1,
     ),
@@ -506,16 +475,11 @@ function main() {
   const rev = $held(
     $rev(
       $knowing(
-        $closing(
-          iterator_fuse(
-            count(),
-            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
-            false,
-            countDrop_drop,
-          ),
-          (it) => {
-            it.return();
-          },
+        iterator_fuse(
+          count(),
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          false,
+          countDrop_drop,
         ),
         (iterator) =>
           fuseDoubleEndedIterator_nextBack(
@@ -571,16 +535,11 @@ function main() {
   }
   const map = $held(
     $enumerate(
-      $closing(
-        iterator_fuse(
-          count(),
-          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
-          false,
-          countDrop_drop,
-        ),
-        (it) => {
-          it.return();
-        },
+      iterator_fuse(
+        count(),
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        false,
+        countDrop_drop,
       ),
     ).map(([i, x]) => (x + (i | 0)) | 0),
   );
