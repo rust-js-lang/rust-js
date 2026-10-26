@@ -296,3 +296,54 @@ console.log(JSON.stringify([found.length, found[0] === a, found[1] === b, lib.tr
 `);
   expect(out).toBe('[2,true,true,null,["A","BC","a=a","bc=bc","1","2"]]\n');
 });
+
+// ADR 0875, amended: a `Map`'s `forEach` of a closure that borrows what's
+// around it, given each value and its key, as React's
+// `ReactFiberHydrationDiffs.js` writes `serverPropNames.forEach(propName =>
+// ..)`, its `return` the closure's; and its iterators, each a JS iterator.
+test("a Map's forEach and iterators", () => {
+  const { dir, js, dts } = compiled("js-map-steps", `use js::{Map, Unknown};
+
+pub fn removed_props(server_props: &Unknown) -> String {
+    let mut content = String::new();
+    let server_prop_names: &Map<str, String> = js::map::new(None);
+    for prop_name in js::keys_in(server_props) {
+        server_prop_names.set(&prop_name.to_lowercase(), prop_name);
+    }
+    server_prop_names.for_each(|prop_name, _| {
+        if prop_name == "children" {
+            // Handled below.
+            return;
+        }
+        content += &("- ".to_owned() + &prop_name + "\\n");
+    });
+    content
+}
+
+pub fn keyed(map: &Map<str, u32>) -> Vec<String> {
+    let mut out = Vec::new();
+    map.for_each(|value, key| out.push(format!("{key}:{value}")));
+    out
+}
+
+pub fn listed(map: &Map<str, u32>) -> Vec<String> {
+    let mut out: Vec<String> = map.keys().map(str::to_uppercase).collect();
+    for (key, value) in map.entries() {
+        out.push(format!("{key}={value}"));
+    }
+    out.extend(map.values().map(|value| value.to_string()));
+    out
+}
+`);
+  expect(js).toContain(
+    '  serverPropNames.forEach((propName) => {\n    if (propName === "children") {\n      // Handled below.\n      return;\n    }\n',
+  );
+  expect(js).toContain("  map.forEach((value, key) => {\n");
+  expect(js).toContain("  for (const [key, value] of map.entries()) {\n");
+  expect(dts).toContain("export function listed(map: Map<string, number>): string[];");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const map = new Map([["a", 1], ["bc", 2]]);
+console.log(JSON.stringify([lib.removedProps({ children: 1, className: "x", ID: 2 }), lib.keyed(map), lib.listed(map)]));
+`);
+  expect(out).toBe('["- className\\n- ID\\n",["a:1","bc:2"],["A","BC","a=1","bc=2","1","2"]]\n');
+});

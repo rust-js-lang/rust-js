@@ -319,8 +319,10 @@ export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
   nothing, `None`, as TypeScript's constructors take an optional array.
   A set's `for_each(f)` is its `forEach`, `f` of each value, which may
   borrow what's around it as JS runs it at once; its `values()`, `keys()`
-  and `entries()` are JS iterators
-  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)):
+  and `entries()` are JS iterators. A map's are alike, its `for_each(f)`'s
+  `f` of each value and its key, `|value, key|`, a key it leaves `_` left
+  out of JS's arrow, and its `entries()` of `(key, value)`
+  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md), amended):
 
 ```rust
 use js::{Dict, Map, Set};
@@ -337,6 +339,13 @@ pub fn listed(set: &Set<str>) -> Vec<&'static str> {
     set.for_each(|value| values.push(value));
     values.extend(set.values());
     values
+}
+
+pub fn named(map: &Map<str, String>) -> Vec<String> {
+    let mut names = Vec::new();
+    map.for_each(|name, _| names.push(name));
+    names.extend(map.keys().map(str::to_owned));
+    names
 }
 ```
 
@@ -357,6 +366,15 @@ export function listed(set) {
   });
   $extend(values, set.values());
   return values;
+}
+
+export function named(map) {
+  const names = [];
+  map.forEach((name) => {
+    names.push(name);
+  });
+  $extend(names, map.keys());
+  return names;
 }
 ```
 

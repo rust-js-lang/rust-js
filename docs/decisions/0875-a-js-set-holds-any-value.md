@@ -6,7 +6,8 @@ which now takes what the map starts with, `None` of nothing. Amended by
 [0884](0884-a-maps-value-is-any-value.md): a `Map`'s value is any value,
 so BadMapPolyfill's port keys its frozen object to `null`, `Kind::Null`,
 as upstream does. Amended below: a `Set`'s `forEach`, `values`, `keys` and
-`entries`, and a keyed collection's own methods run nothing.
+`entries`, and a keyed collection's own methods run nothing; and a `Map`'s
+`forEach`, `values`, `keys` and `entries`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 collection, a value the one `SameValueZero` says, as TypeScript's `Set<T>`
@@ -141,3 +142,35 @@ a borrow held across its own methods": ReactFiberLane's
 `addTransitionToLanesMap` and `getTransitionsForLanes`, run, no borrow
 counted, and a set's values, keys and entries stepped.
 
+## Amendment: a map's `forEach` and iterators (2026-10-26)
+
+React's `ReactFiberHydrationDiffs.js` keeps the server's prop names by
+their lower case, and describes those the client didn't have:
+
+```js
+const serverPropNames: Map<string, string> = new Map();
+..
+serverPropNames.forEach(propName => {
+  if (propName === 'children') {
+    // Handled below.
+    return;
+  }
+  ..
+});
+```
+
+A `js::Map` had neither `forEach` nor a way to step it, so the port kept
+a `HashMap`, whose `values()` stepped in a loop is `for (const propName of
+Array.from(serverPropNames.values()))`, a copy and another statement.
+
+- **`map.for_each(f)` is `map.forEach(f)`**, as a set's is, `f` given each
+  value, as `get` gives it, and its key, `&'static K`, as JS holds it, in
+  TypeScript's order, `(value, key)`; the map, its third, left out. A key
+  `f` doesn't use is `_`, which JS's `(propName) =>` leaves out.
+- **`values()`, `keys()` and `entries()` are JS iterators**, as a set's
+  are, `(key, value)` of each entry; no `IntoIterator`, as a set has none.
+  They run nothing; `forEach` runs `f`, and isn't marked.
+
+Held by `test/js-collections.test.ts`, "a Map's forEach and iterators":
+the hydration diff's `forEach`, its `return`, a closure of both value and
+key, and each iterator stepped, run.

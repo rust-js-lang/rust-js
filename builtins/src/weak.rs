@@ -152,6 +152,45 @@ impl<K: ?Sized, V> Map<K, V> {
     }
 }
 
+/// What steps a map gives each of its keys, held by JS as long as it holds
+/// them, `&'static`, and each value, as [`get`](Map::get) gives it.
+impl<K: ?Sized + 'static, V> Map<K, V> {
+    /// [`map.forEach(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/forEach):
+    /// `f` of each value and its key, in the order they were set. JS runs
+    /// `f` before `forEach` returns and keeps nothing of it, so it may borrow
+    /// what's around it, as a [`Set`]'s `for_each` may (ADR 0875, amended):
+    /// `map.for_each(|value, _| names.push(value))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
+    pub fn for_each(&self, f: impl FnMut(V, &'static K)) {
+        unreachable!()
+    }
+
+    /// [`map.values()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/values):
+    /// its values, in the order their keys were set, a JS iterator (ADR 0140).
+    #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn values(&self) -> Box<dyn Iterator<Item = V>> {
+        unreachable!()
+    }
+
+    /// [`map.keys()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/keys):
+    /// its keys, in the order they were set, a JS iterator.
+    #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn keys(&self) -> Box<dyn Iterator<Item = &'static K>> {
+        unreachable!()
+    }
+
+    /// [`map.entries()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/entries):
+    /// each key and its value, `[k, v]`, in the order they were set, a JS
+    /// iterator, what `for (const [k, v] of map)` steps.
+    #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static K, V)>> {
+        unreachable!()
+    }
+}
+
 pub mod map {
     use super::*;
 
