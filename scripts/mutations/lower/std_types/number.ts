@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bit-width-of-its-own-width",
+    breaks: "a narrow integer's `bit_width()` is its own bits less `Math.clz32`'s zeros, which count 32 bits: `u8`'s is off by 24 (#317)",
+    file: "src/lower/std_types/number.rs",
+    find: "                Expr::bin(Op::Sub, Expr::int(32), math(clz32, vec![bits(arg())]))\n",
+    replace: "                Expr::bin(Op::Sub, Expr::int(num.bits().into()), math(clz32, vec![bits(arg())]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^bit_width.rs$"],
+  },
+  {
+    name: "big-bit-width-of-32",
+    breaks: "a 64- or 128-bit integer's `bit_width()` is 32 less its leading zeros (#317)",
+    file: "src/lower/std_types/number.rs",
+    find: "            NumOp::BitWidth => Expr::bin(\n                Op::Sub,\n                Expr::int(num.bits().into()),\n",
+    replace: "            NumOp::BitWidth => Expr::bin(\n                Op::Sub,\n                Expr::int(32),\n",
+    tests: ["test/corpus.test.ts", "-t", "^bit_width.rs$"],
+  },
+  {
     name: "powi-f32-rounded-once",
     breaks: "`x.powi(n)` of an `f32` multiplies as doubles, where compiler-rt rounds each product",
     file: "src/lower/std_types/number.rs",

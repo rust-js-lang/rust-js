@@ -218,6 +218,7 @@ pub(super) fn number(name: &str, num: Num) -> Option<NumOp> {
         "midpoint" if !float => NumOp::Midpoint,
         "count_zeros" if !float => NumOp::CountZeros,
         "leading_zeros" if !float => NumOp::LeadingZeros,
+        "bit_width" if !float && !signed => NumOp::BitWidth,
         "trailing_zeros" if !float => NumOp::TrailingZeros,
         "count_ones" if !float => NumOp::CountOnes,
         "isolate_lowest_one" if !float => NumOp::IsolateOne { highest: false },

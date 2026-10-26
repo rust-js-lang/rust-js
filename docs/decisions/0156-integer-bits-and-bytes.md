@@ -72,3 +72,15 @@ against native Rust, `lane_bits.rs`, and the mutations
 lines: the matrix's new results, and `lane_bits.rs`'s, are each a
 `value$n` read by the `println!` after it, as that line's others are,
 no new shape.
+
+## Amendment: `bit_width()` (#317)
+
+`bit_width()`, stable since 1.97, was refused: TheAlgorithms/rust's binary
+lifting Fibonacci, `for i in (0..n.bit_width()).rev()`. std's body is
+`Self::BITS - self.leading_zeros()`, so **an unsigned integer's
+`bit_width()` is its bits but its leading zeros**: of one of 32 bits or
+fewer, `32 - Math.clz32(n)`, whose zeros count 32 bits whatever its own
+width; of a 64- or 128-bit one, `64 - $bigLeadingZeros(n)`. Held by the
+corpus case `bit_width` and the mutations `bit-width-of-its-own-width` and
+`big-bit-width-of-32`.
+

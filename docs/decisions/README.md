@@ -174,7 +174,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0153 Collection and cell methods, and `to_vec()` cloning what it copies](0153-collection-and-cell-methods.md) *(amended: a `T: Clone`'s `to_owned()` is its `clone()`)*
 - [0154 Number methods, and parsing that stops where Rust's stops](0154-number-methods.md)
 - [0155 An integer's checked, wrapping, overflowing and saturating families](0155-integer-families.md)
-- [0156 An integer's bits rotated, its bytes, and a float's bits](0156-integer-bits-and-bytes.md) *(amended: one bit isolated, `isolate_lowest_one`)*
+- [0156 An integer's bits rotated, its bytes, and a float's bits](0156-integer-bits-and-bytes.md) *(amended: one bit isolated, `isolate_lowest_one`; `bit_width()`)*
 - [0157 A closure, a function or a set of `char`s as a pattern, and a string's pieces by bytes](0157-char-predicates.md)
 - [0158 A labeled block is JS's labeled block](0158-labeled-blocks.md) *(kept under MIR by 0742: the label is the program's)*
 - [0159 A type's own `FromStr` is what `parse` calls](0159-user-from-str.md)

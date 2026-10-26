@@ -116,6 +116,9 @@ pub(in crate::lower) enum NumOp {
     DivEuclid,
     Signum,
     LeadingZeros,
+    /// `bit_width()` of an unsigned integer: its bits but its leading
+    /// zeros, as std's body has it.
+    BitWidth,
     TrailingZeros,
     CountOnes,
     /// `isolate_lowest_one()`, or `isolate_highest_one()` (`highest`): its
@@ -835,6 +838,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let zeros = math(clz32, vec![bits(arg())]);
                 Expr::bin(Op::Sub, zeros, Expr::int((32 - num.bits()).into()))
             }
+            // Its 32 bits but their leading zeros, whatever its own width.
+            NumOp::BitWidth => {
+                let clz32 = math::function(NumOp::LeadingZeros, Num::U32).expect("a `u32`'s is `Math`'s");
+                Expr::bin(Op::Sub, Expr::int(32), math(clz32, vec![bits(arg())]))
+            }
             NumOp::TrailingZeros => {
                 let x = bits(arg());
                 helper("$trailingZeros", vec![x, Expr::int(num.bits().into())])
@@ -959,6 +967,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::DivEuclid => helper("$bigDivEuclid", vec![arg(), arg(), lo]),
             NumOp::Signum => helper("$bigSignum", vec![arg()]),
             NumOp::LeadingZeros => helper("$bigLeadingZeros", width(vec![arg()])),
+            NumOp::BitWidth => Expr::bin(
+                Op::Sub,
+                Expr::int(num.bits().into()),
+                helper("$bigLeadingZeros", width(vec![arg()])),
+            ),
             NumOp::TrailingZeros => helper("$bigTrailingZeros", width(vec![arg()])),
             NumOp::CountOnes => helper("$bigCountOnes", width(vec![arg()])),
             NumOp::NextPowerOfTwo { checked } => {
