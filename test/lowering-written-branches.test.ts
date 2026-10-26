@@ -904,3 +904,81 @@ pub fn outside(x: f64) -> bool {
   expect(js).toContain("  return !(x >= 1 && x <= 3);\n");
   expect([lib.outside(2 as never), lib.outside(4 as never), lib.outside(NaN as never)]).toEqual([false, true, true]);
 });
+
+// ADR 0946: React's popHydrationState, an `if` whose condition mixes `&&`,
+// `||` and `!`, `tag !== HostRoot && tag !== HostSingleton && !(tag ===
+// HostComponent && (!shouldDelete(type) || shouldSetText(type)))`, which
+// MIR made `if`s that leave a block (`bb42:`): the one test as written,
+// each call made where it was, in the order it was, none twice.
+test("an if of && || and ! mixed is its one test", async () => {
+  const { js, lib } = await compiled(
+    "mixed-skipped-tests",
+    `#[cfg_attr(rust_js, rust_js::link_name = "rustJsShouldDelete")]
+fn should_delete(r#type: &str) -> bool {
+    let _ = r#type;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsShouldSetText")]
+fn should_set_text(r#type: &str) -> bool {
+    let _ = r#type;
+    unreachable!()
+}
+
+pub fn pop(tag: u8, r#type: &str, out: &mut Vec<String>) {
+    if tag != 3 && tag != 27 && !(tag == 5 && (!should_delete(r#type) || should_set_text(r#type))) {
+        out.push("first".to_string());
+    }
+    if tag != 3 && (tag != 5 || (should_delete(r#type) && !should_set_text(r#type))) {
+        out.push("second".to_string());
+    }
+    if !(tag == 5 && should_delete(r#type)) || should_set_text(r#type) {
+        out.push("c".to_string());
+    }
+    if tag != 3 && (tag == 27 || !(should_delete(r#type) && should_set_text(r#type))) {
+        out.push("d".to_string());
+    }
+    if !(tag == 5 || should_delete(r#type)) || !should_set_text(r#type) {
+        out.push("e".to_string());
+    }
+    if tag != 3 && (tag == 27 || should_delete(r#type) && !should_set_text(r#type)) {
+        out.push("f".to_string());
+    }
+    if tag != 3 && !(tag == 27 || !should_delete(r#type) && should_set_text(r#type)) {
+        out.push("g".to_string());
+    }
+    out.push("end".to_string());
+}
+`,
+  );
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain(
+    '  if (\n    tag !== 3 &&\n    tag !== 27 &&\n    !(tag === 5 && (!rustJsShouldDelete(type) || rustJsShouldSetText(type)))\n  ) {\n    out.push("first");\n  }\n',
+  );
+  expect(js).toContain('  if (tag !== 3 && (tag !== 5 || (rustJsShouldDelete(type) && !rustJsShouldSetText(type)))) {\n    out.push("second");\n  }\n');
+  const global = globalThis as Record<string, unknown>;
+  for (const tag of [3, 27, 5, 1]) {
+    for (const del of [false, true]) {
+      for (const text of [false, true]) {
+        const calls: string[] = [];
+        global.rustJsShouldDelete = (t: string) => (calls.push(`delete ${t}`), del);
+        global.rustJsShouldSetText = (t: string) => (calls.push(`text ${t}`), text);
+        const out: string[] = [];
+        lib.pop(tag as never, "div" as never, out as never);
+        const expected: string[] = [];
+        const want: string[] = [];
+        const shouldDelete = () => (expected.push("delete div"), del);
+        const shouldSetText = () => (expected.push("text div"), text);
+        if (tag !== 3 && tag !== 27 && !(tag === 5 && (!shouldDelete() || shouldSetText()))) want.push("first");
+        if (tag !== 3 && (tag !== 5 || (shouldDelete() && !shouldSetText()))) want.push("second");
+        if (!(tag === 5 && shouldDelete()) || shouldSetText()) want.push("c");
+        if (tag !== 3 && (tag === 27 || !(shouldDelete() && shouldSetText()))) want.push("d");
+        if (!(tag === 5 || shouldDelete()) || !shouldSetText()) want.push("e");
+        if (tag !== 3 && (tag === 27 || (shouldDelete() && !shouldSetText()))) want.push("f");
+        if (tag !== 3 && !(tag === 27 || (!shouldDelete() && shouldSetText()))) want.push("g");
+        want.push("end");
+        expect([tag, del, text, out, calls]).toEqual([tag, del, text, want, expected]);
+      }
+    }
+  }
+});

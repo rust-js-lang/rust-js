@@ -663,4 +663,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
   },
+  {
+    name: "skipped-tests-unrun",
+    breaks: "an `if` of `&&`, `||` and `!` mixed is `if`s that leave a block MIR made, `bb42:`, React's popHydrationState (ADR 0946)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals))\n",
+    replace: "                js::statement_lists(b, &mut |_| {})\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
+  },
 ];

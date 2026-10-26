@@ -562,6 +562,114 @@ pub(super) fn or_blocks(stmts: &mut Vec<Stmt>, logicals: &[js::Span]) {
     }
 }
 
+/// `l: { if (p) { if (c) { if (d) { break l; } } t } } r`, MIR's of an
+/// `if` whose condition the program wrote with `&&`, `||` and `!` mixed,
+/// `if (p && !(c && d)) { t } r`, each `break l` a way its condition is
+/// false: the one test, each part tested where it was, in the order it
+/// was, and none twice (ADR 0946). Of the `if`s before `t` only, of tests
+/// of a logical the program wrote; and where a path's value isn't one of
+/// `&&` or `||` alone, `c ? x : y`, as it was.
+pub(super) fn skipped_tests(stmts: &mut [Stmt], logicals: &[js::Span]) {
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+    for stmt in stmts.iter_mut() {
+        let StmtKind::Labeled(label, body) = &stmt.kind else {
+            continue;
+        };
+        if !crate::lower::mir::is_block_label(label) {
+            continue;
+        }
+        let Some((test, then, span)) = skipped(body, label, &within) else {
+            continue;
+        };
+        *stmt = StmtKind::If(test, then, None).at(span);
+    }
+}
+
+/// Of a block `label`'s `body`, `if (p) { tree; t }` or `tree; t`, each
+/// `break label` in `tree`: the test under which `t` runs, `t`, and where
+/// the first `if` is.
+fn skipped(body: &[Stmt], label: &str, within: &dyn Fn(js::Span) -> bool) -> Option<(Expr, Vec<Stmt>, js::Span)> {
+    let tree = (body.iter())
+        .take_while(|s| matches!(s.kind, StmtKind::If(..)) && js::names_jump(std::slice::from_ref(s), label))
+        .count();
+    let (tree, then) = body.split_at(tree);
+    if !tree.is_empty()
+        && !then.is_empty()
+        && !js::names_jump(then, label)
+        && tests_within(tree, within)
+        && let Some(Truth::Test(test)) = falls(tree, label)
+    {
+        return Some((test, then.to_vec(), tree[0].span));
+    }
+    let [
+        Stmt {
+            kind: StmtKind::If(first, then, None),
+            span,
+        },
+    ] = body
+    else {
+        return None;
+    };
+    let (rest, then, _) = skipped(then, label, within)?;
+    Some((Expr::bin(Op::And, first.clone(), rest), then, *span))
+}
+
+/// Whether each `if` of `tree` is a test of a logical the program wrote.
+fn tests_within(tree: &[Stmt], within: &dyn Fn(js::Span) -> bool) -> bool {
+    tree.iter().all(|s| match &s.kind {
+        StmtKind::If(_, a, b) => {
+            within(s.span) && tests_within(a, within) && b.as_deref().is_none_or(|b| tests_within(b, within))
+        }
+        _ => true,
+    })
+}
+
+/// What a path through a tree of `if`s and `break`s gives: always, never,
+/// or where a test holds.
+enum Truth {
+    Always,
+    Never,
+    Test(Expr),
+}
+
+/// Where `stmts`, `if`s whose branches are `if`s and `break label`s only,
+/// go on past their end: each `break label` a way they don't. `None` of
+/// another statement, or of an `if` whose branches give a test each, `c ?
+/// x : y`, which `&&` and `||` don't write.
+fn falls(stmts: &[Stmt], label: &str) -> Option<Truth> {
+    let mut all = Truth::Always;
+    for stmt in stmts {
+        let one = match &stmt.kind {
+            StmtKind::Break(Some(l)) if l == label => Truth::Never,
+            StmtKind::If(test, then, otherwise) => {
+                let yes = falls(then, label)?;
+                let no = falls(otherwise.as_deref().unwrap_or_default(), label)?;
+                let test = test.clone();
+                match (yes, no) {
+                    (Truth::Always, Truth::Always) => return None,
+                    (Truth::Never, Truth::Never) => return None,
+                    (Truth::Always, Truth::Never) => Truth::Test(test),
+                    (Truth::Never, Truth::Always) => Truth::Test(test.negated_test()),
+                    (Truth::Test(x), Truth::Always) => Truth::Test(Expr::bin(Op::Or, test.negated_test(), x)),
+                    (Truth::Test(x), Truth::Never) => Truth::Test(Expr::bin(Op::And, test, x)),
+                    // An `else` that tests, which tidy has made the `if`
+                    // after a `then` that leaves already; and `c ? x : y`.
+                    (_, Truth::Test(_)) => return None,
+                }
+            }
+            _ => return None,
+        };
+        all = match (all, one) {
+            (Truth::Never, _) => return None,
+            (Truth::Always, one) => one,
+            (Truth::Test(a), Truth::Test(b)) => Truth::Test(Expr::bin(Op::And, a, b)),
+            (Truth::Test(_), Truth::Never) => return None,
+            (Truth::Test(a), Truth::Always) => Truth::Test(a),
+        };
+    }
+    Some(all)
+}
+
 /// Of `l: { if (a) { if (b) { s; break l; } } t }`: its tests, `[a, b]`,
 /// `s` and `t`, where `l` is named nowhere else.
 pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {

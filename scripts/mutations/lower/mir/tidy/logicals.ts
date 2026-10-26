@@ -302,4 +302,39 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "options"],
     snapshots: true,
   },
+  {
+    name: "skipped-tests-or-flipped",
+    breaks: "a test whose `then` goes on where a test holds and whose `else` always does is `t && x`, not `!t || x` (ADR 0946)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                    (Truth::Test(x), Truth::Always) => Truth::Test(Expr::bin(Op::Or, test.negated_test(), x)),\n",
+    replace: "                    (Truth::Test(x), Truth::Always) => Truth::Test(Expr::bin(Op::And, test, x)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
+  },
+
+
+  {
+    name: "skipped-tests-and-negated",
+    breaks: "a test whose `then` may go on and whose `else` never does is `!t && x` (ADR 0946)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                    (Truth::Test(x), Truth::Never) => Truth::Test(Expr::bin(Op::And, test, x)),\n",
+    replace: "                    (Truth::Test(x), Truth::Never) => Truth::Test(Expr::bin(Op::And, test.negated_test(), x)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
+  },
+  {
+    name: "skipped-tests-leaf-unnegated",
+    breaks: "a test whose `then` leaves the block and whose `else` goes on is `t`, not `!t` (ADR 0946)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                    (Truth::Never, Truth::Always) => Truth::Test(test.negated_test()),\n",
+    replace: "                    (Truth::Never, Truth::Always) => Truth::Test(test),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
+  },
+  {
+    name: "skipped-tests-of-the-outer-test-alone",
+    breaks: "`if (p) { tree; t }` is `if (tree) { t }`, its first test lost (ADR 0946)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    Some((Expr::bin(Op::And, first.clone(), rest), then, *span))\n",
+    replace: "    Some((rest, then, *span))\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "one test"],
+  },
+
 ];
