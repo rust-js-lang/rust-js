@@ -1735,26 +1735,55 @@ pub mod js_error {
     pub fn to_string(error: &JsError) -> String {
         unreachable!()
     }
+}
+
+/// An [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error)
+/// object, TypeScript's `Error`: what `error::new` makes, and what a
+/// function given one takes, as React's `createCapturedValueFromError(value:
+/// Error)` does. It's what may be thrown too, a `&JsError` by `Deref`, which
+/// reads its `message`, `name` and `stack`.
+#[cfg_attr(rust_js, rust_js::types = "Error")]
+pub struct Error(PhantomData<JsObject>);
+
+/// What JS shows of it, as of what's thrown: `Error: ..`.
+impl core::fmt::Debug for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&js_error::to_string(self))
+    }
+}
+
+impl core::ops::Deref for Error {
+    type Target = JsError;
+
+    fn deref(&self) -> &JsError {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const JsError) }
+    }
+}
+
+pub mod error {
+    use super::*;
 
     /// [`new Error(message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
-    /// an `Error` of `message`, to reject a promise with.
+    /// an `Error` of `message`, to reject a promise with, or to throw.
     #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
-    pub fn new(message: &str) -> &'static JsError {
+    pub fn new(message: &str) -> &'static Error {
         unreachable!()
     }
 }
 
 /// An [`AggregateError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError):
 /// several errors as one, what `Promise.any` rejects with when every
-/// promise rejects. It's an `Error`, a `&JsError` by `Deref`.
+/// promise rejects. It's an `Error`, a `&Error` by `Deref`.
+#[cfg_attr(rust_js, rust_js::types = "AggregateError")]
 pub struct AggregateError(PhantomData<JsObject>);
 
 impl core::ops::Deref for AggregateError {
-    type Target = JsError;
+    type Target = Error;
 
-    fn deref(&self) -> &JsError {
+    fn deref(&self) -> &Error {
         // Never runs: rust-js compiles this `Deref` to the object itself.
-        unsafe { &*(self as *const Self as *const JsError) }
+        unsafe { &*(self as *const Self as *const Error) }
     }
 }
 
@@ -1990,6 +2019,7 @@ pub mod object {
 unsafe impl WeakKey for JsObject {}
 unsafe impl WeakKey for RegExp {}
 unsafe impl WeakKey for JsError {}
+unsafe impl WeakKey for Error {}
 unsafe impl WeakKey for AggregateError {}
 unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}

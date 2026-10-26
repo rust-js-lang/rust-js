@@ -980,10 +980,10 @@ pub fn coerced(value: f64) -> String {
 }
 
 #[inline(never)]
-pub fn unknown_owner() -> &'static js::JsError {
+pub fn unknown_owner() -> &'static js::Error {
     #[inline(never)]
-    fn react_stack_top_frame() -> &'static js::JsError {
-        js::js_error::new("react-stack-top-frame")
+    fn react_stack_top_frame() -> &'static js::Error {
+        js::error::new("react-stack-top-frame")
     }
     react_stack_top_frame()
 }

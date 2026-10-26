@@ -168,3 +168,34 @@ its own for, as TypeScript's ES2024 libs declare them; a test measures it.**
   `to_locale_string_with(locales, options)` takes the same options. The
   shape is written once, in `builtins/intl.ts`, which writes
   `src/intl.rs`, as the typed arrays are. 100.0% of 689.
+
+## Amendment: an `Error` object is a `js::Error` (2026-10-26)
+
+React's `createCapturedValueFromError(value: Error, stack: null |
+string)` takes an `Error`, made by `new Error(..)` where it's called. The
+crate had one type of an error, `JsError`, whatever was thrown, which a
+declaration says is `any`, as JS may throw anything and TypeScript types a
+rejection's reason so; and `js_error::new` gave one of those. So the port's
+`value: &JsError` was `value: any` in its `.d.ts`, looser than upstream's.
+
+**`js::Error` is an `Error` object, declared `Error`; `js::error::new(message)`
+makes one, `new Error(message)`**, in place of `js_error::new`, the one way
+to make one. It's a `&JsError` by `Deref`, as what may be thrown is, so its
+`message()`, `name()` and `stack()` are `JsError`'s, and it's given where a
+`&JsError` is: `Some(error::new(".."))` of an `Option<&JsError>`, `Err(..)`
+of a `Result<_, &JsError>`, by Rust's deref coercion. An `AggregateError`
+is an `&Error` by `Deref` now, and declared `AggregateError`. Both are weak
+keys, as `JsError` is. `JsError` stays what's thrown, `any`; a downcast of
+a payload is of `&JsError` (ADR 0710).
+
+- **Its JS is the same**: `new Error(message)`, the object itself where
+  it's given as a `&JsError`, as an `AggregateError`'s `Deref` is.
+- **Migrated**: the crate's tests and the guide's `unknownOwner`; React's
+  port's six `js::js_error::new(..)` are to read `js::error::new(..)`.
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): a type's
+  declaration.
+
+Held by `test/js-builtins.test.ts`, "an Error object is declared Error,
+and what's thrown any", whose declarations say `value: Error`, `Error`,
+`AggregateError` and, of a `&JsError`, `any`, and whose `Error` is a weak
+key, its `message()` read, run in Bun.

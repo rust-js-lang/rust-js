@@ -24,8 +24,11 @@ spawn(Box::new(async move {                            // runs, unawaited
 - A promise is a `Promise<T>`, to `.await` ([ADR 0029](../docs/decisions/0029-async-await.md));
   `settle(p)` makes its `.await` a `Result`, and one a binding declares as
   `Promise<Result<T, &JsError>>` is one already ([ADR 0035](../docs/decisions/0035-results-and-throwing-js.md)).
-- `JsError` is what JS threw; `js_error::to_string(e)` is `String(e)`, and
-  `e.is_error()` and `e.message()` are an `Error`'s; `aggregate_error::new(errors,
+- `JsError` is what JS threw, TypeScript's `any`; `js_error::to_string(e)` is `String(e)`, and
+  `e.is_error()` and `e.message()` are an `Error`'s. An `Error` object is an
+  `Error`, `error::new(message)` `new Error(message)`, declared `Error` and a
+  `&JsError` by `Deref` ([ADR 0283](../docs/decisions/0283-js-crate-covers-typescripts-es-library.md));
+  `aggregate_error::new(errors,
   None)` is `new AggregateError(errors)`, an `Error` of several, its `errors()`
   what it holds ([ADR 0867](../docs/decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
 - `RegExp` is there for what Rust would use `regex` for: `reg_exp::new(r"^\d+$", "")`,

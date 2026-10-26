@@ -312,7 +312,7 @@ pub fn numeric(text: &str) -> bool {
 test("RegExp, Error, Symbol, weak collections and globals are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-objects");
-  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, reg_exp, symbol, weak_map, weak_ref};
+  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, error, parse_int, reg_exp, symbol, weak_map, weak_ref};
 pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
     let pattern = reg_exp::new(r"(?<word>[a-z]+)(\\d)", "g");
     let m = pattern.exec(text)?;
@@ -320,7 +320,7 @@ pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
     Some((m.get(2).unwrap_or_default(), m.index(), word + &m.full_match(), pattern.global()))
 }
 pub fn errors() -> (String, String, f64, f64) {
-    let e = js_error::new("boom");
+    let e = error::new("boom");
     (e.name(), e.message(), parse_int("42px", Some(10)), parse_int("0x1f", None))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
@@ -352,6 +352,54 @@ pub fn weak(state: &'static State) -> (Option<u32>, bool) {
   expect(lib.errors()).toEqual(["Error", "boom", 42, 31]);
   expect(lib.symbols()).toEqual([true, undefined, "local"]);
   expect(lib.weak({ n: 5 })).toEqual([5, true]);
+});
+
+// React's ReactCapturedValue: `createCapturedValueFromError(value: Error,
+// ..)` takes an `Error` object, `js::Error`, which declares `Error`, as an
+// `AggregateError` declares its own; what's thrown, a `JsError`, is
+// anything, `any`. An `Error` is what may be thrown, by `Deref`.
+test("an Error object is declared Error, and what's thrown any", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-error-objects");
+  writeFileSync(join(dir, "lib.rs"), `use js::{AggregateError, Error, JsError, WeakKey, WeakMap, aggregate_error, error};
+
+thread_local! {
+    static STACKS: &'static WeakMap<dyn WeakKey, String> = js::weak_map::new();
+}
+
+pub fn captured(value: &'static Error, stack: &str) -> String {
+    STACKS.with(|stacks| stacks.set(value, stack.to_string()));
+    value.message()
+}
+
+pub fn thrown(value: &JsError) -> String {
+    value.name()
+}
+
+pub fn made(message: &str) -> &'static Error {
+    error::new(message)
+}
+
+pub fn all() -> &'static AggregateError {
+    aggregate_error::new(&[], Some("every one"))
+}
+
+pub fn named() -> String {
+    let error = made("boom");
+    format!("{} {} {}", thrown(error), captured(error, "at"), all().message())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function captured(value: Error, stack: string): string;");
+  expect(declarations).toContain("export function thrown(value: any): string;");
+  expect(declarations).toContain("export function made(message: string): Error;");
+  expect(declarations).toContain("export function all(): AggregateError;");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  const error = made("boom");');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.named()).toBe("Error boom every one");
+  expect(lib.made("x")).toBeInstanceOf(Error);
 });
 
 // ADR 0677: a weak collection is typed as TypeScript types it,
@@ -452,18 +500,18 @@ console.log(JSON.stringify([lib.functionSeen(f, seen), lib.functionSeen(f, seen)
 test("a Promise's statics and methods are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-promises");
-  writeFileSync(join(dir, "lib.rs"), `use js::{PromiseSettledResult, PromiseWithResolvers, js_error, promise};
+  writeFileSync(join(dir, "lib.rs"), `use js::{PromiseSettledResult, PromiseWithResolvers, error, promise};
 pub async fn made() -> u32 {
     promise::new(|resolve, _| resolve(1)).then(|n: u32| promise::resolve(n + 1)).await
 }
 pub async fn caught() -> String {
-    promise::reject::<String>(Some(js_error::new("boom"))).catch(|e| promise::resolve(e.message())).finally(|| {}).await
+    promise::reject::<String>(Some(error::new("boom"))).catch(|e| promise::resolve(e.message())).finally(|| {}).await
 }
 pub async fn paired() -> (u32, String) {
     promise::all2((promise::resolve(1), promise::resolve("a".to_string()))).await
 }
 pub async fn settled() -> Vec<String> {
-    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(Some(js_error::new("no")))]).await;
+    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(Some(error::new("no")))]).await;
     all.into_iter()
         .map(|r| match r {
             PromiseSettledResult::Fulfilled { value } => value.to_string(),
@@ -944,18 +992,18 @@ pub fn each(texts: &[&str]) -> Vec<String> {
 // reads is a statement, which rustc warns nothing of.
 test("a promise's catch handler gives a value or a promise", async () => {
   const dir = fixture("js-promise-catch");
-  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown, js_error, promise};
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, Unknown, error, promise};
 pub fn silenced(maybe_promise: &'static Unknown) {
     unsafe { js::cast::<Promise<Option<&'static Unknown>>>(Some(maybe_promise)) }.catch(|_| {});
 }
 pub async fn valued() -> u32 {
-    promise::reject::<u32>(Some(js_error::new("no"))).catch(|_| 7).await
+    promise::reject::<u32>(Some(error::new("no"))).catch(|_| 7).await
 }
 pub async fn promised() -> String {
-    promise::reject::<String>(Some(js_error::new("no"))).catch(|e| promise::resolve(e.message())).await
+    promise::reject::<String>(Some(error::new("no"))).catch(|e| promise::resolve(e.message())).await
 }
 pub async fn nothing() -> Option<u32> {
-    promise::reject::<Option<u32>>(Some(js_error::new("no"))).catch(|_| {}).await
+    promise::reject::<Option<u32>>(Some(error::new("no"))).catch(|_| {}).await
 }
 `);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
@@ -991,7 +1039,7 @@ test("a promise's executor may set the variables around it, and then takes two h
   const dir = fixture("js-promise-executor");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 
-use js::{JsError, Promise, Unknown, js_error, promise};
+use js::{JsError, Promise, Unknown, error, js_error, promise};
 
 pub struct Debug {
     pub resolve: &'static dyn Fn(u32),
@@ -1015,7 +1063,7 @@ pub fn stash() -> Debug {
 
 pub async fn settled(fail: bool) -> String {
     let value = match fail {
-        true => promise::reject::<u32>(Some(js_error::new("no"))),
+        true => promise::reject::<u32>(Some(error::new("no"))),
         false => promise::resolve(7),
     };
     value.then_with(|n| n.to_string(), |e| e.message()).await

@@ -884,7 +884,7 @@ pub fn determine_component_frame_root(
                 js::new(js::unknown(r#fn), ());
             }
         } else {
-            control = Some(js::js_error::new(""));
+            control = Some(js::error::new(""));
             let maybe_promise = r#fn();
             // If the function component returns a promise, it's likely an async
             // component, which we don't yet support. Attach a noop catch handler to

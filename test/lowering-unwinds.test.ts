@@ -1112,7 +1112,8 @@ fn widened(payload: Box<dyn Any + Send>) -> Box<dyn Any> {
 
 pub fn of_any(own: bool) -> String {
     let any: Box<dyn Any> = if own {
-        Box::new(js::js_error::new("own"))
+        let error: &'static JsError = js::error::new("own");
+        Box::new(error)
     } else {
         widened(catch_unwind(|| -> u32 { resume_unwind(Box::new(4i32)) }).unwrap_err())
     };
@@ -1122,7 +1123,8 @@ pub fn of_any(own: bool) -> String {
 
 pub fn of_any_boxed(own: bool) -> String {
     let any: Box<dyn Any> = if own {
-        Box::new(js::js_error::new("own"))
+        let error: &'static JsError = js::error::new("own");
+        Box::new(error)
     } else {
         widened(catch_unwind(|| -> u32 { resume_unwind(Box::new(4i32)) }).unwrap_err())
     };
