@@ -79,6 +79,13 @@ react.dev's TopNav passes the same closure instead.
   decides no disagreement, tooling, bindings' shape or the output's
   layout. An unobservable difference says why the program can't tell; a
   rare one lists where it can, under Consequences.
+- **A once-callback passed on is the function it calls**, the second
+  case's, which the user decided (2026-10-26): a closure given to a
+  binding's `FnOnce` callback that only passes its call on to a function
+  of the crate's, or a closure, `p.then(|_| ping(), |_| ping())`, is
+  `p.then(ping, ping)`. Only the callback's identity tells it from a fresh
+  closure's, which JS doesn't compare of a callback it calls once. Listed
+  in the guide's differences (`semantics.md`, 27), below.
 
 ## Amendment: the stack's depth
 
@@ -152,3 +159,33 @@ or an export, and Rust drops it: what it holds isn't dropped. A binding
 that may give a function back itself, `widen`'s `this`, isn't handed one.
 The second case, listed in the twelfth difference, and held by
 `test/lowering-functions.test.ts`.
+
+## Amendment: a once-callback that passes its call on
+
+A closure given to a binding's `FnOnce` callback, `then`'s, `setTimeout`'s,
+`queueMicrotask`'s or any binding's `impl FnOnce` or `Box<dyn FnOnce>`
+parameter, that only passes its call on to a function of the crate's, or a
+closure, is that function, as the user decided (2026-10-26): `listen(|_|
+noop())` is `listen(noop)`. The function is one value, the closure a fresh
+one each time it's made: only comparing the callback tells them apart, and
+JS calls a once-callback once and keeps no other to compare it with. The
+second case, listed among the guide's differences (`semantics.md`, 27),
+with what it isn't (ADR 0605, amended):
+
+- **What JS gives the function is what the closure's caller gives**, so
+  the function is it only where it reads no more than the closure gives
+  it: the crate's function, which takes the arguments Rust gives it alone,
+  or a closure. Not a binding's JS function, a `dyn Fn` or a generic `impl
+  Fn`, which may be a JS caller's of more parameters, nor a function of
+  rest arguments, which reads them all.
+- **What the callback gives is read**, `then`'s value: the closure gives
+  its call's, or `undefined` of a call of `()`, which the crate's function
+  gives too.
+- **An `Fn` or `FnMut` parameter's, a listener's, keeps its arrow**, as
+  does a closure stored: JS may keep a listener and compare it,
+  `removeEventListener`'s, as this decision's two closures given to
+  `addEventListener` and `removeEventListener` are two.
+
+Held by `test/lowering-passed-on.test.ts` and the corpus's
+`once_callback_passed_on.rs`, against native Rust, and
+`scripts/mutations/lower/passed_on.ts`.

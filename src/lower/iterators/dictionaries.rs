@@ -201,7 +201,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.clone_in_place(Expr::var("iterator"), ty, span, &mut body)?,
         };
         body.push(StmtKind::Return(Some(cloned)).at(js::Span::NONE));
-        let clone = Expr::arrow(vec!["iterator".into()], body).called_alone();
+        let clone = Expr::arrow(vec!["iterator".into()], body);
+        let clone = passed_on(&clone, Taker::Made, &[]).unwrap_or(clone);
         let drop = self.drop_function(ty, span)?;
         let mut args = vec![it, clone, next];
         if boxed || drop.is_some() {

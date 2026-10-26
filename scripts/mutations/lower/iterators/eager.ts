@@ -56,14 +56,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "handler-calling-nothing-kept",
-    breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`",
-    file: "src/lower/iterators/eager.rs",
-    find: "        ] if unread => call,\n",
-    replace: "        ] if false => call,\n",
-    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
-  },
-  {
     name: "collected-literal-copied",
     breaks: "`std::iter::empty().collect()` is `[].slice()`, a copy of a new array",
     file: "src/lower/iterators/eager.rs",

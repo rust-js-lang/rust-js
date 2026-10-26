@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0217](0217-enumerate-index.md). Amended by
 [0605](0605-an-arrow-that-passes-on-has-one-owner.md): an event's handler
-asks `passed_on` too.
+asks `passed_on` too; and by its amendment: an array method is
+`passed_on.rs`'s `Taker::ArrayMethod`, and a function of rest arguments
+keeps its arrow (below).
 
 Case: B ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -40,3 +42,15 @@ or a closure, a generic `impl Fn`'s too. A binding's JS function,
 - **It's tested**: a test passes a function of the crate and an `impl Fn`,
   and keeps a binding's arrow; mutations keep each arrow, and pass the
   binding.
+
+## Amendment: the owner's taker, and a function of rest arguments
+
+An array method's callback is `passed_on.rs`'s `Taker::ArrayMethod` (ADR
+0605, amended), whose list of methods is there, and reads MIR's fact of
+what the closure calls with every other taker. A function of the crate's
+that takes rest arguments, `#[rust_js::rest]`, isn't one that "takes no
+more than it's given": `xs.map(|x| many(&[*x]))` was `xs.map(many)`,
+which JS gives the index and the array too, so `many` counted three, where
+Rust's counts one, a wrong answer. Its arrow stays, `xs.map((x) =>
+many(x))`; the corpus's `once_callback_passed_on.rs` holds it against
+native Rust.

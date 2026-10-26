@@ -96,6 +96,45 @@ pub fn is_handler_name(name: &str) -> bool {
         .is_some_and(|s| s.starts_with(|c: char| c.is_ascii_uppercase()))
 }
 
+/// What a function of `params` and `body` passes on what it's given to, in
+/// order, rest arguments spread on, `(x, ...rest) => g(x, ...rest)`: its
+/// call's callee, which names none of its parameters; and, `statement`, of
+/// `() => { g(); }`. Where that's the function it may be is its taker's,
+/// `lower/passed_on.rs`'s (ADR 0605, amended), and a declaration's,
+/// `prepare.rs`'s (ADR 0610).
+pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> Option<&'e Expr> {
+    let call = match body {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(call)),
+                ..
+            },
+        ] => call,
+        [
+            Stmt {
+                kind: StmtKind::Expr(call),
+                ..
+            },
+        ] if statement => call,
+        _ => return None,
+    };
+    let ExprKind::Call(callee, args) = &call.kind else {
+        return None;
+    };
+    let names: Option<Vec<&str>> = (params.iter())
+        .zip(args)
+        .map(|(param, arg)| match (param, &arg.kind) {
+            (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),
+            (Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(&spread.kind, ExprKind::Var(v) if v == name) => {
+                Some(name.as_str())
+            }
+            _ => None,
+        })
+        .collect();
+    let names = names.filter(|_| params.len() == args.len())?;
+    (!names.iter().any(|name| callee.mentions_var(name))).then_some(&**callee)
+}
+
 /// An arrow of one call, `() => { f(); }`, as `() => f()`, which gives
 /// what the call gives: for a call that gives what nothing reads, or
 /// `undefined` whatever it is (ADR 0040).

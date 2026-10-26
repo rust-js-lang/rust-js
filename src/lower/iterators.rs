@@ -13,7 +13,7 @@ pub(super) use self::{eager::*, in_place::*};
 
 use super::calls::Call;
 use super::combinators::IterSource;
-use super::fn_def;
+use super::passed_on::{Taker, passed_on};
 use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::std_types::range::RangeKind;
@@ -21,7 +21,6 @@ use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 
-use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;

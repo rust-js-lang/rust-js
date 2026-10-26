@@ -812,6 +812,13 @@ export function hasSetImmediate() {
   `Option`s ([0102](../decisions/0102-js-and-webapi.md)). What each crate
   rust-js ships binds is [Libraries](libraries/README.md). A library's
   binding is an npm package ([0118](../decisions/0118-bindings-on-npm-only.md)).
+- **A closure given to a binding's `FnOnce` callback that only passes its
+  call on to a function of the crate's is that function,** `p.then(ping)`,
+  `setTimeout(ping)`, not a fresh closure: JS calls the callback once and
+  never compares it, so its identity can't be told, the user's decided
+  exception to Rust's ([ADR 0262](../decisions/0262-when-rust-and-js-disagree.md),
+  amended). An `Fn` or `FnMut` callback, a listener's, which JS may keep
+  and compare, keeps its arrow ([Promises and async](interop/async.md#a-callback-that-passes-its-call-on)).
 - **A binding is trusted as declared.** One returning
   `Result<T, &JsError>` makes what JS throws an `Err`; any other lets it
   propagate, as a panic. Declare `Option` where JS may give `null`. A
@@ -910,3 +917,8 @@ React and JSX are [their own pages](README.md#react).
     `(0..n).enumerate()`, `repeat_n(x, n)` (#246). Past `isize::MAX`
     bytes, where std panics `capacity overflow`, JS runs on as memory
     lets it (ADR 0774, amended).
+27. A closure given to a binding's `FnOnce` callback that only passes its
+    call on to a function of the crate's, or a closure, is that function,
+    `p.then(ping)`, not a fresh closure: only comparing the callback's
+    identity tells them apart, which JS doesn't do to a callback it calls
+    once (ADR 0262, amended).

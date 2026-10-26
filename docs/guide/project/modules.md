@@ -271,7 +271,7 @@ export { px as pixels, BASE } from "./format/units.js";
 export { hello } from "./greet.js";
 
 function greetAll(names) {
-  return names.map((name) => hello(name));
+  return names.map(hello);
 }
 
 export { greetAll as unstable_greet };

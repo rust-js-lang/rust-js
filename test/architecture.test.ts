@@ -1075,15 +1075,51 @@ test("what a module exports an item as is exported_as's alone", () => {
 });
 
 // Whether an arrow is only the function it passes its arguments on to,
-// `(x) => f(x)`, `() => { f(); }`, is `iterators::passed_on`'s, which an
-// array method's callback (ADR 0279) and an event's handler (ADR 0198) both
-// ask: each had its own (ADR 0605).
+// `(x) => f(x)`, `() => { f(); }`, is `passed_on.rs`'s, by where it's given
+// (ADR 0605, amended): an array method's callback (ADR 0279), an event's
+// handler and an optional one passed on (ADR 0198), a binding's `FnOnce`
+// callback (ADR 0262's exception), and the arrows rust-js makes of a
+// function as a value. Its shape is `js::passes_on`'s, which a function
+// declaration's alias asks too (ADR 0610), as preparation can't ask
+// lowering. Besides `iterators::passed_on`, nine functions checked the
+// shape, each its own way: jsx's optional handler, a dictionary's `fmt`,
+// a binding's, a trait method's and any function's value, an impl's
+// dictionary entry, a function's drops, `js::called_alone` and
+// preparation's; and jsx asked THIR whether the call was Rust's, where an
+// array method read MIR's fact. What each
+// closure passes its call on to is one MIR fact, `forwarded_to`'s, made
+// where the closure is.
 test("an arrow that passes on what it's given is passed_on's alone", () => {
-  const asking = files("src/lower").filter((file) => file.endsWith(".rs"))
-    .flatMap((file) => read(file).split("\n").filter((line) => /\bpassed_on\(/.test(line) && !/fn passed_on\(/.test(line)).map(() => file));
-  expect([...new Set(asking)].sort()).toEqual(["src/lower/jsx.rs", "src/lower/mir/tidy/stages.rs", "src/lower/mir/tidy/values.rs"]);
-  const own = files("src/lower").filter((file) => file.endsWith(".rs") && /fn passed_on\(f: &Expr/.test(read(file)));
-  expect(own).toEqual(["src/lower/iterators/eager.rs"]);
+  const sources = files("src").filter((file) => file.endsWith(".rs"));
+  // A call's arguments matched to parameters by name, one by one.
+  const byName = /\.zip\([^;]{0,200}?\.(?:all|map)\(\|\(\w+, \w+\)\|[^;]{0,120}?(?:ExprKind::Var\(\w+\)\)? if \w+ == \w+|is_var\(|passed\()/;
+  expect(sources.filter((file) => byName.test(read(file)))).toEqual(["src/js/stmt_walk.rs"]);
+  // A handler tested to be there, then called: of a function that takes an
+  // arrow apart, from its `fn` to the next.
+  const functions = (file: string) => read(file).split(/\n(?=\s*(?:pub(?:\([^)]*\))?\s+)?fn \w+)/);
+  const optional = (f: string) => /ExprKind::Arrow\(/.test(f) && /null_test\([^]*StmtKind::If\(|StmtKind::If\([^]*null_test\(/.test(f);
+  expect(sources.filter((file) => functions(file).some(optional))).toEqual(["src/lower/passed_on.rs"]);
+  const owned = /fn (passed_on\(f: &Expr|passes_on|passed_handler|called_alone|called_by_name|calls_rust|closure_calls_rust|forwarded_to)\b/;
+  expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/js/stmt_walk.rs", "src/lower/passed_on.rs"]);
+  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/lower/passed_on.rs", "src/prepare.rs"]);
+  // Who asks, each by its position, and where the closure's fact is made:
+  // once, where MIR makes the closure.
+  const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));
+  expect(asking.sort()).toEqual([
+    "src/lower.rs",
+    "src/lower/display.rs",
+    "src/lower/drops/uses.rs",
+    "src/lower/items.rs",
+    "src/lower/iterators/dictionaries.rs",
+    "src/lower/iterators/knowing.rs",
+    "src/lower/jsx.rs",
+    "src/lower/mir/calls.rs",
+    "src/lower/mir/dispatch.rs",
+    "src/lower/mir/tidy/stages.rs",
+    "src/lower/mir/tidy/values.rs",
+    "src/lower/traits/impls.rs",
+  ]);
+  expect(sources.filter((file) => /\.forwarded_to\(/.test(read(file)))).toEqual(["src/lower/mir/closures.rs"]);
 });
 
 // A `snake_case` name is made camelCase in one place, `camel_case`, and

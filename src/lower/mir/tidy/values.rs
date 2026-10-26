@@ -163,10 +163,9 @@ pub(super) fn applied_in_place(f: &Expr, args: &[Expr]) -> Option<Expr> {
     (!called).then_some(applied)
 }
 
-/// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, a closure MIR says passes on
-/// what it's given to a function of Rust's, which takes no more: the index
-/// and the array the method gives it too change nothing (ADR 0279).
-pub(super) fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
+/// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, an array method's callback
+/// that `passed_on` says is the function it passes on to (ADR 0279).
+pub(super) fn passed_on(e: &mut Expr, forwarding: &[crate::lower::passed_on::Forwarding]) {
     let ExprKind::Call(callee, args) = &mut e.kind else {
         return;
     };
@@ -174,9 +173,8 @@ pub(super) fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
         return;
     };
     let [f] = &mut args[..] else { return };
-    if ["map", "filter", "some", "every", "find", "forEach"].contains(&name.as_str())
-        && forwarding.contains(&f.span)
-        && let Some(g) = iterators::passed_on(f, false)
+    if let Some(taker) = crate::lower::passed_on::Taker::array_method(name)
+        && let Some(g) = crate::lower::passed_on::passed_on(f, taker, forwarding)
     {
         *f = g;
     }

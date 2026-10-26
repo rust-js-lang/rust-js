@@ -20,14 +20,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "only its function reads and sets"],
   },
   {
-    "name": "mir-tidy-passed-on-unread",
-    "breaks": "an array method's callback from MIR that passes on what it's given reads `xs.map(parseFloat)`, a JS function's, which may read the index",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        && forwarding.contains(&f.span)\n",
-    "replace": "        && true\n",
-    "tests": ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"]
-  },
-  {
     "name": "array-spread-of-array-kept",
     "breaks": "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
     "file": "src/lower/mir/tidy/values.rs",

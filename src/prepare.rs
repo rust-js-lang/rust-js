@@ -59,43 +59,19 @@ fn forwarding_functions(module: &mut js::Module) {
             i += 1;
             continue;
         }
-        let names: Option<Vec<&str>> = (function.params.iter())
-            .map(|p| match p {
-                js::Pattern::Name(name) => Some(name.as_str()),
-                _ => None,
-            })
-            .collect();
         // Its call's value, `return GET_TIME(n);`, or none, `QUEUE(callback);`
         // of a function of no value.
-        let (call, returns) = match function.body.as_slice() {
-            [
-                Stmt {
-                    kind: StmtKind::Return(Some(call)),
-                    ..
-                },
-            ] => (Some(call), true),
-            [
-                Stmt {
-                    kind: StmtKind::Expr(call),
-                    ..
-                },
-            ] => (Some(call), false),
-            _ => (None, false),
-        };
-        let arity = names.as_ref().map_or(0, Vec::len);
-        let variable = match (names, call) {
-            (Some(names), Some(call)) => match &call.kind {
-                ExprKind::Call(callee, args)
-                    if args.len() == names.len()
-                        && (args.iter().zip(&names)).all(|(a, n)| matches!(&a.kind, ExprKind::Var(v) if v == n)) =>
-                {
-                    match &callee.kind {
-                        ExprKind::Var(v) if *v != function.name && !names.contains(&v.as_str()) => Some(v.clone()),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            },
+        let returns = matches!(
+            function.body.as_slice(),
+            [Stmt {
+                kind: StmtKind::Return(_),
+                ..
+            }]
+        );
+        let arity = function.params.len();
+        // The module variable it calls with its parameters.
+        let variable = match js::passes_on(&function.params, &function.body, true).map(|callee| &callee.kind) {
+            Some(ExprKind::Var(v)) if *v != function.name => Some(v.clone()),
             _ => None,
         };
         let (name, export) = (function.name.clone(), function.export);

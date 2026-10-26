@@ -312,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named = |names: Vec<rustc_span::Symbol>| {
             (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name))
         };
-        match () {
+        let given = match () {
             // A `()` is `undefined`, given as it is, or a list of none,
             // `[]`, where it's a list's (ADR 0775).
             () if ty.is_unit() => {
@@ -332,6 +332,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),
             // A `&dyn Any` given to JS is its value (ADR 0331).
             () => self.any_given_to_js(value, ty),
+        };
+        // A callback JS calls once that only passes on what it's given is
+        // the function it passes on to, `p.then(ping)` (ADR 0262's
+        // exception).
+        match crate::lower::passed_on::Taker::parameter(tcx, def_id, i) {
+            Some(taker) => crate::lower::passed_on::passed_on(&given, taker, self.forwarding()).unwrap_or(given),
+            None => given,
         }
     }
 

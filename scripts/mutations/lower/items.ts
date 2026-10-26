@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "binding-fn-pointer-arrow",
     breaks: "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
     file: "src/lower/items.rs",
-    find: "            return Ok((**callee).clone());\n",
-    replace: "            return Ok(arrow.clone());\n",
+    find: "        Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))\n",
+    replace: "        Ok(arrow)\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
@@ -185,14 +185,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "                true => Pattern::Rest(name),\n",
     replace: "                true => name.into(),\n",
-    tests: ["test/js-object.test.ts", "-t", "console is a value"],
-  },
-  {
-    name: "rest-value-passed-on-unseen",
-    breaks: "an arrow that spreads its rest on, `(...data) => console.log(...data)`, isn't taken for the function itself",
-    file: "src/lower/items.rs",
-    find: "            (ExprKind::Spread(spread), true) => matches!(&spread.kind, ExprKind::Var(v) if v == name),\n",
-    replace: "            (ExprKind::Spread(_), true) => false,\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
   {

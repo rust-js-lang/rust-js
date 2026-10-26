@@ -203,7 +203,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
-| Values, patterns, calls and places | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs` |
+| Values, patterns, calls and places, and an arrow that only passes on its call (ADR 0605) | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs`, `passed_on.rs` |
 | Mutable references, pointers, plain-data layout and unions | `mut_refs.rs`, `pointers.rs`, `plain.rs`, `unions.rs` |
 | Destructors and their facts | `drops.rs`, `drops/`; `mir/drops.rs` follows rustc's drop elaboration |
 | std types and calls | `std_types/`, `std_types/number/`; `std_types/values.rs` dispatches to each type's module |
@@ -288,6 +288,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |
+| Whether an arrow that only passes on what it's given is the function it passes on to, by where it's given: an array method's callback (ADR 0279), an event's handler (ADR 0198), a binding's `FnOnce` callback (ADR 0262's exception), an arrow rust-js makes of a function as a value (ADR 0605, amended); the shape, a declaration's too (ADR 0610); and what each closure MIR makes passes its call on to, its one fact | `passed_on.rs`; `js/stmt_walk.rs`; `mir.rs` | `passed_on`, `Taker`, `Forwarding`, `forwarded_to`; `passes_on`; `forwarding` |
 | The order a struct literal's object lists its fields, and reads them, in | `aggregates.rs` | `written_order` |
 | A variant without fields as a body writes it, a numbered enum's its module's `const` (ADR 0722), and a constant rustc computed there | `representation.rs` | `unit_variant`, `const_value` |
 | Whether a body reads a `const` or a numbered enum's variant by its name, or, where its module loads, another module's as its value (ADR 0722) | `items.rs` | `reads_by_name` |

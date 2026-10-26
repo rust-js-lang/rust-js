@@ -208,4 +208,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
   },
+  {
+    name: "handler-calling-nothing-kept",
+    breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`: a statement of the call is never passed on",
+    file: "src/js/stmt_walk.rs",
+    find: "        ] if statement => call,\n",
+    replace: "        ] if false => call,\n",
+    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
+  },
+  {
+    name: "rest-not-passed-on",
+    breaks: "an arrow of rest arguments spread on, `(...data) => console.log(...data)`, isn't the function it passes them to",
+    file: "src/js/stmt_walk.rs",
+    find: "(Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(",
+    replace: "(Pattern::Rest(name), ExprKind::Spread(spread)) if false && matches!(",
+    tests: ["test/js-object.test.ts", "-t", "console is a value"],
+  },
 ];

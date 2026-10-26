@@ -248,44 +248,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         }))
     }
-
-    /// Does closure `e` call a function of the crate, or a closure, a generic
-    /// `impl Fn`'s too, whose JS takes the arguments Rust gives it alone? And,
-    /// `dyn_fn`, a `dyn Fn`, a prop's, a JS caller's function as its type says.
-    pub(in crate::lower) fn calls_rust(&self, e: ExprId, dyn_fn: bool) -> bool {
-        let ExprKind::Closure(ref closure) = self.frame.thir[self.strip(e)].kind else {
-            return false;
-        };
-        self.closure_calls_rust(self.krate.closures[&closure.closure_id.to_def_id()], dyn_fn)
-    }
-
-    /// `calls_rust`, of a closure's body.
-    pub(in crate::lower) fn closure_calls_rust(&self, body: &crate::lower::Body<'tcx>, dyn_fn: bool) -> bool {
-        let thir = &body.thir;
-        let Some(root) = body.root() else { return false };
-        let mut call = crate::lower::body_queries::strip(thir, root);
-        if let ExprKind::Block { block } = thir[call].kind
-            && thir[block].stmts.is_empty()
-            && let Some(value) = thir[block].expr
-        {
-            call = crate::lower::body_queries::strip(thir, value);
-        }
-        let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
-            return false;
-        };
-        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
-            return false;
-        };
-        match self.tcx.trait_of_assoc(def_id) {
-            Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
-                match thir[args[0]].ty.peel_refs().kind() {
-                    ty::Closure(..) | ty::Param(_) => true,
-                    ty::Dynamic(..) => dyn_fn,
-                    ty::Adt(adt, args) if adt.is_box() => dyn_fn && matches!(args.type_at(0).kind(), ty::Dynamic(..)),
-                    _ => false,
-                }
-            }
-            _ => def_id.is_local() && !crate::lower::bindings::is_binding(self.tcx, def_id),
-        }
-    }
 }

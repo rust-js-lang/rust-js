@@ -64,57 +64,6 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     ))
 }
 
-/// `g` of `(x, i) => g(x, i)`, an arrow that passes on what it's given, in
-/// order, to a function it doesn't name a parameter: an array method's
-/// callback (ADR 0279) and an event's handler (ADR 0198) alike; and,
-/// `unread`, where what it gives is read by nothing, a handler's, of `() =>
-/// { g(); }`.
-pub(in crate::lower) fn passed_on(f: &Expr, unread: bool) -> Option<Expr> {
-    let js::ExprKind::Arrow(params, body) = &f.kind else {
-        return None;
-    };
-    let call = match &body[..] {
-        [
-            Stmt {
-                kind: StmtKind::Return(Some(call)),
-                ..
-            },
-        ] => call,
-        [
-            Stmt {
-                kind: StmtKind::Expr(call),
-                ..
-            },
-        ] if unread => call,
-        _ => return None,
-    };
-    let js::ExprKind::Call(callee, args) = &call.kind else {
-        return None;
-    };
-    let js::ExprKind::Var(g) = &callee.kind else {
-        return None;
-    };
-    let names: Vec<&str> = params
-        .iter()
-        .filter_map(|p| match p {
-            js::Pattern::Name(name) => Some(name.as_str()),
-            _ => None,
-        })
-        .collect();
-    let passed = names.len() == params.len()
-        && args.len() == names.len()
-        && !names.contains(&g.as_str())
-        && args
-            .iter()
-            .zip(&names)
-            .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
-    passed.then(|| Expr {
-        facts: js::Facts::NONE,
-        kind: js::ExprKind::Var(g.clone()),
-        span: f.span,
-    })
-}
-
 /// `(x, i) => [i, x]`, which `enumerate()` maps each item with.
 fn is_enumerate_pairing(e: &Expr) -> bool {
     let var = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);

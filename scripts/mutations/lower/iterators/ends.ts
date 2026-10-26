@@ -35,22 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
   {
-    name: "generic-callback-kept",
-    breaks: "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
-    file: "src/lower/iterators/ends.rs",
-    find: "                    ty::Closure(..) | ty::Param(_) => true,\n",
-    replace: "                    ty::Closure(..) => true,\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "only passes its arguments"],
-  },
-  {
-    name: "boxed-dyn-fn-not-rust",
-    breaks: "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
-    file: "src/lower/iterators/ends.rs",
-    find: "                    ty::Adt(adt, args) if adt.is_box() => dyn_fn && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
-    replace: "",
-    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
-  },
-  {
     name: "last-is-first",
     breaks: "`path.split(\"/\").last()` is the first piece, `.at(0)`, not the last",
     file: "src/lower/iterators/ends.rs",
@@ -89,14 +73,6 @@ export const mutations: Mutation[] = [
     find: "                        self.drop_function(item, span)?\n",
     replace: "                        None\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
-  },
-  {
-    name: "binding-passed-as-callback",
-    breaks: "`xs.map((x) => parseFloat(x))` is `xs.map(parseFloat)`, which gives it the index too",
-    file: "src/lower/iterators/ends.rs",
-    find: "            _ => def_id.is_local() && !crate::lower::bindings::is_binding(self.tcx, def_id),\n",
-    replace: "            _ => def_id.is_local(),\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "only passes its arguments"],
   },
   {
     name: "nullable-sort-by-js",

@@ -60,6 +60,7 @@ mod loops;
 mod mir;
 mod mut_refs;
 mod ordering;
+mod passed_on;
 mod patterns;
 mod pipeline;
 mod places;
@@ -561,21 +562,6 @@ fn in_place_method(call: Expr) -> Expr {
     call
 }
 
-fn called_by_name(params: &[String], call: &Expr) -> Option<Expr> {
-    let js::ExprKind::Call(callee, list) = &call.kind else {
-        return None;
-    };
-    // Or a function made here, which takes as many: itself (ADR 0538).
-    let arrow = matches!(&callee.kind, js::ExprKind::Arrow(taken, _)
-        if taken.len() == params.len() && taken.iter().all(|p| matches!(p, js::Pattern::Name(_))));
-    let by_name = (matches!(callee.kind, js::ExprKind::Var(_)) || arrow)
-        && callee.helper_name().is_none()
-        && list.len() == params.len()
-        && (list.iter().zip(params)).all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
-        && params.iter().all(|name| !callee.mentions_var(name));
-    by_name.then(|| (**callee).clone())
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What walks of types found under the typing environment in force.
     fn walks(&self) -> Rc<TypeWalks<'tcx>> {
@@ -824,15 +810,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(None);
                 };
                 let call = in_place_method(call);
-                if let Some(callee) = called_by_name(&params, &call) {
-                    return Ok(Some(callee));
-                }
                 let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
                 patterns.extend(variadic.map(js::Pattern::Rest));
-                return Ok(Some(Expr::arrow(
-                    patterns,
-                    vec![StmtKind::Return(Some(call)).at(js_span)],
-                )));
+                let arrow = Expr::arrow(patterns, vec![StmtKind::Return(Some(call)).at(js_span)]);
+                // Its call's function, where the arrow only passes on what it's
+                // given (ADR 0538).
+                let taker = passed_on::Taker::FnValue;
+                return Ok(Some(passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow)));
             }
             // One that takes rest arguments, given a slice by what calls it
             // as a value: the arrow of its call, which spreads it (ADR 0664);

@@ -270,15 +270,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "called-alone-kept-whole",
-    breaks: "`(iterator) => IClone.clone(iterator)` isn't `IClone.clone` where it's called with one argument alone",
-    file: "src/js/make.rs",
-    find: "            if !reads {\n                return (**callee).clone();\n            }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
-    snapshots: true,
-  },
-  {
     name: "uncaught-settle-kept",
     breaks: "`js::settle(p).await.unwrap()` is `$unwrapOk(await $settle(p))`, not `await p`",
     file: "src/js/make.rs",

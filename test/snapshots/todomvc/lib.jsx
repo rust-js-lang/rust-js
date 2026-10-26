@@ -11,7 +11,7 @@ import { $trim, $unwrap } from "@rust-js/runtime";
 /** The route's filter, and a render each time the hash changes. */
 function useFilter() {
   const hash = () => window.location.hash;
-  const [current, setCurrent] = useState(() => hash());
+  const [current, setCurrent] = useState(hash);
   useEffect(() => {
     const controller = new AbortController();
     const options = {

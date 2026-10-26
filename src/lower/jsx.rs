@@ -764,7 +764,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (mut first, simple): (Vec<Stmt>, bool),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let value_id = given.expr;
         let value_span = given.span;
         let (children, mut lowered) = match name.as_str() {
             "children" => (self.jsx_children(given, &mut first), None),
@@ -810,23 +809,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Where it's written, which MIR's value, a constant's, doesn't say.
         let mut value = value.or_at(self.js_span(value_span));
-        // `(e) => { if (f != null) { f(e); } }` as an event's handler is
-        // `f`: React ignores what a handler returns, and no handler does
-        // what one that calls nothing does (ADR 0198).
-        let event = name
-            .strip_prefix("on")
-            .is_some_and(|rest| rest.starts_with(char::is_uppercase));
-        if event {
+        // An event's handler that only passes on what it's given is the
+        // function it passes on to, `onClick={onClear}` (ADR 0198): held in
+        // a `const` of its own, or written in place.
+        if let Some(taker) = super::passed_on::Taker::prop(&name) {
+            let forwarding = self.forwarding();
             let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
                 (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
-                    passed_handler(arrow, value_id.is_some_and(|id| self.calls_rust(id, true)))
+                    super::passed_on::passed_on(arrow, taker, forwarding)
                 }
                 _ => None,
             };
             if let Some(handler) = spilled {
                 out.pop();
                 value = handler;
-            } else if let Some(handler) = passed_handler(&value, value_id.is_some_and(|id| self.calls_rust(id, true))) {
+            } else if let Some(handler) = super::passed_on::passed_on(&value, taker, forwarding) {
                 value = handler;
             }
         }
@@ -877,48 +874,4 @@ fn jsx_tree(value: &Expr) -> bool {
         js::ExprKind::Array(items) => items.iter().any(jsx_tree),
         _ => false,
     }
-}
-
-/// `f` of `(e) => { if (f != null) { f(e); } }`: a handler that calls
-/// another, if there is one, with what it's given (ADR 0198). And of `() =>
-/// f()`, one that calls another with nothing, which React gives the event
-/// a Rust function has no parameter for.
-fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
-    if calls_rust && let Some(f) = super::iterators::passed_on(value, true) {
-        return Some(f);
-    }
-    let js::ExprKind::Arrow(params, body) = &value.kind else {
-        return None;
-    };
-    let [js::Pattern::Name(param)] = params.as_slice() else {
-        return None;
-    };
-    let [
-        Stmt {
-            kind: StmtKind::If(test, then, None),
-            ..
-        },
-    ] = body.as_slice()
-    else {
-        return None;
-    };
-    let tested = js::null_test(test, true)?;
-    let js::ExprKind::Var(handler) = &tested.kind else {
-        return None;
-    };
-    let [
-        Stmt {
-            kind: StmtKind::Expr(call),
-            ..
-        },
-    ] = then.as_slice()
-    else {
-        return None;
-    };
-    let js::ExprKind::Call(callee, args) = &call.kind else {
-        return None;
-    };
-    let given = matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(a) if a == param));
-    let called = matches!(&callee.kind, js::ExprKind::Var(c) if c == handler);
-    (given && called && handler != param).then(|| tested.clone())
 }

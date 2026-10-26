@@ -829,7 +829,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         );
-        Ok((next.called_alone(), boxed))
+        let next = passed_on(&next, Taker::Made, &[]).unwrap_or(next);
+        Ok((next, boxed))
     }
 
     /// The compiled `fold` or `rfold`, `method`, of std's struct `ty`, a

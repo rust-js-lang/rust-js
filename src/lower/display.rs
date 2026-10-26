@@ -9,6 +9,7 @@ mod written;
 use super::bindings;
 
 use super::format_spec::{Options, Radix};
+use super::passed_on::{Taker, passed_on};
 use super::recognition::{BuilderStep, ChannelError, DebugBuilder, FmtResultAnswer, FormatterQuery, Std};
 use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
@@ -606,25 +607,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => (vec!["value".into()], Pretty::Plain),
         };
         let shown = self.display_string_with(Expr::var("value"), ty, span, &pretty)?;
-        let names: Vec<&str> = ["value", "options"].into_iter().take(params.len()).collect();
         // `String(value)` of a number is the function `String`.
         if let js::ExprKind::Stringed(value) = &shown.kind
-            && names.len() == 1
+            && params.len() == 1
             && is_var(value, "value")
         {
             return Ok(Expr::var("String"));
         }
-        if let js::ExprKind::Call(callee, args) = &shown.kind
-            && matches!(callee.kind, js::ExprKind::Var(_))
-            && args.len() == names.len()
-            && args.iter().zip(&names).all(|(arg, name)| is_var(arg, name))
-        {
-            return Ok((**callee).clone());
-        }
-        Ok(Expr::arrow(
-            params,
-            vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-        ))
+        let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]);
+        // One that calls a function with what it's given, `$displayF64`.
+        Ok(passed_on(&fmt, Taker::Made, &[]).unwrap_or(fmt))
     }
 }
 

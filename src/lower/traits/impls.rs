@@ -510,25 +510,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 false => call,
             };
+            let made = call.is_none();
+            let patterns = params.into_iter().map(|name| match &defaulted {
+                Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
+                _ => name.into(),
+            });
+            let arrow = Expr::arrow(
+                patterns.collect(),
+                vec![StmtKind::Return(Some(call.unwrap_or_else(|| Expr::call(callee, values)))).at(js::Span::NONE)],
+            );
             // One that passes on just what it's given, in order, is the method.
-            let passed = call.is_none()
-                && defaulted.is_none()
-                && values.len() == params.len()
-                && values
-                    .iter()
-                    .zip(&params)
-                    .all(|(value, param)| matches!(&value.kind, js::ExprKind::Var(v) if v == param));
-            let value = if passed {
-                callee
-            } else {
-                let patterns = params.into_iter().map(|name| match &defaulted {
-                    Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
-                    _ => name.into(),
-                });
-                Expr::arrow(
-                    patterns.collect(),
-                    vec![StmtKind::Return(Some(call.unwrap_or_else(|| Expr::call(callee, values)))).at(js::Span::NONE)],
-                )
+            let value = match made {
+                true => passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow),
+                false => arrow,
             };
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
         }

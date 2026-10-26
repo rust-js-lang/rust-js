@@ -409,15 +409,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(self.copied_back(place, &boxed, object, js_span));
             }
         }
-        if body.is_empty()
-            && let Some(callee) = crate::lower::called_by_name(&params, &value)
-        {
-            return Ok(callee);
-        }
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
         patterns.extend(variadic.map(js::Pattern::Rest));
-        Ok(Expr::arrow(patterns, body))
+        let arrow = Expr::arrow(patterns, body);
+        let taker = crate::lower::passed_on::Taker::FnValue;
+        Ok(crate::lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))
     }
 
     /// A call of what `operands` give, each read, an `==` of an `Option`

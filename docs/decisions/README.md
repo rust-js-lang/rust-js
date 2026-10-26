@@ -217,7 +217,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0195 The props a component's struct doesn't name are `...rest`](0195-rest-props.md)
 - [0196 A crate may have a `.d.ts` beside each module's JS](0196-typescript-declarations.md) *(amended by 0811: `#[rust_js::types]` is a TypeScript type, read; amended: an `impl Fn` parameter is of its own item's parameters; a declaration carries the `//` comments before its item)*
 - [0197 What's moved before anything can leave isn't its scope's to drop](0197-moved-before-leaving.md)
-- [0198 An optional handler passed on to an element is that handler](0198-optional-handlers.md)
+- [0198 An optional handler passed on to an element is that handler](0198-optional-handlers.md) *(amended: `passed_on.rs`'s `Taker::Handler`)*
 - [0199 A component takes no drop of its type parameters](0199-components-take-no-drops.md)
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](0200-binding-props-borrow.md)
 - [0201 A component takes no dictionary, and an update makes no default it replaces](0201-components-take-no-dictionaries.md)
@@ -281,7 +281,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`; amended by 0869: one the API calls once is an `FnOnce`)*
 - [0261 Defaults that do nothing don't move what's made beside them](0261-defaults-made-in-place.md)
-- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`)*
+- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](0263-with-router.md)
 - [0264 A variant's own name is the variant](0264-enum-own-names.md)
 - [0265 A component a thread_local! holds takes props of any lifetime](0265-held-component-lifetimes.md)
@@ -298,7 +298,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md) *(amended: another's variable only where nothing runs before it's read)*
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
-- [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md)
+- [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md) *(amended: a function of rest arguments keeps its arrow)*
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md)
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md) *(extended by 0891: a window's constructors)*
 - [0282 One method API for event listeners](0282-event-listener-methods.md)
@@ -488,7 +488,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0602 A binding taken as a `fn` is its JS function, read where it's taken](0602-a-binding-taken-as-a-fn-is-its-function.md) *(amended by 0667: a variadic one's, of rest arguments as a value; extended by 0887: a std function that's `Math`'s)*
 - [0603 A comment before a `let` with no JS is the next statement's](0603-a-comment-before-an-unprinted-let.md) *(extended by 0444, amended: a block's `let` too)*
 - [0604 A binding as a value gives its arguments as its call does](0604-a-bindings-value-gives-what-its-call-gives.md)
-- [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md)
+- [0605 Whether an arrow only passes on what it's given has one owner](0605-an-arrow-that-passes-on-has-one-owner.md) *(amended: `passed_on.rs` takes each position, and MIR's one fact)*
 - [0606 A blank line before an item's attributes is before the item](0606-a-blank-line-before-attributes.md)
 - [0607 A variable's field is given a call's value in place](0607-a-field-is-given-a-call-in-place.md) *(amended by 0879: a variable a closure captured too)*
 - [0608 A `Drop` is its body at each drop](0608-a-drop-is-its-body-at-each-drop.md) *(amended: a name its body shares with the caller is named apart; amended: a unit struct's guard, and a drop of nothing; amended: a closure a `const` is made of is a function a drop is its body in)*

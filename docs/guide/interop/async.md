@@ -15,6 +15,7 @@ it writes, without its header comment and source-map line.
 - [Rejections](#rejections)
 - [Fetch](#fetch)
 - [Timers](#timers)
+- [A callback that passes its call on](#a-callback-that-passes-its-call-on)
 - [Many promises at once](#many-promises-at-once)
 - [Streams](#streams)
 - [What's refused](#whats-refused)
@@ -269,6 +270,84 @@ export async function countdown() {
 `resolve(())` is `resolve()`: a `()` argument is no argument.
 A browser has no `setImmediate`: `js::is_defined(js::set_immediate)` asks
 ([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md)).
+
+## A callback that passes its call on
+
+A closure given to a binding's `FnOnce` callback, `then`'s, `setTimeout`'s,
+`queueMicrotask`'s or any binding's `impl FnOnce` or `Box<dyn FnOnce>`
+parameter, that only passes its call on to a function of the crate's, or
+a closure, is that function:
+
+```rust
+use js::Promise;
+
+fn ping() {
+    println!("ping");
+}
+
+fn shown(n: u32) -> String {
+    format!("#{n}")
+}
+
+pub fn later() {
+    js::set_timeout(Box::new(|| ping()), None);
+}
+
+pub fn settled(p: Promise<u32>) -> Promise<()> {
+    p.then_with(|_| ping(), |_| ping())
+}
+
+pub fn labelled(p: Promise<u32>) -> Promise<String> {
+    p.then_with(|n| shown(n), |_| String::new())
+}
+```
+
+```js
+function ping() {
+  console.log("ping");
+}
+
+function shown(n) {
+  return `#${n}`;
+}
+
+export function later() {
+  setTimeout(ping);
+}
+
+export function settled(p) {
+  return p.then(ping, ping);
+}
+
+export function labelled(p) {
+  return p.then(shown, () => "");
+}
+```
+
+JS calls such a callback once and never compares it, so that it's the
+function, not a fresh closure, can't be told; that's the one thing that
+differs, a difference the user decided
+([ADR 0262](../../decisions/0262-when-rust-and-js-disagree.md)'s
+exception, [semantics](../semantics.md#the-javascript-boundary)). JS gives
+the function what the binding gives the callback, `then` the value, so
+it's the function only where that reads no more than the closure gives
+it. The arrow stays:
+
+- **Where the function may read what the closure leaves out:** a
+  binding's JS function, a `dyn Fn` or a generic `impl Fn`, which may be a
+  JS caller's, and a function of rest arguments, which reads them all.
+- **Where the closure doesn't give the function's value:** `|_| {
+  count(); }` fulfils with `undefined`, `then(count)` with the count.
+- **Of an `Fn` or `FnMut` callback, a listener's:** JS may keep it and
+  compare it, as `removeEventListener` finds the listener
+  `addEventListener` was given by its identity.
+
+An array method's callback, `xs.iter().map(|x| double(x))`, is the
+function too, `xs.map(double)` ([ADR 0279](../../decisions/0279-callbacks-passed-on.md)),
+and an event's handler, `onClick={onClear}` of `move |_| on_clear()`
+([events](../react/components.md#events), [ADR 0198](../../decisions/0198-optional-handlers.md)):
+each where it's given decides
+([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md)).
 
 ## Many promises at once
 

@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0041](0041-react.md). Amended by
 [0605](0605-an-arrow-that-passes-on-has-one-owner.md): whether a handler
-only passes on what it's given is `iterators::passed_on`'s. Amended by
+only passes on what it's given is `iterators::passed_on`'s; and by its
+amendment: it's `passed_on.rs`'s `Taker::Handler`, the optional handler's
+shape with it, and its call's MIR fact (below). Amended by
 [0224](0224-typed-intrinsic-elements.md): a tag's handler gets its
 element's event, which a handler of any element's takes `upcast`,
 `f(e.upcast())`, the event itself in JS: the handler is still `f`.
@@ -56,3 +58,14 @@ no handler, `undefined`, does what one that calls nothing does.
   `alert`, keeps its arrow, as the event would change what it does. Case
   B: a JS caller's function given as a `dyn Fn()` that reads an optional
   parameter would get the event, as the original's would.
+
+## Amendment: the owner's taker
+
+An event's handler is `passed_on.rs`'s `Taker::Handler` (ADR 0605,
+amended): which prop is an event's, `js::is_handler_name`, the optional
+handler's shape, `(e) => { if (f != null) { f(e); } }`, and whether the
+call is one it may be, are all there. Whether the call is Rust's was
+jsx's own question of THIR (`calls_rust`); it's MIR's fact of the closure
+now, the one every taker reads, which says a `dyn Fn` prop's too, so the
+output is unchanged. A function of the crate's of rest arguments, which
+would read the event, keeps its arrow.

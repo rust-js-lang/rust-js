@@ -4,6 +4,7 @@
 
 use super::bindings::{Holder, JsForm, is_binding, is_method, js_form};
 use super::fn_def;
+use super::passed_on::{Taker, passed_on};
 use super::recognition::Std;
 use super::representation::Num;
 use super::std_types::number::{NumOp, math};
@@ -257,31 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let arrow = self.binding_value(def_id, args, named, span)?;
-        let ExprKind::Arrow(params, body) = &arrow.kind else {
-            return Ok(arrow);
-        };
-        // Each parameter, and whether it's rest arguments, spread on.
-        let names: Option<Vec<(&str, bool)>> = (params.iter())
-            .map(|p| match p {
-                Pattern::Name(name) => Some((name.as_str(), false)),
-                Pattern::Rest(name) => Some((name.as_str(), true)),
-                _ => None,
-            })
-            .collect();
-        let passed = |given: &Expr, (name, rest): (&str, bool)| match (&given.kind, rest) {
-            (ExprKind::Var(v), false) => v == name,
-            (ExprKind::Spread(spread), true) => matches!(&spread.kind, ExprKind::Var(v) if v == name),
-            _ => false,
-        };
-        if let (Some(names), [stmt]) = (names, body.as_slice())
-            && let StmtKind::Return(Some(call)) = &stmt.kind
-            && let ExprKind::Call(callee, given) = &call.kind
-            && given.len() == names.len()
-            && given.iter().zip(names).all(|(g, n)| passed(g, n))
-        {
-            return Ok((**callee).clone());
-        }
-        Ok(arrow)
+        Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))
     }
 
     /// The JS component binding `def_id` names, if it names one.

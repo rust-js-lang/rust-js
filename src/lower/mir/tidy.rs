@@ -93,9 +93,9 @@ pub(super) struct Hints<'h> {
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
     pub(super) plain: &'h HashSet<String>,
-    /// Where each closure that passes on what it's given to Rust's function
-    /// is written (ADR 0279).
-    pub(super) forwarding: &'h [js::Span],
+    /// Each closure of one call, where it's written and what it passes its
+    /// call on to (ADR 0605, amended).
+    pub(super) forwarding: &'h [crate::lower::passed_on::Forwarding],
     /// Where each closure of one call whose JS gives `undefined` is written:
     /// a component's handler of one, `() => f()` (ADR 0040).
     pub(super) concise: &'h [(js::Span, crate::lower::jsx::OneCall)],

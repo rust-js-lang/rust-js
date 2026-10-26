@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
-    name: "passed-handler-wrapped",
-    breaks: "an optional handler passed on to an element is wrapped, `(e) => { if (onClick != null) { onClick(e); } }`",
-    file: "src/lower/jsx.rs",
-    find: "    (given && called && handler != param).then(|| tested.clone())",
-    replace: "    (false && given && called && handler != param).then(|| tested.clone())",
-    tests: ["test/jsx-events.test.ts", "-t", "optional event handler on as it is"],
-  },
-  {
     name: "component-props-unplaced",
     breaks: "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
     file: "src/lower/jsx.rs",
@@ -217,14 +209,6 @@ export const mutations: Mutation[] = [
     find: "            && !self.option_of(spread).is_some_and(js_object)\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "JS values of any shape"],
-  },
-  {
-    name: "handler-of-binding-passed",
-    breaks: "`onClick={() => alert()}` is `onClick={alert}`, which shows the event",
-    file: "src/lower/jsx.rs",
-    find: "    if calls_rust && let Some(f) = super::iterators::passed_on(value, true) {\n",
-    replace: "    if let Some(f) = super::iterators::passed_on(value, true) {\n",
-    tests: ["test/jsx-events.test.ts", "-t", "calls a function with nothing"],
   },
   {
     name: "captured-import-spilled",

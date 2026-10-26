@@ -256,10 +256,10 @@ pub(super) struct Found {
     /// element made ahead of a branch reads, which tidy reads in place
     /// where it can.
     pub(super) captured: HashSet<String>,
-    /// Of a body lowered from its MIR, where each closure it makes that
-    /// passes on what it's given to Rust's function is written: an array
-    /// method's, the function itself (ADR 0279).
-    pub(super) forwarding: Vec<js::Span>,
+    /// Of a body lowered from its MIR, each closure it makes of one call:
+    /// where it's written, and what it passes its call on to, which says
+    /// where it may be that function (ADR 0605, amended).
+    pub(super) forwarding: Vec<crate::lower::passed_on::Forwarding>,
     /// And where each is written of one call whose JS gives `undefined`
     /// anyway, and how: a handler's, or one of its value, `() => f()` (ADRs
     /// 0040, 0883).
@@ -280,6 +280,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// change either.
     pub(super) fn plain_local(&self, name: &str) -> bool {
         self.locals.mir.plain.contains(name)
+    }
+
+    /// Of each closure of one call the body lowered from its MIR makes so
+    /// far, where it's written and what it passes its call on to, which
+    /// `passed_on` reads (ADR 0605, amended).
+    pub(super) fn forwarding(&self) -> &[crate::lower::passed_on::Forwarding] {
+        &self.locals.mir.forwarding
     }
 
     /// `name`, a temporary a `test && value` given what skips what's falsy

@@ -2,6 +2,7 @@
 //! parameters, the drops it may not have, and the arguments it keeps.
 
 use super::*;
+use crate::lower::passed_on::{Taker, passed_on};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The drop function for a `ty` that `callee`, which takes only the
@@ -192,8 +193,8 @@ fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
             .collect();
     };
     let has_drops = |args: &[Expr]| args.iter().any(|a| matches!(a.kind, js::ExprKind::DropArgument(..)));
-    let callee = match &mut e.kind {
-        js::ExprKind::Arrow(params, body) => {
+    let made = match &mut e.kind {
+        js::ExprKind::Arrow(_, body) => {
             let [
                 Stmt {
                     kind: StmtKind::Return(Some(call)),
@@ -203,42 +204,25 @@ fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
             else {
                 return;
             };
-            let js::ExprKind::Call(callee, args) = &mut call.kind else {
+            let js::ExprKind::Call(_, args) = &mut call.kind else {
                 return;
             };
             if !has_drops(args) {
                 return;
             }
             keep(args);
-            let names: Vec<&str> = params
-                .iter()
-                .filter_map(|param| match param {
-                    js::Pattern::Name(name) => Some(name.as_str()),
-                    _ => None,
-                })
-                .collect();
-            let passed = names.len() == params.len()
-                && names.len() == args.len()
-                && names
-                    .iter()
-                    .zip(args.iter())
-                    .all(|(name, arg)| matches!(&arg.kind, js::ExprKind::Var(a) if a == name))
-                && match &callee.kind {
-                    js::ExprKind::Var(name) => !names.contains(&name.as_str()),
-                    js::ExprKind::Symbol(_) => true,
-                    _ => false,
-                };
-            passed.then(|| (**callee).clone())
+            true
         }
         js::ExprKind::Call(_, args) | js::ExprKind::OptionalCall(_, args) | js::ExprKind::New(_, args)
             if has_drops(args) =>
         {
             keep(args);
-            None
+            false
         }
-        _ => None,
+        _ => false,
     };
-    if let Some(callee) = callee {
+    // An arrow that passes on its parameters alone now is its callee.
+    if made && let Some(callee) = passed_on(e, Taker::Made, &[]) {
         *e = callee;
     }
 }

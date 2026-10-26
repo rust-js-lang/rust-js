@@ -232,12 +232,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.place_written(written, &mut stmts);
         stmts.splice(0..0, directives);
-        let forwarding = self.closure_calls_rust(body, false);
+        let forwarded = self.forwarded_to(body);
         let concise = self.closure_calls_for_nothing(body);
-        if forwarding || concise.is_some() {
+        if forwarded.is_some() || concise.is_some() {
             let span = self.js_span(span);
-            if forwarding {
-                self.locals.mir.forwarding.push(span);
+            if let Some(callee) = forwarded {
+                let fact = crate::lower::passed_on::Forwarding { span, callee };
+                self.locals.mir.forwarding.push(fact);
             }
             if let Some(written) = concise {
                 self.locals.mir.concise.push((span, written));
