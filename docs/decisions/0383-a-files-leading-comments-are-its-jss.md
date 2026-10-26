@@ -53,3 +53,16 @@ written.**
 A run of comments right above the first code, no blank line between, is
 that code's, where a blank line parts it from what the file starts with:
 the license stays the header.
+
+## Amendment: a blank line inside a block comment parts nothing (#312)
+
+A run of comments right above the code is the code's, parted from the
+file's at the last blank line (ADR 0444): that blank line was found
+anywhere in the comments, so one inside a block comment, TheAlgorithms/
+rust's PCG32's `/* Permuted Congruential Generator\n\nNote that .. */`,
+cut it there, and rust-js wrote an unterminated `/*` it couldn't read
+back. **Only a blank line between two comments parts them**; a block
+comment is one, whole. Held by `comments::tests`, the lowering test "a
+file's block comment with a blank line in it is one comment" and the
+mutation `head-comment-cut-inside-a-comment`.
+

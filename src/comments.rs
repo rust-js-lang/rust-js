@@ -9,6 +9,8 @@
 pub fn leading_comments(text: &str) -> &str {
     let mut end = 0;
     let mut rest = text;
+    // Where each comment ends, and the next starts: the gaps between them.
+    let mut gaps: Vec<(usize, usize)> = Vec::new();
     loop {
         let trimmed = rest.trim_start();
         let at = text.len() - trimmed.len();
@@ -37,18 +39,23 @@ pub fn leading_comments(text: &str) -> &str {
         } else {
             break;
         };
+        if end > 0 {
+            gaps.push((end, at));
+        }
         end = at + length;
         rest = &text[end..];
     }
     // A run right above the code, no blank line between, is that code's
-    // (ADR 0444), where a blank line parts it from the rest (ADR 0383,
-    // amended): a license, then what the first item's comments say.
+    // (ADR 0444), where a blank line between two comments parts it from the
+    // rest (ADR 0383, amended): a license, then what the first item's
+    // comments say. Not one inside a block comment, which is one comment.
+    let blank = |gap: &str| gap.matches('\n').count() > 1;
     if text[end..].starts_with('\n')
         && !text[end..].starts_with("\n\n")
         && !text[end..].starts_with("\n\r\n")
-        && let Some(blank) = text[..end].rfind("\n\n")
+        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to]))
     {
-        return &text[..blank];
+        return &text[..before];
     }
     &text[..end]
 }
@@ -81,4 +88,18 @@ pub fn jsdoc(lines: &[&str]) -> Option<String> {
             format!("/**\n{}\n */", lines.join("\n"))
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::leading_comments;
+
+    #[test]
+    fn a_blank_line_inside_a_block_comment_parts_nothing() {
+        let file = "/*\nA.\n\nB.\n */\npub fn f() {}\n";
+        assert_eq!(leading_comments(file), "/*\nA.\n\nB.\n */");
+        // Between two comments, it parts a license from the code's.
+        let file = "// License.\n\n/*\nA.\n\nB.\n */\npub fn f() {}\n";
+        assert_eq!(leading_comments(file), "// License.");
+    }
 }

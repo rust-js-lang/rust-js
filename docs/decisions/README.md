@@ -401,7 +401,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](0380-with-rust-js.md) *(superseded by 0412)*
 - [0381 The app's Prettier lays out what rust-js writes](0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust)*
 - [0382 A module has a file for what it has, the root too](0382-a-module-has-a-file-for-what-it-has.md)
-- [0383 A file's leading comments are its JS's](0383-a-files-leading-comments-are-its-jss.md)
+- [0383 A file's leading comments are its JS's](0383-a-files-leading-comments-are-its-jss.md) *(amended: a blank line inside a block comment parts nothing)*
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](0384-a-ref-prop-is-reacts-ref.md)
 - [0385 A private type a declaration names is declared, not exported](0385-a-private-type-a-declaration-names.md)
 - [0386 A function that never returns, `-> !`](0386-a-function-that-never-returns.md)

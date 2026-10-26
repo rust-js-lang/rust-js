@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "head-comment-cut-inside-a-comment",
+    breaks: "a file's leading block comment with a blank line in it is cut at that line, and rust-js writes an unterminated `/*` (#312)",
+    file: "src/comments.rs",
+    find: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to]))\n",
+    replace: "        && let Some(before) = text[..end].rfind(\"\\n\\n\")\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "blank line in it is one comment"],
+  },
+  {
     name: "output-line-docs-carried",
     breaks: "a module's or an item's doc comment, `//!` or `///`, is taken for one the file starts with",
     file: "src/comments.rs",
@@ -46,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "leading-run-above-code-kept",
     breaks: "a comment run right above the first code, a blank line after the license, stays in the header, a blank line between it and its code",
     file: "src/comments.rs",
-    find: "        && let Some(blank) = text[..end].rfind(\"\\n\\n\")\n",
-    replace: "        && let Some(blank) = text[..end].rfind(\"\\n\\n\").filter(|_| false)\n",
+    find: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to]))\n",
+    replace: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to])).filter(|_| false)\n",
     tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
   },
 ];
