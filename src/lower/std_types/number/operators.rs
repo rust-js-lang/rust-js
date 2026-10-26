@@ -226,9 +226,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {
-        // JS bitwise ops return signed 32-bit results; only u32 needs fixing.
+        // JS bitwise ops return signed 32-bit results; only u32 needs fixing,
+        // but where a mask below 2^31 clears bit 31, `n & 1`.
+        let masked = op == Op::BitAnd
+            && [&l, &r]
+                .iter()
+                .any(|e| e.as_int().is_some_and(|k| (0..1 << 31).contains(&k)));
         let e = Expr::bin(op, bits_operand(l), bits_operand(r));
-        if num == Num::U32 { num.wrap(e) } else { e }
+        if num == Num::U32 && !masked { num.wrap(e) } else { e }
     }
 
     pub(in crate::lower) fn unary(&mut self, op: UnOp, a: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {

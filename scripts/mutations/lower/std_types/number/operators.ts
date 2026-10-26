@@ -3,6 +3,23 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "u32-mask-with-bit-31-unwrapped",
+    breaks: "a `u32`'s `n & 0x8000_0000` is JS's signed `&`, `-2147483648` of `u32::MAX`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "                .any(|e| e.as_int().is_some_and(|k| (0..1 << 31).contains(&k)));\n",
+    replace: "                .any(|e| e.as_int().is_some_and(|k| (0..=1 << 31).contains(&k)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^u32_masks.rs$"],
+  },
+  {
+    name: "u32-mask-wrapped",
+    breaks: "a `u32`'s `n & 1` is `(n & 1) >>> 0`, not `n & 1`",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "        let masked = op == Op::BitAnd\n",
+    replace: "        let masked = false && op == Op::BitAnd\n",
+    tests: ["test/corpus.test.ts", "-t", "^u32_masks.rs$"],
+    snapshots: true,
+  },
+  {
     name: "f32-arithmetic-unrounded",
     breaks: "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
     file: "src/lower/std_types/number/operators.rs",

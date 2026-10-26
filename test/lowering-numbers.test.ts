@@ -49,7 +49,7 @@ pub fn zeros() -> f64 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const OWNER_STACK_LIMIT = 1e4;");
   expect(js).toContain("export const SEED = 0x811c9dc5;");
-  expect(js).toContain("return (n & 0xff) >>> 0;");
+  expect(js).toContain("return n & 0xff;");
   expect(js).toContain("return 2.5e-3;");
   expect(js).toContain("return 5000;");
   expect(js).toContain("return -1e4;");

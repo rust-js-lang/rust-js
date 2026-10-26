@@ -494,7 +494,7 @@ pub fn low_byte(n: u32) -> u32 {
 export const OWNER_STACK_LIMIT = 1e4;
 
 export function lowByte(n) {
-  return (n & 0xff) >>> 0;
+  return n & 0xff;
 }
 ```
 

@@ -104,7 +104,7 @@ function main() {
   for (let tag = 0; tag < 10; tag++) {
     for (const ty of ["", "a", "div", "Button"]) {
       for (let flags = 0; flags < 8; flags++) {
-        const flags$1 = [(flags & 1) >>> 0 !== 0, (flags & 2) >>> 0 !== 0, (flags & 4) >>> 0 !== 0];
+        const flags$1 = [(flags & 1) !== 0, (flags & 2) !== 0, (flags & 4) !== 0];
         const named = name(tag, ty, flags$1, log);
         const arg = $take(log, []);
         console.log(

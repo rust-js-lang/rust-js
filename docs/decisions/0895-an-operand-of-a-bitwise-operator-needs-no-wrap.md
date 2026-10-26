@@ -108,3 +108,14 @@ Held by the corpus case `remainder_operands.rs`, against native Rust, at
 each type's `MIN` and `MAX` and of a remainder that's `-0`, `i8`'s too; and
 the mutation `remainder-operand-wrapped`
 (`lower/std_types/number/operators.ts`).
+
+## Amendment: a `u32` masked below 2^31 needs no wrap (#343)
+
+trekhleb/javascript-algorithms' `countSetBits`, ported, read
+`setBitsCount + ((number & 1) >>> 0)` where upstream writes `number & 1`.
+A `u32`'s `&` is made unsigned, `>>> 0`, as JS's is signed, but the two
+differ only where bit 31 is set: **`n & c` of a constant `c` below 2^31
+is the value as it is**, `n & 1`, `n & 0xff`. A mask with bit 31, `n &
+0x8000_0000`, or one of two variables, keeps its `>>> 0` (ADR 0262's case
+A). Held by `test/corpus/u32_masks.rs` and the mutations
+`u32-mask-with-bit-31-unwrapped` and `u32-mask-wrapped`.
