@@ -709,7 +709,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 229], // Whether `?` is written as it is, `tried_as_written` (ADR 0913).
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).
-  ["src/lower/mir.rs", "    fn mir_function(", 349], // What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended).
+  ["src/lower/mir.rs", "    fn mir_function(", 352], // What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 593],

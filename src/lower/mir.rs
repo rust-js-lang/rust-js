@@ -1001,6 +1001,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
+        // A class's method reads its `self` as `this` (ADR 0761).
+        crate::lower::classes::receiver_as_this(self.tcx, mir_body.source.def_id(), &mut params, &mut out)
+            .map_err(|what| self.unsupported(mir_body.span, what))?;
         let params = std::cell::RefCell::new(params);
         tidy::tidy(
             &mut out,

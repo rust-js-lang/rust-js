@@ -7,6 +7,14 @@ const refusals = ["test/classes.test.ts", "-t", "what a class is refused"];
 
 export const mutations: Mutation[] = [
   {
+    name: "class-receiver-left-to-tidy",
+    breaks: "a class's method's `self` stays a parameter through tidy, so it's no `this`, its `let point` read as another variable",
+    file,
+    find: "    if member(tcx, function) != Some(Member::Method) {\n",
+    replace: "    if member(tcx, function) == Some(Member::Method) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_local_named_as_self.rs$"],
+  },
+  {
     name: "class-unmarked",
     breaks: "a struct marked `#[rust_js::class]` is no class: its impl an object of functions, `Component.new(..)`, which `class X extends Component` can't run",
     file,
@@ -26,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "class-self-not-this",
     breaks: "a method's `self` stays its parameter, read where JS gives its first argument, not `this`",
     file,
-    find: "                    e.kind = ExprKind::This;\n",
+    find: "            e.kind = ExprKind::This;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },

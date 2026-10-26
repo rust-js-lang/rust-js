@@ -242,26 +242,41 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
 
 /// `function` (ADR 0761) of a class's member, lowered as its impl's
 /// function: a constructor's `return { props, .. }` its `this`'s fields
-/// set, `this.props = props;`; a method's `self` parameter `this`. `Err`
-/// of a constructor that returns what's no struct literal.
+/// set, `this.props = props;`. A method's `self` is `this` already, made
+/// so before tidy (`receiver_as_this`). `Err` of a constructor that
+/// returns what's no struct literal.
 pub(super) fn as_member(member: Member, function: &mut js::Function) -> Result<(), &'static str> {
     match member {
         Member::Constructor => set_this(&mut function.body),
-        Member::Method => {
-            let receiver = match function.params.first() {
-                Some(Pattern::Name(name)) => name.clone(),
-                _ => return Err("a method whose `self` is no parameter"),
-            };
-            function.params.remove(0);
-            js::each_expr_mut(&mut function.body, &mut |e| {
-                if matches!(&e.kind, ExprKind::Var(v) if *v == receiver) {
-                    e.kind = ExprKind::This;
-                }
-            });
-            Ok(())
-        }
-        Member::Static | Member::Const => Ok(()),
+        Member::Method | Member::Static | Member::Const => Ok(()),
     }
+}
+
+/// Of `function`, a class's method, its `self` parameter, `this` in its
+/// body, `params` left without it. Before tidy, which would take a `let`
+/// of its name, read no more after, for it (ADR 0650): `let complex_number
+/// = ..` of a `ComplexNumber`'s method, whose `self` is named
+/// `complexNumber` too, would be `this = ..`.
+pub(super) fn receiver_as_this(
+    tcx: TyCtxt<'_>,
+    function: DefId,
+    params: &mut Vec<Pattern>,
+    body: &mut [Stmt],
+) -> Result<(), &'static str> {
+    if member(tcx, function) != Some(Member::Method) {
+        return Ok(());
+    }
+    let receiver = match params.first() {
+        Some(Pattern::Name(name)) => name.clone(),
+        _ => return Err("a method whose `self` is no parameter"),
+    };
+    params.remove(0);
+    js::each_expr_mut(body, &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if *v == receiver) {
+            e.kind = ExprKind::This;
+        }
+    });
+    Ok(())
 }
 
 /// Each `return { a, b }` of `body` its fields set on `this`, `this.a =

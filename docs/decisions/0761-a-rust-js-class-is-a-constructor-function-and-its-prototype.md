@@ -217,3 +217,18 @@ where Rust meets JS, so it's an attribute, as a binding's
   (`lower/items.rs`), `class-method-on-the-constructor`,
   `class-constructor-unexported` (`to_oxc/statements.rs`),
   `js-class-of-the-constructor-call` (`lower/binding_calls.rs`).
+
+## Amendment: a method's `self` is `this` before tidy (#344)
+
+A method's `self`, named after its type, `point` of a `Point`'s, was made
+`this` after tidy, every variable of its name with it. Tidy's shadows
+(ADR 0650) take a `let` of that name, read no more after it, for the
+parameter: `let point = Point::new(self.x + by)` is `point = Point.new(..)`
+of a plain method, which is right, and of a class's method was `this =
+new Point(..)`, which rust-js couldn't print (#344; trekhleb/javascript-algorithms'
+ComplexNumber, `let complex_number = self.to_complex_number(number)`).
+**A class's method's `self` is `this` before tidy**
+(`classes::receiver_as_this`), so a `let` of its name is a variable of
+its own, `const point = new Point(this.x + by)`. Held by
+`test/corpus/class_local_named_as_self.rs` and the mutations
+`class-receiver-left-to-tidy` and `class-self-not-this`.
