@@ -471,6 +471,11 @@ export function firstThree(xs) {
 }
 ```
 
+`enumerate()` then `map`, `for_each`, `any`, `all`, `flat_map` or `fold`
+is that array method, its callback given each item's index as JS gives
+it: `fold(0, |sum, (i, x)| ..)` is `reduce((sum, x, i) => .., 0)`, and
+`map(|(i, _)| ..)` is `map((_, i) => ..)`.
+
 Where a closure prints, changes something or may panic, and running it on
 every item would show, the chain is a lazy JS iterator instead, run one
 item at a time, as Rust runs it. Here `find` stops at the third item, so

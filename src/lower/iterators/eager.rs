@@ -6,12 +6,16 @@ use super::*;
 /// `enumerate()` then a method whose callback takes each pair apart,
 /// `.map((x, i) => [i, x]).map(([i, w]) => ..)`: the method of the items
 /// themselves, whose callback JS gives each one's index too, `.map((w, i)
-/// => ..)` (ADR 0217). Not `filter` or `find`, which give back the pairs.
-/// `Err` gives back the callback, of any other.
+/// => ..)` (ADR 0217); `reduce`'s, its pair the callback's second
+/// parameter, `.reduce((acc, w, i) => .., start)`. Not `filter` or `find`,
+/// which give back the pairs. `Err` gives back the callback, of any other.
 pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), Expr> {
-    if !["map", "forEach", "some", "every", "flatMap"].contains(&name) {
-        return Err(f);
-    }
+    // What the callback is given before each item, `reduce`'s accumulator.
+    let before = match name {
+        "map" | "forEach" | "some" | "every" | "flatMap" => 0,
+        "reduce" => 1,
+        _ => return Err(f),
+    };
     let js::ExprKind::Call(callee, args) = &items.kind else {
         return Err(f);
     };
@@ -24,18 +28,32 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return Err(f);
     };
-    let [js::Pattern::Array(parts)] = &params[..] else {
+    let (leading, [js::Pattern::Array(parts)]) = params.split_at(before.min(params.len())) else {
         return Err(f);
     };
-    let [index, item] = &parts[..] else { return Err(f) };
+    // `|(i, _)|`'s, its item left out: `[i]`.
+    let (index, item) = match &parts[..] {
+        [index, item] => (index, item),
+        [index] => (index, &None),
+        _ => return Err(f),
+    };
     let index = match index {
         Some(js::Pattern::Name(index)) => Some(index.clone()),
         Some(_) => return Err(f),
         None => None,
     };
     // The item, taken apart as it was, `({ name }, i)`; `_` where only the
-    // index is read: no Rust variable is.
-    let mut params = vec![item.clone().unwrap_or_else(|| "_".into())];
+    // index is read, or `__` where the accumulator is `_` already, JS
+    // binding a name once in a parameter list.
+    let unread = || {
+        let named = |n: &str| leading.iter().any(|p| matches!(p, js::Pattern::Name(l) if l == n));
+        (1..)
+            .map(|k| "_".repeat(k))
+            .find(|n| !named(n) && js::mentions_in(body, n) == 0)
+            .expect("a name")
+    };
+    let mut params = leading.to_vec();
+    params.push(item.clone().unwrap_or_else(|| unread().into()));
     params.extend(index.map(js::Pattern::Name));
     Ok((
         (**source).clone(),
@@ -277,7 +295,10 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                 true => eager_items(chain, false, None),
                 false => eager_items(chain, true, Some(f)),
             }
-            .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
+            .map(|(items, _)| {
+                let (items, f) = indexed_callback(&items, "reduce", f.clone()).unwrap_or_else(|f| (items, f));
+                Expr::call(Expr::member(items, "reduce"), vec![f, init.clone()])
+            }),
             // Whether any item is a literal, which `===` and `includes` agree
             // of whatever the items are: `includes`.
             ("some", [f])

@@ -3,6 +3,32 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "enumerate-fold-paired",
+    breaks: "`enumerate().fold(..)` reads `.map((x, i) => [i, x]).reduce((acc, [i, x]) => ..)`, not `reduce((acc, x, i) => ..)`",
+    file: "src/lower/iterators/eager.rs",
+    find: "        \"reduce\" => 1,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "enumerate-item-left-out-paired",
+    breaks: "`enumerate().map(|(i, _)| ..)` reads `.map((x, i) => [i, x]).map(([i]) => ..)`, not `map((_, i) => ..)` (ADR 0217)",
+    file: "src/lower/iterators/eager.rs",
+    find: "        [index] => (index, &None),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "enumerate-unread-item-named-as-accumulator",
+    breaks: "`fold(0, |_, (i, _)| i)` is `reduce((_, _, i) => i, 0)`, a SyntaxError: `_` bound twice",
+    file: "src/lower/iterators/eager.rs",
+    find: "            .find(|n| !named(n) && js::mentions_in(body, n) == 0)\n",
+    replace: "            .find(|n| js::mentions_in(body, n) == 0)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
+  },
+  {
     name: "map-for-each-nothing-kept",
     breaks: "a `map(g)` collected into `()` reads `.map(g).forEach(() => {})`, not `.forEach(g)`",
     file: "src/lower/iterators/eager.rs",
