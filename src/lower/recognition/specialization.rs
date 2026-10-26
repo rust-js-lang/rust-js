@@ -100,8 +100,11 @@ const OPTIMIZING: &[(&str, Option<&str>)] = &[("TrustedLen", None), ("TrustedRan
 /// of each integer range, `SpecRangeSetup`'s, which counts what's left in
 /// the range's `end`, and `StepByImpl`'s and `StepByBackImpl`'s, which step
 /// by that count, each item, hint and count the general impls' (ADR 0917).
-/// Only its `Debug` shows the range so changed, which isn't compiled.
-const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl"];
+/// Only its `Debug` shows the range so changed, which isn't compiled. And
+/// `Filter::count`'s `SpecAssumeCount`, whose `TrustedLen` impl assumes
+/// what the general one checks, `upper - count`, which a `TrustedLen`'s
+/// upper bound never fails (ADR 0932).
+const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl", "SpecAssumeCount"];
 
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl as a more specific impl may specialize

@@ -3,6 +3,31 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "meaning-only-made-everywhere",
+    breaks: "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)\n",
+    replace: "    true || !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
+  },
+  {
+    name: "meaning-only-library-items-seen",
+    breaks: "the std manifest's `Filter` impls and methods are taken for the normal build's to call though it doesn't compile `Filter`: `filter(..).collect()` is refused, `this implementation` (ADR 0932)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    if MEANING.with(std::cell::Cell::get) || id.is_local() {\n        return false;\n    }\n",
+    replace: "    if true || MEANING.with(std::cell::Cell::get) || id.is_local() {\n        return false;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
+  },
+  {
+    name: "filter-meaning-unmade",
+    breaks: "std's `Filter` isn't made as its meaning: the build of std's structs alone steps a `rev()` through the recognizers' `filter`, `it.back is not a function` (ADR 0932)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Iterator\", \"filter\"),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^rev_of_lazy_chains with"],
+  },
+  {
     name: "std-questions-impure",
     breaks: "`is_empty()` and the like are taken as doing something: a pure chain is lazy",
     file: "src/lower/recognition/std_items.rs",

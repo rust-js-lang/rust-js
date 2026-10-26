@@ -232,6 +232,16 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Map", Some("ExactSizeIterator"), "len"),
     ("Map", Some("Clone"), "clone"),
     ("Map", Some("Debug"), "fmt"),
+    ("Filter", Some("Iterator"), "next"),
+    ("Filter", Some("Iterator"), "size_hint"),
+    ("Filter", Some("Iterator"), "count"),
+    ("Filter", Some("Iterator"), "fold"),
+    ("Filter", Some("Iterator"), "try_fold"),
+    ("Filter", Some("DoubleEndedIterator"), "next_back"),
+    ("Filter", Some("DoubleEndedIterator"), "rfold"),
+    ("Filter", Some("DoubleEndedIterator"), "try_rfold"),
+    ("Filter", Some("Clone"), "clone"),
+    ("Filter", Some("Debug"), "fmt"),
     ("Inspect", Some("Iterator"), "next"),
     ("Inspect", Some("Iterator"), "size_hint"),
     ("Inspect", Some("Iterator"), "fold"),
@@ -319,6 +329,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "rev"),
     ("Iterator", "enumerate"),
     ("Iterator", "map"),
+    ("Iterator", "filter"),
     ("Iterator", "inspect"),
     ("Iterator", "flatten"),
     ("Iterator", "flat_map"),
@@ -338,6 +349,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Rev", "rev", true),
     ("Enumerate", "enumerate", true),
     ("Map", "map", true),
+    ("Filter", "filter", false),
     ("Inspect", "inspect", true),
     ("Flatten", "flatten", false),
     ("FlatMap", "flat_map", false),
@@ -347,19 +359,71 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Chain", "chain", false),
 ];
 
+/// Of those, the adapters std's struct is the meaning of alone, on their way
+/// to being held as it (ADR 0932): compiled into `@rust-js/std` and std's
+/// struct in the build of std's structs alone, the differential build (ADR
+/// 0908), and what the recognizers make wherever the crate makes one in
+/// any other, as before it was compiled.
+const MEANING_ONLY: &[&str] = &["Filter"];
+
+thread_local! {
+    /// Whether this session's build is one of std's structs as their
+    /// meaning: std's own bodies', or the differential build's.
+    static MEANING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// That this session's build compiles std's structs as their meaning, all
+/// of `MEANING_ONLY`'s too: std's own bodies, `--std-bodies`, or the
+/// differential build, `--std-iterators`. Set once, before anything asks.
+pub(crate) fn build_std_structs_as_meaning(meaning: bool) {
+    MEANING.with(|cell| cell.set(meaning));
+}
+
+/// Whether std's struct named `type_name` is compiled for this build:
+/// each but `MEANING_ONLY`'s, which only a build of the meaning compiles.
+fn compiled_for_build(type_name: &str) -> bool {
+    !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)
+}
+
+/// Whether `id`, a std body `@rust-js/std` compiles, isn't this build's: an
+/// impl of a `MEANING_ONLY` adapter, a method of one, or its maker, `filter`, outside
+/// a build of its meaning, which its manifest's entry doesn't make the
+/// crate's to call (ADR 0932).
+pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    if MEANING.with(std::cell::Cell::get) || id.is_local() {
+        return false;
+    }
+    // Its impl, or it itself, an impl.
+    let imp = match tcx.def_kind(id) {
+        DefKind::Impl { .. } => Some(id),
+        _ => tcx.impl_of_assoc(id),
+    };
+    let owner = imp.and_then(|imp| match tcx.type_of(imp).skip_binder().kind() {
+        ty::Adt(adt, _) => Some(adt.did()),
+        _ => None,
+    });
+    let meaning_only = |name: &str| MEANING_ONLY.contains(&name);
+    owner.is_some_and(|adt| {
+        MEANING_ONLY
+            .iter()
+            .any(|name| std_path(tcx, adt) == format!("std::iter::{name}"))
+    }) || (HELD_COMPILED.iter())
+        .any(|&(name, method, _)| meaning_only(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
+}
+
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
 /// adapters, `rev`: the one answer, of what's made in place.
 pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    HELD_COMPILED
-        .iter()
+    (HELD_COMPILED.iter())
+        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
         .any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
 /// Whether what `id`, one of `HELD_COMPILED`'s makers, makes in place is
 /// sized as Rust's is, `rev()`'s, not `flatten()`'s (ADR 0899).
 pub(crate) fn sized_in_place(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    HELD_COMPILED
-        .iter()
+    (HELD_COMPILED.iter())
+        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
         .any(|&(_, method, sized)| sized && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
@@ -457,7 +521,10 @@ pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let trait_named = |name: &str| tcx.get_diagnostic_item(Symbol::intern(name));
     let mut found = Vec::new();
-    for &(type_name, trait_name, method) in COMPILED_STD {
+    for &(type_name, trait_name, method) in COMPILED_STD
+        .iter()
+        .filter(|&&(type_name, ..)| compiled_for_build(type_name))
+    {
         let Some(adt) = registry::by_path(tcx, "core", &["iter", type_name]) else {
             continue;
         };
@@ -492,7 +559,16 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
             );
         }
     }
-    for &(trait_name, method) in COMPILED_STD_PROVIDED {
+    // Its makers, but a `MEANING_ONLY` adapter's outside a build of it.
+    let made_for_build = |method: &str| {
+        (HELD_COMPILED.iter())
+            .find(|&&(_, maker, _)| maker == method)
+            .is_none_or(|&(type_name, ..)| compiled_for_build(type_name))
+    };
+    for &(trait_name, method) in COMPILED_STD_PROVIDED
+        .iter()
+        .filter(|&&(_, method)| made_for_build(method))
+    {
         found.extend(compiled_provided_method(tcx, trait_name, method));
     }
     // And each function std keeps private that a compiled body calls,
@@ -751,8 +827,8 @@ pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// the crate's is, wherever a value of it is made or read.
 pub(crate) fn is_compiled_std_type(tcx: TyCtxt<'_>, id: DefId) -> bool {
     !id.is_local()
-        && COMPILED_STD
-            .iter()
+        && (COMPILED_STD.iter())
+            .filter(|&&(type_name, ..)| compiled_for_build(type_name))
             .any(|&(type_name, _, _)| std_path(tcx, id) == format!("std::iter::{type_name}"))
 }
 

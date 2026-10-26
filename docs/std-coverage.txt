@@ -934,8 +934,8 @@
 + Map::size_hint	safe
 + Map::try_fold	safe
 + Map::try_rfold	safe
-# Filter 4 of 8; bodies: 7 safe, 1 spec, 0 opaque, 0 memory, 0 none
-+ Filter::count	spec
+# Filter 4 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ Filter::count	safe
 + Filter::fold	safe
 + Filter::next	safe
 - Filter::next_back	safe

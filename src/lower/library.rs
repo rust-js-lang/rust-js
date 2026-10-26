@@ -490,6 +490,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// rest of std is std's (ADR 0561).
     pub(super) fn in_library(&self, id: DefId) -> bool {
         !id.is_local()
+            && !super::recognition::not_compiled_for_build(self.tcx, id)
             && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str())).is_some_and(|library| {
                 !library.builtin || {
                     let key = key(self.tcx, id);
@@ -506,8 +507,10 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {
-        // An instance is the crate's own (ADR 0914).
-        if id.is_local() || self.is_instance(id) {
+        // An instance is the crate's own (ADR 0914); a std body this build
+        // doesn't compile, a `MEANING_ONLY` adapter's, no library's (ADR
+        // 0932).
+        if id.is_local() || self.is_instance(id) || super::recognition::not_compiled_for_build(self.tcx, id) {
             return None;
         }
         let library = self
@@ -695,6 +698,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Is `id` a library's trait impl, one its consumers call?
     pub(super) fn has_impl(&self, id: DefId) -> bool {
         !id.is_local()
+            && !super::recognition::not_compiled_for_build(self.tcx, id)
             && self
                 .dependencies
                 .libraries

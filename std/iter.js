@@ -346,6 +346,8 @@ const $enumerateClone = new WeakMap();
 const $enumerateDebug = new WeakMap();
 const $mapClone = new WeakMap();
 const $mapDebug = new WeakMap();
+const $filterClone = new WeakMap();
+const $filterDebug = new WeakMap();
 const $inspectClone = new WeakMap();
 const $inspectDebug = new WeakMap();
 const $skipClone = new WeakMap();
@@ -1625,6 +1627,225 @@ export function mapDebug_fmt(map, options, IDebug, dropI, dropF) {
   return options?.alternate
     ? $pretty("Map {", [`iter: ${IDebug.fmt(map.iter, options)}`], "}")
     : `Map { iter: ${IDebug.fmt(map.iter, options)} }`;
+}
+
+export function filterIterator_next(filter, IIterator, dropI, dropP, dropIItem) {
+  return $findDropping(
+    $lent($given(filter.iter, IIterator, true)),
+    (item) => filter.predicate(item),
+    dropIItem,
+    true,
+  );
+}
+
+export function filterIterator_sizeHint(filter, IIterator, dropI, dropP, dropIItem) {
+  const upper = $sizeHint(filter.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function filterIterator_count(filter, IIterator, dropI, dropP, dropIItem) {
+  const option = $sizeHint(filter.iter, IIterator)[1];
+  const before = option ?? 4294967295;
+  const predicate = filter.predicate;
+  const map = iterator_map(
+    filter.iter,
+    $dropping(
+      (x) => {
+        const result = predicate(x) ? 1 : 0;
+        dropIItem?.(x);
+        return result;
+      },
+      () => {
+        dropP?.(predicate);
+      },
+    ),
+    IIterator,
+    dropI,
+    undefined,
+    $dispose,
+    dropIItem,
+  );
+  const { iter, f } = map;
+  const captured = (a, b) => (a + b) >>> 0;
+  const f$1 = $dropping(
+    (acc, elt) => captured(acc, f(elt)),
+    () => {
+      $dispose(f);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce(f$1, 0);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f$1);
+  const total = value;
+  iSpecAssumeCount_assumeCountLeUpperBound(total, before, dropI, dropIItem);
+  return total;
+}
+
+export function filterIterator_fold(
+  filter,
+  init,
+  fold,
+  IIterator,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const { iter, predicate } = filter;
+  const f = $dropping(
+    (acc, item) => {
+      if (predicate(item)) {
+        return fold(acc, item);
+      }
+      const result = acc;
+      dropIItem?.(item);
+      return result;
+    },
+    () => {
+      dropP?.(predicate);
+      dropFold?.(fold);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce(f, init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f);
+  return value;
+}
+
+export function filterIterator_tryFold(
+  filter,
+  init,
+  fold,
+  IIterator,
+  RTry,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const predicate = filter.predicate;
+  const f = $dropping(
+    (acc, item) => {
+      if (predicate(item)) {
+        return fold(acc, item);
+      }
+      const result = RTry.fromOutput(acc);
+      dropIItem?.(item);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const value = $tryFoldInto($given(filter.iter, IIterator, true), init, (a, b) => f(a, b), RTry);
+  $dispose(f);
+  return value;
+}
+
+export function filterDoubleEndedIterator_nextBack(
+  filter,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropP,
+  dropIItem,
+) {
+  return $findBack(
+    $given(filter.iter, IIterator, true, IDoubleEndedIterator),
+    filter.predicate,
+    $some,
+    dropIItem,
+  );
+}
+
+export function filterDoubleEndedIterator_rfold(
+  filter,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const { iter, predicate } = filter;
+  const f = $dropping(
+    (acc, item) => {
+      if (predicate(item)) {
+        return fold(acc, item);
+      }
+      const result = acc;
+      dropIItem?.(item);
+      return result;
+    },
+    () => {
+      dropP?.(predicate);
+      dropFold?.(fold);
+    },
+  );
+  const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f);
+  $dispose(f);
+  return value;
+}
+
+export function filterDoubleEndedIterator_tryRfold(
+  filter,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  RTry,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const predicate = filter.predicate;
+  const f = $dropping(
+    (acc, item) => {
+      if (predicate(item)) {
+        return fold(acc, item);
+      }
+      const result = RTry.fromOutput(acc);
+      dropIItem?.(item);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const value = $tryFoldInto(
+    $rev($given(filter.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f(a, b),
+    RTry,
+  );
+  $dispose(f);
+  return value;
+}
+
+export function filterClone_clone(filter, IClone, PClone) {
+  return $stdIterator(
+    { iter: IClone.clone(filter.iter), predicate: PClone.clone(filter.predicate) },
+    filter.$steps,
+  );
+}
+
+export function filterDebug_fmt(filter, options, IDebug, dropI, dropP) {
+  return options?.alternate
+    ? $pretty("Filter {", [`iter: ${IDebug.fmt(filter.iter, options)}`], "}")
+    : `Filter { iter: ${IDebug.fmt(filter.iter, options)} }`;
 }
 
 export function inspectIterator_next(inspect, IIterator, dropI, dropF, dropIItem) {
@@ -4286,6 +4507,51 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
   );
 }
 
+export function iterator_filter(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, predicate },
+    {
+      next: (iterator) =>
+        filterIterator_next(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      hint: (iterator) =>
+        filterIterator_sizeHint(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      fold: (iterator, init, f) =>
+        filterIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        filterIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      count: (iterator) =>
+        filterIterator_count(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      takes: ["fold", "count"],
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropP?.(iterator.predicate);
+      },
+    },
+  );
+}
+
 export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSelfItem) {
   return $stdIterator(
     { iter: self, f },
@@ -4937,6 +5203,8 @@ export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
   dropFnOnce?.(f);
   return x;
 }
+
+export function iSpecAssumeCount_assumeCountLeUpperBound(count, upper, dropI, dropIItem) {}
 
 export function flattenCompatIUIterator_next(
   flattenCompat,
@@ -6076,6 +6344,21 @@ export function mapDebug(IDebug, dropI, dropF) {
     fmt: (arg0, arg1) => mapDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
     $drop(map) {
       map.return();
+    },
+  }));
+}
+
+export function filterClone(IClone, PClone) {
+  return $traitImpl($filterClone, [IClone, PClone], () => ({
+    clone: (arg0) => filterClone_clone(arg0, IClone, PClone),
+  }));
+}
+
+export function filterDebug(IDebug, dropI, dropP) {
+  return $traitImpl($filterDebug, [IDebug, dropI, dropP], () => ({
+    fmt: (arg0, arg1) => filterDebug_fmt(arg0, arg1, IDebug, dropI, dropP),
+    $drop(filter) {
+      filter.return();
     },
   }));
 }

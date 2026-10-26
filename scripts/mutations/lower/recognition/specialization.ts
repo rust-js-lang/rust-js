@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "assume-count-specialized",
+    breaks: "std's `Filter::count` asks `SpecAssumeCount`'s `TrustedLen` impl, which rust-js refuses: std's bodies don't compile (ADR 0932)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecRangeSetup\", \"StepByImpl\", \"StepByBackImpl\", \"SpecAssumeCount\"];",
+    replace: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecRangeSetup\", \"StepByImpl\", \"StepByBackImpl\"];",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "fused-specialization-unseen",
     breaks: "a std-private trait's method whose impl rustc leaves to the caller's type, `FuseImpl::next` of a `Fuse<I>`, isn't seen to be picked by `I` being a `FusedIterator`, and is refused",
     file: "src/lower/recognition/specialization.rs",
@@ -24,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "step-by-specializations-unoptimizing",
     breaks: "std's `StepBy` range specializations aren't read as optimizations, so its `SpecRangeSetup::setup` can't be called in generic code (ADR 0917)",
     file: "src/lower/recognition/specialization.rs",
-    find: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecRangeSetup\", \"StepByImpl\", \"StepByBackImpl\"];\n",
-    replace: "const OPTIMIZING_BY_TYPE: &[&str] = &[];\n",
+    find: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecRangeSetup\", \"StepByImpl\", \"StepByBackImpl\", \"SpecAssumeCount\"];\n",
+    replace: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecAssumeCount\"];\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

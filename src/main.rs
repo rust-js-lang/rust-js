@@ -255,6 +255,9 @@ impl Callbacks for RustJs {
         jsx_syntax::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
         // 0. `#[serde(..)]`, which only the expanded crate still has (ADR 0077).
         let serde_attrs = lower::serde_attributes(tcx);
+        // Std's structs as their meaning, all of them, in std's own bodies'
+        // build and the differential one (ADR 0932).
+        lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx, self.std_iterators);
         // `@rust-js/std`'s: std's own, from the MIR the toolchain ships.

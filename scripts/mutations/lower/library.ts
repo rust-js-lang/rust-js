@@ -214,8 +214,8 @@ export const mutations: Mutation[] = [
     name: "instance-imported",
     breaks: "a library's function the crate compiles itself is still the library's item, imported where it's called, `import { createContext }`, so its own is never called (ADR 0914)",
     file: "src/lower/library.rs",
-    find: "        if id.is_local() || self.is_instance(id) {\n",
-    replace: "        if id.is_local() {\n",
+    find: "        if id.is_local() || self.is_instance(id) || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
+    replace: "        if id.is_local() || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
     tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
   },
   {

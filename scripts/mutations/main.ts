@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-bodies-not-the-meaning",
+    breaks: "std's own bodies' build isn't one of std's structs as their meaning: `@rust-js/std` compiles no `Filter` (ADR 0932)",
+    file: "src/main.rs",
+    find: "        lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);\n",
+    replace: "        lower::build_std_structs_as_meaning(self.std_iterators);\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "bound-of-dependencies-too",
     breaks: "a dependency's JS, which the crate's JS imports, is told Cargo as the crate's own source, so a deleted one rebuilds the crate, which fails reading it, where the tooling says `cargo clean -p` (#300)",
     file: "src/main.rs",

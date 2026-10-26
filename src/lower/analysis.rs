@@ -81,6 +81,13 @@ use super::recognition::serde_derived;
 /// its `const _` block have impls too.
 pub(super) use super::recognition::serde_impl;
 
+/// That this session builds std's structs as their meaning, std's own
+/// bodies or the differential build, which compile each, `MEANING_ONLY`'s
+/// too (ADR 0932). Before anything's collected.
+pub fn build_std_structs_as_meaning(meaning: bool) {
+    super::recognition::build_std_structs_as_meaning(meaning);
+}
+
 /// Copy the THIR of every function and closure in the crate.
 ///
 /// Must run *before* `analysis`: building MIR for borrowck consumes ("steals")
