@@ -622,3 +622,97 @@ pub fn second_number() -> bool {
     "rust-js does not support `size_of` of a type parameter yet",
   );
 });
+
+// A table made as long as another, `vec![0.0; terraces.len()]`, or as a
+// count, `vec![0; n]`, and never resized, is indexed as the other is
+// (#362): javascript-algorithms' `dpRainTerraces` reads `leftMaxLevels[i]`
+// as upstream does. One resized, or whose other changes, keeps its check.
+test("a table as long as another is indexed as it is", async () => {
+  const dir = fixture("same-length");
+  writeFileSync(join(dir, "lib.rs"), `pub fn running_max(terraces: &[f64]) -> Vec<f64> {
+    let mut levels = vec![0.0; terraces.len()];
+    for i in 1..terraces.len() {
+        levels[i] = terraces[i].max(levels[i - 1]);
+    }
+    levels
+}
+
+pub fn squares(n: u32) -> Vec<u32> {
+    let count = n as usize;
+    let mut table = vec![0; count];
+    let mut counted = vec![0; count];
+    for i in 0..count {
+        counted[i] = (i * i) as u32;
+        table[i] = counted[i];
+    }
+    table
+}
+
+pub fn pushed(terraces: &[f64]) -> f64 {
+    let mut levels = vec![0.0; terraces.len()];
+    levels.pop();
+    let mut sum = 0.0;
+    for i in 0..terraces.len() {
+        sum += levels[i];
+    }
+    sum
+}
+
+pub fn grown(mut terraces: Vec<f64>) -> f64 {
+    let levels = vec![0.0; terraces.len()];
+    terraces.push(1.0);
+    let mut sum = 0.0;
+    for i in 0..terraces.len() {
+        sum += levels[i];
+    }
+    sum
+}
+
+pub fn branched(terraces: &[f64], keep: bool) -> f64 {
+    let mut levels = vec![0.0; terraces.len()];
+    let mut sum = 0.0;
+    if keep {
+        sum = 1.0;
+    } else {
+        levels.pop();
+    }
+    for i in 0..terraces.len() {
+        sum += levels[i];
+    }
+    sum
+}
+
+pub fn celled(terraces: &std::cell::RefCell<Vec<f64>>, change: fn(&std::cell::RefCell<Vec<f64>>)) -> f64 {
+    let levels = vec![0.0; terraces.borrow().len()];
+    change(terraces);
+    let mut sum = 0.0;
+    for i in 0..terraces.borrow().len() {
+        sum += levels[i];
+    }
+    sum
+}
+
+pub fn recounted(mut count: usize) -> u32 {
+    let table = vec![1; count];
+    count += 1;
+    let mut sum = 0;
+    for i in 0..count {
+        sum += table[i];
+    }
+    sum
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("levels[i] = $f64Max(terraces[i], levels[i - 1]);");
+  expect(js).toContain("counted[i] = Math.imul(i, i) >>> 0;");
+  expect(js).toContain("table[i] = counted[i];");
+  for (const checked of ["$index(levels, i)", "$index(table, i)"]) expect(js).toContain(checked);
+  expect(js.match(/\$index\(/g)?.length).toBe(5);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.runningMax([1, 3, 2]), lib.squares(3)]).toEqual([[0, 3, 3], [0, 1, 4]]);
+  const outsides = [() => lib.pushed([1, 2]), () => lib.grown([1, 2]), () => lib.recounted(2), () => lib.branched([1, 2], false)];
+  for (const outside of [...outsides, () => lib.celled([1, 2], (cell: number[]) => cell.push(3))]) {
+    expect(outside).toThrow();
+  }
+});

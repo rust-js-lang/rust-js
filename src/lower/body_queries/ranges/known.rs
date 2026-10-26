@@ -193,6 +193,11 @@ pub(super) struct Known {
     /// The variables whose cells each variable may reach: its own, of one
     /// that made some, and of what it's made of, a clone of their `Rc`.
     pub(super) reaches: HashMap<LocalVarId, HashSet<LocalVarId>>,
+    /// Each slice as long as another's length, or as an integer's value,
+    /// while neither changes: `levels` of `let levels = vec![0.0;
+    /// terraces.len()]`, `([], terraces)`, so an index below one is below
+    /// the other (#362).
+    pub(super) same: HashMap<Slice, Slice>,
 }
 
 impl Known {
@@ -208,6 +213,10 @@ impl Known {
             .map(|(v, t)| (*v, t.clone()))
             .collect();
         let empty = self.empty.intersection(&other.empty).cloned().collect();
+        let same = (self.same.iter())
+            .filter(|&(s, base)| other.same.get(s) == Some(base))
+            .map(|(s, base)| (s.clone(), base.clone()))
+            .collect();
         let mut reaches = self.reaches.clone();
         for (var, of) in &other.reaches {
             reaches.entry(*var).or_default().extend(of);
@@ -218,6 +227,7 @@ impl Known {
             tests,
             empty,
             reaches,
+            same,
         }
     }
 
@@ -235,8 +245,10 @@ impl Known {
     /// which leaves it, larger still. Of a slice whose length isn't known,
     /// at least none, a `push` makes it at least one long (ADR 0746).
     pub(super) fn grown(&mut self, slice: &Slice, by: i128) {
-        // A test of the length it had isn't one of the length it has.
+        // A test of the length it had isn't one of the length it has, nor
+        // is another as long.
         self.tests.retain(|_, (_, reads)| !reads.contains(&slice.1));
+        self.same.retain(|s, base| s != slice && base != slice);
         match self.lengths.get_mut(slice) {
             Some(least) => *least = (*least + by).max(0),
             None if by > 0 => _ = self.lengths.insert(slice.clone(), by),
@@ -273,6 +285,7 @@ impl Known {
     pub(super) fn cells_changed(&mut self, except: Option<&Slice>) {
         let celled = |s: &Slice| s.0.contains(&CELL) && Some(s) != except;
         self.lengths.retain(|s, _| !celled(s));
+        self.same.retain(|s, base| !celled(s) && !celled(base));
         for range in self.vars.values_mut() {
             if range.below.as_ref().is_some_and(|(s, _)| celled(s)) {
                 range.below = None;
@@ -292,6 +305,7 @@ impl Known {
     pub(super) fn changed(&mut self, var: LocalVarId) {
         self.vars.remove(&var);
         self.lengths.retain(|(_, v), _| *v != var);
+        self.same.retain(|(_, v), (_, of)| *v != var && *of != var);
         self.tests
             .retain(|held, (_, reads)| *held != var && !reads.contains(&var));
         for range in self.vars.values_mut() {
@@ -299,6 +313,14 @@ impl Known {
                 range.below = None;
             }
         }
+    }
+}
+
+impl Known {
+    /// Whether `a` is as long as `b`: the same slice, or one known as long
+    /// (#362).
+    pub(super) fn same_length(&self, a: &Slice, b: &Slice) -> bool {
+        a == b || self.same.get(a) == Some(b) || self.same.get(b) == Some(a)
     }
 }
 

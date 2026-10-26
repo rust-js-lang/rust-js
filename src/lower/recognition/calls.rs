@@ -412,7 +412,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if diagnostic("vec_from_elem") {
+        if is_vec_from_elem(tcx, def_id) {
             return Some(Some(Std::FromElem));
         }
         if diagnostic("to_string_method") {
@@ -1269,4 +1269,10 @@ fn to_owned_of(ty: Ty<'_>) -> Std {
         _ if ty.is_slice() => Std::ToVec,
         _ => Std::ToOwnedClone,
     }
+}
+
+/// Is `def_id` `vec!`'s of an item and a count, `vec![0.0; n]`, a `Vec` of
+/// `n` items?
+pub(in crate::lower) fn is_vec_from_elem(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("vec_from_elem"), def_id)
 }

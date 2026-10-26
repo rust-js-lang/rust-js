@@ -9,7 +9,9 @@
 
 use super::*;
 use crate::lower::bindings::reads_string_length;
-use crate::lower::recognition::{VecView, counts_utf16_units, is_iterator_rev, once_method, vec_view};
+use crate::lower::recognition::{
+    VecView, counts_utf16_units, is_iterator_rev, is_vec_from_elem, once_method, vec_view,
+};
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
@@ -405,6 +407,25 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         };
         let (def_id, generic_args) = fn_def(thir[strip(thir, fun)].ty)?;
         slice_length(self.tcx, def_id, generic_args).map(|asked| (asked, args[0]))
+    }
+
+    /// What `init`, a `vec![item; n]`, is as long as: the slice `n` is the
+    /// length of, `terraces` of `terraces.len()`, or `n` itself, an integer
+    /// variable (`VALUE`) (#362).
+    fn made_as_long(&self, init: ExprId) -> Option<Slice> {
+        let thir = self.thir;
+        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, init)].kind else {
+            return None;
+        };
+        let (def_id, _) = fn_def(thir[strip(thir, fun)].ty)?;
+        let [_, count] = args[..] else { return None };
+        if !is_vec_from_elem(self.tcx, def_id) {
+            return None;
+        }
+        match self.asks(count) {
+            Some((SliceLength::Len, items)) => self.slice(items),
+            _ => self.value_base(count),
+        }
     }
 
     /// What `fun` makes of a `Vec`, as long as it is.
@@ -1009,6 +1030,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     if let Some(value) = value {
                         k.vars.insert(var, value);
                     }
+                    // A table as long as another, `vec![0.0; terraces.len()]` (#362).
+                    if let Some(base) = initializer.and_then(|init| self.made_as_long(init)) {
+                        k.same.insert((Vec::new(), var), base);
+                    }
                     // A test held, `let truncated = xs.len() > 3;` (ADR 0806).
                     if let Some(test) = initializer
                         && let Some(reads) = self.held_test(test)
@@ -1371,7 +1396,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let Some(k) = known else { return };
         let ok = self.slice(items).zip(index).is_some_and(|(slice, index)| {
             index.lo >= 0
-                && (index.below.as_ref().is_some_and(|(s, b)| *s == slice && b.within())
+                && (index
+                    .below
+                    .as_ref()
+                    .is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())
                     || k.lengths.get(&slice).is_some_and(|&least| index.hi < least))
         });
         *self.indexes.entry(site).or_insert(true) &= ok;

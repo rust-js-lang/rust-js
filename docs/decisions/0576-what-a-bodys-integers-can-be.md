@@ -217,3 +217,24 @@ cleared through one, its index checked still; and the mutations
 reads `Iterator::rev` of a range as the range. Held by
 `lowering-numbers.test.ts`'s "an integer below another's value doesn't
 wrap" and the mutation `rev-for-unranged`.
+
+## Amendment: a table as long as another (#362)
+
+A dynamic-programming table is made as long as its input,
+`vec![0.0; terraces.len()]`, or as a count, `vec![0; n]`, and indexed by
+the input's indexes: javascript-algorithms' `dpRainTerraces` read
+`$index(leftMaxLevels, i - 1)` and `leftMaxLevels[$at(leftMaxLevels, i)]`
+where upstream reads `leftMaxLevels[i]`. **A `let` of `vec![x; n]` is as
+long as what `n` reads** (`Known::same`): the slice `n` is the `len()`
+of, or `n` itself, an integer variable (`VALUE`). An index below one is
+below the other (`Known::same_length`). It's forgotten as a length is:
+where either is changed, grows or shrinks (`grown`), may be changed in a
+`RefCell` (`cells_changed`), or one way into a join doesn't know it. Case
+A ([0262](0262-when-rust-and-js-disagree.md)): an index known in bounds
+reads as JS reads it, with nothing observable lost. Held by
+`lowering-numbers.test.ts`'s "a table as long as another is indexed as it
+is", `test/corpus/same_length_tables.rs`, and the mutations
+`same-length-unread`, `same-length-unmade`, `same-length-of-len-unknown`,
+`same-length-of-count-unknown`, `same-length-joined-either`,
+`same-length-kept-grown`, `same-length-kept-celled` and
+`same-length-kept-changed`.

@@ -115,8 +115,7 @@ export function grids(n) {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       const value = ((Math.imul(i, n) >>> 0) + j) >>> 0;
-      const items = $index(m, i);
-      items[$at(items, j)] = value;
+      m[i][$at(m[i], j)] = value;
     }
   }
   $roomFor(n, 4);
