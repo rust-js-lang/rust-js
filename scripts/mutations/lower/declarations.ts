@@ -658,8 +658,8 @@ export const mutations: Mutation[] = [
     name: "written-const-expanded",
     breaks: "a `const`'s type written with an alias, `Context<Toc>`, is what it stands for",
     file: "src/lower/declarations.rs",
-    find: "            None => self.as_written(self.written_type(def_id), |out| out.ts(ty)),\n",
-    replace: "            None => self.ts(ty),\n",
+    find: "            _ => self.as_written(written, |out| out.ts(ty)),\n",
+    replace: "            _ => self.ts(ty),\n",
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },
   {

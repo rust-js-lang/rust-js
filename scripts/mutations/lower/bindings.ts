@@ -334,8 +334,8 @@ export const mutations: Mutation[] = [
     name: "thread-local-name-taken",
     breaks: "a thread-local named as another item of its module is renamed, `cache$1`, not kept as written",
     file: "src/lower/bindings.rs",
-    find: "                true => name.to_string(),\n                false => variable,\n",
-    replace: "                true => variable.clone(),\n                false => variable,\n",
+    find: "        true => name.to_string(),\n        false => named,\n",
+    replace: "        true => named.clone(),\n        false => named,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "an insert in a thread-local's closure"],
   },
   {
