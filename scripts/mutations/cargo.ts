@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cargo-tests-rustcs",
+    breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes no `lib.test.js` (ADR 0914)",
+    file: "src/cargo.rs",
+    find: '    let tests = builds_tests(&flags);\n',
+    replace: '    let tests = false;\n',
+    tests: ["test/rust-js-test.test.ts"],
+  },
+  {
+    name: "cargo-tests-test-twice",
+    breaks: "a test build gives rustc Cargo's `--test` as well as rust-js's, which rustc refuses (ADR 0914)",
+    file: "src/cargo.rs",
+    find: '        if flag.starts_with("--emit=") || flag == "--test" {\n',
+    replace: '        if flag.starts_with("--emit=") {\n',
+    tests: ["test/rust-js-test.test.ts"],
+  },
+  {
     name: "cargo-build-compiled",
     breaks: "`cargo build` is given metadata and JS for what it links, and fails later, or links rustc's",
     file: "src/cargo.rs",
@@ -22,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "cargo-app-not-library",
     breaks: "the package Cargo was asked for is built as the app, and fresh as that when another build uses it",
     file: "src/cargo.rs",
-    find: "    if std::env::var(APP)\n        .ok()\n        .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
-    replace: "    if std::env::var_os(\"CARGO_PRIMARY_PACKAGE\").is_none() {\n",
+    find: "    if !tests\n        && std::env::var(APP)\n            .ok()\n            .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    replace: "    if !tests && std::env::var_os(\"CARGO_PRIMARY_PACKAGE\").is_none() {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },
   {
@@ -70,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "cargo-app-a-library",
     breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and copies a `Copy` struct only a library's consumers could change (ADR 0844)",
     file: "src/cargo.rs",
-    find: "    if std::env::var(APP)\n        .ok()\n        .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
-    replace: "    if true {\n",
+    find: "    if !tests\n        && std::env::var(APP)\n            .ok()\n            .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    replace: "    if !tests {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },
   {
@@ -86,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "cargo-build-without-declarations",
     breaks: "Cargo's build, `rust-js build`'s, writes no `.d.ts`",
     file: "src/cargo.rs",
-    find: "        \"--declarations\".into(),\n",
+    find: "        ours.push(\"--declarations\".into());\n",
     replace: "",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations"],
   },

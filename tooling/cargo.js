@@ -152,10 +152,13 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * `manifests` is each crate's, validated, as the compiler wrote it.
  * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]> }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
+  // Its library's `#[test]`s, `rust-js test`'s (ADR 0914): rustc's `--test`,
+  // which the wrapper gives rust-js's.
+  if (tests) args.push("--profile", "test", "--lib");
   if (packageName) args.push("-p", packageName);
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
@@ -198,12 +201,16 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
     const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
     crates.set(message.target.name, entry);
-    if (packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest) {
+    const ours = packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest;
+    // Of a test build, the package's test target, its harness's: its
+    // `lib.test.js`, beside its JS.
+    if (ours && tests === Boolean(message.profile?.test)) {
       compiled = true;
-      js = entry.js;
+      js = tests ? join(dirname(library), "lib.test.js") : entry.js;
     }
   }
-  if (!compiled) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
+  if (!compiled) throw new Error(`rust-js compiled no ${tests ? "tests" : "library"} of ${packageName ?? manifest}`);
+  if (tests) return { js, crates };
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));

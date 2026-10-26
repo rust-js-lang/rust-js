@@ -12,7 +12,8 @@ rust-js build --check               # writes nothing; fails if a file is stale
 
 There's no watch mode and no bundler plugin: run `rust-js build` again
 after you change the Rust ([ADR 0412](../../decisions/0412-rust-js-build-is-its-own-process.md)).
-The one other command lints it, `rust-js clippy` ([below](#linting-with-clippy)).
+Two other commands lint it, `rust-js clippy` ([below](#linting-with-clippy)),
+and run its `#[test]`s as JS, `rust-js test` ([Testing](testing.md#rust-tests-compiled-to-javascript)).
 
 ## What you need
 

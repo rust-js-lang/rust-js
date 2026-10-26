@@ -266,6 +266,37 @@ export async function clippyApp({ app, packageName, lints }) {
   return builder.lintCheck({ manifestPath, packageName, lints, targetDir });
 }
 
+/**
+ * `rust-js test` (ADR 0914): the `#[test]`s of the library of the package
+ * `app`'s `Cargo.toml` is of, or `packageName`, compiled to JS as `cargo
+ * check --profile test --lib` builds them, with its dependencies' JS as a
+ * build has it, in a target directory of its own, out of source; then run by
+ * bun, which gives the `test()` its `lib.test.js` calls, `args` given it as
+ * well. bun's exit code.
+ * @param {{ app: string, packageName?: string, args?: string[] }} options
+ * @returns {Promise<number>}
+ */
+export async function testApp({ app, packageName: named, args = [] }) {
+  const { writePatch } = await import("./patch.js");
+  const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
+  const compiler = await findCompiler(app);
+  if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+  const manifestPath = join(app, "Cargo.toml");
+  if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js test\` where the crate's is`);
+  const builder = createNativeBuilder({ root: app, rustJs: compiler });
+  const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "test");
+  const { own } = await builder.cargoWorkspace({ manifestPath, targetDir });
+  const packageName = named ?? own;
+  if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
+  const { js } = await builder.checkCargo({ manifestPath, packageName, packages, targetDir, tests: true });
+  const bun = process.versions.bun ? process.execPath : "bun";
+  return new Promise((resolve, reject) => {
+    const child = spawn(bun, ["test", ...args, js], { cwd: app, stdio: "inherit" });
+    child.on("error", reject);
+    child.on("close", (code) => resolve(code ?? 1));
+  });
+}
+
 /** A Next.js app's Pages Router directories, where a file is a route, of
  * an app that depends on Next.js; none of another's. */
 function nextRoutes(app) {

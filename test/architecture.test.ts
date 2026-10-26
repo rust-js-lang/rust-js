@@ -907,9 +907,11 @@ test("only recognition spells std's names", () => {
 
 // An app's Rust is compiled one way, `rust-js build`, its own process
 // beside the app's own dev server or build (ADR 0412): no host's plugin,
-// no config that compiles, no second command that compiles, and the
-// compiler is what `rust-js build` runs, not the app's command. The one
-// other command, `rust-js clippy`, lints and writes no JS (ADR 0888).
+// no config that compiles, no second command that compiles the app, and
+// the compiler is what `rust-js build` runs, not the app's command. Of the
+// two other commands, `rust-js clippy` lints and writes no JS (ADR 0888),
+// and `rust-js test` compiles its tests, out of source, in a target of its
+// own, and runs them (ADR 0914).
 test("an app's Rust is compiled one way, rust-js build", () => {
   const workspaces: string[] = JSON.parse(read("package.json")).workspaces;
   expect(workspaces.filter((dir) => /plugin/.test(dir))).toEqual([]);
@@ -923,8 +925,10 @@ test("an app's Rust is compiled one way, rust-js build", () => {
   expect(importers).toEqual([]);
   expect(read("scripts/package-compiler.ts")).not.toContain("bin:");
   const cli = read("tooling/cli.js");
-  expect(cli).toContain('if (command !== "build" && command !== "clippy")');
+  expect(cli).toContain('if (command !== "build" && command !== "clippy" && command !== "test")');
   expect(cli).toContain("clippyApp(");
+  expect(cli).toContain("testApp(");
+  expect(read("tooling/build.js")).toContain('join(cacheDirOf(app), "test")');
   expect(cli).not.toContain("spawn");
   // The build's one entry, which the CLI is a parse of.
   expect(cli).toContain("buildApp(");

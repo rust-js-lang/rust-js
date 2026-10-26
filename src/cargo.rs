@@ -120,18 +120,21 @@ pub fn translate(args: Vec<String>) -> Invocation {
         }
     };
     let library = flag_values(&flags, "--crate-type").any(|kind| kind == "lib" || kind == "rlib");
+    let tests = builds_tests(&flags);
     let probe = flags
         .iter()
         .any(|flag| flag == "-" || flag == "-vV" || flag.starts_with("--print"));
     // rustc is rust-js's `--rustc`, with its tool known, as the tooling runs
     // Cargo (ADR 0112): a binding crate's, which is metadata only (ADR 0024),
     // and a registry's, which `RUST_JS_CRATES` leaves out, are checked by it.
-    if probe || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
+    if probe || !(library || tests) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
     let clippy = std::env::var(CLIPPY).ok();
     match whose() {
         Ok(Whose::Own) => {}
+        // Only the app's own crates' tests are compiled.
+        _ if tests => return rustc_itself(&rustc, given),
         // Linted, a dependency is rustc's, as `cargo clippy` lints none of
         // crates.io's, and nothing reads its JS (ADR 0888).
         Ok(Whose::Dependency) if clippy.is_some() => return rustc_itself(&rustc, given),
@@ -160,6 +163,12 @@ pub fn translate(args: Vec<String>) -> Invocation {
             Invocation::Rustc(ExitCode::FAILURE)
         }
     }
+}
+
+/// Whether Cargo builds a library's `#[test]`s, `rust-js test`'s `cargo
+/// check --profile test --lib`: rustc's harness, of no crate type (ADR 0914).
+fn builds_tests(flags: &[String]) -> bool {
+    flags.iter().any(|flag| flag == "--test")
 }
 
 /// Who compiles a crate Cargo builds.
@@ -307,23 +316,31 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     // Each build of the crate Cargo keeps, of a feature set say, has JS of its
     // own, as it has metadata, so a build Cargo has as done is still its JS.
     let dir = out_dir.join("rust-js").join(format!("{name}{extra}"));
-    let mut ours = vec![
+    // Its `#[test]`s, rust-js's `--test`, which gives rustc its own (ADR 0026):
+    // `lib.test.js` beside its JS, which `rust-js test` runs (ADR 0914).
+    let tests = builds_tests(flags);
+    let mut ours: Vec<String> = tests.then(|| "--test".to_string()).into_iter().collect();
+    ours.extend([
         source.clone(),
         "-o".into(),
         dir.join("lib.js").display().to_string(),
         "--manifest".into(),
         dir.join("lib.manifest.json").display().to_string(),
         "--cargo".into(),
-        // Each module's declarations, `rust-js build`'s always (ADR 0412).
-        "--declarations".into(),
-    ];
+    ]);
+    // Each module's declarations, `rust-js build`'s always (ADR 0412); a test
+    // build's are of no use.
+    if !tests {
+        ours.push("--declarations".into());
+    }
     // Each is a library, but the app, the package `RUST_JS_APP` names, which
-    // the tooling builds and no crate of its workspace uses (ADR 0360). What
-    // `RUST_JS_APP` is, rust-js records for Cargo, which builds it again
-    // where it changes.
-    if std::env::var(APP)
-        .ok()
-        .is_none_or(|app| std::env::var("CARGO_PKG_NAME").ok() != Some(app))
+    // the tooling builds and no crate of its workspace uses (ADR 0360), and
+    // a test build, a harness's. What `RUST_JS_APP` is, rust-js records for
+    // Cargo, which builds it again where it changes.
+    if !tests
+        && std::env::var(APP)
+            .ok()
+            .is_none_or(|app| std::env::var("CARGO_PKG_NAME").ok() != Some(app))
     {
         ours.push("--library".into());
     }
@@ -354,7 +371,7 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
             rest.next();
             continue;
         }
-        if flag.starts_with("--emit=") {
+        if flag.starts_with("--emit=") || flag == "--test" {
             continue;
         }
         ours.push(flag.clone());

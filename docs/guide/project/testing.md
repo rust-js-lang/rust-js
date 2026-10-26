@@ -87,11 +87,20 @@ React. Run `rust-js build` first, or test in CI after `rust-js build
 
 ## Rust tests compiled to JavaScript
 
-The compiler itself compiles a crate's `#[test]`s to JS too, with
-rustc's `--test` and its harness left out ([ADR 0026](../../decisions/0026-testing.md)). It's how rust-js
-tests its own examples, from a checkout. `rust-js build` doesn't compile
-tests yet, and the compiler run alone doesn't find the crates Cargo builds,
-so an app's Rust tests are `cargo test`'s; this is what the JS is.
+`rust-js test` runs a crate's library's `#[test]`s as JavaScript, as
+`cargo test` runs them natively ([ADR 0914](../../decisions/0914-rust-js-test-runs-a-crates-tests-as-js.md)):
+Cargo builds them, with rust-js as its wrapper, each dependency compiled
+to JS as `rust-js build` compiles it, and bun runs them. It writes nothing
+beside the Rust; what follows `--` is bun's.
+
+```bash
+rust-js test
+rust-js test --package models -- -t quadruples
+```
+
+What it compiles is rustc's `--test` with its harness left out
+([ADR 0026](../../decisions/0026-testing.md)); the compiler does it alone
+too, of a crate of no dependency:
 
 ```bash
 ./target/debug/rust-js --test src/lib.rs -o out/lib.js
