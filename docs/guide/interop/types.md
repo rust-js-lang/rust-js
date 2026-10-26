@@ -919,7 +919,11 @@ export function ratio(a, b) {
   it's `None` as either is: `is_some()` is `!= null`, `==` is `None`
   equal to `None` whichever each is, and a map or a set keyed by an
   `Option` has one `None` key; a constant written of it is `null` there
-  too, as the example below shows
+  too, as the example below shows, and so is an array's or a tuple's,
+  `[js::null(), js::null()]`'s `[null, null]`, React's `const result:
+  [Fiber | null, Fiber | null] = [null, null]`. A function returning
+  one isn't `#[rust_js::nullable]`, which is of an `Option` result: the
+  error says its `None`s are written `js::null()`
   ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md),
   amended).
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
@@ -985,6 +989,35 @@ export function copy(workInProgress, current) {
 
 export function hasState(fiber) {
   return fiber.memoizedState != null;
+}
+```
+
+An array of them, which JS reads `siblings[0] || siblings[1]` of and
+tests `=== null`:
+
+```rust
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+}
+
+pub fn siblings(fiber: &Rc<Fiber>) -> [Option<Rc<Fiber>>; 2] {
+    let mut result = [js::null(), js::null()];
+    if fiber.tag != 0 {
+        result[1] = Some(Rc::clone(fiber));
+    }
+    result
+}
+```
+
+```js
+export function siblings(fiber) {
+  const result = [null, null];
+  if (fiber.tag !== 0) {
+    result[1] = fiber;
+  }
+  return result;
 }
 ```
 

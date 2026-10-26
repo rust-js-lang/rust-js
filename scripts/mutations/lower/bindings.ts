@@ -310,8 +310,8 @@ export const mutations: Mutation[] = [
     name: "nullable-result-not-an-option",
     breaks: "`#[rust_js::nullable]` on a function whose result isn't an `Option` is let through, saying nothing",
     file: "src/lower/bindings.rs",
-    find: "            if nullable_result(tcx, def.to_def_id())\n",
-    replace: "            if false && nullable_result(tcx, def.to_def_id())\n",
+    find: "            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()) {\n",
+    replace: "            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()).filter(|_| false) {\n",
     tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },
   {

@@ -719,7 +719,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0932 An adapter may be compiled as its meaning alone: std's struct in the build of std's structs, the recognizers' wherever the normal build makes it](0932-an-adapter-compiled-as-its-meaning-alone.md)
 - [0933 `FilterMap`, `TakeWhile`, `SkipWhile`, `MapWhile` and `Scan` are compiled as their meaning, and a function given to std's compiled maker is given its state's box](0933-closure-adapters-compiled-as-their-meaning.md)
 - [0934 std's struct compiled for a build drops what its fields hold, as a struct of the crate's does](0934-a-compiled-struct-drops-its-fields.md)
-- [0935 `js::NULL` is `None`, and `null` where it's written](0935-js-null-is-null-where-its-written.md)
+- [0935 `js::NULL` is `None`, and `null` where it's written](0935-js-null-is-null-where-its-written.md) *(amended: `js::null()`, of any `Option`, replaces `js::NULL`; amended: an array's or a tuple's `js::null()` is `null`, and a nullable function of one is refused naming it)*
 - [0936 An iterator extension's bound on a parameter's associated type is given its own dictionary](0936-an-extension-bound-on-an-associated-type-is-given.md)
 - [0937 A `&mut` to a type parameter steps from its back by the dictionary the parameter was given](0937-a-mut-to-a-parameter-steps-by-its-dictionary.md)
 - [0938 `Copied` is compiled as its meaning, and a type parameter whose copy is itself is given no copy function where std's code asks one](0938-copied-compiled-as-its-meaning.md)

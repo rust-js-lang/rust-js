@@ -82,11 +82,7 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         // What `#[rust_js::nullable(..)]` names is a parameter of its own,
         // an `Option`, whose `None` can be `null`; and alone, its result.
         if matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn) {
-            let output = tcx.fn_sig(def).skip_binder().skip_binder().output();
-            if nullable_result(tcx, def.to_def_id())
-                && !matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
-            {
-                let message = "rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`";
+            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()) {
                 tcx.dcx().span_err(tcx.def_span(def), message);
                 valid = false;
             }

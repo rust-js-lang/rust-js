@@ -101,6 +101,25 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
     nullable_alone(tcx, def_id)
 }
 
+/// Why a function's `#[rust_js::nullable]` is refused, where its result
+/// isn't an `Option`. Where the result holds one, an array's or a tuple's,
+/// its `None`s are `null` where they're written `js::null()` (ADR 0935,
+/// amended): what's returned holds what's stored in it, as a plain place
+/// does.
+pub(super) fn refused_result(tcx: TyCtxt<'_>, def_id: DefId) -> Option<&'static str> {
+    let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
+    let is_option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    if !nullable_result(tcx, def_id) || is_option(output) {
+        return None;
+    }
+    let holds_option = output.walk().any(|arg| arg.as_type().is_some_and(is_option));
+    Some(if holds_option {
+        "rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`; a `None` in it that's `null` is written `js::null()`"
+    } else {
+        "rust-js: `#[rust_js::nullable]` of a function is of its result, which isn't an `Option`"
+    })
+}
+
 /// Whether `key`, a `thread_local!`'s, says its cell's `None` is `null`,
 /// `#[rust_js::nullable]` alone on its static (ADR 0586, amended): its
 /// module's variable, `null` where it's made and set, as a nullable

@@ -1,7 +1,8 @@
 # 0935. `js::NULL` is `None`, and `null` where it's written
 
 Status: Accepted, the user's choice of 2026-10-26; amended: `js::null()`, of any
-`Option`, replaces `js::NULL`. Extends
+`Option`, replaces `js::NULL`; amended: an array's or a tuple's `js::null()`,
+and no nullable function of one. Extends
 [0586](0586-a-nullable-field-is-an-option.md) (a nullable `const`) and
 [0225](0225-unknown-values.md) (`js::Unknown`).
 
@@ -179,3 +180,41 @@ it is": an `&Unknown`, a `&JsError`, an `Rc<RefCell<Vec<String>>>` and a
 `?? null`, run as JS, an `undefined` stored kept so and read as `None`.
 Mutations `js-null-written-undefined` (`binding_calls.rs`) and
 `js-null-constant-by-value` (`pipeline.rs`).
+
+## Amendment: an array's or a tuple's `js::null()`, and no nullable function of one
+
+Status: Accepted, 2026-10-26.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C where JS reads it,
+as above: React's DOM config tells `null` from `undefined`.
+
+**Context.** React's `getFragmentInstanceOrTextInstanceSiblings` makes
+`const result: [Fiber | null, Fiber | null] = [null, null]`, which
+ReactFiberConfigDOM, still JS, reads `hostSiblings[0] ||
+hostSiblings[1]` of and tests `targetFiber === null`. The port's `[None,
+None]` was `[undefined, undefined]`, which that test passes, and it read
+`undefined.tag`.
+
+**Decision.** `[js::null(), js::null()]` is `[null, null]`, and
+`(js::null(), js::null())` is too: `js::null()`'s call is `null` where
+it's written, in an array's or a tuple's literal as in a field's, and
+what's stored in one after, `result[1] = Some(fiber)`, is stored as it
+is. That already held of the amendment above; a test now holds it, run
+as JS.
+
+**A `#[rust_js::nullable]` function returning an array or a tuple of
+`Option`s stays refused.** Its attribute is of an `Option` result, whose
+every `None` the function returns is `null` (ADR 0586); one of an
+array's would be of each of its items, wherever they're stored, a
+`&mut` of it given to another function too: a second meaning of the
+attribute, and a crate-wide fact of where each array goes, for what
+`js::null()` says where it's written. One way: the refusal names it,
+"`#[rust_js::nullable]` of a function is of its result, which isn't an
+`Option`; a `None` in it that's `null` is written `js::null()`", where
+the result holds an `Option`.
+
+**What holds it.** `test/lowering-nullable-constants.test.ts`, "an
+array's and a tuple's js::null() are null, and a nullable function of one
+is refused": React's siblings array and a tuple, run as JS, its
+`hostSiblings[0] || hostSiblings[1]` `=== null`. Mutation
+`nullable-result-js-null-unnamed` (`bindings.rs`).

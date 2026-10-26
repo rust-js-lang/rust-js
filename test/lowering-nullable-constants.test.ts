@@ -6,7 +6,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -251,4 +252,74 @@ pub fn current_state() -> Option<&'static Unknown> {
   expect([lib.hasState(fiber), fiber.memoizedState, lib.sameState(fiber, made)]).toEqual([true, 0, false]);
   lib.reset(fiber);
   expect([fiber.memoizedState, fiber.debugHookTypes]).toEqual([null, null]);
+});
+
+// React's getFragmentInstanceOrTextInstanceSiblings: `const result: [Fiber
+// | null, Fiber | null] = [null, null];`, which ReactFiberConfigDOM reads
+// `hostSiblings[0] || hostSiblings[1]` of and tests `=== null`. An array's
+// or a tuple's `js::null()` is `null` where it's written, as a field's is,
+// and what's stored in it after is as it is; a `#[rust_js::nullable]`
+// function returning one is refused, its error naming `js::null()` (ADR
+// 0935, amended).
+test("an array's and a tuple's js::null() are null, and a nullable function of one is refused", async () => {
+  const dir = fixture("js-null-arrays");
+  const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+}
+
+pub fn siblings(fiber: &Rc<Fiber>) -> [Option<Rc<Fiber>>; 2] {
+    let mut result = [js::null(), js::null()];
+    if fiber.tag == 0 {
+        return result;
+    }
+    fill(&mut result, fiber);
+    result
+}
+
+fn fill(result: &mut [Option<Rc<Fiber>>; 2], fiber: &Rc<Fiber>) {
+    result[1] = Some(Rc::clone(fiber));
+}
+
+pub fn pair(fiber: &Rc<Fiber>) -> (Option<Rc<Fiber>>, Option<u8>) {
+    if fiber.tag == 0 {
+        return (js::null(), js::null());
+    }
+    (Some(Rc::clone(fiber)), None)
+}
+
+pub fn found(fiber: &Rc<Fiber>) -> bool {
+    let [before, after] = siblings(fiber);
+    before.or(after).is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("  const result = [null, null];\n");
+  expect(out).toContain("    return [null, null];\n");
+  const lib = await import(join(dir, "lib.js"));
+  const empty = { tag: 0 };
+  const fiber = { tag: 1 };
+  expect(lib.siblings(empty)).toEqual([null, null]);
+  // ReactFiberConfigDOM's read of it.
+  const hostSiblings = lib.siblings(empty);
+  expect((hostSiblings[0] || hostSiblings[1]) === null).toBe(true);
+  expect(lib.siblings(fiber)).toEqual([null, fiber]);
+  expect([lib.pair(empty), lib.pair(fiber)]).toEqual([
+    [null, null],
+    [fiber, undefined],
+  ]);
+  expect([lib.found(empty), lib.found(fiber)]).toEqual([false, true]);
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::nullable]
+pub fn siblings() -> [Option<u8>; 2] {
+    [None, None]
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain(
+    "`#[rust_js::nullable]` of a function is of its result, which isn't an `Option`; a `None` in it that's `null` is written `js::null()`",
+  );
 });
