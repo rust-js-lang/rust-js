@@ -1307,9 +1307,14 @@ fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
 /// of `undefined` being the function's end `tail_returns` writes as a
 /// guard clause, and a `break` or `continue` a loop's, `early_breaks`'. A
 /// branch that is only the tail stays, an arm
-/// `decisions` merges with the one alike; and one that reads what a branch
-/// declares stays in it.
-pub(super) fn shared_tails(stmts: &mut Vec<Stmt>) {
+/// `decisions` merges with the one alike; one that reads what a branch
+/// declares stays in it; and a branch's copy written in a `let … else`'s
+/// `else` (`let_elses`), the guard's exit, stays the guard's, which
+/// `let_else_first` puts first, not the tail it's alike (ADR 0879, amended).
+pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
+    let guards = |tail: &[Stmt]| {
+        (tail.iter()).any(|s| !s.span.is_none() && let_elses.iter().any(|e| e.lo <= s.span.lo && s.span.hi <= e.hi))
+    };
     let mut i = 0;
     while i < stmts.len() {
         let StmtKind::If(_, then, otherwise) = &stmts[i].kind else {
@@ -1349,7 +1354,12 @@ pub(super) fn shared_tails(stmts: &mut Vec<Stmt>) {
                 let rest = &stmts[i + 1..];
                 let shared = shared_tail(then, rest);
                 let kept = &then[..then.len() - shared];
-                if shared == 0 || shared != rest.len() || kept.is_empty() || reads_declared(rest, kept.iter()) {
+                if shared == 0
+                    || shared != rest.len()
+                    || kept.is_empty()
+                    || reads_declared(rest, kept.iter())
+                    || guards(&then[kept.len()..])
+                {
                     i += 1;
                     continue;
                 }

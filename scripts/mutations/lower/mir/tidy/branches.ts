@@ -350,6 +350,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "shared-tails-take-a-let-elses-exit",
+    breaks: "a `let … else`'s `return` goes as a copy of the function's tail it's alike, and its guard is never first (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    || guards(&then[kept.len()..])\n",
+    replace: "",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a let else before a return is a guard first"],
+  },
+  {
     name: "shared-leaving-tail-hoisted",
     breaks: "a `return` both branches end with is written once after them, and a guard clause is nested instead",
     file: "src/lower/mir/tidy/branches.rs",

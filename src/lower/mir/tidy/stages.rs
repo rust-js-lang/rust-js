@@ -81,7 +81,9 @@ pub(super) const STAGES: &[Stage] = &[
             // A flag whose only test was such a drop's, read nowhere now,
             // goes with its writes.
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
-            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| shared_tails(s, &h.written.let_elses))
+            }),
         ],
         ensures: &[contracts::NOTHING_AFTER_A_JUMP, contracts::NO_EMPTY_IF],
         again: &[],
@@ -179,7 +181,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returned in branches", |b, h| {
                 js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))
             }),
-            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| shared_tails(s, &h.written.let_elses))
+            }),
             // Each `let` where it's first named, a `const` where it's
             // written once.
             pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
@@ -309,7 +313,9 @@ pub(super) const STAGES: &[Stage] = &[
         passes: &[
             // Decided tests and shared tails again, of what's read in place now.
             pass("decided tests", decided_tests_of),
-            pass("shared tails", |b, _| js::statement_lists(b, &mut shared_tails)),
+            pass("shared tails", |b, h| {
+                js::statement_lists(b, &mut |s| shared_tails(s, &h.written.let_elses))
+            }),
             // A chain's tests, where each is read in place now: `if (a) { if
             // (f(a)) { .. } }`, `if (a && f(a))`.
             pass("and tests", |b, h| {
@@ -494,7 +500,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tail continues", |b, h| {
                 js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
             }),
-            pass("let else first", |b, _| js::statement_lists(b, &mut let_else_first)),
+            pass("let else first", |b, h| {
+                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses))
+            }),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
             // What its passes emptied, an `if` of nothing, gone, its test kept
             // where it does anything, as it ensures (#247).

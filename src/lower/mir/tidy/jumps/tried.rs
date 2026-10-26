@@ -76,23 +76,51 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
 
 /// `if (c) { s } else { e }` of an `e` that always leaves, written before
 /// `s`, a `let .. else`'s: `if (!c) { e } s`, as the program wrote it, the
-/// guard first, where nothing `s` declares is declared beside it.
-pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>) {
+/// guard first, where nothing `s` declares is declared beside it. And `if
+/// (c) { s } e` of an `s` that never goes on, `e` the rest, which leaves,
+/// written in a `let … else`'s `else` (`let_elses`) where `s` isn't: `let
+/// Some(x) = .. else { return a; }; return f(x);`, whose two `return`s MIR
+/// joins after the `if` (ADR 0879, amended). Not of a guard already
+/// first, `if (r.TAG === "Err") { return .. } const x = r._0; ..` of a
+/// `?`, whose rest's `let` is written before its exit.
+pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
+    let written_first =
+        |e: &[Stmt], s: &[Stmt]| matches!((first_written(e), first_written(s)), (Some(e), Some(s)) if e < s);
+    // Each of `exit`'s statements written in one `let … else`'s `else`, and
+    // none of `then`'s.
+    let let_else_exit = |exit: &[Stmt], then: &[Stmt]| {
+        let written = |s: &&Stmt| !s.span.is_none();
+        let within = |e: &js::Span, s: &Stmt| e.lo <= s.span.lo && s.span.hi <= e.hi;
+        exit.iter().any(|s| written(&s))
+            && let_elses.iter().any(|e| {
+                exit.iter().filter(written).all(|s| within(e, s)) && !then.iter().filter(written).any(|s| within(e, s))
+            })
+    };
     let mut i = 0;
     while i < stmts.len() {
-        let first = matches!(&stmts[i].kind, StmtKind::If(_, then, Some(otherwise))
-            if otherwise.last().is_some_and(ends)
-                && matches!((first_written(otherwise), first_written(then)), (Some(e), Some(s)) if e < s)
-                && fits_in_place(stmts, i, then));
+        let rest = &stmts[i + 1..];
+        let first = match &stmts[i].kind {
+            StmtKind::If(_, then, Some(otherwise)) => {
+                otherwise.last().is_some_and(ends) && written_first(otherwise, then) && fits_in_place(stmts, i, then)
+            }
+            StmtKind::If(_, then, None) => {
+                then.last().is_some_and(ends)
+                    && rest.last().is_some_and(ends)
+                    && let_else_exit(rest, then)
+                    && written_first(rest, then)
+                    && fits_in_place(stmts, i, then)
+            }
+            _ => false,
+        };
         if !first {
             i += 1;
             continue;
         }
         let span = stmts[i].span;
-        let StmtKind::If(test, then, Some(otherwise)) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
-        else {
+        let StmtKind::If(test, then, otherwise) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
+        let otherwise = otherwise.unwrap_or_else(|| stmts.split_off(i + 1));
         stmts.splice(
             i..=i,
             std::iter::once(StmtKind::If(test.negated_test(), otherwise, None).at(span)).chain(then),

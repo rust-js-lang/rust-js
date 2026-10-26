@@ -272,3 +272,70 @@ pub fn doubled(o: Option<u32>) -> Option<u32> {
   const root = { depth: 0, parent: null };
   expect([lib.parentDepth({ depth: 1, parent: root } as never), lib.parentDepth({ depth: 1, parent: null } as never), lib.parentDepth({ depth: 5, parent: null } as never), lib.doubled(4 as never), lib.doubled(undefined as never)]).toEqual([0, null, 3, 8, undefined]);
 });
+
+// React's getCurrentFiberStackInDev, ported: `if __DEV__ { let Some(current)
+// = CURRENT.with_borrow(..) else { return String::new(); }; // Safe ..
+// return get_owner_stack_by_fiber_in_dev(&current); } String::new()`. A
+// written `let … else` is a guard, first, as upstream's `if (current ===
+// null) { return ''; }`: not `if (current != null) { .. }` with its exit
+// after, nor gone into the function's tail it's alike (ADR 0879, amended).
+test("a let else before a return is a guard first", async () => {
+  const { js, lib } = await compiled("let-else-guard-first", `use std::cell::RefCell;
+
+thread_local! {
+    static CURRENT: RefCell<Option<String>> = const { RefCell::new(None) };
+}
+
+pub fn set_current(name: Option<String>) {
+    CURRENT.set(name);
+}
+
+pub fn current_stack(dev: bool) -> String {
+    if dev {
+        let Some(current) = CURRENT.with_borrow(|current| current.clone()) else {
+            return String::new();
+        };
+        // The stack of what's current.
+        return current + "!";
+    }
+    String::new()
+}
+
+pub fn named(name: Option<String>) -> String {
+    let Some(name) = name else {
+        return String::new();
+    };
+    // Named.
+    return name + "?";
+}
+
+/// A \`?\`'s guard is first already, its rest's \`let\` written before it.
+fn parse(s: &str) -> Result<u32, String> {
+    s.parse().map_err(|_| s.to_string())
+}
+
+pub fn tried(a: &str, b: &str) -> Result<u32, Big> {
+    let x = parse(a)?;
+    let y = parse(b)?;
+    if x + y > 4 {
+        return Err(Big(x + y));
+    }
+    Ok(x + y)
+}
+
+pub struct Big(pub u32);
+
+impl From<String> for Big {
+    fn from(_: String) -> Self {
+        Big(0)
+    }
+}
+`);
+  expect(js).toContain('  if (dev) {\n    if (current == null) {\n      return "";\n    }\n    // The stack of what\'s current.\n    return current + "!";\n  }\n  return "";\n');
+  expect(js).toContain('  if (name == null) {\n    return "";\n  }\n  // Named.\n  return name + "?";\n');
+  expect(js).toMatch(/export function tried\(a, b\) \{\n  const result = parse\(a\);\n  if \(result\.TAG === "Err"\) \{\n/);
+  lib.setCurrent("a" as never);
+  const set = [lib.currentStack(true as never), lib.currentStack(false as never)];
+  lib.setCurrent(undefined as never);
+  expect([...set, lib.currentStack(true as never), lib.named("b" as never), lib.named(undefined as never)]).toEqual(["a!", "", "", "b?", ""]);
+});

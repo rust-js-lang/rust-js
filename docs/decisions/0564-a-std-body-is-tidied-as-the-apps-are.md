@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0364](0364-mir-lowering.md) and
 [0561](0561-std-bodies.md). Extended by [0743](0743-a-part-of-a-chain-a-test-decides-is-left-out.md): a part of a chain a test decides.
-Amended below: an `if` the program wrote stays.
+Amended below: an `if` the program wrote stays. Amended by
+[0879](0879-an-if-and-a-closures-captures-read-as-written.md): a branch's copy
+written in a `let … else`'s `else` stays, the guard's exit.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): each rewrite changes
 nothing a program can observe; the JS reads as a person writes it.

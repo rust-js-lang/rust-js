@@ -23,6 +23,9 @@ pub(super) struct Written {
     /// Each `if` written with an `else`: its condition, its `then` and its
     /// `else`, which MIR's structure may make a guard of (`written_elses`).
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
+    /// Where each `let … else`'s `else` is written: a guard's exit, which
+    /// stays where it's written, not a tail it's alike (`shared_tails`).
+    pub let_elses: Vec<js::Span>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
     /// Each `!( .. )` the program wrote of an `&&` or `||`: where what it
@@ -316,12 +319,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let let_elses = (self.frame.thir.stmts.iter())
+            .filter_map(|stmt| match stmt.kind {
+                thir::StmtKind::Let {
+                    else_block: Some(block),
+                    ..
+                } => Some(self.js_span(self.frame.thir[block].span)),
+                _ => None,
+            })
+            .collect();
         Written {
             tables,
             conditions,
             ifs,
             thens,
             elses,
+            let_elses,
             logicals,
             negations,
             continues,

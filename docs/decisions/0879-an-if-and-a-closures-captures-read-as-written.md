@@ -216,3 +216,34 @@ wrote before a return keeps its body inside", run in JS, the unit test
 `written_thens_turn_only_a_rest_that_leaves` (`tidy.rs`), of a rest that
 goes on, `loop_break_choice.rs` against native Rust, and the mutation
 `written-thens-as-mir-has-them` (`tidy/jumps/tails.ts`).
+
+## Amendment: a `let … else` before a written `return` is a guard first
+
+React's getCurrentFiberStackInDev writes `if (__DEV__) { if (current ===
+null) { return ''; } // Safe because .. return
+getOwnerStackByFiberInDev(current); } return '';`. Its port, `let
+Some(current) = CURRENT.with_borrow(..) else { return String::new(); };
+// Safe .. return get_owner_stack_by_fiber_in_dev(&current);`, printed `if
+(current != null) { // Safe .. return ..; }` with no guard at all: MIR
+joins the guard's `return` and the rest's at the one return block, so the
+`if` is `if (c) { s } e`, not the `if (c) { s } else { e }`
+`let_else_first` turns; and `shared_tails` (ADR 0564) took `e`, `return
+"";`, as a copy of the function's tail it's alike.
+
+**A `let … else`'s `else` is a guard first wherever MIR joins it**
+(`Written::let_elses`, where each `else` is written): `let_else_first`
+turns `if (c) { s } e`, `s` never going on and `e` the rest, which
+leaves, into `if (!c) { e } s` where each of `e`'s statements is written
+in one `let … else`'s `else` and none of `s`'s; and `shared_tails` keeps
+a branch's copy written in one, the guard's exit, not the tail. Only of
+a `let … else` the program wrote: an exit written before the rest is no
+guard by itself, a `?`'s `if (r.TAG === "Err") { return .. } const x =
+r._0;` written after its rest's `let x`, already first. Case N: the
+guard's test negated holds where the other doesn't, each branch where it
+was taken, and the rest never goes on, so nothing follows it either way.
+
+Held by `test/lowering-early-exits.test.ts`, "a let else before a return
+is a guard first", run in JS, `let_else_guard_returns.rs` against native
+Rust, and the mutations `let-else-joined-return-not-guard`,
+`let-else-joined-return-of-any-exit` (`tidy/jumps/tried.ts`) and
+`shared-tails-take-a-let-elses-exit` (`tidy/branches.ts`).

@@ -961,7 +961,9 @@ export function firstTwo(items) {
 - `..` skips the fields you don't name. Rust makes you say so.
 - A tuple, `(i32, i32)`, is a JS array, `[a, b]`.
 - `let ... else` handles the pattern not matching: here, fewer than two
-  items.
+  items. Its `else` is a guard, first, where it's written, before a
+  `return` written after it too, or a function's tail its value is alike
+  ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).
 - A pattern is one destructuring; a `let` of one field, `let x = p.x;`,
   is a statement of its own, `const x = p.x;`, however many follow it,
   but where each of a run side by side is named as the field it reads, a

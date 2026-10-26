@@ -862,7 +862,7 @@ mod tests {
         };
         let assigns = || StmtKind::Assign(Expr::var("x"), Expr::var("v")).at(js::Span::NONE);
         let mut either = vec![branches(vec![call("a"), assigns()], Some(vec![call("b"), assigns()]))];
-        shared_tails(&mut either);
+        shared_tails(&mut either, &[]);
         let [
             Stmt {
                 kind: StmtKind::If(_, then, Some(otherwise)),
@@ -881,13 +881,13 @@ mod tests {
             vec![call("a"), returns("v")],
             Some(vec![call("b"), returns("v")]),
         )];
-        shared_tails(&mut leaving);
+        shared_tails(&mut leaving, &[]);
         assert!(
             matches!(leaving.as_slice(), [Stmt { kind: StmtKind::If(_, then, Some(otherwise)), .. }]
             if then.len() == 2 && otherwise.len() == 2)
         );
         let mut fallen = vec![branches(vec![call("a"), returns("v")], None), returns("v")];
-        shared_tails(&mut fallen);
+        shared_tails(&mut fallen, &[]);
         let [
             Stmt {
                 kind: StmtKind::If(_, then, None),
