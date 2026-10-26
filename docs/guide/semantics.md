@@ -526,7 +526,13 @@ What's refused is in [the limitations](limitations.md).
   so what fits is nothing more. A `HashMap`'s or a `HashSet`'s
   `with_capacity` and `reserve` ask hashbrown's room for its table,
   `$tableRoomFor(n, 8, 4)`, which panics `Hash table capacity overflow`
-  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)). A
+  `collect()` into a `Vec` of std's struct a variable holds asks the room
+  its `size_hint()` says first, `$roomForHint(it, 4, trusted)`, as std's
+  `SpecFromIter` does, but of one over a slice's or a `Vec`'s items; and of
+  one that has no end its type knows, `(0..).map(f)`, a `TrustedLen` of no
+  upper bound, panics `capacity overflow` before any item's made
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what

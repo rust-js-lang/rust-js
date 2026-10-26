@@ -5,6 +5,7 @@ mod fmt;
 mod inherent;
 mod iterators;
 mod json;
+mod lengths;
 mod methods;
 pub(super) mod registry;
 mod serde;

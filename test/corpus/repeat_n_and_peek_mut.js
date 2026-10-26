@@ -9,6 +9,7 @@ import {
   $peekCell,
   $rangeNext,
   $repeatingN,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -72,7 +73,7 @@ function peeked() {
   if (x != null) {
     x.value = (x.value + 100) | 0;
   }
-  console.log(`[${lazy.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(lazy, 4, true).toArray().join(", ")}]`);
   const words = iterator_peekable($iter(["a", "b"]), { next: $next });
   const w = $peekCell(words);
   if (w != null) {

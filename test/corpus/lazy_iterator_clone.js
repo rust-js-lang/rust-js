@@ -8,7 +8,7 @@ import {
   mapClone_clone,
   mapIterator_next,
 } from "@rust-js/std/iter.js";
-import { $clone, $cloning, $given, $iter, $next, $rangeNext } from "@rust-js/runtime";
+import { $clone, $cloning, $given, $iter, $next, $rangeNext, $roomForHint } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -57,8 +57,8 @@ function main() {
   );
   const value = $next(copy);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  console.log(`[${it.toArray().join(", ")}]`);
-  console.log(`[${copy.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(it, 4, true).toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(copy, 4, true).toArray().join(", ")}]`);
 
   const makeFilter = (it, f) =>
     $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
@@ -150,6 +150,8 @@ function main() {
     ),
   };
   $next(again.it);
-  console.log(`[${again.it.toArray().join(", ")}] [${holder.it.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(again.it, 4, true).toArray().join(", ")}] [${$roomForHint(holder.it, 4, true).toArray().join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

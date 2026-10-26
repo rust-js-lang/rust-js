@@ -14,6 +14,7 @@ import {
   $nextBack,
   $range,
   $rest,
+  $roomForHint,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -24,7 +25,10 @@ export function entry() {
 function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
   const back = iterator_rev(it, IIterator, IDoubleEndedIterator);
   $next(back);
-  return [revClone_clone(back, IClone).toArray(), back.toArray()];
+  return [
+    $roomForHint(revClone_clone(back, IClone), 4, false).toArray(),
+    $roomForHint(back, 4, false).toArray(),
+  ];
 }
 
 function backLen(it) {

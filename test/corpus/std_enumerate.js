@@ -9,7 +9,16 @@ import {
   enumerateExactSizeIterator_len,
   iterator_enumerate,
 } from "@rust-js/std/iter.js";
-import { $debugStr, $exactLen, $iter, $lent, $next, $nextBack, $print } from "@rust-js/runtime";
+import {
+  $debugStr,
+  $exactLen,
+  $iter,
+  $lent,
+  $next,
+  $nextBack,
+  $print,
+  $roomForHint,
+} from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -62,7 +71,7 @@ function main() {
   const c = enumerateClone_clone(e, { clone: (value) => [value[0]] });
   console.log(`${enumerateDebug_fmt(c, undefined, countdownDebug)}`);
   console.log(
-    `[${c
+    `[${$roomForHint(c, 8, false)
       .toArray()
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,

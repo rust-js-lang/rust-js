@@ -19,6 +19,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/runtime";
 
@@ -84,7 +85,9 @@ function main() {
     { clone: (value) => [value[0]] },
     { clone: (value) => $clone(value) },
   );
-  console.log(`[${c.toArray().join(", ")}] [${w.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(c, 4, false).toArray().join(", ")}] [${$roomForHint(w, 4, false).toArray().join(", ")}]`,
+  );
 
   const v = [1, 2, 3, 4];
   const held = iterator_inspect(
@@ -128,7 +131,9 @@ function main() {
     ),
   };
   $next(again.it);
-  console.log(` [${again.it.toArray().join(", ")}] [${holder.it.toArray().join(", ")}]`);
+  console.log(
+    ` [${$roomForHint(again.it, 4, false).toArray().join(", ")}] [${$roomForHint(holder.it, 4, false).toArray().join(", ")}]`,
+  );
 
   // Made in place.
   const inspect = (x) => {

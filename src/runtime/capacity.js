@@ -38,6 +38,20 @@ function $roomFor(count, size) {
   if (count > 2 ** 32 - 1 || count * size > 2 ** 31 - 1) throw new Error("capacity overflow");
 }
 
+// `it`, of what `Vec::from_iter` asks room for first, of `size` bytes each,
+// as std's `SpecFromIter` does: a `TrustedLen`'s, `trusted`, its upper
+// bound where its hint has one; of one whose type has no end, `endless`,
+// a `capacity overflow` panic; else its lower bound and one more. A JS
+// iterator's hint of no upper bound is no hint, not an endless one (ADR
+// 0940).
+function $roomForHint(it, size, trusted, endless = false) {
+  if (endless) throw new Error("capacity overflow");
+  const [lower, upper] = $sizeHint(it);
+  if (trusted && upper !== undefined) $roomFor(upper, size);
+  else $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);
+  return it;
+}
+
 // `s.reserve(additional)` of a `String`: room for its bytes and as many
 // more, its bytes counted only where they may not fit, as each of its
 // UTF-16 units is at most three.

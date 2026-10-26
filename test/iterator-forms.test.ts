@@ -62,7 +62,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
-  "asked_length_overflow.rs": "runs on: prints without end",
   "boxed_array_iter.rs": "refused: a std::boxed::BoxedArrayIntoIter<u8, 2> as a DoubleEndedIterator, which rust-js can't step from its back",
   "cloned_chains_and_cycles.rs": "throws: a zip cloned apart clones its part, std's `Chain` here, as its maker made it, `$clone`",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",

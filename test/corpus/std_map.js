@@ -26,6 +26,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $sizeHint,
   $tryOf,
 } from "@rust-js/runtime";
@@ -96,7 +97,9 @@ function main() {
     { clone: (value) => [value[0]] },
     { clone: (value) => $clone(value) },
   );
-  console.log(`[${c.toArray().join(", ")}] [${m.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(c, 4, false).toArray().join(", ")}] [${$roomForHint(m, 4, false).toArray().join(", ")}]`,
+  );
 
   const v = [1, 2, 3, 4, 5];
   let held = iterator_map($iter(v), (x) => Math.imul(x, x) >>> 0, { next: $next });
@@ -163,7 +166,9 @@ function main() {
     .take(5)
     .toArray();
   console.log(`[${cycled.join(", ")}]`);
-  console.log(`[${again.it.toArray().join(", ")}] [${holder.it.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(again.it, 4, true).toArray().join(", ")}] [${$roomForHint(holder.it, 4, true).toArray().join(", ")}]`,
+  );
 
   // Made in place: part of a filter cloned apart, and cycled.
   const makeMap = (it, f) =>

@@ -11,6 +11,7 @@ import {
   $peek,
   $peekSome,
   $rangeNext,
+  $roomForHint,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -65,7 +66,7 @@ function main() {
   const taken = $nextIf(it, (x) => x === 20);
   const refused = $nextIf(it, (x) => x === 99);
   const eq = $nextIf(it, (item) => item === 30);
-  const rest = it.toArray();
+  const rest = $roomForHint(it, 4, true).toArray();
   console.log(
     `${p == null ? "None" : `Some(${p})`} ${q == null ? "None" : `Some(${q})`} ${first == null ? "None" : `Some(${first})`} ${taken == null ? "None" : `Some(${taken})`} ${refused == null ? "None" : `Some(${refused})`} ${eq == null ? "None" : `Some(${eq})`} [${rest.join(", ")}] [${seen.join(", ")}]`,
   );

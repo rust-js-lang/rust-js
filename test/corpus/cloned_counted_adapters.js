@@ -22,6 +22,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/runtime";
 
@@ -40,7 +41,7 @@ function main() {
     clone: (value) => $iter(value.items.slice(value.at, value.end)),
   });
   console.log(
-    `${$count(numbered)} [${copy
+    `${$count(numbered)} [${$roomForHint(copy, 8, false)
       .toArray()
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
@@ -51,7 +52,9 @@ function main() {
   const rest = takeClone_clone(first, {
     clone: (value) => ({ start: value.start, end: value.end }),
   });
-  console.log(`[${first.toArray().join(", ")}] ${rest.reduce((a, b) => (a + b) | 0, 0)}`);
+  console.log(
+    `[${$roomForHint(first, 4, true).toArray().join(", ")}] ${rest.reduce((a, b) => (a + b) | 0, 0)}`,
+  );
 
   const tail = iterator_skip({ start: 1, end: 6 }, 2, { next: $rangeNext });
   const fresh = skipClone_clone(tail, {
@@ -62,9 +65,11 @@ function main() {
   const after = skipClone_clone(stepped, {
     clone: (value) => ({ start: value.start, end: value.end }),
   });
-  const collect = fresh.toArray();
-  const value = stepped.toArray();
-  console.log(`[${collect.join(", ")}] [${value.join(", ")}] [${after.toArray().join(", ")}]`);
+  const collect = $roomForHint(fresh, 4, true).toArray();
+  const value = $roomForHint(stepped, 4, true).toArray();
+  console.log(
+    `[${collect.join(", ")}] [${value.join(", ")}] [${$roomForHint(after, 4, true).toArray().join(", ")}]`,
+  );
 
   const window = {
     rows: iterator_take($iter([1, 2, 3, 4, 5]), 3, { next: $next }),

@@ -28,6 +28,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $roomForHint,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -143,7 +144,7 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  console.log(`[${both.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(both, 4, false).toArray().join(", ")}]`);
 
   const back = $rev(
     $flattenEnds($iter(groups), (g) => $mapEnds($iter(g), (x) => (x * 10) | 0)),

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "endless-room-by-lower",
+    breaks: "a `collect()` of what has no end its type knows, `(0..).map(f)`, asks room of its lower bound, so maps where Rust panics `capacity overflow` at once (ADR 0940)",
+    file: "src/runtime/capacity.js",
+    find: "  if (endless) throw new Error(\"capacity overflow\");\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+  },
+  {
     name: "shrink-to-unshrunk",
     breaks: "`shrink_to_fit()` leaves its room",
     file: "src/runtime/capacity.js",

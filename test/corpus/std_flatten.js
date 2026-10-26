@@ -19,6 +19,7 @@ import {
   $nextBackSome,
   $nextSome,
   $rev,
+  $roomForHint,
   $sizeHint,
   $tryOf,
 } from "@rust-js/runtime";
@@ -106,7 +107,7 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
-  console.log(`[${cells.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(cells, 4, false).toArray().join(", ")}]`);
 
   // Of arrays, whose constant size bounds what's left.
   const grid = iterator_flatten(

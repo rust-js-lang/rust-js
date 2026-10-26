@@ -3,6 +3,23 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "endless-collect-unchecked",
+    breaks: "`(0..).map(f).collect::<Vec<_>>()`, a `TrustedLen` with no upper bound, maps without end where Rust panics `capacity overflow` before any item's made (ADR 0940)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                && self.recognition().endless_by_type(iter_ty);\n",
+    replace: "                && self.recognition().endless_by_type(iter_ty) && false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+  },
+  {
+    name: "collect-hint-room-unasked",
+    breaks: "`collect()` into a `Vec` of std's struct asks no room of its hint first, so `(0..usize::MAX).map(f).collect()` maps without end where Rust's `SpecFromIter` panics `capacity overflow` (ADR 0940)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty) =>\n",
+    replace: "                        || false && self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
+    snapshots: true,
+  },
+  {
     name: "collect-into-unit-refused",
     breaks: "`collect()` into `()` is refused where it steps each item (#322)",
     file: "src/lower/mir/iter/collect.rs",

@@ -73,6 +73,11 @@ fn main() {
     check("collect rev", || {
         (0..usize::MAX).rev().map(made).collect::<Vec<u8>>().len()
     });
+    // Of what has no end, a `RangeFrom`'s, a `TrustedLen` of no upper
+    // bound: `capacity overflow` before any item's made.
+    check("collect endless", || (0..).map(made).collect::<Vec<u8>>().len());
+    let endless = (0..).map(made);
+    check("collect held endless", move || endless.collect::<Vec<u8>>().len());
     let n = std::hint::black_box(3);
     check("collect(3)", || (0..n).map(made).collect::<Vec<u8>>());
     check("collect empty", || (n..1).collect::<Vec<usize>>());

@@ -182,6 +182,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
+            // Of std's struct, the room its hint asks first, as std's
+            // `SpecFromIter` does, and of one whose type has no end, the
+            // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940).
+            let endless = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+                && self.recognition().endless_by_type(iter_ty);
+            let it = match item {
+                Some(item)
+                    if endless
+                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty) =>
+                {
+                    let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+                    let size = self.room_item_size(item);
+                    let mut given = vec![it, size, Expr::bool(trusted)];
+                    if endless {
+                        given.push(Expr::bool(true));
+                    }
+                    Expr::call_helper("$roomForHint", given)
+                }
+                _ => it,
+            };
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
                 None => match self.collected_items(&it, iter_ty) {

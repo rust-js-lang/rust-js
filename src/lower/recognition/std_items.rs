@@ -479,6 +479,15 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
         .any(|&(name, method, _)| meaning_only(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
+/// Whether `ty` is a `TrustedLen`, whose `Vec::from_iter` sizes it by its
+/// upper bound, as rustc selects it (ADR 0940).
+pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    registry::by_path(tcx, "core", &["iter", "TrustedLen"]).is_some_and(|trusted| {
+        let tr = ty::TraitRef::new(tcx, trusted, [ty]);
+        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+    })
+}
+
 /// Whether std's type `adt` has bodies `@rust-js/std` compiles for this
 /// build: a compiled iterator's, or a private struct one holds,
 /// `FlattenCompat` of a `Flatten`, a struct as the crate's are.

@@ -21,6 +21,7 @@ import {
   $rangeNthBack,
   $rev,
   $roomFor,
+  $roomForHint,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -66,7 +67,7 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  console.log(`[${it.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(it, 4, false).toArray().join(", ")}]`);
   const fm = iterator_flatMap(
     { start: 1, end: 4 },
     (n) => {

@@ -15,6 +15,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $roomFor,
+  $roomForHint,
   $sizeHint,
 } from "@rust-js/runtime";
 
@@ -64,7 +65,7 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
-  console.log(`[${runs.toArray().join(", ")}]`);
+  console.log(`[${$roomForHint(runs, 4, false).toArray().join(", ")}]`);
 
   // Of arrays, whose constant size bounds what's left.
   const doubled = iterator_flatMap(
@@ -139,7 +140,7 @@ function main() {
     console.log(
       `${value$1 == null ? "None" : `Some(${value$1})`} (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
     );
-    console.log(`[${held.pairs.toArray().join(", ")}]`);
+    console.log(`[${$roomForHint(held.pairs, 4, true).toArray().join(", ")}]`);
 
     // Made in place, stepped where it's made.
     const total = $lazyRange(1, 4)

@@ -23,6 +23,7 @@ import {
   $next,
   $nextSome,
   $rangeNext,
+  $roomForHint,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -126,7 +127,7 @@ function clones() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
-  console.log(`[${c.toArray().join(", ")}] ${$count(d)}`);
+  console.log(`[${$roomForHint(c, 4, true).toArray().join(", ")}] ${$count(d)}`);
   const makeChain = (a, b) =>
     $cloning($lazyChain(a, b), () =>
       makeChain($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
@@ -150,7 +151,9 @@ function clones() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
-  console.log(`[${e.toArray().join(", ")}] [${f.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(e, 4, true).toArray().join(", ")}] [${$roomForHint(f, 4, true).toArray().join(", ")}]`,
+  );
   const makeChain$1 = (a, b) =>
     $cloning($lazyChain(a, b), () =>
       makeChain$1($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
@@ -225,13 +228,17 @@ function more() {
   $next(c);
   $next(c);
   console.log(
-    `[${chainClone_clone(
-      c,
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+    `[${$roomForHint(
+      chainClone_clone(
+        c,
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+      ),
+      4,
+      true,
     )
       .toArray()
-      .join(", ")}] [${c.toArray().join(", ")}]`,
+      .join(", ")}] [${$roomForHint(c, 4, true).toArray().join(", ")}]`,
   );
   const makeZip$1 = (a, b) =>
     $cloning($lazyZip(a, b), () =>
@@ -265,7 +272,9 @@ function more() {
     { clone: (value) => ({ start: value.start, end: value.end }) },
   );
   $next(cc2);
-  console.log(`[${cc.toArray().join(", ")}] [${cc2.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(cc, 4, true).toArray().join(", ")}] [${$roomForHint(cc2, 4, true).toArray().join(", ")}]`,
+  );
   const o = iterator_chain(
     $iter([1]),
     $iter([3, 4]),
@@ -275,13 +284,17 @@ function more() {
   $next(o);
   $next(o);
   console.log(
-    `[${chainClone_clone(
-      o,
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+    `[${$roomForHint(
+      chainClone_clone(
+        o,
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+      ),
+      4,
+      true,
     )
       .toArray()
-      .join(", ")}] [${o.toArray().join(", ")}]`,
+      .join(", ")}] [${$roomForHint(o, 4, true).toArray().join(", ")}]`,
   );
   const makeZip$2 = (a, b) =>
     $cloning($lazyZip(a, b), () =>
@@ -325,7 +338,9 @@ function steppedThenCloned() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
-  console.log(`[${c.toArray().join(", ")}] [${d.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(c, 4, true).toArray().join(", ")}] [${$roomForHint(d, 4, true).toArray().join(", ")}]`,
+  );
   const e = iterator_chain(
     $iter([1, 2]),
     $iter([3, 4]),
@@ -340,7 +355,9 @@ function steppedThenCloned() {
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
     { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
   );
-  console.log(`[${e.toArray().join(", ")}] [${f.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(e, 4, true).toArray().join(", ")}] [${$roomForHint(f, 4, true).toArray().join(", ")}]`,
+  );
   const makeZip = (a, b) =>
     $cloning($lazyZip(a, b), () =>
       makeZip($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
