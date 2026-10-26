@@ -4,7 +4,8 @@ Status: Accepted. Extends [0196](0196-typescript-declarations.md)'s
 nullable fields and [0275](0275-nullable-writes-null.md). Amended by
 [0772](0772-a-nullable-cell-field-writes-null.md): or a `Cell` of one. Amended: or
 a `Vec` of them, each item's `None` `null`; and of a thread-local, and a
-binding's type parameter, below.
+binding's type parameter; and of a generic struct's field of a type
+parameter's value, and a thread-local a generic constructor makes, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.
@@ -149,3 +150,88 @@ reset, and ReactFiberHiddenContext `createCursor(null)`. The port's
   (`std_types/cell.rs`), `nullable-local-calls-unseen`
   (`mir/local_facts.rs`) and `nullable-local-declared-undefined`
   (`declarations.rs`).
+
+## Amendment: of a generic struct's field of a type parameter's value, and of a thread-local a generic constructor makes
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A where JS reads it
+`== null`, and C where it's `=== null`, as React's JS reads
+`currentTreeHiddenStackCursor.current !== null`. A `None` is `null` or
+`undefined` alike to the program (ADR 0030); only what JS reads changes,
+which is what the attribute says.
+
+React's ReactFiberStack, ported, makes the crate's own
+`create_cursor<T>(default_value: T) -> StackCursor<T>`, and
+ReactFiberHiddenContext's `CURRENT_TREE_HIDDEN_STACK_CURSOR:
+StackCursor<Option<Rc<HiddenContext>>> = create_cursor(None)` was
+`createCursor(undefined)`, where upstream's is `createCursor(null)`;
+`#[rust_js::nullable]` of the thread-local was refused, as it's no cell of
+an `Option`. And the reconciler's `ContextDependency<T>`'s
+`memoized_value: Cell<T>`, of `T = Option<&Unknown>`, was left out where
+it's made `None`, where upstream writes `memoizedValue: null`;
+`#[rust_js::nullable]` of it was refused, as `Cell<T>` is no cell of an
+`Option`.
+
+**An `Option` reaching a nullable place is `null`:**
+
+- **`#[rust_js::nullable]` of a field of a type parameter's value**, `T`,
+  `Cell<T>` or `RefCell<T>`, is of the `Option` it is where its type
+  parameter is one: where the struct is made, `StackCursor { current:
+  RefCell::new(None) }` is `{ current: null }`, and where it's assigned or
+  its cell is `set`, `replace`d or `take`n, `cursor.current = null`, as a
+  nullable field of an `Option` is, by the field's type as it's
+  instantiated there. Generic code, of any `T`, stores what it's given as
+  it is; its `.d.ts` is `current: T`.
+- **`#[rust_js::nullable]` of a thread-local of a generic type made of an
+  `Option`**, `StackCursor<Option<T>>`, is of the `None`s its initializer's
+  call is given for a type parameter's value, `create_cursor(None)`'s
+  `createCursor(null)` (`mir_null_nones`, as a parameter `#[rust_js::nullable(p)]`
+  names is): not what's given for a parameter of its own type, `pair(null,
+  undefined)`, nor what another call on the way is given, `id(undefined)`.
+  Its `.d.ts` is what its type is, `StackCursor<HiddenContext | null |
+  undefined>`, as generic code may write a `None` there that's
+  `undefined`. Of a thread-local made of no `Option` it's refused, as
+  before.
+
+```rust
+pub struct StackCursor<T> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current: RefCell<T>,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static CURRENT_TREE_HIDDEN_STACK_CURSOR: StackCursor<Option<Rc<HiddenContext>>> =
+        create_cursor(None);
+}
+```
+
+Its initializer is `createCursor(null)`, made where it's first used, as
+a thread-local whose initializer runs the crate's code is (ADR 0037,
+amended).
+
+**Alternatives:**
+
+- **A generic function's parameter that reaches a nullable field taken as
+  nullable**, `create_cursor`'s `default_value` because it's made into
+  `current`: the thread-local's attribute unneeded, but a step through a
+  function's body that ADR 0586's first amendment doesn't take of a field's
+  items either, and `#[rust_js::nullable(default_value)]` on the function
+  already says it where it's wanted.
+- **Every generic field's `None` `null`**: what every program's objects
+  hold changes, to say what a few of React's do.
+
+### What holds it
+
+- `test/lowering-nullable.test.ts`, "a generic struct's nullable field is
+  null for None where it's an Option", run as JS; and
+  `test/lowering-module-variables.test.ts`, "a nullable thread-local a
+  generic constructor makes is given null for None" and "a nullable
+  thread-local of no Option is refused".
+- Corpus `nullable_generic_fields`, against native Rust: a cursor pushed
+  and popped through generic code, its `None` read back as Rust's.
+- Mutations `nullable-generic-field-refused` (`bindings.rs`),
+  `nullable-generic-cell-field-refused`,
+  `nullable-thread-local-of-options-refused`,
+  `nullable-init-of-any-thread-local` (`bindings/nullable.rs`),
+  `nullable-init-given-undefined`, `nullable-init-gives-any-parameter` and
+  `nullable-init-gives-any-call` (`mir/patterns.rs`).

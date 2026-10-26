@@ -361,6 +361,76 @@ pub fn lanes_of(lanes: u32) -> StackCursor<u32> {
   expect(js).toContain("  return createCursor(lanes);\n");
 });
 
+// A nullable thread-local a generic constructor makes, React's
+// ReactFiberHiddenContext's `createCursor(null)` now that ReactFiberStack's
+// `create_cursor<T>` is the crate's: each `Option` its call is given for a
+// type parameter's value `null` for `None`; one not nullable as it is
+// (ADR 0586, amended).
+test("a nullable thread-local a generic constructor makes is given null for None", async () => {
+  const dir = fixture("nullable-thread-local-constructed");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct StackCursor<T> {
+    pub current: RefCell<T>,
+}
+
+pub fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+    StackCursor {
+        current: RefCell::new(default_value),
+    }
+}
+
+pub struct Hidden {
+    pub lanes: u32,
+}
+
+pub struct Pair<T> {
+    pub first: T,
+    pub second: Option<u32>,
+    pub third: Option<u32>,
+}
+
+pub fn pair<T>(first: T, second: Option<u32>, third: Option<u32>) -> Pair<T> {
+    Pair { first, second, third }
+}
+
+pub fn id<T>(value: T) -> T {
+    value
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static HIDDEN: StackCursor<Option<Rc<Hidden>>> = create_cursor(None);
+    pub static PREVIOUS: StackCursor<Option<u32>> = create_cursor(None);
+    pub static LANES: StackCursor<u32> = create_cursor(0);
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static PAIR: Pair<Option<u8>> = pair(None, None, id(None));
+}
+
+pub fn hidden() -> bool {
+    HIDDEN.with(|cursor| cursor.current.borrow().is_some())
+}
+
+pub fn previous() -> Option<u32> {
+    PREVIOUS.with(|cursor| *cursor.current.borrow())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("createCursor(null)");
+  expect(js).toContain("createCursor(undefined)");
+  expect(js).toContain("createCursor(0)");
+  // Not what's given for what isn't a type parameter's value, nor to
+  // another call the initializer makes.
+  expect(js).toContain("pair(null, undefined, id(undefined))");
+  const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  // To TypeScript what generic code may write too, `undefined` of a `None`.
+  expect(types).toContain("export const HIDDEN: StackCursor<Hidden | null | undefined>;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hidden(), lib.previous()]).toEqual([false, undefined]);
+});
+
 // One of what's no `Option`, whose `None` it can't be, is refused.
 test("a nullable thread-local of no Option is refused", () => {
   const dir = fixture("nullable-thread-local-number");
@@ -377,6 +447,17 @@ pub fn bump() {
 `);
   expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
     "`#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`",
+  );
+  // Nor one a generic constructor makes of no `Option`.
+  writeFileSync(join(dir, "lib.rs"), `pub struct Wrap<T>(pub T);
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static LANES: Wrap<u32> = const { Wrap(0) };
+}
+`);
+  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+    "or of a generic type made of one, `StackCursor<Option<T>>`, whose `None` is then `null`; this one isn't",
   );
 });
 

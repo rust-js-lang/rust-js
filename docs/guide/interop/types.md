@@ -835,11 +835,15 @@ export function ratio(a, b) {
   `lanes[index] = null`, and a `None` given where its items are made,
   `RefCell::new(create_lane_map(None))`, `createLaneMap(null)`. A `None`
   made otherwise, by a closure's `map(|_| None)` say, is `undefined`, as
-  any `None` is. On anything else it's an error
+  any `None` is. Of a generic struct's field of a type parameter's value,
+  `current: RefCell<T>` or `memoized_value: Cell<T>`, it's where `T` is an
+  `Option`: `StackCursor { current: RefCell::new(None) }` is `{ current:
+  null }`, and `cursor.current.replace(None)` writes `null`; generic code
+  stores what it's given as it is. On anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```
-  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, whose `None` is `null`; this one isn't
+  rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, or of a type parameter's value, whose `None` is `null`; this one isn't
   ```
 
 - **`#[rust_js::optional]` on a nullable field makes it absent until

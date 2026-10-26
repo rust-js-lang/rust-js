@@ -137,15 +137,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             };
             let nullable = bindings::nullable_params(self.tcx, def_id);
-            if nullable.is_empty() {
+            // What a `#[rust_js::nullable]` thread-local is made of, its
+            // `init`'s call's value: each `Option` given for a type
+            // parameter's, `create_cursor(None)`'s (ADR 0586, amended).
+            let made = destination.local == mir::RETURN_PLACE
+                && destination.projection.is_empty()
+                && bindings::nullable_init(self.tcx, body.source.def_id());
+            if nullable.is_empty() && !made {
                 continue;
             }
             let idents = self.tcx.fn_arg_idents(def_id);
+            let inputs = self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs();
             let binding = bindings::is_binding(self.tcx, def_id);
             for (i, arg) in args.iter().enumerate() {
+                let named = (idents.get(i).copied().flatten()).is_some_and(|ident| nullable.contains(&ident.name));
+                let of_a_type_parameter =
+                    made && inputs.get(i).is_some_and(|input| matches!(input.kind(), ty::Param(_)));
                 if let Some(read) = arg.node.place()
                     && read.projection.is_empty()
-                    && (idents.get(i).copied().flatten()).is_some_and(|ident| nullable.contains(&ident.name))
+                    && (named || of_a_type_parameter)
                 {
                     *given.entry(read.local).or_default() += 1;
                     if binding {

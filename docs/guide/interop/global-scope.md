@@ -638,7 +638,11 @@ export function last() {
   TypeScript, as React's `let current: Fiber | null = null` is
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   A `None` a `with_borrow_mut` closure writes is `undefined`, as any a
-  closure makes is.
+  closure makes is. On one a generic constructor makes of an `Option`,
+  `StackCursor<Option<Rc<HiddenContext>>> = create_cursor(None)`, each
+  `None` the call is given for a type parameter's value is `null`,
+  React's `createCursor(null)`; what it's given otherwise, and what other
+  calls on the way are, as it is.
 - **A `with_borrow` closure that may borrow the cell again keeps the cell**,
   borrowed while the closure runs, so a second `borrow_mut()` panics as
   std's does. What a closure, or a function given to `with_borrow`, may

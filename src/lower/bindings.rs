@@ -17,8 +17,8 @@ mod nullable;
 mod rest_values;
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
 pub(super) use nullable::{
-    is_nullable, is_optional, null_where_made, nullable_items, nullable_local, nullable_option, nullable_params,
-    nullable_result,
+    is_nullable, is_optional, made_of_options, null_where_made, nullable_init, nullable_items, nullable_local,
+    nullable_option, nullable_params, nullable_result, of_type_parameter,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 
@@ -119,26 +119,34 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
         // A `#[rust_js::nullable]` thread-local is a `Cell` or a `RefCell` of
-        // an `Option`, whose `None` is `null` (ADR 0586, amended).
+        // an `Option`, whose `None` is `null`, or of a generic type made of
+        // one, `StackCursor<Option<T>>`, whose generic constructor's given
+        // `None` is (ADR 0586, amended).
         if matches!(tcx.def_kind(def), DefKind::Const { .. }) && nullable_local(tcx, def.to_def_id()) {
             let ty = tcx.type_of(def).instantiate_identity().skip_normalization();
             let of_option = matches!(ty.kind(), ty::Adt(key, args)
                 if super::recognition::is_std_def(tcx, key.did(), super::recognition::StdItem::LocalKey)
-                    && nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0)));
+                    && (nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0))
+                        || made_of_options(tcx, args.type_at(0))));
             if !of_option {
-                let message = "rust-js: `#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`, whose `None` is then `null`; this one isn't";
+                let message = "rust-js: `#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`, or of a generic type made of one, `StackCursor<Option<T>>`, whose `None` is then `null`; this one isn't";
                 tcx.dcx().span_err(tcx.def_span(def), message);
                 valid = false;
             }
         }
         // A `#[rust_js::nullable]` field is an `Option` whose `None` is `null`
-        // (ADR 0196), or a `Cell` of one (ADR 0772), or a `Vec` of them
-        // (ADR 0586, amended): of one that isn't, it's nothing to do.
+        // (ADR 0196), or a `Cell` of one (ADR 0772), or a `Vec` of them,
+        // or a type parameter's value, one where it's an `Option` (ADR
+        // 0586, amended): of one that isn't, it's nothing to do.
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {
-                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, whose `None` is `null`; this one isn't";
+                if is_nullable(tcx, field)
+                    && nullable_option(tcx, ty).is_none()
+                    && nullable_items(tcx, ty).is_none()
+                    && !of_type_parameter(tcx, ty)
+                {
+                    let message = "rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, or of a type parameter's value, whose `None` is `null`; this one isn't";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }

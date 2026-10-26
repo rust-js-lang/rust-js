@@ -46,6 +46,26 @@ pub(in crate::lower) fn nullable_option<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -
     }
 }
 
+/// Whether a `#[rust_js::nullable]` field of type `ty`, a generic struct's,
+/// is of a type parameter's value, itself or a `Cell`'s or a `RefCell`'s,
+/// `current: RefCell<T>`: an `Option` where its struct is one of an
+/// `Option`, `StackCursor<Option<Rc<HiddenContext>>>`, whose `None` is then
+/// `null` as `nullable_option`'s is; as it is of any other (ADR 0586,
+/// amended).
+pub(in crate::lower) fn of_type_parameter(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let cell = |adt: ty::AdtDef<'_>, item| adt.did() == crate::lower::recognition::std_item(tcx, item);
+    match ty.kind() {
+        ty::Param(_) => true,
+        ty::Adt(adt, args)
+            if cell(*adt, crate::lower::recognition::StdItem::Cell)
+                || cell(*adt, crate::lower::recognition::StdItem::RefCell) =>
+        {
+            matches!(args.type_at(0).kind(), ty::Param(_))
+        }
+        _ => false,
+    }
+}
+
 /// The `Option` each item of a `#[rust_js::nullable]` field of type `ty`
 /// is, a `Vec<Option<T>>`'s or a `Cell`'s or a `RefCell`'s of one, whose
 /// `None` is `null` in JS, upstream's `createLaneMap(null)` (ADR 0586,
@@ -87,6 +107,23 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
 /// Fiber | null = null` is.
 pub(in crate::lower) fn nullable_local(tcx: TyCtxt<'_>, key: DefId) -> bool {
     nullable_alone(tcx, key)
+}
+
+/// Whether `held`, what a `#[rust_js::nullable]` thread-local holds, is
+/// of a generic type one of whose type parameters is an `Option`,
+/// `StackCursor<Option<Rc<HiddenContext>>>`, as a generic constructor
+/// makes it, `create_cursor(None)`: each `Option` its initializer's call
+/// is given for a type parameter's value is `null` for `None` (ADR 0586,
+/// amended).
+pub(in crate::lower) fn made_of_options(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
+    let option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))
+}
+
+/// Whether `body`, a thread-local's `init`, is a `#[rust_js::nullable]`
+/// one's (`nullable_local`), whose `None`s are `null` where it's made.
+pub(in crate::lower) fn nullable_init(tcx: TyCtxt<'_>, body: DefId) -> bool {
+    tcx.opt_parent(body).is_some_and(|key| nullable_local(tcx, key))
 }
 
 /// `#[rust_js::nullable]` alone on `id`, of no parameter's name.

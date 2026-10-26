@@ -342,8 +342,8 @@ export const mutations: Mutation[] = [
     name: "nullable-field-unchecked",
     breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
-    replace: "                if false && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
+    find: "                if is_nullable(tcx, field)\n                    && nullable_option(tcx, ty).is_none()\n",
+    replace: "                if false\n                    && nullable_option(tcx, ty).is_none()\n",
     tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
   },
   {
@@ -446,8 +446,8 @@ export const mutations: Mutation[] = [
     name: "nullable-cell-refused",
     breaks: "`#[rust_js::nullable]` of a `Cell<Option<T>>` field, React's shared internals', is refused, where its `None` can be `null`",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
-    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty) != Some(ty) && nullable_items(tcx, ty).is_none() {\n",
+    find: "                    && nullable_option(tcx, ty).is_none()\n                    && nullable_items(tcx, ty).is_none()\n",
+    replace: "                    && nullable_option(tcx, ty) != Some(ty)\n                    && nullable_items(tcx, ty).is_none()\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
   },
   {
@@ -470,8 +470,8 @@ export const mutations: Mutation[] = [
     name: "nullable-items-refused",
     breaks: "`#[rust_js::nullable]` of a field of a `Vec<Option<T>>` is refused, as of what isn't an `Option`",
     file: "src/lower/bindings.rs",
-    find: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() && nullable_items(tcx, ty).is_none() {\n",
-    replace: "                if is_nullable(tcx, field) && nullable_option(tcx, ty).is_none() {\n",
+    find: "                    && nullable_items(tcx, ty).is_none()\n                    && !of_type_parameter(tcx, ty)\n",
+    replace: "                    && !of_type_parameter(tcx, ty)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
   },
   {
@@ -497,5 +497,13 @@ export const mutations: Mutation[] = [
     find: "        true => format!(\"{key}$\"),\n",
     replace: "        true => key,\n",
     tests: ["test/std-package.test.ts"],
+  },
+  {
+    name: "nullable-generic-field-refused",
+    breaks: "`#[rust_js::nullable]` of a generic struct's field of a type parameter's value is refused, React's `StackCursor<T>`'s `current: RefCell<T>` (ADR 0586, amended)",
+    file: "src/lower/bindings.rs",
+    find: "                    && !of_type_parameter(tcx, ty)\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
   },
 ];

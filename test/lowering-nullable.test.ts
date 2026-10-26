@@ -1353,3 +1353,79 @@ pub fn ref_or(props: Option<&'static js::Unknown>, other: Option<&'static js::Un
   const lib = await import(join(dir, "lib.js"));
   expect([lib.refOr({} as never, 4 as never), lib.refOr({ ref: 3 } as never, 4 as never)]).toEqual([null, 4]);
 });
+
+// A generic struct's field of a type parameter's value, React's
+// `StackCursor<T>`'s `current: RefCell<T>` and `ContextDependency<T>`'s
+// `memoizedValue: Cell<T>`, `#[rust_js::nullable]`: where `T` is an
+// `Option`, its `None` is `null` where the struct is made and where the
+// cell is set or replaced, as React's JS writes it; where `T` is anything
+// else, or a type parameter's value in generic code, what's given as it
+// is (ADR 0586, amended).
+test("a generic struct's nullable field is null for None where it's an Option", async () => {
+  const dir = fixture("nullable-generic-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+pub struct StackCursor<T> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current: RefCell<T>,
+}
+
+pub struct ContextDependency<T: 'static> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub memoized_value: Cell<T>,
+}
+
+pub fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+    StackCursor {
+        current: RefCell::new(default_value),
+    }
+}
+
+pub fn empty() -> StackCursor<Option<u8>> {
+    StackCursor {
+        current: RefCell::new(None),
+    }
+}
+
+pub fn reset(cursor: &StackCursor<Option<u8>>) -> Option<u8> {
+    cursor.current.replace(None)
+}
+
+pub fn made_of(value: Option<u32>) -> ContextDependency<Option<u32>> {
+    ContextDependency {
+        memoized_value: Cell::new(value),
+    }
+}
+
+pub fn cleared(dependency: &ContextDependency<Option<u32>>) {
+    dependency.memoized_value.set(None);
+}
+
+pub fn numbers() -> ContextDependency<u32> {
+    ContextDependency {
+        memoized_value: Cell::new(1),
+    }
+}
+
+pub fn read(dependency: &ContextDependency<Option<u32>>) -> Option<u32> {
+    dependency.memoized_value.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function createCursor(defaultValue) {\n  return {\n    current: defaultValue,\n  };\n}");
+  expect(js).toContain("  return {\n    current: null,\n  };\n");
+  expect(js).toContain("  cursor.current = null;\n");
+  expect(js).toContain("    memoizedValue: value ?? null,\n");
+  expect(js).toContain("  dependency.memoizedValue = null;\n");
+  expect(js).toContain("    memoizedValue: 1,\n");
+  const lib = await import(join(dir, "lib.js"));
+  const cursor = lib.empty();
+  expect(cursor).toEqual({ current: null });
+  cursor.current = 4;
+  expect([lib.reset(cursor), cursor.current]).toEqual([4, null]);
+  const dependency = lib.madeOf(undefined);
+  expect([dependency.memoizedValue, lib.read(lib.madeOf(2))]).toEqual([null, 2]);
+  lib.cleared(dependency);
+  expect([dependency.memoizedValue, lib.read(dependency), lib.numbers().memoizedValue]).toEqual([null, null, 1]);
+});
