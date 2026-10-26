@@ -59,9 +59,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A library's its JS doesn't export, or whose JS may share what it
         // copies that the crate changes in place, compiled here: asked for,
         // and the crate lowered again with it, which this lowering's JS
-        // isn't kept of (ADR 0914, amended).
+        // isn't kept of (ADR 0914, amended). Not a derived serde codec's,
+        // which its library writes of attributes only it sees, and which
+        // makes its values anew from JSON, sharing none (#341).
         let foreign = self.krate.foreign;
+        let derived_codec = (self.tcx.trait_impl_of_assoc(def_id)).is_some_and(|imp| {
+            super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()
+                && super::recognition::serde_derived(self.tcx, imp)
+        });
         if !self.krate.fns.contains_key(&def_id)
+            && !derived_codec
             && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
         {
             self.krate.asked.borrow_mut().push((def_id, self.module));

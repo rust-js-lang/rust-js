@@ -42,6 +42,11 @@ pub fn main() {
     let json = serde_json::to_string(&ada).unwrap();
     println!("{json}");
     println!("{:?}", serde_json::from_str::<User>(&json).map(|user| user == ada));
+    // One read and changed in place: its library's codec all the same, which
+    // makes it anew from the text (#341).
+    let mut read: User = serde_json::from_str(&json).unwrap();
+    read.age += 1;
+    println!("{read:?}");
     // Found by what `models` reads a field with, and what reads its text.
     for text in [r#"{"name": 5}"#, r#"{"name": "a", "email": "b", "age": -1, "role": "Admin"}"#] {
         match serde_json::from_str::<User>(text) {

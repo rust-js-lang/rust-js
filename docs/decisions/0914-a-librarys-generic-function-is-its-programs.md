@@ -397,3 +397,19 @@ hashOf([1], digitHash);
   `traits/dictionaries.ts`' `unexported-impl-evidence-refused`;
   `mir/dispatch.ts`' `mir-std-hash-dispatched`; `analysis/fmt_failures.ts`'
   `fmt-failing-call-of-mir-unseen`; and those whose code moved.
+
+## Amendment: a derived serde codec is always its library's (#341)
+
+The amendment above leaves derived serde codecs exported, as rust-js
+writes them of attributes only the library sees. But a consumer that
+changes a value of the type in place, the pilot's frontend its `Problem`,
+asked the codec as one that may copy what it changes
+(`instances::Copying`), and compiled the derive's body itself, whose
+visitor isn't its own: the pilot didn't build. **A derived serde impl's
+method is never the consumer's to compile** (`fn_ref`): it makes its
+values anew from the text, sharing nothing the consumer changes, and is
+its library's exported codec. Not another derive's, `Debug`'s, which the
+consumer still compiles where its library doesn't export it. Held by
+`test/crates/frontend`'s user read and changed in place, the pilot, and
+the mutations `derived-codec-compiled-by-consumer` and
+`any-derived-impl-not-compiled`.
