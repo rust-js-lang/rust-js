@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "  if (own(iterator, { next: $next }) && len === undefined\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+  {
+    name: "range-hint-unknown",
+    breaks: "a range a variable holds, given to generic code, says nothing of how many it has left, `(0, None)` where Rust's is exact (ADR 0918)",
+    file: "src/runtime/iterator.js",
+    find: "  hint ??= $rangeHintOf(next);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
+  },
 ];

@@ -82,6 +82,25 @@ function $rangeInclusiveLen(range) {
   return range.start <= range.end ? range.end - range.start + 1 : 0;
 }
 
+// The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
+// inclusive or back form's: std's, exact, of how many numbers it has left
+// (ADR 0918); of a `char`'s or a BigInt's, none known, as before.
+// `undefined` of another `next`.
+function $rangeHintOf(next) {
+  const len =
+    next === $rangeNext || next === $rangeNextBack
+      ? $rangeLen
+      : next === $rangeInclusiveNext || next === $rangeInclusiveNextBack
+        ? $rangeInclusiveLen
+        : undefined;
+  if (len === undefined) return undefined;
+  return (range) => {
+    if (typeof range.start !== "number") return [0, undefined];
+    const left = len(range);
+    return [left, left];
+  };
+}
+
 // The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive
 // or back form's: std's `Range::nth`, of its bounds, which `skip` and
 // `step_by` step it by, so they don't step each number (#231); of a

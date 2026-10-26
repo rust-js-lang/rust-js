@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  range.unused = (k) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
   },
+  {
+    name: "lazy-range-hint-unknown",
+    breaks: "a range written in place, given to generic code, says nothing of how many it has left, `(0, None)` where Rust's is exact (ADR 0918)",
+    file: "src/runtime/lazy_range.js",
+    find: "    return [left, left];\n  };\n  return range;\n",
+    replace: "    return [0, undefined];\n  };\n  return range;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
+  },
 ];

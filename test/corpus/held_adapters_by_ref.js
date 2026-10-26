@@ -51,7 +51,7 @@ function main() {
       $lent(again.it),
       (iterator) =>
         skipDoubleEndedIterator_nextBack(iterator, { next: $next }, { next_back: $nextBack }),
-      undefined,
+      (iterator) => $exactLen($sizeHint(iterator)),
       undefined,
       (iterator, k) =>
         skipDoubleEndedIterator_nthBack(iterator, k, { next: $next }, { next_back: $nextBack }),

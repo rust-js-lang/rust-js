@@ -11,6 +11,12 @@ function $sizeHint(it, iterator) {
     const left = $rangeLen(it);
     return [left, left];
   }
+  // And an inclusive one, `{ next: $rangeInclusiveNext }`, as std's
+  // `RangeInclusive` (ADR 0918).
+  if (iterator?.next === $rangeInclusiveNext && typeof it.start === "number") {
+    const left = $rangeInclusiveLen(it);
+    return [left, left];
+  }
   // An explicit adapter's, its own, of what it steps (ADR 0542).
   if (it.hint !== undefined) return it.hint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as

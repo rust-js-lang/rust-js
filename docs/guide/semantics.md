@@ -823,7 +823,9 @@ React and JSX are [their own pages](README.md#react).
     handed to a binding too, even where JS gives it back to Rust (ADR
     0873).
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
-14. A generic iterator's `size_hint()` is its array's length, or `(0, None)`.
+14. A generic iterator's `size_hint()` is its array's or its range's length
+    ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), or `(0, None)`:
+    an endless `n..`'s too, Rust's `(usize::MAX, None)`.
 15. `zip` makes one more of its first side's items where its second ends
     first, as `Zip::next` does, also where std's wouldn't: where both sides
     know their length, a `map` of a range or of a slice's items, std's

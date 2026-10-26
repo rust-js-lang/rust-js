@@ -220,4 +220,20 @@ export const mutations: Mutation[] = [
     replace: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
+  {
+    name: "inclusive-range-len-refused",
+    breaks: "`len()` of an `a..=b` given to generic code is refused, where rustc makes one an `ExactSizeIterator` (ADR 0918)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            (false, Some(RangeKind::Inclusive)) => Some(Expr::helper(\"$rangeInclusiveLen\")),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+  },
+  {
+    name: "default-len-refused",
+    breaks: "std's `Skip`, whose `len` is std's default, has no `ExactSizeIterator` dictionary, so it can't be given to generic code that asks it (ADR 0918)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            (false, None) if let Some(len) = self.default_len(ty, trait_id) => Some(len),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+  },
 ];

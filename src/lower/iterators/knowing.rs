@@ -732,6 +732,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::object(props))
     }
 
+    /// `ExactSizeIterator::len` of std's struct `ty` whose `len` is std's
+    /// default, `Skip`'s: its exact `size_hint`, which std compiles,
+    /// `(iterator) => $exactLen($sizeHint(iterator))` (ADR 0918). `None` of
+    /// one that's no `ExactSizeIterator` here, `exact_size`, or whose hint
+    /// isn't compiled.
+    pub(in crate::lower) fn default_len(&self, ty: ty::Ty<'tcx>, exact_size: DefId) -> Option<Expr> {
+        let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, exact_size, [ty]));
+        let exact = self
+            .tcx
+            .codegen_select_candidate(self.typing_env.as_query_input(tr))
+            .is_ok();
+        (exact && self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), "size_hint")).then(|| {
+            let hint = Expr::call_helper("$sizeHint", vec![Expr::var("iterator")]);
+            Expr::arrow(
+                vec!["iterator".into()],
+                vec![StmtKind::Return(Some(Expr::call_helper("$exactLen", vec![hint]))).at(js::Span::NONE)],
+            )
+        })
+    }
+
     /// Whether `ty`, a compiled std iterator, has `trait_id`'s `method`
     /// compiled, `Fuse`'s `next_back`, and is a `trait_id` here, so a
     /// use site can give what steps it by that (ADR 0561).
@@ -955,6 +975,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(trait_id) if self.compiled_step(ty, trait_id, method) => {
                         Some(self.user_next(ty, trait_id, method, span)?.0)
                     }
+                    Some(trait_id) if method == "len" => self.default_len(ty, trait_id),
                     _ => None,
                 });
             }

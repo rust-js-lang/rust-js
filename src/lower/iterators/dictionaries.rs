@@ -47,7 +47,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// generic code that steps it as it is (ADR 0487): `DoubleEndedIterator`'s,
     /// `{ next_back }`, a range's `$rangeNextBack`, the crate's own its
     /// impl's, a JS iterator's that knows its back `$nextBack`; and
-    /// `ExactSizeIterator`'s, `{ len }`, a range's `$rangeLen`, the crate's
+    /// `ExactSizeIterator`'s, `{ len }`, a range's `$rangeLen` or
+    /// `$rangeInclusiveLen`, the crate's
     /// own its impl's, a JS iterator's that knows it its own `len()`; of
     /// std's compiled struct, its compiled one.
     pub(in crate::lower) fn iterator_extension_dictionary(
@@ -69,11 +70,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let entry = match (double_ended, self.range_kind(ty)) {
             (true, Some(kind)) => kind.step(true).map(Expr::helper),
             (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),
+            // `a..=b`'s, which rustc gives only 8- and 16-bit numbers, JS's
+            // own numbers (ADR 0918).
+            (false, Some(RangeKind::Inclusive)) => Some(Expr::helper("$rangeInclusiveLen")),
             (_, Some(_)) => None,
             // Std's struct, which generic code given it as it is is given
             // where it's held, a `Map`'s (ADR 0871): its compiled
             // `next_back` or `len`.
             (_, None) if self.compiled_step(ty, trait_id, name) => Some(self.user_next(ty, trait_id, name, span)?.0),
+            // Of one whose `len` is std's default, `Skip`'s (ADR 0918).
+            (false, None) if let Some(len) = self.default_len(ty, trait_id) => Some(len),
             (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
             (false, None) if self.is_user_iterator(ty) => {
                 let mut made = Vec::new();

@@ -702,6 +702,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0915 What's held to be cloned is std's struct](0915-what-s-held-to-be-cloned-is-std-s-struct.md)
 - [0916 `rust-js test` runs a crate's `#[test]`s as JS, through Cargo](0916-rust-js-test-runs-a-crates-tests-as-js.md) *(amended: a unit's directory is Cargo's to give)*
 - [0917 A held `StepBy` is std's, a precondition check never runs, and a std struct is the JS iterator it is where it's first one](0917-a-held-step-by-is-std-s.md)
+- [0918 A range given to generic code knows how many it has left, and std's struct's default `len` is its exact `size_hint`](0918-a-range-given-knows-how-many-it-has-left.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

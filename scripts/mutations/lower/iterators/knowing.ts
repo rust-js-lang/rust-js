@@ -453,4 +453,13 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(try_fold) = None::<Expr> {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "held-default-len-unknown",
+    breaks: "a held `skip()` reversed isn't given its length, std's default of its exact `size_hint` (ADR 0918)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    Some(trait_id) if method == \"len\" => self.default_len(ty, trait_id),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
+  },
 ];

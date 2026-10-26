@@ -42,6 +42,7 @@ const few = [
   "skip_take_own_nth.rs",
   "chain_sides_own_steps.rs",
   "rev_of_lazy_chains.rs",
+  "range_hints_given.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -69,11 +70,9 @@ const differs: Record<string, string> = {
   "own_back_through_adapters.rs": "refused: the DoubleEndedIterator of a Take<Count>",
   "own_iterator_dropped_from_back.rs": "prints otherwise than native Rust",
   "own_iterator_dropped_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Fuse<Count>>",
-  "rev_counted.rs": "refused: the DoubleEndedIterator of a Skip<slice::Iter>",
   "rev_in_place_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Rev<Count>>",
   "rev_of_lazy_chains.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "rev_own_back_methods.rs": "prints otherwise than native Rust",
-  "rev_step_by.rs": "refused: the ExactSizeIterator of a RangeInclusive<u8>",
   "skip_try_fold.rs": "prints otherwise than native Rust",
   "std_map.rs": "throws: std's struct clones a function the recognizers made",
   "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",

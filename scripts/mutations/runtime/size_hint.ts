@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
   },
+  {
+    name: "inclusive-range-hint-unknown",
+    breaks: "an `a..=b` given as it is to std's `Skip` says nothing of how many it has left, so its `len` asserts and panics (ADR 0918)",
+    file: "src/runtime/size_hint.js",
+    find: "  if (iterator?.next === $rangeInclusiveNext && typeof it.start === \"number\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+  },
 ];

@@ -540,8 +540,10 @@ export function $shift(items) {
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220).
 export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
-  // A range's, stepped by its own step, has std's `Range::nth` (#231).
+  // A range's, stepped by its own step, has std's `Range::nth` (#231), and
+  // its `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
+  hint ??= $rangeHintOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // The crate's own `fold` and `nth`, where its impl writes them, which
@@ -2816,6 +2818,25 @@ export function $rangeInclusiveLen(range) {
   return range.start <= range.end ? range.end - range.start + 1 : 0;
 }
 
+// The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
+// inclusive or back form's: std's, exact, of how many numbers it has left
+// (ADR 0918); of a `char`'s or a BigInt's, none known, as before.
+// `undefined` of another `next`.
+export function $rangeHintOf(next) {
+  const len =
+    next === $rangeNext || next === $rangeNextBack
+      ? $rangeLen
+      : next === $rangeInclusiveNext || next === $rangeInclusiveNextBack
+        ? $rangeInclusiveLen
+        : undefined;
+  if (len === undefined) return undefined;
+  return (range) => {
+    if (typeof range.start !== "number") return [0, undefined];
+    const left = len(range);
+    return [left, left];
+  };
+}
+
 // The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive
 // or back form's: std's `Range::nth`, of its bounds, which `skip` and
 // `step_by` step it by, so they don't step each number (#231); of a
@@ -3052,6 +3073,13 @@ export function $lazyRange(start, end = Infinity, step = 1) {
   range.nth = (k) => {
     if (k > 0 && at < end) at = Number(at) + k * step;
     return range.next();
+  };
+  // Its `size_hint`, std's, exact, of how many it has left; of `n..`,
+  // `usize::MAX` and none known (ADR 0918).
+  range.hint = () => {
+    if (end === Infinity) return [4294967295, undefined];
+    const left = at < end ? Math.ceil((Number(end) - Number(at)) / step) : 0;
+    return [left, left];
   };
   return range;
 }
@@ -10301,6 +10329,12 @@ export function $sizeHint(it, iterator) {
   // exact, as it knows how many it has left.
   if (iterator?.next === $rangeNext && typeof it.start === "number") {
     const left = $rangeLen(it);
+    return [left, left];
+  }
+  // And an inclusive one, `{ next: $rangeInclusiveNext }`, as std's
+  // `RangeInclusive` (ADR 0918).
+  if (iterator?.next === $rangeInclusiveNext && typeof it.start === "number") {
+    const left = $rangeInclusiveLen(it);
     return [left, left];
   }
   // An explicit adapter's, its own, of what it steps (ADR 0542).
