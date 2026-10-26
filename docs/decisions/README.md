@@ -29,7 +29,7 @@ reordered, and git merges this file by keeping both sides' lines
 
 **Semantics**
 
-- [0011 Integers are JS numbers, wrapped like release Rust](0011-numbers.md) *(extended by 0895: no wrap where JS's bitwise operator makes it)*
+- [0011 Integers are JS numbers, wrapped like release Rust](0011-numbers.md) *(extended by 0895: no wrap where JS's bitwise operator makes it; amended: a `bool`'s operators of a reference)*
 - [0012 Panics throw, via runtime helpers emitted on demand](0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103; amended by 0660: `catch_unwind` catches one; 0706: a panic of no message is an `Error` of none)*
 - [0013 Fieldless enum variants are strings](0013-fieldless-enums.md) *(extended by 0722: a `#[repr(..)]` one's are numbers)*
 - [0033 Enums with fields are ReScript's tagged objects](0033-enums-with-fields.md) *(extended by 0716: std's enums whose `PartialEq` or order is derived)*

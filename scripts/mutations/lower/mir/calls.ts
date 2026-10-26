@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bool-assign-by-ref-refused",
+    breaks: "a `bool`'s `op=` given a `&bool` from MIR, `*s ^= c`, is refused (#319)",
+    file: "src/lower/mir/calls.rs",
+    find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {\n",
+    replace: "            } else if crate::lower::recognition::has_number_arithmetic(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
+  },
+  {
     name: "class-constructor-called",
     breaks: "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
     file: "src/lower/mir/calls.rs",
@@ -150,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "own-assign-through-place-refused",
     breaks: "`a.0 += b` of the crate's own type through a place is refused, not its impl's",
     file: "src/lower/mir/calls.rs",
-    find: "            && (self.is_lang_adt(ty, LangItem::String) || crate::lower::representation::Num::of(ty).is_some())\n",
+    find: "            && (self.is_lang_adt(ty, LangItem::String)\n                || crate::lower::representation::Num::of(ty).is_some()\n                || ty.is_bool())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
   },
@@ -176,8 +184,8 @@ export const mutations: Mutation[] = [
     name: "duration-assign-number",
     breaks: "a `Duration`'s `-=` is its number's `-`, which doesn't panic past zero as std's does",
     file: "src/lower/mir/calls.rs",
-    find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) {",
-    replace: "            } else if crate::lower::representation::Num::of(ty).is_some() {",
+    find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {",
+    replace: "            } else if crate::lower::representation::Num::of(ty).is_some() || ty.is_bool() {",
     tests: ["test/corpus.test.ts", "-t", "^duration_sub_assign_panic.rs$"],
   },
   {

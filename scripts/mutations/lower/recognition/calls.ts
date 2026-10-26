@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bool-operator-by-ref-unknown",
+    breaks: "a `bool`'s `&`, `|` or `^` of `&bool`s, std's forwarding impl, is refused (#319)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
+    replace: "        if Num::of(ty.peel_refs()).is_some() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
+  },
+  {
     name: "blanket-to-owned-shared",
     breaks: "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
     file: "src/lower/recognition/calls.rs",

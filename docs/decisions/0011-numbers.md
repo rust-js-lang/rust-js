@@ -118,3 +118,16 @@ as a call is. `test/corpus/multiply_by_a_constant.rs` multiplies at each
 type's edges, by `2^21` and just past it, a constant on the left, and a
 named one, against native Rust; mutations `mul-by-constant-imul`,
 `mul-exact-factor-too-large` and `mul-constant-on-the-left-unseen`.
+
+## Amendment: a `bool`'s operators of a reference (#319)
+
+A number's operator given a reference, `total += &x`, calls std's
+forwarding impl, which rust-js reads as the operator of values. A `bool`'s
+were refused: TheAlgorithms/rust's SHA-3, `*s ^= c` of a `&bool` `c`. **A
+`bool`'s `&`, `|` and `^`, and their `op=`, of a reference are the same as
+of values**: `s.value = s.value !== c`, `!!(a & b)`. Held by the corpus case
+`bool_ops_by_ref` and the mutations `bool-operator-by-ref-unknown` and
+`bool-assign-by-ref-refused`. Its `state.iter_mut().zip(chunk)` reads
+`$lazyZip($iter($mutItems(state)), chunk)`, which grew
+`docs/readability.txt`'s `$iter` share: #320.
+

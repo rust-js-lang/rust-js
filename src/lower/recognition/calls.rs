@@ -646,11 +646,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return set_operator(op).map(|name| Std::Map(MapOp::SetOperator(name)));
         }
-        if Num::of(ty.peel_refs()).is_some() {
+        if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {
             if let Some(Ok(op)) = value_operator(tcx, trait_) {
                 return Some(Std::Operator(op));
             }
-            // `total += x` with a `&u32` `x`: the same assignment as with a `u32`.
+            // `total += x` with a `&u32` `x`, `a ^ b` of `&bool`s: the same as of values.
             if let Some(op) = assign_operator(tcx, trait_) {
                 return Some(Std::AssignOperator(op));
             }

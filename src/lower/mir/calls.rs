@@ -88,7 +88,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(op) = crate::lower::recognition::assign_operator(tcx, trait_id)
             && let [place, rhs] = values
             && let ty = arg_tys[0].peel_refs()
-            && (self.is_lang_adt(ty, LangItem::String) || crate::lower::representation::Num::of(ty).is_some())
+            && (self.is_lang_adt(ty, LangItem::String)
+                || crate::lower::representation::Num::of(ty).is_some()
+                || ty.is_bool())
             && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))
         {
             // Through a handle a call gave, `or_insert(10)`'s: its `value`,
@@ -112,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rhs = crate::lower::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
             let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
                 Expr::bin(Op::Add, place.clone(), rhs)
-            } else if crate::lower::recognition::has_number_arithmetic(ty) {
+            } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {
                 self.binary(op, place.clone(), rhs, None, ty, span)?
             } else if let Some((def_id, generic_args, known)) =
                 self.recognition().assigned_by(trait_id, ty, arg_tys[1].peel_refs())
