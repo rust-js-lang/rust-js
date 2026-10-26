@@ -17,6 +17,12 @@ pub(super) const CELL: usize = usize::MAX;
 /// `u32::MAX`, as a length isn't (`by_value`).
 pub(super) const VALUE: usize = usize::MAX - 1;
 
+/// The step of a slice's path to each of its items, of a table whose
+/// items are each as long, `vec![vec![0.0; width]; height]`'s rows:
+/// `board[r]` of any `r`, `([ITEM], board)` (#370). Only `same` and
+/// `lengths` know it, of such a table, and only an index is judged by it.
+pub(super) const ITEM: usize = usize::MAX - 2;
+
 /// Whether a bound's `base` is an integer variable's value, not a slice's
 /// length.
 pub(super) fn by_value(base: &Slice) -> bool {
@@ -317,6 +323,14 @@ impl Known {
 }
 
 impl Known {
+    /// What's known after any of `var`'s tables' rows may have changed
+    /// length: none is known as long as anything (#370).
+    pub(super) fn rows_changed(&mut self, var: LocalVarId) {
+        let rows = |(path, v): &Slice| *v == var && path.contains(&ITEM);
+        self.same.retain(|s, base| !rows(s) && !rows(base));
+        self.lengths.retain(|s, _| !rows(s));
+    }
+
     /// Whether `a` is as long as `b`: the same slice, or one known as long
     /// (#362).
     pub(super) fn same_length(&self, a: &Slice, b: &Slice) -> bool {

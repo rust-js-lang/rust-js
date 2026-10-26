@@ -273,3 +273,23 @@ numbers; the mutation `countdown-of-max-unnumbered`). Case A. Held by
 it is", `test/corpus/same_length_tables.rs`, and the mutations
 `table-least-unrecorded`, `min-max-unranged`, `max-least-of-smaller`,
 `min-below-lost`, `max-below-lost` and `min-max-impure`.
+
+## Amendment: a table's rows (#370)
+
+LCS, edit distance, knapsack and unique-paths make their tables
+`vec![vec![0; width]; height]` and read `board[r][c]`, whose row's
+length nothing knew: `$index(board[r], c)`. **A table of tables' rows are
+each as long as their count** (`Known::same` and `Known::lengths` of the
+path step `ITEM`, `([ITEM], board)`), and an index of a row, `board[r]`
+of any `r`, is judged by them (`row_of`). Only such a table makes them, and
+only an index reads them, so a table of rows of any lengths is never
+taken for one. They're forgotten as soon as any row may change length
+(`rows_changed`): a row's `&mut` lent to anything but an index,
+`board[0].pop()`, or held, `let row = &mut board[0]`; a row assigned,
+`board[0] = Vec::new()`; and any `&mut` of the table but an index's,
+`iter_mut()`, `push`, `swap`, a call given it. Case A. Held by
+`lowering-collections.test.ts`'s "a table's rows are as long as its row
+count", `test/corpus/table_rows.rs`, and the mutations
+`table-rows-unmade`, `table-rows-unjudged`, `row-assigned-kept`,
+`row-borrowed-kept`, `row-lent-kept`, `rows-lent-kept` and
+`rows-least-kept`.

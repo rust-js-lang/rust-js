@@ -10,8 +10,8 @@
 use super::*;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{
-    VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_slice_items, is_vec_from_elem, once_method,
-    ord_max_or_min, vec_view,
+    VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_slice_items, once_method, ord_max_or_min,
+    vec_view,
 };
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
@@ -23,10 +23,12 @@ mod known;
 mod narrowing;
 mod present;
 mod reads;
+mod tables;
 
 use cells::reads_a_cell;
-use known::{Below, Known, Range, VALUE, by_value, either};
+use known::{Below, ITEM, Known, Range, VALUE, by_value, either};
 use reads::{calls, pure, read_vars};
+use tables::chosen;
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
@@ -378,26 +380,6 @@ fn reads_utf16_length<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::
     (generic_args.types().next()).is_some_and(|iter_ty| counts_utf16_units(tcx, def_id, iter_ty))
 }
 
-/// The range of the larger of `a` and `b`, or the smaller: below a bound
-/// both are below, or, the smaller, either's (#367).
-fn chosen(a: &Range, b: &Range, larger: bool) -> Range {
-    match larger {
-        true => Range {
-            lo: a.lo.max(b.lo),
-            hi: a.hi.max(b.hi),
-            below: match (&a.below, &b.below) {
-                (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.join(*y))),
-                _ => None,
-            },
-        },
-        false => Range {
-            lo: a.lo.min(b.lo),
-            hi: a.hi.min(b.hi),
-            below: a.below.clone().or_else(|| b.below.clone()),
-        },
-    }
-}
-
 impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// The slice a place is, through references: `heap` of `*heap`.
     fn slice(&self, e: ExprId) -> Option<Slice> {
@@ -428,27 +410,6 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         };
         let (def_id, generic_args) = fn_def(thir[strip(thir, fun)].ty)?;
         slice_length(self.tcx, def_id, generic_args).map(|asked| (asked, args[0]))
-    }
-
-    /// The count of `init` where it's a table, `vec![item; n]`'s `n`.
-    fn table_count(&self, init: ExprId) -> Option<ExprId> {
-        let thir = self.thir;
-        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, init)].kind else {
-            return None;
-        };
-        let (def_id, _) = fn_def(thir[strip(thir, fun)].ty)?;
-        let [_, count] = args[..] else { return None };
-        is_vec_from_elem(self.tcx, def_id).then_some(count)
-    }
-
-    /// What a table of `count` items is as long as: the slice `count` is the
-    /// length of, `terraces` of `terraces.len()`, or `count` itself, an
-    /// integer variable (`VALUE`) (#362).
-    fn count_base(&self, count: ExprId) -> Option<Slice> {
-        match self.asks(count) {
-            Some((SliceLength::Len, items)) => self.slice(items),
-            _ => self.value_base(count),
-        }
     }
 
     /// What `fun` makes of a `Vec`, as long as it is.
@@ -602,6 +563,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             ExprKind::Assign { lhs, rhs } => {
                 let value = self.expr(rhs, known);
                 self.assign(lhs, value, known);
+                // A table's row replaced, `board[0] = Vec::new()` (#370).
+                self.row_reached(lhs, known);
                 // The value it replaces is dropped, which may change what a
                 // `RefCell` holds, but one whose guard is held (ADR 0881).
                 if let Some(k) = known.as_mut()
@@ -638,6 +601,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 // `RefCell`'s value's too (ADR 0881).
                 if matches!(borrow_kind, BorrowKind::Mut { .. }) {
                     self.forget(self.changed_place(arg), known);
+                    self.row_reached(arg, known);
                 }
                 None
             }
@@ -828,6 +792,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         };
         let keeps = self.vec_view(fun).is_some() || self.cell_view(fun).is_some() || grows.is_some();
         for &arg in args {
+            // A table's row lent, `board[0].pop()`, but to be indexed (#370).
+            if let Some(place) = lent(arg)
+                && !matches!(asked, Some((SliceLength::Index, _)))
+            {
+                self.row_reached(place, known);
+            }
             if let Some(place) = lent(arg)
                 && let (Some(var), Some(k)) = (self.changed_place(place), known.as_mut())
             {
@@ -837,6 +807,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 match slice || keeps {
                     true => _ = k.vars.remove(&var),
                     false => k.changed(var),
+                }
+                // Its rows, which any `&mut` but an index's may give to code
+                // that resizes one, `iter_mut()`'s (#370).
+                if !matches!(asked, Some((SliceLength::Index, _))) {
+                    k.rows_changed(var);
                 }
             }
         }
@@ -1032,8 +1007,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 let value = initializer.and_then(|init| self.expr(init, known));
                 // A table, `vec![x; n]`: what it's as long as (#362), and
                 // how long it is at least, `n`'s least (#367).
-                let table = (initializer.and_then(|init| self.table_count(init)))
-                    .map(|count| (self.count_base(count), self.value_of(count, known)));
+                let table = (initializer.and_then(|init| self.table(init)))
+                    .map(|(item, count)| (self.count_base(count), self.value_of(count, known), item));
+                // And its rows, of a table of tables, `vec![vec![0.0; w]; h]` (#370).
+                let rows = (table.as_ref().and_then(|&(_, _, item)| self.table(item)))
+                    .map(|(_, count)| (self.count_base(count), self.value_of(count, known)));
                 if let Some(otherwise) = else_block {
                     // It never goes on: nothing it learns is known after.
                     let mut gone = known.clone();
@@ -1065,12 +1043,16 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     if let Some(value) = value {
                         k.vars.insert(var, value);
                     }
-                    if let Some((base, count)) = table {
+                    let table = table.map(|(base, count, _)| (Vec::new(), base, count));
+                    for (path, base, count) in table
+                        .into_iter()
+                        .chain(rows.map(|(base, count)| (vec![ITEM], base, count)))
+                    {
                         if let Some(base) = base {
-                            k.same.insert((Vec::new(), var), base);
+                            k.same.insert((path.clone(), var), base);
                         }
                         if let Some(count) = count {
-                            k.lengths.insert((Vec::new(), var), count.lo);
+                            k.lengths.insert((path, var), count.lo);
                         }
                     }
                     // A test held, `let truncated = xs.len() > 3;` (ADR 0806).
@@ -1469,7 +1451,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// slice's length each time it's reached.
     fn judge_index(&mut self, site: ExprId, items: ExprId, index: Option<Range>, known: &Option<Known>) {
         let Some(k) = known else { return };
-        let ok = self.slice(items).zip(index).is_some_and(|(slice, index)| {
+        let slice = self.slice(items).or_else(|| self.row_of(items));
+        let ok = slice.zip(index).is_some_and(|(slice, index)| {
             index.lo >= 0
                 && (index
                     .below

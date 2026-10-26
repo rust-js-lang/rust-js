@@ -831,3 +831,114 @@ pub fn skipped(xs: &[u32]) -> u32 {
     expect(outside).toThrow();
   }
 });
+
+// A table of rows, `vec![vec![1.0; width]; height]`, has rows each as long
+// as `width` (#370): `board[r][c]` of `c < width` reads as upstream's
+// `dpUniquePaths` does. A row changed, through a `&mut` lent or held, an
+// assignment, `iter_mut()`, or a new row, keeps the check.
+test("a table's rows are as long as its row count", async () => {
+  const dir = fixture("table-rows");
+  writeFileSync(join(dir, "lib.rs"), `pub fn paths(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    for r in 1..height {
+        for c in 1..width {
+            board[r][c] = board[r - 1][c] + board[r][c - 1];
+        }
+    }
+    board[height - 1][width - 1]
+}
+
+fn total(board: &[Vec<f64>], width: usize) -> f64 {
+    let mut sum = 0.0;
+    for row in board {
+        for c in 0..width {
+            sum += row[c];
+        }
+    }
+    sum
+}
+
+pub fn popped(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    board[0].pop();
+    let mut sum = 0.0;
+    for r in 0..height {
+        for c in 0..width {
+            sum += board[r][c];
+        }
+    }
+    sum + total(&board, 0)
+}
+
+pub fn replaced(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    board[0] = Vec::new();
+    let mut sum = 0.0;
+    for r in 0..height {
+        for c in 0..width {
+            sum += board[r][c];
+        }
+    }
+    sum
+}
+
+pub fn held(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    let row = &mut board[0];
+    row.pop();
+    let mut sum = 0.0;
+    for r in 0..height {
+        for c in 0..width {
+            sum += board[r][c];
+        }
+    }
+    sum
+}
+
+pub fn added(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    board.push(Vec::new());
+    let mut sum = 0.0;
+    for r in 0..=height {
+        for c in 0..width {
+            sum += board[r][c];
+        }
+    }
+    sum
+}
+
+pub fn cleared(height: usize) -> f64 {
+    let mut board = vec![vec![1.0; 2]; height];
+    let first = board[0][1];
+    board[0].clear();
+    first + board[0][1]
+}
+
+pub fn each(width: usize, height: usize) -> f64 {
+    let mut board = vec![vec![1.0; width]; height];
+    for row in board.iter_mut() {
+        row.pop();
+    }
+    let mut sum = 0.0;
+    for r in 0..height {
+        for c in 0..width {
+            sum += board[r][c];
+        }
+    }
+    sum
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("board[r][c] = board[r - 1][c] + board[r][c - 1];");
+  expect(js.match(/\$index\(board\[r\], c\)/g)?.length).toBe(4);
+  expect(js).toContain("sum += $index($index(board, r), c);");
+  // Each row at least 2 long, of a count of 2, till one's cleared.
+  expect(js).toContain("const first = $index(board, 0)[1];");
+  expect(js).toContain("return first + $index($index(board, 0), 1);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.paths(3, 3)).toBe(6);
+  for (const changed of [() => lib.popped(2, 2), () => lib.replaced(2, 2), () => lib.held(2, 2), () => lib.each(2, 2), () => lib.added(2, 2), () => lib.cleared(1)]) {
+    expect(changed).toThrow();
+  }
+});

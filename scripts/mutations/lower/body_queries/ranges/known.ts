@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
+  {
+    name: "rows-least-kept",
+    breaks: "a row cleared leaves the rows known at least their count long, `board[0][1]` of an empty row unchecked (#370)",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "        self.lengths.retain(|s, _| !rows(s));\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
+  },
 ];

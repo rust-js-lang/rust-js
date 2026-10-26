@@ -114,8 +114,7 @@ export function grids(n) {
   const m = Array.from({ length: n }, () => item.slice());
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      const value = ((Math.imul(i, n) >>> 0) + j) >>> 0;
-      m[i][$at(m[i], j)] = value;
+      m[i][j] = ((Math.imul(i, n) >>> 0) + j) >>> 0;
     }
   }
   $roomFor(n, 4);
