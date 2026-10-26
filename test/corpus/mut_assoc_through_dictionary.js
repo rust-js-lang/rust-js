@@ -73,27 +73,25 @@ function main() {
   const g$1 = { value: h };
   reset(g$1, [7, 8], holderGet);
   $assign(h, g$1.value);
-  $assign(
-    first(
-      {
-        get value() {
-          return h;
-        },
-        set value(value) {
-          h = value;
-        },
+  const value = [9];
+  first(
+    {
+      get value() {
+        return h;
       },
-      holderGet,
-    ).value,
-    [9],
-  );
+      set value(value) {
+        h = value;
+      },
+    },
+    holderGet,
+  ).value = value;
   console.log(`[${h[0].join(", ")}] ${$ptrEq(kept, $ptr(h, 0), 12)}`);
 
   let n = [1];
   const g$2 = { value: n };
   bump(g$2, numGet);
   $assign(n, g$2.value);
-  const value = first(
+  const value$1 = first(
     {
       get value() {
         return n;
@@ -104,7 +102,7 @@ function main() {
     },
     numGet,
   );
-  value.value = (value.value + 5) >>> 0;
+  value$1.value = (value$1.value + 5) >>> 0;
   const g$3 = { value: n };
   reset(g$3, 40, numGet);
   $assign(n, g$3.value);

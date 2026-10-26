@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "place-ref-written-in-place",
     breaks: "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
     file: "src/lower/mir/assign.rs",
-    find: "            && !(base.projection.is_empty() && state.refs.contains_key(&base.local))\n",
+    find: "            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
     snapshots: true,

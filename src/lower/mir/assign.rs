@@ -689,8 +689,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
-        // name for it sees it. Not of one that's a place, `v[i]` of a `Vec`'s
-        // `index_mut` written at once: the place is `v` (#349).
+        // name for it sees it. Not of one whose place is known, `v[i]` of a
+        // `Vec`'s `index_mut` written at once: the place is `v` (#349).
         let decls = &state.body.local_decls;
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && matches!(
@@ -698,7 +698,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
             && self.written_in_place(place.ty(decls, self.tcx).ty)
-            && !(base.projection.is_empty() && state.refs.contains_key(&base.local))
+            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
         {
             let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));

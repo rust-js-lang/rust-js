@@ -199,3 +199,10 @@ A: no other holder of the old object can see a difference, as Rust has
 none. Held by `test/corpus/vec_item_written_whole.rs` and the mutations
 `vec-item-written-in-place`, `vec-item-dropped-then-written-in-place`,
 `written-at-once-cleanup-counted` and `place-ref-written-in-place`.
+
+So is every `*r = v` whose `r` resolves to a known place, a field or an
+item, `v[i + k] = p` of an index spilled first, and a guard's `value`,
+`tmp.value = noisy`: the place written, never its old object made `v`.
+`$assign` is left to a `&mut` that's the object alone, a parameter's.
+Held also by the corpus's `lock_destructors`, `dyn_ref_cells`,
+`generic_deref_mut` and `mut_assoc_through_dictionary`.
