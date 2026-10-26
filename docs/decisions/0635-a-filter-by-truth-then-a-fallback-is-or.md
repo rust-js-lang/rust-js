@@ -6,7 +6,8 @@ chain's and a nullable result's too. Extended by
 [0646](0646-a-held-chain-and-its-fallback-is-one-or.md): a chain held in a
 `const`, then its fallback, is one `||` too; and by
 [0651](0651-a-let-then-its-fallback-is-or.md): a `let`, then its
-fallback where it's falsy, is `||`.
+fallback where it's falsy, is `||`. Amended below: a module variable's
+text kept by its truth, then matched, is tested by its truth.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): no program can tell.
 
@@ -135,3 +136,40 @@ test, `filter(|e| !e.is_empty() && e.len() > n)`, is `x && keep ? x :
 ..`: nothing writes `!!x && keep ? x : undefined` any more, so `filtered`
 no longer reads it (`truthy_of`, and its mutation
 `filtered-of-truthy-unseen`, which nothing caught, are gone, #194).
+
+## Amendment: a module variable's text kept by its truth, then matched
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same value:
+text is falsy exactly where it's empty or absent.
+
+React's ReactFiberErrorLogger writes `const componentNameMessage =
+componentName ? `An error occurred in the <${componentName}> component.` :
+'An error occurred in one of your React components.';`, a module's `let`
+tested by its truth. No Rust read so: `if let`, `match`, `map_or_else`,
+`is_some_and` of `COMPONENT_NAME.with_borrow(Clone::clone).filter(|n|
+!n.is_empty())` each printed `const componentName$1 = componentName ||
+undefined; .. componentName$1 != null ? .. : ..`. Tidy's `filtered_guards`
+reads `const h = x || undefined; if (h != null)` as `if (x)` of a body's
+own variable, but a thread-local's read is `$withBorrow(cell, (c) => c)`
+through tidy: it's the module's variable only once `plain_statics`, after
+tidy, makes its cell's reads its name.
+
+**The most natural Rust is the `match` of the `filter`**, `match
+NAME.with_borrow(Clone::clone).filter(|n| !n.is_empty()) { Some(n) => ..,
+None => .. }`, the value a `let` takes. **Preparation reads `const h = x ||
+undefined;` tested next by a conditional, `h != null ? a : b`, the value
+its statement makes, as `x ? a : b`, `h` read as `x` in `a`**
+(`prepare::truth_tested`): `x || undefined` is there exactly where `x` is
+truthy, and is `x` there. Of a variable another function may set, so only
+where `a` does nothing: the test runs first, and nothing between it and
+`a`'s read can change `x`. An arm that runs code, `Some(n) =>
+cleared_name(&n)`, keeps its `const`; and so does an `if`'s, `if let
+Some(n) = .. { log.push(n); }`, whose body is statements, left for now.
+Two places answer the one shape: tidy's for what a body owns, and
+preparation's for a module's variable, which is one only after tidy; a
+thread-local read as its name in tidy would make them one.
+
+Held by `test/lowering-option-truth.test.ts`, "a module variable's text
+filtered by its truth is tested by its truth", run, `module_text_truth.rs`
+against native Rust, and the mutations `truth-tested-kept` and
+`truth-tested-past-code` (`prepare.ts`).

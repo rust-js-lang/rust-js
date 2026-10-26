@@ -1930,6 +1930,11 @@ export function label(text) {
 - Only a `filter` by the truth of what it holds is `||`: any other test,
   `filter(|n| *n > 0)`, is a conditional, `n != null && n > 0 ? n : 1`.
 - Text is falsy only where it's empty, so `!t.is_empty()` is its truth.
+  So a `match` of what it keeps is a test of that truth: `match
+  NAME.with_borrow(Clone::clone).filter(|n| !n.is_empty()) { Some(n) =>
+  format!("<{n}>"), None => .. }` is `name ? `<${name}>` : ..`, of a
+  module's variable too where the arm that reads it does nothing
+  ([ADR 0635](../../decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md), amended).
 - A chain held in a `let`, its fallback given after, is one `||` too:
   `let r#type = ..filter(..); r#type.unwrap_or_else(|| "Object".into())`
   is `const type = a || b || "Object"; return type;`, where the fallback

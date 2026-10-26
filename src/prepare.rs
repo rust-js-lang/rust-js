@@ -11,6 +11,7 @@ use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp}
 mod catches;
 mod initializers;
 mod reclaim;
+mod truths;
 
 /// A closure's parameter given its name back, preparation's, which a body
 /// lowered from its MIR asks before it's linked, as an import's alias is
@@ -749,6 +750,7 @@ fn block(body: &mut Vec<Stmt>) {
             | StmtKind::Comments => {}
         }
     }
+    truths::truth_tested(body);
     fallen_held(body);
     fallen_declared(body);
 }

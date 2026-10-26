@@ -252,3 +252,85 @@ pub fn text(s: Option<&str>, out: &mut Out) {
   };
   expect([text(""), text("ab"), text(undefined)]).toEqual([0, 2, undefined]);
 });
+
+// React's ReactFiberErrorLogger, ported: `match COMPONENT_NAME.with_borrow(
+// Clone::clone).filter(|name| !name.is_empty()) { Some(component_name) =>
+// format!(..), None => .. }`. A string's truth is exactly a `Some` of one
+// not empty, so a module variable's text kept by its truth, then tested,
+// is tested by its truth, upstream's `componentName ? `..${componentName}..`
+// : '..'`, where the arm that reads it does nothing, so nothing can change
+// the variable between; one that runs code, which may, keeps its binding,
+// and so does an `if`'s (ADR 0635, amended).
+test("a module variable's text filtered by its truth is tested by its truth", async () => {
+  const dir = fixture("module-text-truth");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static COMPONENT_NAME: RefCell<Option<String>> = const { RefCell::new(None) };
+}
+
+pub fn set(name: Option<String>) {
+    COMPONENT_NAME.set(name);
+}
+
+pub fn message() -> String {
+    let component_name_message = match COMPONENT_NAME
+        .with_borrow(Clone::clone)
+        .filter(|name| !name.is_empty())
+    {
+        Some(component_name) => {
+            format!("An error occurred in the <{component_name}> component.")
+        }
+        None => "An error occurred in one of your React components.".to_string(),
+    };
+    component_name_message
+}
+
+fn cleared_name(name: &str) -> String {
+    set(None);
+    name.to_uppercase()
+}
+
+/// The arm runs code, which may change the variable.
+pub fn shouted() -> String {
+    let shout = match COMPONENT_NAME.with_borrow(Clone::clone).filter(|name| !name.is_empty()) {
+        Some(name) => cleared_name(&name),
+        None => String::new(),
+    };
+    shout
+}
+
+pub fn logged(log: &mut Vec<String>) {
+    if let Some(name) = COMPONENT_NAME.with_borrow(Clone::clone).filter(|n| !n.is_empty()) {
+        log.push(name);
+    }
+}
+
+/// Code that changes the variable runs before the binding's read.
+pub fn cleared(log: &mut Vec<String>) {
+    if let Some(name) = COMPONENT_NAME.with_borrow(Clone::clone).filter(|n| !n.is_empty()) {
+        set(None);
+        log.push(name);
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const componentNameMessage = componentName\n    ? `An error occurred in the <${componentName}> component.`\n    : \"An error occurred in one of your React components.\";\n");
+  expect(js).toContain("  const name = componentName || undefined;\n  const shout = name != null ? clearedName(name) : \"\";\n");
+  const lib = await import(join(dir, "lib.js"));
+  const said = [lib.message()];
+  lib.set("" as never);
+  said.push(lib.message());
+  lib.set("App" as never);
+  said.push(lib.message());
+  const log: string[] = [];
+  lib.logged(log as never);
+  lib.cleared(log as never);
+  lib.logged(log as never);
+  lib.set("app" as never);
+  said.push(lib.shouted(), lib.shouted());
+  expect(said).toEqual(["An error occurred in one of your React components.", "An error occurred in one of your React components.", "An error occurred in the <App> component.", "APP", ""]);
+  expect(log).toEqual(["App", "App"]);
+});
