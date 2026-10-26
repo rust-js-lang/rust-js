@@ -249,6 +249,13 @@ fn switch_at(
         .filter(|&c| !cases[c].1.last().is_some_and(js::ends))
         .collect();
     let falling = arms.iter().any(|arm| arm.falls);
+    // Of those, each that goes on to what's written in an arm MIR placed
+    // after the chain: not a guarded arm's that falls to nothing (ADR
+    // 0636), whose failed guard goes past the `match`, as `_ => {}` does,
+    // the `_`'s jump there in its chain's list after it.
+    let going_after: Vec<usize> = (going.iter().copied())
+        .filter(|&c| (arms.iter()).any(|arm| arm.span == cases[c].3 && (arm.guard.is_none() || arm.falls)))
+        .collect();
     // Each arm a case: one that does nothing, left out, goes on too. Of
     // the `default`, a `_`'s, what follows that's written in it or MIR's,
     // up to the first of what's written past it, which stays after the
@@ -293,7 +300,7 @@ fn switch_at(
         let own = |s: &Stmt| written_at(s).is_none_or(|at| within(at, arm.span));
         let n = (after.iter()).take_while(|s| own(s)).count();
         if declared(&after[..n]).all(|name| js::mentions_in(&after[n..], name) == 0) {
-            for &c in &going {
+            for &c in &going_after {
                 cases[c].1.extend(after[..n].iter().cloned());
             }
             absorbed = n;
@@ -324,7 +331,7 @@ fn switch_at(
             return None;
         }
         falls = fallen(&mut cases, &arms)?;
-        let holding = going.iter().filter(|&&c| !falls[c]).count();
+        let holding = going_after.iter().filter(|&&c| !falls[c]).count();
         if absorbed > 0 && holding > 1 {
             return None;
         }
@@ -682,7 +689,7 @@ fn chain(
             let taken = i + 1 + taken;
             return (!whole || taken == stmts.len()).then_some((cases, taken));
         }
-        let (tested, body) = guarded(test, then, arm.guard)?;
+        let (tested, body, held) = guarded(test, then, arm.guard)?;
         // The constants it tests: the next of its arm's.
         let mut each = Vec::new();
         alternatives(&tested, Op::Or, &mut each);
@@ -722,7 +729,7 @@ fn chain(
                 return Some((cases, i));
             }
             // The next, where this one leaves.
-            None if then.last().is_some_and(js::ends) => {}
+            None if held.last().is_some_and(js::ends) => {}
             // The arms after it do nothing.
             None => return Some((cases, i)),
         }
@@ -747,23 +754,43 @@ fn a_jump(stmt: &Stmt) -> bool {
 /// An arm's `if`, its test and its statements, as its case has them: of a
 /// guarded arm whose guard the test joins, `n === C && on`, its pattern's
 /// test, and what it does in an `if` of the guard, `if (on) { .. }`; else
-/// as they are, the guard's `if` in its statements (ADR 0629).
-fn guarded(test: &Expr, then: &[Stmt], guard: Option<js::Span>) -> Option<(Expr, Vec<Stmt>)> {
+/// as they are, the guard's `if` in its statements (ADR 0629). A guard MIR
+/// tests in part in an `if` alone inside, `if (n === C && a) { if (b) { ..
+/// } }`, is one `if` of it all, `if (a && b) { .. }`: neither has an
+/// `else`, so each way on is the same. And what the arm does once its
+/// guard holds, whose end says whether it leaves.
+fn guarded(test: &Expr, then: &[Stmt], guard: Option<js::Span>) -> Option<(Expr, Vec<Stmt>, Vec<Stmt>)> {
+    // A test of the guard's, wherever MIR tests it.
+    let of_guard = |t: &Expr| guard.is_some_and(|guard| test_at(t, js::Span::NONE).is_some_and(|at| within(at, guard)));
+    // `then`'s `if`s alone of the guard: their tests, and what they hold.
+    let peeled = |mut then: Vec<Stmt>| {
+        let mut inner = Vec::new();
+        while let [
+            Stmt {
+                kind: StmtKind::If(test, held, None),
+                ..
+            },
+        ] = &then[..]
+            && of_guard(test)
+        {
+            inner.push(test.clone());
+            then = held.clone();
+        }
+        (inner, then)
+    };
     let mut tests = Vec::new();
     alternatives(test, Op::And, &mut tests);
-    let at = guard
-        .and_then(|guard| (tests.iter()).position(|t| test_at(t, js::Span::NONE).is_some_and(|at| within(at, guard))));
-    let Some(at) = at else {
-        return Some((test.clone(), then.to_vec()));
+    let Some(at) = tests.iter().position(|t| of_guard(t)) else {
+        let (_, held) = peeled(then.to_vec());
+        return Some((test.clone(), then.to_vec(), held));
     };
-    let join = |tests: &[&Expr]| {
-        (tests.iter())
-            .map(|&t| t.clone())
-            .reduce(|a, b| Expr::bin(Op::And, a, b))
-    };
-    let (pattern, guard) = (join(&tests[..at])?, join(&tests[at..])?);
-    let span = guard.span;
-    Some((pattern, vec![StmtKind::If(guard, then.to_vec(), None).at(span)]))
+    let join = |tests: Vec<Expr>| tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b));
+    let pattern = join(tests[..at].iter().map(|&t| t.clone()).collect())?;
+    let own = join(tests[at..].iter().map(|&t| t.clone()).collect())?;
+    let span = own.span;
+    let (inner, held) = peeled(then.to_vec());
+    let joined = join(std::iter::once(own).chain(inner).collect())?;
+    Some((pattern, vec![StmtKind::If(joined, held.clone(), None).at(span)], held))
 }
 
 /// How many of `stmts`, after the arms tested before `arm`, are its: all,
@@ -1022,6 +1049,7 @@ fn tested_at(stmt: &Stmt) -> Option<u32> {
 fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
     match &test.kind {
         ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),
+        ExprKind::Unary(UnaryOp::Not, inner) if test.span.is_none() => test_at(inner, span),
         _ => [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo),
     }
 }
@@ -1232,6 +1260,13 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
             if default.as_deref().is_some_and(does_nothing) {
                 *default = None;
             }
+            // A `break` that ends a branch of the `if` a case that doesn't
+            // fall ends with, which the case's end does, as its `break;`
+            // after it, or the `switch`'s end, does: `if (g) { .. }`.
+            for body in (cases.iter_mut().filter(|case| !case.falls).map(|case| &mut case.body)).chain(default.as_mut())
+            {
+                ending_breaks(body);
+            }
             // The last case's `break`, which its end does (ADR 0629,
             // amended).
             if default.is_none()
@@ -1245,6 +1280,26 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
             }
         }
         i += 1;
+    }
+}
+
+/// Of `stmts`, a case's, each `break;` that ends a branch of the `if` they
+/// end with, however deep, gone, which goes where that branch's end does;
+/// a branch then empty, as `emptied_branch` writes it.
+fn ending_breaks(stmts: &mut Vec<Stmt>) {
+    let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) else {
+        return;
+    };
+    for branch in std::iter::once(then).chain(otherwise) {
+        if matches!(branch.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
+            branch.pop();
+        } else {
+            ending_breaks(branch);
+        }
+    }
+    let last = stmts.pop().expect("matched");
+    if let Some(kind) = super::branches::emptied_branch(last.kind) {
+        stmts.push(kind.at(last.span));
     }
 }
 

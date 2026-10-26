@@ -4,7 +4,9 @@ Status: Accepted. Amends [0636](0636-a-guarded-arm-is-a-case.md), whose
 guarded arm was a case only where its failed guard went on to nothing,
 and [0629](0629-a-match-of-constants-is-a-switch.md), whose cases each
 ended where they went on. Amended below: the last clause has no `break`
-tidy ended it with.
+tidy ended it with; and a guard that falls to nothing beside one that
+falls to the next is a case too, and a case's `if` ends with no `break;`
+its end does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe. Of each value, the `switch` runs the guards Rust runs, in
@@ -209,3 +211,62 @@ constants the next arm names falls through to its case", run in JS,
 `arm-comment-case-no-start`, `arm-comment-attached-inside`,
 `arm-comment-of-an-unguarded-arm-in-its-body` (`to_oxc.ts`) and
 `arm-comment-before-every-case` (`to_oxc/cases.ts`).
+
+## Amendment: a guard that falls to nothing beside one that falls to the next
+
+React's `getOwnerStackByFiberInDev`, ported, has two guarded arms, the
+second as clippy's `collapsible_match` asks:
+
+```rust
+VIEW_TRANSITION_COMPONENT if ENABLE_VIEW_TRANSITION => { info += .. }
+VIEW_TRANSITION_COMPONENT | FUNCTION_COMPONENT | .. => {
+    if work_in_progress.debug_owner.get().is_none() && info.is_empty() { .. }
+}
+FORWARD_REF if work_in_progress.debug_owner.get().is_none() && info.is_empty() => { .. }
+_ => {}
+```
+
+Each is a case on its own, ADR 0636's and this one's; together they were
+labeled blocks, `bb91: { if (..) { ..; break bb91; } .. }`, a label no
+person writes. Four things kept them so, each now as it should be:
+
+- **A guard's negation is where the guard is written**: `!owned` is a
+  negation MIR made of `owned`, of no span of its own, so tidy found no
+  guard in `tag === FORWARD_REF && !owned` and took it all for the
+  pattern's test (`test_at`, which now looks inside a `!`).
+- **A guard MIR tests in part in an `if` inside is one `if`**: `if (tag
+  === FORWARD_REF && !owned) { if (!info) { .. } }` is the case `if
+  (!owned && !info) { .. }`, as upstream writes it, where neither `if`
+  has an `else`, so each way on is the same; and what the arm does once
+  the guard holds, not the inner `if`, says whether it leaves
+  (`guarded`).
+- **A case whose failed guard goes to nothing takes nothing of the arm
+  others fall to**: MIR places that arm's statements after the chain,
+  which the cases that go on to it take (above); a guarded arm's that
+  fails to nothing goes past the `match` instead, by the `_`'s jump in its
+  list, as ADR 0636 has it, and took them, so no `switch` was made.
+- **A branch a tail jump was all of is gone**: `drop_tail`, which takes a
+  `break` that goes where the code goes on anyway, left `if (!on) {}
+  else { .. }`, which no chain reads; it now asks `emptied_branch`, the
+  one owner of an emptied branch, `if (on) { .. }`.
+
+And **a `break;` that ends a branch of the `if` a case ends with is
+gone**, where the case doesn't fall: the case's end leaves the `switch`
+there anyway, by the `break;` the printer writes after it or by the
+`switch`'s end, `case FORWARD_REF: if (..) { info += ..; }`, as React
+writes it. So the port is upstream's `switch`, line for line, but its
+last case's `break;`, which JS falls out of (ADR 0629, amended).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each value takes
+the cases Rust's arms are, its guards run in Rust's order, each once; a
+`break;` removed went where the code went on.
+
+- `default_value_exits.rs`'s `if (!below(n)) {} else { .. }` is `if
+  (below(n)) { .. }`; no other corpus case's or snapshot's JS changed.
+- `test/lowering-switch-fallthrough.test.ts`, "two guarded arms, one
+  falling to the next, one to nothing, are one switch", run against
+  upstream's JS; `test/corpus/switch_guards_apart.rs` against native Rust.
+- Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart`,
+  `switch-failing-guard-goes-after`, `switch-case-ending-break-kept`
+  (`tidy/switches.ts`) and `tail-jump-branch-left-empty`
+  (`tidy/jumps/tails.ts`).

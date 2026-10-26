@@ -214,3 +214,108 @@ pub fn apart(n: u32, on: bool) -> u32 {
   ]);
   expect([0, 1, 2, 3, 5].flatMap((n) => [lib.apart(n, true), lib.apart(n, false)])).toEqual([0, 0, 10, 20, 20, 20, 30, 30, 50, 50]);
 });
+
+// React's getOwnerStackByFiberInDev, ported: two guarded arms, the first's
+// failed guard going on to the next arm, which names its constant, the
+// last's to nothing; and a guard MIR tests part of with the arm's
+// constant, `tag === FORWARD_REF && !owned`, and part in an `if` inside.
+// Upstream's `switch`, no label (ADRs 0636, 0905).
+test("two guarded arms, one falling to the next, one to nothing, are one switch", async () => {
+  const dir = fixture("switch-two-guards");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub const HOST_COMPONENT: u8 = 5;
+pub const FUNCTION_COMPONENT: u8 = 0;
+pub const FORWARD_REF: u8 = 11;
+pub const VIEW_TRANSITION_COMPONENT: u8 = 30;
+
+pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
+    let mut info = String::new();
+    match tag {
+        HOST_COMPONENT => {
+            info += "host";
+        }
+        VIEW_TRANSITION_COMPONENT if view_transitions => {
+            info += "ViewTransition";
+        }
+        VIEW_TRANSITION_COMPONENT | FUNCTION_COMPONENT => {
+            if !owned && info.is_empty() {
+                info += "function";
+            }
+        }
+        FORWARD_REF if !owned && info.is_empty() => {
+            info += "forwardRef";
+        }
+        _ => {}
+    }
+    let mut owner = Some(2);
+    while let Some(o) = owner {
+        info += "/";
+        owner = if o > 0 { Some(o - 1) } else { None };
+    }
+    info
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  let info = "";
+  switch (tag) {
+    case HOST_COMPONENT:
+      info += "host";
+      break;
+    case VIEW_TRANSITION_COMPONENT:
+      if (viewTransitions) {
+        info += "ViewTransition";
+        break;
+      }
+    // Fallthrough
+    case FUNCTION_COMPONENT:
+      if (!owned && !info) {
+        info += "function";
+      }
+      break;
+    case FORWARD_REF:
+      if (!owned && !info) {
+        info += "forwardRef";
+      }
+  }
+  let owner = 2;
+`);
+  expect(js).not.toMatch(/\bbb\d+:/);
+  const lib = await import(join(dir, "lib.js"));
+  // Upstream's JS, as React writes it.
+  const upstream = (tag: number, owned: boolean, viewTransitions: boolean) => {
+    let info = "";
+    switch (tag) {
+      case 5:
+        info += "host";
+        break;
+      case 30:
+        if (viewTransitions) {
+          info += "ViewTransition";
+          break;
+        }
+      // Fallthrough
+      case 0:
+        if (!owned && info === "") {
+          info += "function";
+        }
+        break;
+      case 11:
+        if (!owned && info === "") {
+          info += "forwardRef";
+        }
+        break;
+    }
+    return `${info}///`;
+  };
+  for (const tag of [0, 5, 11, 30, 99]) {
+    for (const owned of [false, true]) {
+      for (const viewTransitions of [false, true]) {
+        const got = lib.ownerStack(tag, owned, viewTransitions);
+        expect([tag, owned, viewTransitions, got]).toEqual([tag, owned, viewTransitions, upstream(tag, owned, viewTransitions)]);
+      }
+    }
+  }
+});

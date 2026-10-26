@@ -6,6 +6,7 @@ const guarded = ["test/lowering-switches.test.ts", "-t", "a guarded arm of a mat
 const typeofs = ["test/lowering-switches.test.ts", "-t", "a match of what a value is"];
 
 const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
+const twoGuards = ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"];
 export const mutations: Mutation[] = [
   {
     name: "switch-default-doing-nothing-kept",
@@ -75,8 +76,8 @@ export const mutations: Mutation[] = [
     name: "switch-joined-guard-unsplit",
     breaks: "a guarded arm whose test joins its guard, `n === C && on`, isn't a case, so its `match` is an `if` chain",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "    let Some(at) = at else {\n",
-    replace: "    let Some(at) = at.filter(|_| false) else {\n",
+    find: "    let Some(at) = tests.iter().position(|t| of_guard(t)) else {\n",
+    replace: "    let Some(at) = tests.iter().position(|t| of_guard(t)).filter(|_| false) else {\n",
     tests: guarded,
   },
   {
@@ -274,5 +275,37 @@ export const mutations: Mutation[] = [
     find: "        let [only] = reaching[..] else {\n",
     replace: "        let [.., only, _] = reaching[..] else {\n",
     tests: fallthrough,
+  },
+  {
+    name: "switch-negated-guard-unplaced",
+    breaks: "a guard's `!owned`, a negation MIR made of no span, isn't where the guard's written, so `tag === C && !owned` is no case and the `match` an `if` chain",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        ExprKind::Unary(UnaryOp::Not, inner) if test.span.is_none() => test_at(inner, span),\n",
+    replace: "",
+    tests: twoGuards,
+  },
+  {
+    name: "switch-failing-guard-goes-after",
+    breaks: "a guarded arm's case whose failed guard goes past the `match` takes the statements of the arm others fall to, so the `match` is labeled blocks",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        .filter(|&c| (arms.iter()).any(|arm| arm.span == cases[c].3 && (arm.guard.is_none() || arm.falls)))\n",
+    replace: "        .filter(|_| true)\n",
+    tests: twoGuards,
+  },
+  {
+    name: "switch-guard-inner-if-apart",
+    breaks: "a guard MIR tests in part in an `if` inside, `if (!info)`, isn't the guard's, so the arm goes on and the `match` is labeled blocks",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            && of_guard(test)\n",
+    replace: "            && false\n",
+    tests: twoGuards,
+  },
+  {
+    name: "switch-case-ending-break-kept",
+    breaks: "a case's `if` ends its branch with the `break;` its end does, `if (g) { ..; break; }`",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                ending_breaks(body);\n",
+    replace: "",
+    tests: twoGuards,
   },
 ];

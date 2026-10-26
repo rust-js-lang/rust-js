@@ -365,4 +365,12 @@ export const mutations: Mutation[] = [
     replace: "        ] if small(value) && !written(returns, *span) => Some(spanned(value, *span)),\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
+  {
+    name: "tail-jump-branch-left-empty",
+    breaks: "a branch a tail jump was all of stays, `if (!on) {} else { .. }`, so a guarded arm's `match` is no `switch`",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    }\n}\n",
+    replace: "    }\n}\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"],
+  },
 ];

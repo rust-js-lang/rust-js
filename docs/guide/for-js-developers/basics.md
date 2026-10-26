@@ -1410,8 +1410,11 @@ is its guard's `if`, and falls through to the next arm's case, as React
 writes `getComponentNameFromFiber`. Each guard runs where Rust runs it, in
 order, once its constant matched; an arm that does nothing where its
 guard holds is a `break`, but in the last case, a `default`'s too, which
-JS falls out of
-([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md)):
+JS falls out of. One `match` may have guards of both kinds, as React's
+`getOwnerStackByFiberInDev` does; each case's guard is one `if`, `if
+(!owned && !info)`, whose branch has no `break;` where the case's
+end leaves anyway
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended):
 
 ```rust
 pub const VIEW_TRANSITION: u8 = 1;

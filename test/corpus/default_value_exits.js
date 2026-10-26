@@ -357,8 +357,7 @@ function guardedRows(rows) {
           break bb25;
         }
         const n = row[0];
-        if (!below(n)) {
-        } else {
+        if (below(n)) {
           level = 3;
           break bb25;
         }
