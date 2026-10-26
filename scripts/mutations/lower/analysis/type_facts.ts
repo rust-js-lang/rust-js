@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-made-behind-mut-unasked",
+    breaks: "a map of a type parameter's keys an entry's `or_default()` makes has no class, its caller never asked, and is refused (#314)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,\n",
+    replace: "                    ty::Ref(_, _, ty::Mutability::Mut) => output,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_made_by_entry.rs$"],
+  },
+  {
+    name: "map-made-by-a-std-fn-unasked",
+    breaks: "a map of a type parameter's keys a std function makes, `BTreeMap::new()`, `map(BTreeMap::from)`, has no class, its caller never asked, and is refused (ADR 0466)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                if let Some((key, fact)) = map_of_param(tcx, made)\n",
+    replace: "                if let Some((key, fact)) = map_of_param(tcx, made).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_map_made_by_entry|generic_maps).rs$"],
+  },
+  {
     name: "type-facts-not-passed-on",
     breaks: "a generic function passing its `U` on to one that asks `size_of::<T>()` isn't given `U`'s size",
     file: "src/lower/analysis/type_facts.rs",

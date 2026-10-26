@@ -115,3 +115,17 @@ once, in order, is given the array itself**, whatever the class:
 gone, its mutation `map-made-of-iter` now. The corpus's `$KeySet`s,
 `$PathSet`s and `$CowSet`s read so too.
 
+## Amendment: a map std makes, called or given, or behind the `&mut` it gives (#314)
+
+The caller was asked for a map's class where a std call's own type was a
+map of a type parameter's keys, `BTreeMap::new()`, `collect()`. So an
+entry's `or_default()`, which gives a `&mut` to the default it made, and a
+constructor given as a value, `map(BTreeMap::from)`, made a map whose class
+nothing asked for, refused: TheAlgorithms/rust's graph tests,
+`graph.entry(v1).or_default().insert(v2, c)` of tuple vertices. **Each std
+function, called or given, asks for the class of what it gives, or of what
+a `&mut` it gives points at**, which it may have made; a shared `&` it
+gives, `&graph[&v]`, it didn't. Held by the corpus case
+`generic_map_made_by_entry` and the mutations `map-made-behind-mut-unasked`
+and `map-made-by-a-std-fn-unasked`.
+

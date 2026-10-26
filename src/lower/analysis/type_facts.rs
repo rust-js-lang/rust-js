@@ -87,17 +87,29 @@ pub(super) fn type_fact_params<'tcx>(
             if in_place.contains(&id) {
                 continue;
             }
-            // A map or a set of a type parameter's keys a std call makes,
-            // `HashMap::new()`'s or `collect()`'s: its class, its caller's
-            // (ADR 0466).
-            if let ExprKind::Call { fun, .. } = expr.kind
-                && let Some((callee, _)) = fn_def(body.thir[fun].ty)
+            // A map or a set of a type parameter's keys a std function makes,
+            // called or given, `HashMap::new()`'s, `collect()`'s,
+            // `or_insert_with(BTreeMap::new)`'s: what it gives, or what a
+            // `&mut` it gives points at, which it may have made, an entry's
+            // `or_default()`'s. Its class, its caller's (ADR 0466).
+            if let ExprKind::ZstLiteral { .. } = expr.kind
+                && let Some((callee, args)) = fn_def(expr.ty)
                 && !callee.is_local()
                 && !foreign.in_library(callee)
-                && let Some((key, fact)) = map_of_param(tcx, expr.ty)
-                && let Some(index) = slot_of(tcx, foreign, caller, key)
             {
-                asking.asked.insert((caller, index, fact));
+                let output = (tcx.fn_sig(callee).instantiate(tcx, args))
+                    .skip_normalization()
+                    .skip_binder()
+                    .output();
+                let made = match *output.kind() {
+                    ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
+                    _ => output,
+                };
+                if let Some((key, fact)) = map_of_param(tcx, made)
+                    && let Some(index) = slot_of(tcx, foreign, caller, key)
+                {
+                    asking.asked.insert((caller, index, fact));
+                }
             }
             // A type parameter's value made a `dyn Any`, whose dictionary is
             // its `TypeId` (ADR 0331).
