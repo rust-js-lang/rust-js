@@ -788,6 +788,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "min" => IterMethod::Min,
             "last" => IterMethod::Last,
             "nth" => IterMethod::Nth,
+            "advance_by" => IterMethod::AdvanceBy,
             "partition" => IterMethod::Partition,
             "is_sorted" => IterMethod::IsSorted,
             "cmp" => IterMethod::Cmp,
@@ -1180,11 +1181,6 @@ pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
     }
 }
 
-/// Whether `ty` is std's `Take` adapter (#213).
-pub(crate) fn is_take(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::Take")
-}
-
 /// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.
 pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
@@ -1379,6 +1375,9 @@ pub(crate) enum IterMethod {
     Min,
     Last,
     Nth,
+    /// `advance_by(n)`, which std's own bodies call, unstable to the
+    /// crate's: `Ok(())`, or `Err` of how many there weren't (ADR 0913).
+    AdvanceBy,
     Partition,
     Collect,
 }

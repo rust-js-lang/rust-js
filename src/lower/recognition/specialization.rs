@@ -86,11 +86,15 @@ pub(crate) fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
 }
 
 /// The traits std specializes an impl on only to do less work, its result
-/// the same (ADR 0899): `TrustedLen`. Not `FusedIterator`, whose
-/// specialization of `Fuse` keeps what the generic one drops, nor
-/// `OneShot`, whose `flatten()`'s `size_hint` bounds what the generic one
-/// doesn't (`fact_specialization`).
-const OPTIMIZING: &[&str] = &["TrustedLen"];
+/// the same, each of every adapter's impl or of one alone (ADR 0899):
+/// `TrustedLen`; and `TrustedRandomAccess` of `Take`'s, whose `fold` of
+/// one reads each item it would step by its index, in the same order,
+/// the source's items never dropped (ADR 0913). Not of `Zip`'s, whose
+/// specialization runs fewer of a longer side's steps; nor
+/// `FusedIterator`, whose specialization of `Fuse` keeps what the generic
+/// one drops, nor `OneShot`, whose `flatten()`'s `size_hint` bounds what
+/// the generic one doesn't (`fact_specialization`).
+const OPTIMIZING: &[(&str, Option<&str>)] = &[("TrustedLen", None), ("TrustedRandomAccess", Some("Take"))];
 
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl as a more specific impl may specialize
@@ -127,13 +131,18 @@ pub(crate) fn optimized_default<'tcx>(
     let specializing: Vec<DefId> = (tcx.all_impls(trait_id))
         .filter(|&other| other != impl_id && tcx.specializes((other, impl_id)))
         .collect();
-    let optimizing = |bound: DefId| OPTIMIZING.contains(&tcx.item_name(bound).as_str());
     // Of the same type, apart by a bound alone: not `ConstSizeIntoIterator`'s
     // impl for `[T; N]`, which specializes the one for any `T` by its type,
     // and answers otherwise.
     let of = |imp: DefId| match tcx.type_of(imp).skip_binder().kind() {
         ty::Adt(adt, _) => Some(adt.did()),
         _ => None,
+    };
+    let adapter = of(impl_id).map(|adt| tcx.item_name(adt));
+    let optimizing = |bound: DefId| {
+        OPTIMIZING.iter().any(|&(name, only)| {
+            tcx.item_name(bound).as_str() == name && only.is_none_or(|only| adapter.is_some_and(|a| a.as_str() == only))
+        })
     };
     let only_optimizing = of(impl_id).is_some()
         && specializing.iter().all(|&other| {

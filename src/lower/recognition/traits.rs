@@ -112,6 +112,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_pair_trait(id)
             || self.tcx.is_lang_item(id, LangItem::DerefMut)
             || is_std_def(self.tcx, id, StdItem::BorrowMut)
+            // `Try`'s its `FromResidual` (ADR 0913).
+            || self.tcx.is_lang_item(id, LangItem::Try)
     }
 
     /// Of those, std's.
@@ -314,6 +316,8 @@ pub(in crate::lower) fn operational(
         || tcx.is_diagnostic_item(Symbol::intern("Any"), id)
         // Its evidence is the writer or reader itself (ADR 0081).
         || serde_trait(tcx, id).is_some()
+        // `R: Try` of std's generic code, `try_fold`'s (ADR 0913).
+        || is_try_trait(tcx, id)
         // `parse` of a `T: FromStr`: its dictionary's `from_str` (ADR 0161).
         || is_from_str(tcx, id)
         // `s.as_ref()` of an `S: AsRef<str>`: its dictionary's `as_ref`, and

@@ -4,13 +4,13 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $closing,
   $cmp,
+  $count,
   $dropEach,
   $heapFrom,
   $iter,
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
-  $someValue,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -33,15 +33,8 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  const counted = iter.reduce((n, item) => {
-    loudDrop_drop(item);
-    return n + 1;
-  }, 0);
-  if (iter.iter != null) {
-    for (const item of iter.iter) {
-      loudDrop_drop(item);
-    }
-  }
+  const counted = $count(iter, loudDrop_drop);
+  iter.return();
   console.log(`counted ${counted}`);
 
   const keep = (l) => l[0] < 5;
@@ -70,25 +63,11 @@ function main() {
   try {
     first = $next(peeked);
   } catch (error) {
-    for (const item of peeked.iter) {
-      loudDrop_drop(item);
-    }
-    if (peeked.peeked != null) {
-      if ($someValue(peeked.peeked) != null) {
-        loudDrop_drop($someValue(peeked.peeked));
-      }
-    }
+    peeked.return();
     throw error;
   }
   try {
-    for (const item of peeked.iter) {
-      loudDrop_drop(item);
-    }
-    if (peeked.peeked != null) {
-      if ($someValue(peeked.peeked) != null) {
-        loudDrop_drop($someValue(peeked.peeked));
-      }
-    }
+    peeked.return();
   } catch (error) {
     if (first != null) {
       loudDrop_drop(first);
@@ -119,12 +98,7 @@ function main() {
   }
 
   const heap = $heapFrom([[10], [11]], (a, b) => $cmp(a[0], b[0]));
-  const some = $closing($iter(heap), $dropEach(loudDrop_drop))
-    .take(1)
-    .reduce((n, item) => {
-      loudDrop_drop(item);
-      return n + 1;
-    }, 0);
+  const some = $count($closing($iter(heap), $dropEach(loudDrop_drop)).take(1), loudDrop_drop);
   console.log(`heap ${some}`);
 }
 //# sourceMappingURL=case.js.map

@@ -109,9 +109,7 @@ function main() {
               countDrop_drop,
             ),
             (it) => {
-              if (it.iter != null) {
-                countDrop_drop(it.iter);
-              }
+              it.return();
             },
           ),
           (iterator) =>
@@ -186,9 +184,7 @@ function main() {
               countDrop_drop,
             ),
             (it) => {
-              if (it.iter != null) {
-                countDrop_drop(it.iter);
-              }
+              it.return();
             },
           ),
           (iterator) =>
@@ -391,9 +387,7 @@ function main() {
             ),
         ),
         (it) => {
-          if (it.iter != null) {
-            countDrop_drop(it.iter);
-          }
+          it.return();
         },
       ),
       (x) => x % 2 === 1,
@@ -520,9 +514,7 @@ function main() {
             countDrop_drop,
           ),
           (it) => {
-            if (it.iter != null) {
-              countDrop_drop(it.iter);
-            }
+            it.return();
           },
         ),
         (iterator) =>
@@ -587,9 +579,7 @@ function main() {
           countDrop_drop,
         ),
         (it) => {
-          if (it.iter != null) {
-            countDrop_drop(it.iter);
-          }
+          it.return();
         },
       ),
     ).map(([i, x]) => (x + (i | 0)) | 0),

@@ -3,38 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "fuse-count-unlisted",
-    breaks: "std's compiled `Fuse` has no `count`, so `rev().take(2).fuse().count()` steps each item back to front, not its source's one slice (#293)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some((\"$fuseCount\", args.type_at(0))),\n",
-    replace: "",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "peekable-count-unlisted",
-    breaks: "std's compiled `Peekable` has no `count`, so `rev().take(2).peekable().count()` steps each item back to front, not its source's one slice (#293)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            ty::Adt(_, args) if self.is_peekable(ty) => Some((\"$peekableCount\", args.type_at(0))),\n",
-    replace: "",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "fuse-advance-by-unlisted",
-    breaks: "std's compiled `Fuse` has no `advance_by`, so it steps each item, not its source's (#286)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                Some((\"$fuseAdvanceBy\", vec![dictionary, drop, fused]))\n",
-    replace: "                None\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "fuse-try-fold-fused-unsaid",
-    breaks: "std's compiled `Fuse`'s `try_fold` isn't told its source is a `FusedIterator`, so it lets go of it at its end (#244)",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                if !matches!(fused.kind, js::ExprKind::Bool(false)) {\n",
-    replace: "                if false {\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "iterator-evidence-of-any-param",
     breaks: "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
     file: "src/lower/iterators/knowing.rs",
@@ -283,14 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
   {
-    name: "std-struct-fold-left-out",
-    breaks: "a peekable's or a fuse's fold steps its source by `next`, not its own `fold`",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                props.push(crate::js::Prop::Field(\"fold\".into(), fold));\n            }\n",
-    replace: "                let _ = fold;\n            }\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
-  },
-  {
     name: "enumerate-of-array-no-back",
     breaks: "an enumerate of an array's items made here steps from its back",
     file: "src/lower/iterators/knowing.rs",
@@ -481,8 +441,16 @@ export const mutations: Mutation[] = [
     name: "compiled-count-unlisted",
     breaks: "a held `enumerate()`'s `count` isn't std's compiled one, its source's own, so it steps each item (ADR 0912)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let counted = match self.compiled_step(ty, iterator, \"count\") {\n",
-    replace: "        let counted = match false {\n",
+    find: "        if self.compiled_step(ty, iterator, \"count\") {\n            let (count, _) = self.user_next(ty, iterator, \"count\", span)?;\n",
+    replace: "        if false {\n            let (count, _) = self.user_next(ty, iterator, \"count\", span)?;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "compiled-try-fold-unlisted",
+    breaks: "std's struct has no compiled `try_fold`, so std's default `nth` through it asks a `skip`'s source `nth(n)` where Rust's asks `nth(n - 1)` (ADR 0913)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if let Some(try_fold) = self.compiled_try_fold(ty, span)? {\n",
+    replace: "        if let Some(try_fold) = None::<Expr> {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

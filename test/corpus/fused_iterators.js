@@ -107,9 +107,7 @@ function main() {
     console.log("ended");
     loud$live = false;
   } finally {
-    if (loud.iter != null) {
-      loudDrop_drop(loud.iter);
-    }
+    loud.return();
   }
   const steady = iterator_fuse([2], { next: steadyIterator_next }, true, steadyDrop_drop);
   let steady$live;
@@ -122,9 +120,7 @@ function main() {
     console.log("ended steady");
     steady$live = false;
   } finally {
-    if (steady.iter != null) {
-      steadyDrop_drop(steady.iter);
-    }
+    steady.return();
   }
   const iter = iterator_fuse(["looped", 3], { next: loudIterator_next }, false, loudDrop_drop);
   while (true) {
@@ -132,36 +128,24 @@ function main() {
     try {
       tmp = $next(iter);
     } catch (error) {
-      if (iter.iter != null) {
-        loudDrop_drop(iter.iter);
-      }
+      iter.return();
       if (steady$live) {
-        if (steady.iter != null) {
-          steadyDrop_drop(steady.iter);
-        }
+        steady.return();
       }
       if (loud$live) {
-        if (loud.iter != null) {
-          loudDrop_drop(loud.iter);
-        }
+        loud.return();
       }
       throw error;
     }
     if (tmp == null) {
       try {
-        if (iter.iter != null) {
-          loudDrop_drop(iter.iter);
-        }
+        iter.return();
       } catch (error) {
         if (steady$live) {
-          if (steady.iter != null) {
-            steadyDrop_drop(steady.iter);
-          }
+          steady.return();
         }
         if (loud$live) {
-          if (loud.iter != null) {
-            loudDrop_drop(loud.iter);
-          }
+          loud.return();
         }
         throw error;
       }
@@ -178,34 +162,24 @@ function main() {
     tmp = (n) => (n * 10) >>> 0;
   } catch (error) {
     if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
+      steady.return();
     }
     if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
+      loud.return();
     }
     throw error;
   }
   let map;
   try {
     map = $closing(fuse, (it) => {
-      if (it.iter != null) {
-        loudDrop_drop(it.iter);
-      }
+      it.return();
     }).map(tmp);
   } catch (error) {
     if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
+      steady.return();
     }
     if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
+      loud.return();
     }
     throw error;
   }
@@ -214,14 +188,10 @@ function main() {
     total = map.reduce((a, b) => (a + b) >>> 0, 0);
   } catch (error) {
     if (steady$live) {
-      if (steady.iter != null) {
-        steadyDrop_drop(steady.iter);
-      }
+      steady.return();
     }
     if (loud$live) {
-      if (loud.iter != null) {
-        loudDrop_drop(loud.iter);
-      }
+      loud.return();
     }
     throw error;
   }

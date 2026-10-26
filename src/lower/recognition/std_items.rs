@@ -165,6 +165,9 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("Iterator"), "next"),
     ("Peekable", Some("Iterator"), "nth"),
     ("Peekable", Some("Iterator"), "last"),
+    ("Peekable", Some("Iterator"), "count"),
+    ("Peekable", Some("Iterator"), "fold"),
+    ("Peekable", Some("Iterator"), "try_fold"),
     ("Peekable", Some("DoubleEndedIterator"), "next_back"),
     ("Peekable", Some("DoubleEndedIterator"), "rfold"),
     ("Peekable", Some("Clone"), "clone"),
@@ -172,6 +175,11 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Fuse", Some("Iterator"), "next"),
     ("Fuse", Some("Iterator"), "size_hint"),
     ("Fuse", Some("Iterator"), "fold"),
+    ("Fuse", Some("Iterator"), "count"),
+    ("Fuse", Some("Iterator"), "try_fold"),
+    ("Fuse", Some("Iterator"), "advance_by"),
+    ("Fuse", Some("FuseImpl"), "try_fold"),
+    ("Fuse", Some("FuseImpl"), "advance_by"),
     ("Fuse", Some("DoubleEndedIterator"), "next_back"),
     ("Fuse", Some("DoubleEndedIterator"), "rfold"),
     ("Fuse", Some("DoubleEndedIterator"), "nth_back"),
@@ -201,6 +209,8 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Enumerate", Some("Iterator"), "nth"),
     ("Enumerate", Some("Iterator"), "count"),
     ("Enumerate", Some("Iterator"), "fold"),
+    ("Enumerate", Some("Iterator"), "try_fold"),
+    ("Enumerate", Some("Iterator"), "advance_by"),
     ("Enumerate", Some("DoubleEndedIterator"), "next_back"),
     ("Enumerate", Some("DoubleEndedIterator"), "nth_back"),
     ("Enumerate", Some("DoubleEndedIterator"), "rfold"),
@@ -210,6 +220,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Map", Some("Iterator"), "next"),
     ("Map", Some("Iterator"), "size_hint"),
     ("Map", Some("Iterator"), "fold"),
+    ("Map", Some("Iterator"), "try_fold"),
     ("Map", Some("DoubleEndedIterator"), "next_back"),
     ("Map", Some("DoubleEndedIterator"), "rfold"),
     ("Map", Some("ExactSizeIterator"), "len"),
@@ -218,6 +229,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Inspect", Some("Iterator"), "next"),
     ("Inspect", Some("Iterator"), "size_hint"),
     ("Inspect", Some("Iterator"), "fold"),
+    ("Inspect", Some("Iterator"), "try_fold"),
     ("Inspect", Some("DoubleEndedIterator"), "next_back"),
     ("Inspect", Some("DoubleEndedIterator"), "rfold"),
     ("Inspect", Some("ExactSizeIterator"), "len"),
@@ -233,6 +245,31 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("FlatMap", Some("Iterator"), "fold"),
     ("FlatMap", Some("DoubleEndedIterator"), "next_back"),
     ("FlatMap", Some("DoubleEndedIterator"), "rfold"),
+    ("Skip", Some("Iterator"), "next"),
+    ("Skip", Some("Iterator"), "size_hint"),
+    ("Skip", Some("Iterator"), "nth"),
+    ("Skip", Some("Iterator"), "count"),
+    ("Skip", Some("Iterator"), "last"),
+    ("Skip", Some("Iterator"), "fold"),
+    ("Skip", Some("Iterator"), "try_fold"),
+    ("Skip", Some("Iterator"), "advance_by"),
+    ("Skip", Some("DoubleEndedIterator"), "next_back"),
+    ("Skip", Some("DoubleEndedIterator"), "nth_back"),
+    ("Skip", Some("ExactSizeIterator"), "len"),
+    ("Skip", Some("Clone"), "clone"),
+    ("Skip", Some("Debug"), "fmt"),
+    ("Take", Some("Iterator"), "next"),
+    ("Take", Some("Iterator"), "size_hint"),
+    ("Take", Some("Iterator"), "nth"),
+    ("Take", Some("Iterator"), "advance_by"),
+    ("Take", Some("Iterator"), "count"),
+    ("Take", Some("Iterator"), "fold"),
+    ("Take", Some("Iterator"), "try_fold"),
+    ("Take", Some("DoubleEndedIterator"), "next_back"),
+    ("Take", Some("DoubleEndedIterator"), "nth_back"),
+    ("Take", Some("ExactSizeIterator"), "len"),
+    ("Take", Some("Clone"), "clone"),
+    ("Take", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -246,6 +283,8 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "inspect"),
     ("Iterator", "flatten"),
     ("Iterator", "flat_map"),
+    ("Iterator", "skip"),
+    ("Iterator", "take"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
@@ -261,6 +300,8 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Inspect", "inspect", true),
     ("Flatten", "flatten", false),
     ("FlatMap", "flat_map", false),
+    ("Skip", "skip", true),
+    ("Take", "take", true),
 ];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
@@ -431,10 +472,13 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 continue;
             };
             // And each method of a trait's impl for a type std keeps
-            // private, `FlattenCompat`'s `next` (ADR 0899).
+            // private, `FlattenCompat`'s `next` (ADR 0899), or of a trait
+            // std keeps private, `SpecTake`'s `spec_fold` of a `Take`
+            // (ADR 0913).
             let of_private_type = |called: DefId| {
                 tcx.trait_impl_of_assoc(called).is_some_and(|imp| {
                     matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _) if !tcx.visibility(adt.did()).is_public())
+                        || std_private(tcx, tcx.impl_trait_id(imp))
                 })
             };
             // Of one whose impl a fact picks, `FlattenCompat`'s `size_hint`
@@ -676,6 +720,7 @@ pub(crate) enum StdItem {
     BTreeMap,
     BTreeSet,
     Cell,
+    ControlFlow,
     Debug,
     Default,
     Display,
@@ -743,6 +788,7 @@ impl StdItem {
             StdItem::BTreeMap => Symbol::intern("BTreeMap"),
             StdItem::BTreeSet => Symbol::intern("BTreeSet"),
             StdItem::Cell => Symbol::intern("Cell"),
+            StdItem::ControlFlow => Symbol::intern("ControlFlow"),
             StdItem::Debug => Symbol::intern("Debug"),
             StdItem::Default => Symbol::intern("Default"),
             StdItem::Display => Symbol::intern("Display"),

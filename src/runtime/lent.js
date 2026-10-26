@@ -8,13 +8,15 @@ function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
+  // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
+  if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.
   if (it.$steps !== undefined) {
-    // Its own steps first, then `it`'s fields, `iter` and `count`, which a
-    // helper's name, `$Steps`' `count`, never hides.
+    // Its own steps first, then `it`'s fields, `iter` and `count$`, which
+    // a helper's name never hides (ADR 0912).
     const of = (target, key) => (Object.hasOwn(target, key) || !Object.hasOwn(it, key) ? target : it);
     return new Proxy(lent, {
       get: (target, key) => of(target, key)[key],

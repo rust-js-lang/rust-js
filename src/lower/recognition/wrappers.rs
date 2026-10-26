@@ -80,6 +80,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // An `AssertUnwindSafe`, what it holds, which rustc checks
             // where it's needed (ADR 0660).
             || is_assert_unwind_safe(self.tcx, adt.did())
+            // A `NeverShortCircuit`, what std's `fold` folds into through
+            // its `try_fold`, what it holds (ADR 0913).
+            || try_kind(self.tcx, ty) == Some(TryKind::NeverShortCircuit)
             || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
         // A `MaybeUninit` is a union of it and `()`.
         let mut held = adt.all_fields().map(|field| self.field_ty(field, args));

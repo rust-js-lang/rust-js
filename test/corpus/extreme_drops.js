@@ -3,6 +3,7 @@
 import {
   $checked,
   $cmp,
+  $count,
   $debugStr,
   $dropEach,
   $intoIter,
@@ -64,10 +65,7 @@ function finalOne(items, dropIItem, dropIIntoIter) {
 // An iterator itself, not an `IntoIterator`, consumed: dropped after too.
 function howMany(items, dropI, dropIItem) {
   const iter = items;
-  const result = Iterator.from(iter).reduce((n, item) => {
-    dropIItem?.(item);
-    return n + 1;
-  }, 0);
+  const result = $count(Iterator.from(iter), dropIItem);
   dropI?.(iter);
   return result;
 }

@@ -14,7 +14,6 @@ import {
   $nextBack,
   $nthDropping,
   $range,
-  $someValue,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -57,12 +56,7 @@ function main() {
     loudDrop_drop,
   );
   const last = $lastDropping(iter, loudDrop_drop);
-  iter.iter.return();
-  if (iter.peeked != null) {
-    if ($someValue(iter.peeked) != null) {
-      loudDrop_drop($someValue(iter.peeked));
-    }
-  }
+  iter.return();
   const map = (loud) => {
     const result = loud[0];
     loudDrop_drop(loud);
@@ -71,8 +65,8 @@ function main() {
   const value$1 = last ? map(last) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   // `Rev::nth`: a `Vec`'s `nth_back`, what it passes dropped as one slice.
-  const peekable = iterator_peekable(
-    $held(
+  const peekable = $held(
+    iterator_peekable(
       iterator_rev(
         $iter(louds(30, 2)),
         { next: $next },
@@ -80,32 +74,22 @@ function main() {
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       ),
+      { next: $next, fold: $foldOf },
+      (rev) => {
+        rev.return();
+      },
+      loudDrop_drop,
     ),
-    { next: $next, fold: $foldOf },
-    (rev) => {
-      rev.return();
-    },
-    loudDrop_drop,
   );
   let nth;
   try {
     nth = $nthDropping($lent(peekable), id(3), loudDrop_drop, false);
   } catch (error) {
-    peekable.iter.return();
-    if (peekable.peeked != null) {
-      if ($someValue(peekable.peeked) != null) {
-        loudDrop_drop($someValue(peekable.peeked));
-      }
-    }
+    peekable.return();
     throw error;
   }
   try {
-    peekable.iter.return();
-    if (peekable.peeked != null) {
-      if ($someValue(peekable.peeked) != null) {
-        loudDrop_drop($someValue(peekable.peeked));
-      }
-    }
+    peekable.return();
   } catch (error) {
     if (nth != null) {
       loudDrop_drop(nth);
@@ -119,9 +103,9 @@ function main() {
   };
   const value$2 = nth ? map$1(nth) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = iterator_peekable(
-    iterator_fuse(
-      $held(
+  const value$3 = $held(
+    iterator_peekable(
+      iterator_fuse(
         iterator_rev(
           $iter($iter(louds(40, 2))),
           { next: $next },
@@ -129,44 +113,28 @@ function main() {
           $dropEach(loudDrop_drop),
           loudDrop_drop,
         ),
+        { next: $next, fold: $foldOf },
+        true,
+        (rev) => {
+          rev.return();
+        },
+        loudDrop_drop,
       ),
       { next: $next, fold: $foldOf },
-      true,
-      (rev) => {
-        rev.return();
+      (fuse) => {
+        fuse.return();
       },
       loudDrop_drop,
     ),
-    { next: $next, fold: $foldOf },
-    (fuse) => {
-      if (fuse.iter != null) {
-        fuse.iter.return();
-      }
-    },
-    loudDrop_drop,
   );
   try {
     nth = $nthDropping($lent(value$3), id(2), loudDrop_drop, false);
   } catch (error) {
-    if (value$3.iter.iter != null) {
-      value$3.iter.iter.return();
-    }
-    if (value$3.peeked != null) {
-      if ($someValue(value$3.peeked) != null) {
-        loudDrop_drop($someValue(value$3.peeked));
-      }
-    }
+    value$3.return();
     throw error;
   }
   try {
-    if (value$3.iter.iter != null) {
-      value$3.iter.iter.return();
-    }
-    if (value$3.peeked != null) {
-      if ($someValue(value$3.peeked) != null) {
-        loudDrop_drop($someValue(value$3.peeked));
-      }
-    }
+    value$3.return();
   } catch (error) {
     if (nth != null) {
       loudDrop_drop(nth);

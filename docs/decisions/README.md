@@ -465,7 +465,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
-- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's)*
+- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value)*
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one; amended: or a `Vec` of them, each item's `None` `null`; of a thread-local, and a binding's type parameter)*
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
@@ -696,7 +696,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md)
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md) *(extended by 0912: std's struct folds by its compiled `fold`; a `&mut I` steps by what std passes on)*
-- [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md)
+- [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md) *(extended by 0913: std's generic `Try` compiles, held `Skip` and `Take` are std's)*
+- [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

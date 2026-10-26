@@ -4,6 +4,7 @@ import {
   $assign,
   $byteLen,
   $cmp,
+  $count,
   $debugStr,
   $iter,
   $mutEntries,
@@ -47,7 +48,7 @@ function sumPastThree(it) {
       break;
     }
   }
-  return [n, Iterator.from(it).reduce((n) => n + 1, 0)];
+  return [n, $count(Iterator.from(it))];
 }
 
 export const refBagIntoIterator = { intoIter: refBagIntoIterator_intoIter };

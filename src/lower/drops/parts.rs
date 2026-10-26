@@ -12,6 +12,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let recognition = self.recognition();
         recognition.closed_on_drop(ty).is_some()
             || (recognition.held_function(ty)).is_some_and(|function| self.drops(function) != Drops::Nothing)
+            // Std's struct, a `Peekable`'s or a `Fuse`'s: closed once, which
+            // drops what it holds, not again after std's compiled `fold`
+            // took it (ADR 0913).
+            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))
     }
 
     /// A `ty`'s drop, written in place: its own `drop`, then its parts'.

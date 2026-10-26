@@ -9,6 +9,7 @@ import {
   $dropEach,
   $exactLen,
   $foldOf,
+  $held,
   $iter,
   $next,
   $nextBack,
@@ -16,7 +17,6 @@ import {
   $peek,
   $rangeNext,
   $sizeHint,
-  $someValue,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -35,50 +35,10 @@ function more() {
   );
   try {
     console.log(`len ${$exactLen($sizeHint(it))}`);
-  } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
-  try {
     $peek(it);
-  } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
-  try {
     console.log(`len ${$exactLen($sizeHint(it))}`);
-  } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
-  for (const item of it.iter) {
-    loudDrop_drop(item);
-  }
-  if (it.peeked != null) {
-    if ($someValue(it.peeked) != null) {
-      loudDrop_drop($someValue(it.peeked));
-    }
+  } finally {
+    it.return();
   }
 }
 function main() {
@@ -90,25 +50,9 @@ function main() {
   );
   try {
     $peek(it);
-  } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
-    throw error;
-  }
-  console.log("peeked");
-  for (const item of it.iter) {
-    loudDrop_drop(item);
-  }
-  if (it.peeked != null) {
-    if ($someValue(it.peeked) != null) {
-      loudDrop_drop($someValue(it.peeked));
-    }
+    console.log("peeked");
+  } finally {
+    it.return();
   }
   it = iterator_peekable(
     $iter([[4], [5], [6]]),
@@ -120,26 +64,12 @@ function main() {
   try {
     none = $nextIf(it, (l) => l[0] === 9);
   } catch (error) {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
+    it.return();
     throw error;
   }
   console.log(`next_if ${!none}`);
   try {
-    for (const item of it.iter) {
-      loudDrop_drop(item);
-    }
-    if (it.peeked != null) {
-      if ($someValue(it.peeked) != null) {
-        loudDrop_drop($someValue(it.peeked));
-      }
-    }
+    it.return();
     const lazy = iterator_peekable(
       iterator_map(
         { start: 7, end: 10 },
@@ -155,172 +85,61 @@ function main() {
     try {
       $peek(lazy);
     } finally {
-      if (lazy.peeked != null) {
-        if ($someValue(lazy.peeked) != null) {
-          loudDrop_drop($someValue(lazy.peeked));
-        }
-      }
+      lazy.return();
     }
-    const back = iterator_peekable(
-      $iter([[20], [21]]),
-      { next: $next },
-      $dropEach(loudDrop_drop),
-      loudDrop_drop,
+    const back = $held(
+      iterator_peekable(
+        $iter([[20], [21]]),
+        { next: $next },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+      ),
     );
     try {
       $peek(back);
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    let nextBack;
-    let tmp;
-    try {
-      nextBack = peekableDoubleEndedIterator_nextBack(
+      const nextBack = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       );
-      tmp = (l) => {
+      const value = (l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       };
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = nextBack ? tmp(nextBack) : undefined;
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
-    let loud;
-    let tmp$2;
-    try {
-      loud = peekableDoubleEndedIterator_nextBack(
+      const value$1 = nextBack ? value(nextBack) : undefined;
+      console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+      const loud = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       );
-      tmp$2 = (l) => {
+      const value$2 = (l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       };
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    let tmp$3;
-    try {
-      tmp$3 = loud ? tmp$2(loud) : undefined;
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    console.log(`${tmp$3 == null ? "None" : `Some(${tmp$3})`}`);
-    let tmp$4;
-    let tmp$5;
-    try {
-      tmp$4 = peekableDoubleEndedIterator_nextBack(
+      const value$3 = loud ? value$2(loud) : undefined;
+      console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+      const value$4 = peekableDoubleEndedIterator_nextBack(
         back,
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       );
-      tmp$5 = (l) => {
+      const value$5 = (l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       };
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    let tmp$6;
-    try {
-      tmp$6 = tmp$4 ? tmp$5(tmp$4) : undefined;
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    console.log(`${tmp$6 == null ? "None" : `Some(${tmp$6})`}`);
-    try {
+      const value$6 = value$4 ? value$5(value$4) : undefined;
+      console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
       more();
-    } catch (error) {
-      for (const item of back.iter) {
-        loudDrop_drop(item);
-      }
-      if (back.peeked != null) {
-        if ($someValue(back.peeked) != null) {
-          loudDrop_drop($someValue(back.peeked));
-        }
-      }
-      throw error;
-    }
-    console.log("end");
-    for (const item of back.iter) {
-      loudDrop_drop(item);
-    }
-    if (back.peeked != null) {
-      if ($someValue(back.peeked) != null) {
-        loudDrop_drop($someValue(back.peeked));
-      }
+      console.log("end");
+    } finally {
+      back.return();
     }
   } finally {
     if (none != null) {

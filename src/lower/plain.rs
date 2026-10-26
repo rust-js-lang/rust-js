@@ -131,6 +131,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(value) = self.transparent_transmute(value.clone(), (from, to)) {
             return Ok(value);
         }
+        if let Some(value) = self.non_zero_transmute(value.clone(), (from, to), span, out)? {
+            return Ok(value);
+        }
         let (Some(source), Some(target)) = (self.plain(from), self.plain(to)) else {
             let what = format!("a `transmute` of `{from}` as `{to}`, which aren't numbers alone");
             return Err(refuse(self.tcx, span, Refused::Memory(&what)));
@@ -180,6 +183,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             span,
         )
+    }
+
+    /// `value`, a number `from`, as an `Option<NonZero<_>>` of it, `to`,
+    /// which `NonZero::new` is, as a call or a cast inlined into std's
+    /// bodies: `NonZero::new`'s (ADRs 0177, 0913). `None` of another.
+    pub(in crate::lower) fn non_zero_transmute(
+        &mut self,
+        value: Expr,
+        (from, to): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let non_zero = self
+            .option_of(to)
+            .is_some_and(crate::lower::recognition::is_non_zero_ty);
+        if !matches!(from.kind(), ty::Int(_) | ty::Uint(_)) || !non_zero {
+            return Ok(None);
+        }
+        self.non_zero_new(value, from, span, out).map(Some)
     }
 
     /// `value`, a `from`, as a `to`, where one is a `#[repr(transparent)]`

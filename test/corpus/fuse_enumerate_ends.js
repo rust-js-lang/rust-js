@@ -10,6 +10,7 @@ import {
   iterator_fuse,
 } from "@rust-js/std/iter.js";
 import {
+  $count,
   $debugStr,
   $enumerate,
   $extend,
@@ -47,7 +48,7 @@ function fusedLen(it, IFused) {
   const f = iterator_fuse(it, { next: $next }, IFused);
   $next(f);
   const left = fuseExactSizeIterator_len(f, { len: (iterator) => iterator.len() });
-  return [left, f.reduce((n) => n + 1, 0)];
+  return [left, $count(f)];
 }
 
 function fusedBack(it, IFused) {

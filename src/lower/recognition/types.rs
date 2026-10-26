@@ -632,6 +632,39 @@ pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// A `NonZero<T>` type (ADR 0177).
+/// Std's `Try` of a type std's own generic code is given, as its dictionary
+/// is in JS (ADR 0913): a `ControlFlow`'s, whose `Continue` is its output
+/// and `Break` its residual; a `NeverShortCircuit`'s, which is its value, a
+/// `#[repr(transparent)]` struct (ADR 0584), and never breaks.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum TryKind {
+    ControlFlow,
+    NeverShortCircuit,
+}
+
+/// `ty`'s `TryKind`, of one std's generic code is given.
+pub(crate) fn try_kind(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<TryKind> {
+    let ty::Adt(adt, _) = ty.kind() else { return None };
+    match () {
+        _ if is_std_def(tcx, adt.did(), StdItem::ControlFlow) => Some(TryKind::ControlFlow),
+        _ if is_std_crate(tcx, adt.did()) && tcx.item_name(adt.did()).as_str() == "NeverShortCircuit" => {
+            Some(TryKind::NeverShortCircuit)
+        }
+        _ => None,
+    }
+}
+
+/// Whether `id` is std's `Try`, or its supertrait `FromResidual`, whose
+/// methods `?` and std's `try_fold` call (ADR 0913).
+pub(crate) fn is_try_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.is_lang_item(id, LangItem::Try)
+        || tcx
+            .lang_items()
+            .get(LangItem::TryTraitFromResidual)
+            .and_then(|from_residual| tcx.trait_of_assoc(from_residual))
+            == Some(id)
+}
+
 pub(crate) fn is_non_zero_ty(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did()))
 }

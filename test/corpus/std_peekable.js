@@ -7,6 +7,7 @@ import {
   peekableDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
+  $count,
   $iter,
   $iterator,
   $lazyRange,
@@ -45,7 +46,7 @@ function summed(it, IIterator, IClone, PeekableClone) {
   const total = p.reduce((acc, x) => (acc + x) >>> 0, 0);
   const again = PeekableClone.clone(copy);
   const third = $lent(again).drop(2).take(1).toArray()[0];
-  return [total, copy.reduce((n) => n + 1, 0), third, again.toArray().at(-1)];
+  return [total, $count(copy), third, again.toArray().at(-1)];
 }
 
 function main() {
@@ -112,6 +113,6 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, { fmt: (value) => String(value) })}`,
   );
-  console.log(`${r.reduce((n) => n + 1, 0)}`);
+  console.log(`${$count(r)}`);
 }
 //# sourceMappingURL=case.js.map

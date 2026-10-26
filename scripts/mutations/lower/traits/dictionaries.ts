@@ -406,4 +406,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_of_by_ref.rs$"],
   },
+  {
+    name: "control-flow-try-never-short-circuits",
+    breaks: "a `ControlFlow`'s `Try` is given as a `NeverShortCircuit`'s, so std's `Take::try_fold` never stops at its count (ADR 0913)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                Some(TryKind::ControlFlow) => Ok(Expr::helper(\"$controlFlowTry\")),\n",
+    replace: "                Some(TryKind::ControlFlow) => Ok(Expr::helper(\"$neverShortCircuitTry\")),\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

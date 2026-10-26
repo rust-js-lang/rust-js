@@ -349,4 +349,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
   },
+  {
+    name: "given-evidence-ignored",
+    breaks: "std's compiled `try_fold` a JS iterator's `tryFold` calls is given a `ControlFlow`'s `Try`, not `$tryOf(broke)`, so what breaks it isn't asked (ADR 0913)",
+    file: "src/lower/traits/calls.rs",
+    find: "                        Some((_, dictionary)) => values.push(dictionary.clone()),\n",
+    replace: "                        Some(_) => values.push(self.dictionary(bound, span)?),\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

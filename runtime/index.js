@@ -1885,6 +1885,15 @@ export function $closing(it, drop, slices = true) {
   if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
     closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
   }
+  // Its `count`, its iterator's own, a compiled `Take`'s, which advances
+  // its source, then done with (ADR 0913).
+  if (Object.hasOwn(it, "count")) {
+    closing.count = (drop) => {
+      const counted = it.count(drop);
+      close();
+      return counted;
+    };
+  }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261).
@@ -6116,6 +6125,54 @@ export function $tryFoldOk(it, init, f) {
   return $lent(it).tryFold({ TAG: "Ok", _0: init }, (made, x) => f(made._0, x), (made) => made.TAG === "Err");
 }
 
+// Std's `Try`, as std's own generic code is given it (ADR 0913): an
+// `R: Try`'s dictionary, `{ fromOutput, branch, FromResidual }`, `branch`
+// giving the `ControlFlow` `?` reads, `FromResidual` its supertrait's,
+// itself.
+
+// A `ControlFlow`'s: its `Continue`'s value is its output, and a `Break` is
+// its residual as it is.
+export const $controlFlowTry = {
+  fromOutput: (output) => ({ TAG: "Continue", _0: output }),
+  branch: (flow) => (flow.TAG === "Continue" ? flow : { TAG: "Break", _0: flow }),
+  fromResidual: (flow) => flow,
+  FromResidual: () => $controlFlowTry,
+};
+
+// A `NeverShortCircuit`'s, which is its value (ADR 0584): never a break.
+export const $neverShortCircuitTry = {
+  fromOutput: (output) => output,
+  branch: (output) => ({ TAG: "Continue", _0: output }),
+  fromResidual: (never) => never,
+  FromResidual: () => $neverShortCircuitTry,
+};
+
+// What a JS iterator's `tryFold(init, f, broke)` folds into, any `R`, as a
+// `Try`: what it's made so far is its output, and a value `broke` says
+// stops it its residual, as it is, so std's compiled `try_fold` given this
+// folds as that `tryFold` does.
+export function $tryOf(broke) {
+  const tried = {
+    fromOutput: (made) => made,
+    branch: (made) => (broke(made) ? { TAG: "Break", _0: made } : { TAG: "Continue", _0: made }),
+    fromResidual: (made) => made,
+    FromResidual: () => tried,
+  };
+  return tried;
+}
+
+// `it.try_fold(init, f)` into an `R` of its `Try`, `tried`: `f` of what's
+// made so far and each item in turn, till what it gives breaks, which it
+// gives, the rest left to step; else what the last gave. It's `it`'s
+// `tryFold`, as std's adapters route it, in `R`'s terms.
+export function $tryFoldInto(it, init, f, tried) {
+  return $lent(it).tryFold(
+    tried.fromOutput(init),
+    (made, x) => f(tried.branch(made)._0, x),
+    (made) => tried.branch(made).TAG === "Break",
+  );
+}
+
 // `s.starts_with(p)`, or `ends_with`, of a predicate of a `char`: whether it
 // holds for the first, or last, `char`, of which an empty string has none.
 export function $startsBy(s, p, end) {
@@ -9878,6 +9935,14 @@ export function $stdIterator(struct, steps) {
   }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
+  // Its `advance_by`, std's compiled one, its `Result` how many there
+  // weren't, as `advanceBy` gives it (ADR 0913).
+  if (steps.advance !== undefined) {
+    it.advanceBy = (m) => {
+      const advanced = steps.advance(it, m);
+      return advanced.TAG === "Ok" ? 0 : advanced._0;
+    };
+  }
   if (steps.advanceBy !== undefined) {
     it.advanceBy = (m, drop) => steps.advanceBy(it, m, drop);
   }
@@ -11989,13 +12054,15 @@ export function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
+  // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
+  if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
   if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.
   if (it.$steps !== undefined) {
-    // Its own steps first, then `it`'s fields, `iter` and `count`, which a
-    // helper's name, `$Steps`' `count`, never hides.
+    // Its own steps first, then `it`'s fields, `iter` and `count$`, which
+    // a helper's name never hides (ADR 0912).
     const of = (target, key) => (Object.hasOwn(target, key) || !Object.hasOwn(it, key) ? target : it);
     return new Proxy(lent, {
       get: (target, key) => of(target, key)[key],
@@ -12024,40 +12091,6 @@ export function $folded(it) {
     .values();
 }
 
-// `fold` of `it`, by its `Iterator` dictionary, `iterator` (ADR 0411): the
-// crate's own, where its impl writes one (#162), which takes `it` and drops
-// it; a JS iterator's, its `reduce`, which a `$Steps` folds by its source's;
-// else each `next`, its `Some` unboxed (ADR 0051). Std's `fold` takes `it`:
-// stepped to its end here, it's dropped by `drop` after, of one with a
-// destructor.
-export function $foldBy(it, init, f, iterator, drop) {
-  if (iterator?.fold !== undefined) return iterator.fold(it, init, f);
-  let folded = init;
-  if (iterator === undefined || iterator.next === $next || iterator.next === $nextSome) {
-    folded = it.reduce((folded, item) => f(folded, item), init);
-  } else {
-    for (let item = iterator.next(it); item != null; item = iterator.next(it)) folded = f(folded, $someValue(item));
-  }
-  drop?.(it);
-  return folded;
-}
-
-// A `Peekable`'s fold, std's: what it peeked at, unless that was its end,
-// then its source's. Its source is dropped with it, as a struct's fields
-// are, where it's consumed; but the crate's own fold took it and dropped
-// it, which `ownFold` says, as `$iterator`'s does.
-export function $peekableFold(peekable, init, f, iterator) {
-  if (iterator?.fold !== undefined) peekable.ownFold = true;
-  let folded = init;
-  if (peekable.peeked !== undefined) {
-    const peeked = $someValue(peekable.peeked);
-    peekable.peeked = undefined;
-    if (peeked == null) return init;
-    folded = f(folded, $someValue(peeked));
-  }
-  return $foldBy(peekable.iter, folded, f, iterator);
-}
-
 // `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which
 // drops what it passes itself, a `Vec`'s as one slice; else std's, each
 // it steps past given to `drop`. How many there weren't (#286).
@@ -12067,18 +12100,12 @@ export function $advanceByOf(it, m, drop, iterator) {
   return $Steps.prototype.advanceBy.call($lent(given), m, drop);
 }
 
-// A `Fuse`'s `advance_by`, std's: its source's, while it has one, which it
-// lets go of, dropped by `dropSelf`, where that ran short; of a
-// `FusedIterator`, `fused`, kept, as std's specialization keeps it (#286).
-export function $fuseAdvanceBy(fuse, m, drop, iterator, dropSelf, fused = false) {
-  if (fuse.iter == null) return m;
-  const iter = $someValue(fuse.iter);
-  const left = $advanceByOf(iter, m, drop, iterator);
-  if (left > 0 && !fused) {
-    fuse.iter = undefined;
-    dropSelf?.(iter);
-  }
-  return left;
+// `it.advance_by(m)`, as std's own bodies call it: `$advanceByOf`'s,
+// `Ok(())` where nothing was short, else `Err` of how many there weren't
+// (ADR 0913).
+export function $advanceBy(it, m, drop) {
+  const left = $advanceByOf(it, m, drop);
+  return left === 0 ? { TAG: "Ok" } : { TAG: "Err", _0: left };
 }
 
 // A `Rev`'s `advance_by`, std's: its source's `advance_back_by`, by its
@@ -12097,44 +12124,6 @@ export function $revAdvanceBy(rev, m, drop, iterator, back) {
   return m;
 }
 
-// `count()` of `it`, by its dictionary, `iterator`: its own, a `Take`'s
-// advancing its source, else each item given to `drop` (#293).
-export function $countOf(it, drop, iterator) {
-  return $count(iterator === undefined ? it : $given(it, iterator, true), drop);
-}
-
-// A `Peekable`'s `count`, std's: what it peeked at, unless that was its
-// end, then its source's own (#293).
-export function $peekableCount(peekable, drop, iterator) {
-  const peeked = peekable.peeked;
-  peekable.peeked = undefined;
-  let counted = 0;
-  if (peeked !== undefined) {
-    const item = $someValue(peeked);
-    if (item == null) return 0;
-    drop?.($someValue(item));
-    counted = 1;
-  }
-  return counted + $countOf(peekable.iter, drop, iterator);
-}
-
-// A `Fuse`'s `count`, std's: its source's own, while it has one (#293).
-export function $fuseCount(fuse, drop, iterator) {
-  if (fuse.iter == null) return 0;
-  const iter = $someValue(fuse.iter);
-  fuse.iter = undefined;
-  return $countOf(iter, drop, iterator);
-}
-
-// A `Fuse`'s fold, std's: its source's, while it has one, which it lets go
-// of, dropped by `drop`, as its `next` does at its end.
-export function $fuseFold(fuse, init, f, iterator, drop) {
-  if (fuse.iter == null) return init;
-  const iter = $someValue(fuse.iter);
-  fuse.iter = undefined;
-  return $foldBy(iter, init, f, iterator, drop);
-}
-
 // A `Fuse`'s `rfold`, std's: its source's, while it has one, by its
 // dictionaries, `iterator` and `back`: the crate's own `rfold` where its impl
 // writes one, which takes the source and drops it, else each `next_back`,
@@ -12146,55 +12135,6 @@ export function $fuseRfold(fuse, init, f, iterator, back, drop) {
   if (back?.rfold !== undefined) return back.rfold(iter, init, f);
   const folded = $foldBack($given(iter, iterator, true, back), init, f);
   drop?.(iter);
-  return folded;
-}
-
-// `try_fold` of `it`, by its `Iterator` dictionary, `iterator`, as
-// `$foldBy`'s fold (#214): a JS iterator's own `tryFold`, which a `$Steps`
-// passes to its source's as std's adapters do; else each `next`, its
-// `Some` unboxed, until `broke` says stop.
-export function $tryFoldBy(it, init, f, broke, iterator) {
-  let folded = init;
-  if (iterator === undefined || iterator.next === $next || iterator.next === $nextSome) {
-    if (it.tryFold !== undefined) return it.tryFold(init, f, broke);
-    for (let step = it.next(); !step.done; step = it.next()) {
-      folded = f(folded, step.value);
-      if (broke(folded)) return folded;
-    }
-    return folded;
-  }
-  for (let item = iterator.next(it); item != null; item = iterator.next(it)) {
-    folded = f(folded, $someValue(item));
-    if (broke(folded)) return folded;
-  }
-  return folded;
-}
-
-// A `Peekable`'s `try_fold`, std's: what it peeked at, unless that was its
-// end, then its source's (#214).
-export function $peekableTryFold(peekable, init, f, broke, iterator) {
-  let folded = init;
-  if (peekable.peeked !== undefined) {
-    const peeked = $someValue(peekable.peeked);
-    peekable.peeked = undefined;
-    if (peeked == null) return init;
-    folded = f(folded, $someValue(peeked));
-    if (broke(folded)) return folded;
-  }
-  return $tryFoldBy(peekable.iter, folded, f, broke, iterator);
-}
-
-// A `Fuse`'s `try_fold`, std's: its source's, while it has one, which it
-// lets go of, dropped by `drop`, once that's run to its end (#214); of a
-// `FusedIterator`, `fused`, kept, as std's specialization keeps it (#244).
-export function $fuseTryFold(fuse, init, f, broke, iterator, drop, fused = false) {
-  if (fuse.iter == null) return init;
-  const iter = $someValue(fuse.iter);
-  const folded = $tryFoldBy(iter, init, f, broke, iterator);
-  if (!fused && !broke(folded)) {
-    fuse.iter = undefined;
-    drop?.(iter);
-  }
   return folded;
 }
 

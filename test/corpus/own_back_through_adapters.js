@@ -529,9 +529,7 @@ function main() {
         $closing(
           iterator_fuse({ left: 2 }, { next: loudIterator_next }, false, loudDrop_drop),
           (it) => {
-            if (it.iter != null) {
-              loudDrop_drop(it.iter);
-            }
+            it.return();
           },
         ),
         (iterator) =>

@@ -626,9 +626,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
-            Some(IterMethod::Max | IterMethod::Min) => {
-                self.extreme_of(std_method == Some(IterMethod::Max), it, item, span)?
-            }
+            Some(m @ (IterMethod::Max | IterMethod::Min)) => self.extreme_of(m == IterMethod::Max, it, item, span)?,
             Some(IterMethod::Last) => self.last_called(it, iter_ty, item, span, made)?,
             Some(IterMethod::IsSorted) => match item {
                 Some(item) => self.is_sorted_call(it, item, span)?,
@@ -638,10 +636,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(item) => self.dropping_pick("$nthDropping", it, arg(), item, span)?,
                 None => return Ok(None),
             },
+            Some(IterMethod::AdvanceBy) => self.advanced_by(it, arg(), dropping, span)?,
             Some(IterMethod::ByRef) => it,
             Some(IterMethod::Collect) => self.collected_into(it, output, item, Some(iter_ty), span)?,
             _ => return Ok(None),
         }))
+    }
+
+    /// `it.advance_by(n)`, of items of type `dropping` with a destructor:
+    /// its own, which drops what it passes itself, else std's, each dropped
+    /// as it's passed, as `$advanceByOf` gives it (ADR 0913).
+    fn advanced_by(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+        let mut args = vec![it, n];
+        if let Some(item) = dropping {
+            args.extend(self.std_drop_function(item, span)?);
+        }
+        Ok(Expr::call_helper("$advanceBy", args))
     }
 
     /// `it.count()`, of `def_id` of an iterator of type `iter_ty`: each item
@@ -691,12 +701,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !body.is_empty() {
             params.push(x.into());
         }
-        // A `Take`'s over what reaches the crate's own `nth`: std's `count`,
-        // which advances its source and asks no `nth` (#213), `$count`'s; and
-        // a `Take`'s or a `Skip`'s whose `nth` drops a reversed `Vec`'s as one
-        // slice, as their `count`s do (#261).
-        if (crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))
-            && self.recognition().nths_its_own(iter_ty))
+        // Its own `count` where it may have one, `$count`'s: std's compiled
+        // one, a `Take`'s, which advances its source and asks no `nth`
+        // (#213, ADR 0913), and a type parameter's, which its caller's
+        // iterator may have, `Take`'s in std's `Skip::count`; and a `Skip`'s
+        // whose `nth` drops a reversed `Vec`'s as one slice, as its `count`
+        // does (#261).
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let own_count = matches!(self.reveal(iter_ty).kind(), ty::Param(_))
+            || self.compiled_step(self.reveal(iter_ty), iterator, "count");
+        if own_count
             || (self.recognition().nths_a_slice(iter_ty)
                 && self.recognition().reversed(iter_ty).is_none()
                 && crate::lower::recognition::stepped_by_source(self.tcx, self.reveal(iter_ty)).is_none())

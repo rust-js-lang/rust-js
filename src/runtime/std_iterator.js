@@ -48,6 +48,14 @@ function $stdIterator(struct, steps) {
   }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
+  // Its `advance_by`, std's compiled one, its `Result` how many there
+  // weren't, as `advanceBy` gives it (ADR 0913).
+  if (steps.advance !== undefined) {
+    it.advanceBy = (m) => {
+      const advanced = steps.advance(it, m);
+      return advanced.TAG === "Ok" ? 0 : advanced._0;
+    };
+  }
   if (steps.advanceBy !== undefined) {
     it.advanceBy = (m, drop) => steps.advanceBy(it, m, drop);
   }

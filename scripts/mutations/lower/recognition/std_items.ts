@@ -208,4 +208,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_flat_map.rs$"],
     snapshots: true,
   },
+  {
+    name: "take-not-held",
+    breaks: "a held `take()` is the recognizers' JS iterator, not std's `Take`, which knows its `size_hint`",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Take\", \"take\", true),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
+  },
 ];

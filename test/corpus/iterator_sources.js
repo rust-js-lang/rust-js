@@ -2,6 +2,7 @@
 
 import {
   $checked,
+  $count,
   $debugStr,
   $fromFn,
   $index,
@@ -138,12 +139,12 @@ function main() {
   console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}] [${squares.join(", ")}]`);
   // `successors` finds the next item before it gives this one.
   let calls = 0;
-  const taken = $successors(1, (n) => {
-    calls = (calls + 1) | 0;
-    return (n + 1) | 0;
-  })
-    .take(3)
-    .reduce((n) => n + 1, 0);
+  const taken = $count(
+    $successors(1, (n) => {
+      calls = (calls + 1) | 0;
+      return (n + 1) | 0;
+    }).take(3),
+  );
   console.log(`${taken} ${calls}`);
   const maybe = "one";
   for (const item of maybe == null ? [] : [maybe]) {

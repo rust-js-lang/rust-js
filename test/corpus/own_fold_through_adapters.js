@@ -6,8 +6,19 @@ import {
   iterator_inspect,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std/iter.js";
-import { $closing, $foldOf, $given, $iter, $iterator, $next, $nth, $peek } from "@rust-js/runtime";
+import {
+  $closing,
+  $count,
+  $foldOf,
+  $given,
+  $iter,
+  $iterator,
+  $next,
+  $nth,
+  $peek,
+} from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -75,11 +86,13 @@ const Holder = {
 
 function main() {
   console.log(
-    `${iterator_peekable(
-      ["a", 0],
-      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-      ownDrop_drop,
-    ).reduce((n) => n + 1, 0)}`,
+    `${$count(
+      iterator_peekable(
+        ["a", 0],
+        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+        ownDrop_drop,
+      ),
+    )}`,
   );
   let peeked = iterator_peekable(
     ["b", 0],
@@ -90,7 +103,7 @@ function main() {
     const value = $peek(peeked);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    ownDrop_drop(peeked.iter);
+    peeked.return();
     throw error;
   }
   console.log(`${peeked.reduce((a, b) => (a + b) >>> 0, 0)}`);
@@ -111,9 +124,7 @@ function main() {
         ownDrop_drop,
       ),
       (it) => {
-        if (it.iter != null) {
-          ownDrop_drop(it.iter);
-        }
+        it.return();
       },
     )
       .map((x) => (x + 1) >>> 0)
@@ -121,15 +132,13 @@ function main() {
   );
   const iter = iterator_peekable(["e", 0], { next: plainIterator_next }, plainDrop_drop);
   const result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-  plainDrop_drop(iter.iter);
+  iter.return();
   console.log(`${result}`);
   console.log(
     `${$closing(
       iterator_fuse(["f", 0], { next: plainIterator_next }, false, plainDrop_drop),
       (it) => {
-        if (it.iter != null) {
-          plainDrop_drop(it.iter);
-        }
+        it.return();
       },
     )
       .map((x) => (x * 2) >>> 0)
@@ -173,12 +182,12 @@ function main() {
   try {
     $peek(peeked);
   } catch (error) {
-    ownDrop_drop(peeked.iter);
+    peeked.return();
     throw error;
   }
   console.log(
     `[${$closing(peeked, (it) => {
-      ownDrop_drop(it.iter);
+      it.return();
     })
       .map((x) => (x * 2) >>> 0)
       .toArray()
@@ -192,7 +201,7 @@ function main() {
         ownDrop_drop,
       ),
       (it) => {
-        ownDrop_drop(it.iter);
+        it.return();
       },
     )
       .map((x) => (x * 2) >>> 0)
@@ -207,9 +216,7 @@ function main() {
         ownDrop_drop,
       ),
       (it) => {
-        if (it.iter != null) {
-          ownDrop_drop(it.iter);
-        }
+        it.return();
       },
     )
       .map((x) => (x * 2) >>> 0)
@@ -223,7 +230,7 @@ function main() {
         ownDrop_drop,
       ),
       (it) => {
-        ownDrop_drop(it.iter);
+        it.return();
       },
     )
       .filter((x) => x % 2 === 1)
@@ -231,7 +238,7 @@ function main() {
   );
   console.log(
     `${$closing(iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop), (it) => {
-      plainDrop_drop(it.iter);
+      it.return();
     })
       .map((x) => (x * 2) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
@@ -240,7 +247,7 @@ function main() {
     `[${$closing(
       iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop),
       (it) => {
-        plainDrop_drop(it.iter);
+        it.return();
       },
     )
       .take(1)
@@ -251,9 +258,7 @@ function main() {
     `[${$closing(
       iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop),
       (it) => {
-        if (it.iter != null) {
-          plainDrop_drop(it.iter);
-        }
+        it.return();
       },
     )
       .map((x) => (x + 1) >>> 0)
@@ -264,12 +269,12 @@ function main() {
   try {
     $peek(stepped);
   } catch (error) {
-    plainDrop_drop(stepped.iter);
+    stepped.return();
     throw error;
   }
   console.log(
     `[${$closing(stepped, (it) => {
-      plainDrop_drop(it.iter);
+      it.return();
     })
       .map((x) => (x * 2) >>> 0)
       .toArray()
@@ -309,21 +314,12 @@ function main() {
     `${$closing(
       iterator_peekable(
         iterator_inspect(
-          $closing(
-            $iterator(
-              ["w", 0],
-              ownIterator_next,
-              false,
-              undefined,
-              undefined,
-              undefined,
-              ownIterator_fold,
-              ownIterator_nth,
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ).drop(1),
+          iterator_skip(
+            ["w", 0],
+            1,
+            { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+            ownDrop_drop,
+          ),
           () => {},
           { next: $next, fold: $foldOf, nth: $nth },
           (skip) => {
@@ -336,7 +332,7 @@ function main() {
         },
       ),
       (it) => {
-        it.iter.return();
+        it.return();
       },
     )
       .map((x) => (x + 1) >>> 0)
@@ -350,7 +346,7 @@ function main() {
     },
   );
   const result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
-  iter$1.iter.return();
+  iter$1.return();
   console.log(`${result$1}`);
   // A held flat map's fold, std's: its source's, through its `map`, the
   // crate's own, each item's array folded in turn (#297).

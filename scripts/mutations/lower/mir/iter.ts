@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-max-is-min",
     breaks: "`max()` of an iterator from MIR is its least item",
     file: "src/lower/mir/iter.rs",
-    find: "                self.extreme_of(std_method == Some(IterMethod::Max), it, item, span)?\n",
-    replace: "                self.extreme_of(std_method == Some(IterMethod::Min), it, item, span)?\n",
+    find: "self.extreme_of(m == IterMethod::Max, it, item, span)?,",
+    replace: "self.extreme_of(m == IterMethod::Min, it, item, span)?,",
     tests: ["test/corpus.test.ts","-t","enum_order|opaque_iterators|generic_as_ref|returned_references"],
   },
   {
@@ -366,14 +366,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
-    name: "take-count-reduced",
-    breaks: "`count()` of a `Take` over the crate's own `nth` is `reduce`, its fold's, which asks `nth`, where std's asks none (#213)",
-    file: "src/lower/mir/iter.rs",
-    find: "        if (crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
-    replace: "        if (false && crate::lower::recognition::is_take(self.tcx, self.reveal(iter_ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
-  },
-  {
     name: "rev-source-unclosed",
     breaks: "what `rev()` steps, a compiled `fuse()`, isn't closed to drop it (#225)",
     file: "src/lower/mir/iter.rs",
@@ -431,5 +423,13 @@ export const mutations: Mutation[] = [
     find: "            || (self.recognition().nths_a_slice(iter_ty)\n",
     replace: "            || (false && self.recognition().nths_a_slice(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "param-count-reduced",
+    breaks: "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let own_count = matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
+    replace: "        let own_count = false && matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

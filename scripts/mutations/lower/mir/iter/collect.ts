@@ -139,8 +139,8 @@ export const mutations: Mutation[] = [
     name: "try-fold-result-as-option",
     breaks: "`try_fold` into a `Result` stops at a `None`, which an `Ok` never is, and goes on past an `Err`",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            None if self.recognition().is_result(output) => \"$tryFoldOk\",\n",
-    replace: "            None if self.recognition().is_result(output) => \"$tryFoldSome\",\n",
+    find: "            (None, None) => \"$tryFoldOk\",\n",
+    replace: "            (None, None) => \"$tryFoldSome\",\n",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
   {
@@ -179,8 +179,8 @@ export const mutations: Mutation[] = [
     name: "try-fold-boxed-option-refused",
     breaks: "`try_fold` into an `Option` of what could look like `None` is refused",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(_) => \"$tryFoldSome\",\n",
-    replace: "            Some(made) if !self.boxed_payload(made) => \"$tryFoldSome\",\n",
+    find: "            (Some(_), _) => \"$tryFoldSome\",\n",
+    replace: "            (Some(made), _) if !self.boxed_payload(made) => \"$tryFoldSome\",\n            (Some(_), _) => return Err(self.unsupported(span, \"a boxed `try_fold`\")),\n",
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
   {

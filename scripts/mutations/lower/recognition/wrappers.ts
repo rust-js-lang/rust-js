@@ -300,4 +300,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
+  {
+    name: "never-short-circuit-a-tuple",
+    breaks: "std's `NeverShortCircuit` is a one-item array where its `Try` is its value, so a held `take`'s `fold` folds into arrays (ADR 0913)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "            || try_kind(self.tcx, ty) == Some(TryKind::NeverShortCircuit)\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

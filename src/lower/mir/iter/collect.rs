@@ -316,10 +316,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Err(self.unsupported(span, "`try_fold` into a `fmt::Result`, from its MIR")),
             };
         }
-        let helper = match self.option_of(output) {
-            Some(_) => "$tryFoldSome",
-            None if self.recognition().is_result(output) => "$tryFoldOk",
-            _ => return Err(self.unsupported(span, &format!("`try_fold` into a `{output}`, from its MIR"))),
+        // Into another `Try`, std's generic code's `R` or a `ControlFlow`:
+        // by its dictionary, `$tryFoldInto` (ADR 0913).
+        let tried = match self.option_of(output) {
+            Some(_) => None,
+            None if self.recognition().is_result(output) => None,
+            None => {
+                let try_trait = self.tcx.require_lang_item(LangItem::Try, span);
+                Some(self.dictionary(ty::TraitRef::new(self.tcx, try_trait, [output]), span)?)
+            }
+        };
+        let helper = match (self.option_of(output), &tried) {
+            (Some(_), _) => "$tryFoldSome",
+            (None, None) => "$tryFoldOk",
+            (None, Some(_)) => "$tryFoldInto",
         };
         // `try_for_each(f)`, std's `try_fold((), |(), x| f(x))` (ADR 0539).
         let (init, f) = match method {
@@ -328,6 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut args = vec![it, init, self.binary_callback(f, own)];
         crate::lower::calls::given_to_js(&mut args);
+        args.extend(tried);
         Ok(Expr::call_helper(helper, args))
     }
 }

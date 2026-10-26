@@ -316,6 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | IterMethod::Ne
                     | IterMethod::Last
                     | IterMethod::Nth
+                    | IterMethod::AdvanceBy
                     | IterMethod::Find
                     | IterMethod::Partition
                     | IterMethod::Filter

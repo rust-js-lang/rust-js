@@ -3,6 +3,7 @@
 import { iterator_map } from "@rust-js/std/iter.js";
 import {
   $closing,
+  $count,
   $dropEach,
   $iter,
   $lent,
@@ -29,10 +30,7 @@ function splitFirst(iter, k, dropI, dropIItem) {
   }
   let result;
   try {
-    result = Iterator.from(iter).reduce((n, item) => {
-      dropIItem?.(item);
-      return n + 1;
-    }, 0);
+    result = $count(Iterator.from(iter), dropIItem);
     dropI?.(iter);
   } catch (error) {
     for (const item of first) {

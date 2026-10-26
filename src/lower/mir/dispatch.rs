@@ -673,6 +673,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(!self.resolves_to_crate(def_id, generic_args)?)
     }
 
+    /// Whether `?` of a `ty`, or what it returns of one, is written as it
+    /// is, `Value::Branch`'s: an `Option`, a `Result` or a `fmt::Result`;
+    /// not another `Try`, std's generic code's, its dictionary's (ADR 0913).
+    fn tried_as_written(&self, ty: Ty<'tcx>) -> bool {
+        self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)
+    }
+
     fn mir_call_values_of(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -747,26 +754,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.never_failing_call(state, def_id, (values, &arg_tys), span, out);
         }
         // `x?`: `Try::branch(x)`, kept as `x` (`Value::Branch`), and what it
-        // returns, `FromResidual::from_residual(r)` (ADR 0052).
-        if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) {
+        // returns, `FromResidual::from_residual(r)` (ADR 0052), of an
+        // `Option`, a `Result` or a `fmt::Result`; of another `Try`, std's
+        // generic code's, its dictionary's, as any trait's (ADR 0913).
+        if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) && self.tried_as_written(arg_tys[0]) {
             let ty = arg_tys[0];
             // Of one that may be an `Err`: its error thrown on, `fmt_check`
             // (ADR 0187), and what's left never breaks.
             if self.is_write_result(ty) && self.krate.any_failing {
                 return self.tried_write(state, values, ty, span, out);
             }
-            if !self.is_write_result(ty) && self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
-                return Err(self.unsupported(span, &format!("`?` on a `{ty}`, from its MIR")));
-            }
             let tried = self.value_expr(values.into_iter().next().expect("the value tried"), span)?;
             let tried = self.read_once_tried(state, tried, ty, out)?;
             return Ok(Value::Branch(tried, ty));
         }
-        if tcx.is_lang_item(def_id, LangItem::TryTraitFromResidual) {
+        if tcx.is_lang_item(def_id, LangItem::TryTraitFromResidual) && self.tried_as_written(arg_tys[0]) {
             let ty = arg_tys[0];
-            if self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
-                return Err(self.unsupported(span, &format!("`?` returning a `{ty}`, from its MIR")));
-            }
             let residual = self.value_expr(values.into_iter().next().expect("the residual"), span)?;
             if self.is_write_result(output) {
                 return Ok(Value::Expr(self.thrown_residual(residual, output)));

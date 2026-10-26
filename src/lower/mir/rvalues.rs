@@ -496,7 +496,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => self.cast(value, from, *to, span)?,
                 }
             }
-            Rvalue::Cast(_, operand, to) => {
+            Rvalue::Cast(kind, operand, to) => {
                 let from = operand.ty(decls, tcx);
                 // An enum's discriminant, `ordering as i32`'s: the enum made a
                 // number, as `cast` makes it.
@@ -508,6 +508,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if from == *to {
                     v
+                } else if *kind == mir::CastKind::Transmute
+                    && let Some(made) = self.non_zero_transmute(v.clone(), (from, *to), span, out)?
+                {
+                    made
                 } else if to.is_char() {
                     Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v])
                 } else if self.kept_cast_at(span) {

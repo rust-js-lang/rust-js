@@ -113,6 +113,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(item))
     }
 
+    /// The place a closure captured, of `place`, its environment's field
+    /// `(*_1).0`, where that's a `&mut` of a number captured as the place
+    /// it points at; `None` of another.
+    fn captured_place(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> Option<Expr> {
+        let field = match place.projection.as_slice() {
+            [PlaceElem::Deref, PlaceElem::Field(field, ty)] | [PlaceElem::Field(field, ty)] => {
+                matches!(ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee))
+                    .then_some(*field)?
+            }
+            _ => return None,
+        };
+        let closure = matches!(
+            state.body.local_decls[place.local].ty.peel_refs().kind(),
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..)
+        );
+        let (capture, is_place) = state.facts.captures().get(field.as_usize())?.clone();
+        (closure && is_place).then_some(capture)
+    }
+
     fn mir_operand_read(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -143,6 +162,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     js::HELD.into(),
                     Expr::held(read),
                 )])))
+            }
+            // A `&mut` of a number a closure captured as the place it is,
+            // read whole into a local, as rustc's optimized MIR copies it
+            // before it's written through, std's inlined `check` in
+            // `Take::try_fold`: still that place, as read in place
+            // (ADR 0913).
+            Operand::Copy(place) | Operand::Move(place) if let Some(captured) = self.captured_place(state, place) => {
+                Ok(Value::Ref(captured))
             }
             Operand::Copy(place) | Operand::Move(place) => {
                 let span = state.body.local_decls[place.local].source_info.span;

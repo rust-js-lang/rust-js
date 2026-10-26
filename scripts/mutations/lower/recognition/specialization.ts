@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "one-shot-optimizing",
     breaks: "`OneShot`'s specialization of `FlattenCompat` is taken for an optimization, so a flatten of `Option`s is sized `(0, None)` where std's is `(0, upper)`",
     file: "src/lower/recognition/specialization.rs",
-    find: "const OPTIMIZING: &[&str] = &[\"TrustedLen\"];\n",
-    replace: "const OPTIMIZING: &[&str] = &[\"OneShot\", \"TrustedLen\"];\n",
+    find: "const OPTIMIZING: &[(&str, Option<&str>)] = &[(\"TrustedLen\", None), (\"TrustedRandomAccess\", Some(\"Take\"))];\n",
+    replace: "const OPTIMIZING: &[(&str, Option<&str>)] = &[(\"OneShot\", None), (\"TrustedLen\", None), (\"TrustedRandomAccess\", Some(\"Take\"))];\n",
     tests: [
       "test/std-package.test.ts"
     ]

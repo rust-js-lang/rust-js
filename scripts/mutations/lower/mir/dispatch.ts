@@ -608,4 +608,12 @@ export const mutations: Mutation[] = [
     replace: "            Value::Expr(made) if false => Value::Expr(made.in_place()),\n",
     tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
   },
+  {
+    name: "other-try-as-written",
+    breaks: "`?` of a `ControlFlow` or a type parameter's `Try` in std's bodies is read as an `Option`'s, not by its dictionary (ADR 0913)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)\n",
+    replace: "        true || self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

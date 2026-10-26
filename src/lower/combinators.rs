@@ -1052,6 +1052,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // Std's struct given whole, `repeat(x).take(n)` held: dropped once
+        // it's stepped, as `extend` drops what it's given, which its end
+        // doesn't, as the recognizers' `take` does (ADR 0913).
+        if !iterable.is_ref()
+            && self.compiled_struct_at(iterable, span)
+            && let Some(drop) = self.drop_function(iterable, span)?
+        {
+            let held = match items.reads_same() {
+                true => items,
+                false => self.spill("items", items, out),
+            };
+            let extended = self.extended_whole(collection, held.clone(), (iterable, into), span, out)?;
+            out.push(StmtKind::Expr(extended).at(js::Span::NONE));
+            return Ok(Expr::call(drop, vec![held]));
+        }
+        self.extended_whole(collection, items, (iterable, into), span, out)
+    }
+
+    /// `extended`'s, of what's dropped after.
+    fn extended_whole(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let items = self.extended_items(items, (iterable, into), span, out)?;
         if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {
             let item = self

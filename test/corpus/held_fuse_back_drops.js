@@ -115,9 +115,7 @@ function main() {
       `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
     );
   } finally {
-    if (it.iter.iter != null) {
-      countdownDrop_drop(it.iter.iter);
-    }
+    it.iter.return();
   }
   const ranged = $iterator(
     pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),

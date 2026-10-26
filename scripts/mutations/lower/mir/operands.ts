@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "                    && self.krate.fns.contains_key(&def_id) =>\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a library's static mut"],
   },
+  {
+    name: "captured-place-copied-as-box",
+    breaks: "a `&mut` of a number a closure captured as its place, copied into a local by optimized MIR, is read as a box, `take.n.value`, in std's `Take::try_fold` (ADR 0913)",
+    file: "src/lower/mir/operands.rs",
+    find: "        (closure && is_place).then_some(capture)\n",
+    replace: "        (closure && is_place && false).then_some(capture)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

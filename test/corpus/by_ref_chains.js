@@ -2,6 +2,7 @@
 
 import {
   $byteLen,
+  $count,
   $debugStr,
   $iter,
   $lazyTakeWhile,
@@ -47,10 +48,11 @@ function main() {
   );
 
   const nums = $iter($range(10, 20));
-  const evens = $lent(nums)
-    .filter((n) => n % 2 === 0)
-    .take(2)
-    .reduce((n) => n + 1, 0);
+  const evens = $count(
+    $lent(nums)
+      .filter((n) => n % 2 === 0)
+      .take(2),
+  );
   const rest = nums.reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${evens} ${rest}`);
 }

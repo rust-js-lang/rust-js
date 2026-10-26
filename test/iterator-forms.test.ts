@@ -36,6 +36,9 @@ const few = [
   "adapter_drops.rs",
   "own_fold_and_nth.rs",
   "by_ref_steps.rs",
+  "held_skip_take.rs",
+  "skip_take_own_nth.rs",
+  "chain_sides_own_steps.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -45,7 +48,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
-  "adapters_own_nth_fold.rs": "prints otherwise than native Rust",
   "asked_length_overflow.rs": "runs on: prints without end",
   "back_stepped_adapter_sources.rs": "refused: the DoubleEndedIterator of a Chain<slice::Iter, slice::Iter>",
   "back_steps.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
@@ -60,13 +62,11 @@ const differs: Record<string, string> = {
   "flatten_from_its_back.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "flatten_of_iterators_from_back.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "fold_back_drops_what_it_takes.rs": "refused: the DoubleEndedIterator of a Skip<Count>",
-  "held_adapters_by_ref.rs": "refused: the DoubleEndedIterator of a Skip<slice::Iter>",
   "held_enumerate.rs": "refused: the DoubleEndedIterator of a R",
   "lazy_iterator_clone.rs": "throws: std's struct clones a function the recognizers made",
   "own_back_through_adapters.rs": "refused: the DoubleEndedIterator of a Take<Count>",
   "own_iterator_dropped_from_back.rs": "prints otherwise than native Rust",
   "own_iterator_dropped_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Fuse<Count>>",
-  "own_nth_through_adapters.rs": "prints otherwise than native Rust",
   "rev_counted.rs": "refused: the DoubleEndedIterator of a Skip<slice::Iter>",
   "rev_in_place_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Rev<Count>>",
   "rev_of_lazy_chains.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
@@ -74,7 +74,6 @@ const differs: Record<string, string> = {
   "rev_step_by.rs": "refused: the DoubleEndedIterator of a StepBy<std::ops::Range<i32>>",
   "skip_try_fold.rs": "prints otherwise than native Rust",
   "std_map.rs": "throws: std's struct clones a function the recognizers made",
-  "step_by_compiled_source_nth.rs": "prints otherwise than native Rust",
   "step_by_nth_back.rs": "refused: the DoubleEndedIterator of a StepBy<Count>",
   "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",
 };

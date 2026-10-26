@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "    if (!closed) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
+  {
+    name: "closing-count-unforwarded",
+    breaks: "a held `take` a chain closes counts by folding, not its own `count`, so a reversed `Vec`'s items are dropped back to front (ADR 0913)",
+    file: "src/runtime/closing.js",
+    find: "  if (Object.hasOwn(it, \"count\")) {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^chain_sides_own_steps with std's iterator structs$"],
+  },
 ];

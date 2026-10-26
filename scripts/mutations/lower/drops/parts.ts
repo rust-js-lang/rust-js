@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
+  {
+    name: "std-struct-dropped-by-parts",
+    breaks: "a `Peekable` std's compiled `fold` took is dropped again by its fields after, `drop e` twice (ADR 0913)",
+    file: "src/lower/drops/parts.rs",
+    find: "            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
 ];

@@ -447,8 +447,8 @@ export const mutations: Mutation[] = [
     name: "borrow-mut-holds-no-borrow",
     breaks: "a `BorrowMut` dictionary is taken to hold no `Borrow`, so `self.borrow()` of a trait's own default through it is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n    }\n",
-    replace: "    }\n",
+    find: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n            // `Try`'s its `FromResidual` (ADR 0913).\n",
+    replace: "            // `Try`'s its `FromResidual` (ADR 0913).\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
   {

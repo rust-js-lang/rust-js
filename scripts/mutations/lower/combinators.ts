@@ -582,4 +582,12 @@ export const mutations: Mutation[] = [
     replace: "            && self.is_rc(inner)\n        {\n            return Ok(Some(subject.clone()));",
     tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
+  {
+    name: "extended-std-struct-undropped",
+    breaks: "a held `repeat(x).take(n)` given whole to `extend` isn't dropped after, so its `x` is never dropped (ADR 0913)",
+    file: "src/lower/combinators.rs",
+    find: "        if !iterable.is_ref()\n            && self.compiled_struct_at(iterable, span)\n",
+    replace: "        if false\n            && self.compiled_struct_at(iterable, span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
+  },
 ];

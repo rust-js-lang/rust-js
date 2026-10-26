@@ -7,3 +7,7 @@
 
 /// `core::iter`'s: the adapters and `Iterator`'s provided methods.
 pub mod iter {}
+
+/// `core::ops`'s: what a compiled body of `iter`'s calls of it, `try_fold`'s
+/// `NeverShortCircuit` (ADR 0913).
+pub mod ops {}

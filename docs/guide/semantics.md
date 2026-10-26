@@ -441,7 +441,7 @@ What's refused is in [the limitations](limitations.md).
 - **An `impl Iterator` is the iterator it stands for**
   ([0061](../decisions/0061-generic-iterators.md)).
 - **A `Peekable`, a `Fuse`, and a held `Rev`, `Enumerate`, `Map`,
-  `Inspect`, `Flatten` or `FlatMap` are std's own structs,** compiled from std's bodies into `@rust-js/std`: a
+  `Inspect`, `Flatten`, `FlatMap`, `Skip` or `Take` are std's own structs,** compiled from std's bodies into `@rust-js/std`: a
   `Rev` its `next_back()` asks of, `let mut r = v.iter().rev();
   r.next_back()`, is `iterator_rev($iter(v), { next: $next }, { next_back:
   $nextBack })`, and its `len()`, clone and `Debug` std's; a `Map` a struct
@@ -453,10 +453,14 @@ What's refused is in [the limitations](limitations.md).
   asked its `size_hint()` is std's struct, which knows it, but a `rev()`,
   `enumerate()`, `map()` or `inspect()` made in place, sized as its source
   is; a flatten's, and a flat map's, counts what's left of its items, an
-  array's `N` each ([0561](../decisions/0561-std-bodies.md),
+  array's `N` each. Each folds, tries, counts and advances by std's own
+  methods, a `take()` over a `skip()` asking the `skip`'s source
+  `nth(n - 1)` once as Rust's `fold` does; dropped, it's closed once,
+  `it.return()` ([0561](../decisions/0561-std-bodies.md),
   [0871](../decisions/0871-rev-is-stds.md),
   [0899](../decisions/0899-a-flatten-held-is-stds.md),
-  [0903](../decisions/0903-a-flat-map-held-is-stds.md)).
+  [0903](../decisions/0903-a-flat-map-held-is-stds.md),
+  [0913](../decisions/0913-std-s-generic-try-is-a-dictionary.md)).
 - **Generic code given items bound by `IntoIterator`,** `I::Item:
   IntoIterator`, is given their dictionary, which makes and steps each one's
   iterator, `$given(IItemIntoIterator.intoIter(item), ..)`: an `Option`'s

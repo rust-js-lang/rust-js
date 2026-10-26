@@ -59,6 +59,15 @@ function $closing(it, drop, slices = true) {
   if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
     closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
   }
+  // Its `count`, its iterator's own, a compiled `Take`'s, which advances
+  // its source, then done with (ADR 0913).
+  if (Object.hasOwn(it, "count")) {
+    closing.count = (drop) => {
+      const counted = it.count(drop);
+      close();
+      return counted;
+    };
+  }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
   // a `step_by` over it asks it (#261).

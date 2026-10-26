@@ -639,6 +639,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (nth, _) = self.user_method(ty, iterator, "nth", &["n"], span)?;
             props.push(crate::js::Prop::Field("nth".into(), nth));
         }
+        // Its `advance_by`, the compiled impl's, a `Take`'s, which a chain's
+        // `nth` asks (ADR 0913).
+        if self.compiled_step(ty, iterator, "advance_by") {
+            let (advance, _) = self.user_method(ty, iterator, "advance_by", &["n"], span)?;
+            props.push(crate::js::Prop::Field("advance".into(), advance));
+        }
         // And its `last`, its source's.
         if self.compiled_step(ty, iterator, "last") {
             let (last, _) = self.user_next(ty, iterator, "last", span)?;
@@ -650,117 +656,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What of these std's compiled ones take whole, as Rust's move it.
         let mut takes = Vec::new();
         let compiled_fold = self.compiled_fold(ty, (iterator, "fold"), span)?;
-        let folds_compiled = compiled_fold.is_some();
         if let Some(fold) = compiled_fold {
             props.push(crate::js::Prop::Field("fold".into(), fold));
             takes.push("fold");
         }
-        // Else a peekable's what it peeked at then its source's, a fuse's
-        // its source's while it has one, by the source's dictionary, which
-        // has that impl's own `fold` (#162); a fuse's source, which it lets
-        // go of, dropped by its drop after, as its `next` drops it at its end.
-        let fold = match ty.peel_refs().kind() {
-            ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableFold", args.type_at(0))),
-            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseFold", args.type_at(0))),
-            _ => None,
-        };
-        if let Some((helper, source)) = fold {
-            let mut args = vec![Expr::var("it"), Expr::var("init"), Expr::var("f")];
-            let dictionary = self.iterator_evidence(source, iterator);
-            let drop = match helper {
-                "$fuseFold" => self.drop_function(source, span)?,
-                _ => None,
-            };
-            if dictionary.is_some() || drop.is_some() {
-                args.push(dictionary.unwrap_or_else(Expr::undefined));
-            }
-            args.extend(drop);
-            // And its `try_fold`, std's, its source's too (#214). A fuse's
-            // of a `FusedIterator` keeps its source at its end, as std's
-            // specialization does, which its drop drops (#244).
-            let mut tried = vec![Expr::var("it"), Expr::var("init"), Expr::var("f"), Expr::var("broke")];
-            tried.extend(args.iter().skip(3).cloned());
-            if helper == "$fuseFold" {
-                let fused = self.type_fact_value(source, crate::lower::recognition::TypeFact::Fused, span)?;
-                if !matches!(fused.kind, js::ExprKind::Bool(false)) {
-                    tried.resize(6, Expr::undefined());
-                    tried.push(fused);
-                }
-            }
-            let fold = Expr::arrow(
-                vec!["it".into(), "init".into(), "f".into()],
-                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
-            );
-            if !folds_compiled {
-                props.push(crate::js::Prop::Field("fold".into(), fold));
-            }
-            let try_helper = match helper {
-                "$fuseFold" => Some("$fuseTryFold"),
-                "$peekableFold" => Some("$peekableTryFold"),
-                _ => None,
-            };
-            if let Some(try_helper) = try_helper {
-                let try_fold = Expr::arrow(
-                    vec!["it".into(), "init".into(), "f".into(), "broke".into()],
-                    vec![StmtKind::Return(Some(Expr::call_helper(try_helper, tried))).at(js::Span::NONE)],
-                );
-                props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
-            }
+        // And its `try_fold`, std's compiled one, in the JS iterator's
+        // terms (ADR 0913).
+        if let Some(try_fold) = self.compiled_try_fold(ty, span)? {
+            props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
         }
-        // Its `count`, std's: a peekable's what it peeked at then its
-        // source's own, a fuse's its source's, a `Take`'s advancing a
-        // reversed `Vec` by one slice (#293).
-        let counted = match ty.peel_refs().kind() {
-            ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableCount", args.type_at(0))),
-            ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseCount", args.type_at(0))),
-            _ => None,
-        };
-        // The compiled impl's first, an `Enumerate`'s, its source's own
-        // (ADR 0912).
-        let counted = match self.compiled_step(ty, iterator, "count") {
-            true => {
-                let (count, _) = self.user_next(ty, iterator, "count", span)?;
-                props.push(crate::js::Prop::Field("count".into(), count));
-                takes.push("count");
-                None
-            }
-            false => counted,
-        };
+        // Its `count`, std's compiled one, a peekable's what it peeked at
+        // then its source's own, a `Take`'s advancing its source (ADR 0913).
+        if self.compiled_step(ty, iterator, "count") {
+            let (count, _) = self.user_next(ty, iterator, "count", span)?;
+            props.push(crate::js::Prop::Field("count".into(), count));
+            takes.push("count");
+        }
         if !takes.is_empty() {
             let takes = takes.into_iter().map(Expr::str).collect();
             props.push(crate::js::Prop::Field("takes".into(), Expr::array(takes)));
         }
-        if let Some((helper, source)) = counted {
-            let mut args = vec![Expr::var("it"), Expr::var("drop")];
-            args.extend(self.iterator_evidence(source, iterator));
-            let count = Expr::arrow(
-                vec!["it".into(), "drop".into()],
-                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
-            );
-            props.push(crate::js::Prop::Field("count".into(), count));
-        }
-        // Its `advance_by`, std's: a fuse's its source's while it has one, a
-        // `FusedIterator`'s kept; a `Rev`'s its source's `advance_back_by`,
+        // Its `advance_by`, std's: a `Rev`'s its source's `advance_back_by`,
         // a `Vec`'s, which drops what it passes as one slice (#286).
-        let advance = match ty.peel_refs().kind() {
-            ty::Adt(_, args) if self.recognition().is_fuse(ty) => {
-                let source = args.type_at(0);
-                let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
-                let drop = self.drop_function(source, span)?.unwrap_or_else(Expr::undefined);
-                let fused = self.type_fact_value(source, crate::lower::recognition::TypeFact::Fused, span)?;
-                Some(("$fuseAdvanceBy", vec![dictionary, drop, fused]))
-            }
-            _ => match self.recognition().reversed(ty) {
-                Some(source) => {
-                    let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
-                    let back = (self.recognition().double_ended_iterator())
-                        .and_then(|back| self.iterator_evidence(source, back))
-                        .unwrap_or_else(Expr::undefined);
-                    Some(("$revAdvanceBy", vec![dictionary, back]))
-                }
-                None => None,
-            },
-        };
+        let advance = self.recognition().reversed(ty).map(|source| {
+            let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
+            let back = (self.recognition().double_ended_iterator())
+                .and_then(|back| self.iterator_evidence(source, back))
+                .unwrap_or_else(Expr::undefined);
+            ("$revAdvanceBy", vec![dictionary, back])
+        });
+        // Not where std's is compiled, `steps.advance` (ADR 0913).
+        let advance = advance.filter(|_| !self.compiled_step(ty, iterator, "advance_by"));
         if let Some((helper, given)) = advance {
             let mut args = vec![Expr::var("it"), Expr::var("m"), Expr::var("drop")];
             args.extend(given);
@@ -790,7 +716,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let field_ty = self
                     .tcx
                     .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
-                let value = Expr::member(Expr::var("iterator"), field.name.as_str());
+                let value = Expr::member(
+                    Expr::var("iterator"),
+                    crate::lower::bindings::field_key(self.tcx, field),
+                );
                 self.drop_value(value, field_ty, span, &mut body)?;
             }
             if !body.is_empty() {
@@ -899,6 +828,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let call = self.impl_call(fold, args, params.map(Expr::var).to_vec(), span)?;
         Ok(Some(Expr::arrow(
             params.map(Into::into).to_vec(),
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        )))
+    }
+
+    /// Std's compiled `try_fold` of std's struct `ty`, as its steps'
+    /// `tryFold`, `(iterator, init, f, broke) => ..`: of any `R`, whose `Try`
+    /// is `$tryOf(broke)`, as a JS iterator's `tryFold` folds (ADR 0913).
+    /// Given no drops of what it folds, as `fold` is, so its `B` is `()`,
+    /// its `F` a function of it and its `R` a `ControlFlow<(), ()>`, which
+    /// nothing drops. `None` where std's isn't compiled.
+    pub(in crate::lower) fn compiled_try_fold(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        let Some(item) = self.iterator_item(ty) else {
+            return Ok(None);
+        };
+        let control_flow = std_item(tcx, StdItem::ControlFlow);
+        let unit = tcx.types.unit;
+        let tried = ty::Ty::new_adt(tcx, tcx.adt_def(control_flow), tcx.mk_args(&[unit.into(), unit.into()]));
+        let by = ty::Ty::new_fn_ptr(
+            tcx,
+            ty::Binder::dummy(tcx.mk_fn_sig(
+                [unit, item],
+                tried,
+                ty::FnSigKind::default().set_safety(rustc_hir::Safety::Safe),
+            )),
+        );
+        let try_fold = trait_method(tcx, std_item(tcx, StdItem::Iterator), "try_fold");
+        let args = tcx.mk_args(&[ty.into(), unit.into(), by.into(), tried.into()]);
+        let Some(instance) = (self.resolve_instance(try_fold, args)?)
+            .filter(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()))
+        else {
+            return Ok(None);
+        };
+        let try_trait = tcx.require_lang_item(rustc_hir::attrs::lang_items::LangItem::Try, span);
+        let given = [(
+            ty::TraitRef::new(tcx, try_trait, [tried]),
+            Expr::call_helper("$tryOf", vec![Expr::var("broke")]),
+        )];
+        let mut values = ["iterator", "init", "f"].map(Expr::var).to_vec();
+        let location = self.caller_location(span);
+        values.extend(self.evidence_args_given(instance.def_id(), instance.args, location, &given, span)?);
+        let call = Expr::call(self.fn_ref(instance.def_id()), values);
+        Ok(Some(Expr::arrow(
+            ["iterator", "init", "f", "broke"].map(Into::into).to_vec(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }

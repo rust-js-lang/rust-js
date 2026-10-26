@@ -100,6 +100,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return self.iterator_dictionary(tr.self_ty(), span);
         }
+        // Std's `Try` of what its generic code is given (ADR 0913), and its
+        // supertrait `FromResidual`'s, the same dictionary.
+        if crate::lower::recognition::is_try_trait(self.tcx, tr.def_id) {
+            use crate::lower::recognition::TryKind;
+            return match crate::lower::recognition::try_kind(self.tcx, tr.self_ty()) {
+                Some(TryKind::ControlFlow) => Ok(Expr::helper("$controlFlowTry")),
+                Some(TryKind::NeverShortCircuit) => Ok(Expr::helper("$neverShortCircuitTry")),
+                None => Err(self.unsupported(
+                    span,
+                    &format!("the `Try` of a `{}` given to std's generic code", tr.self_ty()),
+                )),
+            };
+        }
         // An iterator's extension's, of one given as it is (ADR 0487).
         if crate::lower::recognition::is_iterator_extension(self.tcx, tr.def_id) {
             return self.iterator_extension_dictionary(tr.def_id, tr.self_ty(), span);

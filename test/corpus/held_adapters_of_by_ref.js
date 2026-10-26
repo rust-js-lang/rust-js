@@ -2,6 +2,7 @@
 
 import { iterator_fuse, iterator_map, iterator_peekable } from "@rust-js/std/iter.js";
 import {
+  $count,
   $foldOf,
   $iterator,
   $lazyRange,
@@ -73,7 +74,7 @@ function main() {
   const again = { at: 0, end: 6 };
   const peeked = iterator_peekable(again, { next: countIterator_next, nth: countIterator_nth });
   const first = $peek(peeked);
-  const arg = peeked.reduce((n) => n + 1, 0);
+  const arg = $count(peeked);
   console.log(`${first == null ? "None" : `Some(${first})`} ${arg}`);
 
   const value$4 = halves(

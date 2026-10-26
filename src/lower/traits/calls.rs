@@ -118,6 +118,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         location: Expr,
         span: Span,
     ) -> R<Vec<Expr>> {
+        self.evidence_args_given(id, args, location, &[], span)
+    }
+
+    /// `evidence_args_with`, of the bounds `given` names, the dictionary it
+    /// gives for each: one made where it's called, as what a JS iterator's
+    /// `tryFold` folds into is `$tryOf(broke)` (ADR 0913).
+    pub(in crate::lower) fn evidence_args_given(
+        &mut self,
+        id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        location: Expr,
+        given: &[(ty::TraitRef<'tcx>, Expr)],
+        span: Span,
+    ) -> R<Vec<Expr>> {
         self.check_drops_given(id, args, span)?;
         if let Some(held) = self.dyn_in_generic_cell(id, args) {
             let what = format!("a cell of a `{held}` given to generic code as a cell of a type parameter");
@@ -140,7 +154,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let bound = ty::EarlyBinder::bind(self.tcx, bound)
                         .instantiate(self.tcx, args)
                         .skip_normalization();
-                    values.push(self.dictionary(bound, span)?);
+                    let erased = self.tcx.erase_and_anonymize_regions(bound);
+                    match given
+                        .iter()
+                        .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)
+                    {
+                        Some((_, dictionary)) => values.push(dictionary.clone()),
+                        None => values.push(self.dictionary(bound, span)?),
+                    }
                 }
                 Slot::Fact(index, fact) => {
                     let of = self.drop_slot_of(id, index, args);
