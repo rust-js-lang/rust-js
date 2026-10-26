@@ -90,6 +90,9 @@ const jobs: [string, string[], Record<string, string>][] = [
     ? [["guide, packages, readability", ["bun", "test", "test/docs.test.ts", "test/std-package.test.ts", "test/runtime-package.test.ts", "test/readability.test.ts"], {}] as [string, string[], Record<string, string>]]
     : []),
   ...(shared
+    ? [["React's ports", ["bun", "test", "test/port-"], {}] as [string, string[], Record<string, string>]]
+    : []),
+  ...(shared
     ? ["snapshots", "diagnostics"].map(
         (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
       )
