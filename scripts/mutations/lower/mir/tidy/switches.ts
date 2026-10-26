@@ -317,6 +317,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"],
   },
   {
+    name: "guard-else-falling-unread",
+    breaks: "a guarded arm whose `if` has the next arm's in its `else`, `if (scope) { .. } else if (tracing) { .. }`, falls to nothing, React's getTag an `if` chain with a labeled block",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {\n",
+    replace: "        Some(otherwise) if false && alike(&[otherwise.as_slice(), rest].concat(), next) => {\n",
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "four guarded arms of symbols"],
+  },
+  {
     name: "last-clause-tail-kept",
     breaks: "a `switch`'s last clause keeps the jump it's followed by, `default: tag = \"throw\"; return tag;` before `return tag;`",
     file: "src/lower/mir/tidy/switches.rs",

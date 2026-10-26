@@ -381,3 +381,103 @@ pub fn between(tag: u8, view_transitions: bool) -> u32 {
     }
   }
 });
+
+// ADR 0905, amended: React's createFiberFromTypeAndProps' `getTag`, four
+// guarded arms of its flags, each falling to the next, of the registry's
+// symbols, which MIR tests by their `==`, one guard's `if` and the next
+// arm's in its `else`, `if (scope) { .. } else if (tracing) { .. }`: one
+// `switch`, each case falling through, as upstream's.
+test("four guarded arms of symbols, each falling to the next, are one switch", async () => {
+  const dir = fixture("switch-four-falling");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::{SymbolFor, Unknown};
+
+const REACT_FRAGMENT_TYPE: SymbolFor = SymbolFor("react.fragment");
+const REACT_LEGACY_HIDDEN_TYPE: SymbolFor = SymbolFor("react.legacy_hidden");
+const REACT_VIEW_TRANSITION_TYPE: SymbolFor = SymbolFor("react.view_transition");
+const REACT_SCOPE_TYPE: SymbolFor = SymbolFor("react.scope");
+const REACT_TRACING_MARKER_TYPE: SymbolFor = SymbolFor("react.tracing_marker");
+
+const ENABLE_LEGACY_HIDDEN: bool = false;
+const ENABLE_VIEW_TRANSITION: bool = true;
+const ENABLE_SCOPE_API: bool = false;
+const ENABLE_TRANSITION_TRACING: bool = false;
+
+pub fn tag_of(r#type: Option<&Unknown>) -> &'static str {
+    let mut tag = "function";
+    if js::type_of(r#type) == "function" {
+        tag = "class";
+    } else if js::type_of(r#type) == "string" {
+        tag = "host";
+    } else {
+    'get_tag: {
+        match SymbolFor::from_value(r#type) {
+            Some(REACT_FRAGMENT_TYPE) => return "fragment",
+            Some(REACT_LEGACY_HIDDEN_TYPE) if ENABLE_LEGACY_HIDDEN => return "legacy hidden",
+            // falls through
+            Some(REACT_LEGACY_HIDDEN_TYPE | REACT_VIEW_TRANSITION_TYPE) if ENABLE_VIEW_TRANSITION => {
+                return "view transition";
+            }
+            // falls through
+            Some(REACT_LEGACY_HIDDEN_TYPE | REACT_VIEW_TRANSITION_TYPE | REACT_SCOPE_TYPE)
+                if ENABLE_SCOPE_API =>
+            {
+                return "scope";
+            }
+            // falls through
+            Some(
+                REACT_LEGACY_HIDDEN_TYPE
+                | REACT_VIEW_TRANSITION_TYPE
+                | REACT_SCOPE_TYPE
+                | REACT_TRACING_MARKER_TYPE,
+            ) if ENABLE_TRANSITION_TRACING => return "tracing marker",
+            _ => {
+                if js::type_of(r#type) == "object"
+                    && let Some(object) = r#type
+                {
+                    match SymbolFor::from_value(js::get(object, "$$typeof")) {
+                        Some(REACT_SCOPE_TYPE) => {
+                            tag = "scope object";
+                            break 'get_tag;
+                        }
+                        Some(REACT_FRAGMENT_TYPE) => {
+                            tag = "fragment object";
+                            break 'get_tag;
+                        }
+                        Some(REACT_TRACING_MARKER_TYPE) => {
+                            tag = "marker object";
+                            break 'get_tag;
+                        }
+                        _ => {}
+                    }
+                }
+                tag = "throw";
+            }
+        }
+    }
+    }
+    tag
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`      case REACT_SCOPE_TYPE:
+        if (ENABLE_SCOPE_API) {
+          return "scope";
+        }
+      // falls through
+      case REACT_TRACING_MARKER_TYPE:
+        if (ENABLE_TRANSITION_TRACING) {
+          return "tracing marker";
+        }
+`);
+  const lib = await import(join(dir, "lib.js"));
+  const of = (name: string) => Symbol.for(`react.${name}`);
+  expect(["fragment", "legacy_hidden", "view_transition", "scope", "tracing_marker"].map((n) => lib.tagOf(of(n))))
+    .toEqual(["fragment", "view transition", "view transition", "throw", "throw"]);
+  expect([lib.tagOf({ $$typeof: of("scope") }), lib.tagOf({ $$typeof: of("fragment") }), lib.tagOf({}), lib.tagOf(null), lib.tagOf(3)])
+    .toEqual(["scope object", "fragment object", "throw", "throw", "throw"]);
+  expect([lib.tagOf(() => {}), lib.tagOf("div")]).toEqual(["class", "host"]);
+});

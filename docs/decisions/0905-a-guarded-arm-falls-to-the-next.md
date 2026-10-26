@@ -288,3 +288,21 @@ as ESLint's `no-fallthrough` reads one, `/falls?\s?through/i`, no
 `// Fallthrough` is written beside it** (`to_oxc/cases.rs`'s
 `says_fallthrough`, `fallthroughs`). Held by the corpus's
 `option_constants_switch.rs` and mutation `fallthrough-said-twice`.
+
+## Amendment: a guard whose next arm's test is in its `else` falls through (2026-10-26)
+
+React's createFiberFromTypeAndProps falls through four guarded cases,
+`legacy hidden`, `view transition`, `scope`, `tracing marker`. Its port's
+arms are of the registry's symbols, which MIR tests by their `==`, and of
+the third arm's case MIR wrote its guard's `if` with the fourth's test in
+its `else`: `if (ENABLE_SCOPE_API) { return "scope"; } else { if
+(ENABLE_TRANSITION_TRACING) { .. } }`. None of the forms `guard_alone`
+read was that, so the `match` was an `if` chain with a labeled block,
+`bb101:`, where upstream's is a `switch`.
+
+**`if (guard) { .. } else { E } R`, its `if` leaving, is the guard's
+`if` where `E` and then `R` are the next case's statements**: where the
+guard fails it goes on to `E` and `R` either way. Held by
+`test/lowering-switch-fallthrough.test.ts`, "four guarded arms of
+symbols, each falling to the next, are one switch", run as JS, and
+mutation `guard-else-falling-unread`.

@@ -478,6 +478,12 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
         None if alike(then, next) && rest.last().is_none_or(js::ends) => (test.clone().negated_test(), leaving(rest)),
         Some(otherwise) if rest.is_empty() && alike(otherwise, next) => (test.clone(), leaving(then)),
         Some(otherwise) if rest.is_empty() && alike(then, next) => (test.clone().negated_test(), leaving(otherwise)),
+        // `if (guard) { .. } else { next } rest`, its `if` leaving: the
+        // `else` and what follows are the next's, `else if` of three arms
+        // falling, React's getTag (ADR 0905, amended).
+        Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {
+            (test.clone(), then.clone())
+        }
         _ => return None,
     };
     let (test, then) = held;
