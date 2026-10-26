@@ -3,7 +3,10 @@
 Status: Accepted, by the user's decision of 2026-10-24. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
-constructor function's (below).
+constructor function's (below). Extended by
+[0911](0911-a-bindings-class-is-the-global-typescript-names.md):
+`js::class::<T>()` of a binding's type is the global class TypeScript
+names it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for what's kept, a
 value's fields and its methods' meaning; and a compile error where Rust's

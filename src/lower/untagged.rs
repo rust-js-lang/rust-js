@@ -292,6 +292,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// The class a binding's JS object type `ty` is of, as a value: the one
+    /// `instanceof` tests it by (`untagged_kind`'s), where TypeScript names
+    /// the type as that class, `#[rust_js::types = "AbortController"]`, a
+    /// global's, `js::class::<AbortController>()`'s (ADR 0911). None of a
+    /// type TypeScript names otherwise, `object` or `unknown`, or doesn't,
+    /// `JsError`, what JS threw, of no one class.
+    pub(super) fn class_value(&self, ty: Ty<'tcx>) -> Option<String> {
+        let Some(Kind::Class(class, Some(did))) = self.untagged_kind(ty) else {
+            return None;
+        };
+        match written_types(self.tcx, did)? {
+            Written::Reference { from: None, name, .. } if name == class => Some(class),
+            _ => None,
+        }
+    }
+
     /// What JS can tell `variant` is: its payload's kind, or of one without
     /// fields, its name's string.
     pub(super) fn untagged_variant_kind(&self, variant: &VariantDef, args: GenericArgsRef<'tcx>) -> Option<Kind> {

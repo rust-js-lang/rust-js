@@ -579,9 +579,9 @@ pub fn throw(this: Option<&Unknown>) -> ! {
 }
 
 /// A JS class's constructor function, `Component`, which [`class`] gives
-/// of a struct marked `#[rust_js::class]`: its `prototype`, which a port
-/// sets as JS does, `ComponentDummy.prototype = Component.prototype` (ADR
-/// 0761).
+/// of a struct marked `#[rust_js::class]`, or of a binding's class: its
+/// `prototype`, which a port sets as JS does, `ComponentDummy.prototype =
+/// Component.prototype` (ADR 0761), and what [`new`] makes one of.
 pub struct Class(PhantomData<JsObject>);
 
 unsafe impl Defined for Class {}
@@ -603,8 +603,10 @@ impl Class {
 }
 
 /// The constructor function of `T`, a struct marked `#[rust_js::class]`:
-/// `js::class::<Component>()` is `Component` (ADR 0761). Of any other type,
-/// a compile error.
+/// `js::class::<Component>()` is `Component` (ADR 0761). Of a binding's
+/// type, the global class TypeScript names it, its `#[rust_js::types]`:
+/// `js::class::<AbortController>()` is `AbortController` (ADR 0911). Of
+/// any other type, a compile error.
 #[cfg_attr(rust_js, rust_js::link_name = "class")]
 pub fn class<T>() -> &'static Class {
     unreachable!()

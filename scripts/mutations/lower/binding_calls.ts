@@ -27,6 +27,14 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
   {
+    name: "binding-class-refused",
+    breaks: "`js::class::<AbortController>()` of a binding's class is refused, as before, so React's `AbortControllerLocal` can't keep the host's class (ADR 0911)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    (None, Some(class)) => self.js_ref(&class),\n",
+    replace: "                    (None, Some(_)) => return Err(self.unsupported(span, \"a binding's class\")),\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a binding's class is the global class"],
+  },
+  {
     name: "js-throw-made-an-error",
     breaks: "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
     file: "src/lower/binding_calls.rs",

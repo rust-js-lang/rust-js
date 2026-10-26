@@ -299,6 +299,72 @@ export function report(message) {
 }
 ```
 
+### A class as a value
+
+A binding's class is a value as the crate's own is, `js::class::<T>()`
+of its type: the global class TypeScript names it,
+`js::class::<AbortController>()` `AbortController`, where its
+`#[rust_js::types]` names that class, as webapi's each do
+([ADR 0911](../../decisions/0911-a-bindings-class-is-the-global-typescript-names.md)).
+A program keeps one where the host has it, and its own where it hasn't,
+as React keeps `AbortController`, and makes one with `js::new`, as of
+[the crate's class](export-to-javascript.md#js-classes):
+
+```rust
+use js::Class;
+use webapi::AbortController;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct AbortControllerShim {
+    pub aborted: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl AbortControllerShim {
+    pub fn new() -> Self {
+        AbortControllerShim { aborted: false }
+    }
+}
+
+thread_local! {
+    // In environments without AbortController (e.g. tests)
+    // replace it with a lightweight shim that only has the features we use.
+    #[cfg_attr(rust_js, rust_js::name = "AbortControllerLocal")]
+    static ABORT_CONTROLLER_LOCAL: &'static Class = if js::is_defined(webapi::abort_controller::new) {
+        js::class::<AbortController>()
+    } else {
+        js::class::<AbortControllerShim>()
+    };
+}
+
+pub fn controller() -> &'static AbortController {
+    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(js::unknown(*class), ()));
+    // Safety: each class makes an `AbortController`, or what React uses of one.
+    unsafe { js::cast(Some(controller)) }
+}
+```
+
+```js
+export function AbortControllerShim() {
+  this.aborted = false;
+}
+
+// In environments without AbortController (e.g. tests)
+// replace it with a lightweight shim that only has the features we use.
+const AbortControllerLocal =
+  typeof AbortController !== "undefined" ? AbortController : AbortControllerShim;
+
+export function controller() {
+  const controller = new AbortControllerLocal();
+  // Safety: each class makes an `AbortController`, or what React uses of one.
+  return controller;
+}
+```
+
+- **What TypeScript names no class is refused**: a `JsError`, what JS
+  threw, of no one class; a `JsObject` or an `Unknown`, TypeScript's
+  `object` and `unknown`; a type it doesn't name, `any`.
+
 ## What a value is: `typeof`
 
 `js::type_of(value)` is `typeof value`, as text: for a message. To branch on

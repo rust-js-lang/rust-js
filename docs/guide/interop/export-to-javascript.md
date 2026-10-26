@@ -689,7 +689,9 @@ export function mounted(props?: unknown | null | undefined): Component;
   }`.
 - **`js::class::<T>()` is the constructor itself**, `Component`, a
   `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
-  a prototype chain is written with, as JS writes it. `js::unknown(..)` of
+  a prototype chain is written with, as JS writes it. Of a binding's
+  type, it's the global class TypeScript names, `AbortController`
+  ([A class as a value](global-scope.md#a-class-as-a-value)). `js::unknown(..)` of
   an instance needs its `unsafe impl js::Defined`, a marker.
 - **Its declaration is a class's**, `export declare class Component {
   constructor(..); props?: unknown; forceUpdate(): void; }`, which a

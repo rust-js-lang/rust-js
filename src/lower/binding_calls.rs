@@ -191,17 +191,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
             (JsForm::Class, None) if args.is_empty() => {
-                let class = generic_args.types().next().and_then(|ty| match ty.kind() {
+                let ty = generic_args.types().next();
+                let constructor = ty.and_then(|ty| match ty.kind() {
                     ty::Adt(adt, _) => super::classes::constructor_of(self.tcx, adt.did()),
                     _ => None,
                 });
-                let Some(constructor) = class else {
-                    let what = "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct";
-                    return Err(self.unsupported(span, what));
-                };
-                match self.fn_ref(constructor).kind {
-                    js::ExprKind::Member(class, _) => *class,
-                    _ => unreachable!("a class's constructor is a member of its class"),
+                // The crate's class, its constructor function; or a
+                // binding's, the global class TypeScript names (ADR 0911).
+                match (constructor, ty.and_then(|ty| self.recognition().class_value(ty))) {
+                    (Some(constructor), _) => match self.fn_ref(constructor).kind {
+                        js::ExprKind::Member(class, _) => *class,
+                        _ => unreachable!("a class's constructor is a member of its class"),
+                    },
+                    (None, Some(class)) => self.js_ref(&class),
+                    (None, None) => {
+                        let what = "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct, nor a class TypeScript names, `#[rust_js::types = \"AbortController\"]`";
+                        return Err(self.unsupported(span, what));
+                    }
                 }
             }
             (JsForm::Throw, Some(this)) if args.is_empty() => {

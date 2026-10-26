@@ -614,7 +614,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
-- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's)*
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; extended by 0911: a binding's class is the global TypeScript names)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
@@ -693,6 +693,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md)
+- [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

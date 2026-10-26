@@ -527,3 +527,67 @@ pub fn asked() -> bool {
   const refused = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
   expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("a step isn't a method of what the one before gives")]);
 });
+
+// ADR 0911: `js::class::<T>()` of a binding's class is the global class
+// TypeScript names, as React's ReactFiberCacheComponent keeps
+// `AbortController` where the host has one, and its shim where it hasn't;
+// `js::new` of either constructs it.
+test("a binding's class is the global class TypeScript names", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("binding-class");
+  writeFileSync(join(dir, "lib.rs"), `use js::Class;
+use webapi::AbortController;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct AbortControllerShim {
+    pub shimmed: bool,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl AbortControllerShim {
+    pub fn new() -> Self {
+        AbortControllerShim { shimmed: true }
+    }
+}
+
+thread_local! {
+    // In environments without AbortController (e.g. tests)
+    // replace it with a lightweight shim that only has the features we use.
+    #[cfg_attr(rust_js, rust_js::name = "AbortControllerLocal")]
+    static ABORT_CONTROLLER_LOCAL: &'static Class = if js::is_defined(webapi::abort_controller::new) {
+        js::class::<AbortController>()
+    } else {
+        js::class::<AbortControllerShim>()
+    };
+}
+
+pub fn made() -> &'static AbortController {
+    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(js::unknown(*class), ()));
+    unsafe { js::cast(Some(controller)) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`// In environments without AbortController (e.g. tests)
+// replace it with a lightweight shim that only has the features we use.
+const AbortControllerLocal =
+  typeof AbortController !== "undefined" ? AbortController : AbortControllerShim;`);
+  expect(js).toContain("const controller = new AbortControllerLocal();");
+  // Where the host has one, its own; where it hasn't, the shim.
+  const host = globalThis as any;
+  expect((await import(join(dir, "lib.js"))).made()).toBeInstanceOf(AbortController);
+  writeFileSync(join(dir, "shim.js"), js);
+  const real = host.AbortController;
+  delete host.AbortController;
+  try {
+    expect((await import(join(dir, "shim.js"))).made()).toEqual({ shimmed: true });
+  } finally {
+    host.AbortController = real;
+  }
+  // A type that names no class TypeScript has, as what JS threw doesn't, is refused.
+  for (const [ty, name] of [["js::JsError", "error"], ["js::JsObject", "object"], ["js::Unknown", "unknown"]]) {
+    writeFileSync(join(dir, `${name}.rs`), `pub fn class() -> &'static js::Class {\n    js::class::<${ty}>()\n}\n`);
+    const refused = Bun.spawnSync([compiler, join(dir, `${name}.rs`), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+    expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct, nor a class TypeScript names")]);
+  }
+});

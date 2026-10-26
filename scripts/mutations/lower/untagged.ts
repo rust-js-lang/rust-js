@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
   },
   {
+    name: "binding-class-any-name",
+    breaks: "`js::class::<JsError>()` is `JsError`, a class TypeScript names no type by, which no host has: a `ReferenceError` where the refusal was (ADR 0911)",
+    file: "src/lower/untagged.rs",
+    find: "            Written::Reference { from: None, name, .. } if name == class => Some(class),\n            _ => None,\n",
+    replace: "            _ => Some(class),\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a binding's class is the global class"],
+  },
+  {
     name: "untagged-literal-any",
     breaks: "a variant without fields is matched by any value, `matches!(false, Blocking)`",
     file: "src/lower/untagged.rs",
