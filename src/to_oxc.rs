@@ -222,9 +222,7 @@ pub fn emit(
             }
         }
         // And an object's `}`, its comments before it (ADR 0708, amended).
-        for (line, column, texts) in closing::splits(&closing, map, &generated_lines, &offset) {
-            splits.entry(line).or_default().push((column, texts));
-        }
+        closing::split(&closing, map, &generated_lines, &offset, &mut splits);
     }
     for list in splits.values_mut() {
         list.sort_by_key(|&(column, _)| column);
@@ -266,11 +264,7 @@ pub fn emit(
             // What's first on its line, an object's `}`: its comments the
             // lines before it, no line of nothing (ADR 0708, amended).
             if head.trim().is_empty() && end.is_none() {
-                for text in texts {
-                    code.push_str(text);
-                    code.push('\n');
-                }
-                added += texts.len() as u32;
+                added += closing::lines_of(texts, &mut code);
                 at = column;
                 placed.push((column, header_lines + i + added));
                 continue;

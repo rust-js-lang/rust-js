@@ -90,26 +90,36 @@ pub(super) fn taken<'c>(
     (rest, taken)
 }
 
-/// Where each of `closing`, an object's `}` and the comments before it, is
-/// split in `generated_lines`: the line, by the map, and the column of the
-/// `}` its last source byte is printed as.
-pub(super) fn splits<'c>(
-    closing: &'c [(u32, Vec<String>)],
+/// Each of `closing`, an object's `}` and the comments before it, split in
+/// `generated_lines` where it is: its line, by the map, and the column of
+/// the `}` its last source byte is printed as, in `splits`.
+pub(super) fn split<'c>(
+    closing: &'c Closing,
     map: &oxc_sourcemap::SourceMap,
     generated_lines: &[&str],
     offset: &dyn Fn(u32, u32) -> Option<u32>,
-) -> Vec<(u32, u32, &'c [String])> {
-    (closing.iter())
-        .filter_map(|(end, texts)| {
-            let (line, column) = (map.get_tokens())
-                .filter(|t| offset(t.get_src_line(), t.get_src_col()) == Some(*end))
-                .map(|t| (t.get_dst_line(), t.get_dst_col()))
-                .find(|&(line, column)| {
-                    (generated_lines.get(line as usize))
-                        .and_then(|text| text.get(column as usize..))
-                        .is_some_and(|rest| rest.starts_with('}'))
-                })?;
-            Some((line, column, texts.as_slice()))
-        })
-        .collect()
+    splits: &mut std::collections::HashMap<u32, Vec<(u32, &'c [String])>>,
+) {
+    for (end, texts) in closing {
+        let found = (map.get_tokens())
+            .filter(|t| offset(t.get_src_line(), t.get_src_col()) == Some(*end))
+            .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            .find(|&(line, column)| {
+                (generated_lines.get(line as usize))
+                    .and_then(|text| text.get(column as usize..))
+                    .is_some_and(|rest| rest.starts_with('}'))
+            });
+        if let Some((line, column)) = found {
+            splits.entry(line).or_default().push((column, texts.as_slice()));
+        }
+    }
+}
+
+/// `texts`, each a line of its own in `code`: how many lines.
+pub(super) fn lines_of(texts: &[String], code: &mut String) -> u32 {
+    for text in texts {
+        code.push_str(text);
+        code.push('\n');
+    }
+    texts.len() as u32
 }
