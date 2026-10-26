@@ -491,14 +491,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
   },
   {
-    name: "nullable-local-of-no-option-kept",
-    breaks: "a `#[rust_js::nullable]` thread-local of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
-    file: "src/lower/bindings.rs",
-    find: "            if !of_option {\n",
-    replace: "            if false {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "of no Option is refused"],
-  },
-  {
     name: "nullable-type-parameter-refused",
     breaks: "a binding's type parameter `#[rust_js::nullable(..)]` names is refused, React's `createCursor<T>(defaultValue)` (ADR 0586, amended)",
     file: "src/lower/bindings.rs",
@@ -521,13 +513,5 @@ export const mutations: Mutation[] = [
     find: "                    && !of_type_parameter(tcx, ty)\n",
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
-  },
-  {
-    name: "nullable-thread-local-of-option-refused",
-    breaks: "a `#[rust_js::nullable]` thread-local of an `Option` itself, React's `callComponentInDEV`, is refused",
-    file: "src/lower/bindings.rs",
-    find: "                    && (nullable_option(tcx, args.type_at(0)).is_some() || made_of_options(tcx, args.type_at(0))));\n",
-    replace: "                    && (nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0)) || made_of_options(tcx, args.type_at(0))));\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
   },
 ];

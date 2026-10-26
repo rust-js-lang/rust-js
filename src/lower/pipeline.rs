@@ -297,11 +297,11 @@ pub fn lower_crate<'tcx>(
         // its variable, by its name.
         let key = thread_local_inits.get(&def_id).copied();
         let named = key.unwrap_or(def_id);
-        // A nullable one's `None` `null` (ADR 0586, amended).
+        // A nullable one's `None` `null`, a nullable `const`'s too (ADR 0586, amended).
+        let nullable = |id: rustc_span::def_id::LocalDefId| super::bindings::nullable_local(tcx, id.to_def_id());
         let value = match key {
-            Some(key) if super::bindings::nullable_local(tcx, key.to_def_id()) => {
-                super::std_types::cell::nullable_made(value)
-            }
+            Some(key) if nullable(key) => super::std_types::cell::nullable_made(value),
+            None if nullable(def_id) => js::Storage::NullForNone.written(value, false),
             _ => value,
         };
         let info = &fns[&named.to_def_id()];

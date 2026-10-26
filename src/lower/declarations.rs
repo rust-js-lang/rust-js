@@ -1132,7 +1132,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] })
             }
             Some(_) => self.ts(ty),
-            // One that holds the `Option` itself, a `const`, alike.
+            // One that holds the `Option` itself, a `const`, a nullable `const` too.
             None if super::bindings::nullable_local(self.tcx, def_id)
                 && let Some(inner) = self.option(ty) =>
             {

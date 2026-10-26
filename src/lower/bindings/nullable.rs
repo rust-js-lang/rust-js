@@ -2,6 +2,7 @@
 //! its parameters, and a thread-local: that a `None` is `null` there (ADRs
 //! 0196, 0275, 0586).
 
+use crate::lower::recognition::{StdItem, is_std_def};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt};
 use rustc_span::Symbol;
@@ -104,7 +105,8 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
 /// `#[rust_js::nullable]` alone on its static (ADR 0586, amended): its
 /// module's variable, `null` where it's made and set, as a nullable
 /// field's is, `Fiber | null` to TypeScript, as React's `let current:
-/// Fiber | null = null` is.
+/// Fiber | null = null` is. Or a `const`'s, of an `Option`: `export const
+/// NoTransition = null`.
 pub(in crate::lower) fn nullable_local(tcx: TyCtxt<'_>, key: DefId) -> bool {
     nullable_alone(tcx, key)
 }
@@ -121,13 +123,38 @@ pub(in crate::lower) fn nullable_local_option(tcx: TyCtxt<'_>, key: DefId) -> bo
                 && option(args.type_at(0)))
 }
 
+/// What's wrong with `#[rust_js::nullable]` on `def`, a `const`, or a
+/// `thread_local!`'s key, which is one: a thread-local's is of an `Option`,
+/// or a `Cell` or a `RefCell` of one, or of a generic type made of one,
+/// `StackCursor<Option<T>>`, whose generic constructor's given `None` is
+/// `null`; a `const`'s is of an `Option` (ADR 0586, amended).
+pub(in crate::lower) fn nullable_const_refused(tcx: TyCtxt<'_>, def: DefId) -> Option<&'static str> {
+    if !nullable_local(tcx, def) {
+        return None;
+    }
+    let option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    let ty = tcx.type_of(def).instantiate_identity().skip_normalization();
+    match ty.kind() {
+        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) => {
+            let held = args.type_at(0);
+            let of_option = nullable_option(tcx, held).is_some() || made_of_options(tcx, held);
+            (!of_option).then_some(
+                "rust-js: `#[rust_js::nullable]` of a thread-local is of one of an `Option`, or a `Cell` or a `RefCell` of one, or of a generic type made of one, `StackCursor<Option<T>>`, whose `None` is then `null`; this one isn't",
+            )
+        }
+        _ => (!option(ty)).then_some(
+            "rust-js: `#[rust_js::nullable]` of a `const` is of one that's an `Option`, whose `None` is then `null`; this one isn't",
+        ),
+    }
+}
+
 /// Whether `held`, what a `#[rust_js::nullable]` thread-local holds, is
 /// of a generic type one of whose type parameters is an `Option`,
 /// `StackCursor<Option<Rc<HiddenContext>>>`, as a generic constructor
 /// makes it, `create_cursor(None)`: each `Option` its initializer's call
 /// is given for a type parameter's value is `null` for `None` (ADR 0586,
 /// amended).
-pub(in crate::lower) fn made_of_options(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
+fn made_of_options(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
     let option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
     matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))
 }

@@ -6,7 +6,8 @@ nullable fields and [0275](0275-nullable-writes-null.md). Amended by
 a `Vec` of them, each item's `None` `null`; and of a thread-local, and a
 binding's type parameter; and of a generic struct's field of a type
 parameter's value, and a thread-local a generic constructor makes, below;
-and of a thread-local of an `Option` itself, and what one gives, below.
+and of a thread-local of an `Option` itself, and what one gives, and of a
+`const`, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.
@@ -277,3 +278,40 @@ thread-local of an Option is null where it's made, and what it gives is as
 it is", its JS, `.d.ts` and values in and out of DEV, and the mutations
 `nullable-thread-local-of-option-refused`, `nullable-option-init-undefined`,
 `nullable-option-local-declared-undefined` and `nullable-cell-taken-unknown`.
+
+## Amendment: of a `const`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A where JS reads it
+`== null`, and C where it's `=== null`. React's ReactFiberTransition
+exports `export const NoTransition = null`, which its importers compare
+`=== NoTransition`. The port's `pub const NO_TRANSITION:
+Option<&Transition> = None;` was `export const NoTransition = undefined;`,
+and `#[rust_js::nullable]` of it was refused with the thread-local's
+message, as a `thread_local!`'s key is a `const` too.
+
+**`#[rust_js::nullable]` on a `const` of an `Option` makes its `None`
+`null`**: its value is stored as a nullable place stores it
+(`Storage::NullForNone`), `export const NoTransition = null;`, a `Some`'s
+value as it is, and its `.d.ts` is `Transition | null`. What the crate's
+bodies read of it is the same `None` to Rust either way (ADR 0030); a
+body that reads it by its name reads `null`. Of a `const` of anything
+else it's refused, as a `const`'s:
+
+```
+rust-js: `#[rust_js::nullable]` of a `const` is of one that's an `Option`, whose `None` is then `null`; this one isn't
+```
+
+`bindings/nullable.rs`'s `nullable_const_refused` says what's wrong with
+either, a thread-local's by its `LocalKey`, a `const`'s otherwise.
+
+### What holds it
+
+- `test/lowering-module-variables.test.ts`, "a nullable const's None is
+  null": its JS, its `.d.ts`, and its value imported, and one of a number
+  refused.
+- Mutations `nullable-const-of-no-option-kept`,
+  `nullable-const-taken-for-a-thread-local`,
+  `nullable-local-of-no-option-kept` (`bindings/nullable.rs`),
+  `nullable-const-made-undefined` (`pipeline.rs`), and
+  `nullable-option-local-declared-undefined` (`declarations.rs`), which a
+  thread-local of an `Option` shares.

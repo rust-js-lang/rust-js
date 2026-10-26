@@ -813,6 +813,11 @@ export function ratio(a, b) {
   `#[rust_js::nullable(range)]`, a binding's or the crate's own
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md),
   [ADR 0578](../../decisions/0578-a-nullable-result-where-its-written.md)).
+  On a `const` of an `Option`, its `None` is `null`, `pub const
+  NO_TRANSITION: Option<&Transition> = None;`'s `export const
+  NoTransition = null;`, `Transition | null` to TypeScript; on a `const`
+  of anything else it's an error
+  ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   The crate's function's parameter is `null` where a call gives it `None`
   and where its body sets it so, `children = None`'s `children = null`,
   and what a call gives it otherwise is as it is, its body reading either

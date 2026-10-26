@@ -461,6 +461,48 @@ thread_local! {
   );
 });
 
+// React's ReactFiberTransition: `export const NoTransition = null`. A
+// `#[rust_js::nullable]` `const` of an `Option` is `null` for `None`, and
+// its `.d.ts` `Transition | null`; a `Some`'s value is as it is; and of no
+// `Option` it's refused, as a `const`'s, not a thread-local's (ADR 0586,
+// amended).
+test("a nullable const's None is null", async () => {
+  const dir = fixture("nullable-const");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Transition {
+    pub name: String,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable, rust_js::name = "NoTransition")]
+pub const NO_TRANSITION: Option<&Transition> = None;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub const DEFAULT_NAME: Option<&str> = Some("idle");
+
+pub fn transition_name(transition: Option<&Transition>) -> &str {
+    transition.map_or("none", |transition| &transition.name)
+}
+
+pub fn none_name() -> &'static str {
+    transition_name(NO_TRANSITION)
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const NoTransition = null;\n");
+  expect(js).toContain('export const DEFAULT_NAME = "idle";\n');
+  const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(types).toContain("export const NoTransition: Transition | null;\n");
+  expect(types).toContain("export const DEFAULT_NAME: string | null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.NoTransition, lib.DEFAULT_NAME, lib.noneName()]).toEqual([null, "idle", "none"]);
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::nullable)]
+pub const LANES: u32 = 0;
+`);
+  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+    "`#[rust_js::nullable]` of a `const` is of one that's an `Option`, whose `None` is then `null`; this one isn't",
+  );
+});
+
 
 // React's ReactFiberTransition imports `entangledTransitionTypes`, an
 // `export let` that starts `null`, and tests it `!== null`. Its port fills
