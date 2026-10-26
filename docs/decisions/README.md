@@ -508,7 +508,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too; extended by 0891: a constructor its last step)*
 - [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported; by 0773: one a `pub use` of its module renames too)*
-- [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md)
+- [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md) *(amended: a closure of the crate's a library's function is given hands nothing)*
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
 - [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next)*

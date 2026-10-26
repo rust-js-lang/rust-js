@@ -1102,7 +1102,9 @@ export function share(doc) {
   none of: read the count in the library, which then counts it. A library
   hands what the items of its the crate uses reach, an `Rc` in a
   function's parameters or result or a type's fields, not one of a type
-  parameter the crate gives it, nor of a `bool` static's
+  parameter the crate gives it, nor what a closure of the crate's holds
+  that its generic function is given, `then(move |_| ..)`'s, nor of a
+  `bool` static's
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
 - **An `Rc` is `js::Defined` as what it points at is**, as a `Box` is, so
   a `WeakMap` or a `Map` holds one, `WeakMap<JsObject, Rc<CacheNode>>`,

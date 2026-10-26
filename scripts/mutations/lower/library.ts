@@ -123,6 +123,14 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
   },
   {
+    name: "crate-closure-taken-for-the-librarys",
+    breaks: "what a closure of the crate's given to a library's generic binding holds, an `Rc<RefCell<Vec<&dyn Fn(..)>>>`, is taken for a `dyn Fn` the library hands it, so every `dyn Fn` drops and an unrelated `Rc<RefCell<Vec<Rc<dyn Fn()>>>>` is counted, `{ value, strong, weak }` (ADR 0626, amended)",
+    file: "src/lower/library.rs",
+    find: "                        && id.is_local()\n",
+    replace: "                        && false\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a crate's closure given to a library's binding hands the crate nothing"],
+  },
+  {
     name: "library-rc-unreached",
     breaks: "an `Rc` a library hands a crate isn't counted, though the library counts it",
     file: "src/lower/library.rs",

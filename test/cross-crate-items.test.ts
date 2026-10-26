@@ -444,3 +444,83 @@ pub const FLAGGED: i32 = if ENABLE_CREATE_EVENT_HANDLE_API {
   const { BeforeMutationMask, Shared } = await import(join(dir, "app", "lib.js"));
   expect([BeforeMutationMask, Shared]).toEqual([2, 6]);
 });
+
+// React's ReactFiberCacheComponent: an `AbortController` shim's listeners,
+// `Rc<RefCell<Vec<Rc<dyn Fn()>>>>`, and elsewhere in the crate a closure
+// given to a library's generic binding, `Thenable::then(impl FnOnce)`, that
+// holds an `Rc<RefCell<Vec<&dyn Fn(..)>>>`. The closure is the crate's: what
+// it holds the crate made and sees, not a `dyn Fn` the library hands it,
+// so no `dyn Fn` drops, and no `Rc` is counted, the listeners an array
+// (ADR 0626, amended).
+test("a crate's closure given to a library's binding hands the crate nothing", async () => {
+  const dir = fixture("cross-crate-closure-given");
+  const { app } = compiled(dir, `use std::marker::PhantomData;
+
+use js::{JsObject, Unknown};
+
+pub struct Thenable(PhantomData<JsObject>);
+
+unsafe impl js::Defined for Thenable {}
+
+impl Thenable {
+    #[cfg_attr(rust_js, rust_js::link_name = "then")]
+    pub fn then(&self, on_fulfill: impl FnOnce(Option<&'static Unknown>) + 'static) {
+        let _ = on_fulfill;
+        unreachable!()
+    }
+}
+
+pub fn settled(thenable: &Thenable) {
+    thenable.then(|_| {});
+}
+`, `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use dep::Thenable;
+
+type Listener = Rc<dyn Fn()>;
+
+pub struct Signal {
+    pub aborted: Cell<bool>,
+    pub add: Box<dyn Fn(Listener)>,
+}
+
+pub fn controller() -> (Rc<Signal>, Box<dyn Fn()>) {
+    let listeners: Rc<RefCell<Vec<Listener>>> = Rc::new(RefCell::new(Vec::new()));
+    let signal = Rc::new(Signal {
+        aborted: Cell::new(false),
+        add: {
+            let listeners = Rc::clone(&listeners);
+            Box::new(move |listener| listeners.borrow_mut().push(listener))
+        },
+    });
+    let abort: Box<dyn Fn()> = {
+        let signal = Rc::clone(&signal);
+        Box::new(move || {
+            signal.aborted.set(true);
+            let count = listeners.borrow().len();
+            for index in 0..count {
+                let listener = Rc::clone(&listeners.borrow()[index]);
+                listener();
+            }
+        })
+    };
+    (signal, abort)
+}
+
+pub fn count_later(thenable: &Thenable) {
+    let waiters: Rc<RefCell<Vec<&'static dyn Fn(Option<&'static js::Unknown>)>>> = Rc::new(RefCell::new(Vec::new()));
+    thenable.then(move |_| println!("{}", waiters.borrow().len()));
+}
+`);
+  expect(app).not.toContain("strong");
+  expect(app).not.toContain("$dropping");
+  expect(app).toContain("  const listeners = [];\n");
+  const { controller } = await import(join(dir, "app", "lib.js"));
+  const [signal, abort] = controller();
+  const heard: string[] = [];
+  signal.add(() => heard.push("one"));
+  signal.add(() => heard.push(String(signal.aborted)));
+  abort();
+  expect(heard).toEqual(["one", "true"]);
+});

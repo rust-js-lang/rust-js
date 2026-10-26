@@ -726,9 +726,20 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
         let tcx = self.tcx;
         let library = |id: DefId| self.is_library(id.krate);
+        // Not what a closure of the crate's holds, which a library's generic
+        // function is given, `then(move |_| ..)`'s: the crate made it of
+        // what it sees, nothing the library hands it.
         let mut parts = |of: DefId, tys: Vec<ty::Ty<'tcx>>, reached: &mut Reached<'tcx>| {
             for t in tys {
-                for part in t.walk().filter_map(|part| part.as_type()) {
+                let mut walk = t.walk();
+                while let Some(part) = walk.next() {
+                    let Some(part) = part.as_type() else { continue };
+                    if let ty::Closure(id, _) | ty::CoroutineClosure(id, _) | ty::Coroutine(id, _) = *part.kind()
+                        && id.is_local()
+                    {
+                        walk.skip_current_subtree();
+                        continue;
+                    }
                     self.reach(part, Some(of.krate), seen, reached);
                 }
             }
