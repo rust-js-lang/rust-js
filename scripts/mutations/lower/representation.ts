@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-written-in-place",
+    breaks: "`*cell = Matrix::Cell(v)` through a `&mut` to an untagged enum is `$assign(cell, v)`, which changes no number: the matrix keeps its old cell (#347)",
+    file: "src/lower/representation.rs",
+    find: "                && !bindings::is_untagged(self.tcx, adt.did())\n                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
+    replace: "                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_written_through_mut.rs$"],
+  },
+  {
     name: "uncounted-weak-never-nullish",
     breaks: "`Some(Weak::new())` is `null`, the same as `None` (ADR 0843)",
     file: "src/lower/representation.rs",

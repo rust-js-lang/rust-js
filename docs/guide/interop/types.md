@@ -696,6 +696,9 @@ export function size(input) {
   tested as that kind. A `match` of three cases or more of kinds `typeof`
   tells is a `switch (typeof value)`, as a `match` of constants is a
   `switch` ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
+  A `&mut` to one is a place, as a `&mut f64` is: `*r = v` writes where
+  the value is, as no payload can become another's in place
+  ([ADR 0214](../../decisions/0214-untagged-enums.md)).
 
 ## Option and Result
 

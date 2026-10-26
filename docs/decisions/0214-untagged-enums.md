@@ -154,3 +154,19 @@ A payload of a JS object type is told apart by its class, `instanceof`;
 but one TypeScript types as an object literal, `Dict`'s `{ [key: string]:
 T }`, has no class: it's an object, `typeof value === "object"`. A legacy
 URL's query, its text or a `ParsedUrlQuery`, was tested `instanceof Dict`.
+
+## Amendment: a `&mut` to one is a place (#347)
+
+An enum each of whose variants has fields was an object, a `&mut` to it
+the object, `*r = v` writing `v` into it in place (ADRs 0033, 0147). An
+untagged enum's value is its payload, which needn't be an object, nor one
+`v` can be made into: trekhleb/javascript-algorithms' Matrix, `Cell(f64)`
+or `Rows(Vec<Matrix>)`, wrote a cell through `*cell = Matrix::Cell(v)`,
+which was `$assign(0, v)`: nothing changed, a wrong answer; and an array
+made a plain object, `$assign([..], { .. })`, was a RangeError. A class's
+instance would keep its prototype, so `instanceof` told the old variant.
+**A `&mut` to an untagged enum is a place**, a box or a handle, as a
+`&mut f64`'s, `*r = v` writing the place: `values[$at(values, 8)] = []`.
+ADR 0262's case: results change, so Rust's. Held by
+`test/corpus/untagged_written_through_mut.rs` and the mutation
+`untagged-written-in-place`.

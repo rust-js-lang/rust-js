@@ -494,7 +494,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // object.
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                // An untagged enum is its payload (ADR 0214), which `*r = v`
+                // can't make another's in place: a number isn't an object,
+                // an array no plain object, and a class's instance keeps its
+                // prototype (#347). A `&mut` to one is a place.
+                && !bindings::is_untagged(self.tcx, adt.did())
                 && adt.variants().iter().all(|v| !v.fields.is_empty()))
+    }
+
+    /// Each variant's payload of `ty`, an untagged enum, `None` where one has
+    /// none, its name's string or `undefined` (ADR 0676), or `ty` is no such
+    /// enum.
+    fn untagged_payloads(&self, ty: Ty<'tcx>) -> Option<Vec<Ty<'tcx>>> {
+        let (adt, args) = super::untagged::untagged_adt(self.tcx, self.reveal(ty))?;
+        (adt.variants().iter())
+            .map(|v| match v.fields.iter().collect::<Vec<_>>()[..] {
+                [field] => Some(field.ty(self.tcx, args).skip_normalization()),
+                _ => None,
+            })
+            .collect()
     }
 
     /// Might a `ty` value be a JS object something changes in place? An
@@ -504,7 +522,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_object(ty)
             || matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+                && !bindings::is_untagged(self.tcx, adt.did())
                 && adt.variants().iter().any(|v| !v.fields.is_empty()))
+            // An untagged enum's, its payload, where one may be an object.
+            || self.untagged_payloads(ty).is_some_and(|payloads| payloads.iter().any(|&p| self.may_be_object(p)))
     }
 
     /// An enum variant's fields as JS properties (ADR 0033): `_0`, `_1` for a
