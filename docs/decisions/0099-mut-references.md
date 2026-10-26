@@ -109,6 +109,14 @@ returned. It reads and writes its place:
   named where it's used, `x.value`, is of what `x` was, held where `x` is
   reassigned, `const x$1 = x`: `add(&mut *x, { x = &mut q; 10 })` added to
   `q`, a wrong answer (`test/corpus/mut_ref_reborrow_reassigned.rs`).
+  (Amended: held only where it's read past the write, by MIR. One that
+  isn't, the `&mut found` that `if let Some(found) = &mut found` tests,
+  read by the branch it matched and dead in the `else` that writes
+  `found = Some(..)`, held nothing there, but the branches share what's
+  read in place, so the `if`'s branch, lowered after, read the `else`'s
+  `const found$2 = found` it never declared: `found$2 is not defined`, a
+  throw where Rust gives a value. Now nothing's held, and the branch reads
+  `found` (`test/corpus/if_let_mut_else_assign.rs`). Case C.)
 - Of an object, a handle's `value` is the object, and changes through it
   are the object's; only a `&mut` to an object that's kept, and replaced
   whole through, needs one.

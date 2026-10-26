@@ -347,17 +347,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// temporary's read in, `state.in_place`, `s.v` of `&mut s.v`, whose
     /// place is through `local`, `x.value`, made of what `local` holds now,
     /// held: `local` is about to be written, `s = o` while `s.v[0]` is
-    /// borrowed.
+    /// borrowed. Only those read past the write: one that isn't, the `&mut
+    /// found` an `if let Some(found) = &mut found` tests, read in the branch
+    /// it matched and not in the `else` that writes `found`, holds nothing,
+    /// as its name, which that branch would read, is declared in this one.
     fn hold_refs_through(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<()> {
         let name = state.locals.names[local].clone();
-        let through = |target: &Expr| root_var(target) == Some(name.as_str());
-        if name.is_empty() || !(state.refs.values()).chain(state.in_place.values()).any(through) {
+        let at = state.location();
+        let read: HashSet<Local> = (state.refs.iter())
+            .chain(state.in_place.iter())
+            .filter(|(_, target)| root_var(target) == Some(name.as_str()))
+            .map(|(&l, _)| l)
+            .filter(|&l| read_past(state.body, at, l))
+            .collect();
+        if name.is_empty() || read.is_empty() {
             return Ok(());
         }
         self.flush(state, out)?;
         let held = self.spill(&name, Expr::var(&name), out);
-        for target in (state.refs.values_mut()).chain(state.in_place.values_mut()) {
-            if root_var(target) == Some(name.as_str()) {
+        for (l, target) in (state.refs.iter_mut()).chain(state.in_place.iter_mut()) {
+            if read.contains(l) {
                 *target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target.clone());
             }
         }

@@ -326,6 +326,20 @@ pub(super) fn only_read(body: &mir::Body<'_>, local: Local) -> bool {
 /// Whether `local` is read in `from`, or a block it goes on to, before it's
 /// assigned again: what it holds now is read there.
 pub(super) fn read_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
+    read_in(body, from, 0, local)
+}
+
+/// Whether `local` is read past what's at `at`, a statement or its block's
+/// terminator, before it's assigned again: what it holds there is read
+/// again, in its block or a block it goes on to.
+pub(super) fn read_past(body: &mir::Body<'_>, at: mir::Location, local: Local) -> bool {
+    read_in(body, at.block, at.statement_index + 1, local)
+}
+
+/// Whether `local` is read in `from`, its statements from `start` on, its
+/// terminator unless `start` is past it, or a block it goes on to, before
+/// it's assigned again.
+fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -> bool {
     /// The first thing a statement does with `local`: reads it, `Some(true)`,
     /// or assigns it, `Some(false)`.
     struct First {
@@ -344,14 +358,15 @@ pub(super) fn read_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) ->
             };
         }
     }
+    // Each block from its start, `from`'s too where a way goes back to it.
     let mut seen = std::collections::HashSet::new();
-    let mut next = vec![from];
-    'blocks: while let Some(block) = next.pop() {
-        if !seen.insert(block) {
+    let mut next = vec![(from, start)];
+    'blocks: while let Some((block, start)) = next.pop() {
+        if !seen.insert((block, start)) {
             continue;
         }
         let data = &body.basic_blocks[block];
-        for (index, statement) in data.statements.iter().enumerate() {
+        for (index, statement) in data.statements.iter().enumerate().skip(start) {
             let at = mir::Location {
                 block,
                 statement_index: index,
@@ -373,17 +388,20 @@ pub(super) fn read_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) ->
                 None => {}
             }
         }
-        let mut first = First { local, found: None };
-        let at = mir::Location {
-            block,
-            statement_index: data.statements.len(),
-        };
-        first.visit_terminator(data.terminator(), at);
-        match first.found {
-            Some(true) => return true,
-            Some(false) => continue,
-            None => next.extend(data.terminator().successors()),
+        if start <= data.statements.len() {
+            let mut first = First { local, found: None };
+            let at = mir::Location {
+                block,
+                statement_index: data.statements.len(),
+            };
+            first.visit_terminator(data.terminator(), at);
+            match first.found {
+                Some(true) => return true,
+                Some(false) => continue,
+                None => {}
+            }
         }
+        next.extend(data.terminator().successors().map(|b| (b, 0)));
     }
     false
 }

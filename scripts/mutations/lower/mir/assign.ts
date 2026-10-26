@@ -336,6 +336,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_reborrow_reassigned.rs$"],
   },
   {
+    name: "unread-ref-held-at-write",
+    breaks: "`if let Some(found) = &mut found { found.push(v) } else { found = Some(..) }` holds the `&mut found` in the `else`, `const found$2 = found`, which the `if`'s branch reads undeclared",
+    file: "src/lower/mir/assign.rs",
+    find: "            .filter(|&l| read_past(state.body, at, l))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
+  },
+  {
     name: "generic-iterator-ref-boxed-for-impl",
     breaks: "a copied default's `&mut self` of a blanket impl over every iterator is given its impl's method as the box, which steps nothing",
     file: "src/lower/mir/assign.rs",
@@ -576,8 +584,8 @@ export const mutations: Mutation[] = [
     name: "in-place-not-held",
     breaks: "a temporary's place read in place, `s.v`, through a reference reassigned while it's borrowed, `s = o`, is the new one's",
     file: "src/lower/mir/assign.rs",
-    find: "        if name.is_empty() || !(state.refs.values()).chain(state.in_place.values()).any(through) {\n",
-    replace: "        if name.is_empty() || !state.refs.values().any(through) {\n",
+    find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(name.as_str()))\n",
+    replace: "            .filter(|(_, target)| root_var(target) == Some(name.as_str()))\n",
     tests: ["test/corpus.test.ts", "-t", "^place_through_reassigned_reference.rs$"],
   },
   {
