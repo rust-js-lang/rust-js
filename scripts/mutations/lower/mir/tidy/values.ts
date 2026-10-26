@@ -198,4 +198,20 @@ export const mutations: Mutation[] = [
     replace: "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
   },
+  {
+    name: "present-place-stored-coalesced",
+    breaks: "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                && shown_present(test, made)\n",
+    replace: "                && shown_present(test, made)\n                && false\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
+  },
+  {
+    name: "present-place-of-an-or",
+    breaks: "a part of an `||` taken as shown, `a || p != null` storing `p` as it is where `p` may be `undefined` (ADR 0957)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        ExprKind::Binary(Op::And, a, b) => shown_present(a, place) || shown_present(b, place),\n",
+    replace: "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
+  },
 ];

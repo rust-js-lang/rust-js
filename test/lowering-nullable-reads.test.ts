@@ -63,3 +63,57 @@ pub fn set_current(value: Option<&'static Unknown>) {
   lib.setCurrent(one);
   expect(lib.current()).toBe(one);
 });
+
+// ADR 0957: React's popHydrationStateOnInterruptedWork, `if (fiber.tag ===
+// HostComponent && fiber.stateNode != null) { nextHydratableInstance =
+// fiber.stateNode; }`: a place a test shows isn't `null`, stored right
+// after it, is stored as it is, no `?? null`.
+test("a place a test shows present is stored as it is", async () => {
+  const dir = fixture("nullable-store-after-test");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub tag: Cell<u8>,
+    pub state_node: Cell<Option<&'static Unknown>>,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static NEXT: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+}
+
+pub fn restore(fiber: &Fiber) {
+    if fiber.tag.get() == 5 && fiber.state_node.get().is_some() {
+        NEXT.set(fiber.state_node.get());
+    }
+}
+
+pub fn restore_or(fiber: &Fiber) {
+    if fiber.tag.get() == 7 || fiber.state_node.get().is_some() {
+        NEXT.set(fiber.state_node.get());
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn next() -> Option<&'static Unknown> {
+    NEXT.get()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (fiber.tag === 5 && fiber.stateNode != null) {\n    NEXT = fiber.stateNode;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  const node = {};
+  lib.restore({ tag: 5, stateNode: undefined });
+  expect(lib.next()).toBe(null);
+  lib.restore({ tag: 5, stateNode: node });
+  expect(lib.next()).toBe(node);
+  // Of an `||`, where the place may be `undefined`: `?? null` kept.
+  lib.restoreOr({ tag: 7, stateNode: undefined });
+  expect(lib.next()).toBe(null);
+});
