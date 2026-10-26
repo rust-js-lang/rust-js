@@ -760,6 +760,14 @@ export function mounted(props?: unknown | null | undefined): Component;
   method is: `IS_REACT_COMPONENT` is `isReactComponent`. A function of no
   `self` is the constructor's own, `Component.from = function (..) { ..
   }`.
+- **A method marked `#[cfg_attr(rust_js, rust_js::getter)]` is the
+  prototype's getter**, as JS's `get leftDiagonal() { .. }`:
+  `Object.defineProperty(QueenPosition.prototype, "leftDiagonal", { get()
+  { .. } })`, declared `get leftDiagonal(): number`. Its Rust call reads
+  it, `position.leftDiagonal`, and as a value it's the arrow of that read.
+  It's a method of `&self` alone that gives a value: one of `&mut self`,
+  of arguments, of no `self`, `async`, or of a struct that's no class is
+  refused.
 - **`js::class::<T>()` is the constructor itself**, `Component`, a
   `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
   a prototype chain is written with, as JS writes it. Of a binding's

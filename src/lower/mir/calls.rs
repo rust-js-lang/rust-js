@@ -283,6 +283,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let this = args.remove(0);
                 Expr::call(Expr::member(this, name), args)
             }
+            // A getter's, its read, `position.leftDiagonal` (#357).
+            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {
+                Expr::member(args.remove(0), name)
+            }
             (_, kind) => Expr::call(Expr { kind, ..callee }, args),
         }
     }

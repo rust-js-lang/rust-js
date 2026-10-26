@@ -152,8 +152,9 @@ impl<'a> Cx<'a> {
     /// constructor function, `export function Component(props) { this.props
     /// = props; }`; then its prototype's constants and methods, each a
     /// `function` reading `this`, `Component.prototype.setState = function
-    /// (partialState) { .. };`; and its statics, `Component.from =
-    /// function (..) { .. };`.
+    /// (partialState) { .. };`, a getter `Object.defineProperty(
+    /// QueenPosition.prototype, "leftDiagonal", { get() { .. } });`; and its
+    /// statics, `Component.from = function (..) { .. };`.
     pub(super) fn class(&self, n: &js::Namespace, class: &js::Class) -> Vec<Statement<'a>> {
         let mut out = Vec::new();
         if let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) {
@@ -169,6 +170,22 @@ impl<'a> Cx<'a> {
             assigned.push(js::StmtKind::Assign(to, c.value.clone()).at(c.span));
         }
         for f in n.methods.iter().filter(|f| f.name != class.constructor) {
+            if class.getters.contains(&f.name) {
+                let at = |kind| js::Expr {
+                    kind,
+                    span: f.span,
+                    facts: js::Facts::NONE,
+                };
+                let get = js::Prop::Method("get".to_owned(), at(js::ExprKind::Arrow(Vec::new(), f.body.clone())));
+                let descriptor = at(js::ExprKind::Object(vec![get], js::ObjectLayout::default()));
+                let define = js::Expr::member(js::Expr::var("Object"), "defineProperty");
+                let call = js::Expr::call(
+                    define,
+                    vec![prototype(), at(js::ExprKind::Str(f.name.clone())), descriptor],
+                );
+                assigned.push(js::StmtKind::Expr(call).at(f.span));
+                continue;
+            }
             let of = match class.prototype.contains(&f.name) {
                 true => prototype(),
                 false => js::Expr::var(&n.name),

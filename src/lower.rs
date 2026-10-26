@@ -825,7 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.takes_rest(def_id)
                 || matches!(
                     classes::member(self.tcx, def_id),
-                    Some(classes::Member::Constructor | classes::Member::Method)
+                    Some(classes::Member::Constructor | classes::Member::Method | classes::Member::Getter)
                 )
                 || self.converts_arguments(def_id, args, span)?
             {

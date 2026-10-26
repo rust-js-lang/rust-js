@@ -277,3 +277,26 @@ its accessors (`this_outside_accessors`). Held by `classes.test.ts`'s "a
 class's method sets its Cell fields on this",
 `test/corpus/class_cell_fields.rs` and the mutations
 `class-handle-this-unnamed` and `read-handle-this-rooted-kept`.
+
+## Amendment: a getter is the prototype's (#357)
+
+Decided by the user (2026-10-26). trekhleb/javascript-algorithms'
+`QueenPosition` has `get leftDiagonal()`, which its test reads as
+`position.leftDiagonal`; a class's method was always the prototype's
+function. **A class's method marked `#[cfg_attr(rust_js,
+rust_js::getter)]` is its prototype's getter**, written in the
+constructor-function style of this ADR, `Object.defineProperty(
+QueenPosition.prototype, "leftDiagonal", { get() { .. } })`, and declared
+`get leftDiagonal(): number`. A Rust call of it, `p.left_diagonal()`, is
+its read, `p.leftDiagonal`; as a value it's the arrow of that read, as a
+method's is the arrow of its call. Rust has no property syntax, so the
+attribute, where Rust meets JS, says which method is one: the one way to
+make a getter. Only a method of `&self` alone, not `async`, giving a
+value, is one; `&mut self`, arguments, no `self` or a struct that's no
+class are refused, saying what to write. A setter would be a
+`rust_js::setter` of its own when a port needs one. Held by
+`classes.test.ts`'s "a class's getter is its prototype's" and "what a
+getter is refused says what to write", `test/corpus/class_getters.rs`, and
+the mutations `getter-a-method`, `getter-of-no-class-allowed`,
+`getter-of-any-shape-allowed`, `getter-called`, `getter-value-unread` and
+`getter-printed-as-method`.

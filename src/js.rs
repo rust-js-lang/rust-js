@@ -192,6 +192,9 @@ pub struct Namespace {
 pub struct Class {
     pub constructor: String,
     pub prototype: Vec<String>,
+    /// Its prototype's getters, `Object.defineProperty(QueenPosition.prototype,
+    /// "leftDiagonal", { get() { .. } })` (#357).
+    pub getters: Vec<String>,
     /// Where its struct is declared: the comments before it, its `///`
     /// doc, are the constructor function's (ADR 0761).
     pub declared: Span,

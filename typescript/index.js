@@ -35,7 +35,8 @@ import * as f from "typescript/ast/factory";
  *
  * @typedef {{ kind: "constructor", params: Param[] }
  *   | { kind: "property", name: string, static: boolean, optional: boolean, type: Type, docs?: string }
- *   | { kind: "method", name: string, static: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }} ClassMember
+ *   | { kind: "method", name: string, static: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
+ *   | { kind: "getter", name: string, returns: Type, docs?: string }} ClassMember
  *
  * @typedef {{ name: string, optional: boolean, rest: boolean, type: Type }} Param
  *
@@ -627,6 +628,8 @@ function classMember(m) {
         m.params.map(param),
         typeNode(m.returns),
       );
+    case "getter":
+      return f.createGetAccessorDeclaration(undefined, propertyName(m.name), undefined, [], typeNode(m.returns));
     default:
       throw new Error(`a ${m.kind} class member isn't one TypeScript is given`);
   }

@@ -494,3 +494,72 @@ impl Counted {
   expect(counted.readCount()).toBe(3);
   expect([counted.twice(), counted.readCount()]).toEqual([7, 6]);
 });
+
+// javascript-algorithms' `QueenPosition`: `get leftDiagonal()`, read as
+// `position.leftDiagonal` (#357). A method marked `rust_js::getter` is the
+// prototype's getter, `Object.defineProperty(QueenPosition.prototype,
+// "leftDiagonal", { get() { .. } })`, declared `get leftDiagonal(): number`;
+// a Rust call of it reads it, `p.leftDiagonal`, and as a value it's the
+// arrow of that read.
+test("a class's getter is its prototype's", async () => {
+  const { js, ts, dir } = compiled("class-getter", `#[cfg_attr(rust_js, rust_js::class)]
+pub struct QueenPosition {
+    pub row_index: i32,
+    pub column_index: i32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl QueenPosition {
+    pub fn new(row_index: i32, column_index: i32) -> Self {
+        QueenPosition {
+            row_index,
+            column_index,
+        }
+    }
+
+    /// Each position on the same left (\\\\) diagonal has the same difference.
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn left_diagonal(&self) -> i32 {
+        self.row_index - self.column_index
+    }
+}
+
+pub fn same_diagonal(a: &QueenPosition, b: &QueenPosition) -> bool {
+    a.left_diagonal() == b.left_diagonal()
+}
+
+pub fn diagonals(positions: &[QueenPosition]) -> Vec<i32> {
+    positions.iter().map(QueenPosition::left_diagonal).collect()
+}
+`);
+  expect(js).toContain(`Object.defineProperty(QueenPosition.prototype, "leftDiagonal", {
+  get() {
+    return (this.rowIndex - this.columnIndex) | 0;
+  },
+});`);
+  expect(js).toContain("return a.leftDiagonal === b.leftDiagonal;");
+  expect(js).not.toContain("leftDiagonal()");
+  expect(ts).toContain("    get leftDiagonal(): number;\n");
+  const { QueenPosition, sameDiagonal, diagonals } = await import(join(dir, "lib.js"));
+  const position = new QueenPosition(2, 1);
+  expect([position.leftDiagonal, Object.keys(position)]).toEqual([1, ["rowIndex", "columnIndex"]]);
+  expect(sameDiagonal(position, new QueenPosition(3, 2))).toBe(true);
+  expect(diagonals([position, new QueenPosition(0, 4)])).toEqual([1, -4]);
+});
+
+// A getter is a class's method of `&self` alone, which gives a value: what
+// else is marked one is refused, saying what to write (#357).
+test("what a getter is refused says what to write", () => {
+  const head = "#[cfg_attr(rust_js, rust_js::class)]\npub struct C {\n    pub n: u32,\n}\n";
+  const marked = "#[cfg_attr(rust_js, rust_js::class)]\nimpl C {\n    pub fn new() -> Self {\n        C { n: 0 }\n    }\n";
+  const getter = "    #[cfg_attr(rust_js, rust_js::getter)]\n";
+  const cases: [string, string, string][] = [
+    ["getter-argument", `${head}${marked}${getter}    pub fn plus(&self, k: u32) -> u32 {\n        self.n + k\n    }\n}\n`, "getter is a method of `&self` alone"],
+    ["getter-mut", `${head}${marked}${getter}    pub fn bump(&mut self) -> u32 {\n        self.n += 1;\n        self.n\n    }\n}\n`, "getter is a method of `&self` alone"],
+    ["getter-static", `${head}${marked}${getter}    pub fn zero() -> u32 {\n        0\n    }\n}\n`, "getter is a method of `&self` alone"],
+    ["getter-of-no-class", `pub struct S {\n    pub n: u32,\n}\nimpl S {\n${getter}    pub fn twice(&self) -> u32 {\n        self.n * 2\n    }\n}\n`, "getter is a `#[rust_js::class]`'s method"],
+  ];
+  for (const [name, rust, message] of cases) {
+    expect(refused(name, rust)).toContain(message);
+  }
+});

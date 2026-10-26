@@ -348,8 +348,8 @@ export const mutations: Mutation[] = [
     name: "class-method-value-itself",
     breaks: "a class's method as a value is the prototype's function itself, `Component.prototype.forceUpdate`, which a call through it gives no `this` (ADR 0761)",
     file: "src/lower.rs",
-    find: "                    Some(classes::Member::Constructor | classes::Member::Method)\n",
-    replace: "                    Some(classes::Member::Constructor)\n",
+    find: "                    Some(classes::Member::Constructor | classes::Member::Method | classes::Member::Getter)\n",
+    replace: "                    Some(classes::Member::Constructor | classes::Member::Getter)\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
   {
@@ -375,5 +375,13 @@ export const mutations: Mutation[] = [
     find: "            let mut place = place.or_at(self.js_span(span));\n",
     replace: "            let mut place = place;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+  },
+  {
+    name: "getter-value-unread",
+    breaks: "a class's getter as a value, `.map(QueenPosition::left_diagonal)`, is its function, not the arrow reading it (#357)",
+    file: "src/lower.rs",
+    find: "                    Some(classes::Member::Constructor | classes::Member::Method | classes::Member::Getter)\n",
+    replace: "                    Some(classes::Member::Constructor | classes::Member::Method)\n",
+    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
 ];

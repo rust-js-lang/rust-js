@@ -816,6 +816,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         let constant = self.constant(item);
                         json!({ "kind": "property", "name": constant["name"], "static": false, "optional": false, "type": constant["type"] })
                     }
+                    Some(Member::Getter) => {
+                        json!({ "kind": "getter", "name": self.js_name(item), "returns": self.function(item)["returns"] })
+                    }
                     Some(kind @ (Member::Method | Member::Static)) => {
                         let function = self.function(item);
                         let mut params = function["params"].as_array().cloned().unwrap_or_default();

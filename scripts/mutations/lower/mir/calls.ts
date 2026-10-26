@@ -324,4 +324,12 @@ export const mutations: Mutation[] = [
     replace: "            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_none() => {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
   },
+  {
+    name: "getter-called",
+    breaks: "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
+    file: "src/lower/mir/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
+    replace: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
+    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+  },
 ];

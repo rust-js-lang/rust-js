@@ -832,16 +832,11 @@ pub fn lower_crate<'tcx>(
                             let class = namespace.class.get_or_insert_with(|| js::Class {
                                 constructor: String::new(),
                                 prototype: Vec::new(),
+                                getters: Vec::new(),
                                 declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))
                                     .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
                             });
-                            match member {
-                                super::classes::Member::Constructor => {
-                                    class.constructor = lowered.function.name.clone()
-                                }
-                                super::classes::Member::Method => class.prototype.push(lowered.function.name.clone()),
-                                super::classes::Member::Static | super::classes::Member::Const => {}
-                            }
+                            super::classes::place(member, class, &lowered.function.name);
                         }
                         namespace.methods.push(lowered.function);
                     }

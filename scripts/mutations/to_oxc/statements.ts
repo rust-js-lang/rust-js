@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "            let at = spans.get(i).map_or(SPAN, |_| SPAN);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
   },
+  {
+    name: "getter-printed-as-method",
+    breaks: "a class's getter is printed as a prototype method, `QueenPosition.prototype.leftDiagonal = function () { .. }` (#357)",
+    file: "src/to_oxc/statements.rs",
+    find: "            if class.getters.contains(&f.name) {\n",
+    replace: "            if false {\n",
+    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+  },
 ];

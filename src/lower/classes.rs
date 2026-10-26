@@ -27,6 +27,11 @@ pub(crate) enum Member {
     /// A method of `&self` or `&mut self`: the prototype's, `function (..)
     /// { .. }` reading `this`, called `component.setState(..)`.
     Method,
+    /// A method of `&self` alone marked `#[rust_js::getter]`: the
+    /// prototype's getter, `Object.defineProperty(QueenPosition.prototype,
+    /// "leftDiagonal", { get() { .. } })`, read `position.leftDiagonal`
+    /// (#357).
+    Getter,
     /// A function of no `self`: the constructor's own, `Component.from(..)`.
     Static,
     /// An associated `const`: the prototype's property,
@@ -38,6 +43,30 @@ fn marked(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("class")])
         .next()
         .is_some()
+}
+
+fn marked_getter(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("getter")])
+        .next()
+        .is_some()
+}
+
+/// Is `method`, a class's, one a getter is: of `&self` alone, no type
+/// parameters, giving a value.
+fn reads_as_getter(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    let sig = tcx
+        .fn_sig(method)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder();
+    matches!(sig.inputs(), [receiver] if matches!(receiver.kind(), ty::Ref(_, _, ty::Mutability::Not)))
+        && !sig.output().is_unit()
+        && !tcx.asyncness(method).is_async()
+        && tcx
+            .generics_of(method)
+            .own_params
+            .iter()
+            .all(|p| !p.kind.is_ty_or_const())
 }
 
 /// Is `adt` a JS class, a struct marked `#[rust_js::class]`?
@@ -62,6 +91,7 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
     let imp = tcx.inherent_impl_of_assoc(def_id)?;
     class_of_impl(tcx, imp)?;
     Some(match tcx.def_kind(def_id) {
+        DefKind::AssocFn if tcx.associated_item(def_id).is_method() && marked_getter(tcx, def_id) => Member::Getter,
         DefKind::AssocFn if tcx.associated_item(def_id).is_method() => Member::Method,
         DefKind::AssocFn if is_constructor_name(tcx.item_name(def_id)) => Member::Constructor,
         DefKind::AssocFn => Member::Static,
@@ -139,6 +169,12 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
             DefKind::Enum | DefKind::Union | DefKind::Fn | DefKind::Trait if marked(tcx, id) => {
                 refuse(span, "is a struct and its impl, `struct Component { .. }`");
             }
+            _ if marked_getter(tcx, id) && class_of(tcx, id).is_none() => {
+                refuse(
+                    span,
+                    "getter is a `#[rust_js::class]`'s method, `fn left_diagonal(&self) -> i32`",
+                );
+            }
             DefKind::Impl { of_trait: false } => {
                 let of_class = class_of_impl(tcx, id).is_some();
                 match (of_class, marked(tcx, id)) {
@@ -157,7 +193,9 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
                     // An instance's own property hides its prototype's: a
                     // method named as a field is never called.
                     let named = const_name(tcx, item).unwrap_or_else(|| crate::lower::bindings::fn_name(tcx, item));
-                    if matches!(member(tcx, item), Some(Member::Method | Member::Const)) && fields.contains(&named) {
+                    if matches!(member(tcx, item), Some(Member::Method | Member::Getter | Member::Const))
+                        && fields.contains(&named)
+                    {
                         refuse(
                             item_span,
                             &format!(
@@ -165,8 +203,16 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
                             ),
                         );
                     }
+                    if marked_getter(tcx, item)
+                        && !(member(tcx, item) == Some(Member::Getter) && reads_as_getter(tcx, item))
+                    {
+                        refuse(
+                            item_span,
+                            "getter is a method of `&self` alone that gives a value, `fn left_diagonal(&self) -> i32`, read `position.leftDiagonal`",
+                        );
+                    }
                     match member(tcx, item) {
-                        Some(Member::Method) => {
+                        Some(Member::Method | Member::Getter) => {
                             let receiver = tcx
                                 .fn_sig(item)
                                 .instantiate_identity()
@@ -248,11 +294,23 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
 pub(super) fn as_member(member: Member, class: &str, function: &mut js::Function) -> Result<(), &'static str> {
     match member {
         Member::Constructor => set_this(&mut function.body),
-        Member::Method => {
+        Member::Method | Member::Getter => {
             this_outside_accessors(class, &mut function.body);
             Ok(())
         }
         Member::Static | Member::Const => Ok(()),
+    }
+}
+
+/// Where `class`'s member `name` is written, as `member` is of it: its
+/// constructor function, its prototype's method or getter; the rest, its
+/// statics and constants, written where they are.
+pub(super) fn place(member: Member, class: &mut js::Class, name: &str) {
+    match member {
+        Member::Constructor => class.constructor = name.to_owned(),
+        Member::Method => class.prototype.push(name.to_owned()),
+        Member::Getter => class.getters.push(name.to_owned()),
+        Member::Static | Member::Const => {}
     }
 }
 
@@ -302,7 +360,7 @@ pub(super) fn receiver_as_this(
     body: &mut [Stmt],
     booleans: &mut std::collections::HashSet<String>,
 ) -> Result<(), &'static str> {
-    if member(tcx, function) != Some(Member::Method) {
+    if !matches!(member(tcx, function), Some(Member::Method | Member::Getter)) {
         return Ok(());
     }
     let receiver = match params.first() {
