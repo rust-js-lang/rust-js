@@ -116,6 +116,76 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   for a constant ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
 - **A `thread_local!` is named as a module's variable**: `CLICK_COUNT` is
   `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
+  One named as another function, `const` or static of its module keeps
+  its Rust name, `CACHE` beside `fn cache()`; an exported one, only
+  beside another export.
+- **An export's name is what its importers read, and never changes**:
+  a module's `pub` items are named first, and an item it keeps to itself
+  of the same name is named apart
+  ([ADR 0922](../../decisions/0922-an-export-is-named-first.md)).
+
+An exported thread-local is `clickCount` beside a private `fn
+click_count()`, which is named apart, `clickCount$1`:
+
+```rust
+use std::cell::Cell;
+
+thread_local! {
+    pub static CLICK_COUNT: Cell<u32> = const { Cell::new(0) };
+}
+
+fn click_count() -> u32 {
+    CLICK_COUNT.get()
+}
+
+pub fn click() -> u32 {
+    CLICK_COUNT.set(click_count() + 1);
+    click_count()
+}
+```
+
+```js
+export let clickCount = 0;
+
+function clickCount$1() {
+  return clickCount;
+}
+
+export function click() {
+  clickCount = (clickCount$1() + 1) >>> 0;
+  return clickCount$1();
+}
+```
+
+Two exports of one name are an error that names both, as an importer
+reads one export by a name:
+
+```rust
+pub fn sort_index() -> u32 {
+    1
+}
+
+#[cfg_attr(rust_js, rust_js::name = "sortIndex")]
+pub fn index_for_sorting() -> u32 {
+    2
+}
+```
+
+```
+error: rust-js: `sort_index` and `index_for_sorting` are both exported as `sortIndex` in JS, where an importer reads one export by that name; give one another with `#[rust_js::name = ".."]`
+ --> src/lib.rs:6:1
+  |
+6 | pub fn index_for_sorting() -> u32 {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+note: `sortIndex` is exported here first
+ --> src/lib.rs:1:1
+  |
+1 | pub fn sort_index() -> u32 {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
+```
 
 ## Parameters and results
 

@@ -11,6 +11,7 @@ use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind, StmtKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
+use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// What of JS the crate's bodies use (ADRs 0024, 0028).
@@ -435,7 +436,11 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
 /// names so far (`taken`, which also gets the import aliases, so local
 /// variables avoid both). A method is its type's (ADR 0047): a property of
 /// the object named after the type, unique in the module, and its name is
-/// unique among the type's. The last result says whether it all went well.
+/// unique among the type's. What a module exports by its name is named
+/// first, so it's what it's written as, and an item the module keeps to
+/// itself is named apart from it, `emptyContextObject$1`; two exports of
+/// one name are refused (`exported_by_name`, ADR 0922). The last result
+/// says whether it all went well.
 pub(super) fn name_items(
     tcx: TyCtxt<'_>,
     items: &[DefId],
@@ -450,10 +455,32 @@ pub(super) fn name_items(
     let mut owners: HashMap<(LocalModId, DefId), String> = HashMap::new();
     let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
     let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
-    for &def_id in items {
+    let mut exports: HashMap<(LocalModId, String), DefId> = HashMap::new();
+    let exported = |def_id: DefId| bindings::exported_by_name(tcx, def_id) && !named_expressions.contains(&def_id);
+    let (first, rest): (Vec<DefId>, Vec<DefId>) = items.iter().copied().partition(|&def_id| exported(def_id));
+    for def_id in first.into_iter().chain(rest) {
         let module = crate::lower::body_module(tcx, instances, def_id);
         let names = taken.entry(module).or_default();
         let js_name = item_js_name(tcx, def_id, trait_impls);
+        if exported(def_id) {
+            match exports.entry((module, js_name.clone())) {
+                Entry::Occupied(other) => {
+                    let message = format!(
+                        "rust-js: `{}` and `{}` are both exported as `{js_name}` in JS, where an importer reads one export by that name; give one another with `#[rust_js::name = \"..\"]`",
+                        tcx.def_path_str(*other.get()),
+                        tcx.def_path_str(def_id),
+                    );
+                    (tcx.dcx().struct_span_err(tcx.def_span(def_id), message))
+                        .with_span_note(
+                            tcx.def_span(*other.get()),
+                            format!("`{js_name}` is exported here first"),
+                        )
+                        .emit();
+                    failed = true;
+                }
+                Entry::Vacant(entry) => _ = entry.insert(def_id),
+            }
+        }
         if trait_impls.contains(&def_id) && names.contains(&js_name) {
             let message = format!(
                 "rust-js: generated trait implementation name `{js_name}` collides; put the implementations in separate modules"

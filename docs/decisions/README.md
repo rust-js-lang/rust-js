@@ -25,7 +25,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0008 Two lowering modes: expressions and statements](0008-expression-and-statement-modes.md)
 - [0009 Temporaries keep Rust's evaluation order](0009-temporaries-and-evaluation-order.md)
 - [0010 Unique names per function, flat blocks](0010-naming-and-scopes.md)
-- [0019 One JS file per Rust module](0019-one-js-file-per-module.md)
+- [0019 One JS file per Rust module](0019-one-js-file-per-module.md) *(amended by 0922: an export is named first)*
 
 **Semantics**
 
@@ -461,7 +461,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
-- [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md)
+- [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md) *(amended by 0922: an exported one keeps its Rust name only beside another export)*
+- [0922 An export is named first, and two exports of one name are refused](0922-an-export-is-named-first.md)
 - [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing; extended by 0898: a binding that runs only what it's given, given only numbers and text; extended by 0907: a fn pointer runs what the crate made it of)*
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*

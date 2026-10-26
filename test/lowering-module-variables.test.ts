@@ -791,3 +791,93 @@ pub fn counted() -> (u32, u32) {
   ]);
   expect(exportedErr).not.toContain("`COUNT`");
 });
+
+// ADR 0922: what a module exports is named first, by its own name, which
+// nothing its module keeps to itself changes: React's ReactFiberContext
+// exports `emptyContextObject`, which ReactFiberClassComponent's JS
+// imports, beside a private function of its name, named apart. Its
+// declarations, its crate's other module and a library's contract name it
+// so too.
+test("an export keeps its name beside a private item of it", async () => {
+  const dir = fixture("export-named-first");
+  const manifest = join(dir, "dep", "lib.manifest.json"), metadata = join(dir, "libdep.rmeta");
+  writeFileSync(join(dir, "lib.rs"), `use js::Dict;
+
+pub mod class_component;
+
+thread_local! {
+    pub static EMPTY_CONTEXT_OBJECT: &'static Dict<bool> = js::dict::new();
+}
+
+fn empty_context_object() -> &'static Dict<bool> {
+    EMPTY_CONTEXT_OBJECT.with(|empty| *empty)
+}
+
+pub fn get_context() -> &'static Dict<bool> {
+    empty_context_object()
+}
+`);
+  writeFileSync(join(dir, "class_component.rs"), `use js::Dict;
+
+pub fn is_empty_context(context: &Dict<bool>) -> bool {
+    crate::EMPTY_CONTEXT_OBJECT.with(|empty| std::ptr::eq(*empty, context))
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", manifest,
+    "--", "--crate-name", "dep", `--emit=metadata=${metadata}`, ...js]);
+  const libJs = readFileSync(join(dir, "dep", "lib.js"), "utf8");
+  expect(libJs).toContain("export const emptyContextObject = {};\n");
+  expect(libJs).toContain("function emptyContextObject$1() {\n  return emptyContextObject;\n}\n");
+  expect(libJs).not.toContain("EMPTY_CONTEXT_OBJECT");
+  expect(readFileSync(join(dir, "dep", "lib.d.ts"), "utf8")).toContain("\nexport const emptyContextObject: {\n");
+  expect(readFileSync(join(dir, "dep", "class_component.js"), "utf8")).toContain('import { emptyContextObject } from "./lib.js";\n');
+  const contract = JSON.stringify(JSON.parse(readFileSync(manifest, "utf8")).library);
+  expect(contract).toContain('"emptyContextObject"');
+  expect(contract).not.toContain('"emptyContextObject$1"');
+  // JS's importer, as ReactFiberClassComponent's is, written by hand.
+  writeFileSync(join(dir, "dep", "importer.js"), `import { emptyContextObject, getContext } from "./lib.js";
+import { isEmptyContext } from "./class_component.js";
+
+export const read = [typeof emptyContextObject, emptyContextObject === getContext(), isEmptyContext(emptyContextObject)];
+`);
+  const { read } = await import(join(dir, "dep", "importer.js"));
+  expect(read).toEqual(["object", true, true]);
+  // Another crate imports it by that name.
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "app", "lib.rs"), "pub fn empty() -> bool {\n    dep::EMPTY_CONTEXT_OBJECT.with(|empty| std::ptr::eq(*empty, dep::get_context()))\n}\n");
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", manifest,
+    "--", "--crate-name", "app", "--extern", `dep=${metadata}`, "-L", dir, ...js]);
+  expect(readFileSync(join(dir, "app", "lib.js"), "utf8")).toContain("emptyContextObject");
+  const { empty } = await import(join(dir, "app", "lib.js"));
+  expect(empty()).toBe(true);
+});
+
+// ADR 0922: two exports of one module with one JS name are refused, naming
+// both: an importer reads one export by a name, and either named apart
+// would be another than its importers read.
+test("two exports of one JS name are refused", () => {
+  const dir = fixture("two-exports-one-name");
+  writeFileSync(join(dir, "lib.rs"), `pub fn sort_index() -> u32 {
+    1
+}
+
+#[rust_js::name = "sortIndex"]
+pub fn index_for_sorting() -> u32 {
+    2
+}
+
+fn index() -> u32 {
+    sort_index() + index_for_sorting()
+}
+
+pub fn indexed() -> u32 {
+    index()
+}
+`);
+  const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 120_000);
+  expect([out.code === 0, out.stderr]).toEqual([
+    false,
+    expect.stringContaining("`sort_index` and `index_for_sorting` are both exported as `sortIndex` in JS"),
+  ]);
+  expect(out.stderr).toContain("`sortIndex` is exported here first");
+});

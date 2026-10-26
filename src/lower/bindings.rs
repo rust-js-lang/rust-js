@@ -1283,11 +1283,29 @@ fn variable_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     }
 }
 
+/// Whether `def_id` is what its module's file exports by its name to every
+/// importer, JS's too: a `pub` function, `const`, `static` or
+/// `thread_local!` of a module of the crate's own. That name is its
+/// interface, which nothing its module keeps to itself changes: it's named
+/// before them, and one of them of its name is named apart (ADR 0922).
+pub(in crate::lower) fn exported_by_name(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    def_id.is_local()
+        && matches!(
+            tcx.def_kind(def_id),
+            DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }
+        )
+        && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod
+        && tcx.visibility(def_id).is_public()
+}
+
 /// Whether another item of `def_id`'s module, a function's, a constant's
 /// or a thread-local's, is `name` in JS: a thread-local named after the
 /// function that reads it, `CACHE` of `cache()`, keeps its Rust name, as
-/// JS keeps two names apart.
+/// JS keeps two names apart. Of an exported one, only another export is
+/// asked, as what the module keeps to itself never changes what it exports
+/// (`exported_by_name`, ADR 0922).
 fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
+    let exported = exported_by_name(tcx, def_id);
     let Some(module) = tcx
         .parent(def_id)
         .as_local()
@@ -1303,6 +1321,7 @@ fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
                 tcx.def_kind(other),
                 DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }
             )
+            && (!exported || exported_by_name(tcx, other))
             && given_name(tcx, other).unwrap_or_else(|| match thread_local_value(tcx, other) {
                 Some(_) => variable_name(tcx, other),
                 None => super::camel_case(tcx.item_name(other).as_str()),

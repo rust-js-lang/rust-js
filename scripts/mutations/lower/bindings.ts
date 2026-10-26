@@ -339,6 +339,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "an insert in a thread-local's closure"],
   },
   {
+    name: "thread-local-name-kept-for-private",
+    breaks: "an exported thread-local keeps its Rust name beside a private function of its camelCase name, `EMPTY_CONTEXT_OBJECT`, which JS's importer of `emptyContextObject` doesn't read (ADR 0922)",
+    file: "src/lower/bindings.rs",
+    find: "            && (!exported || exported_by_name(tcx, other))\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export keeps its name beside a private item of it"],
+  },
+  {
+    name: "private-item-exported-by-name",
+    breaks: "a private item is taken for an export, so an exported thread-local beside a private function of its name keeps its Rust name (ADR 0922)",
+    file: "src/lower/bindings.rs",
+    find: "        && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod\n        && tcx.visibility(def_id).is_public()\n",
+    replace: "        && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export keeps its name beside a private item of it"],
+  },
+  {
     name: "nullable-field-unchecked",
     breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
     file: "src/lower/bindings.rs",

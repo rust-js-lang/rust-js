@@ -1,6 +1,6 @@
 # 0579. A thread-local is named as its module's variable
 
-Status: Accepted. Amended by [0619](0619-a-primitive-thread-local-is-a-constant.md): one of a primitive keeps its name, as a constant. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
+Status: Accepted. Amended by [0619](0619-a-primitive-thread-local-is-a-constant.md): one of a primitive keeps its name, as a constant. Amended by [0922](0922-an-export-is-named-first.md): an exported one keeps its Rust name only beside another export. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
 which left a name with no lowercase letter as it was; extends
 [0270](0270-module-variables.md), whose thread-locals are their module's
 variables.
@@ -35,7 +35,10 @@ context, and `memo`'s, `lazy`'s, `forward_ref`'s and a component value.
 
 - **One named after another item of its module keeps its Rust name**: a
   thread-local read by a function of its name, `CACHE` of `cache()`, is
-  `CACHE`, as JS keeps two names apart, not `cache$1`.
+  `CACHE`, as JS keeps two names apart, not `cache$1`. (Amended by
+  [0922](0922-an-export-is-named-first.md): an exported one only beside
+  another export; a private item of its camelCase name is named apart,
+  as its importers read the export by that name.)
 - **A `const` is a constant, named as written**, `MAX_SIZE`: JS's own
   convention, and what keeps `START` apart from the `start()` that
   returns it. One that must be another says so, `#[rust_js::name =

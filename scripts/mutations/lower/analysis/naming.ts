@@ -317,4 +317,20 @@ export const mutations: Mutation[] = [
     replace: "            .is_some()\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
   },
+  {
+    name: "exports-named-in-order",
+    breaks: "a module's items are named in the order they're found, so a private function takes `emptyContextObject` and the export it reads is `emptyContextObject$1` (ADR 0922)",
+    file: "src/lower/analysis/naming.rs",
+    find: ".partition(|&def_id| exported(def_id));\n",
+    replace: ".partition(|_| false);\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export keeps its name beside a private item of it"],
+  },
+  {
+    name: "two-exports-one-name-unrefused",
+    breaks: "two exports of one JS name compile, one named apart, which its importers don't read (ADR 0922)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        if exported(def_id) {\n            match exports.entry(",
+    replace: "        if exported(def_id) && false {\n            match exports.entry(",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "two exports of one JS name are refused"],
+  },
 ];
