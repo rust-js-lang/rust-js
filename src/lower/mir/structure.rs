@@ -567,7 +567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),
                             value => value,
                         };
-                        let value = self.nullable_written(state, *destination, value, made_by, span)?;
+                        let value = self.nullable_written(state, *destination, value, (made_by, false), span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns.
                         if !state.copy_backs.is_empty() {

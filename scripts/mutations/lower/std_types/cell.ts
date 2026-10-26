@@ -494,4 +494,12 @@ export const mutations: Mutation[] = [
     replace: "                match false {\n                    true => old.defined(),\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
   },
+  {
+    name: "nullable-cell-get-undefined",
+    breaks: "a nullable thread-local's read may be `undefined`, `return CURRENT ?? null;` (ADR 0949)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    facts: read.facts.with(js::Known::Defined),\n",
+    replace: "                    facts: read.facts,\n",
+    tests: ["test/lowering-nullable-reads.test.ts"],
+  },
 ];

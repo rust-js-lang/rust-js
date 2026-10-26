@@ -339,6 +339,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     quiet.calls.insert(block);
                 }
+                // A nullable one's read, `null` or a value (ADR 0949).
+                Some(Std::CellGet)
+                    if let Some(key) = local_key(&first.node)
+                        && crate::lower::bindings::nullable_local(tcx, key) =>
+                {
+                    quiet.nullable.insert(block);
+                }
                 Some(Std::CellSet | Std::CellReplace | Std::CellTake) if let Some(key) = local_key(&first.node) => {
                     if key.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)) {
                         quiet.calls.insert(block);

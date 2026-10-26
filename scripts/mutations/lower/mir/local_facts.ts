@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
+  {
+    name: "nullable-local-get-unmarked",
+    breaks: "a nullable thread-local's `get` isn't known `null` or a value, `return CURRENT ?? null;` (ADR 0949)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                Some(Std::CellGet)\n",
+    replace: "                Some(Std::Drop)\n",
+    tests: ["test/lowering-nullable-reads.test.ts"],
+  },
 ];

@@ -100,6 +100,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),
             Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
             // `RefCell::into_inner`'s, of one that's its object, the object.
+            // A nullable one's, `null` or a value, never `undefined`, as
+            // each write of it stores (ADR 0949).
+            Std::CellGet if null_for_none => {
+                let read = match self.is_value_cell(tys[0]) {
+                    true => arg(),
+                    false => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
+                };
+                Expr {
+                    facts: read.facts.with(js::Known::Defined),
+                    ..read
+                }
+            }
             Std::CellGet if self.is_value_cell(tys[0]) => arg(),
             Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
             // Of a value with a destructor, the old dropped once the new is

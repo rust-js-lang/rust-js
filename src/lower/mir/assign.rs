@@ -190,7 +190,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.binding_var = false;
         let value = match rvalue {
             Rvalue::Aggregate(..) => value?,
-            _ => self.nullable_written(state, *place, value?, None, span)?,
+            // What's `null` or a value already, as it is (ADR 0949).
+            Rvalue::Use(operand, _) => {
+                let nulled = self.nulled(state, operand);
+                self.nullable_written(state, *place, value?, (None, nulled), span)?
+            }
+            _ => self.nullable_written(state, *place, value?, (None, false), span)?,
         };
         // A `#[rust_js::nullable]` field assigned, `p.title = None`: its
         // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
@@ -269,13 +274,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// was written, so it's written where it's made. So is a call's
     /// `Option` that only nullable fields and parameters read
     /// (`null_nones`), `c ? f(c) : null` of `map`'s `c ? f(c) : undefined`,
-    /// as they then take it (ADR 0841).
+    /// as they then take it (ADR 0841). What's `nulled`, `null` or a value
+    /// already, a nullable field's read, is as it is (ADR 0949).
     pub(super) fn nullable_written(
         &mut self,
         state: &mut State<'_, 'tcx>,
         place: Place<'tcx>,
         value: Value<'tcx>,
-        made_by: Option<rustc_span::def_id::DefId>,
+        (made_by, nulled): (Option<rustc_span::def_id::DefId>, bool),
         span: Span,
     ) -> R<Value<'tcx>> {
         let read_nullable = place.projection.is_empty()
@@ -290,7 +296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
-        Ok(Value::Expr(js::Storage::NullForNone.written(value, false)))
+        Ok(Value::Expr(js::Storage::NullForNone.written(value, nulled)))
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:

@@ -464,8 +464,8 @@ export const mutations: Mutation[] = [
     name: "nullable-result-at-return",
     breaks: "a nullable result is a variable each branch sets, so `pop` returns `result ?? null` and its `return`s aren't where they're written",
     file: "src/lower/mir/assign.rs",
-    find: "            _ => self.nullable_written(state, *place, value?, None, span)?,\n",
-    replace: "            _ => value?,\n",
+    find: "                self.nullable_written(state, *place, value?, (None, nulled), span)?\n",
+    replace: "                value?\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
   },
   {
@@ -637,5 +637,13 @@ export const mutations: Mutation[] = [
     find: "        let (target, value) = match self.whole_property_cell(state, place) {\n",
     replace: "        let (target, value) = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
+  },
+  {
+    name: "nullable-return-of-nulled-coalesced",
+    breaks: "a nullable function's `return suspenseState.dehydrated;` of a nullable field is `?? null` again (ADR 0949)",
+    file: "src/lower/mir/assign.rs",
+    find: "                let nulled = self.nulled(state, operand);\n",
+    replace: "                let nulled = false;\n",
+    tests: ["test/lowering-nullable-reads.test.ts"],
   },
 ];
