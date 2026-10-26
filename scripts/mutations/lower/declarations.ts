@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "library-type-declared-any",
     breaks: "a library's type its declarations export is `any` in a consumer's, React's `CacheContext` a `ReactContext<Cache>` (ADR 0210, amended)",
     file: "src/lower/declarations.rs",
-    find: "                if let Some((from, name)) = self.foreign.declared_type(did) {\n",
-    replace: "                if let Some((from, name)) = None::<&(String, String)> {\n",
+    find: "                if let Some((from, name, default)) = self.foreign.declared_type(did) {\n",
+    replace: "                if let Some((from, name, default)) = None::<&(String, String, bool)> {\n",
     tests: ["test/declarations-libraries.test.ts"],
   },
   {
@@ -682,8 +682,8 @@ export const mutations: Mutation[] = [
     name: "transparent-tuple-struct-any",
     breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
     file: "src/lower/declarations.rs",
-    find: "                            || super::recognition::transparent_field(tcx, *adt).is_some()\n",
-    replace: "",
+    find: "            adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()\n",
+    replace: "            adt.non_enum_variant().ctor.is_none()\n",
     tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
   },
   {

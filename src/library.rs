@@ -248,6 +248,10 @@ pub struct DeclaredType {
     /// The module whose `.d.ts` declares it.
     pub module: Vec<String>,
     pub name: String,
+    /// Whether it's that module's default, `export default Complex;`,
+    /// which a consumer imports as it, `import type Complex from ..`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub default: bool,
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -369,9 +373,9 @@ pub struct Exports {
     pub held: HashMap<(String, String), HeldImport>,
     /// Each type its declarations export, by key: the `.d.ts` that declares
     /// it, by its JS file's specifier, relative to the consumer's output,
-    /// and its name there (ADR 0210, amended). Not of a library written
-    /// without declarations.
-    pub types: HashMap<String, (String, String)>,
+    /// its name there, and whether it's its default (ADR 0210, amended).
+    /// Not of a library written without declarations.
+    pub types: HashMap<String, (String, String, bool)>,
 }
 
 #[derive(Default)]
@@ -459,7 +463,7 @@ impl Dependencies {
             for declared in library.types {
                 let declared_here = (manifest.modules.iter()).any(|m| m.module == declared.module && m.types.is_some());
                 if declared_here {
-                    let imported = (specifier(&declared.module)?, declared.name);
+                    let imported = (specifier(&declared.module)?, declared.name, declared.default);
                     if exports.types.insert(declared.key, imported).is_some() {
                         return Err("duplicate dependency export".into());
                     }

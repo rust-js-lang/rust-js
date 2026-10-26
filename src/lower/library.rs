@@ -68,8 +68,6 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) variables: &'a HashSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],
-    /// The types its modules' declarations export (ADR 0210, amended).
-    pub(super) declared_types: &'a [DefId],
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -173,7 +171,6 @@ pub(super) fn exports<'tcx>(
         lazy_locals: _,
         variables,
         identities,
-        declared_types,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -282,18 +279,32 @@ pub(super) fn exports<'tcx>(
             keys.sort();
             keys
         },
-        types: {
-            let mut types: Vec<crate::library::DeclaredType> = (declared_types.iter())
-                .map(|&id| crate::library::DeclaredType {
-                    key: key(tcx, id),
-                    module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
-                    name: tcx.item_name(id).to_string(),
-                })
-                .collect();
-            types.sort();
-            types
-        },
+        types: declared_types(tcx),
     }
+}
+
+/// Each type its modules' declarations export by its name, which a
+/// consumer's declarations import (ADR 0210, amended): a public struct, enum
+/// or union of a module's own that its declarations declare
+/// (`declarations::declares_type`), its default too, sorted.
+fn declared_types(tcx: TyCtxt<'_>) -> Vec<crate::library::DeclaredType> {
+    let mut types: Vec<crate::library::DeclaredType> = (tcx.hir_crate_items(()).definitions())
+        .map(|local| local.to_def_id())
+        .filter(|&id| {
+            super::declarations::declares_type(tcx, id)
+                && matches!(tcx.def_kind(tcx.parent(id)), rustc_hir::def::DefKind::Mod)
+                && tcx.visibility(id).is_public()
+                && !super::bindings::is_mark(tcx, id)
+        })
+        .map(|id| crate::library::DeclaredType {
+            key: key(tcx, id),
+            module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
+            name: tcx.item_name(id).to_string(),
+            default: super::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == "default",
+        })
+        .collect();
+    types.sort();
+    types
 }
 
 /// What a library and its consumers both call `id`, an item or a field
@@ -694,7 +705,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// What `id`, a library's type, is declared as: its module's `.d.ts`,
     /// by its JS file's specifier, and its name there, where its library's
     /// declarations export it (ADR 0210, amended).
-    pub(super) fn declared_type(&self, id: DefId) -> Option<&'a (String, String)> {
+    pub(super) fn declared_type(&self, id: DefId) -> Option<&'a (String, String, bool)> {
         if id.is_local() {
             return None;
         }

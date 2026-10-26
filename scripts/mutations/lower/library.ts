@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-default-type-imported-by-name",
+    breaks: "a consumer's declarations import a library's default class by its name, `import type { Complex }`, which its module doesn't export (ADR 0210, amended)",
+    file: "src/lower/library.rs",
+    find: "            default: super::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == \"default\",\n",
+    replace: "            default: false,\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "default class"],
+  },
+  {
     name: "uncounted-library-rcs-unseen",
     breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
     file: "src/lower/library.rs",

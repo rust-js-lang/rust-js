@@ -60,9 +60,13 @@ export function read(context: Context<number>): number;
 ```
 
 - **The library says which**, in its contract (ADR 0100): each type its
-  modules' declarations export, by rustc's key for it, its module and its
-  name, `types`. Its declarations are what decides, as they decide what
-  they write; the consumer reads the answer, not the library's `.d.ts`.
+  modules' declarations export by its name, by rustc's key for it, its
+  module and its name, `types`: a public struct, enum or union of a
+  module of its own that declarations declare, by the one rule a module's
+  declarations import another's type by (`declarations::declares_type`),
+  and whether it's its module's default, `import type Complex from ..`,
+  as another module's of the crate's is. The consumer reads the answer,
+  not the library's `.d.ts`.
 - **Only where its declarations are written**: a library compiled
   without them has no `.d.ts` to import from, its manifest's module no
   `types`, so its type is still `any`, as a library written by an older
@@ -76,6 +80,7 @@ checks TypeScript that calls the JS; what runs is the same.
 
 Tested by `test/declarations-libraries.test.ts`: a consumer's
 declarations import a library's `Context<T>` and TypeScript finds a
-caller's wrong value; a library without declarations stays `any`. Its
-mutations are `library-type-declared-any` and
-`library-type-without-declarations-imported`.
+caller's wrong value; a library's default class is imported as its
+default; a library without declarations stays `any`. Its mutations are
+`library-type-declared-any`, `library-type-without-declarations-imported`
+and `library-default-type-imported-by-name`.

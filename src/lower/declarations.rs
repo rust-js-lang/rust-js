@@ -35,8 +35,7 @@ use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
 
 /// What a module's `.d.ts` declares, but its header: `None` where it
-/// exports nothing. And the types it exports by name, which a library's
-/// contract says to its consumers' declarations (ADR 0210, amended).
+/// exports nothing.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn module<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -52,7 +51,7 @@ pub(super) fn module<'tcx>(
         &[super::bindings::HeldBinding],
         &HashMap<DefId, bool>,
     ),
-) -> (Option<Value>, Vec<DefId>) {
+) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         foreign,
@@ -80,7 +79,6 @@ pub(super) fn module<'tcx>(
     // is its default alone too, declared below (ADR 0611, amended).
     let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
-    let mut types = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         let held = held_default == Some(def_id);
@@ -118,9 +116,6 @@ pub(super) fn module<'tcx>(
             }
             declared
         });
-        if declaration.is_some() && matches!(tcx.def_kind(def_id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
-            types.push(def_id);
-        }
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
         if tcx.def_kind(def_id) == DefKind::Enum {
             items.extend(out.variant_constants(def_id));
@@ -167,7 +162,7 @@ pub(super) fn module<'tcx>(
     // interface an exported function names.
     items.splice(0..0, out.unexported.into_values().flatten());
     if items.is_empty() && reexports.is_empty() {
-        return (None, types);
+        return None;
     }
     let mut declarations = imports::imports((&out.imports, &out.library_imports, &out.module_imports), reexports);
     declarations.extend(items);
@@ -177,7 +172,23 @@ pub(super) fn module<'tcx>(
         let names: Vec<&(String, String)> = aliases.iter().map(|(_, names)| names).collect();
         declarations.push(json!({ "kind": "export", "names": names }));
     }
-    (Some(json!({ "declarations": declarations })), types)
+    Some(json!({ "declarations": declarations }))
+}
+
+/// Whether the declarations of `did`'s module declare it, a struct, an
+/// enum or a union of the crate's another module's or a library's consumer
+/// names by its name (ADR 0210, amended): an enum, a union, a
+/// `#[repr(transparent)]` struct, or one of named fields; not a tuple
+/// struct, which has no declaration.
+pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    match tcx.def_kind(did) {
+        DefKind::Struct => {
+            let adt = tcx.adt_def(did);
+            adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()
+        }
+        DefKind::Enum | DefKind::Union => true,
+        _ => false,
+    }
 }
 
 /// An item's type parameters bound by a trait that says what it is to
@@ -305,7 +316,7 @@ struct Declarations<'a, 'tcx> {
     /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
     imports: BTreeSet<(String, String)>,
     /// The types of libraries' modules it names, by their file's specifier.
-    library_imports: BTreeSet<(String, String)>,
+    library_imports: BTreeSet<(String, String, bool)>,
     /// The types of the crate's other modules it names, by their path.
     /// Each by its module's path, its name, and whether it's that module's
     /// default, a class (ADR 0761).
@@ -1372,8 +1383,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 // A library's its declarations export, imported from them
                 // (ADR 0210, amended).
-                if let Some((from, name)) = self.foreign.declared_type(did) {
-                    self.library_imports.insert((from.clone(), name.clone()));
+                if let Some((from, name, default)) = self.foreign.declared_type(did) {
+                    self.library_imports.insert((from.clone(), name.clone(), *default));
                     let type_args = self.type_args(did, args);
                     return reference(name, type_args);
                 }
@@ -1382,15 +1393,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let Some(local) = did.as_local() else {
                     return keyword("any");
                 };
-                let declared = match tcx.def_kind(did) {
-                    DefKind::Struct => {
-                        adt.non_enum_variant().ctor.is_none()
-                            || super::recognition::transparent_field(tcx, *adt).is_some()
-                    }
-                    DefKind::Enum | DefKind::Union => true,
-                    _ => false,
-                };
-                if !declared {
+                if !declares_type(tcx, did) {
                     return keyword("any");
                 }
                 let home = tcx.parent_module_from_def_id(local);

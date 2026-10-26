@@ -88,3 +88,40 @@ test("a library without declarations has its types as any", () => {
   expect(declarations).not.toContain("import");
   expect(declarations).toContain("export function read(context: any): number;");
 });
+
+// A library's module's default, a class `js::export_default!` makes it
+// (ADR 0761, amended), is imported as its default, as another module of
+// the crate's is.
+test("a library's default class is imported as its default", () => {
+  const dir = fixture("declarations-library-default");
+  compiled(dir, {
+    "dep.rs": "pub mod complex;\n",
+    "complex.rs": `#[cfg_attr(rust_js, rust_js::class)]
+pub struct Complex {
+    pub re: f64,
+    pub im: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Complex {
+    pub fn new(re: f64, im: f64) -> Self {
+        Complex { re, im }
+    }
+
+    pub fn radius(&self) -> f64 {
+        (self.re * self.re + self.im * self.im).sqrt()
+    }
+}
+
+js::export_default!(Complex);
+`,
+  }, `use dep::complex::Complex;
+
+pub fn radius(complex: &Complex) -> f64 {
+    complex.radius()
+}
+`);
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type Complex from "../dep/complex.js";\n');
+  expect(declarations).toContain("export function radius(complex: Complex): number;");
+});
