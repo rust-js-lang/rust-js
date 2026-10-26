@@ -187,8 +187,8 @@ export const mutations: Mutation[] = [
     name: "chain-place-read-twice",
     breaks: "a let chain after a test of its own reads its place twice, `if (debug && info.value != null) { const value = info.value; .. }` (ADR 0842)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        if read_twice_apart(test, bound, second, &again) {\n",
-    replace: "        if false && read_twice_apart(test, bound, second, &again) {\n",
+    find: "        if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {\n",
+    replace: "        if read_past_code(bound, second, &again) {\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a let chain after a test of its own reads its place once"],
   },
   {
@@ -252,5 +252,13 @@ export const mutations: Mutation[] = [
     replace: "        ] if label.is_none() => Some(Valued::Returned(value)),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
     snapshots: true,
+  },
+  {
+    name: "chain-binding-read-past-code",
+    breaks: "a let chain's binding read before a later test that runs code, `let Some(task) = f.task.get() && probe(f)`, is read after it in the body, where `probe` may have changed the field (ADR 0842, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {\n",
+    replace: "        if read_twice_apart(test, bound, second, &again) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_binding_past_a_call.rs$"],
   },
 ];

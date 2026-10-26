@@ -705,7 +705,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md) *(extended by 0875: a `js::Set` of any value; `map::new` takes its entries; amended by 0884: its value is any value, and `get` of an `Option` tells a `None` from a missing key)*
 - [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md) *(amended by 0884: a `WeakMap`'s value needn't be `Defined`)*
 - [0852 Each type's `Rc`s are counted apart](0852-each-types-rcs-are-counted-apart.md)
-- [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)
+- [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md) *(amended: a binding read before a test that runs code stays before it)*
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)
 - [0721 `js::strict_equals(a, b)` is JS's `===`](0721-strict-equals-is-jss-triple-equals.md) *(fixed by 0775: a `()` compared is `undefined`)*
 - [0722 A `#[repr(..)]` enum's variant is its number](0722-a-repr-enums-variant-is-its-number.md) *(amended: each its module's `const`, read by its name; what a module's load makes reads another module's as its value; a variant's `#[rust_js::name]` names its `const`)*

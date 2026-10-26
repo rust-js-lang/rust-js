@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends tidy's `and tests`, which
 [0672](0672-a-property-a-test-reads-is-read-once.md) amended for a getter's
-read.
+read. Amended below: a binding read before a test that runs code stays
+before it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the nested `if`s
 are the JS MIR made of the chain, its tests in the order written and each
@@ -114,3 +115,24 @@ read either way.
   its own reads its place once": `settle`'s and `many`'s nested `if`s, run.
 - The mutations `chain-place-read-twice`, `chain-tests-read-place-twice`
   and `chain-taken-apart-nested`, the last held by the `options` snapshot.
+
+## Amendment: a binding read before a test that runs code stays before it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+are kept. A wrong answer, fixed.
+
+`if let Some(fiber) = fiber && let Some(task) = fiber.task.get() &&
+probe(fiber) { return task.len(); }` printed `if (fiber && fiber.task !=
+null && probe(fiber)) { const task = fiber.task; return $byteLen(task);
+}`: joining MIR's `if`s moved the binding's `const` past `probe(fiber)`,
+which clears the field, so `task` was `undefined` where Rust's is what was
+read before, and the JS threw. **A chain whose next test runs code isn't
+joined where a binding before it is read after it, by the body or a later
+binding** (`logicals::read_past_code`): `if (fiber) { const task =
+fiber.task; if (task != null && probe(fiber)) { .. } }`, the binding
+read where Rust reads it. One the test reads alone, in its place, goes as
+before; one past a test that does nothing, `task.len() > min`, is joined
+as before, nothing between able to change what it read.
+
+Held by `let_chain_binding_past_a_call.rs` against native Rust, and the
+mutation `chain-binding-read-past-code` (`tidy/logicals.ts`).

@@ -215,7 +215,7 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
             first_reads.extend(read_once_first(stmt).map(|read| (i, read)));
             continue;
         };
-        if read_twice_apart(test, bound, second, &again) {
+        if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {
             continue;
         }
         let second = second_joined;
@@ -264,6 +264,17 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
         let tested = js::mentions_in(&test, name);
         apart && tested > 0 && tested + again(at, name) > 1
     })
+}
+
+/// Whether joining `if (a) { const x = e; if (b) { s } }` into `if (a &&
+/// b) { const x = e; s }` would read `e` after `b` runs code, which may
+/// change it: `let Some(task) = fiber.task.get() && probe(fiber)`, whose
+/// `task` is what was read before `probe` cleared it. A binding `s` or a
+/// later one reads stays before `b` (ADR 0842, amended).
+fn read_past_code(bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
+    b.has_effects()
+        && (bound.iter().enumerate())
+            .any(|(at, stmt)| matches!(&stmt.kind, StmtKind::Const(name, _) if again(at, name) > 0))
 }
 
 /// Of `if (a) { const x = e; if (b) { s; break l; } }`, a chain whose `e`
