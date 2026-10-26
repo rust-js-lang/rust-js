@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "powf-of-one-as-js",
+    breaks: "`1f64.powf(n)` is `1 ** n`, NaN of an infinite or NaN power, where Rust's is 1",
+    file: "src/lower/std_types/number.rs",
+    find: "                    (js::ExprKind::Num(n), _) if n.abs() != 1.0 => rounded(Expr::bin(Op::Pow, a, b)),\n",
+    replace: "                    (js::ExprKind::Num(n), _) => rounded(Expr::bin(Op::Pow, a, b)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^powf_of_a_constant.rs$"],
+  },
+  {
+    name: "powf-of-a-constant-helper",
+    breaks: "`2f64.powf(n)` is `$powf(2, n)`, not `2 ** n`",
+    file: "src/lower/std_types/number.rs",
+    find: "                    (js::ExprKind::Num(n), _) if n.abs() != 1.0 => rounded(Expr::bin(Op::Pow, a, b)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^powf_of_a_constant.rs$"],
+    snapshots: true,
+  },
+  {
     name: "powi-any-power-a-square",
     breaks: "`x.powi(3)` of a variable is `x * x`, its square",
     file: "src/lower/std_types/number.rs",

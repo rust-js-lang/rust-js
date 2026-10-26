@@ -608,11 +608,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::MulAdd => helper("$mulAdd", vec![arg(), arg(), arg()]),
             // `a ** b`, but where JS's `**` gives NaN, of a base of 1 or -1 to an
             // infinite or NaN power, Rust's is 1: `$powf`, unless the power is a
-            // finite constant, `x.powf(2.0)`.
+            // finite constant, `x.powf(2.0)`, or the base a constant but ±1,
+            // `2f64.powf(n)`.
             NumOp::Powf => {
                 let (a, b) = (arg(), arg());
-                match &b.kind {
-                    js::ExprKind::Num(n) if n.is_finite() => rounded(Expr::bin(Op::Pow, a, b)),
+                match (&a.kind, &b.kind) {
+                    (_, js::ExprKind::Num(n)) if n.is_finite() => rounded(Expr::bin(Op::Pow, a, b)),
+                    (js::ExprKind::Num(n), _) if n.abs() != 1.0 => rounded(Expr::bin(Op::Pow, a, b)),
                     _ => rounded(helper("$powf", vec![a, b])),
                 }
             }

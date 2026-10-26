@@ -72,3 +72,14 @@ implementations go wrong, and print each result exactly:**
   is listed out until it's supported.
 - **The integer matrix's JS snapshot is large,** 57 KB, its macro
   expanded once for each type.
+
+## Amendment: `powf` of a constant base but ±1 is `**` (#342)
+
+The fix above made `powf` `$powf(a, b)`, `a ** b` but 1 of a base of 1, or
+of -1 to an infinite power, and `**` where the power is a finite
+constant. trekhleb/javascript-algorithms' `liuHui`, ported, read
+`$powf(2, splitCount)` where upstream writes `2 ** splitCount`. **A
+constant base that isn't 1 or -1 is `**` too**: neither case can be, so
+it's the same value of every power, NaN and the infinities included (ADR
+0262's case A). Held by `test/corpus/powf_of_a_constant.rs` and the
+mutations `powf-of-one-as-js` and `powf-of-a-constant-helper`.
