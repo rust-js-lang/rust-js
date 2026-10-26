@@ -406,6 +406,38 @@ pub fn run() -> u32 {
   expect(run()).toBe(7);
 });
 
+// React's ReactFiberNewContext could `use shared::object_is::OBJECT_IS as
+// IS;`, shared's default thread-local, as shared's own shallowEqual does:
+// the name a `use` renames it to is written as the item's own is, a
+// thread-local's camelCase, `is` (ADR 0202, amended).
+test("a use's name of a library's thread-local is cased as the thread-local's own", async () => {
+  const dir = fixture("cross-crate-renamed-local");
+  const { app } = compiled(dir, `pub mod object_is {
+    fn is(x: f64, y: f64) -> bool {
+        x == y
+    }
+
+    thread_local! {
+        pub static OBJECT_IS: fn(f64, f64) -> bool = is;
+        pub static CALL_LIMIT: u32 = 3;
+    }
+
+    js::export_default!(OBJECT_IS);
+}
+
+pub const LIMIT: u32 = 1;
+`, `use dep::object_is::{CALL_LIMIT as MAX_CALLS, OBJECT_IS as IS};
+
+pub fn same(x: f64, y: f64) -> bool {
+    IS.with(|is| is(x, y)) && MAX_CALLS.with(|&max| max > 1)
+}
+`);
+  expect(app).toContain('import is, { CALL_LIMIT as MAX_CALLS } from "../dep/object_is.js";\n');
+  expect(app).toContain("  return is(x, y) && MAX_CALLS > 1;\n");
+  const { same } = await import(join(dir, "app", "lib.js"));
+  expect([same(1, 1), same(1, 2)]).toEqual([true, false]);
+});
+
 // React's ReactFiberFlags: `Hydrate = enableCreateEventHandleAPI ? .. :
 // ..`, a feature flag of `shared`'s, which React's build swaps a fork of
 // in: a const written of a library's is as it's written, the flag imported

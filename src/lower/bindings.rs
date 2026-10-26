@@ -1249,26 +1249,36 @@ fn name_in_js(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// writes a constant, `MAX_SIZE`; a variant's and a JS class's, its name.
 fn default_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     let name = tcx.item_name(def_id);
+    let named = cased_as(tcx, def_id, name.as_str());
+    // A thread-local's variable of the name of another item of its module
+    // keeps its own.
+    match thread_local_value(tcx, def_id).is_some_and(|held| !primitive(tcx, held))
+        && another_named(tcx, def_id, &named)
+    {
+        true => name.to_string(),
+        false => named,
+    }
+}
+
+/// `name`, an item's own or what a `use .. as` renames it, as JS writes
+/// the item's name (`default_name`): `use shared::object_is::OBJECT_IS as
+/// IS;` imports `is`, as the thread-local's own is `objectIs` (ADR 0202,
+/// amended).
+pub(in crate::lower) fn cased_as(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
     match tcx.def_kind(def_id) {
         DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
         DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {
             name.to_string()
         }
-        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {
-            let variable = variable_name(tcx, def_id);
-            match another_named(tcx, def_id, &variable) {
-                true => name.to_string(),
-                false => variable,
-            }
-        }
-        _ => super::camel_case(name.as_str()),
+        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),
+        _ => super::camel_case(name),
     }
 }
 
-/// A thread-local's name as its module's variable: camelCase,
+/// A thread-local's name, `name`, as its module's variable: camelCase,
 /// capitalized where it holds a component.
-fn variable_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
-    let variable = super::variable_case(tcx.item_name(def_id).as_str());
+fn variable_name(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
+    let variable = super::variable_case(name);
     match holds_component(tcx, def_id) {
         true => super::upper_first(&variable),
         false => variable,
@@ -1315,7 +1325,7 @@ fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
             )
             && (!exported || exported_by_name(tcx, other))
             && given_name(tcx, other).unwrap_or_else(|| match thread_local_value(tcx, other) {
-                Some(_) => variable_name(tcx, other),
+                Some(_) => variable_name(tcx, other, tcx.item_name(other).as_str()),
                 None => super::camel_case(tcx.item_name(other).as_str()),
             }) == name
     })

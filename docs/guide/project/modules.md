@@ -115,8 +115,9 @@ Imports are one block, in the order a person writes them: packages, then
 the crate's own modules, then imports for their effect, then
 `@rust-js/runtime` ([ADR 0295](../../decisions/0295-import-order.md)).
 
-A `use .. as` names the import as it renames the item, camelCase as any
-name is: another module's function, a library's item, a module's default
+A `use .. as` names the import as it renames the item, cased as the
+item's own name is, a thread-local's camelCase, `use shared::object_is::OBJECT_IS
+as IS;`'s `import is`, a function's camelCase as any name is: another module's function, a library's item, a module's default
 too, `import queueMacrotask from "../shared/enqueueTask.js"`, and a
 binding's export, `import { useId as makeId } from "react"`; by its
 `#[rust_js::name]` where it has one. The module reads it by that name;

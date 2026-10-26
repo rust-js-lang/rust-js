@@ -93,3 +93,21 @@ and a member's export by its own name, and refuses two names of one.
 Mutations: each of the three left out, a member's `use` naming its
 export, and two names kept.
 
+## Amendment: a `use`'s name is cased as its item's own
+
+A `use .. as` name was camelCase as any Rust name is, `camel_case`, which
+leaves a word with no `_` as it's written: `use shared::object_is::OBJECT_IS
+as IS;`, shared's default thread-local, was `import IS from
+"../shared/objectIs.js"` and `IS(newValue, oldValue)`, where the
+thread-local's own name is `objectIs`, `SCREAMING_SNAKE` words lowercase
+then camelCase (ADR 0573), and shared's own `shallowEqual` reads it `is`.
+
+**A `use`'s name is written as its item's own name would be**
+(`bindings::cased_as`, which an item's default name asks too): a
+thread-local's as its module's variable, `is`; one of a primitive as it's
+written, a constant; anything else camelCase, as before. Case: N (ADR
+0262), a file's name of its import.
+
+Test: `cross-crate-items`, "a use's name of a library's thread-local is
+cased as the thread-local's own": `import is, { CALL_LIMIT as MAX_CALLS }
+from "../dep/object_is.js"`, run. Mutation: `renamed-thread-local-as-written`.

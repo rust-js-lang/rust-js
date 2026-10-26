@@ -367,7 +367,7 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
                     let alias = given.or_else(|| crate::lower::default_exports::alias_named(tcx, def_id, ident.name));
                     Some((
                         def_id,
-                        alias.unwrap_or_else(|| camel_case(ident.name.as_str())),
+                        alias.unwrap_or_else(|| bindings::cased_as(tcx, def_id, ident.name.as_str())),
                         item.span,
                     ))
                 }

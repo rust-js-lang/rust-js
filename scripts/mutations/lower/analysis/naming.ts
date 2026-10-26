@@ -128,9 +128,17 @@ export const mutations: Mutation[] = [
     name: "renamed-static-not-camel-case",
     breaks: "`use …::hero_img as banner_img` is `import banner_img from \"./hero.png\"`, not an asset's camel case",
     file: "src/lower/analysis/naming.rs",
-    find: "alias.unwrap_or_else(|| camel_case(ident.name.as_str())),",
+    find: "alias.unwrap_or_else(|| bindings::cased_as(tcx, def_id, ident.name.as_str())),",
     replace: "alias.unwrap_or_else(|| ident.name.to_string()),",
     tests: ["test/jsx.test.ts", "-t", "use renames it"],
+  },
+  {
+    name: "renamed-thread-local-as-written",
+    breaks: "`use shared::object_is::OBJECT_IS as IS` is `import IS`, called `IS(..)`, not the thread-local's camelCase `is` (ADR 0202, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "alias.unwrap_or_else(|| bindings::cased_as(tcx, def_id, ident.name.as_str())),",
+    replace: "alias.unwrap_or_else(|| camel_case(ident.name.as_str())),",
+    tests: ["test/cross-crate-items.test.ts", "-t", "cased as the thread-local"],
   },
   {
     name: "tested-variant-unimported",
