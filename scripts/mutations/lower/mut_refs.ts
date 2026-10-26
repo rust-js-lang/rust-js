@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-iter-self-items-given",
+    breaks: "`for x in &mut v` steps `v`'s numbers, not a handle on each: `into_iter`'s own `self`, bound by `IntoIterator`, counted as giving the `&mut`s it makes (ADR 0926)",
+    file: "src/lower/mut_refs.rs",
+    find: "                matches!(input.kind(), ty::Param(param) if !super::recognition::is_trait_self(*param))\n",
+    replace: "                matches!(input.kind(), ty::Param(_))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(std_mut_items|mut_ref_loop).rs$"],
+  },
+  {
+    name: "into-iterator-items-made",
+    breaks: "`a.iter().zip(b)` of a `&mut [u32]` is refused, `a &mut u32 from zip used as a value`: the `&mut`s `b`'s `IntoIterator` gives counted as `zip`'s own (ADR 0926)",
+    file: "src/lower/mut_refs.rs",
+    find: "            let into = taken_into(i).then(|| self.iterable_item(t));\n",
+    replace: "            let into = taken_into(i).then(|| self.iterable_item(t)).filter(|_| false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_into_mut_slice.rs$"],
+  },
+  {
+    name: "into-iterator-items-of-any-argument",
+    breaks: "`b.iter_mut()` of a `&mut Vec<u32>` steps its numbers, not a handle on each: its receiver's `IntoIterator` items counted as given where `iter_mut` takes it as itself (ADR 0926)",
+    file: "src/lower/mut_refs.rs",
+    find: "            let into = taken_into(i).then(|| self.iterable_item(t));\n",
+    replace: "            let into = Some(self.iterable_item(t)).filter(|_| i < usize::MAX);\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_into_mut_slice.rs$"],
+  },
+  {
     name: "nested-mut-object-accepted",
     breaks: "`to_vec(c)` of an object gives a `Vec` of handles, which the caller takes for the objects",
     file: "src/lower/mut_refs.rs",

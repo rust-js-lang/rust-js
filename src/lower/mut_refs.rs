@@ -86,19 +86,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(place)
     }
 
-    /// `makes_items`, of its arguments' types (ADR 0364).
+    /// `makes_items`, of the call of `callee` and its arguments' types (ADR
+    /// 0364): not a `&mut` one gives, an iterator's item, or the items of
+    /// one it takes as an `IntoIterator`, a `&mut [T]`'s `&mut T` that
+    /// `zip(b)` steps, made where it's made into its iterator (ADR 0926);
+    /// not `into_iter`'s own `self`, which makes them.
     pub(in crate::lower) fn makes_items_of(
         &self,
+        callee: DefId,
         output: Ty<'tcx>,
         generic_args: ty::GenericArgsRef<'tcx>,
         tys: &[Ty<'tcx>],
     ) -> Option<Ty<'tcx>> {
         let cells = |ty: Ty<'tcx>| ty.walk().filter_map(|part| part.as_type()).filter(|&t| self.is_cell(t));
+        let into_iterator = super::recognition::std_item(self.tcx, super::recognition::StdItem::IntoIterator);
+        let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
+        let bounds = self.tcx.param_env(callee).caller_bounds();
+        let taken_into = |i: usize| {
+            inputs.get(i).is_some_and(|&input| {
+                matches!(input.kind(), ty::Param(param) if !super::recognition::is_trait_self(*param))
+                    && bounds.iter().any(|clause| {
+                        clause.as_trait_clause().is_some_and(|bound| {
+                            bound.def_id() == into_iterator && bound.self_ty().skip_binder() == input
+                        })
+                    })
+            })
+        };
+        let items = |(i, t): (usize, Ty<'tcx>)| {
+            let into = taken_into(i).then(|| self.iterable_item(t));
+            self.iterator_item(t).into_iter().chain(into)
+        };
         let given: Vec<_> = tys
             .iter()
             .copied()
-            .chain(generic_args.types())
-            .flat_map(|t| cells(t).chain(self.iterator_item(t).into_iter().flat_map(cells)))
+            .enumerate()
+            .flat_map(|(i, t)| cells(t).chain(items((i, t)).flat_map(cells)))
+            .chain(
+                generic_args
+                    .types()
+                    .flat_map(|t| cells(t).chain(self.iterator_item(t).into_iter().flat_map(cells))),
+            )
             .collect();
         let mut made = cells(output).chain(self.iterator_item(output).into_iter().flat_map(cells));
         made.find(|t| !given.contains(t))

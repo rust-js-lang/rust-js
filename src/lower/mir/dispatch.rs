@@ -1169,7 +1169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `&mut` it made to an item JS can't change in place: a handle on
         // each (ADR 0152).
-        if let Some(cell) = self.makes_items_of(output, generic_args, arg_tys) {
+        if let Some(cell) = self.makes_items_of(def_id, output, generic_args, arg_tys) {
             let exprs = values
                 .iter()
                 .cloned()
