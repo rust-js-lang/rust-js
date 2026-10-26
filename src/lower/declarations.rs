@@ -1120,25 +1120,22 @@ impl<'tcx> Declarations<'_, 'tcx> {
             },
             _ => ty,
         };
-        // Each by the aliases its type is written of, `CallRender | null`
-        // (ADR 0586, amended).
         let written = self.written_type(def_id);
         let ty = match variable {
-            // A nullable one's `None` is `null` (ADR 0586, amended).
+            // A nullable one's `None` is `null`, by the aliases its type is written of (ADR 0586, amended).
             Some(_)
                 if super::bindings::nullable_local(self.tcx, def_id)
                     && let Some(inner) = self.option(ty) =>
             {
                 json!({ "kind": "union", "types": [self.as_written(written, |out| out.ts(inner)), keyword("null")] })
             }
-            Some(_) => self.as_written(written, |out| out.ts(ty)),
             // One that holds the `Option` itself, a `const`, a nullable `const` too.
             None if super::bindings::nullable_local(self.tcx, def_id)
                 && let Some(inner) = self.option(ty) =>
             {
                 json!({ "kind": "union", "types": [self.as_written(written, |out| out.ts(inner)), keyword("null")] })
             }
-            None => self.as_written(written, |out| out.ts(ty)),
+            _ => self.as_written(written, |out| out.ts(ty)),
         };
         let mut declared = json!({
             "kind": "const",
