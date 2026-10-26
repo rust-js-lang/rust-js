@@ -7,7 +7,8 @@ a `Vec` of them, each item's `None` `null`; and of a thread-local, and a
 binding's type parameter; and of a generic struct's field of a type
 parameter's value, and a thread-local a generic constructor makes, below;
 and of a thread-local of an `Option` itself, and what one gives, and of a
-`const`, below; and a constant's struct's field, below. Extended by
+`const`, below; and a constant's struct's field, below; and each declared
+by the aliases its type is written of, below. Extended by
 [0935](0935-js-null-is-null-where-its-written.md): the js crate's `js::NULL`,
 a nullable `const`, is `null` where it's written.
 
@@ -343,3 +344,25 @@ does of a struct made at run time.
 Tested by `test/lowering-nullable-constants.test.ts`, of the crate's
 struct and a library's; its mutations are
 `nullable-const-field-undefined` and `optional-const-field-null`.
+
+## Amendment: declared by the aliases its type is written of
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a declaration's
+spelling. React's ReactFiberCallUserSpace declares `callComponentInDEV`
+by its frame's type, and the port's nullable `thread_local! { pub static
+CALL_RENDER_IN_DEV: Option<CallRender> = .. }` was declared
+`((value: number) => number) | null`, where a plain one's was
+`CallRender | null | undefined`: the `null` union was made of the
+`Option`'s type alone, not as its type is written, as a `const`'s and a
+function's result are (`as_written`).
+
+**A nullable thread-local, `const` or module variable is declared by the
+aliases its type is written of**, as any other is: `export const
+callRenderInDev: CallRender | null;`, `export let blockingUpdateTask:
+ConsoleTask | null;`.
+
+- `test/lowering-module-variables.test.ts`, "a nullable thread-local of
+  an Option is null where it's made, and what it gives is as it is": its
+  `.d.ts`, of a thread-local of an `Option` and of a module variable's
+  cell.
+- Mutation `nullable-local-declared-unaliased` (`declarations.rs`).

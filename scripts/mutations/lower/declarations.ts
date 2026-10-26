@@ -791,6 +791,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
   {
+    name: "nullable-local-declared-unaliased",
+    breaks: "a nullable thread-local of an `Option<CallDestroy>`, and a variable's `Cell<Option<ConsoleTask>>`, are declared by what the alias is, `((fiber: Fiber, value: number) => number) | null`, not `CallDestroy | null` (ADR 0586, amended)",
+    file: "src/lower/declarations.rs",
+    find: "        let written = self.written_type(def_id);\n        let ty = match variable {\n",
+    replace: "        let written = None;\n        let ty = match variable {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
+  {
     name: "nullable-option-local-declared-undefined",
     breaks: "a nullable thread-local of an `Option`, and a nullable `const`, is declared `T | undefined`, not `T | null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",

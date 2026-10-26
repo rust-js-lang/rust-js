@@ -978,8 +978,10 @@ thread_local! {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub static COMPONENT_EFFECT_ERRORS: RefCell<Option<Vec<String>>> = const { RefCell::new(None) };
     #[cfg_attr(rust_js, rust_js::nullable)]
-    pub static BLOCKING_UPDATE_TASK: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+    pub static BLOCKING_UPDATE_TASK: Cell<Option<ConsoleTask>> = const { Cell::new(None) };
 }
+
+pub type ConsoleTask = &'static Unknown;
 
 pub fn destroyed(fiber: &Fiber) -> u32 {
     match CALL_DESTROY_IN_DEV.with(|call| *call) {
@@ -1008,7 +1010,10 @@ pub fn start_update_timer_by_lane(fiber: &Fiber) {
   );
   expect(out).toContain("  const old = componentEffectErrors;\n  componentEffectErrors = null;\n  return old;\n");
   expect(out).toContain("  blockingUpdateTask = __DEV__ ? fiber._debugTask : null;\n");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export const callDestroyInDEV: ((fiber: Fiber, value: number) => number) | null;");
+  // By the alias its type is written of (ADR 0586, amended).
+  const declared = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declared).toContain("export const callDestroyInDEV: CallDestroy | null;");
+  expect(declared).toContain("export let blockingUpdateTask: ConsoleTask | null;");
   (globalThis as any).__DEV__ = false;
   try {
     const lib = await import(join(dir, "lib.js"));
