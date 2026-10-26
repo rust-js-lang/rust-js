@@ -495,7 +495,7 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
 /// MIR's copy of the `return` the `switch` is followed by: the case's
 /// `break;`, which goes on to that `return`. One that ends the case,
 /// which ends there anyway, gone.
-fn returns_broken(stmts: &mut Vec<Stmt>, value: Option<&Expr>, written: js::Span) {
+pub(super) fn returns_broken(stmts: &mut Vec<Stmt>, value: Option<&Expr>, written: js::Span) {
     fn each(stmts: &mut [Stmt], value: Option<&Expr>, written: js::Span) {
         for stmt in stmts.iter_mut() {
             match &mut stmt.kind {
@@ -1047,7 +1047,7 @@ fn literal(e: &Expr) -> bool {
 }
 
 /// Whether `a` and `b` are the same JS, wherever each was written.
-fn alike(a: &Expr, b: &Expr) -> bool {
+pub(super) fn alike(a: &Expr, b: &Expr) -> bool {
     let unspanned = |e: &Expr| {
         let mut e = e.clone();
         e.each_mut(&mut |e| e.span = js::Span::NONE);
@@ -1428,7 +1428,7 @@ pub(super) fn blocks_ending_cases(stmts: &mut [Stmt], elses: &[(js::Span, js::Sp
 /// leaves, `if (c) { a } b`. What `b` declares is a body's name of its
 /// own, given apart from the rest, `name$1`, which preparation names
 /// `name` again only where JS's scopes let it (ADR 0352).
-fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
+pub(super) fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let Some(last) = stmts.last() else {
         return;
     };
@@ -1473,7 +1473,7 @@ fn ending_switches(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 
 /// Each `break label` of a case's `stmts`, outside a loop or `switch` of
 /// its own, which a bare `break` would leave instead: a bare `break`.
-fn case_breaks(stmts: &mut [Stmt], label: &str) {
+pub(super) fn case_breaks(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Break(Some(l)) if l == label => stmt.kind = StmtKind::Break(None),

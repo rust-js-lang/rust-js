@@ -452,6 +452,212 @@ pub(in crate::lower::mir::tidy) fn never_taken(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// The `switch` a block the program labeled leaves, labeled by it, where a
+/// `break` of it is in a `switch` or a loop inside a case, which a plain
+/// `break` would leave instead: React's `getTag: switch (type) { ..
+/// default: switch (type.$$typeof) { case X: ..; break getTag; } }` (ADR
+/// 0944). MIR leaves the block around the `switch`, `L: { switch (..) { ..
+/// } } return tag;`, each case's end a copy of the `return`; or around the
+/// inner `switch`, in a case, followed by a jump that leaves the outer one,
+/// `L: { switch (..) { .. break L; } } break;`: then the block's statements
+/// in its place, the jump gone where they never go on to it, and the outer
+/// `switch` labeled `L`. Each `break L` of a case's own, outside a `switch`
+/// or a loop of its own, is the case's `break;`, and each copy of the
+/// `return` after it too, an `if` written with no `else` then none (ADR
+/// 0805); a label nothing names then, gone. A block MIR made
+/// (`is_block_label`) labels nothing.
+pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt], elses: &[(js::Span, js::Span, js::Span)]) {
+    /// `stmts`, whose end is that of the blocks of `ending` and goes on to
+    /// the `return` of `then`.
+    fn walk(
+        stmts: &mut [Stmt],
+        ending: &[String],
+        then: Option<&Option<Expr>>,
+        elses: &[(js::Span, js::Span, js::Span)],
+    ) {
+        let n = stmts.len();
+        // What each statement goes on to, a `return` after it.
+        let next = |stmts: &[Stmt], i: usize| match stmts.get(i + 1).map(|s| &s.kind) {
+            Some(StmtKind::Return(value)) => Some(value.clone()),
+            Some(_) => None,
+            None => then.cloned(),
+        };
+        for i in 0..n {
+            let leaving = if i + 1 == n { ending } else { &[] };
+            let returned = next(stmts, i);
+            if let Some(label) = left_by(&mut stmts[i], leaving, returned.as_ref()) {
+                let switch = std::mem::replace(&mut stmts[i], StmtKind::Comments.at(js::Span::NONE));
+                let span = switch.span;
+                stmts[i] = StmtKind::Labeled(label, vec![switch]).at(span);
+            }
+            labeled_cases(&mut stmts[i], returned.as_ref(), elses);
+        }
+        for i in 0..n {
+            let ending: &[String] = if i + 1 == n { ending } else { &[] };
+            let returned = next(stmts, i);
+            match &mut stmts[i].kind {
+                StmtKind::Labeled(label, body) => {
+                    let ending: Vec<String> = ending.iter().cloned().chain([label.clone()]).collect();
+                    walk(body, &ending, returned.as_ref(), elses);
+                }
+                StmtKind::If(_, a, b) => {
+                    walk(a, ending, returned.as_ref(), elses);
+                    if let Some(b) = b {
+                        walk(b, ending, returned.as_ref(), elses);
+                    }
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    walk(body, &[], None, elses)
+                }
+                StmtKind::Switch { cases, default, .. } => {
+                    js::case_lists_mut(cases, default).for_each(|case| walk(case, &[], None, elses));
+                }
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    walk(a, &[], None, elses);
+                    walk(b, &[], None, elses);
+                }
+                _ => {}
+            }
+        }
+    }
+    walk(body, &[], None, elses);
+}
+
+/// Of `L: switch (..) { .. }`, a label the program wrote: each copy of
+/// `returned`, the `return` after it, the case's `break;`, an `if` written
+/// with no `else` then none (ADR 0805). Each `break L` of a case's own is
+/// the case's `break;` later, as a block's is (`breaks_past_switches`).
+fn labeled_cases(stmt: &mut Stmt, returned: Option<&Option<Expr>>, elses: &[(js::Span, js::Span, js::Span)]) {
+    let StmtKind::Labeled(label, body) = &mut stmt.kind else {
+        return;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::Switch { cases, default, .. },
+            span: written,
+        },
+    ] = &mut body[..]
+    else {
+        return;
+    };
+    let (Some(value), false) = (returned, crate::lower::mir::is_block_label(label)) else {
+        return;
+    };
+    let ending = (cases.iter_mut())
+        .filter(|case| !case.falls)
+        .map(|case| &mut case.body)
+        .chain(default.as_mut());
+    for case in ending {
+        super::super::switches::returns_broken(case, value.as_ref(), *written);
+        // An `if` written with no `else`, whose `then` leaves now.
+        super::super::switches::unwritten_else(case, elses);
+    }
+}
+
+/// Of a `switch`, the label of each block the program labeled that a case
+/// ends with, followed by a jump that leaves the `switch`, through the
+/// `if`s and blocks it's in: its `break;`, a `break` of a block of
+/// `leaving`, whose end the `switch` ends, or MIR's copy of the `return`
+/// it goes on to, `returned`'s. The one label of them all: each such
+/// block's statements in its place, its `break`s the `switch`'s now, and
+/// the jump after it gone where they never go on to it.
+fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>>) -> Option<String> {
+    let leaves = |stmt: Option<&Stmt>| match (stmt.map(|s| &s.kind), returned) {
+        (Some(StmtKind::Break(None)), _) => true,
+        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),
+        (Some(StmtKind::Return(None)), Some(None)) => true,
+        (Some(StmtKind::Return(Some(value))), Some(Some(after))) => super::super::switches::alike(value, after),
+        _ => false,
+    };
+    fn blocks(stmts: &[Stmt], leaves: &dyn Fn(Option<&Stmt>) -> bool, found: &mut Vec<String>) {
+        for (k, stmt) in stmts.iter().enumerate() {
+            match &stmt.kind {
+                StmtKind::Labeled(label, body)
+                    if !crate::lower::mir::is_block_label(label)
+                        && leaves(stmts.get(k + 1))
+                        && js::names_jump(body, label)
+                        && fits_in_place(stmts, k, body) =>
+                {
+                    found.push(label.clone());
+                }
+                StmtKind::Labeled(_, body) => blocks(body, leaves, found),
+                StmtKind::If(_, a, b) => {
+                    blocks(a, leaves, found);
+                    blocks(b.as_deref().unwrap_or_default(), leaves, found);
+                }
+                _ => {}
+            }
+        }
+    }
+    fn unwrapped(stmts: &mut Vec<Stmt>, label: &str) {
+        let mut k = 0;
+        while k < stmts.len() {
+            match &mut stmts[k].kind {
+                StmtKind::Labeled(l, _) if l == label => {
+                    let StmtKind::Labeled(_, body) = stmts.remove(k).kind else {
+                        unreachable!("matched")
+                    };
+                    let n = body.len();
+                    let goes_on = body.last().is_none_or(|last| !never_goes_on(last));
+                    stmts.splice(k..k, body);
+                    k += n;
+                    if !goes_on
+                        && matches!(
+                            stmts.get(k).map(|s| &s.kind),
+                            Some(StmtKind::Break(_) | StmtKind::Return(_))
+                        )
+                    {
+                        stmts.remove(k);
+                    }
+                    continue;
+                }
+                StmtKind::Labeled(_, body) => unwrapped(body, label),
+                StmtKind::If(_, a, b) => {
+                    unwrapped(a, label);
+                    if let Some(b) = b {
+                        unwrapped(b, label);
+                    }
+                }
+                _ => {}
+            }
+            k += 1;
+        }
+    }
+    let StmtKind::Switch { cases, default, .. } = &mut switch.kind else {
+        return None;
+    };
+    let mut found = Vec::new();
+    js::case_lists(cases, default).for_each(|case| blocks(case, &leaves, &mut found));
+    found.dedup();
+    let [label] = &found[..] else {
+        return None;
+    };
+    let label = label.clone();
+    js::case_lists_mut(cases, default).for_each(|case| unwrapped(case, &label));
+    Some(label)
+}
+
+/// Whether `stmt` never goes on to what's after it: a jump past it, a
+/// `break` of a label, a `return`, a `throw` or a `continue`; or a `switch`
+/// with a `default` each of whose cases ends with one, none of its own
+/// `break;`.
+fn never_goes_on(stmt: &Stmt) -> bool {
+    let past = |s: &Stmt| {
+        matches!(
+            s.kind,
+            StmtKind::Break(Some(_)) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_)
+        )
+    };
+    match &stmt.kind {
+        StmtKind::Switch {
+            cases,
+            default: Some(default),
+            ..
+        } => cases.iter().all(|case| case.body.last().is_some_and(past)) && default.last().is_some_and(past),
+        _ => past(stmt),
+    }
+}
+
 /// A body's jumps settled once a pass has moved them: a `break` or a
 /// `continue` that goes where the code goes on anyway, gone (`tail_jumps`),
 /// then a label nothing names any more, gone (`unlabeled`). Run after any

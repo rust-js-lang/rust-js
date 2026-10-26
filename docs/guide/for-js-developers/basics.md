@@ -1543,6 +1543,87 @@ export function count(s) {
 }
 ```
 
+A block the program labeled around a `match` is the `switch`'s label,
+camelCase as every name, where an arm's inner `switch` leaves it, which a
+plain `break` can't; elsewhere it's the case's `break`, and no label is
+left ([ADR 0944](../../decisions/0944-a-label-the-program-wrote-labels-the-switch.md)):
+
+```rust
+use js::{SymbolFor, Unknown};
+
+const FRAGMENT: SymbolFor = SymbolFor("react.fragment");
+const STRICT_MODE: SymbolFor = SymbolFor("react.strict_mode");
+const CONTEXT: SymbolFor = SymbolFor("react.context");
+const MEMO: SymbolFor = SymbolFor("react.memo");
+const LAZY: SymbolFor = SymbolFor("react.lazy");
+
+pub fn tag_of(r#type: Option<&Unknown>) -> &'static str {
+    let tag;
+    'get_tag: {
+        match SymbolFor::from_value(r#type) {
+            Some(FRAGMENT) => return "fragment",
+            Some(STRICT_MODE) => tag = "mode",
+            _ => {
+                if r#type.is_some() {
+                    match SymbolFor::from_value(js::get(r#type, "$$typeof")) {
+                        Some(CONTEXT) => {
+                            tag = "context";
+                            break 'get_tag;
+                        }
+                        Some(MEMO) => {
+                            tag = "memo";
+                            break 'get_tag;
+                        }
+                        Some(LAZY) => {
+                            tag = "lazy";
+                            break 'get_tag;
+                        }
+                        _ => {}
+                    }
+                }
+                tag = "throw";
+            }
+        }
+    }
+    tag
+}
+```
+
+```js
+const FRAGMENT = Symbol.for("react.fragment");
+const STRICT_MODE = Symbol.for("react.strict_mode");
+const CONTEXT = Symbol.for("react.context");
+const MEMO = Symbol.for("react.memo");
+const LAZY = Symbol.for("react.lazy");
+
+export function tagOf(type) {
+  let tag;
+  getTag: switch (type) {
+    case FRAGMENT:
+      return "fragment";
+    case STRICT_MODE:
+      tag = "mode";
+      break;
+    default:
+      if (type != null) {
+        switch (type.$$typeof) {
+          case CONTEXT:
+            tag = "context";
+            break getTag;
+          case MEMO:
+            tag = "memo";
+            break getTag;
+          case LAZY:
+            tag = "lazy";
+            break getTag;
+        }
+      }
+      tag = "throw";
+  }
+  return tag;
+}
+```
+
 Where JS uses string constants or a `kind` field to tell cases apart, Rust
 uses an `enum`. An enum without fields is its variant's name as a string;
 one with fields is an object with a `TAG`:

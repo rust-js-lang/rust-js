@@ -257,10 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { value, hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
                     // The loop it scopes, in scopes of its own too.
-                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => Some((
-                        self.strip(value),
-                        label.ident.name.as_str().trim_start_matches('\'').to_string(),
-                    )),
+                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => Some((self.strip(value), written_label(&label))),
                     _ => None,
                 },
                 _ => None,
@@ -369,7 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         block.hir_id.local_id,
                         LabeledBlock {
                             span: self.js_span(e.span.source_callsite()),
-                            label: label.ident.name.as_str().trim_start_matches('\'').to_string(),
+                            label: written_label(&label),
                             breaks: Vec::new(),
                         },
                     )),
@@ -1084,4 +1081,10 @@ mod tests {
         assert_eq!(variable_name("IOError"), "ioError");
         assert_eq!(variable_name("trailingZeros"), "trailingZeros");
     }
+}
+
+/// A label the program wrote, `'get_tag`, as JS writes it: camelCase,
+/// `getTag`, as every name is (ADRs 0573, 0944).
+fn written_label(label: &rustc_ast::Label) -> String {
+    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\''))
 }

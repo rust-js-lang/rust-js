@@ -8,7 +8,9 @@ whose labeled block tidy could make something else, and extends
 [0805](0805-a-cases-if-is-as-written-whatever-ends-it.md): an `||` of
 such a `break` is as written whatever the rest ends with, a loop nothing
 leaves too, and a case's `if` the program wrote with no `else` has none
-once its `then` leaves.
+once its `then` leaves. Extended by
+[0944](0944-a-label-the-program-wrote-labels-the-switch.md): a block the
+program labeled around a `switch` an inner `switch` leaves labels it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 where a `break` is written, whether a block has a label, and a test that

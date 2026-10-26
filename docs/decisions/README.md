@@ -728,6 +728,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0941 A `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, steps the array's items it owns](0941-a-boxed-array-s-into-iter-is-its-items.md)
 - [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md)
 - [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md)
+- [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

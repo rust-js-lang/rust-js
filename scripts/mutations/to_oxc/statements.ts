@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
+  {
+    name: "labeled-switch-printed-as-block",
+    breaks: "a labeled `switch` is printed in a block, `getTag: { switch (type) { .. } }`, not as JS writes it (ADR 0944)",
+    file: "src/to_oxc/statements.rs",
+    find: "                    ] => self.stmt(only),\n",
+    replace: "                    ] if false => self.stmt(only),\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
+  },
 ];

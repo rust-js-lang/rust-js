@@ -5,7 +5,9 @@ is JS's labeled block, under MIR's lowering. Amended by
 [0790](0790-a-break-the-program-wrote-is-where-it-is-written.md): the
 block is named first, its `break`s are where they're written, never an
 `else` or a `return` tidy makes of them, and a block that ends a case is
-the case's `break;`s, no label.
+the case's `break;`s, no label. Amended by
+[0944](0944-a-label-the-program-wrote-labels-the-switch.md): the name is
+camelCase, `getTag`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 a label's name is how the JS reads, not what it does.

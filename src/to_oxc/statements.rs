@@ -480,9 +480,19 @@ impl<'a> Cx<'a> {
                 });
                 Statement::new_if_statement(sp, self.expr(cond), self.block(then), els, b)
             }
+            // A label of a `switch` alone, the `switch`'s, `getTag: switch
+            // (type) { .. }`, as JS writes it (ADR 0944).
             StmtKind::Labeled(label, body) => {
-                let block = Statement::new_block_statement(sp, self.stmts(body), b);
-                self.labeled(sp, Some(label), block)
+                let labeled = match &body[..] {
+                    [
+                        only @ js::Stmt {
+                            kind: StmtKind::Switch { .. },
+                            ..
+                        },
+                    ] => self.stmt(only),
+                    _ => Statement::new_block_statement(sp, self.stmts(body), b),
+                };
+                self.labeled(sp, Some(label), labeled)
             }
             // Each case's values stacked, `case 1: case 2:`, the last its
             // statements (ADR 0629).

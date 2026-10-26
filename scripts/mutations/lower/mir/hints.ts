@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     name: "mir-label-of-scope",
     breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
     file: "src/lower/mir/hints.rs",
-    find: "                        self.strip(value),\n",
-    replace: "                        value,\n",
+    find: "Some((self.strip(value), written_label(&label))),\n",
+    replace: "Some((value, written_label(&label))),\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
@@ -352,5 +352,13 @@ export const mutations: Mutation[] = [
     find: "            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id)),\n",
     replace: "            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if labeled.contains(&label.local_id)),\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
+  },
+  {
+    name: "written-label-snake-case",
+    breaks: "the program's `'get_tag` is `get_tag:` in JS, not camelCase as every name is (ADR 0944)",
+    file: "src/lower/mir/hints.rs",
+    find: "    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\\''))\n",
+    replace: "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
 ];

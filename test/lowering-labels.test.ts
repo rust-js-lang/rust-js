@@ -506,3 +506,126 @@ pub fn reset<'a>(mut value: Option<&'a Unknown>, other: Option<&'a Unknown>) -> 
   expect(lib.reset({ a: 1 }, { b: 1 })).toBe(2);
   expect(lib.reset(undefined, undefined)).toBe(3);
 });
+
+// ADR 0944 (the user's decision): React's createFiberFromTypeAndProps,
+// `getTag: switch (type) { .. default: { if (..) { switch (type.$$typeof)
+// { case X: tag = ..; break getTag; .. } } tag = Throw; } }`. The program's
+// `'get_tag: { match .. }` labels the `switch` its block is, by its
+// camelCase name, where a `break` of it is in a `switch` inside a case,
+// which a plain `break` would leave instead; one in the case itself is the
+// case's `break;`. No block MIR made is left, however MIR placed the
+// block: around the `switch` (a case's own `break 'get_tag`), around the
+// inner one followed by the case's `break` (none), or by a jump past the
+// `if` the `switch` ends (an `else` around it).
+test("a label the program wrote is the switch's whose inner switch leaves it", async () => {
+  const dir = fixture("labeled-switch");
+  const source = (strict: boolean, host: boolean) => `use js::{SymbolFor, Unknown};
+
+const REACT_FRAGMENT_TYPE: SymbolFor = SymbolFor("react.fragment");
+const REACT_STRICT_MODE_TYPE: SymbolFor = SymbolFor("react.strict_mode");
+const REACT_MEMO_TYPE: SymbolFor = SymbolFor("react.memo");
+const REACT_LAZY_TYPE: SymbolFor = SymbolFor("react.lazy");
+const REACT_CONTEXT_TYPE: SymbolFor = SymbolFor("react.context");
+
+pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
+    let mut tag = "function";
+    if js::type_of(r#type) == "function" {
+        tag = "class";
+    } else ${host ? `if js::type_of(r#type) == "string" {
+        tag = "host";
+    } else ` : ""}{
+        'get_tag: {
+            match SymbolFor::from_value(r#type) {
+                Some(REACT_FRAGMENT_TYPE) => return "fragment",
+                Some(REACT_STRICT_MODE_TYPE) => {
+                    ${strict ? `if strict {
+                        tag = "strict";
+                        break 'get_tag;
+                    }
+                    ` : "let _ = strict;\n                    "}tag = "mode";
+                }
+                _ => {
+                    if js::type_of(r#type) == "object" && r#type.is_some() {
+                        match SymbolFor::from_value(js::get(r#type, "$$typeof")) {
+                            Some(REACT_CONTEXT_TYPE) => {
+                                tag = "context";
+                                break 'get_tag;
+                            }
+                            Some(REACT_MEMO_TYPE) => {
+                                tag = "memo";
+                                break 'get_tag;
+                            }
+                            Some(REACT_LAZY_TYPE) => {
+                                tag = "lazy";
+                                break 'get_tag;
+                            }
+                            _ => {}
+                        }
+                    }
+                    tag = "throw";
+                }
+            }
+        }
+    }
+    tag
+}
+`;
+  const of = (key: string) => ({ $$typeof: Symbol.for(key) });
+  const tags = async (file: string) => {
+    const lib = await import(join(dir, file));
+    return [
+      lib.tagOf(Symbol.for("react.fragment"), false),
+      lib.tagOf(Symbol.for("react.strict_mode"), true),
+      lib.tagOf(Symbol.for("react.strict_mode"), false),
+      lib.tagOf(of("react.context"), false),
+      lib.tagOf(of("react.memo"), false),
+      lib.tagOf(of("react.lazy"), false),
+      lib.tagOf(of("react.other"), false),
+      lib.tagOf({}, false),
+      lib.tagOf(null, false),
+      lib.tagOf(() => 1, false),
+      lib.tagOf("div", false),
+    ];
+  };
+  for (const [strict, host] of [
+    [true, false],
+    [false, false],
+    [false, true],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source(strict, host));
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    expect([strict, host, js]).toEqual([strict, host, expect.not.stringMatching(/\bbb\d+/)]);
+    expect(js).toContain("    getTag: switch (type) {\n");
+    if (strict) {
+      expect(js).toContain('        if (strict) {\n          tag = "strict";\n          break;\n        }\n        tag = "mode";\n        break;\n');
+    }
+    expect(js).toContain('            case REACT_CONTEXT_TYPE:\n              tag = "context";\n              break getTag;\n');
+    expect(js).toContain('              tag = "lazy";\n              break getTag;\n          }\n        }\n        tag = "throw";\n    }\n  }\n  return tag;\n');
+    expect(await tags(`lib.js?${strict}${host}`)).toEqual([
+      "fragment",
+      strict ? "strict" : "mode",
+      "mode",
+      "context",
+      "memo",
+      "lazy",
+      "throw",
+      "throw",
+      "throw",
+      "class",
+      host ? "host" : "throw",
+    ]);
+  }
+  // The block around the inner `switch` alone, followed by the case's
+  // `break;`, where nothing is around the `match`.
+  const bare = source(false, false)
+    .replace('    let mut tag = "function";\n    if js::type_of(r#type) == "function" {\n        tag = "class";\n    } else {\n', "    let tag;\n")
+    .replace("        }\n    }\n    tag\n}", "        }\n    tag\n}");
+  writeFileSync(join(dir, "lib.rs"), bare);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "bare.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "bare.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain('  let tag;\n  getTag: switch (type) {\n');
+  expect(js).toContain('            tag = "lazy";\n            break getTag;\n        }\n      }\n      tag = "throw";\n  }\n  return tag;\n');
+  expect(await tags("bare.js")).toEqual(["fragment", "mode", "mode", "context", "memo", "lazy", "throw", "throw", "throw", "throw", "throw"]);
+});
