@@ -640,3 +640,34 @@ check where none can fail.
 
 Held by `test/corpus/let_else_guard_released.rs`, against native Rust,
 and the mutation `let-else-guard-held-through-else`.
+
+## Amendment: a cell's own impls are only those it has
+
+React's thenables keep their listeners, `Rc<RefCell<Vec<&dyn Fn()>>>`,
+each borrow a moment's: `listeners.borrow_mut().push(listener)`, and
+`while i < listeners.borrow().len() { let listener =
+listeners.borrow()[i]; listener(); i += 1 }`, no borrow held while a
+listener runs. Upstream's are an array. But each borrow was checked,
+`$borrowMut(listeners, true)` in a `try`/`finally`, and the loop a
+`while (true)` testing a borrow: the type wasn't quiet, as its own impls,
+`Clone`, `PartialEq`, `PartialOrd`, `Ord` and `Debug`, were each walked
+for what they may run (`CellBorrows::impls_ask`), and the walk of one
+whose impl std's bounds didn't say, `Vec<T>: PartialEq<Vec<U>>`, reached
+the `dyn Fn()`, which may run anything.
+
+**Only an impl the cell has may run**: `RefCell<Vec<&dyn Fn()>>` has no
+`PartialEq` nor `Debug`, as no `dyn Fn()` has, so neither runs, nor
+anything of the `dyn Fn()`'s; its `Clone` copies the references. rustc
+says which it has, `codegen_select_candidate`'s `Unimplemented`. Of a
+type parameter's cell, `RefCell<Vec<T>>` in a generic body, which may be
+any, rustc can't say, and each may: a generic `flip<T>(c: &RefCell<Vec<T>>)`
+borrowing its cell mutably from a `Node`'s `Clone`, while the cell's own
+`clone` holds it, still panics `already borrowed`.
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)): a borrow left
+unchecked is one that can't fail. Held by
+`test/corpus/refcell_listeners_momentary.rs`, against native Rust, a
+listener adding another while they run, and
+`test/corpus/refcell_generic_borrow_meets_held.rs`, the generic body's
+panic; the mutations `impls-ask-of-what-it-hasnt` and
+`impls-had-of-a-parameter-unknown` (`analysis/cell_borrows.ts`).

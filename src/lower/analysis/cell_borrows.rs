@@ -166,7 +166,9 @@ impl<'tcx> CellBorrows<'tcx> {
     /// Whether `cell`'s own impls may ask of it (ADR 0863): a `RefCell<T>`'s
     /// `Clone`, `PartialEq`, `PartialOrd`, `Ord` and `Debug` hold a borrow
     /// of it while `T`'s run, which may borrow it mutably, or run what
-    /// rust-js can't see.
+    /// rust-js can't see. Only those it has: a `RefCell<Vec<&dyn Fn()>>`
+    /// has no `PartialEq` nor `Debug`, as a `dyn Fn()` hasn't, so none of
+    /// them runs, nor what a `dyn Fn()` would run of them.
     pub(in crate::lower) fn impls_ask(
         &self,
         recognition: &Recognition<'_, 'tcx>,
@@ -185,9 +187,26 @@ impl<'tcx> CellBorrows<'tcx> {
             Some(crate::lower::recognition::std_item(tcx, StdItem::Ord)),
             Some(crate::lower::recognition::std_item(tcx, StdItem::Debug)),
         ];
+        // Whether `cell` has `trait_id`'s impl, `PartialEq<Self>`'s of
+        // `PartialEq`: where what it is isn't known, of a type parameter,
+        // it may.
+        let has = |trait_id: DefId| {
+            if cell.has_param() || cell.has_aliases() {
+                return true;
+            }
+            let of: Vec<ty::GenericArg<'tcx>> = match tcx.generics_of(trait_id).count() {
+                1 => vec![cell.into()],
+                _ => vec![cell.into(), cell.into()],
+            };
+            let tr = ty::TraitRef::new(tcx, trait_id, of);
+            !matches!(
+                tcx.codegen_select_candidate(recognition.typing_env.as_query_input(tr)),
+                Err(rustc_middle::traits::CodegenObligationError::Unimplemented)
+            )
+        };
         let mut given = Given::default();
         let mut seen = HashSet::new();
-        for trait_id in traits.into_iter().flatten() {
+        for trait_id in traits.into_iter().flatten().filter(|&t| has(t)) {
             bound_runs(
                 recognition,
                 &self.impls,

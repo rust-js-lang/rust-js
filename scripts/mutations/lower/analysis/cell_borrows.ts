@@ -127,6 +127,23 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_borrows_itself.rs$"],
   },
   {
+    name: "impls-ask-of-what-it-hasnt",
+    breaks: "a `RefCell<Vec<&dyn Fn()>>`'s `PartialEq` and `Debug`, which it hasn't, are taken to run what a `dyn Fn()` may, so each moment's borrow of a list of listeners is checked, `$borrowMut(listeners, true)`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        for trait_id in traits.into_iter().flatten().filter(|&t| has(t)) {\n",
+    replace: "        for trait_id in traits.into_iter().flatten() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "impls-had-of-a-parameter-unknown",
+    breaks: "a `RefCell<T>` of a type parameter's has no impl of what's asked, as rustc can't select one, so a generic `Clone` that borrows its cell mutably runs on where Rust panics",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            if cell.has_param() || cell.has_aliases() {\n                return true;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_generic_borrow_meets_held.rs$"],
+  },
+  {
     name: "unseen-never",
     breaks: "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",

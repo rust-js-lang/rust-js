@@ -124,3 +124,22 @@ against native Rust, and the mutations `present-index-unknown`,
 `present-index-where-it-isnt` (`body_queries/ranges.ts`),
 `present-not-through-a-closure` and `present-below-most-itself`
 (`body_queries/ranges/present.ts`).
+
+## Amendment: a cell an `Rc` holds is read through it
+
+A `RefCell` shared by its `Rc`, `listeners: Rc<RefCell<Vec<&dyn Fn()>>>`,
+is borrowed through the `Rc`'s `deref`, a call: `while i <
+listeners.borrow().len() { let listener = listeners.borrow()[i];
+listener(); i += 1 }` read no slice of the test, so it showed nothing of
+`i`, and printed `$index(listeners, i)` and `i = (i + 1) >>> 0`.
+**An `Rc`'s or an `Arc`'s `deref` of a `RefCell`, std's, which runs
+nothing, is a view of the cell** (`recognition::cell_view`'s
+`CellView::Cell`), as long as the `Rc` is: the same cell each time it's
+read, its `Vec` the slice `([CELL], listeners)`. So `listeners[i]` and
+`i++`, as upstream's. What may change the `Vec` meanwhile still forgets
+it, `listener()` here, a call that may push another, which the next
+test reads anew.
+
+Case N: neither check can fail. Held by
+`test/corpus/refcell_listeners_momentary.rs` against native Rust, and
+the mutation `rc-deref-of-a-cell-unviewed` (`recognition/types.ts`).

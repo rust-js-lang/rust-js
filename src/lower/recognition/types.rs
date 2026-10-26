@@ -1018,11 +1018,14 @@ fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 
 /// What a `RefCell`'s call makes of what it holds, as long as it is: a
 /// guard on it, `borrow()` or `borrow_mut()`, or a guard's `deref` or
-/// `deref_mut`, the value itself (ADR 0881).
+/// `deref_mut`, the value itself (ADR 0881); and an `Rc`'s or an `Arc`'s
+/// `deref` of one, std's, which runs nothing, the cell, the same one as long
+/// as the `Rc` is: `listeners.borrow()` of a shared cell of a `Vec`.
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum CellView {
     Guard { mutable: bool },
     Value,
+    Cell,
 }
 
 pub(in crate::lower) fn cell_view<'tcx>(
@@ -1031,6 +1034,11 @@ pub(in crate::lower) fn cell_view<'tcx>(
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<CellView> {
     let of = |ty: Ty<'tcx>, item| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), item));
+    if is_rc_deref(tcx, def_id, args) {
+        let cell = (args.types().next()).and_then(|rc| rc_pointee(tcx, rc.peel_refs()));
+        let of_cell = cell.is_some_and(|cell| of(cell, StdItem::RefCell));
+        return of_cell.then_some(CellView::Cell);
+    }
     if let Some(trait_) = tcx.trait_of_assoc(def_id) {
         let deref = tcx.is_lang_item(trait_, LangItem::Deref) || tcx.is_lang_item(trait_, LangItem::DerefMut);
         let guard = args

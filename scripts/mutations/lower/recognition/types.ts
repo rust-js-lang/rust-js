@@ -311,4 +311,13 @@ export const mutations: Mutation[] = [
     replace: "            .is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
+  {
+    name: "rc-deref-of-a-cell-unviewed",
+    breaks: "an `Rc`'s `deref` of a `RefCell` isn't a view of the cell, so `i < listeners.borrow().len()` of an `Rc<RefCell<Vec<T>>>` shows nothing of `i`: its item is `$index(listeners, i)` and `i += 1` `(i + 1) >>> 0` (ADR 0881)",
+    file: "src/lower/recognition/types.rs",
+    find: "        let of_cell = cell.is_some_and(|cell| of(cell, StdItem::RefCell));\n",
+    replace: "        let of_cell = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
+    snapshots: true,
+  },
 ];

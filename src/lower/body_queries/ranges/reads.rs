@@ -50,10 +50,11 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
                         // A `String`'s text, `&server_text` of a `&str`.
                         || is_string_deref(tcx, def_id, generic_args)
                         // A `RefCell`'s read of what it holds, `queue.borrow()`,
-                        // and its guard's `deref`, the value (ADR 0881).
+                        // its guard's `deref`, the value, and an `Rc`'s
+                        // `deref` of it, the cell (ADR 0881).
                         || matches!(
                             cell_view(tcx, def_id, generic_args),
-                            Some(CellView::Guard { mutable: false } | CellView::Value)
+                            Some(CellView::Guard { mutable: false } | CellView::Value | CellView::Cell)
                         )
                         // A string's `encode_utf16()`, std's, which reads it, and
                         // its `count()`, its `length` (ADR 0632).
