@@ -279,7 +279,9 @@ export function middle(items) {
   insertion order, where Rust's order is unspecified
   ([ADR 0059](../../decisions/0059-hashmap.md)). A key that's a struct, a
   tuple or an enum with a derived `Eq` is compared by value, in the
-  runtime's `$KeyMap`. A set's `iter().for_each(..)` is the set's own
+  runtime's `$KeyMap`, and so is an `Option`, whose `None` is one key
+  whether it's `undefined` or `null`
+  ([ADR 0121](../../decisions/0121-value-keys.md), amended). A set's `iter().for_each(..)` is the set's own
   `forEach`, `tags.forEach((tag) => ..)`, each item given in the order
   `Array.from(tags)` has them
   ([ADR 0877](../../decisions/0877-a-sets-for-each-is-its-own.md)).

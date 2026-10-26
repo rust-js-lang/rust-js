@@ -934,16 +934,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         !ty.is_unit() && !self.is_primitive_key(ty) && self.compares_by_value(ty, &mut Vec::new())
     }
 
-    /// A key a JS `Map` finds as Rust does: a primitive one (ADR 0059), or
-    /// an `Option` of one, `undefined` or the value (ADR 0030). One found by
-    /// value that's one of these needs no `$KeyMap`.
+    /// A key a JS `Map` finds as Rust does: a primitive one (ADR 0059). One
+    /// found by value that's one of these needs no `$KeyMap`. Not an
+    /// `Option` of one, whose `None` is `undefined` or `null`, each its own
+    /// key to JS's `Map`, where Rust has one `None` (ADRs 0030, 0935):
+    /// `$KeyMap` finds either.
     pub(in crate::lower) fn is_js_key(&self, ty: Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
-        self.is_primitive_key(ty)
-            || self.option_of(ty).is_some_and(|inner| {
-                let inner = inner.peel_refs();
-                !self.boxed_payload(inner) && self.is_primitive_key(inner) && !Num::of(inner).is_some_and(Num::float)
-            })
+        self.is_primitive_key(ty.peel_refs())
     }
 
     /// A key a JS `Map` holds as it is, a primitive `js_eq` compares, not

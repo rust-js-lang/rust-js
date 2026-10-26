@@ -44,6 +44,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
   {
+    name: "option-keys-by-identity",
+    breaks: "a `HashMap<Option<u32>, _>` is a plain `Map`, whose `null` key and `undefined` key are two, where Rust has one `None`, and `get(&None)` misses a nullable field's (ADR 0935)",
+    file: "src/lower/std_types/map.rs",
+    find: "        self.is_primitive_key(ty.peel_refs())\n",
+    replace: "        let ty = ty.peel_refs();\n        self.is_primitive_key(ty) || self.option_of(ty).is_some_and(|inner| self.is_primitive_key(inner.peel_refs()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^null_option_keys.rs$"],
+  },
+  {
     name: "map-index-message",
     breaks: "`m[&k]` of a missing key panics with `key not found`, not Rust's `no entry found for key`",
     file: "src/lower/std_types/map.rs",

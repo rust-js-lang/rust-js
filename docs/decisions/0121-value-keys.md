@@ -1,6 +1,7 @@
 # 0121. A map keyed by a struct is a `Map` keyed by its value
 
-Status: Accepted. Extends [0059](0059-hashmap.md).
+Status: Accepted. Extends [0059](0059-hashmap.md). Amended: an `Option`
+key is found by its value.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -46,8 +47,8 @@ for (const [cell, kind] of cells) { .. } // the key as it was put in
   whose `PartialEq` is derived and whose fields' types are those too.
 - **ADR 0059's keys stay a plain `Map`'s and `Set`'s**: a string, a number,
   a `bool` or a fieldless enum is its own key already, and a `$KeyMap` of
-  them would only be slower. So is an `Option` of one, `undefined` or the
-  value (ADR 0030): `HashMap<Option<u32>, _>` is a `Map`.
+  them would only be slower. (Amended below: an `Option` of one, whose
+  `None` may be `null` or `undefined`, is a `$KeyMap`'s.)
 - **A set read from JSON**, an array, is a `$KeySet` of its items, so two
   equal ones are one, as serde_json's `HashSet` has them.
 - **A clone clones the keys too**, where they need it (ADR 0052): a clone
@@ -108,3 +109,28 @@ by a struct reads as a Map to the JS given it". Which of two equal keys
 `insert` keeps, and which a drop is of, isn't mutated: a key's `Eq` is
 derived, so two equal keys print and drop alike, and nothing can tell
 them apart.
+
+## Amendment: an `Option` key is found by its value
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed, a
+wrong answer fixed. Rust has one `None`; JS has two, `undefined` and
+`null`, which a `Map` keeps apart.
+
+An `Option` of a key a `Map` holds as it is, `HashMap<Option<u32>, _>`,
+was a plain `Map`, on the grounds above that its `None` is `undefined`.
+It isn't always: a `#[rust_js::nullable]` field's `None` is `null` (ADR
+0275), as is what JS gives and `js::NULL` (ADR 0935). So
+`m.insert(node.parent, ..)` of a root's `null` and `m.get(&None)`'s
+`get(undefined)` were two keys, `len()` 2 where Rust's is 1, and the
+`get` missed. A `BTreeMap`, a `BTreeSet` and a `HashSet` of one were
+the same.
+
+**An `Option` key is a `$KeyMap`'s**, whose `$key` is `"~"` of either
+`None`, as `$eq` has them equal. Only a primitive key is a plain `Map`'s.
+
+- `test/corpus/null_option_keys.rs`: a `HashMap`, a `HashSet`, an
+  `entry`, a `BTreeMap` and a `BTreeSet` each given a nullable field's
+  `None` and another, one key, as natively.
+- Mutation `option-keys-by-identity` (`std_types/map.rs`).
+- The cost: `new $KeyMap()` for `new Map()` of an `Option` key, which
+  makes each key's string, where rare idiomatic code keys by one.
