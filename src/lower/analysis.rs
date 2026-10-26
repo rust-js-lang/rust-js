@@ -82,10 +82,18 @@ pub(super) use super::recognition::serde_impl;
 /// Copy the THIR of every function and closure in the crate.
 ///
 /// Must run *before* `analysis`: building MIR for borrowck consumes ("steals")
-/// the THIR, so this is our only chance to read it.
-pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+/// the THIR, so this is our only chance to read it. Of `std_iterators`,
+/// the differential job's build, no adapter is made in place: each is
+/// std's struct (ADR 0908).
+pub fn collect_bodies(tcx: TyCtxt<'_>, std_iterators: bool) -> Vec<Body<'_>> {
     let mut bodies = lowered_bodies(tcx);
     super::body_queries::results_in_place(tcx, &mut bodies);
+    if std_iterators {
+        for body in &mut bodies {
+            body.facts.in_place_adapters.clear();
+            body.facts.in_place_adapter_steps.clear();
+        }
+    }
     // What only an unlowered impl reaches is no JS either (ADR 0425).
     let unreached = reached_only_unlowered(tcx, &bodies);
     bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id)));

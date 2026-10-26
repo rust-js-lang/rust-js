@@ -4,7 +4,8 @@ name: Nightly
 # jobs, the suite, the examples, the WASM compiler, rustc's tests, with
 # every mutation where a branch's check runs only its own, a batch of
 # generated programs, new ones each night (ADR 0092), and each case of the
-# corpus after each of tidy's stages (ADR 0659). Of a public
+# corpus after each of tidy's stages (ADR 0659) and with std's iterator
+# structs alone (ADR 0908). Of a public
 # repository, GitHub's machines cost nothing. A failure is mailed to whoever
 # last changed this schedule; `bun run ci:status` shows the latest run.
 on:
@@ -74,3 +75,32 @@ jobs:
           RUST_JS_CASES: ${{ matrix.part }}/6
           RUST_JS_COMPILER: target/release/rust-js
         run: bun test --timeout=300000 test/tidy-stages.test.ts
+
+  # One meaning per iterator (ADR 0908): each case built with std's
+  # iterator structs alone, none rewritten in place, runs as native Rust
+  # does, but the cases `differs` lists; the suite runs a few of them.
+  forms:
+    name: iterator forms (${{ matrix.part }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run part ${{ matrix.part }} of 2
+        env:
+          ITERATOR_FORMS: corpus
+          RUST_JS_CASES: ${{ matrix.part }}/2
+          RUST_JS_COMPILER: target/release/rust-js
+        run: bun test --timeout=300000 test/iterator-forms.test.ts

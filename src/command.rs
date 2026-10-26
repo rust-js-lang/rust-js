@@ -61,6 +61,11 @@ pub(crate) struct Build {
     /// runs, `finish`'s naming and taking apart its parameters among them,
     /// so what's printed is what that pass made.
     pub tidy_until: Option<String>,
+    /// `--std-iterators`: every iterator adapter std compiles is its struct,
+    /// none rewritten to the JS chain the recognizers make in place. A test
+    /// hook, not a way to build: the differential job compares it with the
+    /// rewritten build and native Rust (ADR 0908).
+    pub std_iterators: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
@@ -102,6 +107,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let library = flag(&mut ours, "--library");
     let declarations = flag(&mut ours, "--declarations");
     let std_bodies = flag(&mut ours, "--std-bodies");
+    let std_iterators = flag(&mut ours, "--std-iterators");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
@@ -140,6 +146,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        std_iterators,
         rustc: rustc.to_vec(),
     }))
 }

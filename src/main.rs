@@ -122,6 +122,8 @@ struct RustJs {
     std_bodies: bool,
     /// `--tidy-until <stage/pass>` (ADR 0659).
     tidy_until: Option<String>,
+    /// `--std-iterators`, the differential job's hook (ADR 0908).
+    std_iterators: bool,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -248,7 +250,7 @@ impl Callbacks for RustJs {
         // 0. `#[serde(..)]`, which only the expanded crate still has (ADR 0077).
         let serde_attrs = lower::serde_attributes(tcx);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let mut bodies = lower::collect_bodies(tcx);
+        let mut bodies = lower::collect_bodies(tcx, self.std_iterators);
         // `@rust-js/std`'s: std's own, from the MIR the toolchain ships.
         if self.std_bodies {
             bodies.extend(lower::collect_std_bodies(tcx));
@@ -459,6 +461,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        std_iterators,
         ..
     } = build;
     let command::Staged { metadata, dep_info, .. } = staged;
@@ -479,6 +482,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_coverage,
         std_bodies,
         tidy_until,
+        std_iterators,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),

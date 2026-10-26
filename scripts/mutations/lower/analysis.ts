@@ -319,4 +319,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(held_enumerate|std_enumerate).rs$"],
   },
+  {
+    name: "std-iterators-ignored",
+    breaks: "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
+    file: "src/lower/analysis.rs",
+    find: "    if std_iterators {\n",
+    replace: "    if false && std_iterators {\n",
+    tests: ["test/iterator-forms.test.ts"],
+  },
 ];
