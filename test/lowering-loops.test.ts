@@ -73,6 +73,13 @@ pub fn upto(k: u32) -> u32 {
     }
     n
 }
+pub fn through(k: u32) -> u32 {
+    let mut n = 0;
+    for i in 0..=k {
+        n += i;
+    }
+    n
+}
 pub fn stops(items: &[u32]) -> u32 {
     let mut n = 0;
     for x in items {
@@ -90,11 +97,12 @@ pub fn stops(items: &[u32]) -> u32 {
   expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      return x;\n");
   expect(js).toContain("  for (const [a, b] of items) {\n");
   expect(js).toContain("  for (let i = 0; i < k; i++) {\n");
+  expect(js).toContain("  for (let i = 0; i <= k; i++) {\n");
   expect(js).toContain("    if (x === 0) {\n      break;\n    }\n");
   expect(js).not.toContain("while (true)");
   expect(js).not.toContain("$iter");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.counted([1, 3, 4]), lib.found([1, 3]), lib.found([1]), lib.pairs([[1, 2], [3, 4]]), lib.upto(4), lib.stops([1, 2, 0, 5])]).toEqual([2, 3, undefined, 14, 6, 3]);
+  expect([lib.counted([1, 3, 4]), lib.found([1, 3]), lib.found([1]), lib.pairs([[1, 2], [3, 4]]), lib.upto(4), lib.through(4), lib.stops([1, 2, 0, 5])]).toEqual([2, 3, undefined, 14, 6, 10, 3]);
 });
 
 // `if let`s chained with `&&`, and loops, from MIR (ADR 0364), as written:

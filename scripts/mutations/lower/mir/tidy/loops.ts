@@ -19,6 +19,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
+    name: "mir-tidy-for-inclusive-range-kept",
+    breaks: "an inclusive range's `while` stepping `$rangeInclusiveNext` stays, not `for (let i = 0; i <= k; i++)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "\"$rangeNext\" | \"$rangeInclusiveNext\" | DICTIONARY\n",
+    replace: "\"$rangeNext\" | DICTIONARY\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
+  },
+  {
+    name: "mir-tidy-for-inclusive-range-exclusive",
+    breaks: "`for i in 0..=k` stops before `k`, `i < k`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "if step == \"$rangeInclusiveNext\" { Op::Le } else { Op::Lt },",
+    replace: "if step == \"$rangeInclusiveNext\" { Op::Lt } else { Op::Lt },",
+    tests: ["test/corpus.test.ts", "-t", "inclusive_range_loops"],
+  },
+  {
     name: "mir-tidy-for-of-assigned-kept",
     breaks: "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
     file: "src/lower/mir/tidy/loops.rs",
@@ -78,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-next-some-loop-kept",
     breaks: "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\" | DICTIONARY)\n",
-    replace: "    if !matches!(step, \"$next\" | \"$rangeNext\" | DICTIONARY)\n",
+    find: "\"$next\" | \"$nextSome\" | \"$rangeNext\" | \"$rangeInclusiveNext\" | DICTIONARY\n",
+    replace: "\"$next\" | \"$rangeNext\" | \"$rangeInclusiveNext\" | DICTIONARY\n",
     tests: ["test/bindings.test.ts", "-t", "a defined value is an unknown"],
   },
   {

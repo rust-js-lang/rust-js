@@ -5,7 +5,8 @@ use super::*;
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
 /// const t = $next(iter); if (t == null) { exit } const x = t; body }`, is
 /// `for (const x of xs) { body } exit`; of a range, `$rangeNext` of
-/// `{ start, end }`, `for (let i = start; i < end; i++)`: where nothing else
+/// `{ start, end }`, `for (let i = start; i < end; i++)`, and an inclusive
+/// one's, `$rangeInclusiveNext`, `i <= end` (ADR 0036): where nothing else
 /// reads the iterator, and only its end leaves the loop. MIR's other shape,
 /// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
 /// body; break; } exit`, its body going on to the exit where it ends.
@@ -106,8 +107,10 @@ pub(super) fn for_of(
         ) if it == iter && given(callee) => DICTIONARY,
         _ => return None,
     };
-    if !matches!(step, "$next" | "$nextSome" | "$rangeNext" | DICTIONARY)
-        || js::mentions_in(std::slice::from_ref(looped), iter) != 1
+    if !matches!(
+        step,
+        "$next" | "$nextSome" | "$rangeNext" | "$rangeInclusiveNext" | DICTIONARY
+    ) || js::mentions_in(std::slice::from_ref(looped), iter) != 1
         || js::mentions_in(after, iter) != 0
     {
         return None;
@@ -241,7 +244,9 @@ pub(super) fn for_of(
         }
         // A range's end, read once by Rust, is read each step by JS's `for`:
         // one that reads the same then, a constant or a variable the body
-        // doesn't assign; else a `const end` of it first.
+        // doesn't assign; else a `const end` of it first. An inclusive one's
+        // count passes its end only at the test that ends the loop, a JS
+        // number not wrapping, as `$rangeInclusiveNext`'s doesn't.
         _ => {
             let ExprKind::Object(props, ..) = &source.kind else {
                 return None;
@@ -288,7 +293,11 @@ pub(super) fn for_of(
             };
             let looped = StmtKind::For {
                 label: label.clone(),
-                test: Expr::bin(Op::Lt, Expr::var(&name), test),
+                test: Expr::bin(
+                    if step == "$rangeInclusiveNext" { Op::Le } else { Op::Lt },
+                    Expr::var(&name),
+                    test,
+                ),
                 name,
                 start: start.clone(),
                 down: false,

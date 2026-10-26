@@ -4,16 +4,7 @@
 // are the array's methods, and `Ordering` is -1, 0 or 1, as a comparator
 // returns it.
 
-import {
-  $byteLen,
-  $cmp,
-  $lazyRange,
-  $max,
-  $min,
-  $position,
-  $range,
-  $rangeInclusiveNext,
-} from "@rust-js/runtime";
+import { $byteLen, $cmp, $lazyRange, $max, $min, $position, $range } from "@rust-js/runtime";
 
 export function squares(n) {
   return $range(0, n, 4).map((i) => Math.imul(i, i) >>> 0);
@@ -137,9 +128,7 @@ export function negated(v) {
  */
 export function inclusive(n) {
   let total = 0;
-  const iter = { start: 1, end: n };
-  let i;
-  while ((i = $rangeInclusiveNext(iter)) != null) {
+  for (let i = 1; i <= n; i++) {
     total = (total + i) >>> 0;
   }
   const down = $range(0, n + 1, 4).toReversed();

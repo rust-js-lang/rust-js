@@ -184,3 +184,20 @@ items it does nothing with, tidy writes `forEach(g)`: `rest.forEach((s) =>
 and the mutations `collect-into-unit-refused` and
 `map-for-each-nothing-kept`.
 
+
+## Amendment: an inclusive range's loop counts (#332)
+
+`for i in a..=n` of a variable `n` had become `while ((i =
+$rangeInclusiveNext(iter)) != null)` once ranges were `{ start, end }`
+values, where this decision has `for (let i = a; i <= n; i++)`: tidy's
+`for_of` counted `$rangeNext`'s loop alone. Found porting
+trekhleb/javascript-algorithms' `sieveOfEratosthenes`. **It counts again,
+`i <= end`**, under the rules `a..n`'s loop has: a number start (a `char`'s
+range steps by its code point), and an end the body can't change, or held
+in a `const end` first. No observable difference (ADR 0262): a JS number
+doesn't wrap, so the count passes `n`, even a type's largest, `255` or
+`4294967295`, only at the test that ends the loop, as the helper's own
+`range.start++` does. Held by the corpus case `inclusive_range_loops`,
+`lowering-loops.test.ts`, and the mutations
+`mir-tidy-for-inclusive-range-kept` and
+`mir-tidy-for-inclusive-range-exclusive`.
