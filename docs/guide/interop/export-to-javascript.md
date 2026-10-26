@@ -692,7 +692,11 @@ export function mounted(props?: unknown | null | undefined): Component;
   a prototype chain is written with, as JS writes it. Of a binding's
   type, it's the global class TypeScript names, `AbortController`
   ([A class as a value](global-scope.md#a-class-as-a-value)). `js::unknown(..)` of
-  an instance needs its `unsafe impl js::Defined`, a marker.
+  an instance needs its `unsafe impl js::Defined`, a marker. A class it
+  hands JS is used, its `new`, its impl's items, its fields and what they
+  use, as JS makes it and reads them: a private one, which only
+  `js::class::<T>()` names, needs no `#[allow(dead_code)]`, to rustc or
+  `rust-js clippy` ([ADR 0888](../../decisions/0888-rust-js-clippy.md), amended).
 - **Its declaration is a class's**, `export declare class Component {
   constructor(..); props?: unknown; forceUpdate(): void; }`, which a
   TypeScript `class X extends Component` type-checks against.

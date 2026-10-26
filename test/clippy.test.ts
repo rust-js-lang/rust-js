@@ -52,10 +52,12 @@ function clippy(dir: string, ...lints: string[]) {
 // `js::export_default!` names (ADR 0611), as React's
 // DefaultPrepareStackTraceV8 has its hook; and a struct of descriptors only
 // `Object.defineProperties` reads, React's ConsolePatchingDev's `Logs` (ADR
-// 0666). Each is used, as rust-js reads it. And an `if` in an `if`, which
-// clippy's `collapsible_if` says is one.
+// 0666); and a class only `js::class::<T>()` hands JS. Each is used, as
+// rust-js reads it. And an `if` in an `if`, which clippy's `collapsible_if`
+// says is one.
 const files = {
   "App.rs": `mod logs;
+mod shim;
 mod v8;
 
 use react::{JSX, jsx};
@@ -109,6 +111,67 @@ pub fn disable(console: &Unknown) {
 
 js::export_default!(prepare_stack_trace);
 `,
+  // A class only \`js::class::<T>()\` hands JS, as React's
+  // ReactFiberCacheComponent has its unexported \`AbortControllerShim\`:
+  // JS makes it, \`new AbortControllerShim()\`, and reads its fields and
+  // calls its prototype's methods, so they, and what they use, are used
+  // (ADR 0888, amended).
+  "shim.rs": `use std::cell::Cell;
+
+use js::Class;
+
+struct Signal {
+    aborted: Cell<bool>,
+}
+
+impl Signal {
+    fn abort(&self) {
+        self.aborted.set(true);
+    }
+}
+
+fn unaborted() -> Signal {
+    Signal {
+        aborted: Cell::new(false),
+    }
+}
+
+struct Reason(&'static str);
+
+struct Options {
+    capture: bool,
+}
+
+fn listening(options: &Options) -> u32 {
+    u32::from(options.capture)
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+struct AbortControllerShim {
+    signal: Signal,
+    reason: Reason,
+    listeners: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl AbortControllerShim {
+    fn new() -> Self {
+        AbortControllerShim {
+            signal: unaborted(),
+            reason: Reason("none"),
+            listeners: listening(&Options { capture: false }),
+        }
+    }
+
+    fn abort(&self) {
+        self.signal.abort();
+    }
+}
+
+pub fn shim() -> &'static Class {
+    js::class::<AbortControllerShim>()
+}
+`,
 };
 
 // Its lint flags are clippy's: a warning, then, with `-D warnings`, an
@@ -127,5 +190,5 @@ test("rust-js clippy of clean Rust says nothing", () => {
   const dir = app("clippy-clean", clean);
   const { code, said, stderr } = clippy(dir, "-D", "warnings");
   expect([code, said], stderr).toEqual([0, []]);
-  expect(readdirSync(join(dir, "src")).sort()).toEqual(["App.rs", "logs.rs", "v8.rs"]);
+  expect(readdirSync(join(dir, "src")).sort()).toEqual(["App.rs", "logs.rs", "shim.rs", "v8.rs"]);
 }, 600_000);

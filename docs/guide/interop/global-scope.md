@@ -310,20 +310,24 @@ of its type: the global class TypeScript names it,
 ([ADR 0911](../../decisions/0911-a-bindings-class-is-the-global-typescript-names.md)).
 A program keeps one where the host has it, and its own where it hasn't,
 as React keeps `AbortController`, and makes one with `js::new`, as of
-[the crate's class](export-to-javascript.md#js-classes):
+[the crate's class](export-to-javascript.md#js-classes). Its shim is the
+module's own, as React's is, which only `js::class::<T>()` names: JS makes
+it and reads its fields, so they and its `new` are used, to rustc's
+dead-code lint and `rust-js clippy` too
+([ADR 0888](../../decisions/0888-rust-js-clippy.md), amended):
 
 ```rust
 use js::Class;
 use webapi::AbortController;
 
 #[cfg_attr(rust_js, rust_js::class)]
-pub struct AbortControllerShim {
-    pub aborted: bool,
+struct AbortControllerShim {
+    aborted: bool,
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl AbortControllerShim {
-    pub fn new() -> Self {
+    fn new() -> Self {
         AbortControllerShim { aborted: false }
     }
 }
@@ -347,7 +351,7 @@ pub fn controller() -> &'static AbortController {
 ```
 
 ```js
-export function AbortControllerShim() {
+function AbortControllerShim() {
   this.aborted = false;
 }
 

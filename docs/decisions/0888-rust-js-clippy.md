@@ -139,3 +139,56 @@ byte for byte; no commit of it has the backports. rust-js pins `2bc35de`:
   one other command is `rust-js clippy`, which compiles nothing.
 - todomvc and the Next.js and Vite examples lint clean; todomvc under
   `-W clippy::pedantic` is told only of its own Rust.
+
+## Amendment: a class `js::class::<T>()` hands JS is used (2026-10-26)
+
+React's `ReactFiberCacheComponent` keeps a shim where the host has no
+`AbortController`, a function it never exports, made only by `new
+AbortControllerLocal()`:
+
+```js
+const AbortControllerLocal =
+  typeof AbortController !== 'undefined' ? AbortController : function AbortControllerShim() { .. };
+```
+
+Its port's `#[rust_js::class] struct AbortControllerShim`, named only by
+`js::class::<AbortControllerShim>()`, failed `rust-js clippy -- -D
+warnings` either way it was written. Private, as upstream's, rustc said
+its `new` was never used and its fields never read, three `dead_code`
+errors, as nothing in Rust calls `new`: JS does, as `new` of the class.
+`pub`, as the guide's example was, clippy's `new_without_default` asked
+for a `Default` of its `pub fn new() -> Self`, and a class's `impl
+Default` is refused, as its methods would be a dictionary's, not the
+prototype's (ADR 0761).
+
+**A class `js::class::<T>()` hands JS is used, as rust-js's liveness reads
+it (ADR 0440)**: JS makes it with its constructor and reads what its
+prototype and its instances have, so its `new`, each item of its impl
+and its fields are, and its fields' structs' fields, as a struct given a
+binding's are; and what their bodies use: each function, constant,
+static, struct made, method called and field read they name, through
+their closures, walked from them as rustc walks from what it starts at,
+which never starts there (`src/lower/liveness.rs`, `used_by_classes`). So
+the shim is private, as upstream's is, and lint-clean, and its JS,
+`function AbortControllerShim()`, is no export, as upstream's isn't.
+
+- **`impl Default` of a class stays refused**: the shim is private, so
+  `new_without_default`, which asks it only of a `pub` type, doesn't. A
+  `pub` class whose `new` takes nothing still meets it: its `Default`
+  would be an object of functions the class doesn't have in JS, whose
+  shape a later decision would have to say.
+- **Liveness only adds**: what the walk finds is used, and nothing rustc
+  found used is unused, so it can keep a warning of dead code from being
+  said, never say one of code that's used. It marks what a body names, a
+  field it sets too, a little more than rustc's own walk does.
+- Case N, as above.
+
+Held by `test/clippy.test.ts`, "rust-js clippy of clean Rust says
+nothing", whose app adds a private class only `js::class::<T>()` names,
+with a field only JS reads, a struct and a function only its `new` makes
+and calls, a tuple struct it makes, and a method its method calls; and
+the mutations `js-class-dead`, `js-class-uses-unwalked`,
+`js-class-fields-unread`, `js-class-paths-unread`,
+`js-class-methods-unseen` and `js-class-fields-read-unseen`
+(`lower/liveness.ts`). The guide's shim, in "A class as a value", is
+private now.
