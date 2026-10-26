@@ -511,7 +511,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
 - [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next)*
-- [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value, on a line of its own too)*
+- [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value, on a line of its own too; amended: a block comment after an argument's `,` is after the argument)*
 - [0631 A step of one is `++`](0631-a-step-of-one-is-plus-plus.md)
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
 - [0682 A JS string's `length` is at most `2^31 - 1`, so two add without a wrap](0682-a-js-strings-length-is-at-most-int32-max.md) *(amended by 0701: an array of sized items is at most `2^31 - 1` long too)*

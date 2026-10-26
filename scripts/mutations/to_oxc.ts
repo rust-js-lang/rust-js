@@ -646,4 +646,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
   },
+  {
+    name: "comment-after-an-argument-trailing",
+    breaks: "a block comment after an argument's comma, `1, /* Resolved; see ReactLazy */`, is its line's, after the `if`'s `{`, in its block",
+    file: "src/to_oxc.rs",
+    find: "                let inside = block && (!sources.text[c.hi as usize..line_end].trim().is_empty() || after_argument);\n",
+    replace: "                let inside = block && !sources.text[c.hi as usize..line_end].trim().is_empty();\n                let _ = after_argument;\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
+  },
+  {
+    name: "line-comment-after-an-argument-inside",
+    breaks: "a line comment after an argument's comma, `0, // Pending`, is taken inside the expression, where it would end the line's code",
+    file: "src/to_oxc.rs",
+    find: "                let block = written.starts_with(\"/*\");\n",
+    replace: "                let block = true;\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
+  },
 ];

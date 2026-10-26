@@ -462,8 +462,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     .find('\n')
                     .map_or(sources.text.len(), |i| c.hi as usize + i);
                 // A block comment with code after it on its line is inside
-                // an expression: after the code right before it (ADR 0630).
-                let inside = written.starts_with("/*") && !sources.text[c.hi as usize..line_end].trim().is_empty();
+                // an expression: after the code right before it (ADR 0630);
+                // so is one after an argument's `,`, `1, /* Resolved */` of
+                // a call rustfmt writes an argument a line, whose JS is on
+                // one (ADR 0630, amended).
+                let block = written.starts_with("/*");
+                let after_argument = sources.text[line_start..c.lo as usize].trim_end().ends_with(',');
+                let inside = block && (!sources.text[c.hi as usize..line_end].trim().is_empty() || after_argument);
                 // One right after an `=`, an initializer's or an assignment's,
                 // not `==`'s, `<=`'s or `+=`'s, is before the value it gives,
                 // `= /* .. */ 0b0000000` (ADR 0630, amended).

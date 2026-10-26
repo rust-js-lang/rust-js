@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose rule 2 was of a comment at its line's end. Amended below: one after
 an `=` is before the value; amended again: and one on a line of its own
-between an `=` and its value.
+between an `=` and its value; and a block comment after an argument's `,` is
+after the argument.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -146,3 +147,22 @@ Test: `lowering-comments`'s "a comment on its own line between an = and
 its value is before the value", a module's `const` and a `let`, run.
 Mutations `own-line-value-comment-unplaced`,
 `own-line-value-comment-also-before-statement` (`to_oxc.ts`).
+
+## Amendment: a block comment after an argument's comma is after the argument (2026-10-26)
+
+React's ReactFiberHotReloading writes `if (payload._status === 1 /*
+Resolved; see ReactLazy */) {`. Its port's call, too long for a line, is
+an argument a line as rustfmt writes it, `1, /* Resolved; see ReactLazy
+*/`: no code after the comment on its line, so it was the line's, after
+the code the line's JS ends with, the `if`'s `{`, the first line of its
+block. **A block comment after an argument's `,` is inside the
+expression, after the code right before it, as one with code after it on
+its line is**: `if (payload._status === 1 /* Resolved; see ReactLazy */)
+{`. A line comment there is the line's still, `// Pending` after the
+statement, as a line comment ends the code on its line. Case N: what's
+printed.
+
+Held by `test/lowering-comments-inside.test.ts`, "a block comment after
+an argument's comma is after the argument", and the mutations
+`comment-after-an-argument-trailing` and
+`line-comment-after-an-argument-inside` (`to_oxc.ts`).
