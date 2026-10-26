@@ -66,4 +66,28 @@ export const mutations: Mutation[] = [
     replace: "                    {\n                        true\n                    }\n                    None => true,\n",
     tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
   },
+  {
+    name: "instance-constant-not-copied",
+    breaks: "a library's function that reads its `const SHAPE`, a `Copy` enum its consumer changes in place, isn't taken to copy it, so changing what it gives changes the constant (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "                    mir::Operand::Constant(constant) => self.copies |= (self.holds)(constant.ty()),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum"],
+  },
+  {
+    name: "instance-box-read-copied",
+    breaks: "optimized MIR's copy of a `Box` it reads through is taken for a copy of what it holds, and a consumer compiles the library's `grow`, whose `Box` deref it can't lower (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {\n",
+    replace: "                    mir::Operand::Copy(place) if { let _ = &copy; true } => {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: tree"],
+  },
+  {
+    name: "instance-trait-call-unresolved",
+    breaks: "a library function's call of its trait's method isn't resolved to the impl's that copies a `Spot`, so `first_of` is its library's and shares what it gives (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "                                .map_or(callee, |instance| instance.def_id()),\n",
+    replace: "                                .map_or(callee, |_| callee),\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

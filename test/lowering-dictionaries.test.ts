@@ -257,10 +257,10 @@ pub mod counts {
 
 // ADR 0864, amended: a `PartialEq` whose `eq` is `ptr::eq(self, other)`
 // alone, whatever its `Hash`, is `===`: `a != b` of two `Option<Rc<_>>` is
-// `a != b`, and generic code is given `===`. A library writes its
-// dictionary for its consumers, which no code of its own reads, so no
-// load cycle reaches it, as React's update queue and hidden context
-// import each other.
+// `a != b`, and generic code is given `===`. A library writes what its
+// program does, no dictionary no code of its own reads, so none a load
+// cycle could reach, as React's update queue and hidden context import
+// each other (ADR 0914, amended).
 test("an identity PartialEq is ===, and its dictionary no load cycle reaches", async () => {
   const program = `pub mod queue {
     use std::rc::Rc;
@@ -273,6 +273,14 @@ test("an identity PartialEq is ===, and its dictionary no load cycle reaches", a
     impl PartialEq for Update {
         fn eq(&self, other: &Self) -> bool {
             std::ptr::eq(self, other)
+        }
+    }
+
+    // Written whether or not its crate shows one, for what may: its
+    // dictionary no code of its own reads, which no load cycle reaches.
+    impl std::fmt::Display for Update {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "lane {}", self.lane)
         }
     }
 
@@ -327,11 +335,13 @@ pub mod hidden {
   expect(queue).toContain("return a === b && has([a], b, { eq: (a, b) => a === b });");
   expect(queue).toContain("export function values(a, b) {\n  return a === b;\n}");
   expect(queue).not.toContain("PartialEq");
+  expect(queue).toContain("export const updateDisplay = { fmt: updateDisplay_fmt };");
   (globalThis as { tick?: () => number }).tick = () => 3;
   expect((await import(join(dir, "hidden.js"))).first()).toBe("false true true true");
 
   const library = fixture("identity-eq-in-a-library-load-cycle");
   writeFileSync(join(library, "lib.rs"), program);
   run([compiler, join(library, "lib.rs"), "-o", join(library, "lib.js"), "--library", "--manifest", join(library, "m.json")]);
-  expect(readFileSync(join(library, "queue.js"), "utf8")).toContain("export const updatePartialEq = { eq: updatePartialEq_eq };");
+  const body = (js: string) => js.slice(js.indexOf("\n"));
+  expect(body(readFileSync(join(library, "queue.js"), "utf8"))).toBe(body(queue));
 });

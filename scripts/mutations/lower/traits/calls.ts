@@ -365,4 +365,12 @@ export const mutations: Mutation[] = [
     replace: "            && self.equal_only_to_itself(tr.self_ty());\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
   },
+  {
+    name: "instance-facts-library",
+    breaks: "what a function a consumer compiles asks of its type parameters is read of its library's manifest, which has none of it, so `footprint` is given no size (ADRs 0145, 0914)",
+    file: "src/lower/traits/calls.rs",
+    find: "            || self.krate.foreign.is_instance(id)\n            || crate::lower::recognition::is_compiled_std",
+    replace: "            || crate::lower::recognition::is_compiled_std",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

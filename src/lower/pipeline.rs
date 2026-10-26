@@ -148,12 +148,28 @@ pub fn lower_crate<'tcx>(
     let defaulted: HashSet<DefId> = (modules.iter())
         .filter_map(|&module| super::default_exports::own_default(tcx, module))
         .collect();
-    // A library exports what its consumers can reach (ADR 0100).
-    if export_library {
+    // A library exports what its program does: what its consumers reach that
+    // it doesn't, they compile (ADR 0914, amended). `@rust-js/std`, compiled
+    // once into a package, all they may reach (ADR 0561).
+    let exports_reachable = std_bodies;
+    if exports_reachable {
         called_from_elsewhere.extend(fns.keys().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
-
+    // A derived serde impl's codec is one rust-js writes of its type's
+    // attributes, which no consumer sees to write: a library exports each
+    // its consumers can reach (ADRs 0077, 0100).
+    if export_library {
+        called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
+    }
     let foreign = super::library::Foreign::new(tcx, dependencies, instances);
+    // Which of its libraries' functions may copy what the crate changes in
+    // place, which their JS, copying what their own crates change, may
+    // share (ADR 0914, amended).
+    let changed = super::copies::Changed {
+        mutated: &mutated,
+        vecs: &changed_vecs,
+    };
+    let copying = super::instances::Copying::new((&trait_impls, &foreign), changed);
     // The library functions the crate's calls give more than they take,
     // compiled here first, before anything is lowered (ADR 0914).
     let analyzed = super::instances::Analyzed {
@@ -342,6 +358,9 @@ pub fn lower_crate<'tcx>(
     let crate_facts = CrateFacts {
         foreign: &foreign,
         library: export_library,
+        compiled_once: exports_reachable,
+        asked: Default::default(),
+        copying: &copying,
         panics_abort,
         sources: &sources,
         mutated: &mutated,
@@ -401,11 +420,15 @@ pub fn lower_crate<'tcx>(
     let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
-        // A trait's default is copied into each impl (ADR 0049); a library's
-        // is a function of its own too, for its consumers' impls (ADR 0185).
+        // A trait's default is copied into each impl (ADR 0049); a library's,
+        // which a consumer's impl of its trait calls, a function over `Self`,
+        // the consumer's own (ADRs 0185, 0914, amended); std's, compiled
+        // into `@rust-js/std`, its own too (ADR 0561).
         .filter(|b| {
             let id = b.def_id;
-            tcx.trait_of_assoc(id).is_none() || (export_library && super::library::reachable(tcx, id))
+            tcx.trait_of_assoc(id).is_none()
+                || foreign.is_instance(id)
+                || (exports_reachable && super::library::reachable(tcx, id))
         })
         .map(|b| (b.def_id, Some(*b)))
         .chain(dictionaries.iter().map(|id| (*id, None)))
@@ -530,6 +553,13 @@ pub fn lower_crate<'tcx>(
             Err(_) => failed = true,
         }
     }
+    // What of its libraries the crate's lowering found it compiles itself,
+    // which their JS doesn't export: the crate lowered again with them, as
+    // with what its calls give more (ADR 0914, amended).
+    let asked = crate_facts.asked.take();
+    if !asked.is_empty() && tcx.dcx().has_errors().is_none() {
+        return Lowered::Instances(super::instances::asked(tcx, asked));
+    }
     // What a function takes no destructor of, each call of it checked (ADR 0190).
     let checks = std::mem::take(&mut drops_observed.checks);
     failed |= super::drops::check_no_drops(tcx, &mut drops_observed.no_drops, &checks);
@@ -593,6 +623,9 @@ pub fn lower_crate<'tcx>(
                 || super::traits::is_marker(tcx, &foreign, trait_id)
                 || super::recognition::is_hashing(tcx, trait_id)
                 || identity_eq(id, trait_id, false)
+                // A library's the crate compiles itself, only what it uses
+                // of it (ADR 0914, amended).
+                || foreign.is_instance(id)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .chain(trait_impls.iter().copied().filter(|&id| {
@@ -626,12 +659,13 @@ pub fn lower_crate<'tcx>(
     // cycle of the crate's reaches it (ADR 0592, amended).
     let reached_here = crate::reachability::reachable(own_roots.clone(), edges.clone());
     let roots = own_roots
-        // A library's consumers may reach one (ADR 0100).
+        // `@rust-js/std`'s consumers may reach one (ADR 0561); a library's
+        // compile their own (ADR 0914, amended).
         .chain(
             derived
                 .iter()
                 .copied()
-                .filter(|&id| export_library && super::library::reachable(tcx, id)),
+                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),
         );
     let reached = crate::reachability::reachable(roots, edges);
     let mut pass = Pass::default();
@@ -1354,12 +1388,13 @@ pub fn lower_crate<'tcx>(
                 super::drops::drop_runs(recognition, (export_library, &closure_facts), &counted, t)
             })
     };
+    let exported = super::library::exported_names(&lowered);
     Lowered::Crate(tcx.dcx().has_errors().is_none().then(|| {
         Box::new(Unlinked {
             library: export_library.then(|| {
                 super::library::exports(
                     tcx,
-                    &fns,
+                    (&fns, &exported),
                     &super::library::Contracts {
                         drop_params: &drop_params,
                         copied: &copied,

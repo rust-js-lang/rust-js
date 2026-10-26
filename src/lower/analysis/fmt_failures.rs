@@ -6,9 +6,9 @@
 //! write's result passes one on; a crate none of whose functions do is
 //! lowered as one whose writes never fail (ADRs 0054, 0132).
 
+use crate::lower::Body;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{fmt_trait_called, is_err_variant, is_generic_fmt_result, is_write_result_type};
-use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
@@ -32,100 +32,93 @@ pub(super) fn failing_fns<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
-        for expr in body.thir.exprs.iter() {
-            match expr.kind {
-                ExprKind::Adt(ref adt)
-                    if is_write_result_type(tcx, expr.ty)
-                        && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id) =>
+        // A write's error made, `Err(fmt::Error)`.
+        if makes_write_error(tcx, body) {
+            failing.insert(caller);
+        }
+        // Each function it names, as its THIR names it, or a body of MIR
+        // alone, a library's the crate compiles (ADR 0914), its MIR.
+        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+            // `?` of a value's `Result` of a write's error,
+            // `parse(s)?` of an `io::Result<u32>`: its `Err`, given on.
+            if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitBranch)
+                && let Some(tried) = args.types().next()
+                && !is_write_result_type(tcx, tried)
+                && of_write_error(tcx, tried)
+            {
+                failing.insert(caller);
+                continue;
+            }
+            // `{}` of a value, or its `to_string()`: its trait's `fmt`,
+            // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
+            if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
+                let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
+                for part in args
+                    .types()
+                    .next()
+                    .into_iter()
+                    .flat_map(|ty| ty.walk())
+                    .filter_map(|part| part.as_type())
+                    // Not one a binder inside holds, `&'a dyn Display` of a
+                    // `dyn for<'a> FnMut(&'a dyn Display)`, a type only there.
+                    .filter(|part| !part.has_escaping_bound_vars())
                 {
-                    failing.insert(caller);
-                }
-                ExprKind::ZstLiteral { .. } => {
-                    let Some((callee, args)) = fn_def(expr.ty) else {
-                        continue;
-                    };
-                    // `?` of a value's `Result` of a write's error,
-                    // `parse(s)?` of an `io::Result<u32>`: its `Err`, given on.
-                    if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitBranch)
-                        && let Some(tried) = args.types().next()
-                        && !is_write_result_type(tcx, tried)
-                        && of_write_error(tcx, tried)
-                    {
-                        failing.insert(caller);
-                        continue;
-                    }
-                    // `{}` of a value, or its `to_string()`: its trait's `fmt`,
-                    // and that of each type it holds, as std's `Vec<T>` calls `T`'s.
-                    if let Some(fmt_trait) = fmt_trait_called(tcx, callee) {
-                        let fmt = tcx.associated_item_def_ids(fmt_trait)[0];
-                        for part in args
-                            .types()
-                            .next()
-                            .into_iter()
-                            .flat_map(|ty| ty.walk())
-                            .filter_map(|part| part.as_type())
-                            // Not one a binder inside holds, `&'a dyn Display` of a
-                            // `dyn for<'a> FnMut(&'a dyn Display)`, a type only there.
-                            .filter(|part| !part.has_escaping_bound_vars())
-                        {
-                            if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {
-                                calls.push((caller, callee));
-                            }
-                        }
-                        continue;
-                    }
-                    let declared = tcx
-                        .fn_sig(callee)
-                        .instantiate_identity()
-                        .skip_normalization()
-                        .skip_binder()
-                        .output();
-                    // A generic `Result` that's a `fmt::Result` here, `encode<S:
-                    // Sink>`'s `Result<(), S::Error>`: what its dictionary's
-                    // calls give, which may be any.
-                    if is_generic_fmt_result(tcx, typing_env, declared, args) {
-                        calls.push((caller, Callee::Unknown));
-                        continue;
-                    }
-                    let output = tcx
-                        .fn_sig(callee)
-                        .instantiate(tcx, args)
-                        .skip_normalization()
-                        .skip_binder()
-                        .output();
-                    // A `Result`'s method that makes one of a value's `Result`
-                    // of a write's error, `map` of an `io::Result<usize>`: its
-                    // `Err`, given on.
-                    let receiver = (tcx
-                        .fn_sig(callee)
-                        .instantiate(tcx, args)
-                        .skip_normalization()
-                        .skip_binder())
-                    .inputs()
-                    .first()
-                    .copied();
-                    // Not `?`'s own `from_residual`, which `Try::branch` says.
-                    if is_write_result_type(tcx, output)
-                        && !callee.is_local()
-                        && !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
-                        && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))
-                    {
-                        failing.insert(caller);
-                        continue;
-                    }
-                    if is_write_result_type(tcx, output)
-                        && let Some(callee) = resolve(tcx, typing_env, callee, args)
-                    {
-                        // std's own, `write_all`, of a crate's writer, whose
-                        // `write` may fail as any of the crate's may.
-                        let own_writer = matches!(callee, Callee::Known(id) if !id.is_local())
-                            && args.types().next().is_some_and(
-                                |this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if adt.did().is_local()),
-                            );
-                        calls.push((caller, if own_writer { Callee::Unknown } else { callee }));
+                    if let Some(callee) = resolve(tcx, typing_env, fmt, tcx.mk_args(&[part.into()])) {
+                        calls.push((caller, callee));
                     }
                 }
-                _ => {}
+                continue;
+            }
+            let declared = tcx
+                .fn_sig(callee)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder()
+                .output();
+            // A generic `Result` that's a `fmt::Result` here, `encode<S:
+            // Sink>`'s `Result<(), S::Error>`: what its dictionary's
+            // calls give, which may be any.
+            if is_generic_fmt_result(tcx, typing_env, declared, args) {
+                calls.push((caller, Callee::Unknown));
+                continue;
+            }
+            let output = tcx
+                .fn_sig(callee)
+                .instantiate(tcx, args)
+                .skip_normalization()
+                .skip_binder()
+                .output();
+            // A `Result`'s method that makes one of a value's `Result`
+            // of a write's error, `map` of an `io::Result<usize>`: its
+            // `Err`, given on.
+            let receiver = (tcx
+                .fn_sig(callee)
+                .instantiate(tcx, args)
+                .skip_normalization()
+                .skip_binder())
+            .inputs()
+            .first()
+            .copied();
+            // Not `?`'s own `from_residual`, which `Try::branch` says.
+            if is_write_result_type(tcx, output)
+                && !callee.is_local()
+                && !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+                && receiver.is_some_and(|from| !is_write_result_type(tcx, from) && of_write_error(tcx, from))
+            {
+                failing.insert(caller);
+                continue;
+            }
+            if is_write_result_type(tcx, output)
+                && let Some(callee) = resolve(tcx, typing_env, callee, args)
+            {
+                // std's own, `write_all`, of a crate's writer, whose
+                // `write` may fail as any of the crate's may.
+                let own_writer = matches!(callee, Callee::Known(id) if !id.is_local())
+                    && args
+                        .types()
+                        .next()
+                        .is_some_and(|this| matches!(this.peel_refs().kind(), ty::Adt(adt, _) if adt.did().is_local()));
+                calls.push((caller, if own_writer { Callee::Unknown } else { callee }));
             }
         }
     }
@@ -158,6 +151,17 @@ pub(super) fn failing_fns<'tcx>(
             )
     });
     failing
+}
+
+/// Whether `body` makes a write's error, `Err(fmt::Error)`, of its THIR. A
+/// body of MIR alone, a library's the crate compiles (ADR 0914), has none
+/// rust-js lowers: optimized MIR makes it of a constant `fmt::Error`, which
+/// is refused.
+fn makes_write_error<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+    (body.thir.exprs.iter()).any(|expr| {
+        matches!(expr.kind, ExprKind::Adt(ref adt) if is_write_result_type(tcx, expr.ty)
+            && is_err_variant(tcx, adt.adt_def.variant(adt.variant_index).def_id))
+    })
 }
 
 /// `def_id` of `args`, as the caller's typing environment resolves it: a

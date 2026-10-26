@@ -422,4 +422,12 @@ export const mutations: Mutation[] = [
     replace: "                let dictionary = match None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
+  {
+    name: "unexported-impl-evidence-refused",
+    breaks: "a library's impl its JS doesn't make has no evidence where its consumer gives it to generic code, and is refused (ADR 0914, amended)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                || self.krate.foreign.compiles(impl_id))\n",
+    replace: ")\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

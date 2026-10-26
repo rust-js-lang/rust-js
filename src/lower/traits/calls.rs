@@ -198,10 +198,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether `id` is compiled with this crate: its own, or a std body
-    /// compiled with it (ADR 0561), whose facts are this compile's.
+    /// Whether `id` is compiled with this crate: its own, a std body
+    /// compiled with it (ADR 0561), or a library's it compiles itself (ADR
+    /// 0914), whose facts are this compile's.
     fn compiled_here(&self, id: DefId) -> bool {
-        id.is_local() || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
+        id.is_local()
+            || self.krate.foreign.is_instance(id)
+            || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
     }
 
     pub(in crate::lower) fn facts_asked(&self, id: DefId) -> Vec<(u32, TypeFact)> {
@@ -440,7 +443,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(instance) = self.resolve_self_instance(id, generic_args)?
             && self.is_rust_fn(instance.def_id())
             && (self.tcx.trait_of_assoc(instance.def_id()).is_none()
-                || self.krate.foreign.item(instance.def_id()).is_some())
+                || self.krate.foreign.item(instance.def_id()).is_some()
+                || self.krate.foreign.compiles(instance.def_id()))
         {
             let mut values = values;
             let given = self

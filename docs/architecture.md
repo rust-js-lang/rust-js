@@ -199,7 +199,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` (a condition's narrowing, `ranges/narrowing.rs`) |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
 | Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
-| Which of a library's functions the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914) | `instances.rs` |
+| Which of a library's functions and impls the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914, amended) | `instances.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
 | Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
@@ -254,10 +254,10 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | Whether an Option's payload may be falsy in JS, and so whether it's there, by its truth or against `null` (ADR 0298), and what `#[rust_js::types]` says may be | `std_types/option.rs`; `declarations.rs` | `never_falsy`, `present`, `absent` (a test of being set, `presence`, which `null_test` reads); `written_falsy` |
-| Copy policy | `copies.rs` | `copy_if_needed`, `contains_mutated` |
+| Copy policy, and the coarse question whether a value may hold what the crate changes in place, a library's function compiled here by (ADR 0914, amended) | `copies.rs` | `copy_if_needed`, `contains_mutated`, `may_hold_changed` |
 | Which std functions and constants are JS's `Math`'s, for a call, a `fn`, `js::is_defined` and a constant's read (ADR 0887) | `std_types/number/math.rs` | `function`, `math_function`, `constant`, `written_constant` |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |
-| Which library functions the crate compiles itself, given more than they take, their bodies and modules, and which of a library's are the crate's own (ADR 0914) | `instances.rs`; `library.rs` | `Instances`, `needed`, `instance_bodies`, `calls_of`; `is_instance` |
+| Which library functions and impls the crate compiles itself: given more than they take, its lowering asks for what their library's JS hasn't, or they may copy what the crate changes in place; their bodies and modules; which of a library's are the crate's own, which its JS doesn't export that the crate compiles, and which are called through their exported dictionary (ADR 0914, amended) | `instances.rs`; `library.rs`; `traits/impls.rs` | `Instances`, `needed`, `asked`, `Copying`, `instance_bodies`, `calls_of`; `is_instance`, `compiles`, `through_dictionary`, `exported_names`; `dictionary_entry` |
 | Which thread-locals are made where they're first used, and a read of one, its call (ADR 0037, amended) | `analysis/lazy_locals.rs`; `items.rs` | `lazy_locals`; `made_where_used`, `item_read` |
 | Map/set operations and discarded results | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A binding's keyed read of what may look like `None`, its `Some(None)` told from a missing key, a `Map`'s `get` by `has` and a `Dict`'s by its own key (ADRs 0225, 0884) | `binding_calls.rs`; `bindings.rs` | `gives_boxed_option`; `reads_a_key` |

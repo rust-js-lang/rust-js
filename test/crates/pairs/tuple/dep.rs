@@ -8,3 +8,9 @@ pub fn origin() -> (i32, i32) {
 pub fn corners() -> [(i32, i32); 2] {
     [ORIGIN, (1, 1)]
 }
+
+/// Changes the tuple it's given a `&mut` to, in place: of a type its
+/// consumer changes nowhere itself.
+pub fn bump(at: &mut (u8, u8)) {
+    at.0 += 1;
+}

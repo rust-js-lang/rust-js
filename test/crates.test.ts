@@ -262,7 +262,10 @@ console.log(a === object, b === object, dep.first([object]) === object, dep.firs
 // declared. Its consumer, which gives a `Point` it changes and a value with
 // a destructor a panic drops, compiles its own of each from the library's
 // MIR, and of the private function one calls, beside its own code: not
-// exported, its JS against native Rust's.
+// exported, its JS against native Rust's. And (ADR 0914, amended) the trait
+// impls it uses that the library's own code doesn't, which its JS hasn't,
+// and the functions that copy what it changes in place, which the library
+// never changes.
 test("a library's generic function is its program's, alone or a dependency, and its consumer compiles what it gives more of", () => {
   const out = chain(pairs, "program_form", ["dep", "app"]);
   const alone = fixture("program-form-alone");
@@ -279,8 +282,41 @@ test("a library's generic function is its program's, alone or a dependency, and 
   expect(app).toContain("\nfunction pairOf(value, dropped, dropD) {\n");
   // One that takes the copy its consumer gives, as its own crate's calls give
   // one, is the library's.
-  expect(app).toContain('import { marks, twice } from "../dep/lib.js";');
+  expect(app).toContain('import {\n  digitDoubled,\n  digitPartialEq,\n  hashOf,\n  hourDisplay,\n  marks,\n  same,\n  shown,\n  twice,\n} from "../dep/lib.js";');
+  // A writer of its it compiles, which calls what may fail, may fail; and an
+  // impl's method its JS doesn't export by name is its dictionary's entry.
+  expect(app).toContain("$writeTry(() => written([8], [7], loudDrop_drop))");
+  expect(app).toContain("text += hourDisplay.fmt(hour);");
+  expect(app).toContain("digitDoubled.doubled([4])");
   expect(app).toContain("twice({ x: 3 }, { copy: (value) => ({ ...value }) })");
+  // The impls the library's own code never asks for, which its JS hasn't,
+  // the consumer compiles where it gives them to the library's generic
+  // code (ADR 0914, amended); one its program exports, `digitPartialEq`, it
+  // imports. Each reads as the library's own would.
+  for (const own of ["keyHash", "keyPartialEq", "digitHash", "tagHash", "tagDebug", "spotDebug"]) {
+    expect(dep).not.toContain(own);
+    expect(app).toContain(`\nconst ${own} = {`);
+  }
+  expect(dep).not.toContain("export function digitPartialEq_eq");
+  // Only what it uses of an impl, `Label`'s `fmt`, not its dictionary; and
+  // as the consumer asks it, of the facts it takes and its writers' options.
+  expect(app).not.toContain("labelDebug =");
+  expect(app).not.toContain("spotsFirst =");
+  expect(app).toContain('labelDebug_fmt(["x"], { width: 9, align: "Right" })');
+  expect(app).toContain("footprint([10], 4, loudDrop_drop)");
+  expect(app).toContain("\nfunction digitHash_hash(digit, state, HHasher, dropH) {\n  HHasher.writeU32(state, digit[0] % 10);\n}\n");
+  expect(app).toContain("\nfunction tagHash_hash(tag, state, HHasher, dropH) {\n");
+  // The functions that copy what the consumer changes in place, which the
+  // library never changes, are its own, and copy.
+  expect(dep).toContain("export function firstSpot(spots) {\n  return $index(spots, 0);\n}");
+  expect(app).toContain("\nfunction firstSpot(spots) {\n  return { ...$index(spots, 0) };\n}");
+  expect(app).toContain("\nfunction firstPair(pairs) {\n  const value = $index(pairs, 0);\n  return [value[0], value[1]];\n}");
+  // An impl's that copies, its own, called through the dictionary the
+  // library exports, or by a library function that calls it.
+  expect(app).toContain("\nfunction spotsFirst_first(spots) {\n  return { ...$index(spots[0], 0) };\n}");
+  expect(app).toContain("\nfunction firstOf(spots) {\n  return spotsFirst_first(spots);\n}");
+  // And two that call each other, above one that copies.
+  expect(app).toContain("\nfunction inner(spots, n) {\n  return outer(spots, n);\n}");
   const lib = JSON.stringify(join(out, "dep", "lib.js"));
   const called = `const dep = await import(${lib});
 const object = { name: "default" };
@@ -297,12 +333,13 @@ try { dep.useState(object); } catch (error) { console.log(error.message); }`;
 // what's public of its library to read: one that reads its library's
 // private thread-local or static, of which its library's code has the one
 // there is, is refused, naming it; a public one is imported. So is one that
-// calls a binding its library names by a path relative to its own file.
+// calls a binding its library names by a path relative to its own file, and
+// an impl's method, a destructor, its JS doesn't export (ADR 0914, amended).
 test("a library's function its consumer compiles is refused where it reads its library's private state", () => {
   const dir = fixture("instance-private-state");
   const lib = join(dir, "dep");
   mkdirSync(lib, { recursive: true });
-  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n";
+  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n\npub struct Counted;\n\nimpl Drop for Counted {\n    fn drop(&mut self) {\n        COUNT.set(COUNT.get() + 1);\n    }\n}\n";
   writeFileSync(join(dir, "dep.rs"), dep);
   writeFileSync(join(lib, "stack.js"), "export function size() {\n  return 1;\n}\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
@@ -314,13 +351,18 @@ test("a library's function its consumer compiles is refused where it reads its l
     return printed(join(dir, "app.js"));
   };
   expect(() => app("println!(\"{}\", dep::discard(Loud(1)));")).toThrow(
-    "this crate gives `dep::discard` a value to copy or drop that its library's JS takes nothing for, as its own crate's calls give it none, so it's compiled here; but it reads `dep::COUNT`, private to its library",
+    "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `dep::COUNT`, private to its library",
   );
   expect(app("println!(\"{}\", dep::named(Loud(2)));")).toBe("dropped 2\ndep\n");
   // Nor one that calls a binding its library names by a path relative to
   // its own file, which isn't the consumer's.
   expect(() => app("println!(\"{}\", dep::sized(Loud(3)));")).toThrow(
     "but it calls `dep::size`, which its library binds to `./stack.js`, a module by a path relative to that library's own file",
+  );
+  // And an impl's method its library's JS doesn't export, a destructor it
+  // runs where it drops one (ADR 0914, amended).
+  expect(() => app("let _counted = dep::Counted;")).toThrow(
+    "this crate compiles `<dep::Counted as std::ops::Drop>::drop` itself, as its library's JS has none it can call",
   );
 }, 300_000);
 

@@ -275,9 +275,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// isn't a number, a `bool` or a string?
     /// Does `writer`, a function that writes, take its `Formatter`'s
     /// options after its arguments? Its crate's answer (ADR 0137), a
-    /// library's in its manifest.
+    /// library's in its manifest, but one the crate compiles itself, its own
+    /// (ADR 0914).
     pub(super) fn takes_options(&self, writer: DefId) -> bool {
-        match writer.is_local() {
+        match writer.is_local() || self.krate.foreign.is_instance(writer) {
             true => self.writers_take_options(),
             false => self.krate.foreign.writers_take_options(writer.krate),
         }
@@ -546,6 +547,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let args = self.tcx.erase_and_anonymize_regions(args);
+        // Through a library's dictionary, its entry, given what the method
+        // takes (ADR 0914, amended).
+        if let Some((instance, entry)) = self.dictionary_entry(method, args, 1, span)? {
+            let mut values = vec![value];
+            if self.takes_options(instance.def_id()) {
+                values.push(pretty.options());
+            }
+            return Ok(Expr::call(entry, values));
+        }
         let instance = self
             .resolve_instance(method, args)?
             .filter(|i| self.is_rust_fn(i.def_id()))

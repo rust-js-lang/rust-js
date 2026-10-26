@@ -355,6 +355,18 @@ struct CrateFacts<'a, 'tcx> {
     panics_abort: bool,
     /// Is this crate compiled as a library, for others to use (ADR 0100)?
     library: bool,
+    /// Is it `@rust-js/std`, compiled once into a package for every
+    /// consumer, which none compiles again (ADR 0561)? Another library's
+    /// JS is its program's, and a consumer compiles what it needs more of
+    /// (ADR 0914, amended).
+    compiled_once: bool,
+    /// The library items the crate's lowering found it must compile itself,
+    /// which their libraries' JS doesn't export, each with the module that
+    /// first asked (ADR 0914, amended): the crate is lowered again with them.
+    asked: std::cell::RefCell<Vec<(DefId, LocalModId)>>,
+    /// Which of its libraries' functions and impls may copy what the crate
+    /// changes in place, which it compiles itself (ADR 0914, amended).
+    copying: &'a instances::Copying<'a, 'tcx>,
     trait_impls: &'a [DefId],
     /// `#[serde(..)]` attributes, from the expanded crate (ADR 0077).
     serde_attrs: &'a serde::SerdeAttributes,

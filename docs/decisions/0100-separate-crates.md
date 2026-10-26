@@ -1,6 +1,6 @@
 # 0100. Each crate is compiled once, to JS of its own, with a manifest of what crosses
 
-Status: Accepted. Extends [0085](0085-scalar-library-linkage.md), [0049](0049-traits-and-generics.md) and [0098](0098-destructors.md). Cargo runs these compilations as [0101](0101-cargo-workspace-wrapper.md) says. Amended by [0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's `const` is imported by its name.
+Status: Accepted. Extends [0085](0085-scalar-library-linkage.md), [0049](0049-traits-and-generics.md) and [0098](0098-destructors.md). Cargo runs these compilations as [0101](0101-cargo-workspace-wrapper.md) says. Amended by [0770](0770-a-librarys-const-is-imported-by-its-name.md): a library's `const` is imported by its name; by [0914](0914-a-librarys-generic-function-is-its-programs.md): a library exports what its program does.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -325,3 +325,18 @@ trait's method is checked as before. Held by the crate pair
 `trait_method_as_value` and the mutation
 `library-trait-method-value-unlisted`.
 
+## Amendment: a library exports what its program does ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A library assumed the worst of what crosses, and wrote it: each derived
+impl and impl method a consumer could reach, exported, and a copy of each
+public `Copy` type, tuple and `Vec` where it read one. So its JS changed
+when another crate used it, React's `fiberHash` and
+`refReactContextUsableT` in `react`'s. It writes and exports what its
+program does now, and its manifest lists what its JS exports; a consumer
+that asks it for an impl its JS hasn't, or for a function that may copy
+what the consumer changes in place, compiles its own of it, and calls an
+impl's method its JS doesn't export through its exported dictionary
+(ADR 0914, amended). A consumer still assumes a library may change what
+it hands over, and copies a library's type, a tuple, an array and a `Vec`
+where it reads one. A library's derived serde codecs, which rust-js writes
+of attributes only the library sees, are still written and exported.

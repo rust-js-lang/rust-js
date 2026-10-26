@@ -143,11 +143,12 @@ serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
 ## Platforms and builds
 
 - Releases are for macOS on Apple silicon ([the changelog](../../CHANGELOG.md)).
-- A crate's call of another crate's generic function that gives it a value
-  to copy or drop that it takes nothing for compiles that function in the
-  crate, and is refused where the function reads its library's private
-  `static` or thread-local, or calls a binding its library names by a path
-  relative to its own file
+- What a crate compiles of another crate's itself, a generic function it
+  gives a value to copy or drop that it takes nothing for, an impl that
+  crate's JS hasn't, a destructor among them, or a function that copies
+  what the crate changes in place, is refused where it reads its
+  library's private `static` or thread-local, or calls a binding its
+  library names by a path relative to its own file
   ([ADR 0914](../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
 - What else isn't built yet is in [the architecture's "Not yet"](../architecture.md#not-yet)
   and [the roadmap](../../ROADMAP.md).

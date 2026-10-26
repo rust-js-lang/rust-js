@@ -4,6 +4,9 @@ Status: Accepted. Amends [0098](0098-destructors.md),
 [0289](0289-copy-bounds.md), [0300](0300-drops-by-need.md) and
 [0360](0360-the-app-is-a-program.md): a library's public generic function
 takes the copies and drops its own crate's calls give it, no more.
+Amended (below): a library's trait impls and copies are its program's too,
+and amends [0100](0100-separate-crates.md) and
+[0185](0185-library-trait-defaults.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for
 JS callers, so Rust's behavior holds for Rust callers, and JS's call is
@@ -183,7 +186,8 @@ function resolveDispatcher(dispatcher) { .. }
   and the copies a library makes of its public `Copy` types a consumer may
   change in place (`copies.rs`'s `crosses_crates`, ADR 0052). An impl's
   instance, compiled by the consumer that needs it as a function's is,
-  would make the first the program's too.
+  would make the first the program's too. (Amended below: both are the
+  program's now.)
 - An `Option`'s clone whose payload's clone is the payload is the
   `Option` itself, `element.key`, not `element.key == null ? element.key :
   element.key`, which React's `cloneElement` was in its library's form.
@@ -212,3 +216,184 @@ function resolveDispatcher(dispatcher) { .. }
   `instance-takes-unused-drops` (`drops/uses.ts`),
   `instance-copies-unasked` (`analysis/mutation.ts`) and
   `library-takes-every-drop` (`analysis/drops.ts`).
+
+## Amendment: a library's trait impls and copies are its program's too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C. What a library's own
+JS does is its program's; what its consumer's Rust needs more of, a
+dictionary, a copy, the consumer's code does, as Rust's.
+
+What this decision left a library writing for its consumers, which its
+program didn't, still changed a crate's JS when another started using
+it. React's port added `react-isomorphic` to the reconciler's
+dependencies, and `react`'s committed JS gained, of dictionaries no code
+of React's asks for:
+
+```js
+// ReactHooks.js
+export function refReactContextUsableT(dropT) {
+  return $traitImpl($refReactContextUsableT, [dropT], () => ({}));
+}
+// ReactStartTransition.js
+export const fiberHash = { hash: fiberHash_hash, hashSlice: $hashSlice(fiberHash_hash) };
+export function fiberHash_hash(fiber, state, HHasher, dropH) { .. }
+```
+
+and `ReactTaintRegistry.js` its `requestCleanupQueuePartialEq` and
+`requestCleanupQueueHash`. A library also exported each trait impl's
+method, `export function digitPartialEq_eq`, which its program doesn't,
+and copied a public `Copy` type, a tuple and a `Vec` wherever it read one
+(`copies.rs`'s `crosses_crates`), as a consumer might change it.
+
+**A library's JS is its program's: it writes and exports what its program
+does, and its manifest lists what its JS exports. What a consumer asks
+of it that its JS hasn't, the consumer compiles from the library's MIR,
+as it compiles the generic functions above:**
+
+```rust
+// dep
+pub struct Digit(pub u32);
+impl Hash for Digit { fn hash<H: Hasher>(&self, state: &mut H) { (self.0 % 10).hash(state); } }
+pub fn hash_of<T: Hash>(value: &T) -> u64 { .. }
+#[derive(Clone, Copy, Debug)]
+pub struct Spot { pub x: i32 }
+pub fn first_spot(spots: &[Spot]) -> Spot { spots[0] }
+// app
+dep::hash_of(&dep::Digit(1));
+let mut spot = dep::first_spot(&spots);
+spot.x += 10;
+```
+
+```js
+// dep's: its program's, and the same as a dependency
+export function firstSpot(spots) {
+  return $index(spots, 0);
+}
+
+// app's
+const digitHash = { hash: digitHash_hash, hashSlice: $hashSlice(digitHash_hash) };
+function digitHash_hash(digit, state, HHasher, dropH) {
+  HHasher.writeU32(state, digit[0] % 10);
+}
+function firstSpot(spots) {
+  return { ...$index(spots, 0) };
+}
+hashOf([1], digitHash);
+```
+
+- **An impl its JS doesn't make** (a derived `Debug` or `Hash`, a
+  `Hash`, a marker's, a `PartialEq` of a type equal only to itself, an
+  operator's: what a program writes only where its code asks for it), or
+  doesn't export (a private trait's), **is the consumer's**, where its
+  lowering asks for it: its dictionary, `dictionary`, a call of one of its
+  methods, a drop of its type. Lowering asks (`Foreign::compiles`, the
+  crate's `asked`), the pipeline returns what was asked,
+  `instances::asked`, the impl with each of its methods, and the driver
+  lowers the crate again with them, beside where each was first asked.
+  Of an impl, only what the consumer uses is written: `labelDebug_fmt`,
+  not `labelDebug`.
+- **The method of an impl whose dictionary it exports is called through
+  the dictionary**, `strToKebabCase.toKebabCase(title)`, `hourDisplay.fmt(
+  hour)` (`Foreign::through_dictionary`, `dictionary_entry`), where it's
+  called as the method is: one with no type parameters of its own, given
+  what it takes as the method takes it; else the consumer compiles the
+  impl. The dictionary's manifest item says it may fail where a method of
+  it may (ADR 0187).
+- **A trait's default a consumer's impl doesn't write** is compiled by
+  the consumer, a function over `Self` as ADR 0185 has it, the consumer's
+  own: a library writes none.
+- **A library function or impl that may copy, or clone, a value of what
+  the consumer changes in place is the consumer's** (`instances::Copying`,
+  asked where it's referred to, `fn_ref`): of its MIR, a `copy` of a
+  `Copy` value of one, a constant of one, a call of std's that makes one of
+  what it's given a reference to (`Cell::get`, `clone`, `to_vec`), a call
+  of its library's that may, its trait's method resolved, and a closure it
+  makes: the least answer that holds, of functions that call each other
+  too, `outer` and `inner`. What the consumer changes is its `mutated` types and changed
+  `Vec`s, matched as `copies.rs` matches them (`instance_of`), and what
+  holds one by value (`copies::may_hold_changed`), not behind a reference,
+  a pointer, an `Rc` or a std type of a lifetime. The library's own copies
+  are its program's: what its own crate changes. `@rust-js/std`, compiled
+  once for every consumer, still copies what any may change, and exports
+  all they may reach (ADR 0561).
+- **What an instance asks is the consumer's own**: its type facts (ADR
+  0145), its writers' options (ADR 0137); and a write that may fail, of
+  its MIR's calls as of THIR's (ADR 0187).
+- **A derived serde impl's codec stays exported**, as rust-js writes it of
+  its type's attributes, which no consumer sees (ADRs 0077, 0100).
+- **A std type's `hash` in optimized MIR** is the writes std's impl makes,
+  `HHasher.writeU32(state, digit[0] % 10)`, whatever references its MIR
+  has, as its library's own is; and a derive's own type parameter is named
+  without its `__`, `dropH`, as its dictionary, `HHasher`, is.
+- **Refused**, as above, an instance that reads its library's private
+  state: of an impl too, a destructor that counts in a private
+  thread-local. The message names what it compiles and why it can't.
+
+### Why
+
+- **It's the JS of the program**, React's own: `react`'s JS built alone or
+  as the reconciler's dependency is the same bytes, `git diff --stat
+  packages/react` empty after `rust-js build --package react-reconciler`.
+- **It's what Rust runs**: a consumer's `Hash` of a library's type is
+  that impl's code, compiled for the consumer, as codegen compiles it;
+  a copy the consumer needs is made where Rust makes it, in the function
+  that reads the value, compiled with the consumer's knowledge of what it
+  changes.
+- **An exported dictionary's entry is what JS calls**: a JS module using
+  the library would call `strToKebabCase.toKebabCase(title)` too, and the
+  consumer copies none of the library's code to call it.
+
+### Alternatives
+
+- **Every impl's method exported by the program too**, `export function
+  digitPartialEq_eq`: one export more for each impl of every crate, React's
+  among them, that its upstream hasn't.
+- **Every impl's method compiled by its consumer**: the docs' heck example
+  became the whole of heck's `transform`, beside the app's `slug`.
+- **Asking which impls a consumer needs before lowering it**: a
+  dictionary is asked of evidence, a `dyn`, a drop, a default's body,
+  which only lowering finds; asked there, nothing is missed, and a crate
+  that asks nothing pays nothing.
+
+### What still differs
+
+- A library whose crate has no destructor and uses no library takes a drop
+  of each of its generic impls' and trait methods' type parameters, which
+  its program doesn't (`traits::may_have_destructors`), the dictionaries
+  callers it can't see call; and its dictionaries have every associated
+  constant, which its program's have only where generic code reads one
+  (ADR 0176). React's crates, which have destructors and use `shared`,
+  differ in neither.
+- A library writes its derived serde impls' codecs a consumer can reach.
+
+### What holds it
+
+- `test/crates.test.ts`, "a library's generic function is its program's,
+  alone or a dependency, and its consumer compiles what it gives more of":
+  `program_form` against native Rust, its library's JS alone and as a
+  dependency the same bytes, the consumer's own `keyHash`, `keyPartialEq`,
+  `digitHash`, `tagHash`, `tagDebug`, `spotDebug`, `firstSpot`,
+  `firstPair`, `spotsFirst_first`, `firstOf`, `outer` and `inner`; `labelDebug_fmt` without
+  its dictionary, given its width; `footprint` given its size; the
+  library's `digitPartialEq`, `hourDisplay` and `digitDoubled` called
+  through; the instance `written` caught where it fails. And "refused where
+  it reads its library's private state", of a destructor too; the pairs
+  `copy_enum`, `tuple` (a `&mut` of the consumer's copy), `tree` and
+  `ref_cells`; `test/cargo-workspace.test.ts`'s library that copies its
+  `Point` as its program does.
+- The guide's `dependencies.md` example, `strToKebabCase.toKebabCase`.
+- Mutations: `instances.ts`' `instance-constant-not-copied`,
+  `instance-box-read-copied`, `instance-trait-call-unresolved`;
+  `copies.ts`' `library-copies-for-consumers`, `borrowing-std-type-holds`;
+  `library.ts`' `library-lists-unexported`, `library-impl-not-compiled`,
+  `library-exported-impl-method-compiled`,
+  `library-dictionary-entry-unseen`, `library-dictionary-fails-unlisted`;
+  `items.ts`' `unexported-library-item-imported`,
+  `exported-copying-impl-imported`; `pipeline.ts`'
+  `instance-impl-kept-unused`, `asked-instances-ignored`,
+  `library-derive-kept-for-consumers`; `display.ts`'
+  `instance-writer-options-library`; `traits/calls.ts`'
+  `instance-facts-library`; `traits/impls.ts`' `instance-dictionary-exported`;
+  `traits/dictionaries.ts`' `unexported-impl-evidence-refused`;
+  `mir/dispatch.ts`' `mir-std-hash-dispatched`; `analysis/fmt_failures.ts`'
+  `fmt-failing-call-of-mir-unseen`; and those whose code moved.

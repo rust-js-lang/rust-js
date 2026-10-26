@@ -229,4 +229,20 @@ export const mutations: Mutation[] = [
     replace: "        module.is_none_or(|module| module == self.module)\n",
     tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
   },
+  {
+    name: "unexported-library-item-imported",
+    breaks: "a library's item its JS doesn't export, an impl's dictionary, isn't asked for, and its reference panics (ADR 0914, amended)",
+    file: "src/lower/items.rs",
+    find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
+    replace: "            && (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id))\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
+  {
+    name: "exported-copying-impl-imported",
+    breaks: "an exported dictionary whose method copies a `Spot` its consumer changes in place is imported, so changing what `first()` gives changes the `Vec`'s (ADR 0914, amended)",
+    file: "src/lower/items.rs",
+    find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
+    replace: "            && foreign.compiles(def_id)\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

@@ -470,4 +470,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
   },
+  {
+    name: "instance-dictionary-exported",
+    breaks: "a dictionary a consumer compiles of its library's impl is exported, as if its own (ADR 0914, amended)",
+    file: "src/lower/traits/impls.rs",
+    find: "            export: self.tcx.visibility(tr.def_id).is_public() && !self.krate.foreign.is_instance(id),\n",
+    replace: "            export: self.tcx.visibility(tr.def_id).is_public(),\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

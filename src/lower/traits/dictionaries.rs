@@ -689,12 +689,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        // The crate's own impl's accessor, or one a library exports (ADR 0100):
-        // in a copied default, of the impl's terms, where its bounds and the
-        // default's hold, `Map<T, F>: Counting` of a blanket impl's.
+        // The crate's own impl's accessor, or one a library exports (ADR 0100),
+        // or one of a library's its JS doesn't, which the crate compiles
+        // (ADR 0914, amended): in a copied default, of the impl's terms, where
+        // its bounds and the default's hold, `Map<T, F>: Counting` of a
+        // blanket impl's.
         let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);
         if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)
-            && (self.krate.trait_impls.contains(&impl_id) || self.krate.foreign.item(impl_id).is_some())
+            && (self.krate.trait_impls.contains(&impl_id)
+                || self.krate.foreign.item(impl_id).is_some()
+                || self.krate.foreign.compiles(impl_id))
         {
             let callee = self.fn_ref(impl_id);
             let args = self.evidence_args(impl_id, impl_args, span)?;

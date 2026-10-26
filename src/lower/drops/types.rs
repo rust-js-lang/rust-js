@@ -106,10 +106,12 @@ pub(in crate::lower) struct DropQuery<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> DropQuery<'a, 'tcx> {
-    /// Is `drop`, a type's `Drop::drop`, one rust-js runs: the crate's own, or
-    /// a library's it exports (ADR 0100)?
+    /// Is `drop`, a type's `Drop::drop`, one rust-js runs: the crate's own, a
+    /// library's it exports (ADR 0100), or one the crate compiles itself,
+    /// which its library's JS doesn't export (ADR 0914, amended)?
     pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
-        drop.is_local() || self.recognition.foreign.item(drop).is_some()
+        let foreign = self.recognition.foreign;
+        drop.is_local() || foreign.item(drop).is_some() || foreign.is_instance(drop) || foreign.compiles(drop)
     }
 
     /// Does making a `from` a `to` lose a drop: what owns it, `target`, a

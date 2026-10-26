@@ -305,9 +305,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A library's trait's default, whose body is the library's (ADR 0100):
             // its function over `Self`, given this impl's dictionary as any of
-            // its generic functions is (ADR 0185).
+            // its generic functions is (ADR 0185), the crate's own where the
+            // library's JS doesn't export it (ADR 0914, amended).
             let library_default = self.krate.foreign.in_library(method);
-            if library_default && self.krate.foreign.item(method).is_none() {
+            if library_default && !self.is_rust_fn(method) {
                 let what = format!(
                     "implementing another crate's trait without its default `{}`: write the method in the impl",
                     self.tcx.def_path_str(method)
@@ -600,7 +601,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             name: self.krate.fns[&id].name.clone(),
             params,
             body,
-            export: self.tcx.visibility(tr.def_id).is_public(),
+            // Not a library's the crate compiles itself, its own (ADR 0914).
+            export: self.tcx.visibility(tr.def_id).is_public() && !self.krate.foreign.is_instance(id),
             is_async: false,
             noinline: false,
             span: self.js_span(span),
@@ -832,8 +834,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Of `method`, a trait's, for its `args`, given `count` values: where it
+    /// resolves to a library's impl's method that its JS reaches only
+    /// through the impl's dictionary, the method resolved and that entry,
+    /// `counterClone.clone`, where it's called as the method is: one of no
+    /// type parameters of its own, given what it takes as it takes it; else
+    /// the crate compiles the impl itself, asked for, and its entry is a
+    /// placeholder (ADR 0914, amended). `None` of another.
+    pub(in crate::lower) fn dictionary_entry(
+        &mut self,
+        method: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        count: usize,
+        span: Span,
+    ) -> R<Option<(ty::Instance<'tcx>, Expr)>> {
+        let Some(instance) = self.resolve_instance(method, args)? else {
+            return Ok(None);
+        };
+        let Some(imp) = self.krate.foreign.through_dictionary(instance.def_id()) else {
+            return Ok(None);
+        };
+        let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(method), args);
+        let as_entry = self.tcx.generics_of(method).own_params.is_empty()
+            && !self.held_in_box(tr.self_ty())
+            && (0..count).all(|i| self.param_is_box(method, i) == self.param_is_box(instance.def_id(), i));
+        if !as_entry {
+            self.krate.asked.borrow_mut().push((imp, self.module));
+            return Ok(Some((instance, Expr::undefined())));
+        }
+        let dictionary = self.dictionary(tr, span)?;
+        Ok(Some((
+            instance,
+            Expr::member(dictionary, bindings::fn_name(self.tcx, method)),
+        )))
+    }
+
     /// `method` of the hand-written impl for the trait's `args`, called
-    /// directly: `counterClone_clone(c)`.
+    /// directly: `counterClone_clone(c)`, or through a library's dictionary
+    /// (`dictionary_entry`), `counterClone.clone(c)`.
     pub(in crate::lower) fn impl_call(
         &mut self,
         method: DefId,
@@ -842,6 +880,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let args = self.tcx.erase_and_anonymize_regions(args);
+        if let Some((instance, entry)) = self.dictionary_entry(method, args, values.len(), span)? {
+            let called = Expr::call(entry, values);
+            return Ok(self.fmt_result_value(instance.def_id(), instance.args, called));
+        }
         let instance = self
             .resolve_instance(method, args)?
             .filter(|i| self.is_rust_fn(i.def_id()))

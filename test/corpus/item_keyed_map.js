@@ -54,7 +54,7 @@ function tCounting(TIterator, dropT, dropTItem) {
 
 export const pHash = { hash: pHash_hash, hashSlice: $hashSlice(pHash_hash) };
 
-function pHash_hash(p, state, HHasher, drop__H) {
+function pHash_hash(p, state, HHasher, dropH) {
   HHasher.writeU8(state, p[0]);
   HHasher.writeU8(state, p[1]);
 }
@@ -65,7 +65,7 @@ export const loudHash = {
   $drop: loudDrop_drop,
 };
 
-function loudHash_hash(loud, state, HHasher, drop__H) {
+function loudHash_hash(loud, state, HHasher, dropH) {
   HHasher.writeU8(state, loud[0]);
 }
 

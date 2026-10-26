@@ -268,6 +268,22 @@ models/src/lib.js     export function pick(a, b) { return a; }
 frontend/src/lib.js   function pick(a, b, dropB) { dropB?.(b); return a; }
 ```
 
+So are its trait impls and copies: a library writes and exports what its
+program does. A crate that uses an impl its library's JS hasn't, a `Hash`
+it gives generic code, a derived `Debug` it prints, a destructor, compiles
+its own of what it uses of it; one whose dictionary the library exports,
+it calls through that, `strToKebabCase.toKebabCase(title)`. A library
+copies what its own crate changes in place; a crate that changes a value
+a library's function copies compiles its own of that function, which
+copies it
+([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)):
+
+```
+models/src/lib.rs     pub fn first(points: &[Point]) -> Point { points[0] }
+models/src/lib.js     export function first(points) { return $index(points, 0); }
+frontend/src/lib.js   function first(points) { return { ...$index(points, 0) }; }
+```
+
 The same `models` crate builds natively for a Rust server. See
 [Testing](testing.md#test-shared-logic-natively).
 

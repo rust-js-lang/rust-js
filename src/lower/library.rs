@@ -104,12 +104,51 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     params
 }
 
-/// The items another crate can reach, and the impls it calls through them;
-/// and the bindings its modules hold, which a consumer naming one through
-/// its module reads through it (ADR 0633).
+/// Is `id` the crate's own, or std's compiled into `@rust-js/std` (ADR
+/// 0561): not a library's it compiled itself, which is that library's (ADR
+/// 0914).
+fn own(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    id.is_local() || super::recognition::is_std_crate(tcx, id)
+}
+
+/// What a crate's JS exports of its own, each by its module's path and its
+/// name there (`exported_names`).
+pub(super) type Exported = HashSet<(Vec<String>, String)>;
+
+/// What each of `modules`' JS exports of its own, by its module's path and
+/// its name there: an item `export`ed, its default and those it exports by
+/// another name.
+pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
+    let mut exported = HashSet::new();
+    for module in modules.iter().map(|unlinked| &unlinked.module) {
+        let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
+        for item in &module.items {
+            match item {
+                crate::js::Item::Function(function) if function.export => export(&function.name),
+                crate::js::Item::Const(constant) if constant.export => export(&constant.name),
+                crate::js::Item::Namespace(namespace) if namespace.export => export(&namespace.name),
+                _ => false,
+            };
+        }
+        for name in module
+            .default_export
+            .iter()
+            .chain(module.aliases.iter().map(|(local, _)| local))
+        {
+            export(name);
+        }
+    }
+    exported
+}
+
+/// The items another crate can reach that its JS exports, `exported`
+/// (`exported_names`), and the impls it calls through them; and the
+/// bindings its modules hold, which a consumer naming one through its
+/// module reads through it (ADR 0633). What a consumer reaches that it
+/// doesn't export, the consumer compiles (ADR 0914, amended).
 pub(super) fn exports<'tcx>(
     tcx: TyCtxt<'tcx>,
-    functions: &HashMap<DefId, FnInfo>,
+    (functions, exported): (&HashMap<DefId, FnInfo>, &Exported),
     contracts: &Contracts<'_, 'tcx>,
     (trait_impls, held): (&[DefId], &HashMap<LocalModId, Vec<HeldBinding>>),
     dependencies: &Dependencies,
@@ -136,7 +175,10 @@ pub(super) fn exports<'tcx>(
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
         .iter()
-        .filter(|&(&id, _)| reachable(tcx, id))
+        .filter(|&(&id, info)| {
+            let name = info.owner.as_ref().unwrap_or(&info.name);
+            own(tcx, id) && reachable(tcx, id) && exported.contains(&(module_path(tcx, info.module), name.clone()))
+        })
         .map(|(&id, info)| Item {
             key: key(tcx, id),
             rust_path: format!("{crate_name}::{}", tcx.def_path_str(id)),
@@ -150,7 +192,14 @@ pub(super) fn exports<'tcx>(
             calling: crate::library::Calling {
                 params: type_params(tcx, id, contracts),
                 facts: [
-                    (ItemFact::Fails, failing.contains(&id)),
+                    // An impl's dictionary, of a method that may fail, which a
+                    // consumer calls through it (`Foreign::through_dictionary`).
+                    (
+                        ItemFact::Fails,
+                        failing.contains(&id)
+                            || (matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true })
+                                && (tcx.associated_item_def_ids(id).iter()).any(|method| failing.contains(method))),
+                    ),
                     (ItemFact::TakesLocation, caller_locations.contains(&id)),
                     (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),
                     (
@@ -169,7 +218,7 @@ pub(super) fn exports<'tcx>(
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
     let mut impls: Vec<String> = trait_impls
         .iter()
-        .filter(|&&id| reachable(tcx, id))
+        .filter(|&&id| own(tcx, id) && reachable(tcx, id))
         .map(|&id| key(tcx, id))
         .collect();
     impls.sort();
@@ -456,9 +505,48 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).flat_map(|library| library.held.values())
     }
 
-    /// Why `id` can't be used, if it's a library's its manifest doesn't list.
+    /// Is `id` a library's that its JS doesn't export, which this crate
+    /// compiles itself where it uses it, from the MIR its library's metadata
+    /// keeps (ADR 0914, amended): a trait impl of its, whose dictionary its
+    /// program makes only where its own code asks for it, and its methods;
+    /// or a trait's default, which a consumer's impl of the trait calls. Not
+    /// the method of an impl whose dictionary it exports, called through it
+    /// (`through_dictionary`); nor a derive's that rust-js writes itself,
+    /// `==` of a struct, nor a binding's, JS's; nor a function or an
+    /// inherent method, which its program exports where it's public, as its
+    /// manifest says (`unlisted`).
+    pub(super) fn compiles(&self, id: DefId) -> bool {
+        use rustc_hir::def::DefKind;
+        let tcx = self.tcx;
+        let own = |imp: DefId| self.has_impl(imp) && self.item(imp).is_none();
+        !id.is_local()
+            && self.is_library(id.krate)
+            && !self.is_instance(id)
+            && self.item(id).is_none()
+            && match tcx.def_kind(id) {
+                DefKind::Impl { of_trait: true } => own(id),
+                DefKind::AssocFn if tcx.is_mir_available(id) && !super::bindings::is_binding(tcx, id) => {
+                    match tcx.trait_impl_of_assoc(id) {
+                        Some(imp) => own(imp),
+                        None => tcx.trait_of_assoc(id).is_some(),
+                    }
+                }
+                _ => false,
+            }
+    }
+
+    /// The impl of `id`, a library's impl's method its JS doesn't export by
+    /// name, whose dictionary it does: what a call of it is a call through,
+    /// `strToKebabCase.toKebabCase(title)` (ADR 0914, amended).
+    pub(super) fn through_dictionary(&self, id: DefId) -> Option<DefId> {
+        let imp = self.tcx.trait_impl_of_assoc(id)?;
+        (!id.is_local() && !self.is_instance(id) && self.item(id).is_none() && self.item(imp).is_some()).then_some(imp)
+    }
+
+    /// Why `id` can't be used, if it's a library's its manifest doesn't list
+    /// and the crate can't compile itself (`compiles`).
     pub(super) fn unlisted(&self, id: DefId) -> Option<String> {
-        (self.in_library(id) && self.item(id).is_none() && !self.is_instance(id)).then(|| {
+        (self.in_library(id) && self.item(id).is_none() && !self.is_instance(id) && !self.compiles(id)).then(|| {
             format!(
                 "rust-js: `{}` isn't one of the items `{}`'s manifest exports",
                 self.tcx.def_path_str(id),
@@ -468,8 +556,11 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// May `id`, a library's, return `Err(fmt::Error)` (ADR 0187)?
+    /// Of a method called through its impl's dictionary, its dictionary's
+    /// (ADR 0914, amended).
     pub(super) fn fails(&self, id: DefId) -> bool {
-        self.item(id).is_some_and(|item| item.calling.has(ItemFact::Fails))
+        let item = self.item(id).or_else(|| self.item(self.through_dictionary(id)?));
+        item.is_some_and(|item| item.calling.has(ItemFact::Fails))
     }
 
     /// Does a library's `id` step its type parameter `index` as it is, by

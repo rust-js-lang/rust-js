@@ -56,6 +56,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn fn_ref(&self, def_id: DefId) -> Expr {
+        // A library's its JS doesn't export, or whose JS may share what it
+        // copies that the crate changes in place, compiled here: asked for,
+        // and the crate lowered again with it, which this lowering's JS
+        // isn't kept of (ADR 0914, amended).
+        let foreign = self.krate.foreign;
+        if !self.krate.fns.contains_key(&def_id)
+            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
+        {
+            self.krate.asked.borrow_mut().push((def_id, self.module));
+            return Expr::undefined();
+        }
         // A library's, imported by the name it chose (ADR 0100).
         if let Some(item) = self.krate.foreign.item(def_id) {
             let export = (item.from.clone(), item.export.clone());
@@ -279,10 +290,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A function or its type's method object, imported by name when it lives
     /// in another module. The linker resolves collisions after lowering.
     /// Is `def_id` a Rust function, `const` or `static` rust-js compiled, read
-    /// by its name: the crate's own, or one a library exports (ADRs 0100,
-    /// 0770)?
+    /// by its name: the crate's own, one a library exports (ADRs 0100,
+    /// 0770), or a library's the crate compiles itself (ADR 0914, amended)?
     pub(super) fn is_rust_fn(&self, def_id: DefId) -> bool {
-        self.krate.fns.contains_key(&def_id) || self.krate.foreign.item(def_id).is_some()
+        self.krate.fns.contains_key(&def_id)
+            || self.krate.foreign.item(def_id).is_some()
+            || self.krate.foreign.compiles(def_id)
     }
 
     /// Does this body read `def_id`, an item rust-js compiled that's made

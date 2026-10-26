@@ -229,4 +229,12 @@ export const mutations: Mutation[] = [
     replace: "strings_alone",
     tests: ["test/corpus.test.ts", "-t", "^format_values_alone.rs$"],
   },
+  {
+    name: "instance-writer-options-library",
+    breaks: "a writer a consumer compiles takes its Formatter's options as its library's do, not its crate's own, so `{:>9?}` of a `Label` isn't padded (ADRs 0137, 0914)",
+    file: "src/lower/display.rs",
+    find: "        match writer.is_local() || self.krate.foreign.is_instance(writer) {\n",
+    replace: "        match writer.is_local() {\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
 ];

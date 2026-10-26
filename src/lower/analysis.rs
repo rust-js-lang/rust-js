@@ -635,6 +635,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             true => None,
             false => tcx.trait_impl_of_assoc(body.def_id),
         }))
+        // And a library's the crate compiles itself, which its JS doesn't
+        // export, a marker's of no methods too (ADR 0914, amended).
+        .chain(instances.impls(tcx))
         .fold(Vec::new(), |mut impls, id| {
             if !impls.contains(&id) {
                 impls.push(id);

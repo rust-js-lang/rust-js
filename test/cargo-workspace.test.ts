@@ -218,8 +218,8 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const dir = fixture("crates-app-program");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
   const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {} {}\", *a, *b, Rc::strong_count(&a));\n}\n";
-  // `user` reads no count, and holds a `Copy` struct a library's consumers
-  // may change in place, which a library copies and a program needn't.
+  // `user` reads no count, and holds a `Copy` struct it never changes in
+  // place, which neither a program nor a library copies (ADR 0914, amended).
   const reads = counts
     .replace(", Rc::strong_count(&a)", "")
     .replace("{} {} {}", "{} {}")
@@ -246,11 +246,13 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   expect(readFileSync(again.js, "utf8")).toBe(alone);
   // The whole workspace, each member a package Cargo was asked for: no app,
   // so every crate is a library, `user` too, which reads no count and is
-  // handed no `Rc`: it counts none (ADR 0844), and copies its `Point`.
+  // handed no `Rc`: it counts none (ADR 0844), and copies its `Point` as
+  // its program does, not at all: a consumer that changes one compiles its
+  // own of what copies it (ADR 0914, amended).
   await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
   const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
   const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
   const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
-  expect([counted(root), copied(root)]).toEqual([false, true]);
+  expect([counted(root), copied(root)]).toEqual([false, false]);
 }, 600_000);

@@ -156,11 +156,7 @@ pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         }
         // A struct's or an enum's own name, `String`, not its path.
         ty::Adt(..) => type_word(tcx, ty),
-        // A derive's own, `__H` of `#[derive(Hash)]`'s `hash<__H: Hasher>`:
-        // `H`, as it's written by hand (ADR 0463).
-        ty::Param(p) if p.name.as_str().starts_with('_') && !p.name.as_str().trim_start_matches('_').is_empty() => {
-            p.name.as_str().trim_start_matches('_').to_string()
-        }
+        ty::Param(p) => param_word(p.name),
         _ => ty.to_string(),
     }
 }
@@ -234,10 +230,16 @@ pub(super) fn js_word(text: &str) -> String {
 }
 
 /// A type parameter's name as part of a JS name: `T`, or of `x: impl
-/// fmt::Display`, which rustc names as it's written, its trait's, `Display`.
+/// fmt::Display`, which rustc names as it's written, its trait's, `Display`;
+/// or of a derive's own, `__H` of `#[derive(Hash)]`'s `hash<__H: Hasher>`,
+/// `H`, as it's written by hand (ADR 0463), its dictionary's and its drop's.
 pub(super) fn param_word(name: Symbol) -> String {
     let Some(bound) = name.as_str().strip_prefix("impl ") else {
-        return name.to_string();
+        let unmarked = name.as_str().trim_start_matches('_');
+        return match unmarked.is_empty() {
+            true => name.to_string(),
+            false => unmarked.to_string(),
+        };
     };
     let path: String = bound
         .chars()

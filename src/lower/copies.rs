@@ -10,6 +10,7 @@ use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
+use std::collections::HashSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
@@ -294,29 +295,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Might another crate change `ty` in place (ADR 0100)? Any crate using a
-    /// library's type might, and so might a library's consumers its own type
-    /// they can reach. This crate can't see their code, so it assumes they do,
-    /// of a type whose values may be JS objects: a fieldless enum's string
-    /// can't change, an enum's variant with fields can.
-    /// A tuple or an array is any crate's, so in a library, or a crate using
-    /// one, any may cross.
+    /// library's type might, as its library's code may: this crate can't see
+    /// it, so it assumes it does, of a type whose values may be JS objects: a
+    /// fieldless enum's string can't change, an enum's variant with fields
+    /// can. A tuple or an array is any crate's, so in a crate using a
+    /// library, any may cross. A library's consumers' changes are their own,
+    /// who compile what of its copies them (ADR 0914, amended); but
+    /// `@rust-js/std`'s, compiled once for all (ADR 0561), are any crate's.
     pub(super) fn crosses_crates(&self, ty: Ty<'tcx>) -> bool {
         let shared = match ty.kind() {
             ty::Adt(adt, _) => {
                 self.krate.foreign.in_library(adt.did())
-                    || (self.krate.library && super::library::reachable(self.tcx, adt.did()))
+                    || (self.krate.compiled_once && super::library::reachable(self.tcx, adt.did()))
             }
-            ty::Tuple(_) | ty::Array(..) => self.krate.library || self.krate.foreign.any(),
+            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || self.krate.foreign.any(),
             _ => false,
         };
         shared && self.may_be_object(ty)
     }
 
     /// Is `ty` a `Vec` type something may change (ADR 0052)? One another crate
-    /// can hold might be changed there (ADR 0100): in a library, or a crate
-    /// using one, any may be.
+    /// can hold might be changed there (ADR 0100): in a crate using a library,
+    /// or `@rust-js/std`, any may be (`crosses_crates`).
     pub(super) fn vec_changed(&self, ty: Ty<'tcx>) -> bool {
-        (self.krate.library || self.krate.foreign.any())
+        (self.krate.compiled_once || self.krate.foreign.any())
             || self
                 .krate
                 .changed_vecs
@@ -332,25 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the `Holder<Numbers>` changed in place by its caller. Lifetimes don't
     /// matter.
     pub(super) fn instance_of(&self, ty: Ty<'tcx>, general: Ty<'tcx>) -> bool {
-        match (ty.kind(), general.kind()) {
-            _ if self.is_unknown(general) || self.is_unknown(ty) => true,
-            (ty::Adt(adt, args), ty::Adt(general_adt, general_args)) => {
-                adt.did() == general_adt.did()
-                    && args.iter().zip(general_args.iter()).all(|(arg, general)| {
-                        match (arg.as_type(), general.as_type()) {
-                            (Some(arg), Some(general)) => self.instance_of(arg, general),
-                            _ => true,
-                        }
-                    })
-            }
-            (ty::Ref(_, inner, _), ty::Ref(_, general, _))
-            | (ty::Slice(inner), ty::Slice(general))
-            | (ty::Array(inner, _), ty::Array(general, _)) => self.instance_of(*inner, *general),
-            (ty::Tuple(parts), ty::Tuple(general)) => {
-                parts.len() == general.len() && parts.iter().zip(general.iter()).all(|(p, g)| self.instance_of(p, g))
-            }
-            _ => self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(general),
-        }
+        instance_of(&self.recognition(), ty, general)
     }
 
     /// Whether reconstructing a value can replace its Clone implementation.
@@ -391,6 +375,111 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seen.pop();
         structural
     }
+}
+
+/// Is `ty` one of the types `general` stands for (`FnCx::instance_of`)?
+pub(super) fn instance_of<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    general: Ty<'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    match (ty.kind(), general.kind()) {
+        _ if recognition.is_unknown(general) || recognition.is_unknown(ty) => true,
+        (ty::Adt(adt, args), ty::Adt(general_adt, general_args)) => {
+            adt.did() == general_adt.did()
+                && args
+                    .iter()
+                    .zip(general_args.iter())
+                    .all(|(arg, general)| match (arg.as_type(), general.as_type()) {
+                        (Some(arg), Some(general)) => instance_of(recognition, arg, general),
+                        _ => true,
+                    })
+        }
+        (ty::Ref(_, inner, _), ty::Ref(_, general, _))
+        | (ty::Slice(inner), ty::Slice(general))
+        | (ty::Array(inner, _), ty::Array(general, _)) => instance_of(recognition, *inner, *general),
+        (ty::Tuple(parts), ty::Tuple(general)) => {
+            parts.len() == general.len()
+                && parts
+                    .iter()
+                    .zip(general.iter())
+                    .all(|(p, g)| instance_of(recognition, p, g))
+        }
+        _ => tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(general),
+    }
+}
+
+/// What the crate changes in place (ADR 0052): the types whose objects it
+/// changes, and the `Vec`s.
+#[derive(Clone, Copy)]
+pub(super) struct Changed<'a, 'tcx> {
+    pub(super) mutated: &'a HashSet<Ty<'tcx>>,
+    pub(super) vecs: &'a HashSet<Ty<'tcx>>,
+}
+
+/// May a value of `ty` hold, by value, not behind a reference, what the
+/// crate changes in place, `changed`: the coarse question whether a
+/// library's function that copies or clones one is compiled here, where
+/// its library's JS, which copies what its own crate changes, may share
+/// one the crate then changes (ADR 0914, amended). `contains_mutated` is
+/// the exact one, of the crate's own copies.
+pub(super) fn may_hold_changed<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    changed: Changed<'_, 'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    fn walk<'tcx>(
+        recognition: &super::recognition::Recognition<'_, 'tcx>,
+        changed: Changed<'_, 'tcx>,
+        ty: Ty<'tcx>,
+        seen: &mut Vec<Ty<'tcx>>,
+    ) -> bool {
+        if seen.contains(&ty) {
+            return false;
+        }
+        let tcx = recognition.tcx;
+        let is = |general: &Ty<'tcx>| !recognition.is_unknown(*general) && instance_of(recognition, ty, *general);
+        let pointer_like = |ty: Ty<'tcx>| {
+            super::pointers::raw_pointee(tcx, ty).is_some()
+                || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::PhantomData))
+        };
+        seen.push(ty);
+        let holds = match ty.kind() {
+            ty::Tuple(_) | ty::Array(..) if changed.mutated.iter().any(is) => true,
+            ty::Tuple(items) => items.iter().any(|item| walk(recognition, changed, item, seen)),
+            ty::Array(item, _) | ty::Slice(item) => walk(recognition, changed, *item, seen),
+            ty::Adt(..) if changed.mutated.iter().chain(changed.vecs).any(is) => true,
+            // A pointer to one, a shared `Rc`'s, holds none by value; nor a
+            // `PhantomData`; nor std's of a lifetime, which borrows what it
+            // reads, a `Ref` or an `Iter`; nor std's of pointers alone, the
+            // `Unique` optimized MIR reads a `Box` through.
+            ty::Adt(adt, args)
+                if pointer_like(ty)
+                    || super::recognition::rc_pointee(tcx, ty).is_some()
+                    || super::recognition::weak_pointee(tcx, ty).is_some()
+                    || (super::recognition::is_std_crate(tcx, adt.did())
+                        && (args.regions().next().is_some()
+                            || (adt.is_struct()
+                                && adt
+                                    .all_fields()
+                                    .all(|field| pointer_like(field.ty(tcx, args).skip_normalization()))))) =>
+            {
+                false
+            }
+            ty::Adt(adt, args) => {
+                args.types().any(|arg| walk(recognition, changed, arg, seen))
+                    || (!super::recognition::is_std_crate(tcx, adt.did())
+                        && adt
+                            .all_fields()
+                            .any(|field| walk(recognition, changed, field.ty(tcx, args).skip_normalization(), seen)))
+            }
+            _ => false,
+        };
+        seen.pop();
+        holds
+    }
+    walk(recognition, changed, ty, &mut Vec::new())
 }
 
 /// Can one JS value be every use of a constant of `ty`, which Rust makes

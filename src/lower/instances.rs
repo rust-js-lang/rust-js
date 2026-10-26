@@ -42,6 +42,221 @@ impl Instances {
     pub fn extend(&mut self, more: Vec<(DefId, LocalModId)>) {
         self.placed.extend(more);
     }
+
+    /// The trait impls of its libraries the crate compiles itself, which
+    /// their JS doesn't export (ADR 0914, amended), in the order they're
+    /// declared.
+    pub(super) fn impls(&self, tcx: TyCtxt<'_>) -> Vec<DefId> {
+        let mut impls: Vec<DefId> = (self.placed.keys().copied())
+            .filter(|&id| matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true }))
+            .collect();
+        impls.sort_by_key(|&id| tcx.def_path_hash(id));
+        impls
+    }
+}
+
+/// What the crate's lowering asked for of its libraries that their JS
+/// doesn't export (`Foreign::compiles`), each where it was first asked: a
+/// trait impl, or its method, the impl with each of its methods, beside
+/// it, whose dictionary names them (ADR 0914, amended).
+pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(DefId, LocalModId)> {
+    let mut more: Vec<(DefId, LocalModId)> = Vec::new();
+    for (id, module) in asked {
+        let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);
+        let methods = match tcx.def_kind(id) {
+            DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
+                .filter(|&method| tcx.def_kind(method) == DefKind::AssocFn && tcx.is_mir_available(method))
+                .collect(),
+            _ => Vec::new(),
+        };
+        for id in std::iter::once(id).chain(methods) {
+            if !more.iter().any(|&(placed, _)| placed == id) {
+                more.push((id, module));
+            }
+        }
+    }
+    more
+}
+
+/// Which of a library's functions and impls may copy, or clone, a value
+/// of what the crate changes in place, which its library's JS, copying
+/// what its own crate changes, may then share: the crate compiles its own
+/// of each it uses (ADR 0914, amended). Asked of each once.
+pub(super) struct Copying<'a, 'tcx> {
+    recognition: super::recognition::Recognition<'a, 'tcx>,
+    changed: super::copies::Changed<'a, 'tcx>,
+    known: std::cell::RefCell<HashMap<DefId, bool>>,
+    /// Those being asked, outermost first.
+    asking: std::cell::RefCell<Vec<DefId>>,
+}
+
+impl<'a, 'tcx> Copying<'a, 'tcx> {
+    /// Of the crate's impls and libraries, `trait_impls` and `foreign`, and
+    /// what it changes in place.
+    pub(super) fn new(
+        (trait_impls, foreign): (&'a [DefId], &'a super::library::Foreign<'a, 'tcx>),
+        changed: super::copies::Changed<'a, 'tcx>,
+    ) -> Self {
+        let recognition = super::recognition::Recognition {
+            tcx: foreign.tcx(),
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls,
+            foreign,
+        };
+        Copying {
+            recognition,
+            changed,
+            known: Default::default(),
+            asking: Default::default(),
+        }
+    }
+
+    /// Whether `id`, a library's function or trait impl the crate uses,
+    /// may copy or clone a value of what the crate changes in place: an
+    /// impl's of its methods; a function's, of its MIR: a `copy` of a place
+    /// of one, a call of std's, or of what else its library doesn't compile,
+    /// that makes one of what it's given a reference to, a call of its
+    /// library's that may, and a closure it makes that may.
+    pub(super) fn copies(&self, id: DefId) -> bool {
+        self.copies_below(id).0
+    }
+
+    /// `copies`, and the lowest of the functions still being asked that
+    /// the answer read, where it read one: a call it makes of one that
+    /// calls it. Of the least answer that holds, kept once it's settled: a
+    /// `true`, or one that read none asked below it.
+    fn copies_below(&self, id: DefId) -> (bool, usize) {
+        let tcx = self.recognition.tcx;
+        if id.is_local() || !self.recognition.foreign.is_library(id.krate) {
+            return (false, usize::MAX);
+        }
+        if let Some(&known) = self.known.borrow().get(&id) {
+            return (known, usize::MAX);
+        }
+        if let Some(at) = self.asking.borrow().iter().position(|&asked| asked == id) {
+            return (false, at);
+        }
+        let depth = self.asking.borrow().len();
+        self.asking.borrow_mut().push(id);
+        let (copies, read) = match tcx.def_kind(id) {
+            DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter())
+                .map(|&method| self.copies_below(method))
+                .fold((false, usize::MAX), |(a, at), (b, bt)| (a || b, at.min(bt))),
+            DefKind::Fn | DefKind::AssocFn | DefKind::Closure if tcx.is_mir_available(id) => {
+                self.body_copies(tcx.optimized_mir(id))
+            }
+            _ => (false, usize::MAX),
+        };
+        self.asking.borrow_mut().pop();
+        if copies || read >= depth {
+            self.known.borrow_mut().insert(id, copies);
+            return (copies, usize::MAX);
+        }
+        (copies, read)
+    }
+
+    fn body_copies(&self, body: &mir::Body<'tcx>) -> (bool, usize) {
+        let tcx = self.recognition.tcx;
+        let holds = |ty: Ty<'tcx>| {
+            let ty = tcx.erase_and_anonymize_regions(ty);
+            super::copies::may_hold_changed(&self.recognition, self.changed, ty)
+        };
+        struct Found<'b, 'a, 'tcx> {
+            copying: &'b Copying<'a, 'tcx>,
+            body: &'b mir::Body<'tcx>,
+            holds: &'b dyn Fn(Ty<'tcx>) -> bool,
+            copies: bool,
+            read: usize,
+        }
+        impl Found<'_, '_, '_> {
+            /// What `id`, a function it calls or a closure it makes, copies.
+            fn ask(&mut self, id: DefId) {
+                let (copies, read) = self.copying.copies_below(id);
+                self.copies |= copies;
+                self.read = self.read.min(read);
+            }
+        }
+        impl<'tcx> mir::visit::Visitor<'tcx> for Found<'_, '_, 'tcx> {
+            fn visit_operand(&mut self, operand: &mir::Operand<'tcx>, location: mir::Location) {
+                let tcx = self.copying.recognition.tcx;
+                let copy = |ty: Ty<'tcx>| {
+                    let typing_env = ty::TypingEnv::post_analysis(tcx, self.body.source.def_id());
+                    tcx.type_is_copy_modulo_regions(typing_env, ty)
+                };
+                match operand {
+                    // A `Copy` value's, not what optimized MIR copies of a
+                    // `Box` it reads through.
+                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {
+                        self.copies |= (self.holds)(place.ty(&self.body.local_decls, tcx).ty)
+                    }
+                    // A constant's, each use of which is a value of its own
+                    // (ADR 0031).
+                    mir::Operand::Constant(constant) => self.copies |= (self.holds)(constant.ty()),
+                    _ => {}
+                }
+                self.super_operand(operand, location);
+            }
+            fn visit_rvalue(&mut self, rvalue: &mir::Rvalue<'tcx>, location: mir::Location) {
+                if let mir::Rvalue::Aggregate(kind, _) = rvalue
+                    && let mir::AggregateKind::Closure(closure, _) = **kind
+                {
+                    self.ask(closure);
+                }
+                self.super_rvalue(rvalue, location);
+            }
+            fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
+                let tcx = self.copying.recognition.tcx;
+                if let TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } = &terminator.kind
+                {
+                    // A trait's method, the impl's it resolves to, where it does.
+                    let resolved = func.const_fn_def().map(|(callee, args)| {
+                        let typing_env = ty::TypingEnv::post_analysis(tcx, self.body.source.def_id());
+                        match tcx.trait_of_assoc(callee) {
+                            Some(_) => super::items::resolve_instance_in(tcx, typing_env, callee, args)
+                                .ok()
+                                .flatten()
+                                .map_or(callee, |instance| instance.def_id()),
+                            None => callee,
+                        }
+                    });
+                    self.copies |= match resolved {
+                        // Its library's, which may copy one itself.
+                        Some(callee) if self.copying.recognition.foreign.is_library(callee.krate) => {
+                            self.ask(callee);
+                            false
+                        }
+                        // Another's, std's: one that makes what it's given a
+                        // reference to, `Cell::get`, `clone`, `to_vec`.
+                        Some(_) => {
+                            (self.holds)(destination.ty(&self.body.local_decls, tcx).ty)
+                                && args.iter().any(|arg| {
+                                    (arg.node.ty(&self.body.local_decls, tcx).walk())
+                                        .filter_map(|part| part.as_type())
+                                        .any(|part| part.is_ref() || super::pointers::raw_pointee(tcx, part).is_some())
+                                })
+                        }
+                        // A fn pointer's, a `dyn`'s: code of its own.
+                        None => false,
+                    };
+                }
+                self.super_terminator(terminator, location);
+            }
+        }
+        let mut found = Found {
+            copying: self,
+            body,
+            holds: &holds,
+            copies: false,
+            read: usize::MAX,
+        };
+        mir::visit::Visitor::visit_body(&mut found, body);
+        (found.copies, found.read)
+    }
 }
 
 /// The bodies of each of `more`, a library's functions, from the MIR its
@@ -359,7 +574,7 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         if state && !def.is_local() && calls.foreign.item(def).is_none() {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate gives `{}` a value to copy or drop that its library's JS takes nothing for, as its own crate's calls give it none, so it's compiled here; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`, or give the function a value it needn't copy or drop",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
                 tcx.def_path_str(root),
                 tcx.def_path_str(def),
             ));
@@ -376,7 +591,7 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate gives `{}` a value to copy or drop that its library's JS takes nothing for, as its own crate's calls give it none, so it's compiled here; but it calls `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): give the function a value it needn't copy or drop",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it calls `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
                 tcx.def_path_str(root),
                 tcx.def_path_str(binding),
             ));

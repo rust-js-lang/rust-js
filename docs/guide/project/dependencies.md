@@ -130,10 +130,10 @@ pub fn slug(title: &str) -> String {
 ```
 
 ```js
-import { strToKebabCase_toKebabCase } from "../rust-js/crates/heck-0.5.0/src/kebab.js";
+import { strToKebabCase } from "../rust-js/crates/heck-0.5.0/src/kebab.js";
 
 export function slug(title) {
-  return strToKebabCase_toKebabCase(title);
+  return strToKebabCase.toKebabCase(title);
 }
 ```
 

@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0100](0100-separate-crates.md),
 [0049](0049-traits-and-generics.md), [0174](0174-generic-fmt-traits.md)
-and [0019](0019-one-js-file-per-module.md).
+and [0019](0019-one-js-file-per-module.md). Amended by
+[0914](0914-a-librarys-generic-function-is-its-programs.md): the default a
+consumer's impl calls is the consumer's own.
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -94,3 +96,14 @@ What bitflags' macro needs besides:
 - **A library ships each reachable default,** used or not.
 - **A std dictionary of an integer's `LowerHex` is written where it's
   given,** as one of its `Debug` is: `{ fmt: (value, options) => .. }`.
+
+## Amendment: the default is the consumer's own ([0914](0914-a-librarys-generic-function-is-its-programs.md))
+
+A library wrote each of its traits' defaults as a function for its
+consumers' impls, which its program doesn't, so its JS changed when
+another crate used it. Its JS is its program's now (ADR 0914, amended):
+the consumer whose impl doesn't write a default compiles the library's,
+from its MIR, as the same function over `Self`, `counter_double(self,
+SelfCounter)`, beside its impl, and its dictionary calls that.
+`@rust-js/std`'s provided methods are still its functions, compiled once
+for all (ADR 0561).

@@ -118,7 +118,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](0097-deref-and-marker-impls.md)
 - [0098 A destructor runs where rustc runs it, in a `finally`](0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing; amended: which type is inside itself is the drop query's; amended by 0914: a library's function is given the drops its crate's calls give it)*
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended by 0791: a handle reaches its place once, and stores as its storage says; extended by 0897: a parameter's index, and a `RefCell` guard's element)*
-- [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name; amended: a library trait's method as a value is its impl's)*
+- [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name; amended: a library trait's method as a value is its impl's; amended by 0914: a library exports what its program does, a consumer compiling the impls and copies it needs more of)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
 - [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0860: JS's iterator protocol, `js::Iterator`)*
 - [0103 The runtime is a package, `@rust-js/runtime`, as ReScript's is](0103-runtime-package.md) *(amended by 0919: it spreads only arrays, so an app's loose transforms leave its answers)*
@@ -204,7 +204,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0182 Boundary matrices: each operation on the values where implementations go wrong](0182-boundary-matrices.md)
 - [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](0183-code-point-order-and-trim.md)
 - [0184 `ok_or_else` keeps its value, a branch's operand is dropped in its branch, and `by_ref()` of the crate's iterator](0184-bitflags-gaps.md)
-- [0185 A library's trait's defaults are its functions over `Self`](0185-library-trait-defaults.md)
+- [0185 A library's trait's defaults are its functions over `Self`](0185-library-trait-defaults.md) *(amended by 0914: a consumer compiles a library's trait's default its impl calls)*
 - [0186 What another crate's derive writes is the crate's own code](0186-other-crates-derives.md)
 - [0187 A writer's `Err(fmt::Error)` is thrown, with what it wrote, and each consumer takes it as std's does](0187-fmt-error.md)
 - [0188 A `Duration` is its nanoseconds, a BigInt](0188-duration.md)
@@ -699,7 +699,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md) *(extended by 0912: std's struct folds by its compiled `fold`; a `&mut I` steps by what std passes on)*
 - [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md) *(extended by 0913: std's generic `Try` compiles, held `Skip` and `Take` are std's)*
 - [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
-- [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md)
+- [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md) *(amended: its trait impls and copies are its program's too, a consumer compiling what it asks more of)*
 - [0915 What's held to be cloned is std's struct](0915-what-s-held-to-be-cloned-is-std-s-struct.md)
 - [0916 `rust-js test` runs a crate's `#[test]`s as JS, through Cargo](0916-rust-js-test-runs-a-crates-tests-as-js.md) *(amended: a unit's directory is Cargo's to give)*
 - [0917 A held `StepBy` is std's, a precondition check never runs, and a std struct is the JS iterator it is where it's first one](0917-a-held-step-by-is-std-s.md)
