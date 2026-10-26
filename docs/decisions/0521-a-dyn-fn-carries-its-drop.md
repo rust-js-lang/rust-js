@@ -1,7 +1,8 @@
 # 0521. A `dyn Fn` carries its drop
 
 Status: Accepted. Extends [0484](0484-a-returned-closure-carries-its-drop.md)
-and [0098](0098-destructors.md).
+and [0098](0098-destructors.md). Amended: a type parameter's function is
+one that may be, below.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.
@@ -76,3 +77,15 @@ a function its body has no name for.
 A crate using a library takes it to hand what the items of its the
 crate uses reach, its `impl Fn`, a `dyn Fn` or an `Rc` in what it exports,
 not anything: a library of a `bool` static hands none.
+
+## Amendment: a type parameter's function is one that may be (ADR 0626, amended)
+
+A function made a `dyn Fn` is taken to be a type parameter's, which may
+be any closure the crate makes, only where it may be: a type parameter's
+own, `F`, or a closure that captures a value of one. A closure of a
+generic function's that captures none, React's `chain_thenable_value<T>`'s
+`move |resolve| listeners.borrow_mut().push(resolve)`, drops what it
+captures, which the drop query answers; a `dyn Fn` made another is a
+function already, whose own coercion answers. Held by the corpus's
+`dyn_fn_generic_closure_drops` against native Rust, and ADR 0626's
+amendment's tests and mutations.

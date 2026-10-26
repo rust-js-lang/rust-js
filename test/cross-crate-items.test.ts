@@ -606,3 +606,157 @@ pub fn run() -> u32 {
   const { run: ran } = await import(join(dir, "app", "lib.js"));
   expect(ran()).toBe(131);
 });
+
+// React's react_isomorphic and shared hand the reconciler `dyn Fn()`s, made
+// of none that drops, and the reconciler's chainThenableValue<T> boxes a
+// closure that holds only its listeners. Neither makes the crate's `dyn Fn`s
+// drop: a library's contract says whether it makes a `dyn Fn` of what
+// drops, and a closure of a generic function's is judged by what it holds
+// (ADRs 0521, 0626, amended).
+test("a library's dyn Fn drops in its consumer only where a library makes one of what drops", async () => {
+  const dir = fixture("cross-crate-dyn-fn-plain");
+  const { app } = compiled(dir, `pub fn call(f: &dyn Fn() -> u32) -> u32 {
+    f()
+}
+
+pub fn counter() -> Box<dyn Fn() -> u32> {
+    Box::new(|| 1)
+}
+
+// React's useReducer, a \`dyn Fn\` of its type parameters given on.
+pub fn use_reducer<S, A>(reducer: &'static dyn Fn(S, A) -> S, state: S, action: A) -> S {
+    reduce(reducer, state, action)
+}
+
+fn reduce<S, A>(reducer: &dyn Fn(S, A) -> S, state: S, action: A) -> S {
+    reducer(state, action)
+}
+
+// A closure that holds a type parameter's value, made no \`dyn Fn\`.
+pub fn repeat<T: Clone>(value: T, n: usize) -> Vec<T> {
+    (0..n).map(move |_| value.clone()).collect()
+}
+`, `use std::cell::RefCell;
+use std::rc::Rc;
+
+type Listener = Rc<dyn Fn()>;
+
+pub fn controller() -> (Box<dyn Fn(Listener)>, Box<dyn Fn() -> u32>) {
+    let listeners: Rc<RefCell<Vec<Listener>>> = Rc::new(RefCell::new(Vec::new()));
+    let add: Box<dyn Fn(Listener)> = {
+        let listeners = Rc::clone(&listeners);
+        Box::new(move |listener| listeners.borrow_mut().push(listener))
+    };
+    let abort: Box<dyn Fn() -> u32> = Box::new(move || {
+        let count = listeners.borrow().len();
+        for index in 0..count {
+            let listener = Rc::clone(&listeners.borrow()[index]);
+            listener();
+        }
+        dep::call(&|| count as u32) + dep::counter()() + dep::use_reducer(&|s: u32, a: u32| s + a, 1, 2)
+    });
+    (add, abort)
+}
+
+pub fn chained<T: Copy + 'static>(result: T) -> (T, Box<dyn Fn(Listener)>) {
+    let listeners: Rc<RefCell<Vec<Listener>>> = Rc::new(RefCell::new(Vec::new()));
+    (result, Box::new(move |listener| listeners.borrow_mut().push(listener)))
+}
+
+pub fn chained_count() -> u32 {
+    let (n, add) = chained(2);
+    add(Rc::new(|| {}));
+    n
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(false);
+  expect(app).not.toContain("strong");
+  expect(app).not.toContain("$dropping");
+  expect(app).not.toContain("$dispose");
+  const { controller, chainedCount } = await import(join(dir, "app", "lib.js"));
+  const [add, abort] = controller();
+  const heard: string[] = [];
+  add(() => heard.push("one"));
+  add(() => heard.push("two"));
+  expect([abort(), heard, chainedCount()]).toEqual([6, ["one", "two"], 2]);
+});
+
+// And where a library makes a `dyn Fn` of a closure that holds a value with
+// a destructor, its contract says so, and the crate's `dyn Fn`s carry their
+// drops: the one it hands the crate is dropped where Rust drops it.
+test("a library's dyn Fn of what drops is dropped where its consumer drops it", async () => {
+  const dir = fixture("cross-crate-dyn-fn-drops");
+  const { app } = compiled(dir, `pub struct Loud(pub u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+pub fn loud(n: u32) -> Box<dyn Fn() -> u32> {
+    let loud = Loud(n);
+    Box::new(move || {
+        let loud = &loud;
+        loud.0 + 1
+    })
+}
+`, `pub fn run(n: u32) -> u32 {
+    let f = dep::loud(n);
+    let value = f();
+    println!("called {value}");
+    value
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(true);
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const { run } = await import(join(dir, "app", "lib.js"));
+    expect(run(4)).toBe(5);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["called 5", "dropped 4"]);
+});
+
+// A library that makes no `dyn Fn` of what drops still drops one it's
+// given where Rust does: its callers' closures, unseen, may hold what has a
+// destructor (ADR 0521).
+test("a library drops a dyn Fn its consumer gives it, of what drops", async () => {
+  const dir = fixture("cross-crate-dyn-fn-given");
+  const { dep } = compiled(dir, `pub fn call_boxed(f: Box<dyn Fn() -> u32>) -> u32 {
+    let value = f();
+    println!("called {value}");
+    value
+}
+`, `pub struct Loud(pub u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+pub fn run(n: u32) -> u32 {
+    let loud = Loud(n);
+    dep::call_boxed(Box::new(move || {
+        let loud = &loud;
+        loud.0 + 1
+    }))
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(false);
+  expect(dep).toContain("$dispose(f)");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const { run } = await import(join(dir, "app", "lib.js"));
+    expect(run(7)).toBe(8);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["called 8", "dropped 7"]);
+});

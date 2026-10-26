@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                ref_cells: Default::default(),\n                impls: library.impls.into_iter().collect(),\n                ..Exports::default()\n            };\n            // Where",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
+  {
+    name: "library-fn-dyns-unread",
+    breaks: "a consumer reads no library's `makes_dropping_fn_dyns`, so a `dyn Fn` of what drops a library hands it is dropped as nothing (ADR 0626, amended)",
+    file: "src/library.rs",
+    find: "                makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,\n",
+    replace: "                makes_dropping_fn_dyns: false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+  },
 ];

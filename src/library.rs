@@ -212,6 +212,12 @@ pub struct Library {
     /// compiler wrote before is taken to.
     #[serde(default = "made_before")]
     pub makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Fn` of a function holding a value with a
+    /// destructor, or is handed one so by its own libraries, as a program
+    /// would (ADR 0626, amended): a `dyn Fn` it hands a consumer may then
+    /// hold one. A library a compiler wrote before is taken to.
+    #[serde(default = "made_before")]
+    pub makes_dropping_fn_dyns: bool,
     /// The bindings its modules hold (ADR 0633). A library a compiler
     /// wrote before held none a consumer read through it.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -358,6 +364,8 @@ pub struct Exports {
     pub writers_take_options: bool,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
+    pub makes_dropping_fn_dyns: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
     /// What it does with its `RefCell`s (ADR 0863).
@@ -425,6 +433,7 @@ impl Dependencies {
                 crate_hash: library.crate_hash,
                 keeps_capacity: library.keeps_capacity,
                 makes_dropping_anys: library.makes_dropping_anys,
+                makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
                 writers_take_options: library.writers_take_options,
                 identities: library.identities.into_iter().collect(),
                 fields: library
@@ -520,6 +529,7 @@ impl Dependencies {
             builtin: true,
             keeps_capacity: library.keeps_capacity,
             makes_dropping_anys: library.makes_dropping_anys,
+            makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
             writers_take_options: library.writers_take_options,
             identities: library.identities.into_iter().collect(),
             fields: library

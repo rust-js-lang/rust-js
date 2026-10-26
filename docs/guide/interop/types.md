@@ -1167,6 +1167,13 @@ export function share(doc) {
   that its generic function is given, `then(move |_| ..)`'s, nor of a
   `bool` static's
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
+  A `dyn Fn` carries a drop, `$dropping(f, drop)`, only where the crate
+  makes one of a function holding a value with a destructor, a generic
+  function's closure by what it captures, or a library hands it one whose
+  contract says the library makes one so: React's reconciler's `Rc<dyn
+  Fn()>` listeners are an array of functions beside `react`'s `dyn Fn`s
+  ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md),
+  [ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md), amended).
 - **An `Rc` is `js::Defined` as what it points at is**, as a `Box` is, so
   a `WeakMap` or a `Map` holds one, `WeakMap<JsObject, Rc<CacheNode>>`,
   the value itself, which its `get` gives back as a clone shares it. A

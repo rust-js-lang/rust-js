@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "        (false && !id.is_local()).then_some(imp)\n",
     tests: ["test/crates.test.ts", "-t", "may fail is one its consumer"],
   },
+  {
+    name: "library-fn-dyns-unwritten",
+    breaks: "a library's contract says it makes no `dyn Fn` of what drops, though it does, so its consumer drops the one it's handed as nothing (ADR 0626, amended)",
+    file: "src/lower/library.rs",
+    find: "        makes_dropping_fn_dyns: *makes_dropping_fn_dyns,\n",
+    replace: "        makes_dropping_fn_dyns: false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+  },
 ];

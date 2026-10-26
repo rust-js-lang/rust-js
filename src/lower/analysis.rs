@@ -794,13 +794,16 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
-    // A `dyn Fn` a library hands the crate may hold one already (ADR 0626).
-    if !closure_facts.fn_dyns_drop
-        && (reached.fn_dyns
-            || closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, reached.functions), |ty| {
-                super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
-            }))
-    {
+    // Whether the crate makes a `dyn Fn` of a function holding a value with
+    // a destructor, or a library hands it one that may hold one, as its
+    // contract says (ADR 0626, amended): what a program's `dyn Fn`s drop
+    // by, and what a library's contract says of it. A library's drop
+    // anyway: its callers' closures are unseen.
+    closure_facts.makes_dropping_fn_dyns = reached.fn_dyns && foreign.makes_dropping_fn_dyns()
+        || closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, reached.functions), |ty| {
+            super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
+        });
+    if closure_facts.makes_dropping_fn_dyns || library {
         closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts);
     }

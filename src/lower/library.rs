@@ -55,6 +55,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) writers_take_options: bool,
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub(super) makes_dropping_anys: bool,
+    /// Whether it makes a `dyn Fn` of what drops (ADR 0626, amended).
+    pub(super) makes_dropping_fn_dyns: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
     /// What it does with its `RefCell`s (ADR 0863).
@@ -165,6 +167,7 @@ pub(super) fn exports<'tcx>(
         keeps_capacity,
         writers_take_options,
         makes_dropping_anys,
+        makes_dropping_fn_dyns,
         counted,
         ref_cells: _,
         fields: _,
@@ -256,6 +259,7 @@ pub(super) fn exports<'tcx>(
         keeps_capacity: *keeps_capacity,
         writers_take_options: *writers_take_options,
         makes_dropping_anys: *makes_dropping_anys,
+        makes_dropping_fn_dyns: *makes_dropping_fn_dyns,
         held,
         counted_rcs: {
             let mut shapes: Vec<RcShape> = match counted.all {
@@ -616,6 +620,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// crate may be handed, or catch as what unwound (ADR 0691, amended)?
     pub(super) fn makes_dropping_anys(&self) -> bool {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_anys)
+    }
+
+    /// Does any of the libraries make a `dyn Fn` of what drops, or is handed
+    /// one so, which a `dyn Fn` it hands the crate may then be (ADR 0626,
+    /// amended)?
+    pub(super) fn makes_dropping_fn_dyns(&self) -> bool {
+        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_fn_dyns)
     }
 
     /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?

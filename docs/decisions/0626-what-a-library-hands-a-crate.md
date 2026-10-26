@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0521](0521-a-dyn-fn-carries-its-drop.md) and
 [0523](0523-libraries-share-one-counted-rc.md), whose "a crate using a
 library" this narrows to what it uses of it. Amended: a closure of the
-crate's a library's function is given hands nothing, below.
+crate's a library's function is given hands nothing, below; and a
+library's `dyn Fn` drops where a library makes one of what drops, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R where it was wrong,
 a library's `dyn Fn` dropped as nothing; else none: a refusal lifted.
@@ -103,3 +104,63 @@ crate's closures that drops is made a `dyn Fn`, every `dyn Fn` does.
   library's binding hands the crate nothing": the shim's listeners an
   array, no `strong` nor `$dropping`, its listeners run.
 - Mutation `crate-closure-taken-for-the-librarys` (`library.rs`).
+
+## Amendment: a library's `dyn Fn` drops where a library makes one of what drops
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; what changes is
+which representation is taken, each correct.
+
+The amendment above left React's port as it was: its
+ReactFiberCacheComponent shim still `{ value, strong, weak }`,
+`$rcClone`, `$rcDrop` and `$dropping`, and ReactFiberTransition's
+`ReactSharedInternals.G` chain `$dispose`s and `cancel$0$live`. Two
+things still made every `dyn Fn` of the reconciler drop:
+
+- **`react` and `shared` hand it `dyn Fn()`s**, `useMemo`'s `create`,
+  `enqueueTask`'s callback, which a library's `dyn Fn` "may already hold
+  one" took to drop. A library's own `dyn Fn`s drop, as its callers'
+  closures are unseen; but which of the program's do is the program's to
+  know: the crates that make them, each of which sees its own coercions.
+- **Its `chain_thenable_value<T>` boxes `move |resolve|
+  listeners.borrow_mut().push(resolve)`**, a closure that holds only an
+  `Rc` of its own, which ADR 0521's rule took for a type parameter's
+  function, its type naming `T` among its parent's generic arguments.
+
+**A library's contract says whether it makes a `dyn Fn` of a function
+holding a value with a destructor, or is handed one so by its own
+libraries, as a program would find it** (`makes_dropping_fn_dyns`, as
+`makes_dropping_anys` says of a `dyn Any`, ADR 0691; a library a
+compiler wrote before is taken to): **a `dyn Fn` a library hands the
+crate drops only where one says so.** The library's own `dyn Fn`s still
+drop, whatever it says, as before. And **a function made a `dyn Fn` is a
+type parameter's only where it may be**: a type parameter's own, `F`, or
+a closure that captures a value of one; not a closure of a generic
+function's that captures none, which its captures answer for, nor a `dyn
+Fn` made another, `&dyn Fn(S, A) -> S` given on as React's `useReducer`
+gives its reducer, a function already, whose own coercion answers (ADR
+0521, amended).
+
+React's reconciler's shim is then the JS a person writes, its listeners
+an array, and the `ReactSharedInternals.G` chain plain functions: `react`
+and `shared` say they make no `dyn Fn` of what drops.
+
+What still holds: whether a `dyn Fn` drops is one answer for the crate,
+not one per `dyn Fn` type: where one of the crate's closures that drops
+is made a `dyn Fn`, every `dyn Fn` does. Here none is.
+
+### What holds it
+
+- `test/cross-crate-items.test.ts`, "a library's dyn Fn drops in its
+  consumer only where a library makes one of what drops": the library's
+  contract says it makes none, the crate's shim and a generic function's
+  boxed closure carry no drop, and they run; "a library's dyn Fn of what
+  drops is dropped where its consumer drops it", whose contract says it
+  does, its value dropped after its call as Rust drops it; and "a library
+  drops a dyn Fn its consumer gives it, of what drops".
+- Corpus `dyn_fn_generic_closure_drops`, against native Rust: a generic
+  function's closures, of what they capture.
+- Mutations `library-fn-dyns-always-drop`, `library-fn-dyns-never-drop`,
+  `library-fn-dyns-drop-unless-made` (`analysis.rs`),
+  `library-fn-dyns-unwritten` (`lower/library.rs`),
+  `library-fn-dyns-unread` (`library.rs`), `generic-closure-holds-a-param`
+  and `dyn-made-dyn-holds-a-param` (`analysis/closures.rs`).

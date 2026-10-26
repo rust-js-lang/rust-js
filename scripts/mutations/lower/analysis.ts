@@ -335,4 +335,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
+  {
+    name: "library-fn-dyns-always-drop",
+    breaks: "a `dyn Fn` a library hands the crate drops though no library makes one of what drops, so the crate's own `Rc<dyn Fn()>` listeners are `{ value, strong, weak }` (ADR 0626, amended)",
+    file: "src/lower/analysis.rs",
+    find: "    closure_facts.makes_dropping_fn_dyns = reached.fn_dyns && foreign.makes_dropping_fn_dyns()\n",
+    replace: "    closure_facts.makes_dropping_fn_dyns = reached.fn_dyns\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn drops in its consumer only where"],
+  },
+  {
+    name: "library-fn-dyns-never-drop",
+    breaks: "a `dyn Fn` a library makes of a closure holding a value with a destructor, handed to the crate, is dropped as nothing (ADR 0626, amended)",
+    file: "src/lower/analysis.rs",
+    find: "    closure_facts.makes_dropping_fn_dyns = reached.fn_dyns && foreign.makes_dropping_fn_dyns()\n",
+    replace: "    closure_facts.makes_dropping_fn_dyns = false && reached.fn_dyns\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+  },
+  {
+    name: "library-fn-dyns-drop-unless-made",
+    breaks: "a library whose own code makes no `dyn Fn` of what drops leaves its `dyn Fn`s dropping nothing, though its callers' closures may (ADR 0521)",
+    file: "src/lower/analysis.rs",
+    find: "    if closure_facts.makes_dropping_fn_dyns || library {\n",
+    replace: "    if closure_facts.makes_dropping_fn_dyns {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a library drops a dyn Fn its consumer gives it"],
+  },
 ];

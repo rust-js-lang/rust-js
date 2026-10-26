@@ -508,7 +508,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0622 A global binding a module names is its `const`](0622-a-global-binding-a-module-names-is-its-const.md)
 - [0624 `js::is_defined` of a path of bindings asks each part](0624-is-defined-of-a-path-of-bindings.md) *(amended by 0645: a static of a path too; extended by 0891: a constructor its last step)*
 - [0625 A default constant is its value; a comment right above the first code is its](0625-a-default-constant-is-its-value.md) *(amended: one its module reads is declared, then exported; by 0773: one a `pub use` of its module renames too)*
-- [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md) *(amended: a closure of the crate's a library's function is given hands nothing)*
+- [0626 What a library hands a crate is what its items reach](0626-what-a-library-hands-a-crate.md) *(amended: a closure of the crate's a library's function is given hands nothing; amended: a library's `dyn Fn` drops where a library makes one of what drops)*
 - [0627 A number literal keeps its base and its exponent](0627-a-number-literal-keeps-its-base-and-exponent.md)
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
 - [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next)*
@@ -641,6 +641,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md) *(extended by 0879: of what a `move` closure captured)*
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
 - [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
+- [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
 - [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0857 A function's own nullable parameter is `null` where it's given or set `None`](0857-a-functions-own-nullable-parameter-is-set-null.md)
 - [0858 A comment at a body's end is there, before its `None` or after its last code](0858-a-comment-at-a-bodys-end-is-there.md)
@@ -819,7 +820,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0518 A held `filter_map`, and `$closing` a JS iterator](0518-filter-map-held-and-closing-iterators.md)
 - [0519 A `Cell` or a `OnceCell` of what has a destructor](0519-a-cell-of-what-has-a-destructor.md)
 - [0520 A counted `Rc<dyn T>` is its pair](0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
-- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md) *(amended by 0873: one handed to JS carries none, and an `FnOnce`'s own body drops what it took)*
+- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md) *(amended by 0873: one handed to JS carries none, and an `FnOnce`'s own body drops what it took; amended: a type parameter's function is one that may be)*
 - [0522 A closure cloned apart is made again](0522-a-closure-cloned-apart-is-made-again.md)
 - [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none; by 0852: the types each counts, which its contract lists)*
 - [0524 A library's `dyn` in its consumer](0524-a-librarys-dyn-in-its-consumer.md)

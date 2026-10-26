@@ -1428,6 +1428,7 @@ pub fn lower_crate<'tcx>(
                         keeps_capacity,
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
+                        makes_dropping_fn_dyns: closure_facts.makes_dropping_fn_dyns,
                         counted: &counted,
                         ref_cells: ref_cell_facts(),
                         fields: ref_cells.get().map(|found| found.fields(tcx)).unwrap_or_default(),

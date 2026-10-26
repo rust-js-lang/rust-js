@@ -18,6 +18,10 @@ pub struct ClosureFacts {
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be.
     pub fn_dyns_drop: bool,
+    /// Whether the crate makes one so itself, or a library hands it one
+    /// that may be, as a program's are: what a library's contract says,
+    /// whose own `dyn Fn`s drop anyway (ADR 0626, amended).
+    pub makes_dropping_fn_dyns: bool,
     /// Whether a value with a destructor is made a `dyn Any`, which then
     /// drops it: what unwound, a panic's message or what JS threw, drops
     /// nothing, nor a `dyn Any` of anything else (ADR 0691).
@@ -67,7 +71,8 @@ impl ClosureFacts {
             })
             .collect();
         ClosureFacts {
-            fn_dyns_drop: library,
+            fn_dyns_drop: false,
+            makes_dropping_fn_dyns: false,
             any_dyns_drop: false,
             made_fn_dyns,
             handed_fn_dyns,
@@ -162,13 +167,29 @@ pub(super) fn fn_dyns_drop<'tcx>(
                 let id = body.def_id;
                 tcx.is_closure_like(id) && {
                     let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
-                    drops(ty) || params_may_drop && ty.has_non_region_param()
+                    drops(ty) || params_may_drop && holds_a_param(ty)
                 }
             })
     };
     (all_bodies.iter())
         .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-        .any(|(from, handed)| !handed && (drops(from) || from.has_non_region_param() && closure_drops()))
+        .any(|(from, handed)| !handed && (drops(from) || holds_a_param(from) && closure_drops()))
+}
+
+/// Whether a function of type `ty` may be one of a type parameter's,
+/// whose drop only its callers know: a type parameter's own, `F`, or a
+/// closure that captures one. Not a closure of a generic function's that
+/// holds none, `move |resolve| listeners.borrow_mut().push(resolve)` in
+/// `chain_thenable_value<T>`, whose type names `T` among its parent's
+/// generic arguments but holds what it captures, which `drops` answers
+/// for; nor a `dyn Fn` made another, `&dyn Fn(S, A) -> S`, a function
+/// already, whose own coercion answers (ADR 0521, amended).
+fn holds_a_param(ty: Ty<'_>) -> bool {
+    match ty.kind() {
+        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| t.has_non_region_param()),
+        ty::Dynamic(..) => false,
+        _ => ty.has_non_region_param(),
+    }
 }
 
 /// Whether any of `all_bodies` makes a value a `dyn Any` that `drops` says
