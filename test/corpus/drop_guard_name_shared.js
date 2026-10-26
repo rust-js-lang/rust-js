@@ -19,9 +19,8 @@ function main() {
   console.log(`${total}`);
   const fresh = (n) => {
     const counted = (n + 1) >>> 0;
-    const result = counted;
     console.log(`drop ${counted}`);
-    return result;
+    return counted;
   };
   console.log(`${fresh(1013)}`);
 }

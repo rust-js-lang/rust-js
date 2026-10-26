@@ -40,13 +40,12 @@ const Ends = {
 function main() {
   const loud = "fold";
   const value = [];
-  const captured = loud;
   try {
     const tags = Ends.taggedBack(
       { inner: { start: 0, end: 3 } },
       value,
       (v, t) => {
-        v.push([t, captured]);
+        v.push([t, loud]);
         return v;
       },
       { next: $rangeNext },

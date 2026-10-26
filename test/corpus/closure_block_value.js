@@ -19,8 +19,7 @@ function main() {
     console.log(`${r.strong}`);
     const d = "in block";
     console.log("making");
-    const captured = d;
-    const f = () => $byteLen(captured);
+    const f = () => $byteLen(d);
     console.log(`drop ${d}`);
     console.log(`call ${f()}`);
     console.log("end");

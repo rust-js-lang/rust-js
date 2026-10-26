@@ -142,3 +142,169 @@ pub fn run(n: u32) -> u32 {
   expect(later.js).toContain("const restore = previous;");
   expect(later.js).toContain("console.log(`restore ${restore}`);");
 });
+
+// Its port's `Drop` takes what the guard holds, `set_current_fiber(
+// self.0.take())`, which writes the field `None` as it reads it: the
+// guard's dropped once, in the `finally`, and nothing reads it after, so
+// the write goes, and the guard is its field's variable, as upstream's
+// `finally { setCurrentFiber(previousFiber); }` (ADR 0705, amended). A
+// `Drop` that reads the field again after taking it keeps the write, and
+// so does a scope that writes it before its drop reads it; a guard made in
+// a loop is made fresh each time round.
+test("a guard's drop that takes its field reads the variable it was made of", async () => {
+  const { js, dir } = compiled(
+    "guard-take",
+    runWithFiber("struct Restore(Option<String>);", "set_current_fiber(self.0.take());"),
+  );
+  expect(js).toContain(`export function runWithFiberInDev(fiber, wrap, callback) {
+  const previousFiber = current;
+  setCurrentFiber(fiber);
+  try {
+    if (wrap) {
+      return callback();
+    }
+    return callback();
+  } finally {
+    setCurrentFiber(previousFiber);
+  }
+}
+`);
+  await restoresEach(dir);
+  const named = compiled(
+    "guard-take-named",
+    runWithFiber("struct Restore {\n    previous: Option<String>,\n}", "set_current_fiber(self.previous.take());").replace(
+      "let _restore = Restore(previous_fiber);",
+      "let _restore = Restore { previous: previous_fiber };",
+    ),
+  );
+  expect(named.js).toContain("  } finally {\n    setCurrentFiber(previousFiber);\n  }\n");
+  await restoresEach(named.dir);
+  const again = compiled(
+    "guard-take-again",
+    `struct Twice(Option<String>);
+
+impl Drop for Twice {
+    fn drop(&mut self) {
+        let first = self.0.take();
+        let again = self.0.take();
+        println!("{first:?} {again:?}");
+    }
+}
+
+pub fn twice(name: Option<String>) {
+    let _t = Twice(name);
+}
+
+struct TwiceNamed {
+    held: Option<String>,
+}
+
+impl Drop for TwiceNamed {
+    fn drop(&mut self) {
+        let first = self.held.take();
+        let again = self.held.take();
+        println!("{first:?} {again:?}");
+    }
+}
+
+pub fn twice_named(v: Option<String>) {
+    let _t = TwiceNamed { held: v };
+}
+
+struct More(Option<bool>);
+
+impl Drop for More {
+    fn drop(&mut self) {
+        println!("more {:?}", self.0.take());
+    }
+}
+
+pub fn flushed(work: fn()) {
+    let mut guard = More(Some(true));
+    work();
+    guard.0 = None;
+    work();
+}
+
+pub fn looped(names: Vec<String>) {
+    for name in names {
+        let _more = More(Some(name.is_empty()));
+        println!("{name}");
+    }
+}
+`,
+  );
+  expect(again.js).toContain("  _t[0] = undefined;\n  const again = _t[0];\n");
+  expect(again.js).not.toContain("_more[0] = undefined;");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const lib = await import(join(again.dir, "lib.js"));
+    lib.twice("a");
+    lib.twiceNamed("n");
+    lib.flushed(() => {});
+    lib.looped(["", "b"]);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(['Some("a") None', 'Some("n") None', "more None", "", "more Some(true)", "b", "more Some(false)"]);
+});
+
+// A copy the drop makes of its guard's field, `let old = self.0.clone();`,
+// is the variable the field reads as, at each place the guard's dropped;
+// where the drop names another of its own so, a closure's parameter, the
+// copy is its own (ADR 0705, amended).
+test("a drop's copy of its guard's field reads as the field's variable", async () => {
+  const { js, dir } = compiled(
+    "guard-field-copies",
+    `struct Restore(Option<String>);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        let old = self.0.clone();
+        println!("{old:?}");
+    }
+}
+
+pub fn branches(c: bool, n: Option<String>) {
+    let g = Restore(n);
+    if c {
+        drop(g);
+        println!("a");
+    } else {
+        println!("b");
+    }
+}
+
+struct Named(Option<String>);
+
+impl Drop for Named {
+    fn drop(&mut self) {
+        let old = self.0.take();
+        let f = |old: Option<String>| old.map(|o| o.len());
+        println!("{:?} {old:?}", f(Some("xy".to_string())));
+    }
+}
+
+pub fn named(n: Option<String>) {
+    let _g = Named(n);
+}
+`,
+  );
+  expect(js).not.toContain("g[0]");
+  expect(js.slice(0, js.indexOf("function named")).match(/const old/g)).toBeNull();
+  expect(js).toContain("  const old = n;\n  const f = (old) =>");
+  const logged: unknown[] = [];
+  const log = console.log;
+  console.log = (...args: unknown[]) => logged.push(args.join(" "));
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.branches(true, "x");
+    lib.branches(false, "y");
+    lib.named("abc");
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(['Some("x")', "a", "b", 'Some("y")', 'Some(2) Some("abc")']);
+});

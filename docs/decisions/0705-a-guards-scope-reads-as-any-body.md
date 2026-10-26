@@ -7,7 +7,9 @@ and [0589](0589-a-drop-dropped-once-is-its-body-there.md), whose guard
 was its fields only where no name of the function was a field's. Amended
 below: a `while`'s test the scope held apart joins the loop's, and a loop
 that ends a block MIR made breaks as a loop; a one-field tuple guard's
-field of a variable is that variable too. Extended by
+field of a variable is that variable too; a `Drop`'s write of its guard's
+field that nothing reads after goes, and its copy of one is what the field
+reads as. Extended by
 [0859](0859-a-loop-that-ends-a-branch-breaks-as-a-loop.md): each of the
 loop's `break`s of the block, as a `loop` that ends an `if`'s branch has.
 
@@ -270,3 +272,71 @@ variable reads as that variable", run in JS, and its variable set later;
 the corpus case `drop_guard_early_return` against native Rust; and the
 mutations `one-field-variable-copied`, `one-field-variable-set-later` and
 `one-field-variable-guard-kept` (`drops/inlined.rs`).
+
+## Amendment: a drop's write nothing reads after goes, and its copy of a field is the field
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same values
+read and the same calls, in the same order; only how the JS reads changes.
+
+React's port of `runWithFiberInDEV` restores the fiber with
+`set_current_fiber(self.0.take())`, std's `Option::take`, which writes
+the field `None` as it reads it. The guard's `Drop`, its body in the
+`finally`, was:
+
+```js
+const _restore = [previousFiber];
+try {
+  ..
+} finally {
+  const old = _restore[0];
+  _restore[0] = undefined;
+  setCurrentFiber(old);
+}
+```
+
+the guard an array for a write nothing reads, and `old` a copy of its
+field, where upstream's `finally` is `setCurrentFiber(previousFiber);`.
+
+**Where a guard's `Drop` is written, a write of one of its fields, of a
+value that does nothing, that nothing reads after, goes**
+(`drops/inlined.rs::unread_writes`): a value is dropped once, and once its
+`Drop` and its fields' drops have run, nothing reads it. What's after is
+what runs after, as JS's statements say: the rest of the block, what a
+`try`'s `finally` reads after its block, the branches of an `if`, a
+labeled block, and the body of a loop the guard is made in, fresh each
+time round; anything else that may run again, or after a `catch`, keeps
+its writes. Then the guard is taken apart as one nothing writes.
+
+**A copy of a guard's field nothing writes, `const old = _restore[0];`,
+is what the field reads as**, the variable it was made of or its `const`,
+where each declaration of `old` in the function is such a copy, at each
+place the guard's dropped (`copies_read_as`): neither is set once it's
+made. A name the drop gives something else too, a closure's parameter,
+keeps its copy. A copy of a field written after it, a first
+`self.held.take()` of two, is what the field held then, a `const` of its
+own.
+
+```js
+try {
+  ..
+} finally {
+  setCurrentFiber(previousFiber);
+}
+```
+
+Corpus programs read shorter: a closure's capture of a guard's field,
+`const captured = d; const f = () => $byteLen(captured);`, is `() =>
+$byteLen(d)`, and `const result = counted; ..; return result;` is
+`return counted;`, in five more.
+
+Held by `test/lowering-drop-guards.test.ts`, "a guard's drop that takes
+its field reads the variable it was made of", run in JS (a tuple's and a
+named field's; a second `take()` that reads the write, a write in the
+scope its `finally` reads, a guard made in a loop) and "a drop's copy of
+its guard's field reads as the field's variable" (a copy at each of two
+drops; one whose name a closure's parameter shares); the corpus case
+`drop_guard_early_return` against native Rust; and the mutations
+`taken-field-write-kept`, `field-write-read-after-dropped`,
+`field-write-read-in-finally-dropped`, `field-write-in-loop-kept`,
+`field-copy-named-elsewhere-read`, `named-field-copy-kept`,
+`written-field-copy-read-as` and `one-field-copy-kept` (`drops/inlined.rs`).

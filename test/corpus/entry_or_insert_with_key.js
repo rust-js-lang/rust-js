@@ -21,9 +21,8 @@ function main() {
   const m = new $KeyMap();
   for (const [i, w] of ["a", "b", "a"].entries()) {
     try {
-      const captured = w;
       const entry = $entry(m, [1, w]);
-      $orInsertWithKey(entry._0[0], entry._0[1], (k) => `${k[1]}-${captured}-${i}`);
+      $orInsertWithKey(entry._0[0], entry._0[1], (k) => `${k[1]}-${w}-${i}`);
       const v = $mutGet(entry._0[0], entry._0[1]);
       v.value += "!";
     } finally {

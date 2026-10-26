@@ -21,16 +21,13 @@ function current() {
 function runWith(name, wrap, callback) {
   const previous = current();
   setCurrent(name);
-  const _restore = [previous];
   try {
     if (wrap) {
       return callback();
     }
     return callback();
   } finally {
-    const old = _restore[0];
-    _restore[0] = undefined;
-    setCurrent(old);
+    setCurrent(previous);
   }
 }
 

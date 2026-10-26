@@ -115,6 +115,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             // named twice, in each closure where it's its own.
             for guard in given {
                 if alone(&function.params, &made, &guard, true) {
+                    unread_writes(&mut made, &guard, false);
                     fields_of(&mut made, &function.params, &guard);
                     one_field_of(&mut made, &function.params, &guard);
                     continue;
@@ -123,6 +124,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
                     if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind
                         && alone(params, body, &guard, false)
                     {
+                        unread_writes(body, &guard, false);
                         fields_of(body, params, &guard);
                         one_field_of(body, params, &guard);
                     }
@@ -202,6 +204,105 @@ fn unwrapped_tries(stmts: &mut Vec<Stmt>) {
         let n = block.len();
         stmts.splice(i..=i, block);
         i += n;
+    }
+}
+
+/// Of `stmts`, in which `guard` is made and dropped, each write of one of
+/// its fields that nothing reads after, `_restore[0] = undefined;` of a
+/// `Drop`'s `self.0.take()`: gone, as a guard is dropped once, and is
+/// nothing after (ADR 0705, amended). `read_after` says whether what runs
+/// after `stmts` may read it. Into a `try`, an `if` and a labeled block,
+/// and a loop's body where it's made, fresh each time round: what else
+/// runs again, or after a `catch`, is left as it is.
+fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: bool) {
+    let field = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Index(of, _) | ExprKind::Member(of, _)
+            if matches!(&of.kind, ExprKind::Var(v) if v == guard))
+    };
+    let mut i = stmts.len();
+    while i > 0 {
+        i -= 1;
+        if !read_after
+            && let StmtKind::Assign(target, value) = &stmts[i].kind
+            && field(target)
+            && !value.has_effects()
+            && js::mentions_in(&[StmtKind::Expr(value.clone()).at(value.span)], guard) == 0
+        {
+            stmts.remove(i);
+            continue;
+        }
+        let read = js::mentions_in(&stmts[i..=i], guard) > 0;
+        let made_in = |body: &[Stmt]| {
+            body.iter()
+                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == guard))
+        };
+        match &mut stmts[i].kind {
+            StmtKind::Try(block, finally) => {
+                unread_writes(finally, guard, read_after);
+                let read_finally = js::mentions_in(finally, guard) > 0;
+                unread_writes(block, guard, read_after || read_finally);
+            }
+            StmtKind::If(_, a, b) => {
+                if let Some(b) = b {
+                    unread_writes(b, guard, read_after);
+                }
+                unread_writes(a, guard, read_after);
+            }
+            StmtKind::Labeled(_, body) => unread_writes(body, guard, read_after),
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }
+                if made_in(body) =>
+            {
+                unread_writes(body, guard, false)
+            }
+            _ => {}
+        }
+        read_after |= read;
+    }
+}
+
+/// Each `const n = e;` of `body` of what `field` says is a read of a
+/// guard's field nothing writes, which reads as `v`, the variable it was
+/// made of or a `const` of its own, `const old = _restore[0];` of a
+/// `Drop`'s `self.0.take()`: `n` read as `v`, where each of `body`'s
+/// declarations of `n` is such a copy, as nothing sets either once it's
+/// made (ADR 0705, amended).
+fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str) {
+    let mut copies = Vec::new();
+    js::each_block_mut(body, &mut |stmts| {
+        for s in stmts.iter() {
+            if let StmtKind::Const(n, value) = &s.kind
+                && n != v
+                && field(value)
+            {
+                copies.push(n.clone());
+            }
+        }
+    });
+    copies.sort();
+    copies.dedup();
+    for n in copies {
+        // Each of its declarations a copy, in each place the drop is.
+        let mut declared = 0;
+        js::each_declared(body, &mut |name| declared += usize::from(name == n));
+        let mut copied = 0;
+        js::each_block_mut(body, &mut |stmts| {
+            copied += (stmts.iter())
+                .filter(|s| matches!(&s.kind, StmtKind::Const(name, value) if *name == n && field(value)))
+                .count();
+        });
+        if declared != copied {
+            continue;
+        }
+        js::each_block_mut(body, &mut |stmts| {
+            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if *name == n && field(value)));
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if let ExprKind::Var(name) = &mut e.kind
+                && *name == n
+            {
+                *name = v.to_string();
+            }
+        });
     }
 }
 
@@ -316,6 +417,16 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
         .any(|field| read_as(field).is_none() && (names.contains(&field.0) || !crate::names::is_identifier(&field.0)))
     {
         return;
+    }
+    // A copy of a field nothing writes, `const old = guard.previous;`, is
+    // what the field reads as.
+    for field in fields.iter().filter(|(key, _)| !written.contains(key)) {
+        let (key, v) = (&field.0, read_as(field).unwrap_or_else(|| field.0.clone()));
+        let read = |e: &Expr| {
+            matches!(&e.kind, ExprKind::Member(of, k)
+                if k == key && matches!(&of.kind, ExprKind::Var(g) if g == guard))
+        };
+        copies_read_as(body, &read, &v);
     }
     // Each read of a field the value it was made of, never `undefined`
     // where that's what was known of it and nothing sets it again: what a
@@ -460,6 +571,8 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
         (None, free) if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
         _ => guard.to_string(),
     };
+    // A copy of it, `const old = _restore[0];`, is what it reads as too.
+    copies_read_as(body, &field, &read);
     // Never `undefined` where that's what was known of it (ADR 0841,
     // amended), as `fields_of` reads one.
     js::each_expr_mut(body, &mut |e| {

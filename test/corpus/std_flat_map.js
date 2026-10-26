@@ -119,10 +119,9 @@ function main() {
   const tag = "tag";
   const value$5 = [1, 2];
   try {
-    const captured = tag;
     const tagged = Iterator.from(
       $iter(value$5).flatMap((n) => {
-        console.log(`map ${n} ${captured}`);
+        console.log(`map ${n} ${tag}`);
         return new Array(2).fill(n);
       }),
     );
