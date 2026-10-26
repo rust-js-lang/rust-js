@@ -1447,3 +1447,45 @@ fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -
     let branches: Vec<Stmt> = branches.cloned().collect();
     declared(&branches).any(|name| js::mentions_in(tail, name) > 0)
 }
+
+/// A flag a test made, as `matches!(..)` of a guard makes one, a block
+/// `bb: { if (t) { x = true; break bb; } x = false; }`: `x = t`, `!!t` of
+/// what's no `bool`, `!t` of its values the other way. No program writes a `bool`'s value with an
+/// `if`, clippy's `needless_bool`, so none's undone.
+pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &HashSet<String>) {
+    // `x = true;`'s `x` and `true`.
+    fn set(stmt: &Stmt) -> Option<(&str, bool)> {
+        match &stmt.kind {
+            StmtKind::Assign(target, value) => match (&target.kind, &value.kind) {
+                (ExprKind::Var(x), ExprKind::Bool(b)) => Some((x.as_str(), *b)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    for stmt in stmts {
+        if let StmtKind::Labeled(label, body) = &stmt.kind
+            && let [
+                Stmt {
+                    kind: StmtKind::If(test, then, None),
+                    ..
+                },
+                otherwise,
+            ] = &body[..]
+            && let [
+                then,
+                Stmt {
+                    kind: StmtKind::Break(Some(l)),
+                    ..
+                },
+            ] = &then[..]
+            && l == label
+            && let (Some((x, yes)), Some((y, no))) = (set(then), set(otherwise))
+            && x == y
+            && yes != no
+        {
+            let value = conditional(test.clone(), Expr::bool(yes), Expr::bool(no), booleans, false);
+            stmt.kind = StmtKind::Assign(Expr::var(x), value);
+        }
+    }
+}

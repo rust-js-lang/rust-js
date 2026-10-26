@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flag-given-first",
+    breaks: "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0928)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            && yes != no\n",
+    replace: "            && yes == no\n",
+    tests: ["test/corpus.test.ts", "-t", "^flag_of_a_guarded_match.rs$"],
+    snapshots: true,
+  },
+  {
     name: "same-test-strict-null-undefined",
     breaks: "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
     file: "src/lower/mir/tidy/branches.rs",

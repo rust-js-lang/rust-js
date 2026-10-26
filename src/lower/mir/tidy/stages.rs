@@ -364,6 +364,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| chained_checks(s))
             }),
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
+            // A flag a block MIR made gives, of a test one now, `bb: { if (a
+            // && b) { x = true; break bb; } x = false; }`: `x = a && b`, not
+            // a default given first then set.
+            pass("flag values", |b, h| {
+                js::statement_lists(b, &mut |s| flag_values(s, h.booleans))
+            }),
             // A value a block MIR made gives where nothing else does: given
             // first, and the block's `break`s that go where it ends anyway,
             // gone.
