@@ -670,8 +670,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(args))
             .ok()?;
-        let instance = crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, method, args).ok()??;
-        Some((method, args, instance.def_id()))
+        // Of a type only its bounds know, `U: From<T>`, no impl yet: the
+        // bound's method, its dictionary's.
+        let implementation = match crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, method, args) {
+            Ok(Some(instance)) => instance.def_id(),
+            _ if known_by_bounds(args.type_at(0)) => method,
+            _ => return None,
+        };
+        Some((method, args, implementation))
     }
     pub(in crate::lower) fn conversion(&self, adt: DefId, convert: StdItem, serialize: bool) -> Option<Ty<'tcx>> {
         struct Finder<'tcx> {

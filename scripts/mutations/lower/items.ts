@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-a-from-unbound",
+    breaks: "`x.into()` of a type parameter's target is its `From`'s where the function is bound `T: Into<U>`, whose `From` it has no dictionary of (#321)",
+    file: "src/lower/items.rs",
+    find: "                self.evidence_for(ty::TraitRef::new_from_args(self.tcx, from, args))\n                    .is_some()\n",
+    replace: "                from == from\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
+  },
+  {
+    name: "into-of-a-bound-not-redirected",
+    breaks: "`x.into()` whose `From` is a bound's, `U: From<T>`, isn't lowered as that bound's `from`, and is refused (#321)",
+    file: "src/lower/items.rs",
+    find: "        (self.is_rust_fn(implementation) || bound).then_some((method, args))\n",
+    replace: "        self.is_rust_fn(implementation).then_some((method, args))\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
+  },
+  {
     name: "load-reads-by-name",
     breaks: "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
     file: "src/lower/items.rs",

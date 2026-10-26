@@ -323,14 +323,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `Into::<U>::into` of a `T` as `<U as From<T>>::from`, and
-    /// `TryInto` as `TryFrom`, if that's a hand-written impl.
+    /// `TryInto` as `TryFrom`, if that's a hand-written impl, or a bound's
+    /// this function has of a type parameter, `U: From<T>`, its
+    /// dictionary's; not where it's bound `T: Into<U>`, that one's.
     pub(super) fn resolve_into(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
         let (method, args, implementation) = self.recognition().resolve_into(def_id, args)?;
-        self.is_rust_fn(implementation).then_some((method, args))
+        let bound = implementation == method
+            && (self.tcx.trait_of_assoc(method)).is_some_and(|from| {
+                self.evidence_for(ty::TraitRef::new_from_args(self.tcx, from, args))
+                    .is_some()
+            });
+        (self.is_rust_fn(implementation) || bound).then_some((method, args))
     }
 
     /// The function a call runs: the crate's impl a trait method resolves to,

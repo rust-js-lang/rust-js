@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-a-bound-target-unresolved",
+    breaks: "`x.into()` of a type parameter's target, `U: From<T>`, is refused, its `From` no impl to resolve (#321)",
+    file: "src/lower/recognition/traits.rs",
+    find: "            _ if known_by_bounds(args.type_at(0)) => method,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
+  },
+  {
     name: "trait-of-no-items-impl",
     breaks: "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
     file: "src/lower/recognition/traits.rs",

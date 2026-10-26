@@ -40,7 +40,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md)
-- [0052 The crate's own `Default`, `From` and `Clone`, and the trait ABI kept](0052-std-trait-impls.md)
+- [0052 The crate's own `Default`, `From` and `Clone`, and the trait ABI kept](0052-std-trait-impls.md) *(amended: `into()` of a type parameter's target is its bound's `from`)*
 - [0053 `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it](0053-partial-eq.md) *(amended: an item-by-item `==`'s arrow names are fresh)*
 - [0054 `Display`: a `fmt` returns the string it writes](0054-display.md)
 - [0055 The crate's own `Iterator` is a JS iterator](0055-iterator.md)

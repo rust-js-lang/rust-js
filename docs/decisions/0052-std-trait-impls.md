@@ -199,3 +199,18 @@ is changed as itself, `p.x = 2` of `a[0].as_mut()`'s `Point`, still copied.
 Held by `test/lowering-collections.test.ts`, "an option written through a
 &mut is no object changed in place", run, and the mutation
 `option-mut-changes-in-place`.
+
+## Amendment: `into()` of a type parameter's target is its bound's `from` (#321)
+
+`x.into()` is the `From::from(x)` it calls where that's the crate's own
+impl. Of a type parameter's target, `U: From<T>`, directly or through a
+supertrait, `trait MatrixElement: From<u8>`, there's no impl to resolve,
+and it was refused, though `U::from(x)` wasn't: TheAlgorithms/rust's
+matrix operations, `vec![0.into(); rows * cols]`. **It's the bound's
+`from`, its dictionary's, as `U::from(x)` is**: `TFromU8.from(1)`,
+`TElement.From().from(2)`. Only where the function has that bound: one
+bound `T: Into<U>` instead, either's `either_into`, has its `into`'s
+dictionary and none of a `From`. Held by the corpus case
+`into_a_bound_target` and the mutations `into-a-bound-target-unresolved`,
+`into-of-a-bound-not-redirected` and `into-a-from-unbound`.
+
