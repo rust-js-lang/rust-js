@@ -119,4 +119,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: refusals,
   },
+  {
+    name: "class-handle-this-unnamed",
+    breaks: "a handle a class's method hands on, `bump(&self.reads)`, reads `this` in its accessors, the handle's own, so the field is never set (#359)",
+    file,
+    find: "    if !kept {\n        return;\n    }\n",
+    replace: "    if kept || !kept {\n        return;\n    }\n",
+    tests: ["test/classes.test.ts", "-t", "Cell fields"],
+  },
 ];

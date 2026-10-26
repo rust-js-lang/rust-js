@@ -198,4 +198,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (&then, &x);\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
+  {
+    name: "read-handle-this-rooted-kept",
+    breaks: "a `&Cell` handle on a field of `this` read later is kept, not its place, `const reads = { get value() { .. } }` (#359)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This))\n",
+    replace: "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))\n",
+    tests: ["test/classes.test.ts", "-t", "Cell fields"],
+  },
 ];

@@ -807,7 +807,7 @@ pub fn lower_crate<'tcx>(
                         // (ADR 0761).
                         let member = super::classes::member(tcx, def_id);
                         if let Some(member) = member
-                            && let Err(what) = super::classes::as_member(member, &mut lowered.function)
+                            && let Err(what) = super::classes::as_member(member, owner, &mut lowered.function)
                         {
                             super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
                             failed = true;

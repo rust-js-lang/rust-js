@@ -262,3 +262,18 @@ trekhleb/javascript-algorithms' Comparator, read `!!this.lessThan(a, b) ||
 `this` as a variable's name. Held by `test/corpus/class_bool_methods.rs`
 and the mutations `receiver-booleans-unrenamed` and
 `field-path-not-of-this`.
+
+## Amendment: a handle on `this`'s field reads the instance (#359)
+
+Case C ([0262](0262-when-rust-and-js-disagree.md)): results changed. With
+a method's `self` `this` before tidy (#344), `self.reads.set(..)` of a
+`Cell` field kept its handle, `({ get value() { return this.reads; }, ..
+}).value = ..`, whose `this` is the handle: the field was never set.
+Tidy's `read_handles` takes a handle's place where it's rooted at `this`,
+as it does at a variable, so the method reads `this.reads = ..` again.
+A handle the method keeps, one it hands on, `bump(&self.reads)`, reads
+the instance by a name of its class's, `const counted = this;`, outside
+its accessors (`this_outside_accessors`). Held by `classes.test.ts`'s "a
+class's method sets its Cell fields on this",
+`test/corpus/class_cell_fields.rs` and the mutations
+`class-handle-this-unnamed` and `read-handle-this-rooted-kept`.

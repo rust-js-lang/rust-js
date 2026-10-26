@@ -434,3 +434,63 @@ pub fn real(re: f64) -> Complex {
   const { unit } = await import(join(dir, "lib.js"));
   expect(unit(1)).toBeCloseTo(1, 12);
 });
+
+// A class's method setting a `Cell` field, `self.reads.set(..)`, sets
+// `this.reads` (#359): no handle whose `get value() { return this.reads; }`
+// would read the handle's own `reads`. And one it hands on, `bump(&self.reads)`,
+// is on the instance's field, its `this` named outside the accessors.
+test("a class's method sets its Cell fields on this", async () => {
+  const { js, dir } = compiled("class-cell-field", `use std::cell::Cell;
+
+fn bump(count: &Cell<u32>) {
+    count.set(count.get() + 1);
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Counted {
+    row: i32,
+    reads: Cell<u32>,
+    firsts: [Cell<u32>; 2],
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Counted {
+    pub fn new(row: i32) -> Self {
+        Counted {
+            row,
+            reads: Cell::new(0),
+            firsts: [Cell::new(1), Cell::new(2)],
+        }
+    }
+
+    pub fn row_counted(&self) -> i32 {
+        self.reads.set(self.reads.get() + 1);
+        self.row
+    }
+
+    pub fn row_bumped(&self) -> i32 {
+        bump(&self.reads);
+        self.row
+    }
+
+    pub fn read_count(&self) -> u32 {
+        self.reads.get()
+    }
+
+    pub fn twice(&self) -> u32 {
+        let reads = &self.reads;
+        reads.set(reads.get() * 2);
+        self.firsts[0].set(self.firsts[0].get() + reads.get());
+        self.firsts[0].get()
+    }
+}
+`);
+  expect(js).toContain("  this.reads = (this.reads + 1) >>> 0;\n");
+  expect(js).toContain("  this.reads = (this.reads * 2) >>> 0;\n");
+  expect(js.match(/get value\(\)/g)?.length).toBe(1);
+  const { Counted } = await import(join(dir, "lib.js"));
+  const counted = new Counted(3);
+  expect(counted.rowCounted() + counted.rowCounted() + counted.rowBumped()).toBe(9);
+  expect(counted.readCount()).toBe(3);
+  expect([counted.twice(), counted.readCount()]).toEqual([7, 6]);
+});

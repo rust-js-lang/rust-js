@@ -245,11 +245,47 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
 /// set, `this.props = props;`. A method's `self` is `this` already, made
 /// so before tidy (`receiver_as_this`). `Err` of a constructor that
 /// returns what's no struct literal.
-pub(super) fn as_member(member: Member, function: &mut js::Function) -> Result<(), &'static str> {
+pub(super) fn as_member(member: Member, class: &str, function: &mut js::Function) -> Result<(), &'static str> {
     match member {
         Member::Constructor => set_this(&mut function.body),
-        Member::Method | Member::Static | Member::Const => Ok(()),
+        Member::Method => {
+            this_outside_accessors(class, &mut function.body);
+            Ok(())
+        }
+        Member::Static | Member::Const => Ok(()),
     }
+}
+
+/// Of `body`, a class's method's: each handle kept on a place of `this`,
+/// which preparation writes `{ get value() { return this.reads; }, .. }`,
+/// whose `this` is the handle, on the instance named before it, `const
+/// counted = this;`, `counted.reads` (#359). Named as its class is, as a
+/// method's `self` is.
+fn this_outside_accessors(class: &str, body: &mut Vec<Stmt>) {
+    let mut kept = false;
+    js::each_expr(body, &mut |e| {
+        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &e.kind {
+            place.each(&mut |e| kept |= matches!(e.kind, ExprKind::This));
+        }
+    });
+    if !kept {
+        return;
+    }
+    let mut taken = std::collections::HashSet::new();
+    js::names_in(body, &mut taken);
+    let mut instance = class.to_owned();
+    instance[..1].make_ascii_lowercase();
+    let instance = crate::lower::fresh_in(&mut taken, &instance);
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind {
+            place.each_mut(&mut |e| {
+                if matches!(e.kind, ExprKind::This) {
+                    e.kind = ExprKind::Var(instance.clone());
+                }
+            });
+        }
+    });
+    body.insert(0, StmtKind::Const(instance, Expr::this()).at(js::Span::NONE));
 }
 
 /// Of `function`, a class's method, its `self` parameter, `this` in its

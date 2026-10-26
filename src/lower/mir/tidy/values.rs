@@ -496,7 +496,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
         while let ExprKind::Member(of, _) = &root.kind {
             root = of;
         }
-        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))
+        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This))
     });
     if handles.is_empty() {
         return;
