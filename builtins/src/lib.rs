@@ -200,6 +200,20 @@ impl PartialEq for Unknown {
     }
 }
 
+impl Unknown {
+    /// [`value.hasOwnProperty(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty):
+    /// the value's own `hasOwnProperty` called, as `value.hasOwnProperty(key)`
+    /// asks it: whether it has a property of that name of its own, or what
+    /// a `hasOwnProperty` of its own says; of one with none, an
+    /// `Object.create(null)`, JS's `TypeError`, a panic. Where no value's
+    /// own may answer, [`object::has_own_property`]`.call(value, key)` is
+    /// `Object.prototype`'s (ADR 0615, amended).
+    #[cfg_attr(rust_js, rust_js::link_name = "hasOwnProperty")]
+    pub fn has_own_property<K: PropertyKey + ?Sized>(&self, key: &K) -> bool {
+        unreachable!()
+    }
+}
+
 /// What a JS value is, as JS's `typeof`, `=== null` and `Array.isArray`
 /// tell it: each variant's value is the value itself (ADR 0214), a `match`
 /// of them a `switch (typeof value)` (ADR 0668). An `Option<&Unknown>`'s

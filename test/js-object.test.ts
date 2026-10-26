@@ -799,6 +799,52 @@ pub fn applied(f: &AnyFunction, args: &[Option<&'static Unknown>]) -> [Option<&'
   expect(lib.applied(strict, [1, "b"])).toEqual([[null, 1, "b"], [undefined], ["self", 1, "b"]]);
 });
 
+// ADR 0615, amended: a value's own `hasOwnProperty`, `value.hasOwnProperty(key)`,
+// as React's `ReactFiberHydrationDiffs.js` asks it, which an object with no
+// prototype hasn't: JS's `TypeError`, a panic, which `describeDiff`'s `catch`
+// makes `""`. `Object.prototype.hasOwnProperty.call(value, key)` would
+// answer `false` there and go on.
+test("a value's own hasOwnProperty is called on it", async () => {
+  const { js, lib, warnings } = await compiled("js-object-own-has-own-property", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+use js::{JsObject, Unknown};
+
+fn own_names(value: &Unknown) -> String {
+    let mut properties = String::new();
+    for prop_name in js::keys_in(value) {
+        if !value.has_own_property(prop_name.as_str()) {
+            continue;
+        }
+        properties += &prop_name;
+    }
+    properties
+}
+
+pub fn describe_diff(value: &Unknown) -> String {
+    match catch_unwind(AssertUnwindSafe(|| "\\n\\n".to_owned() + &own_names(value))) {
+        Ok(described) => described,
+        Err(_) => String::new(),
+    }
+}
+
+pub fn has_a(object: &JsObject) -> bool {
+    object.has_own_property("a")
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("    if (!value.hasOwnProperty(propName)) {\n");
+  expect(js).toContain('  return object.hasOwnProperty("a");');
+  const inherits = Object.create({ inherited: 1 });
+  inherits.mine = 2;
+  expect(lib.describeDiff(inherits)).toBe("\n\nmine");
+  const bare = Object.create(null);
+  bare.mine = 2;
+  expect(lib.describeDiff(bare)).toBe("");
+  // Its own `hasOwnProperty` answers.
+  expect(lib.hasA({ hasOwnProperty: () => true })).toBe(true);
+  expect(lib.hasA({ b: 1 })).toBe(false);
+});
+
 // ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes
 // it, each shape upstream's: `Fake` a function declaration where it's
 // written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it

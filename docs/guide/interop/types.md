@@ -1467,8 +1467,12 @@ export function describe(value) {
   Where a value may be missing and that's no error, Rust says so,
   `value.and_then(|v| js::get(v, key))`;
   `js::object::has_own_property.call(value, key)` is
-  `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own
-  ([ADR 0615](../../decisions/0615-has-own-property-the-function.md)).
+  `Object.prototype.hasOwnProperty.call(value, key)`, a property of its own,
+  whatever the value's own `hasOwnProperty`; `value.has_own_property(key)`
+  is `value.hasOwnProperty(key)`, the value's own method, which an object
+  of no prototype hasn't, a `TypeError`, a panic. Each is of its own
+  meaning: write the one upstream writes
+  ([ADR 0615](../../decisions/0615-has-own-property-the-function.md), amended).
 - `js::object::keys(value)` is `Object.keys(value)`, its own enumerable
   keys; `js::keys_in(value)` the keys `for…in` visits, its prototypes'
   too, each as the loop reaches it. A `for` loop of it is `for (const key
