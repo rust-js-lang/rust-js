@@ -1783,6 +1783,10 @@ export function same(a, b) {
   return (a ?? null) === (b ?? null);
 }
 ```
+- **`<` and `>` of two are JS's own**, and `partial_cmp` JS's order:
+  `Equal` where `===`, else `<`'s or `>`'s, else none, `NaN`'s;
+  `<=` is `<` or `===`, not JS's `<=`, which coerces `"1" <= 1` true
+  ([ADR 0931](../../decisions/0931-values-of-any-shape-are-ordered-as-js-orders-them.md)).
 - **`js::strict_equals(a, b)` is JS's `===`**, of any two values, `None`s
   too, where a `null` isn't an `undefined`
   ([ADR 0721](../../decisions/0721-strict-equals-is-jss-triple-equals.md)).

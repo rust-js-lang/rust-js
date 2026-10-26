@@ -200,6 +200,17 @@ impl PartialEq for Unknown {
     }
 }
 
+/// JS's relational comparison, as upstream code orders values of any
+/// shape: `Less` where `a < b`, `Greater` where `a > b`, `Equal` where `a
+/// === b`, as `==` is (ADR 0612), else none, `NaN`'s or an object's and a
+/// number's. `a < b` and `a > b` are JS's own; `a <= b` is `a < b || a ===
+/// b`, not JS's `<=`, which coerces `"1" <= 1` true (ADR 0931).
+impl PartialOrd for Unknown {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        (self == other).then_some(std::cmp::Ordering::Equal)
+    }
+}
+
 impl Unknown {
     /// [`value.hasOwnProperty(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty):
     /// the value's own `hasOwnProperty` called, as `value.hasOwnProperty(key)`

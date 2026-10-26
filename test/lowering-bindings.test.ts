@@ -1021,6 +1021,51 @@ pub fn is(a: Option<&Unknown>, b: &Unknown) -> bool {
   expect([lib.same(o, o), lib.same(o, {}), lib.same(NaN, NaN), lib.sameMaybe(null, undefined), lib.sameMaybe(undefined, undefined), lib.sameMaybe(o, o), lib.sameMaybe(o, null), lib.sameMaybe(1, "1")]).toEqual([true, false, false, true, true, true, false, false]);
 });
 
+// ADR 0931: two values of any shape are ordered as JS's \`<\` and \`>\` have
+// them, equal as \`===\`, else not at all: \`partial_cmp\` is \`$partialCmp\`,
+// and \`<=\` its \`<= 0\`, not JS's \`<=\`, which coerces \`"1" <= 1\` true.
+test("js::Unknown's < is JS's, its partial_cmp $partialCmp", async () => {
+  const dir = fixture("unknown-order");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn compare(a: &Unknown, b: &Unknown) -> i32 {
+    if a == b {
+        0
+    } else if a < b {
+        -1
+    } else {
+        1
+    }
+}
+
+pub fn greater(a: &Unknown, b: &Unknown) -> bool {
+    a > b
+}
+
+pub fn at_most(a: &Unknown, b: &Unknown) -> bool {
+    a <= b
+}
+
+pub fn at_least(a: &Unknown, b: &Unknown) -> bool {
+    a >= b
+}
+
+pub fn ordered(a: &Unknown, b: &Unknown) -> Option<std::cmp::Ordering> {
+    a.partial_cmp(b)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (a === b) {\n    return 0;\n  }\n  return a < b ? -1 : 1;\n");
+  expect(js).toContain("  return a > b;\n");
+  expect(js).toContain("  return $partialCmp(a, b) <= 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const o = {};
+  expect([lib.compare(1, 2), lib.compare("b", "a"), lib.compare(o, o), lib.compare("a", "ab")]).toEqual([-1, 1, 0, -1]);
+  expect([lib.greater(2, 1), lib.greater(NaN, 1), lib.atMost("1", 1), lib.atMost(1, 1), lib.atLeast(o, {}), lib.atLeast(2, 1)]).toEqual([true, false, false, true, false, true]);
+  expect([lib.ordered(1, 2), lib.ordered(NaN, NaN), lib.ordered(o, {}), lib.ordered("x", "x")]).toEqual([-1, undefined, undefined, 0]);
+});
+
 // ADR 0721: \`js::strict_equals(a, b)\` is JS's \`a === b\` of any two values,
 // \`Option\`s too, where a \`null\` isn't an \`undefined\`, as React's
 // \`Object.is\` polyfill asks; \`==\` stays Rust's (ADR 0612).

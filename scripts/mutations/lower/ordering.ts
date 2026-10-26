@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unknown-lt-by-partial-cmp",
+    breaks: "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
+    file: "src/lower/ordering.rs",
+    find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
+    replace: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && false && any_shape(self.tcx, field)\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
+  },
+  {
+    name: "unknown-le-as-js",
+    breaks: "`a <= b` of two `js::Unknown`s is JS's `a <= b`, which coerces `\"1\" <= 1` true where `partial_cmp` finds none",
+    file: "src/lower/ordering.rs",
+    find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
+    replace: "        if let Some(op @ (Op::Lt | Op::Gt | Op::Le | Op::Ge)) = operator\n            && any_shape(self.tcx, field)\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
+  },
+  {
+    name: "unknown-unordered",
+    breaks: "`partial_cmp` of two `js::Unknown`s asks for a `PartialOrd` dictionary, and is refused",
+    file: "src/lower/ordering.rs",
+    find: "        if partial && (Num::of(ty).is_some_and(Num::float) || any_shape(self.tcx, ty)) {\n",
+    replace: "        if partial && (Num::of(ty).is_some_and(Num::float)) {\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
+  },
+  {
     name: "numbered-ordered-by-name",
     breaks: "a numbered enum's derived order is by its names' places, of numbers no name is, so each is equal and a sort leaves them as they were",
     file: "src/lower/ordering.rs",

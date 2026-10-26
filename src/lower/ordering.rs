@@ -92,8 +92,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (a, _) = self.through_refs(a, ty);
         let (b, ty) = self.through_refs(b, ty);
-        // `f64`'s `NaN` isn't ordered at all.
-        if partial && Num::of(ty).is_some_and(Num::float) {
+        // `f64`'s `NaN` isn't ordered at all; nor is a value of any shape
+        // JS's `<` and `>` don't order, nor finds `===` (ADR 0931).
+        if partial && (Num::of(ty).is_some_and(Num::float) || any_shape(self.tcx, ty)) {
             return Ok(Expr::call(Expr::helper("$partialCmp"), vec![a, b]));
         }
         // A path's components in turn (ADR 0401).
@@ -504,6 +505,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Some(Expr::bin(op, a, b)));
         }
+        // A value of any shape's `<` and `>` are JS's own; its `<=` isn't,
+        // which coerces, so it's its `partial_cmp`'s, below (ADR 0931).
+        if let Some(op @ (Op::Lt | Op::Gt)) = operator
+            && any_shape(self.tcx, field)
+        {
+            return Ok(Some(Expr::bin(op, a, b)));
+        }
         if let Some(op) = operator
             && self.is_text_ord(field)
         {
@@ -528,6 +536,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => order,
         }))
     }
+}
+
+/// Whether `ty` is a value of any shape, `js::Unknown` (ADR 0612).
+fn any_shape(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.peel_refs().kind(), rustc_middle::ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did()))
 }
 
 fn is_var(e: &Expr, name: &str) -> bool {
