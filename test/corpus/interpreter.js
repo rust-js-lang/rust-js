@@ -134,11 +134,11 @@ const Lexer = {
             return { TAG: "Err", _0: "Unterminated" };
           }
           if (ch === '"') {
-            token = { TAG: "Str", _0: s };
             break;
           }
           s += ch;
         }
+        token = { TAG: "Str", _0: s };
       } else if (c === "(") {
         token = "LParen";
       } else if (c === ")") {

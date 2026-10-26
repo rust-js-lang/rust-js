@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -460,3 +460,23 @@ is kept, and its map points there. Case N: where a statement is mapped,
 which nothing runs. Held by `test/lowering-comments.test.ts`, "a blank
 line before a function's last value in export_default! stays", and the
 mutation `macro-fn-return-at-the-macro` (`lower/mir/structure.ts`).
+
+## Amendment: a comment before a `match` an `if` is made of is the `if`'s (2026-10-26)
+
+React's enqueueCapturedUpdate writes `// Append the captured update the
+end of the cloned list.` before a `match &new_last { None => .., Some(last)
+=> .. }`, which MIR makes an `if` of, mapped where its test is, the first
+arm's pattern (`tidy.rs`'s `source_spans`). With nothing else printed of
+the `match`, the code between the comment and that start, `match
+&new_last {`, was code, so the comment was lost. **A `match`'s opening,
+`match <scrutinee> {` on its line, right before its first arm, is no code
+of its own**, as an `unsafe` block's and a closure's openings aren't
+(`to_oxc/openings.rs`, which holds what opens such a block, out of
+`to_oxc.rs` at its line cap): the comment is the `if`'s, `// Pick by
+option, none first.` before `if (x == null) {`. Not where the start is past the
+first arm's pattern, a statement in an arm, which the comment isn't
+before. Case N: what's printed, which nothing runs.
+
+Held by `test/lowering-comments.test.ts`, "a comment before a match an if
+is made of is the if's", and the mutation `comment-before-a-match-lost`
+(`to_oxc.ts`).

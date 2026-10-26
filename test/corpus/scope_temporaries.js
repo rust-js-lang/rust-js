@@ -77,13 +77,13 @@ function main() {
     const value = make(n);
     if (Noisy.big(value) !== false) {
       console.log(`drop ${value[0]}`);
-
       break;
     }
     console.log(`drop ${value[0]}`);
     console.log(`round ${n}`);
     n = (n + 1) & 255;
   }
+
   const inner = 50;
   const value$1 = make(5);
   const found = Noisy.big(value$1);

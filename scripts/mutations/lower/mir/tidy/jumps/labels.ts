@@ -124,4 +124,21 @@ export const mutations: Mutation[] = [
     replace: "            } else if false && fits(then) {\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_constant_alternative.rs$"],
   },
+  {
+    name: "exit-after-of-a-break-kept",
+    breaks: "what the program wrote after a loop that `break`s, `None => break`'s, stays in its way out, `} else { ..; break; }`, not after the loop",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "    let own = breaks(body, label.as_deref());\n",
+    replace: "    if breaks(body, label.as_deref()) {\n        return None;\n    }\n    let own = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_code_after.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "exit-after-break-at-the-moved-code",
+    breaks: "the `break` left where what's after a loop was is where that code is written, so its comment, `// Append the end.`, is in the loop's `break`",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            StmtKind::Break(None).at(at)\n",
+    replace: "            StmtKind::Break(None).at(if at.is_none() { at } else { moved[0].span })\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a match an if is made of is the if's"],
+  },
 ];

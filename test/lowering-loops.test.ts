@@ -1337,7 +1337,8 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
 });
 
 // An arm that ends in a loop, which leaves the match where it ends:
-// the loop's own `break`, not a labeled block's.
+// the loop's own `break`, not a labeled block's; what the arm writes after
+// it, after it (ADR 0702, amended).
 test("a match arm that ends in a loop leaves it with the loop's break", async () => {
   const dir = fixture("arm-loop-exit");
   writeFileSync(join(dir, "lib.rs"), `pub fn words(s: &str) -> Vec<String> {
@@ -1364,7 +1365,7 @@ test("a match arm that ends in a loop leaves it with the loop's break", async ()
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toMatch(/\bbb\d+\b/);
   expect(js).toContain(`    if (c >= "a" && c <= "z") {\n      let w = "";`);
-  expect(js).toContain(`          out.push(w);\n          break;\n`);
+  expect(js).toContain(`        w += c;\n      }\n      out.push(w);\n    } else {\n`);
   const lib = await import(join(dir, "lib.js"));
   expect(lib.words("ab cd,e")).toEqual(["ab", "cd", "e"]);
   expect(lib.words("")).toEqual([]);

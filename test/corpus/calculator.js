@@ -94,15 +94,13 @@ function tokenize(source) {
       tokens.push({ TAG: "Num", _0: number(chars) });
     } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
       let name = "";
-      while (true) {
-        const c = $nextIf(chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
-        if (c != null) {
-          name += c;
-        } else {
-          tokens.push({ TAG: "Ident", _0: name });
-          break;
-        }
+      let c;
+      while (
+        (c = $nextIf(chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null
+      ) {
+        name += c;
       }
+      tokens.push({ TAG: "Ident", _0: name });
     } else if (c === "+" || c === "-" || c === "*" || c === "/" || c === "^") {
       tokens.push({ TAG: "Op", _0: c });
       $next(chars);

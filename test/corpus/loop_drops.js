@@ -317,9 +317,9 @@ function main() {
     for (const item of iter) {
       noisyDrop_drop(item);
     }
-
     break;
   }
+
   iter$1 = [3];
   while (true) {
     const n = countdownIterator_next(iter$1);

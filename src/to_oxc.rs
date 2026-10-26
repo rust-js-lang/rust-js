@@ -23,6 +23,7 @@ mod arguments;
 mod cases;
 mod expressions;
 mod loads;
+mod openings;
 mod statements;
 mod trailing;
 
@@ -32,6 +33,7 @@ pub(crate) use self::cases::fallen_to;
 use self::cases::{FALLTHROUGH, fallthrough_starts};
 pub(crate) use self::expressions::*;
 pub(crate) use self::loads::loaded_modules;
+use self::openings::{leading_statements, macro_opening, match_opening, unsafe_opening};
 
 use std::path::PathBuf;
 
@@ -621,9 +623,15 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                         // and a macro's on its own line, `thread_local! {`,
                         // whose code is (ADR 0621); and an `unsafe` block's,
                         // which has no JS but its code's (ADR 0444, amended).
+                        // And a `match`'s, `match &new_last {`, right before
+                        // its first arm, whose pattern the `if` MIR makes of
+                        // it starts at (ADR 0444, amended).
                         let opens = (rest.match_indices('{')).all(|(i, _)| {
                             let head = rest[..i].trim_end();
-                            head.ends_with('|') || macro_opening(&rest[..=i]) || unsafe_opening(head)
+                            head.ends_with('|')
+                                || macro_opening(&rest[..=i])
+                                || unsafe_opening(head)
+                                || match_opening(head) && rest[i + 1..].trim().is_empty()
                         });
                         lets.iter().all(|s| s.starts_with("let ")) && !rest.contains([';', '}']) && opens
                     });
@@ -1166,47 +1174,6 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
         }
     }
     starts
-}
-
-/// The whole statements `code` starts with, each trimmed, each ending in a
-/// `;` outside its brackets, and what's after them: the next's start, or
-/// from where a bracket closes one it didn't open, its block's `}`. A
-/// bracket or `;` in a string is counted as code's, which only ever leaves
-/// fewer of them `let`s, or what's after them with a `;` or `}`.
-fn leading_statements(code: &str) -> (Vec<&str>, &str) {
-    let (mut statements, mut depth, mut from) = (Vec::new(), 0u32, 0);
-    for (at, c) in code.char_indices() {
-        match c {
-            '(' | '[' | '{' => depth += 1,
-            ')' | ']' | '}' => match depth.checked_sub(1) {
-                Some(inside) => depth = inside,
-                None => break,
-            },
-            ';' if depth == 0 => {
-                statements.push(code[from..at].trim());
-                from = at + 1;
-            }
-            _ => {}
-        }
-    }
-    (statements, &code[from..])
-}
-
-/// Whether `head`, the code before a `{`, ends in `unsafe`, the keyword,
-/// whose block is its code alone in JS.
-fn unsafe_opening(head: &str) -> bool {
-    head.strip_suffix("unsafe")
-        .is_some_and(|before| !before.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
-}
-
-/// Whether `line`, to its end, opens a macro's body on a line of its own,
-/// `thread_local! {`, `jsx! {`: a path, `!` and `{`, whose code is the
-/// program's text (ADR 0621).
-fn macro_opening(line: &str) -> bool {
-    let line = line[line.rfind('\n').map_or(0, |i| i + 1)..].trim();
-    line.strip_suffix('{')
-        .and_then(|head| head.trim_end().strip_suffix('!'))
-        .is_some_and(|path| !path.is_empty() && path.chars().all(|c| c.is_alphanumeric() || c == '_' || c == ':'))
 }
 
 /// The span of each of `list`'s statements that has one: a temporary

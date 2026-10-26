@@ -5,7 +5,8 @@ Status: Accepted. Extends tidy's `while_tests` and
 as written, which left a loop's test in its body.
 Amended: a `while` that ends an `if`'s branch with code after the `if`
 is its test too; and an `if` of a `break` the program wrote first in a
-`while`'s body is that `if`, not the loop's test (#298).
+`while`'s body is that `if`, not the loop's test (#298); and what's written
+after a loop that `break`s is after it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -331,3 +332,41 @@ No corpus case or snapshot changed; the JS of each `while` whose first
   a loop's break is before the break", its `while`.
 - Mutations `while-written-breaks-joined` and
   `while-written-breaks-ungrouped`.
+
+## Amendment: what's written after a loop that `break`s is after it (2026-10-26)
+
+React's enqueueCapturedUpdate clones each update in a `loop` that ends
+`match next { Some(next) => update = next, None => break }`, then appends
+the captured update, under `// Append the captured update the end of the
+cloned list.`, and goes on past the `if let` it's in. MIR reaches that
+code through the `break` alone, and lowering wrote it there, `if (next
+!= null) { update = next; } else { ..; break; }`: `exits_after`, which
+moves what's written after a loop out of its way out, took only a loop
+nothing `break`s, leaving by a `return`. And where it did move it, the
+`break` it left had the moved code's place, so a comment before that
+code, `// Append the captured update.`, was the `break`'s, in the loop.
+
+**What the program wrote after a loop is after it, its way out the loop's
+own `break` too**: of a loop with one `break`, the code before it there
+that's written after the loop moves after it, and the `break` stays as
+it is, `if (next == null) { break; } update = next;`. Not where another
+`break` leaves the loop, which would then run it. The `break` left where
+the code was, of a `return`'s way out, is where the moved code ends, so
+what's written before that code, a comment, is the code's, after the
+loop. Case A: the code runs where the loop ends, as it did where the loop
+left.
+
+- calculator's `tokenize`, interpreter's lexer and a match arm that ends
+  in a loop (`test/lowering-loops.test.ts`) write what follows the inner
+  loop after it, `while ((c = $nextIf(..)) != null) { name += c; }
+  tokens.push(..)`; `adapter_source_drops.rs`'s comment and
+  `loop_drops.rs`'s and `scope_temporaries.rs`'s blank lines are after
+  their loops. `docs/readability.txt` is blessed: the case below adds two
+  `while (true)`s, its `loop`s, as written.
+- Held by `test/lowering-comments.test.ts`, "a comment before a match an
+  if is made of is the if's", run in JS; the corpus case
+  `loop_exit_code_after.rs`, against native Rust; and the mutations
+  `exit-after-of-a-break-kept` and `exit-after-break-at-the-moved-code`
+  (`lower/mir/tidy/jumps/labels.ts`). That a second `break` keeps the
+  code in place is a guard no program here reaches: MIR makes one block
+  of what's after a loop, which each `break` reaches.

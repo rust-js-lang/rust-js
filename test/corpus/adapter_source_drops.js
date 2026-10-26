@@ -46,13 +46,13 @@ function main() {
     }
     if (tmp == null) {
       iter.return();
-      // A chain's first part, done with before its second is stepped, as
-      // Rust's `Chain` drops it.
       break;
     }
     const x = tmp;
     console.log(`for ${x}`);
   }
+  // A chain's first part, done with before its second is stepped, as
+  // Rust's `Chain` drops it.
   const map = $closing($iterator({ n: 1, name: "first" }, counterIterator_next), (it) => {
     console.log(`drop ${it.of.name}`);
   }).map((x) => (x + 1) >>> 0);

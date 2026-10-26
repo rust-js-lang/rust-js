@@ -1437,3 +1437,64 @@ pub fn nested(name: &str, message: &str) -> u32 {
   expect(js).toContain("    shout(\n      name,\n      message,\n      // Inner.\n    ),\n  );\n");
   expect([lib.logged("ab" as never, "c" as never), lib.nested("ab" as never, "c" as never)]).toEqual([6, 5]);
 });
+
+// React's enqueueCapturedUpdate: a comment before a `match &new_last`, after
+// a loop. The `if` MIR makes of a `match` starts at its first arm's pattern:
+// the comment is the `if`'s; and what's written after a loop MIR moved into
+// its `break` is after it, its comment too (ADRs 0444, 0702, amended).
+test("a comment before a match an if is made of is the if's", async () => {
+  const { js, lib } = await compiled("comment-before-a-match", `pub fn pick(x: &Option<u32>, log: &mut Vec<u32>) -> u32 {
+    let mut total = 0;
+    // Pick by option, none first.
+    match x {
+        None => {
+            log.push(1);
+            total += 2;
+        }
+        Some(v) => {
+            log.push(*v);
+            total = *v;
+        }
+    }
+    total
+}
+
+pub struct Update {
+    pub lane: u32,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub next: std::cell::RefCell<Option<std::rc::Rc<Update>>>,
+}
+
+pub fn appended(first: &std::rc::Rc<Update>, captured: &std::rc::Rc<Update>) -> u32 {
+    let mut new_last: Option<std::rc::Rc<Update>> = None;
+    let mut update = std::rc::Rc::clone(first);
+    loop {
+        match &new_last {
+            None => new_last = Some(std::rc::Rc::clone(&update)),
+            Some(last) => new_last = Some(std::rc::Rc::clone(last)),
+        }
+        let next = update.next.borrow().clone();
+        match next {
+            Some(next) => update = next,
+            None => break,
+        }
+    }
+
+    // Append the captured update.
+    match &new_last {
+        None => new_last = Some(std::rc::Rc::clone(captured)),
+        Some(last) => {
+            last.next.replace(Some(std::rc::Rc::clone(captured)));
+        }
+    }
+    new_last.map_or(0, |last| last.lane)
+}
+`);
+  expect(js).toContain("  let total = 0;\n  // Pick by option, none first.\n  if (x == null) {\n");
+  expect(js).toContain("      break;\n    }\n    update = next;\n  }\n\n  // Append the captured update.\n  if (newLast == null) {\n");
+  const log: number[] = [];
+  expect([lib.pick(undefined as never, log as never), lib.pick(4 as never, log as never), log]).toEqual([2, 4, [1, 4]]);
+  const [captured, second] = [{ lane: 9, next: null }, { lane: 2, next: null }];
+  const first = { lane: 1, next: second };
+  expect([lib.appended(first as never, captured as never), first.next]).toEqual([1, captured]);
+});
