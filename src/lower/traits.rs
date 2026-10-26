@@ -238,6 +238,16 @@ fn bound_of<'tcx>(
     {
         return None;
     }
+    // A library's export's, as its contract says: one it takes no copy
+    // function for is given none, as its JS takes none, the dictionaries
+    // after it in their places (ADR 0914).
+    if tcx.is_lang_item(tr.def_id, LangItem::Copy)
+        && let ty::Param(param) = tr.self_ty().kind()
+        && let Some(item) = foreign.item(id)
+        && !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Copy))
+    {
+        return None;
+    }
     // An `Iterator` a type holds or a function gives back: its dictionary,
     // which steps it as it is (ADR 0411), and its extensions' (ADR 0487).
     if (is_std_def(tcx, tr.def_id, StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, tr.def_id))

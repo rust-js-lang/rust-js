@@ -6,7 +6,8 @@ Status: Accepted. Amends [0098](0098-destructors.md),
 takes the copies and drops its own crate's calls give it, no more.
 Amended (below): a library's trait impls and copies are its program's too,
 and amends [0100](0100-separate-crates.md) and
-[0185](0185-library-trait-defaults.md).
+[0185](0185-library-trait-defaults.md); and a consumer gives an export the
+copy functions its contract says it takes.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for
 JS callers, so Rust's behavior holds for Rust callers, and JS's call is
@@ -413,3 +414,24 @@ consumer still compiles where its library doesn't export it. Held by
 `test/crates/frontend`'s user read and changed in place, the pilot, and
 the mutations `derived-codec-compiled-by-consumer` and
 `any-derived-impl-not-compiled`.
+
+## Amendment: a consumer gives an export the copy functions its contract says it takes
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, a wrong answer
+fixed. A library's `pair<T: Copy, U: Display>` takes no `TCopy` where its
+own crate's calls give none, `export function pair(t, u, UDisplay)`, as
+above; but its consumer worked out the export's dictionaries as of any
+function that isn't the crate's own, every `Copy` bound given one, and
+called `pair(1, [2], undefined, wrapDisplay)`: `UDisplay` was `undefined`,
+and `UDisplay.fmt(u)` threw where Rust gives `"w2!"`.
+
+**A library's export's `Copy` bound is given a copy function only where
+its contract says it takes one** (its parameter's `copy`, ADR 0914's
+library ABI 8; `traits::bound_of`), so each dictionary after it is in its
+place: `pair(1, [2], wrapDisplay)`. A consumer whose call gives a value
+whose copy isn't itself compiles its own `pair`, as before, whose `Copy`
+bound its own callers decide.
+
+- `test/cross-crate-items.test.ts`, "a library's export is given the
+  dictionaries its contract says it takes", run.
+- Mutation `library-copy-bound-recomputed` (`traits.rs`).

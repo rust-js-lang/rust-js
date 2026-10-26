@@ -760,3 +760,33 @@ pub fn run(n: u32) -> u32 {
   }
   expect(logged).toEqual(["called 8", "dropped 7"]);
 });
+
+// A library's generic function takes a copy function only where its own
+// crate's calls give one (ADR 0914): its consumer gives the dictionaries its
+// contract says it takes, each in its place, not a `TCopy` the library's JS
+// hasn't, which put `undefined` where `UDisplay` is and threw. One that
+// gives a value whose copy isn't itself compiles its own (`copy_given`).
+test("a library's export is given the dictionaries its contract says it takes", async () => {
+  const dir = fixture("cross-crate-copy-bound");
+  const { dep, app } = compiled(dir, `pub fn pair<T: Copy, U: std::fmt::Display>(t: T, u: U) -> (T, String) {
+    (t, format!("{u}!"))
+}
+`, `use std::fmt;
+
+pub struct Wrap(pub u32);
+
+impl fmt::Display for Wrap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "w{}", self.0)
+    }
+}
+
+pub fn run() -> String {
+    dep::pair(1u32, Wrap(2)).1
+}
+`);
+  expect(dep).toContain("export function pair(t, u, UDisplay) {");
+  expect(app).toContain("pair(1, [2], wrapDisplay)");
+  const { run } = await import(join(dir, "app", "lib.js"));
+  expect(run()).toBe("w2!");
+});

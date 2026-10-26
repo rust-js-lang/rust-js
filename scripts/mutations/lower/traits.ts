@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "        && false\n    {\n        return Some(tr);",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
+  {
+    name: "library-copy-bound-recomputed",
+    breaks: "a consumer gives a library's export a `TCopy` its contract says it takes none of, `pair(1, [2], undefined, wrapDisplay)`, which puts `undefined` where its `UDisplay` is (ADR 0914, amended)",
+    file: "src/lower/traits.rs",
+    find: "        && let Some(item) = foreign.item(id)\n        && !(item.calling.param(param.index))",
+    replace: "        && let Some(item) = foreign.item(id).filter(|_| false)\n        && !(item.calling.param(param.index))",
+    tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
+  },
 ];
