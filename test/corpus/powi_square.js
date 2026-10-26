@@ -32,6 +32,29 @@ function squares(xs) {
   return xs.map((x) => x * x);
 }
 
+const Point = {
+  norm(point) {
+    return Math.sqrt(point.x * point.x + point.y * point.y);
+  },
+
+  scaled(point, by) {
+    return {
+      x: point.x * by,
+      y: point.y * by,
+    };
+  },
+};
+
+function length(segment) {
+  return Math.sqrt(
+    $powi(segment.to.x - segment.from.x, 2) + $powi(segment.to.y - segment.from.y, 2),
+  );
+}
+
+function far(segment) {
+  return segment.to.x * segment.to.x + $powi(Point.scaled(segment.from, 2).x, 2);
+}
+
 function main() {
   for (const x of [0, -0, 1.5, -3, 1e200, NaN, Infinity, -Infinity, 0.1]) {
     console.log(`${$debugF64(square(x))} ${$debugF64(1 / square(x))}`);
@@ -45,6 +68,13 @@ function main() {
     `[${squares([0.5, -2])
       .map((item) => $debugF64(item))
       .join(", ")}]`,
+  );
+  const segment = {
+    from: { x: 1, y: 2 },
+    to: { x: 4, y: 6 },
+  };
+  console.log(
+    `${$displayF64(Point.norm(segment.to))} ${$displayF64(length(segment))} ${$displayF64(far(segment))}`,
   );
 }
 //# sourceMappingURL=case.js.map

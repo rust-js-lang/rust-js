@@ -1395,3 +1395,26 @@ pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect(() => lib.read([1, 2], 0)).toThrow("index out of bounds: the len is 0 but the index is 0");
 });
+
+// ADR 0064 (amended, #346): a square of a variable, or of a field of one or
+// of `this`, is `x * x`, read twice; but of a getter's read, which may do
+// something, once, `$powi(window.scrollY, 2)`.
+test("a square of a field is x * x, of a getter's read $powi", () => {
+  const dir = fixture("field-squares");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Point {
+    pub x: f64,
+}
+
+pub fn norm(point: &Point) -> f64 {
+    point.x.powi(2)
+}
+
+pub fn scrolled(window: &webapi::Window) -> f64 {
+    window.scroll_y().powi(2)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return point.x * point.x;\n");
+  expect(js).toContain("  return $powi(window.scrollY, 2);\n");
+});

@@ -79,7 +79,8 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   `**` gives NaN; a constant power, or a constant base but ±1, `2f64.powf(n)`,
   is `**` itself ([0182](../decisions/0182-boundary-matrices.md)).
   `powi` multiplies as Rust's does, so a variable's square, `x.powi(2)`,
-  is `x * x`, never `x ** 2`, whose precision is the engine's
+  or a field's, `p.x.powi(2)`, is `x * x`, never `x ** 2`, whose precision
+  is the engine's
   ([0064](../decisions/0064-numbers.md)).
 - **`size_of`, `align_of`** are wasm32's: a pointer is 4 bytes
   ([0145](../decisions/0145-type-facts.md)).

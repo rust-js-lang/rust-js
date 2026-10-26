@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "square-of-a-getter-read-twice",
+    breaks: "`window.scroll_y().powi(2)` is `window.scrollY * window.scrollY`, its getter run twice",
+    file: "src/lower/std_types/number.rs",
+    find: "    place(e) && !e.has_effects()\n",
+    replace: "    place(e)\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a square of a field"],
+  },
+  {
+    name: "square-of-a-field-helper",
+    breaks: "`point.x.powi(2)` is `$powi(point.x, 2)`, not `point.x * point.x`",
+    file: "src/lower/std_types/number.rs",
+    find: "            js::ExprKind::Member(of, _) => place(of),\n",
+    replace: "",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a square of a field"],
+  },
+  {
     name: "powf-of-one-as-js",
     breaks: "`1f64.powf(n)` is `1 ** n`, NaN of an infinite or NaN power, where Rust's is 1",
     file: "src/lower/std_types/number.rs",
@@ -23,16 +39,16 @@ export const mutations: Mutation[] = [
     name: "powi-any-power-a-square",
     breaks: "`x.powi(3)` of a variable is `x * x`, its square",
     file: "src/lower/std_types/number.rs",
-    find: "                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
-    replace: "                (x, n) if n.as_int().is_some() && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    find: "                (x, n) if n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
+    replace: "                (x, n) if n.as_int().is_some() && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
     tests: ["test/corpus.test.ts", "-t", "^powi_square.rs$"],
   },
   {
     name: "powi-square-helper",
     breaks: "a variable's `powi(2)` is `$powi(x, 2)`, not `x * x`",
     file: "src/lower/std_types/number.rs",
-    find: "                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
-    replace: "                (x, n) if false && n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    find: "                (x, n) if n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
+    replace: "                (x, n) if false && n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),\n",
     tests: ["test/corpus.test.ts", "-t", "^powi_square.rs$"],
     snapshots: true,
   },

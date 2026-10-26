@@ -597,11 +597,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::Powi if num == Num::F32 => helper("$powiF32", vec![arg(), arg()]),
             // A variable's square, which `$powi` multiplies once, `x * x`,
             // as Rust's does: the same value, read twice with nothing run
-            // between. Not `x ** 2`, whose precision is the engine's.
+            // between; or a field's of one, or of `this`, whose read does
+            // nothing, a getter's not. Not `x ** 2`, whose precision is the
+            // engine's.
             NumOp::Powi => match (arg(), arg()) {
-                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {
-                    Expr::bin(Op::Mul, x.clone(), x)
-                }
+                (x, n) if n.as_int() == Some(2) && read_twice(&x) => Expr::bin(Op::Mul, x.clone(), x),
                 (x, n) => helper("$powi", vec![x, n]),
             },
             NumOp::MulAdd if num == Num::F32 => helper("$mulAddF32", vec![arg(), arg(), arg()]),
@@ -1117,4 +1117,17 @@ fn without_zero_sign(e: Expr) -> Expr {
         }
         _ => e,
     }
+}
+
+/// Whether `e` is a variable, `this`, or a field of one, whose read does
+/// nothing: read twice, `x * x`, it's the same value.
+fn read_twice(e: &Expr) -> bool {
+    fn place(e: &Expr) -> bool {
+        match &e.kind {
+            js::ExprKind::Var(_) | js::ExprKind::This => true,
+            js::ExprKind::Member(of, _) => place(of),
+            _ => false,
+        }
+    }
+    place(e) && !e.has_effects()
 }

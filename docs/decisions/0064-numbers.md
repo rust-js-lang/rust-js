@@ -175,3 +175,13 @@ Another power, and a square of what isn't a variable, `(a + b).powi(2)`,
 stay `$powi`; an `f32`'s stays `$powiF32`, rounded to one. Held by
 `test/corpus/powi_square.rs` and the mutations `powi-any-power-a-square`
 and `powi-square-helper`.
+
+## Amendment: a field's square is `p.x * p.x` (#346)
+
+ComplexNumber, ported, read `$powi(complexDivider.re, 2)` and `$powi(this.re,
+2)`. **A field's square, of a variable or of `this`, is `p.x * p.x`** too,
+where reading it does nothing (`has_effects`): a getter's read, marked so
+(`Known::Getter`, ADR 0672), may, and stays `$powi(window.scrollY, 2)`,
+read once. Held by `test/corpus/powi_square.rs`, `lowering-numbers.test.ts`'s
+"a square of a field is x * x, of a getter's read $powi" and the mutations
+`square-of-a-getter-read-twice` and `square-of-a-field-helper`.
