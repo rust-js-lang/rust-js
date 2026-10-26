@@ -8,9 +8,10 @@
 //   bun run check:fast                 the change's checks
 //   bun run check:fast --all           every suite it can touch
 //   bun run check:fast test/x.test.ts  and these files
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
+import { pruneKept } from "../test/kept";
 import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -30,6 +31,18 @@ const tidy = all || changed.some((file) => /^src\/lower\/mir\/tidy/.test(file));
 const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], { cwd: root }).stdout.toString();
 const untracked = changed.filter((file) => file.startsWith("scripts/mutations/") && !diff.includes(file));
 const added = [...diff.matchAll(/^\+\s*"?name"?: "([^"]+)"/gm), ...untracked.flatMap((file) => [...readFileSync(join(root, file), "utf8").matchAll(/"?name"?: "([^"]+)"/g)])].map((m) => m[1]);
+
+// What no test used for a week, before any runs (test/kept.ts), as the
+// whole suite prunes it: only CI runs that, and a Mac's native programs'
+// builds grew 23 GB in two days. Once a day, as it takes some 12 s.
+const pruned = join(root, "target", "kept-pruned");
+if (!existsSync(pruned) || Date.now() - statSync(pruned).mtimeMs > 24 * 60 * 60 * 1000) {
+  const pruning = Date.now();
+  pruneKept(join(root, "target/native-cache"));
+  pruneKept(join(root, "target/corpus-cache"));
+  writeFileSync(pruned, "");
+  console.log(timed("pruning what tests keep", (Date.now() - pruning) / 1000));
+}
 
 // Each step's time is kept, and said against its usual (scripts/timing.ts).
 const building = Date.now();

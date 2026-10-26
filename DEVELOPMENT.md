@@ -196,6 +196,9 @@ What keeps them there:
   harness again, its four runs aren't run again; its two compiles always
   are, and its snapshot is always checked. A `check:fast` whose change
   leaves most cases' JS as it was runs the corpus in half the time.
+  What no test used for a week is pruned by `bun run test`, and by
+  `check:fast` once a day (`target/kept-pruned`), as only CI runs the
+  whole suite: a Mac's `target/native-cache` grew 23 GB in two days.
 - **The react, webapi and js crates' metadata** is built only when their
   sources, build scripts or the toolchain change: a stamp beside it,
   `target/libreact.stamp`, says what it was made from. Built every run, it
