@@ -24,6 +24,10 @@ pub(super) enum Given {
     Unknown,
     /// `null` or a value already (`nulled`).
     Nulled,
+    /// What an optional nullable field holds, read: absent, `null` or a
+    /// value, which another optional nullable field takes as it is, as a
+    /// JS object's `{ name: abort.name }` copies it (ADR 0810, amended).
+    Optional,
     /// A `None` the literal writes, `S { label: None }`'s, or a
     /// `Cell::new(None)`'s: an optional field's left out.
     WrittenNone,
@@ -323,7 +327,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 continue;
             }
-            let stored = js::Storage::NullForNone.written(held, given == Given::Nulled);
+            // What one optional field holds, given another, is as it is,
+            // `undefined` where it's absent (ADR 0810, amended).
+            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);
+            let stored = js::Storage::NullForNone.written(held, given == Given::Nulled || copied);
             *value = match cell {
                 true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
                 false => stored,

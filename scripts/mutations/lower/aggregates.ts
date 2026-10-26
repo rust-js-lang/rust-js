@@ -155,6 +155,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
   },
   {
+    name: "optional-given-optional-coalesced",
+    breaks: "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
+    file: "src/lower/aggregates.rs",
+    find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    replace: "            let copied = false;\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value"],
+  },
+  {
+    name: "optional-given-any-nullable",
+    breaks: "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
+    file: "src/lower/aggregates.rs",
+    find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    replace: "            let copied = given == Given::Optional;\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value"],
+  },
+  {
     name: "optional-written-none-unasked",
     breaks: "an optional nullable field's `Cell::new(None)` of what has drop glue, a temporary MIR makes, is `undefined ?? null` in its literal, not left out (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",

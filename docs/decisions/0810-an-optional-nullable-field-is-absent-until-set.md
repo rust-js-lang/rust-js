@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0275](0275-nullable-writes-null.md) and
 [0772](0772-a-nullable-cell-field-writes-null.md), whose nullable field's
-`None` was `null` where its struct is made too.
+`None` was `null` where its struct is made too. Amended: given another
+optional field's value, it's that value as it is, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: an absent key,
 `undefined` and `null` are each `None` to the program, which reads any of
@@ -244,3 +245,41 @@ What holds it:
   (`aggregates.rs`), `null-none-given-optional`,
   `written-none-of-two-writes`,
   `written-none-cell-unasked` (`mir/patterns.rs`).
+
+## Amendment: given another optional field's value, it's as it is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C. React's
+`processTransitionCallbacks` copies each abort's `name?: string | null`
+into the deletion it hands `onMarkerIncomplete`:
+
+```js
+filteredAborts.push({ type: 'marker', name: abort.name, endTime });
+```
+
+The port's `TransitionAbort` and `TransitionTracingDeletion` both have
+`#[rust_js::nullable, rust_js::optional] name: Option<String>`, and
+`name: abort.name.clone()` printed `name: abort.name ?? null`: an abort
+without a name gave the callback `null` where upstream gives it
+`undefined`, which a JS callback can tell (`=== undefined`, `toEqual`).
+The rule above, "a read of it isn't one a nullable field takes as it is",
+was written for a nullable field that isn't optional, which holds `null`
+or a value; an optional one holds what's absent too.
+
+**An optional nullable field given what another optional nullable field
+holds, read, stores it as it is**: absent stays `undefined`, `null`
+stays `null`, a value stays the value. Where its struct is made, `{
+name: abort.name }`, and where it's assigned, `deletion.name =
+abort.name`, through MIR's temporary, a `Copy`'s read or a `clone()` of
+a string, a number or a reference, as `nulled` follows a nullable
+field's (`stored_given`'s `Given::Optional`). A nullable field that
+isn't optional is still given it `?? null`, as it holds `null` or a
+value. Its `.d.ts`, `name?: string | null | undefined`, says so already.
+
+- `test/lowering-optional-fields.test.ts`, "an optional nullable field
+  given another's value stores it as it is": objects JS makes, the key
+  absent, `null` and a string, copied where a struct is made and where
+  it's assigned, and given to a nullable field that isn't optional.
+- Mutations `optional-read-coalesced` (`mir/rvalues.rs`),
+  `optional-assigned-coalesced` (`mir/assign.rs`),
+  `optional-given-optional-coalesced` and `optional-given-any-nullable`
+  (`aggregates.rs`).

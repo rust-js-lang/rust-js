@@ -762,11 +762,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.value_expr(v, span),
                     })
                     .collect::<R<Vec<_>>>()?;
-                let given: Vec<Given> = (operands.iter().zip(&nulled))
-                    .map(|(o, &nulled)| match nulled {
-                        _ if self.written_none(state.body, &state.locals, o) => Given::WrittenNone,
-                        true => Given::Nulled,
-                        false => Given::Unknown,
+                let given: Vec<Given> = (operands.iter())
+                    .map(|o| match self.written_none(state.body, &state.locals, o) {
+                        true => Given::WrittenNone,
+                        false => self.stored_given(state, o),
                     })
                     .collect();
                 // `FromFn(f)`, `iter::from_fn(f)` inlined into std's bodies:
@@ -1046,22 +1045,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variable, or a `Some(..)`, or a `#[rust_js::nullable]` function's
     /// result (ADR 0841, amended).
     pub(super) fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        self.stored_given(state, operand) == Given::Nulled
+    }
+
+    /// What `operand`, an `Option`, is to a `#[rust_js::nullable]` place
+    /// it's stored in: `null` or a value already (`nulled`), what an
+    /// optional nullable field holds, read, which another such takes as it
+    /// is (ADR 0810, amended), or what may be `undefined`. Not a
+    /// `WrittenNone`, which `written_none` tells.
+    pub(super) fn stored_given(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Given {
         let Some(place) = operand.place() else {
-            return false;
+            return Given::Unknown;
         };
         if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
-            return self
-                .place_field(state, place)
-                .is_some_and(|field| bindings::null_where_made(self.tcx, field));
+            return match self.place_field(state, place) {
+                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,
+                Some(field) if bindings::is_optional(self.tcx, field) => Given::Optional,
+                _ => Given::Unknown,
+            };
         }
         if !place.projection.is_empty() {
-            return false;
+            return Given::Unknown;
         }
         if state.facts.options().null_nones.contains(&place.local) {
-            return true;
+            return Given::Nulled;
         }
         if state.locals.writes[place.local] != 1 {
-            return false;
+            return Given::Unknown;
         }
         // What it's assigned, once: another such, or `Some(..)`.
         let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
@@ -1089,7 +1099,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
             && crate::lower::calls::gives_null_for_none(self.tcx, def_id)
         {
-            return true;
+            return Given::Nulled;
         }
         if itself
             && let Some((func, args)) = call
@@ -1105,16 +1115,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 })
         {
-            return self.nulled(state, &Operand::Copy(*borrowed));
+            return self.stored_given(state, &Operand::Copy(*borrowed));
         }
         match assigned {
-            Some(Rvalue::Use(operand, _)) => self.nulled(state, operand),
-            Some(Rvalue::Aggregate(kind, fields)) => {
-                fields.len() == 1
+            Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),
+            Some(Rvalue::Aggregate(kind, fields))
+                if fields.len() == 1
                     && matches!(**kind, AggregateKind::Adt(did, variant, ..)
-                    if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option))
+                    if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option)) =>
+            {
+                Given::Nulled
             }
-            _ => false,
+            _ => Given::Unknown,
         }
     }
 }

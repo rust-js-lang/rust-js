@@ -2,6 +2,7 @@
 //! a call of the crate's is given.
 
 use super::*;
+use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn mir_assign(
@@ -199,18 +200,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // set, `children = None`, as React's `mapIntoArray` writes it (ADR
         // 0861), and a field a `get_mut` lent, `*t.types.get_mut() = None`
         // (ADR 0863).
-        let nullable = match self
-            .place_field(state, *place)
+        // What an optional one holds, given another, is as it is (ADR 0810,
+        // amended).
+        let field = (self.place_field(state, *place))
             .or_else(|| self.field_got_mut(state, *place))
-            .or_else(|| self.field_item(state, *place))
-        {
+            .or_else(|| self.field_item(state, *place));
+        let nullable = match field {
             Some(field) => bindings::is_nullable(self.tcx, field),
             None => self.own_nullable_param(state, *place),
         };
+        let optional = (self.place_field(state, *place)).is_some_and(|field| bindings::is_optional(self.tcx, field));
         let value = match nullable {
             true => {
                 let nulled = match rvalue {
-                    Rvalue::Use(operand, _) => self.nulled(state, operand),
+                    Rvalue::Use(operand, _) => match self.stored_given(state, operand) {
+                        Given::Nulled => true,
+                        Given::Optional => optional,
+                        _ => false,
+                    },
                     _ => false,
                 };
                 Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
