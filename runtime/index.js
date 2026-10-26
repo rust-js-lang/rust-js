@@ -323,10 +323,10 @@ export function $debug(v) {
   }
   // A `HashMap` and a `HashSet` (ADR 0059), in braces as Rust shows them.
   if (v instanceof Map) {
-    return "{" + [...v].map(([k, x]) => $debug(k) + ": " + $debug(x)).join(", ") + "}";
+    return "{" + Array.from(v, ([k, x]) => $debug(k) + ": " + $debug(x)).join(", ") + "}";
   }
   if (v instanceof Set) {
-    return "{" + [...v].map($debug).join(", ") + "}";
+    return "{" + Array.from(v, (x) => $debug(x)).join(", ") + "}";
   }
   if (typeof v === "object" && v !== null) {
     return "{ " + Object.entries(v).map(([k, x]) => k + ": " + $debug(x)).join(", ") + " }";
@@ -356,7 +356,7 @@ export function $eq(a, b, cells) {
   if (a instanceof Map) return b instanceof Map && $mapEq(a, b, (x, y) => $eq(x, y, true));
   // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  return [...keys].every((k) => $eq(a[k], b[k], true));
+  return Array.from(keys).every((k) => $eq(a[k], b[k], true));
 }
 // Two maps (ADR 0059): as many entries, and each key of `a` one of `b`'s,
 // whose value `eq` says is equal, `===` where it's given none; and two sets,
@@ -3248,7 +3248,7 @@ export function $strPop(s) {
 export function $splitN(s, n, p) {
   if (n === 0) return [];
   const parts = $split(s, p);
-  return parts.length <= n ? parts : [...parts.slice(0, n - 1), parts.slice(n - 1).join(p)];
+  return parts.length <= n ? parts : parts.slice(0, n - 1).concat([parts.slice(n - 1).join(p)]);
 }
 
 // `s.rsplit(p)`, and `s.rsplitn(n, p)`: its pieces from the end, searched
@@ -3881,7 +3881,7 @@ export class $CowSet extends $KeySet {
 // field's decoder (ADR 0562). A field it doesn't hold that isn't plain
 // data, whose bytes JS has none of, is rust-js's error.
 export function $unionField(union, key, alike = [], decoders = {}) {
-  for (const field of [key, ...alike]) if (Object.hasOwn(union, field)) return union[field];
+  for (const field of [key].concat(alike)) if (Object.hasOwn(union, field)) return union[field];
   const held = Object.keys(union)[0];
   // Plain data's, as the field asked reads its bytes (ADR 0562). One JS
   // holds as an object, which fills the union, is then the field held, so
@@ -4701,7 +4701,7 @@ export function $fromUtf16Lossy(units) {
 
 export function $utf16Text(units) {
   let text = "";
-  for (let i = 0; i < units.length; i += 4096) text += String.fromCharCode(...units.slice(i, i + 4096));
+  for (let i = 0; i < units.length; i += 4096) text += String.fromCharCode.apply(null, units.slice(i, i + 4096));
   return text;
 }
 
@@ -5005,7 +5005,7 @@ export function $sliceStripCircumfix(v, prefix, suffix, eq) {
 export function $repeatItems(v, n, size, copy) {
   $roomFor(v.length * n, size);
   const out = [];
-  for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
+  for (let i = 0; i < n; i++) $extend(out, copy === undefined ? v : v.map(copy));
   return out;
 }
 
@@ -5246,12 +5246,12 @@ export function $setAlgebra(a, b, op, cmp) {
   const only = (x, y) => Array.from(x).filter((item) => !y.has(item));
   const items =
     op === "union"
-      ? [...a, ...only(b, a)]
+      ? Array.from(a).concat(only(b, a))
       : op === "intersection"
         ? Array.from(a).filter((item) => b.has(item))
         : op === "difference"
           ? only(a, b)
-          : [...only(a, b), ...only(b, a)];
+          : only(a, b).concat(only(b, a));
   return cmp ? items.sort(cmp) : items;
 }
 
@@ -6075,7 +6075,7 @@ export function $padIntegral(nonNegative, prefix, digits, options) {
   const head = sign + (options.alternate ? prefix : "");
   const width = options.width;
   if (width === undefined) return head + digits;
-  if (options.zero) return head + digits.padStart(width - [...head].length, "0");
+  if (options.zero) return head + digits.padStart(width - Array.from(head).length, "0");
   const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? ">";
   return $pad(head + digits, width, align, options.fill);
 }
@@ -6914,7 +6914,7 @@ export function $getDisjointMut(v, indices, handle = false, inclusive = false) {
       if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: "Err", _0: "OverlappingIndices" };
     }
   }
-  const take = (at, i) => (typeof at !== "number" ? $view(v, ...bounds[i]) : handle ? $mutAt(v, at) : v[at]);
+  const take = (at, i) => (typeof at !== "number" ? $view(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
   return { TAG: "Ok", _0: indices.map(take) };
 }
 
@@ -7075,8 +7075,8 @@ export const $stderrWriter = {
   flush: () => {},
 };
 export const $vecWriter = {
-  write: (w, bytes) => (w.value.push(...bytes), { TAG: "Ok", _0: bytes.length }),
-  writeAll: (w, bytes) => void w.value.push(...bytes),
+  write: (w, bytes) => ($extend(w.value, bytes), { TAG: "Ok", _0: bytes.length }),
+  writeAll: (w, bytes) => $extend(w.value, bytes),
   writeFmt: (w, text) => $writeText(w.value, text),
   flush: () => {},
 };
@@ -7112,7 +7112,7 @@ export function $ioWriteFmt(write) {
 }
 // `write!(v, ..)` of a `Vec<u8>`: its text's UTF-8 bytes added.
 export function $writeText(v, text) {
-  v.push(...new TextEncoder().encode(text));
+  $extend(v, new TextEncoder().encode(text));
 }
 
 // The process a program runs in, Node's (ADR 0391): what std asks of it,
@@ -7373,7 +7373,7 @@ export function $replace(s, pattern, replacement) {
   return Array.from(s, (c) => replacement + c).join("") + replacement;
 }
 export function $split(s, pattern) {
-  return pattern === "" ? ["", ...s, ""] : s.split(pattern);
+  return pattern === "" ? ["", ...Array.from(s), ""] : s.split(pattern);
 }
 // `s.replacen(from, to, n)`: the first `n` matches, left to right; of an
 // empty pattern, at each char's boundary, as Rust matches it.
@@ -9363,7 +9363,7 @@ export function $jsonUnexpectedNumber(n) {
 }
 
 export function $jsonChar(s) {
-  if ([...s].length === 1) return s;
+  if (Array.from(s).length === 1) return s;
   throw $jsonError(`invalid value: string ${$debugStr(s)}, expected a character`);
 }
 
@@ -9403,14 +9403,14 @@ export function $jsonField(key, fields, deny) {
 // serde's `OneOf`, of each name and its aliases, which serde keeps sorted.
 export function $jsonOneOf(entries) {
   const byCodePoint = (a, b) => {
-    const [x, y] = [[...a], [...b]];
+    const [x, y] = [Array.from(a), Array.from(b)];
     for (let i = 0; i < Math.min(x.length, y.length); i++) {
       const d = x[i].codePointAt(0) - y[i].codePointAt(0);
       if (d !== 0) return d;
     }
     return x.length - y.length;
   };
-  const names = entries.flatMap((names) => (typeof names === "string" ? [names] : [...names].sort(byCodePoint)));
+  const names = entries.flatMap((names) => (typeof names === "string" ? [names] : names.toSorted(byCodePoint)));
   const quoted = names.map((name) => `\`${name}\``);
   if (quoted.length === 1) return quoted[0];
   if (quoted.length === 2) return `${quoted[0]} or ${quoted[1]}`;
@@ -10161,7 +10161,8 @@ export function $heapRebuildTail(heap, start, cmp) {
 export function $heapAppend(heap, other, cmp) {
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
-  heap.push(...first, ...rest);
+  $extend(heap, first);
+  $extend(heap, rest);
   other.length = 0;
   $heapRebuildTail(heap, first.length, cmp);
 }
@@ -10269,7 +10270,7 @@ export function $parseBool(s) {
 }
 
 export function $parseChar(s) {
-  const chars = [...s];
+  const chars = Array.from(s);
   if (chars.length === 1) return { TAG: "Ok", _0: s };
   return { TAG: "Err", _0: chars.length === 0 ? "cannot parse char from empty string" : "too many characters in string" };
 }
@@ -10485,7 +10486,7 @@ export function $escapeByte(byte) {
 
 // `{}` of a byte's escape, stepped or not: the bytes it has left, as text.
 export function $restBytes(it) {
-  return String.fromCharCode(...it.items.slice(it.at, it.end));
+  return String.fromCharCode.apply(null, it.items.slice(it.at, it.end));
 }
 
 // `bytes.utf8_chunks()`: each run of valid text and the bad bytes after it,
@@ -10547,7 +10548,7 @@ export function $swapBytes(x, bits, signed) {
 
 // `x.reverse_bits()`: its bits the other way round.
 export function $reverseBits(x, bits, signed) {
-  const digits = [...$intDigits(x, bits)].reverse().join("");
+  const digits = Array.from($intDigits(x, bits)).reverse().join("");
   return $intOfDigits(digits, bits, signed, typeof x === "bigint");
 }
 
@@ -11248,7 +11249,13 @@ export function $dedupByCells(v, same) {
 
 export function $splice(items, start, end, replacement) {
   $checkRange(start, end, items.length);
-  return items.splice(start, end - start, ...replacement);
+  // Pushed, not spread into `splice`'s arguments: as many as there are.
+  const added = Array.from(replacement);
+  const tail = items.splice(end);
+  const removed = items.splice(start);
+  $extend(items, added);
+  $extend(items, tail);
+  return removed;
 }
 
 export function $windows(v, size) {
@@ -12052,7 +12059,7 @@ export function $zeroPad(text, width) {
 }
 
 export function $pad(text, width, align, fill = " ") {
-  const room = width - [...text].length;
+  const room = width - Array.from(text).length;
   if (room <= 0) return text;
   const before = align === ">" ? room : align === "^" ? Math.floor(room / 2) : 0;
   return fill.repeat(before) + text + fill.repeat(room - before);
@@ -12065,7 +12072,7 @@ export function $formatted(text, options, numeric = false) {
   if (options === undefined) return text;
   const { width, precision } = options;
   if (numeric && options.plus) text = $plus(text);
-  if (!numeric && precision !== undefined) text = [...text].slice(0, precision).join("");
+  if (!numeric && precision !== undefined) text = Array.from(text).slice(0, precision).join("");
   if (width === undefined) return text;
   if (numeric && options.zero) return $zeroPad(text, width);
   const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? (numeric ? ">" : "<");

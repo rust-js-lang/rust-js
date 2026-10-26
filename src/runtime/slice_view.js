@@ -173,6 +173,6 @@ function $getDisjointMut(v, indices, handle = false, inclusive = false) {
       if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: "Err", _0: "OverlappingIndices" };
     }
   }
-  const take = (at, i) => (typeof at !== "number" ? $view(v, ...bounds[i]) : handle ? $mutAt(v, at) : v[at]);
+  const take = (at, i) => (typeof at !== "number" ? $view(v, bounds[i][0], bounds[i][1]) : handle ? $mutAt(v, at) : v[at]);
   return { TAG: "Ok", _0: indices.map(take) };
 }

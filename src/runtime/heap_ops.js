@@ -21,7 +21,8 @@ function $heapRebuildTail(heap, start, cmp) {
 function $heapAppend(heap, other, cmp) {
   const [first, rest] = heap.length < other.length ? [other.slice(), heap.slice()] : [heap.slice(), other.slice()];
   heap.length = 0;
-  heap.push(...first, ...rest);
+  $extend(heap, first);
+  $extend(heap, rest);
   other.length = 0;
   $heapRebuildTail(heap, first.length, cmp);
 }

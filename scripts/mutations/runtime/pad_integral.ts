@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "pad-integral-zeros-before-prefix",
     breaks: "`{:#010}` of `pad_integral`'s digits puts its zeros before the prefix",
     file: "src/runtime/pad_integral.js",
-    find: "  if (options.zero) return head + digits.padStart(width - [...head].length, \"0\");\n",
+    find: "  if (options.zero) return head + digits.padStart(width - Array.from(head).length, \"0\");\n",
     replace: "  if (options.zero) return (head + digits).padStart(width, \"0\");\n",
     tests: ["test/corpus.test.ts", "-t", "^pad_integral.rs$"],
   },

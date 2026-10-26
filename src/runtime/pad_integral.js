@@ -8,7 +8,7 @@ function $padIntegral(nonNegative, prefix, digits, options) {
   const head = sign + (options.alternate ? prefix : "");
   const width = options.width;
   if (width === undefined) return head + digits;
-  if (options.zero) return head + digits.padStart(width - [...head].length, "0");
+  if (options.zero) return head + digits.padStart(width - Array.from(head).length, "0");
   const align = { Left: "<", Right: ">", Center: "^" }[options.align] ?? ">";
   return $pad(head + digits, width, align, options.fill);
 }

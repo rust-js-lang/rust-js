@@ -70,7 +70,7 @@ function $fromUtf16Lossy(units) {
 
 function $utf16Text(units) {
   let text = "";
-  for (let i = 0; i < units.length; i += 4096) text += String.fromCharCode(...units.slice(i, i + 4096));
+  for (let i = 0; i < units.length; i += 4096) text += String.fromCharCode.apply(null, units.slice(i, i + 4096));
   return text;
 }
 

@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "  for (const item of items) heap.push(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_extend.rs$"],
   },
+  {
+    name: "heap-append-spread-arguments",
+    breaks: "a heap's `append` spreads its items into one `push`, more than a JS call takes as arguments: `RangeError` (ADR 0919)",
+    file: "src/runtime/heap_ops.js",
+    find: "  $extend(heap, first);\n  $extend(heap, rest);\n",
+    replace: "  heap.push(...first, ...rest);\n",
+    tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
+  },
 ];

@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "vec-writer-text-unencoded",
     breaks: "a `Vec<u8>`'s `write!` adds the text's UTF-16 code units, not its UTF-8 bytes",
     file: "src/runtime/print.js",
-    find: "  v.push(...new TextEncoder().encode(text));\n",
-    replace: "  v.push(...[...text].map((c) => c.charCodeAt(0)));\n",
+    find: "  $extend(v, new TextEncoder().encode(text));\n",
+    replace: "  $extend(v, Array.from(text, (c) => c.charCodeAt(0)));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
   {
@@ -25,5 +25,13 @@ export const mutations: Mutation[] = [
     find: "        throw written._0;\n",
     replace: "        throw new Error(\"a write that fails\");\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
+  },
+  {
+    name: "vec-writer-spread-arguments",
+    breaks: "a `Vec<u8>`'s `write_all` as a `dyn Write` spreads its bytes into one `push`, more than a JS call takes: `RangeError` (ADR 0919)",
+    file: "src/runtime/print.js",
+    find: "writeAll: (w, bytes) => $extend(w.value, bytes),",
+    replace: "writeAll: (w, bytes) => void w.value.push(...bytes),",
+    tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
   },
 ];

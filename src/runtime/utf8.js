@@ -137,7 +137,7 @@ function $escapeByte(byte) {
 
 // `{}` of a byte's escape, stepped or not: the bytes it has left, as text.
 function $restBytes(it) {
-  return String.fromCharCode(...it.items.slice(it.at, it.end));
+  return String.fromCharCode.apply(null, it.items.slice(it.at, it.end));
 }
 
 // `bytes.utf8_chunks()`: each run of valid text and the bad bytes after it,

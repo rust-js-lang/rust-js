@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     replace: "  return key;\n",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
   },
+  {
+    name: "set-union-spread",
+    breaks: "a set's `union` spreads the set, which Babel's loose spread keeps whole, one item (ADR 0919)",
+    file: "src/runtime/map_ops.js",
+    find: "? Array.from(a).concat(only(b, a))",
+    replace: "? [...a, ...only(b, a)]",
+    tests: ["test/runtime-transpiled.test.ts"],
+  },
 ];

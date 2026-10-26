@@ -21,7 +21,7 @@ function $eq(a, b, cells) {
   if (a instanceof Map) return b instanceof Map && $mapEq(a, b, (x, y) => $eq(x, y, true));
   // A key one has and the other hasn't is a `None` the other left out (ADR 0280).
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  return [...keys].every((k) => $eq(a[k], b[k], true));
+  return Array.from(keys).every((k) => $eq(a[k], b[k], true));
 }
 // Two maps (ADR 0059): as many entries, and each key of `a` one of `b`'s,
 // whose value `eq` says is equal, `===` where it's given none; and two sets,

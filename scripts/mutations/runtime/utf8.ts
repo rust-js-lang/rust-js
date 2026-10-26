@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "byte-escape-shows-all",
     breaks: "`{}` of a byte's escape partly stepped shows all of it",
     file: "src/runtime/utf8.js",
-    find: "  return String.fromCharCode(...it.items.slice(it.at, it.end));",
-    replace: "  return String.fromCharCode(...it.items);",
+    find: "  return String.fromCharCode.apply(null, it.items.slice(it.at, it.end));",
+    replace: "  return String.fromCharCode.apply(null, it.items);",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
   {

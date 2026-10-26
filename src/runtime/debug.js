@@ -12,10 +12,10 @@ function $debug(v) {
   }
   // A `HashMap` and a `HashSet` (ADR 0059), in braces as Rust shows them.
   if (v instanceof Map) {
-    return "{" + [...v].map(([k, x]) => $debug(k) + ": " + $debug(x)).join(", ") + "}";
+    return "{" + Array.from(v, ([k, x]) => $debug(k) + ": " + $debug(x)).join(", ") + "}";
   }
   if (v instanceof Set) {
-    return "{" + [...v].map($debug).join(", ") + "}";
+    return "{" + Array.from(v, (x) => $debug(x)).join(", ") + "}";
   }
   if (typeof v === "object" && v !== null) {
     return "{ " + Object.entries(v).map(([k, x]) => k + ": " + $debug(x)).join(", ") + " }";

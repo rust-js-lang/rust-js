@@ -53,6 +53,13 @@ export function pick(items, index) {
   what the app runs. `rust-js build` refuses another version ([ADR 0103](../../decisions/0103-runtime-package.md)).
 - **Each helper is a named export**, and the packages have no side
   effects, so a bundler keeps only what's used.
+- **Your tooling may transpile them.** The runtime spreads only arrays,
+  and steps a string's chars or a set's items by `Array.from`, so Babel's
+  loose spread and destructuring, which React's Jest config runs over
+  everything, leave its answers as they are ([ADR 0919](../../decisions/0919-the-runtime-survives-loose-transforms.md)).
+  A transform that steps every `for…of` as an array, Babel's
+  `assumeArray` or TypeScript's ES5 output without `downlevelIteration`,
+  breaks a loop over a map in the JS rust-js writes, as in any JS.
 
 What each Rust construct becomes, and when it needs a helper, is
 [Semantics](../semantics.md).

@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "union-field-alike-unread",
     breaks: "a union's field of the same type as the one it holds is rust-js's error",
     file: "src/runtime/unions.js",
-    find: "  for (const field of [key, ...alike]) if (Object.hasOwn(union, field)) return union[field];\n",
+    find: "  for (const field of [key].concat(alike)) if (Object.hasOwn(union, field)) return union[field];\n",
     replace: "  if (Object.hasOwn(union, key)) return union[key];\n",
     tests: ["test/runtime-package.test.ts", "-t", "union"],
   },

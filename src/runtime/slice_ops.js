@@ -277,7 +277,7 @@ function $sliceStripCircumfix(v, prefix, suffix, eq) {
 function $repeatItems(v, n, size, copy) {
   $roomFor(v.length * n, size);
   const out = [];
-  for (let i = 0; i < n; i++) out.push(...(copy === undefined ? v : v.map(copy)));
+  for (let i = 0; i < n; i++) $extend(out, copy === undefined ? v : v.map(copy));
   return out;
 }
 

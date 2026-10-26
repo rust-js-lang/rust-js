@@ -5,7 +5,7 @@ function $replace(s, pattern, replacement) {
   return Array.from(s, (c) => replacement + c).join("") + replacement;
 }
 function $split(s, pattern) {
-  return pattern === "" ? ["", ...s, ""] : s.split(pattern);
+  return pattern === "" ? ["", ...Array.from(s), ""] : s.split(pattern);
 }
 // `s.replacen(from, to, n)`: the first `n` matches, left to right; of an
 // empty pattern, at each char's boundary, as Rust matches it.

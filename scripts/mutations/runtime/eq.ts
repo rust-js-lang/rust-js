@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "eq-counts-keys",
     breaks: "two structs alike but for a `None` one left out aren't equal",
     file: "src/runtime/eq.js",
-    find: "  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);\n  return [...keys].every((k) => $eq(a[k], b[k], true));",
+    find: "  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);\n  return Array.from(keys).every((k) => $eq(a[k], b[k], true));",
     replace: "  const keys = Object.keys(a);\n  return keys.length === Object.keys(b).length && keys.every((k) => $eq(a[k], b[k], true));",
     tests: ["test/lowering-options.test.ts", "-t", "literal None is left out"],
   },

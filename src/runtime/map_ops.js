@@ -155,12 +155,12 @@ function $setAlgebra(a, b, op, cmp) {
   const only = (x, y) => Array.from(x).filter((item) => !y.has(item));
   const items =
     op === "union"
-      ? [...a, ...only(b, a)]
+      ? Array.from(a).concat(only(b, a))
       : op === "intersection"
         ? Array.from(a).filter((item) => b.has(item))
         : op === "difference"
           ? only(a, b)
-          : [...only(a, b), ...only(b, a)];
+          : only(a, b).concat(only(b, a));
   return cmp ? items.sort(cmp) : items;
 }
 

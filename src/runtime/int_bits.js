@@ -26,7 +26,7 @@ function $swapBytes(x, bits, signed) {
 
 // `x.reverse_bits()`: its bits the other way round.
 function $reverseBits(x, bits, signed) {
-  const digits = [...$intDigits(x, bits)].reverse().join("");
+  const digits = Array.from($intDigits(x, bits)).reverse().join("");
   return $intOfDigits(digits, bits, signed, typeof x === "bigint");
 }
 

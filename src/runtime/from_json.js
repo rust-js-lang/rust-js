@@ -32,7 +32,7 @@ function $jsonUnexpectedNumber(n) {
 }
 
 function $jsonChar(s) {
-  if ([...s].length === 1) return s;
+  if (Array.from(s).length === 1) return s;
   throw $jsonError(`invalid value: string ${$debugStr(s)}, expected a character`);
 }
 
@@ -72,14 +72,14 @@ function $jsonField(key, fields, deny) {
 // serde's `OneOf`, of each name and its aliases, which serde keeps sorted.
 function $jsonOneOf(entries) {
   const byCodePoint = (a, b) => {
-    const [x, y] = [[...a], [...b]];
+    const [x, y] = [Array.from(a), Array.from(b)];
     for (let i = 0; i < Math.min(x.length, y.length); i++) {
       const d = x[i].codePointAt(0) - y[i].codePointAt(0);
       if (d !== 0) return d;
     }
     return x.length - y.length;
   };
-  const names = entries.flatMap((names) => (typeof names === "string" ? [names] : [...names].sort(byCodePoint)));
+  const names = entries.flatMap((names) => (typeof names === "string" ? [names] : names.toSorted(byCodePoint)));
   const quoted = names.map((name) => `\`${name}\``);
   if (quoted.length === 1) return quoted[0];
   if (quoted.length === 2) return `${quoted[0]} or ${quoted[1]}`;

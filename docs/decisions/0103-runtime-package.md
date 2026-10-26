@@ -149,3 +149,4 @@ not npm's.
 ## Amended by
 
 - [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way
+- [0919](0919-the-runtime-survives-loose-transforms.md): The runtime spreads only arrays, so an app's loose transforms, Babel's in React's Jest, leave its answers as they are

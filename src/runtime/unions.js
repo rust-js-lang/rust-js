@@ -4,7 +4,7 @@
 // field's decoder (ADR 0562). A field it doesn't hold that isn't plain
 // data, whose bytes JS has none of, is rust-js's error.
 function $unionField(union, key, alike = [], decoders = {}) {
-  for (const field of [key, ...alike]) if (Object.hasOwn(union, field)) return union[field];
+  for (const field of [key].concat(alike)) if (Object.hasOwn(union, field)) return union[field];
   const held = Object.keys(union)[0];
   // Plain data's, as the field asked reads its bytes (ADR 0562). One JS
   // holds as an object, which fills the union, is then the field held, so

@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
+  {
+    name: "repeat-items-spread-arguments",
+    breaks: "`v.repeat(n)` spreads its items into one `push`, more than a JS call takes as arguments: `RangeError` (ADR 0919)",
+    file: "src/runtime/slice_ops.js",
+    find: "$extend(out, copy === undefined ? v : v.map(copy));",
+    replace: "out.push(...(copy === undefined ? v : v.map(copy)));",
+    tests: ["test/corpus.test.ts", "-t", "^runtime_long_writes.rs$"],
+  },
 ];

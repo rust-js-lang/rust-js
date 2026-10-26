@@ -52,8 +52,8 @@ const $stderrWriter = {
   flush: () => {},
 };
 const $vecWriter = {
-  write: (w, bytes) => (w.value.push(...bytes), { TAG: "Ok", _0: bytes.length }),
-  writeAll: (w, bytes) => void w.value.push(...bytes),
+  write: (w, bytes) => ($extend(w.value, bytes), { TAG: "Ok", _0: bytes.length }),
+  writeAll: (w, bytes) => $extend(w.value, bytes),
   writeFmt: (w, text) => $writeText(w.value, text),
   flush: () => {},
 };
@@ -89,5 +89,5 @@ function $ioWriteFmt(write) {
 }
 // `write!(v, ..)` of a `Vec<u8>`: its text's UTF-8 bytes added.
 function $writeText(v, text) {
-  v.push(...new TextEncoder().encode(text));
+  $extend(v, new TextEncoder().encode(text));
 }
