@@ -162,7 +162,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0141 A `dyn Display` or `dyn Error` is a value and its dictionary](0141-std-trait-objects.md)
 - [0142 A channel on one thread is a queue its ends share](0142-channels.md)
 - [0143 A `Formatter`'s options are an object its writers are given](0143-formatter-options.md)
-- [0144 A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`](0144-locks.md)
+- [0144 A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`](0144-locks.md) *(amended: a static lock or atomic is one cell)*
 - [0145 A generic function is given the size and name of a type parameter it asks for](0145-type-facts.md) *(extended by 0899: an array's constant size and `OneShot`, carried by std traits' dictionaries)*
 - [0146 A generic associated type of lifetimes is an associated type](0146-generic-associated-types.md)
 - [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](0147-replacing-through-mut.md) *(amended: std's enums with a fieldless variant are by their place too)*

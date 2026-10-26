@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "static-lock-refused",
+    breaks: "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",
+    file: "src/lower/pipeline.rs",
+    find: "                super::recognition::StdItem::Mutex,\n                super::recognition::StdItem::RwLock,\n                super::recognition::StdItem::Atomic,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^static_locks.rs$"],
+  },
+  {
     name: "unread-library-item-imported",
     breaks: "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
     file: "src/lower/pipeline.rs",
@@ -278,8 +286,8 @@ export const mutations: Mutation[] = [
     name: "lazy-static-refused",
     breaks: "a `static` `LazyLock` is refused",
     file: "src/lower/pipeline.rs",
-    find: "            if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]\n",
-    replace: "            if [super::recognition::StdItem::OnceCell]\n",
+    find: "                super::recognition::StdItem::LazyCell,\n                super::recognition::StdItem::Mutex,\n",
+    replace: "                super::recognition::StdItem::Mutex,\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
   {

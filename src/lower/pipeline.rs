@@ -187,11 +187,19 @@ pub fn lower_crate<'tcx>(
         // use's, and it reads no static, whose value may not be made yet.
         // A `OnceLock`, only ever made empty, or a `LazyLock`, which
         // makes its value when it's used, is one JS cell too (ADRs 0317, 0318),
-        // and so is a `static mut`, its value's `{ value }` (ADR 0096).
+        // and so is a `Mutex`, an `RwLock` or an atomic, which every use
+        // changes in place, the one place a static is, and a `static mut`,
+        // its value's `{ value }` (ADR 0096).
         let mutable = matches!(tcx.def_kind(def_id), DefKind::Static { mutability, .. } if mutability.is_mut());
         let once = matches!(tcx.def_kind(def_id), DefKind::Static { .. })
             && matches!(ty.kind(), ty::Adt(adt, _)
-            if [super::recognition::StdItem::OnceCell, super::recognition::StdItem::LazyCell]
+            if [
+                super::recognition::StdItem::OnceCell,
+                super::recognition::StdItem::LazyCell,
+                super::recognition::StdItem::Mutex,
+                super::recognition::StdItem::RwLock,
+                super::recognition::StdItem::Atomic,
+            ]
                 .into_iter()
                 .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
         // A constant's each use is a value of its own, copied where it may

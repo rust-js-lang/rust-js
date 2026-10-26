@@ -92,3 +92,15 @@ its guard drops the old value; and `into_inner` gives the value back,
 dropped then by whoever has it. The `lock_destructors` corpus case runs
 each against native Rust; mutations of the drop and of `into_inner` are
 caught.
+
+## Amendment: a static lock or atomic is one cell (#330)
+
+A static `Mutex`, `RwLock` or atomic, std's way to keep global state, was
+refused: "statics of type `RwLock<..>`". A static without `mut` is one
+place every use reads, which changes only through interior mutability, so
+**it's one JS cell made of its initializer**, as a `OnceLock` static is
+(ADR 0317): `const TABLE = { value: Table.new() }`, which `$lock` and
+`$lockRead` guard as a local's. TheAlgorithms/rust's Bell numbers keep
+their lookup table so. Held by the corpus case `static_locks` and the
+mutation `static-lock-refused`.
+
