@@ -200,6 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
+            (JsForm::Null, None) if args.is_empty() => Expr::null(),
             (JsForm::Class, None) if args.is_empty() => {
                 let ty = generic_args.types().next();
                 let constructor = ty.and_then(|ty| match ty.kind() {

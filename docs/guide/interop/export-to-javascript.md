@@ -789,7 +789,7 @@ impl Fiber {
     pub fn new(tag: u8, dev: bool) -> Self {
         let fiber = Fiber {
             tag: Cell::new(tag),
-            memoized_state: Cell::new(js::NULL),
+            memoized_state: Cell::new(js::null()),
             actual_duration: Cell::new(None),
             debug_owner: Cell::new(None),
         };
@@ -797,7 +797,7 @@ impl Fiber {
             fiber.actual_duration.set(Some(-0.0));
         }
         if dev {
-            fiber.debug_owner.set(js::NULL);
+            fiber.debug_owner.set(js::null());
             js::object::prevent_extensions(&fiber);
         }
         fiber

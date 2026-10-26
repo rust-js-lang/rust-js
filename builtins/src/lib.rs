@@ -466,14 +466,18 @@ pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
     unreachable!()
 }
 
-/// JS's `null`, as any value: `None` to Rust, as either of JS's `None`s is
-/// (ADR 0030), and `null` where it's written, as TypeScript's `any` starts
-/// `null`: React's fiber's `memoizedState: null`, of `memoized_state:
-/// Cell::new(js::NULL)`. What's stored there later is stored as it is,
-/// `undefined` too, where a `#[rust_js::nullable]` field would store `null`
-/// for every `None` (ADR 0935).
-#[cfg_attr(rust_js, rust_js::nullable)]
-pub const NULL: Option<&'static Unknown> = None;
+/// JS's `null`, as an `Option` of any type: `None` to Rust, as either of
+/// JS's `None`s is (ADR 0030), and `null` where it's written, as a field
+/// TypeScript types `T | null` starts: React's fiber's `memoizedState:
+/// null`, of `memoized_state: Cell::new(js::null())`, and `_debugStack:
+/// null`, of `debug_stack: Cell::new(js::null())`. What's stored there
+/// later is stored as it is, `undefined` too, where a
+/// `#[rust_js::nullable]` field would store `null` for every `None` (ADR
+/// 0935).
+#[cfg_attr(rust_js, rust_js::link_name = "null", rust_js::nullable)]
+pub const fn null<T>() -> Option<T> {
+    None
+}
 
 /// `value` as a `T`, unchecked, as TypeScript's `any` is given a type: the
 /// value itself.

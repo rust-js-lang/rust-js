@@ -17,8 +17,8 @@ mod nullable;
 mod rest_values;
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
 pub(super) use nullable::{
-    is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init, nullable_items,
-    nullable_local, nullable_option, nullable_params, nullable_result, of_type_parameter,
+    is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init,
+    nullable_items, nullable_local, nullable_option, nullable_params, nullable_result, of_type_parameter,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 
@@ -364,6 +364,9 @@ pub(super) enum JsForm {
     /// `class`: the constructor function of the class its type argument
     /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
     Class,
+    /// `null`: JS's `null`, an `Option` of any type's `None` where it's
+    /// written, `js::null()`'s (ADR 0935, amended).
+    Null,
     /// `typeof object`: `this`, an untagged enum's value, where it's an
     /// object or an array, `typeof this === "object" && this !== null`,
     /// else `undefined`, `js::Kind::object`'s (ADR 0910).
@@ -392,6 +395,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "for in" => return JsForm::KeysIn,
         "throw" => return JsForm::Throw,
         "class" => return JsForm::Class,
+        "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
         _ => {}
     }

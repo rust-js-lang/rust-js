@@ -379,4 +379,12 @@ export const mutations: Mutation[] = [
     replace: "                if true =>\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
   },
+  {
+    name: "js-null-written-undefined",
+    breaks: "`js::null()` is `undefined`, as any `None`, so a fiber made `memoized_state: Cell::new(js::null())` has no `memoizedState` (ADR 0935, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::Null, None) if args.is_empty() => Expr::null(),\n",
+    replace: "            (JsForm::Null, None) if args.is_empty() => Expr::undefined(),\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::null\\(\\) is null where it's written"],
+  },
 ];

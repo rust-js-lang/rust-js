@@ -374,15 +374,24 @@ pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::Generic
 /// are read by their names (`by_name`), `A | B` or `EventPriority(NO_LANE)`,
 /// and of no call of a function `by_name` says is compiled, whose body would
 /// run where its module loads: so its JS is as it's written, not rustc's
-/// value (ADR 0031, amended).
-pub(super) fn written_of_constants(thir: &Thir<'_>, by_name: &dyn Fn(DefId) -> bool) -> bool {
+/// value (ADR 0031, amended). A call `in_place` says is written as the value
+/// it gives, `js::null()`'s `null`, is such a constant, which rustc's value
+/// would leave out (ADR 0935, amended).
+pub(super) fn written_of_constants(
+    thir: &Thir<'_>,
+    by_name: &dyn Fn(DefId) -> bool,
+    in_place: &dyn Fn(DefId) -> bool,
+) -> bool {
     let calls_compiled = thir.exprs.iter().any(|e| match e.kind {
         ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),
         ExprKind::Closure(_) => true,
         _ => false,
     });
-    let names_constant =
-        (thir.exprs.iter()).any(|e| matches!(e.kind, ExprKind::NamedConst { def_id, .. } if by_name(def_id)));
+    let names_constant = (thir.exprs.iter()).any(|e| match e.kind {
+        ExprKind::NamedConst { def_id, .. } => by_name(def_id),
+        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_some_and(|(def_id, _)| in_place(def_id)),
+        _ => false,
+    });
     names_constant && !calls_compiled
 }
 

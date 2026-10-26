@@ -32,7 +32,7 @@ from your crate and what a binding must be given.
 | `Option<T>` | the value, or `undefined` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<T>` | the value, or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `#[rust_js::optional]` field | absent until it's set, then the value or `null` | [Option and Result](#option-and-result) |
-| `js::NULL` | `null` where it's written, `None` to Rust | [Option and Result](#option-and-result) |
+| `js::null()` | `null` where it's written, `None` to Rust | [Option and Result](#option-and-result) |
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
@@ -907,14 +907,18 @@ export function ratio(a, b) {
   rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already
   ```
 
-- **`js::NULL` is a `None` that's `null` where it's written**, an
-  `Option<&'static Unknown>`, as an `any` upstream starts `null`: React's
-  fiber's `memoizedState: null`. The field is a plain `Option`, so what's
-  stored there later is stored as it is, `undefined` too, where a
+- **`js::null()` is a `None` that's `null` where it's written**, of any
+  `Option`, usually inferred, as a field upstream types `T | null` or
+  `any` starts `null`: React's fiber's `memoizedState: null` and
+  `_debugStack: null`. The field is a plain `Option`, so what's stored
+  there later is stored as it is, `undefined` too, where a
   `#[rust_js::nullable]` field would store `null` for every `None`. Read,
-  it's `None` as either is, `memoized_state.get().is_some()` `!= null`; a
-  constant written of it is `null` there too, as the example below
-  shows ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md)).
+  it's `None` as either is: `is_some()` is `!= null`, `==` is `None`
+  equal to `None` whichever each is, and a map or a set keyed by an
+  `Option` has one `None` key; a constant written of it is `null` there
+  too, as the example below shows
+  ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md),
+  amended).
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
   or a generic `T` that's either, `{ $someNone: 0 }`, so it isn't
   `undefined` ([ADR 0051](../../decisions/0051-generic-options.md)).
@@ -923,26 +927,35 @@ export function ratio(a, b) {
   A binding returns one to say JS may throw: see
   [Errors, panics and exceptions](exceptions.md).
 
-A field of any value that starts `null`, upstream's `memoizedState: any`,
-is made `js::NULL`, and keeps what's stored after as it is:
+A field that starts `null`, upstream's `memoizedState: any` or
+`_debugStack: Error | null`, is made `js::null()`, and keeps what's
+stored after as it is:
 
 ```rust
 use std::cell::Cell;
 
-use js::Unknown;
+use js::{JsError, Unknown};
 
 pub struct Fiber {
     pub memoized_state: Cell<Option<&'static Unknown>>,
+    pub debug_stack: Cell<Option<&'static JsError>>,
+    pub name: Option<String>,
 }
 
 pub fn create_fiber() -> Fiber {
     Fiber {
-        memoized_state: Cell::new(js::NULL),
+        memoized_state: Cell::new(js::null()),
+        debug_stack: Cell::new(js::null()),
+        name: js::null(),
     }
 }
 
 pub fn set_state(fiber: &Fiber, state: Option<&'static Unknown>) {
     fiber.memoized_state.set(state);
+}
+
+pub fn copy(work_in_progress: &Fiber, current: &Fiber) {
+    work_in_progress.debug_stack.set(current.debug_stack.get());
 }
 
 pub fn has_state(fiber: &Fiber) -> bool {
@@ -954,11 +967,17 @@ pub fn has_state(fiber: &Fiber) -> bool {
 export function createFiber() {
   return {
     memoizedState: null,
+    debugStack: null,
+    name: null,
   };
 }
 
 export function setState(fiber, state) {
   fiber.memoizedState = state;
+}
+
+export function copy(workInProgress, current) {
+  workInProgress.debugStack = current.debugStack;
 }
 
 export function hasState(fiber) {

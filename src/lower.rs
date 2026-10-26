@@ -706,13 +706,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Ok(place),
             };
         }
-        // A binding crate's, `js::NULL`, whose `#[rust_js::nullable]` says
-        // its `None` is `null` where it's written (ADR 0935).
         if let Some(value) = representation::const_value_js(self.tcx, self.typing_env, def_id, args, span) {
-            return Ok(match bindings::nullable_local(self.tcx, def_id) {
-                true => js::Storage::NullForNone.written(value, false),
-                false => value,
-            });
+            return Ok(value);
         }
         match self.tcx.trait_of_assoc(def_id) {
             Some(trait_id) if args.has_non_region_param() => {

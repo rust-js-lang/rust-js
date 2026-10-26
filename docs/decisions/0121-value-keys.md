@@ -119,7 +119,7 @@ wrong answer fixed. Rust has one `None`; JS has two, `undefined` and
 An `Option` of a key a `Map` holds as it is, `HashMap<Option<u32>, _>`,
 was a plain `Map`, on the grounds above that its `None` is `undefined`.
 It isn't always: a `#[rust_js::nullable]` field's `None` is `null` (ADR
-0275), as is what JS gives and `js::NULL` (ADR 0935). So
+0275), as is what JS gives and `js::null()` (ADR 0935, amended). So
 `m.insert(node.parent, ..)` of a root's `null` and `m.get(&None)`'s
 `get(undefined)` were two keys, `len()` 2 where Rust's is 1, and the
 `get` missed. A `BTreeMap`, a `BTreeSet` and a `HashSet` of one were

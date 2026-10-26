@@ -9,8 +9,8 @@ parameter's value, and a thread-local a generic constructor makes, below;
 and of a thread-local of an `Option` itself, and what one gives, and of a
 `const`, below; and a constant's struct's field, below; and each declared
 by the aliases its type is written of, below. Extended by
-[0935](0935-js-null-is-null-where-its-written.md): the js crate's `js::NULL`,
-a nullable `const`, is `null` where it's written.
+[0935](0935-js-null-is-null-where-its-written.md): the js crate's
+`js::null()`, a `None` of any `Option`, is `null` where it's written.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.

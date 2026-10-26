@@ -178,3 +178,10 @@ fn nullable_alone(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(id, &path).any(|attr| attr.is_word())
 }
+
+/// Is this `js::null()`, written as the `null` it gives, `link_name =
+/// "null"` (ADR 0935, amended)? A constant written of it is its
+/// initializer's, not rustc's value, whose `None` would be left out.
+pub(in crate::lower) fn is_js_null(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    super::is_binding(tcx, def_id) && matches!(super::js_form(tcx, def_id), super::JsForm::Null)
+}

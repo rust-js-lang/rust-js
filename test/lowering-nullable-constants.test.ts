@@ -131,40 +131,52 @@ pub fn counted() -> f64 {
 });
 
 // React's Fiber has fields of `any` upstream, `memoizedState`,
-// `updateQueue`, `stateNode`, made `null` and then holding what JS writes,
-// `undefined` too. A plain `Option` field made `None` was left out, which
-// React's dev mode, whose objects keep their shape, can't add later; a
-// nullable one wrote `?? null` on every store, a stored `undefined` read
-// back `null`. `js::NULL` is `None` to Rust and `null` where it's written
-// (ADR 0935).
-test("js::NULL is null where it's written, and what's stored after is as it is", async () => {
+// `updateQueue`, `stateNode`, and typed ones, `_debugStack: Error | null`,
+// `_debugHookTypes: Array<HookType> | null`, a marker's `name: string |
+// null`, made `null` and then holding what JS writes, `undefined` too. A
+// plain `Option` field made `None` was left out, which React's dev mode,
+// whose objects keep their shape, can't add later; a nullable one wrote
+// `?? null` on every store, a stored `undefined` read back `null`.
+// `js::null()` is `None` to Rust and `null` where it's written, of any
+// `Option` (ADR 0935, amended).
+test("js::null() is null where it's written, of any Option, and what's stored after is as it is", async () => {
   const dir = fixture("js-null");
   const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
-  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
-use js::Unknown;
+use js::{JsError, Unknown};
 
 pub struct Fiber {
     pub memoized_state: Cell<Option<&'static Unknown>>,
     pub memoized_props: Option<&'static Unknown>,
     pub update_queue: Cell<Option<&'static Unknown>>,
+    pub debug_stack: Cell<Option<&'static JsError>>,
+    pub debug_hook_types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,
+    pub name: Option<String>,
 }
 
 pub const EMPTY: Fiber = Fiber {
-    memoized_state: Cell::new(js::NULL),
-    memoized_props: js::NULL,
+    memoized_state: Cell::new(js::null()),
+    memoized_props: js::null(),
     update_queue: Cell::new(None),
+    debug_stack: Cell::new(js::null()),
+    debug_hook_types: RefCell::new(None),
+    name: js::null(),
 };
 
 thread_local! {
-    static CURRENT: Cell<Option<&'static Unknown>> = const { Cell::new(js::NULL) };
+    static CURRENT: Cell<Option<&'static Unknown>> = const { Cell::new(js::null()) };
 }
 
 pub fn create_fiber() -> Fiber {
     Fiber {
-        memoized_state: Cell::new(js::NULL),
-        memoized_props: js::NULL,
+        memoized_state: Cell::new(js::null()),
+        memoized_props: js::null(),
         update_queue: Cell::new(None),
+        debug_stack: Cell::new(js::null()),
+        debug_hook_types: RefCell::new(js::null()),
+        name: js::null(),
     }
 }
 
@@ -172,8 +184,15 @@ pub fn set_state(fiber: &Fiber, state: Option<&'static Unknown>) {
     fiber.memoized_state.set(state);
 }
 
+pub fn copy(work_in_progress: &Fiber, current: &Fiber) {
+    work_in_progress.debug_stack.set(current.debug_stack.get());
+    let debug_hook_types = current.debug_hook_types.borrow().clone();
+    work_in_progress.debug_hook_types.replace(debug_hook_types);
+}
+
 pub fn reset(fiber: &Fiber) {
-    fiber.memoized_state.set(js::NULL);
+    fiber.memoized_state.set(js::null());
+    fiber.debug_hook_types.replace(js::null());
 }
 
 pub fn has_state(fiber: &Fiber) -> bool {
@@ -184,28 +203,52 @@ pub fn same_state(fiber: &Fiber, other: &Fiber) -> bool {
     fiber.memoized_state.get() == other.memoized_state.get()
 }
 
+pub fn named(fiber: &Fiber) -> bool {
+    fiber.name.is_some()
+}
+
+pub fn same_name(fiber: &Fiber, other: &Fiber) -> bool {
+    fiber.name == other.name
+}
+
+pub fn hook_types(fiber: &Fiber) -> usize {
+    fiber.debug_hook_types.borrow().as_ref().map_or(0, |types| types.borrow().len())
+}
+
 pub fn current_state() -> Option<&'static Unknown> {
     CURRENT.get()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   const out = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(out).toContain("export const EMPTY = {\n  memoizedState: null,\n  memoizedProps: null,\n};\n");
   expect(out).toContain("const current = null;\n");
-  expect(out).toContain("  return {\n    memoizedState: null,\n    memoizedProps: null,\n  };\n");
   expect(out).toContain("  fiber.memoizedState = state;\n");
   expect(out).toContain("  fiber.memoizedState = null;\n");
+  expect(out).toContain("  workInProgress.debugStack = current.debugStack;\n");
+  expect(out).toContain("  workInProgress.debugHookTypes = debugHookTypes;\n");
+  expect(out).toContain("  fiber.debugHookTypes = null;\n");
+  expect(out).not.toContain("?? null;\n");
   const lib = await import(join(dir, "lib.js"));
+  const keys = ["memoizedState", "memoizedProps", "debugStack", "debugHookTypes", "name"];
+  expect(Object.entries(lib.EMPTY)).toEqual(keys.filter((k) => k !== "debugHookTypes").map((k) => [k, null]));
   const fiber = lib.createFiber();
-  expect(Object.keys(fiber)).toEqual(["memoizedState", "memoizedProps"]);
-  expect([lib.hasState(fiber), lib.currentState()]).toEqual([false, null]);
+  expect(Object.entries(fiber)).toEqual(keys.map((k) => [k, null]));
+  expect([lib.hasState(fiber), lib.named(fiber), lib.hookTypes(fiber), lib.currentState()]).toEqual([false, false, 0, null]);
   // What JS stores is kept as it is: `undefined` isn't made `null`.
   lib.setState(fiber, undefined);
   expect("memoizedState" in fiber && fiber.memoizedState === undefined).toBe(true);
+  const other = { debugStack: undefined, debugHookTypes: undefined };
+  lib.copy(fiber, other);
+  expect([fiber.debugStack, fiber.debugHookTypes]).toEqual([undefined, undefined]);
   // Either is `None` to the program, as to Rust.
-  expect([lib.hasState(fiber), lib.sameState(fiber, lib.createFiber())]).toEqual([false, true]);
+  const made = lib.createFiber();
+  expect([lib.hasState(fiber), lib.sameState(fiber, made), lib.hookTypes(fiber)]).toEqual([false, true, 0]);
+  fiber.name = undefined;
+  expect([lib.named(fiber), lib.sameName(fiber, made)]).toEqual([false, true]);
+  fiber.name = "a";
+  expect([lib.named(fiber), lib.sameName(fiber, made)]).toEqual([true, false]);
   lib.setState(fiber, 0);
-  expect([lib.hasState(fiber), fiber.memoizedState, lib.sameState(fiber, lib.createFiber())]).toEqual([true, 0, false]);
+  expect([lib.hasState(fiber), fiber.memoizedState, lib.sameState(fiber, made)]).toEqual([true, 0, false]);
   lib.reset(fiber);
-  expect(fiber.memoizedState).toBeNull();
+  expect([fiber.memoizedState, fiber.debugHookTypes]).toEqual([null, null]);
 });
