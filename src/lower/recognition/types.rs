@@ -747,8 +747,17 @@ pub(crate) fn map_of_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<
         _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,
         _ => return None,
     };
-    let key = args.types().next()?;
+    let key = class_key(args.types().next()?);
     known_by_bounds(key).then_some((key, fact))
+}
+
+/// A map's or a set's key as its class is found: a `&K`'s is its `K`'s, a
+/// shared reference being its value (ADR 0023), `HashSet<&T>`'s `T`'s.
+pub(crate) fn class_key(key: Ty<'_>) -> Ty<'_> {
+    match *key.kind() {
+        ty::Ref(_, inner, rustc_ast::Mutability::Not) => class_key(inner),
+        _ => key,
+    }
 }
 
 /// The layout `def_id` asks of its type argument, its size or alignment, and

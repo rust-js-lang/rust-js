@@ -134,13 +134,11 @@ function main() {
           .join(", ")}}`,
       );
 
-      const pairs = new $KeyMap(
-        $iter([
-          [["a", true], 1],
-          [["a", false], 2],
-          [["a", true], 3],
-        ]),
-      );
+      const pairs = new $KeyMap([
+        [["a", true], 1],
+        [["a", false], 2],
+        [["a", true], 3],
+      ]);
       const value$1 = pairs.get(["a", true]);
       const arg = pairs.get(["a", false]);
       console.log(

@@ -78,7 +78,7 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  const hashed = new $PathSet($iter(["q/r", "q//r"]));
+  const hashed = new $PathSet(["q/r", "q//r"]);
   console.log(
     `{${Array.from(hashed)
       .map((item) => $debugStr(item))

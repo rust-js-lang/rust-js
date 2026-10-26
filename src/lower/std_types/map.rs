@@ -320,6 +320,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         key: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Expr> {
+        // A `&K`'s is its `K`'s.
+        let key = key.map(crate::lower::recognition::class_key);
         // A type parameter's, or a std associated type's of one, its
         // caller's, `KMap` (ADR 0466).
         if let Some(key) = key
@@ -451,6 +453,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if !drops.is_empty() => {
                 let list = vec![made, items, Expr::bool(set)].into_iter().chain(drops).collect();
                 Expr::call(Expr::helper("$extendMap"), list)
+            }
+            // A class's constructor steps what it's given once, in order, a
+            // plain `Set`'s and a caller's `TSet` alike: an array's `$iter`
+            // that nothing else steps is the array, `new TSet(xs)`.
+            _ if crate::lower::iterators::is_stepped_items(&items) => {
+                Expr::new_(class, vec![crate::lower::iterators::iterated(items)])
             }
             _ => Expr::new_(class, vec![items]),
         })

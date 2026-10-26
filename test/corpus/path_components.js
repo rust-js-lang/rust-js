@@ -98,7 +98,7 @@ function main() {
       ["Less", "Equal", "Greater"][arg + 1]
     }`,
   );
-  const hashed = new $KeySet($iter($pathComponents(p)));
+  const hashed = new $KeySet($pathComponents(p));
   const ordered = $treeFrom(
     new ($ordSet(
       (a, b) =>

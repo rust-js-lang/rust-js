@@ -24,16 +24,6 @@ pub(super) fn array_values(e: &mut Expr) {
     {
         *each = Expr::var(param);
     }
-    // A set or a map made of an array's `$iter`, `new Set($iter(xs))`: of
-    // the array, whose items it steps the same.
-    if let ExprKind::New(class, args) = &mut e.kind
-        && matches!(&class.kind, ExprKind::Var(c) if c == "Set" || c == "Map")
-        && let [items] = args.as_mut_slice()
-        && crate::lower::iterators::is_stepped_items(items)
-    {
-        *items = iterated(items.clone());
-        return;
-    }
     // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
     // all of them, `cs.join("")`, which may be a `char`'s case
     // mapping's, below.

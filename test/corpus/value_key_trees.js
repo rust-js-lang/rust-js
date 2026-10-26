@@ -7,7 +7,6 @@ import {
   $cmpItems,
   $debugStr,
   $insert,
-  $iter,
   $mutGet,
   $orInsert,
   $remove,
@@ -95,14 +94,12 @@ function main() {
       .join(", ")}}`,
   );
 
-  const points = new $KeySet(
-    $iter([
-      { x: 3, y: 0 },
-      { x: 1, y: 9 },
-      { x: 1, y: 2 },
-      { x: 3, y: 0 },
-    ]),
-  );
+  const points = new $KeySet([
+    { x: 3, y: 0 },
+    { x: 1, y: 9 },
+    { x: 1, y: 2 },
+    { x: 3, y: 0 },
+  ]);
   const last = $treeEnd(points, (a, b) => $cmp(a.x, b.x) || $cmp(a.y, b.y), true, true, false);
   console.log(
     `{${Array.from($sortedKeys(points, (a, b) => $cmp(a.x, b.x) || $cmp(a.y, b.y)))

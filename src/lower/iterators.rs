@@ -430,7 +430,7 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
     }
 }
 
-pub(super) fn is_stepped_items(e: &Expr) -> bool {
+pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }
 
@@ -560,7 +560,7 @@ pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
 
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
 /// `Iterator.from(xs)`'s: `xs` itself.
-pub(super) fn iterated(e: Expr) -> Expr {
+pub(in crate::lower) fn iterated(e: Expr) -> Expr {
     match e.kind {
         js::ExprKind::Call(callee, mut args)
             if args.len() == 1

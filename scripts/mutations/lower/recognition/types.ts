@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "class-key-unpeeled",
+    breaks: "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
+    file: "src/lower/recognition/types.rs",
+    find: "        ty::Ref(_, inner, rustc_ast::Mutability::Not) => class_key(inner),\n",
+    replace: "        ty::Ref(_, _, rustc_ast::Mutability::Not) => key,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_params_ref.rs$"],
+  },
+  {
     name: "drain-not-asked",
     breaks: "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
     file: "src/lower/recognition/types.rs",

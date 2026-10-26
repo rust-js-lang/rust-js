@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.is_map(ty) => {
                 let key = args.type_at(0);
                 // A type parameter's, its class its caller's (ADR 0466).
-                let given = super::recognition::known_by_bounds(key);
+                let given = super::recognition::known_by_bounds(super::recognition::class_key(key));
                 // A B-tree's, found by its `cmp` where not by its value (ADR 0404).
                 if !given && !self.is_sorted(ty) && !self.is_key(key, false) {
                     return Some(key);

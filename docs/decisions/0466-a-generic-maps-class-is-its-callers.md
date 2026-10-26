@@ -87,3 +87,31 @@ map's class: a `$KeyMap` of keys whose `Ord` is the crate's own, which
 finds a key by its fields, not by its `cmp`. A B-tree asks its own fact,
 `TreeMap` or `TreeSet` (`TypeFact::of_map`), whose class may be an
 `$ordMap(cmp)` ([ADR 0404](0404-a-b-tree-keyed-by-value.md) amended).
+
+## Amendment: a `&T` key's class is `T`'s (#313)
+
+A map or a set keyed by a reference to a type parameter's value,
+`HashSet<&T>` of `a.iter().collect()`, was refused, "values of type `&T`":
+the check of what rust-js represents, the question asked of the caller
+(`map_of_param`) and the class the map is made of (`map_class`) each took
+a type parameter's key only bare. A shared reference is its value (ADR
+0023), so **a `&K` key's class is its `K`'s**, `recognition::class_key`'s
+answer, which the three ask: `HashSet<&T>` is `new TSet(..)` of the class
+its caller gives for `T`, `$KeySet` of a tuple's. TheAlgorithms/rust's
+`have_same_elements`, which every sort's tests compare with, is this.
+Held by the corpus case `map_keyed_by_a_params_ref` (a count map, a
+B-tree set, `contains` and `==` of two, of tuples and strings) and the
+mutations `class-key-unpeeled`, `map-class-of-the-ref` and
+`generic-map-refused`; `map-of-param-unsupported`, the same mutation as
+`generic-map-refused`, is gone.
+
+A map made of what it's collected from is `new C(items)`, of a caller's
+class `C` too; an array's `$iter` was dropped from it, `new Set(xs)`, by
+tidy only where `C` was named `Set` or `Map`, so `HashSet<&T>`'s read
+`new TSet($iter(xs))` and a tuple set's `new $KeySet($iter(xs))`. **Where
+it's made (`made_of`), a class's constructor, which steps what it's given
+once, in order, is given the array itself**, whatever the class:
+`new TSet(xs)`, `new $KeySet([[1, 2], ..])`; tidy's rule of the names is
+gone, its mutation `map-made-of-iter` now. The corpus's `$KeySet`s,
+`$PathSet`s and `$CowSet`s read so too.
+

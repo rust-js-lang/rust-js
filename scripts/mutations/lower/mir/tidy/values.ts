@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
-    "name": "mir-set-of-iter",
-    "breaks": "`[1, 2].into_iter().collect::<HashSet<_>>()` from MIR is `new Set($iter([1, 2]))`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "if c == \"Set\" || c == \"Map\")",
-    "replace": "if c == \"None\")",
-    "tests": ["test/lowering-collections.test.ts", "-t", "sets and maps from MIR"]
-  },
-  {
     name: "mir-tidy-plain-cell-shadowed",
     breaks: "a cell a callback's parameter shadows is made plain, `(item) => item.value` read as `item`",
     file: "src/lower/mir/tidy/values.rs",

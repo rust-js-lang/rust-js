@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-made-of-iter",
+    breaks: "a set or a map collected from an array is `new Set($iter([1, 2]))`, `new $KeySet($iter(xs))`, where its constructor steps the array the same",
+    file: "src/lower/std_types/map.rs",
+    find: "            _ if crate::lower::iterators::is_stepped_items(&items) => {\n",
+    replace: "            _ if false => {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "sets and maps from MIR"],
+  },
+  {
+    name: "map-class-of-the-ref",
+    breaks: "a map or a set keyed by a `&T` is made a plain `Map` or `Set`, not the class its caller gives for `T`, so a tuple key is found by identity (#313)",
+    file: "src/lower/std_types/map.rs",
+    find: "        let key = key.map(crate::lower::recognition::class_key);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_keyed_by_a_params_ref.rs$"],
+  },
+  {
     name: "map-index-of-options-unboxed",
     breaks: "`m[k]` of a map of values that could look like `None` takes a stored `None` for a missing key, and panics (#311)",
     file: "src/lower/std_types/map.rs",
