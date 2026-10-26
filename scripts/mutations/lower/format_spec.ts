@@ -3,6 +3,23 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "signed-zero-pad-start",
+    breaks: "`{:05}` of a negative `i32` is `padStart`, `000-5` where Rust's is `-0005`",
+    file: "src/lower/format_spec.rs",
+    find: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {\n",
+    replace: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.float()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^matrix_integers.rs$"],
+  },
+  {
+    name: "unsigned-big-zero-padded-by-helper",
+    breaks: "`{:064b}` of a `u64` is `$zeroPad(..)`, not `.padStart(64, \"0\")` as a `u32`'s",
+    file: "src/lower/format_spec.rs",
+    find: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {\n",
+    replace: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float() && !n.big()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^stock_orders.rs$"],
+    snapshots: true,
+  },
+  {
     name: "options-not-handed-on",
     breaks: "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64`'s shows it unpadded, with all its digits",
     file: "src/lower/format_spec.rs",

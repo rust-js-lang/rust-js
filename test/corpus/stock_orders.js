@@ -21,7 +21,6 @@ import {
   $toFixed,
   $trim,
   $unwrap,
-  $zeroPad,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -85,7 +84,7 @@ function linePriced_quantity(line) {
 }
 
 function money(cents) {
-  return `$${cents / 100n}.${$zeroPad(String(cents % 100n), 2)}`;
+  return `$${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 }
 
 const Inventory = {

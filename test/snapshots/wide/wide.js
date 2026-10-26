@@ -35,7 +35,6 @@ import {
   $tryFromInt,
   $unwrapErr,
   $unwrapOk,
-  $zeroPad,
 } from "@rust-js/runtime";
 
 /** An ID of a millisecond, a worker and a sequence, packed in 64 bits. */
@@ -122,7 +121,7 @@ export function balances(entries) {
 export function dollars(cents) {
   const sign = cents < 0n ? "-" : "";
   cents = $bigAbs(cents);
-  return `${sign}$${cents / 100n}.${$zeroPad(String(cents % 100n), 2)}`;
+  return `${sign}$${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 }
 
 export function report() {
@@ -137,7 +136,7 @@ export function report() {
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
 
   for (const text of ["", "a", "rust-js"]) {
-    out += `${$zeroPad(fnv1a(text).toString(16), 16)} `;
+    out += `${fnv1a(text).toString(16).padStart(16, "0")} `;
   }
   out += "\n";
 

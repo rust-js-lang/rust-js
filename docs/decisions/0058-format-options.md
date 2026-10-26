@@ -134,3 +134,14 @@ without a width is an option too, which a `fmt` asks of its `Formatter`,
 `Debug` of text writes it whole, taking no precision, as it takes no
 width: its `Debug`, as without one. Held by
 `test/corpus/debug_text_precision.rs`.
+
+## Amendment: any unsigned integer's zeros are `padStart`'s (#350)
+
+`{:0w}` of a `u8`, `u16` or `u32` was `.padStart(w, "0")`, and of a `u64`
+or `u128` `$zeroPad(..)`, which keeps a sign and a `0x` before the zeros.
+An unsigned integer has neither, a BigInt's `toString` included, so **each
+unsigned integer's is `padStart`'s**: trekhleb/javascript-algorithms'
+floatAsBinaryString's `{:064b}` of a `to_bits()` reads as its `{:032b}`.
+A signed one's, a float's, a `+`'s and a `#`'s stay `$zeroPad`'s. Held by
+the corpus's `stock_orders` and `matrix_integers`, and the mutations
+`signed-zero-pad-start` and `unsigned-big-zero-padded-by-helper`.

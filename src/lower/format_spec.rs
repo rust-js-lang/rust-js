@@ -308,8 +308,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(text);
         }
         if spec.zero && num.is_some() {
-            // After the sign and any `0x`.
-            if !spec.plus && !spec.alternate && matches!(num, Some(Num::U8 | Num::U16 | Num::U32)) {
+            // After the sign and any `0x`: none of an unsigned integer's,
+            // a BigInt's too.
+            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {
                 return Ok(Expr::call(Expr::member(text, "padStart"), vec![width, Expr::str("0")]));
             }
             return Ok(Expr::call(Expr::helper("$zeroPad"), vec![text, width]));

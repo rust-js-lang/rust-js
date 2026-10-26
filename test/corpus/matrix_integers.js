@@ -45,7 +45,7 @@ export function entry() {
 }
 
 function f64Bits(x) {
-  return Number.isNaN(x) ? "NaN" : $zeroPad($floatToBits(x, 8).toString(16), 16);
+  return Number.isNaN(x) ? "NaN" : $floatToBits(x, 8).toString(16).padStart(16, "0");
 }
 
 function f32Bits(x) {
@@ -790,7 +790,7 @@ function main() {
     const value$15 = $parseBig(String(a), 0n, 18446744073709551615n);
     const arg$1 = $parseBig(a.toString(16), 0n, 18446744073709551615n, 16);
     console.log(
-      `u64 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u64 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
     const value$16 = Number(BigInt.asIntN(8, a));
     const value$17 = Number(BigInt.asIntN(16, a));
@@ -892,7 +892,7 @@ function main() {
     const value$15 = $parseBig(String(a), 0n, 340282366920938463463374607431768211455n);
     const arg$1 = $parseBig(a.toString(16), 0n, 340282366920938463463374607431768211455n, 16);
     console.log(
-      `u128 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u128 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$15.TAG === "Ok" ? `Ok(${value$15._0})` : `Err(${$debugParseError(value$15._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
     const value$16 = Number(BigInt.asIntN(8, a));
     const value$17 = Number(BigInt.asIntN(16, a));

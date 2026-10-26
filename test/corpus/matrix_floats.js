@@ -37,7 +37,7 @@ export function entry() {
 }
 
 function f64Bits(x) {
-  return Number.isNaN(x) ? "NaN" : $zeroPad($floatToBits(x, 8).toString(16), 16);
+  return Number.isNaN(x) ? "NaN" : $floatToBits(x, 8).toString(16).padStart(16, "0");
 }
 
 function f32Bits(x) {
