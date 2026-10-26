@@ -136,9 +136,9 @@ function main() {
   );
 
   // Made in place.
-  const inspect = (x) => {
+  function inspect(x) {
     $print(`{${x}}`);
-  };
+  }
   const total = v
     .map((item) => {
       inspect(item);

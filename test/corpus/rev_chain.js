@@ -16,10 +16,10 @@ export function entry() {
 }
 
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`f${x}`);
     return x;
-  };
+  }
   const v = [1, 2, 3];
   const w = [7, 8];
   console.log(

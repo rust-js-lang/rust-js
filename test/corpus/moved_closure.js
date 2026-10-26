@@ -7,10 +7,10 @@ export function entry() {
 function main() {
   const n = 0;
   let n$1 = n;
-  const g = () => {
+  function g() {
     n$1 = (n$1 + 1) | 0;
     return n$1;
-  };
+  }
   g();
   console.log(`${g()}`);
   const k = 41;

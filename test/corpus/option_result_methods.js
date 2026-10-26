@@ -41,16 +41,16 @@ function main() {
   );
   const seen = [];
   if (some != null) {
-    const inspected = (x) => {
+    function inspected(x) {
       seen.push(x);
-    };
+    }
     inspected(some);
   }
   const kept = some != null ? (some + 1) | 0 : undefined;
   if (none != null) {
-    const inspected = (x) => {
+    function inspected(x) {
       seen.push(x);
-    };
+    }
     inspected(none);
   }
   console.log(
@@ -174,27 +174,27 @@ function main() {
   );
   const log = [];
   if (good.TAG === "Ok") {
-    const inspected = (x) => {
+    function inspected(x) {
       log.push(`ok ${x}`);
-    };
+    }
     inspected(good._0);
   }
   if (good.TAG === "Err") {
-    const inspected = (e) => {
+    function inspected(e) {
       log.push(`err ${e}`);
-    };
+    }
     inspected(good._0);
   }
   if (bad.TAG === "Ok") {
-    const inspected = (x) => {
+    function inspected(x) {
       log.push(`ok ${x}`);
-    };
+    }
     inspected(bad._0);
   }
   if (bad.TAG === "Err") {
-    const inspected = (e) => {
+    function inspected(e) {
       log.push(`err ${e}`);
-    };
+    }
     inspected(bad._0);
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);

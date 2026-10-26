@@ -84,7 +84,7 @@ function returned(pairs) {
   let hit = false;
   const seen = [];
   for (const [a, b] of pairs) {
-    const step = () => {
+    function step() {
       if (a === 1 || b === 1) {
         hit = true;
       } else if (a === 2 && b === 2) {
@@ -93,7 +93,7 @@ function returned(pairs) {
         hit = false;
       }
       console.log(`stepped ${a} ${b}`);
-    };
+    }
     step();
     seen.push(hit);
   }
@@ -260,7 +260,7 @@ function returnedRows(rows) {
   let hit = false;
   const seen = [];
   for (const row of rows) {
-    const step = () => {
+    function step() {
       bb11: {
         if (row.length >= 1) {
           if (row[0] === 1 || row[row.length - 1] === 1) {
@@ -276,7 +276,7 @@ function returnedRows(rows) {
         hit = false;
       }
       console.log(`stepped [${row.join(", ")}]`);
-    };
+    }
     step();
     seen.push(hit);
   }

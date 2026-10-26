@@ -84,10 +84,10 @@ function main() {
   tmp = o$2.value;
   console.log(`${value}`);
   let calls = 0;
-  const count = () => {
+  function count() {
     calls = (calls + 1) >>> 0;
     return calls;
-  };
+  }
   let tmp$1 = count;
   const o$3 = { value: tmp$1 };
   const value$1 = callTwice(o$3);

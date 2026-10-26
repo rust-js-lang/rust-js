@@ -39,6 +39,53 @@ pub fn module(module: &mut js::Module) {
     compound(module);
     stepped(module);
     read_together(module);
+    js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
+}
+
+/// `const deleteChild = (returnFiber, child) => { .. };`, a closure of
+/// statements a `let` binds: a function declared as React writes its
+/// factory's, `function deleteChild(returnFiber, child) { .. }` (ADR 0882,
+/// amended). One of a value alone, `const double = (x) => x * 2`, stays an
+/// arrow, as a field's does. Where its declaration's hoisting changes
+/// nothing: a `const`, never set again, whose name no read before it can
+/// reach, as JS's `const` throws there, and the names of a block are given
+/// apart; not one that reads `this` or `arguments`, which a function has
+/// of its own.
+fn declared_functions(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let StmtKind::Const(name, value) = &stmt.kind else {
+            continue;
+        };
+        let (ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body)) = &value.kind else {
+            continue;
+        };
+        let mut own = false;
+        js::each_expr(body, &mut |e| {
+            own |= matches!(&e.kind, ExprKind::This) || matches!(&e.kind, ExprKind::Var(v) if v == "arguments");
+        });
+        let value_alone = matches!(
+            body.as_slice(),
+            [Stmt {
+                kind: StmtKind::Return(Some(_)),
+                ..
+            }]
+        );
+        if own || value_alone {
+            continue;
+        }
+        let function = js::Function {
+            name: name.clone(),
+            params: params.clone(),
+            body: body.clone(),
+            export: false,
+            is_async: matches!(value.kind, ExprKind::AsyncArrow(..)),
+            noinline: false,
+            span: stmt.span,
+            name_span: js::Span::NONE,
+            param_spans: Vec::new(),
+        };
+        stmt.kind = StmtKind::Function(Box::new(function));
+    }
 }
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only

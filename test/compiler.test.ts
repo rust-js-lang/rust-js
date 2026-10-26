@@ -346,7 +346,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
   // A closure of an `async` block, an async arrow.
-  expect(js).toContain("const loading = async () => {\n    taskLog.push(1);");
+  expect(js).toContain("async function loading() {\n    taskLog.push(1);");
   // A future in a variable is the promise; `.await` on it is `await`.
   expect(js).toContain("const first = setTimeout(5, 1);");
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");
@@ -1138,7 +1138,7 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
   // A block's statements go before the `const` of its value; the
   // `Rc<RefCell<i32>>` its closure shares, no borrow of which meets
   // another, is the variable (ADR 0863).
-  expect(js).toContain("  let counter = 0;\n  const bump = (n) => {\n    counter = (counter + n) | 0;");
+  expect(js).toContain("  let counter = 0;\n  function bump(n) {\n    counter = (counter + n) | 0;");
 });
 
 // ADR 0070: a std function taken as a value is an arrow, and an array's

@@ -8,10 +8,10 @@ export function entry() {
 }
 
 function cIterator_next(c) {
-  const value = () => {
+  function value() {
     c.at = (c.at + 1) >>> 0;
     return (c.at - 1) >>> 0;
-  };
+  }
   return c.at < c.end ? value() : undefined;
 }
 function cIterator_nth(c, n) {

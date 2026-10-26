@@ -44,11 +44,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value = l ? map(l) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log("--");
@@ -60,11 +60,11 @@ function main() {
   );
   try {
     const nth = $nthDropping($lent(chain), 3, loudDrop_drop, false);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$1 = nth ? value(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
@@ -79,11 +79,11 @@ function main() {
   );
   try {
     const loud = $nthDropping($lent(value$1), 4, loudDrop_drop, false);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = loud ? value(loud) : undefined;
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   } finally {
@@ -101,11 +101,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$1 = (l) => {
+  function map$1(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$2 = l$1 ? map$1(l$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log("--");
@@ -119,11 +119,11 @@ function main() {
       loudDrop_drop,
     ),
   );
-  const map$2 = (l) => {
+  function map$2(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$3 = l$2 ? map$2(l$2) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log("--");
@@ -138,11 +138,11 @@ function main() {
   const value$4 = $held($lazyChain(skip, $closing($iter(tmp), $dropEach(loudDrop_drop))));
   try {
     const value = $nthDropping($lent(value$4), 3, loudDrop_drop, false);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   } finally {
@@ -160,11 +160,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$3 = (l) => {
+  function map$3(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$5 = l$3 ? map$3(l$3) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }

@@ -98,11 +98,11 @@ function main() {
   );
   try {
     const nth = $nthDropping($lent(takeWhile), 0, dDrop_drop, false);
-    const value = (d) => {
+    function value(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
-    };
+    }
     const value$1 = nth ? value(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {

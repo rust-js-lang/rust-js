@@ -36,9 +36,9 @@ function main() {
   console.log(`${a()} ${a()} ${b()} ${a()}`);
 
   const names = ["x"];
-  const add = (s) => {
+  function add(s) {
     names.push(s);
-  };
+  }
   add("y");
   add("z");
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
@@ -48,9 +48,9 @@ function main() {
   console.log(`[${adders.map((f) => f(1)).join(", ")}]`);
 
   let value = 5;
-  const double = () => {
+  function double() {
     value = (value * 2) | 0;
-  };
+  }
   double();
   double();
   console.log(`value ${value}`);

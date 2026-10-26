@@ -18,11 +18,11 @@ function main() {
   let it = $iter(noisy([1, 2, 3]));
   try {
     const nthBack = $nthBack(it, 1, undefined, noisyDrop_drop);
-    const value = (n) => {
+    function value(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
-    };
+    }
     const value$1 = nthBack ? value(nthBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(`left ${it.end - it.at}`);
@@ -34,11 +34,11 @@ function main() {
   it = $iter(noisy([4, 5, 6]));
   try {
     const rfind = $findBack(it, (n) => n[0] === 4, undefined, noisyDrop_drop);
-    const value = (n) => {
+    function value(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
-    };
+    }
     const value$1 = rfind ? value(rfind) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     console.log(

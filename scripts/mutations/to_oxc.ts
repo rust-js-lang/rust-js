@@ -685,4 +685,12 @@ export const mutations: Mutation[] = [
     replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field of an if's value"],
   },
+  {
+    name: "declared-function-body-spans-twice",
+    breaks: "a comment before a statement of a function declared in a body is inside the closure that statement gives, its closures' statements found first (ADR 0882, amended)",
+    file: "src/to_oxc.rs",
+    find: "                    functions.push(std::mem::take(&mut f.body));\n",
+    replace: "                    functions.push(f.body.clone());\n",
+    tests: ["test/lowering-arrows.test.ts", "-t", "where it's written"],
+  },
 ];

@@ -244,12 +244,12 @@ export function Player({ src, ref }) {
 
 export function Screen() {
   const player = useRef(undefined);
-  const play = () => {
+  function play() {
     const handle = player.current;
     if (handle) {
       handle.play();
     }
-  };
+  }
   return (
     <>
       <Player src="/intro.mp4" ref={player} />

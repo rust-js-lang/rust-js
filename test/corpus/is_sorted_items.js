@@ -7,10 +7,10 @@ export function entry() {
 }
 
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`t${x}`);
     return x;
-  };
+  }
   console.log(
     `${$isSortedBy([1, 2, 2], (a, b) => a <= b)} ${$isSortedBy($iter([3, 1]), (a, b) => a <= b)}`,
   );

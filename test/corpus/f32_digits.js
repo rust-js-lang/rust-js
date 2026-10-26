@@ -21,10 +21,10 @@ function main() {
   // it falls below the normal range, where it's rounded.
   const seed = 20261001;
   let seed$1 = seed;
-  const next = () => {
+  function next() {
     seed$1 = (((seed$1 * 1664525) >>> 0) + 1013904223) >>> 0;
     return seed$1;
-  };
+  }
   for (let i = 0; i < 3000; i++) {
     const significand = Math.fround(next() >>> 8);
     let x = significand;

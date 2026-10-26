@@ -7,10 +7,10 @@ export function entry() {
 }
 
 function counterIterator_next(counter) {
-  const value = () => {
+  function value() {
     counter.n = (counter.n - 1) >>> 0;
     return counter.n;
-  };
+  }
   return counter.n > 0 ? value() : undefined;
 }
 
@@ -56,9 +56,9 @@ function main() {
   const map = $closing($iterator({ n: 1, name: "first" }, counterIterator_next), (it) => {
     console.log(`drop ${it.of.name}`);
   }).map((x) => (x + 1) >>> 0);
-  const inspect = (x) => {
+  function inspect(x) {
     console.log(`second ${x}`);
-  };
+  }
   let tmp;
   try {
     tmp = $closing($iterator({ n: 1, name: "second" }, counterIterator_next), (it) => {

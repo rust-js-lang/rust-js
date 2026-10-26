@@ -66,10 +66,10 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
 }
 
 function plainIterator_next(plain) {
-  const value = () => {
+  function value() {
     plain[0] = (plain[0] + 1) | 0;
     return plain[0];
-  };
+  }
   return plain[0] < plain[1] ? value() : undefined;
 }
 function plainIterator_sizeHint(plain) {
@@ -78,10 +78,10 @@ function plainIterator_sizeHint(plain) {
 }
 
 function plainDoubleEndedIterator_nextBack(plain) {
-  const value = () => {
+  function value() {
     plain[1] = (plain[1] - 1) | 0;
     return (plain[1] + 1) | 0;
-  };
+  }
   return plain[0] < plain[1] ? value() : undefined;
 }
 

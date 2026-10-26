@@ -44,11 +44,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value = l ? map(l) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const l$1 = $nthDropping(
@@ -72,11 +72,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$1 = (l) => {
+  function map$1(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$1 = l$1 ? map$1(l$1) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const l$2 = $nthDropping(
@@ -97,11 +97,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$2 = (l) => {
+  function map$2(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$2 = l$2 ? map$2(l$2) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const l$3 = $next(
@@ -117,11 +117,11 @@ function main() {
       loudDrop_drop,
     ),
   );
-  const map$3 = (l) => {
+  function map$3(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$3 = l$3 ? map$3(l$3) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const l$4 = $nthDropping(
@@ -150,11 +150,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$4 = (l) => {
+  function map$4(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$4 = l$4 ? map$4(l$4) : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const l$5 = $nthDropping(
@@ -186,11 +186,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$5 = (l) => {
+  function map$5(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$5 = l$5 ? map$5(l$5) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   const l$6 = $nthDropping(
@@ -207,11 +207,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$6 = (l) => {
+  function map$6(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$6 = l$6 ? map$6(l$6) : undefined;
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const l$7 = $nthDropping(
@@ -247,11 +247,11 @@ function main() {
     loudDrop_drop,
     false,
   );
-  const map$7 = (l) => {
+  function map$7(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$7 = l$7 ? map$7(l$7) : undefined;
   console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
 }

@@ -173,11 +173,11 @@ function main() {
   const held = [[0]];
   holderPeeled({ next: loudsIterator_next }, undefined, loudDrop_drop).dropTwo(held);
   const l = holderIterator_next(held, { next: loudsIterator_next }, undefined, loudDrop_drop);
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$3 = l ? map(l) : undefined;
   console.log(`held ${value$3 == null ? "None" : `Some(${value$3})`}`);
   const numbers = [{ start: 1, end: 4 }];

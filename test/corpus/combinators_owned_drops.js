@@ -18,27 +18,27 @@ function half(n) {
 
 function main() {
   const option = some(1);
-  const holds = (n) => {
+  function holds(n) {
     const result = n[0] === 1;
     console.log(`drop ${n[0]}`);
     return result;
-  };
+  }
   console.log(`${option != null && holds(option)}`);
   const option$1 = some(2);
-  const holds$1 = (n) => {
+  function holds$1(n) {
     const result$1 = n[0] > 5;
     console.log(`drop ${n[0]}`);
     return result$1;
-  };
+  }
   console.log(`${option$1 == null || holds$1(option$1)}`);
   const result = ok(4);
   let holds$2;
   if (result.TAG === "Ok") {
-    const holds = (n) => {
+    function holds(n) {
       const result$2 = n[0] === 4;
       console.log(`drop ${n[0]}`);
       return result$2;
-    };
+    }
     holds$2 = holds(result._0);
   } else {
     holds$2 = false;
@@ -48,11 +48,11 @@ function main() {
   const result$1 = ok(5);
   let holds$3;
   if (result$1.TAG === "Err") {
-    const holds = (n) => {
+    function holds(n) {
       const result$4 = n[0] === 5;
       console.log(`drop ${n[0]}`);
       return result$4;
-    };
+    }
     holds$3 = holds(result$1._0);
   } else {
     holds$3 = false;
@@ -60,7 +60,7 @@ function main() {
   }
   console.log(`${holds$3}`);
   const option$2 = some(6);
-  const then = (n) => {
+  function then(n) {
     let n$4$live = true;
     let result$6;
     if (n[0] > 0) {
@@ -73,39 +73,39 @@ function main() {
       console.log(`drop ${n[0]}`);
     }
     return result$6;
-  };
+  }
   const kept = option$2 != null ? then(option$2) : undefined;
-  const map = (n) => {
+  function map(n) {
     const result$7 = n[0];
     console.log(`drop ${n[0]}`);
     return result$7;
-  };
+  }
   console.log(`${kept != null ? map(kept) : 0}`);
   const option$3 = some(7);
-  const map$1 = (n) => {
+  function map$1(n) {
     const result$9 = (n[0] + 1) & 255;
     console.log(`drop ${n[0]}`);
     return result$9;
-  };
+  }
   console.log(`${option$3 != null ? map$1(option$3) : 0}`);
   const result$2 = ok(8);
-  const map$2 = (n) => {
+  function map$2(n) {
     const result$11 = (n[0] * 2) & 255;
     console.log(`drop ${n[0]}`);
     return result$11;
-  };
-  const fallback = (e) => {
+  }
+  function fallback(e) {
     const result$10 = e[0];
     console.log(`drop ${e[0]}`);
     return result$10;
-  };
+  }
   console.log(`${result$2.TAG === "Ok" ? map$2(result$2._0) : fallback(result$2._0)}`);
   const result$3 = ok(9);
-  const fallback$1 = (e) => {
+  function fallback$1(e) {
     const result = [(e[0] + 1) & 255];
     console.log(`drop ${e[0]}`);
     return result;
-  };
+  }
   const noisy = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
   console.log(`${noisy[0]}`);
   console.log(`drop ${noisy[0]}`);
@@ -117,21 +117,21 @@ function main() {
     value = undefined;
     console.log(`drop ${result$4._0[0]}`);
   }
-  const map$3 = (n) => {
+  function map$3(n) {
     const result = n[0];
     console.log(`drop ${n[0]}`);
     return result;
-  };
+  }
   const value$2 = value ? map$3(value) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const result$5 = ok(11);
   let holds$4;
   if (result$5.TAG === "Ok") {
-    const holds = (n) => {
+    function holds(n) {
       const result = n[0] > 0;
       console.log(`drop ${n[0]}`);
       return result;
-    };
+    }
     holds$4 = holds(result$5._0);
   } else {
     holds$4 = false;
@@ -140,11 +140,11 @@ function main() {
   const result$6 = ok(12);
   let holds$5;
   if (result$6.TAG === "Err") {
-    const holds = (n) => {
+    function holds(n) {
       const result = n[0] > 0;
       console.log(`drop ${n[0]}`);
       return result;
-    };
+    }
     holds$5 = holds(result$6._0);
   } else {
     holds$5 = false;
@@ -159,11 +159,11 @@ function main() {
     value$1 = undefined;
     console.log(`drop ${result$7._0[0]}`);
   }
-  const map$4 = (n) => {
+  function map$4(n) {
     const result = n[0];
     console.log(`drop ${n[0]}`);
     return result;
-  };
+  }
   const value$3 = value$1 ? map$4(value$1) : undefined;
   const result$8 = ok(14);
   let error;
@@ -173,11 +173,11 @@ function main() {
     error = undefined;
     console.log(`drop ${result$8._0[0]}`);
   }
-  const map$5 = (n) => {
+  function map$5(n) {
     const result = n[0];
     console.log(`drop ${n[0]}`);
     return result;
-  };
+  }
   const value$4 = error ? map$5(error) : undefined;
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
@@ -221,11 +221,11 @@ function main() {
     console.log(`drop ${result$11._0[0]}`);
   }
   const result$12 = half(18);
-  const holds$7 = (n) => {
+  function holds$7(n) {
     const result = n[0] > 0;
     console.log(`drop ${n[0]}`);
     return result;
-  };
+  }
   console.log(`${holds$6} ${result$12.TAG === "Err" && holds$7(result$12._0)}`);
   console.log("end");
 }

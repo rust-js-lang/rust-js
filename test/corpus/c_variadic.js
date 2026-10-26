@@ -43,12 +43,12 @@ function main() {
   console.log(`${$displayF64(Scale.apply([2.5], 4))}`);
   const pointer = sum;
   console.log(`${pointer(2, 10n, 20n)}`);
-  const bump = (x, ...args) => {
+  function bump(x, ...args) {
     const self = { value: x };
     const value = countCounter.bump(self, ...args);
     $assign(x, self.value);
     return value;
-  };
+  }
   const count = [100];
   console.log(`${bump(count, 32)} ${count[0]}`);
 }

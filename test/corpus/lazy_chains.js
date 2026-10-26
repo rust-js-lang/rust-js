@@ -99,9 +99,9 @@ function main() {
   }
 
   total = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
-  const inspect = (x) => {
+  function inspect(x) {
     console.log(`saw ${x}`);
-  };
+  }
   const count = v
     .map((item) => {
       inspect(item);

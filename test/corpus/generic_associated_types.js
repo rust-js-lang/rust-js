@@ -87,10 +87,10 @@ function uptoSource_numbers(upto) {
 }
 
 function downIterator_next(down) {
-  const value = () => {
+  function value() {
     down[0] = (down[0] - 1) >>> 0;
     return down[0];
-  };
+  }
   return down[0] > 0 ? value() : undefined;
 }
 

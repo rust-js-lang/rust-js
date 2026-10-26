@@ -20,11 +20,11 @@ function main() {
   const root = {
     log: [],
   };
-  const counted = (root) => {
+  function counted(root) {
     const borrow = $borrow(root.log, true);
     $unborrow(borrow);
     return borrow.length;
-  };
+  }
   const constant = () => 7;
   record(root, constant);
   const value = $borrow(root.log, true);

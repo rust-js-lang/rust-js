@@ -16,10 +16,10 @@ export function entry() {
 }
 
 function countIterator_next(count) {
-  const value = () => {
+  function value() {
     count[0] = (count[0] + 1) >>> 0;
     return count[0];
-  };
+  }
   return count[0] < count[1] ? value() : undefined;
 }
 

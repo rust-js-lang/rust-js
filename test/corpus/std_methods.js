@@ -27,10 +27,10 @@ const Stack = {
   pop(stack) {
     const old = stack.head;
     stack.head = undefined;
-    const map = (node) => {
+    function map(node) {
       stack.head = node.next;
       return node.value;
-    };
+    }
     return old != null ? map(old) : undefined;
   },
 };
@@ -135,9 +135,9 @@ function main() {
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
   );
 
-  const inspect = (x) => {
+  function inspect(x) {
     $print(`saw ${x} `);
-  };
+  }
   const doubled = [1, 2, 3]
     .map((item) => {
       inspect(item);

@@ -74,11 +74,11 @@ function main() {
     }
     throw error;
   }
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   console.log(`first ${first != null ? map(first) : 0}`);
 
   const value = (l) => l[0] < 5;

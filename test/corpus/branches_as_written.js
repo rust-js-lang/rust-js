@@ -94,10 +94,10 @@ function thenable(prev) {
 
 function borrowedThenGivenAnother() {
   let a = 1;
-  const make = () => {
+  function make() {
     const b = a;
     return () => b;
-  };
+  }
   const g = make();
   a = 2;
   return (((a * 10) | 0) + g()) | 0;

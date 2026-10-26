@@ -19,10 +19,10 @@ function scaled(v) {
     }
     throw error;
   }
-  const f = (x) => {
+  function f(x) {
     const f = factor;
     return ((Math.imul(x, factor[0]) >>> 0) + f[0]) >>> 0;
-  };
+  }
   const iter = $closing(tmp.map(f), (it) => {
     it.return();
     console.log(`drop ${factor[0]}`);
@@ -82,10 +82,10 @@ function main() {
     }
     throw error;
   }
-  const f = (x) => {
+  function f(x) {
     const s = shared;
     return (x + s[0]) >>> 0;
-  };
+  }
   const iter = $closing(tmp.map(f), (it) => {
     it.return();
     console.log(`drop ${shared[0]}`);
@@ -118,10 +118,10 @@ function main() {
     }
     throw error;
   }
-  const f$1 = (x) => {
+  function f$1(x) {
     const t = tag;
     return x % 2 === t[0] % 2;
-  };
+  }
   const filtered = $closing(tmp$1.filter(f$1), (it) => {
     it.return();
     console.log(`drop ${tag[0]}`);

@@ -26,17 +26,17 @@ export function entry() {
 }
 
 function downIterator_next(down) {
-  const value = () => {
+  function value() {
     down.n = (down.n - 1) >>> 0;
     return down.n;
-  };
+  }
   return down.n > 0 ? value() : undefined;
 }
 function downDoubleEndedIterator_nextBack(down) {
-  const value = () => {
+  function value() {
     down.n = (down.n - 1) >>> 0;
     return (100 + down.n) >>> 0;
-  };
+  }
   return down.n > 0 ? value() : undefined;
 }
 function ends() {

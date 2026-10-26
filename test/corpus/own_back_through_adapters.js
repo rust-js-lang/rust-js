@@ -84,18 +84,18 @@ function count() {
 }
 
 function loudIterator_next(loud) {
-  const value = () => {
+  function value() {
     loud.left = (loud.left - 1) | 0;
     return (3 - loud.left) | 0;
-  };
+  }
   return loud.left > 0 ? value() : undefined;
 }
 
 function loudDoubleEndedIterator_nextBack(loud) {
-  const value = () => {
+  function value() {
     loud.left = (loud.left - 1) | 0;
     return (loud.left + 1) | 0;
-  };
+  }
   return loud.left > 0 ? value() : undefined;
 }
 

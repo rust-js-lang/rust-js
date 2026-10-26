@@ -30,10 +30,10 @@ function writtenInValue(v, i) {
   }
   i++;
   v[value] = (v[value] + 3) >>> 0;
-  const next = () => {
+  function next() {
     i = (i + 1) >>> 0;
     return i;
-  };
+  }
   const value$1 = next();
   v[$at(v, 0)] = value$1;
   const value$2 = next();

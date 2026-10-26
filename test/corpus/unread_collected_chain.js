@@ -16,9 +16,9 @@ function main() {
   const _plain = [...$iter([1, 2]), 3];
   const end = probe(1);
   for (let round = 0; round < end; round++) {
-    const inspect = (seen) => {
+    function inspect(seen) {
       console.log(`see ${seen}`);
-    };
+    }
     const value = [probe(round), probe(round + 1)].values().map((item) => {
       inspect(item);
       return item;

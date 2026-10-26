@@ -57,16 +57,16 @@ function holderSkipping(IIterator, IDefault, dropI, dropIItem) {
       }
     },
     eat(self) {
-      const dropSelf = (holder) => {
+      function dropSelf(holder) {
         dropI?.(holder[0]);
-      };
+      }
       console.log("eaten");
       dropSelf?.(self);
     },
     eatAfterOne(self) {
-      const dropSelf = (holder) => {
+      function dropSelf(holder) {
         dropI?.(holder[0]);
-      };
+      }
       try {
         holderSkipping(IIterator, IDefault, dropI, dropIItem).skipOne(self);
       } catch (error) {

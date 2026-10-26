@@ -11,10 +11,10 @@ function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
 }
 function ownIterator_next(own) {
-  const value = () => {
+  function value() {
     own.at = (own.at + 1) >>> 0;
     return [own.at];
-  };
+  }
   return own.at < 5 ? value() : undefined;
 }
 function ownIterator_nth(own, n) {
@@ -27,28 +27,28 @@ function ownIterator_last(own) {
   return [99];
 }
 function plainIterator_next(plain) {
-  const value = () => {
+  function value() {
     plain.at = (plain.at + 1) >>> 0;
     return [plain.at];
-  };
+  }
   return plain.at < 5 ? value() : undefined;
 }
 function third(it) {
   const n = $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
-  const map = (n) => {
+  function map(n) {
     const result = n[0];
     noisyDrop_drop(n);
     return result;
-  };
+  }
   return n ? map(n) : undefined;
 }
 function finalOne(it) {
   const n = $lastDropping(Iterator.from(it), noisyDrop_drop);
-  const map = (n) => {
+  function map(n) {
     const result = n[0];
     noisyDrop_drop(n);
     return result;
-  };
+  }
   return n ? map(n) : undefined;
 }
 function main() {

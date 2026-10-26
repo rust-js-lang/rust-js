@@ -1279,11 +1279,14 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
     fn of_stmts(stmts: &[js::Stmt], starts: &mut Found) {
         let mut copy = stmts.to_vec();
         let mut functions = Vec::new();
+        // A function declared in it, its body's own, after: taken out, so
+        // its closures' statements aren't before its own (ADR 0882,
+        // amended).
         js::statement_lists(&mut copy, &mut |stmts| {
             list(stmts, starts);
-            for stmt in stmts.iter() {
-                if let StmtKind::Function(f) = &stmt.kind {
-                    functions.push(f.body.clone());
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Function(f) = &mut stmt.kind {
+                    functions.push(std::mem::take(&mut f.body));
                 }
             }
         });

@@ -7,10 +7,10 @@ export function entry() {
 }
 
 function countIterator_next(count) {
-  const value = () => {
+  function value() {
     count.at = (count.at + 1) >>> 0;
     return (count.at - 1) >>> 0;
-  };
+  }
   return count.at < count.end ? value() : undefined;
 }
 

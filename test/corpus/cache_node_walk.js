@@ -48,9 +48,9 @@ function kept(a, b) {
   const first = node$1.v;
   let node2 = a;
   const node2$1 = node2;
-  const swap = () => {
+  function swap() {
     node2 = b;
-  };
+  }
   swap();
   node2$1.v = (node2$1.v + 10) >>> 0;
   return [(first + node.v) >>> 0, (node2$1.v + node2.v) >>> 0];

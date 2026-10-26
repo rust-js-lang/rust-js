@@ -44,12 +44,12 @@ const personGreet = {
     return result;
   },
   lists(self, long) {
-    const dropList = (list) => {
+    function dropList(list) {
       noisyDrop_drop(list.item);
       if (list.next != null) {
         dropList(list.next);
       }
-    };
+    }
     const first = { item: [6] };
     let result;
     try {

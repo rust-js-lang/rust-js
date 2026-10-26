@@ -140,13 +140,13 @@ function main() {
         someBorrowed([make(50), make(51)]);
         allBorrowed([make(52), make(53)]);
         allMoved([make(54), make(55)]);
-        const closure = (_2) => {
+        function closure(_2) {
           const a = _2[0];
           const b = _2[1];
           console.log(`closure ${a[0]} ${b[0]}`);
           loudDrop_drop(a);
           loudDrop_drop(_2[1]);
-        };
+        }
         closure([make(56), make(57)]);
         console.log(`end ${whole}`);
       } finally {

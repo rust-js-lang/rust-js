@@ -29,9 +29,9 @@ function layoutArray(n, TSize, TAlign) {
 const Buf = {
   withCapacity(cap, TSize, TAlign) {
     const layout = layoutArray(cap, TSize, TAlign);
-    const fallback = () => {
+    function fallback() {
       $allocError(layout);
-    };
+    }
     const ptr = $ptrTyped($alloc(layout) ?? fallback());
     return { ptr, cap, len: 0 };
   },

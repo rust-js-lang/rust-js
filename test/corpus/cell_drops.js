@@ -43,11 +43,11 @@ function main() {
           }
           const again = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
           const l = again.TAG === "Err" ? again._0 : undefined;
-          const map = (l) => {
+          function map(l) {
             const result = l[0];
             console.log(`drop ${l[0]}`);
             return result;
-          };
+          }
           const value$1 = l ? map(l) : undefined;
           console.log(`again ${value$1 == null ? "None" : `Some(${value$1})`}`);
           const l$1 = o;
@@ -64,11 +64,11 @@ function main() {
               }
               const old = t;
               t = undefined;
-              const map = (l) => {
+              function map(l) {
                 const result = l[0];
                 console.log(`drop ${l[0]}`);
                 return result;
-              };
+              }
               const value$1 = old ? map(old) : undefined;
               console.log(`took ${value$1 == null ? "None" : `Some(${value$1})`}`);
               console.log("end");

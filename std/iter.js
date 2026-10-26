@@ -130,7 +130,7 @@ export const FlattenCompat = {
       }
       flattenCompat.frontiter = undefined;
       const fuse = flattenCompat.iter;
-      const fold$1 = (acc, iter) => {
+      function fold$1(acc, iter) {
         const value = IItemIntoIterator.intoIter(iter);
         const value$1 = $some(value);
         if (flattenCompat.frontiter != null) {
@@ -141,7 +141,7 @@ export const FlattenCompat = {
         const option = $some(x);
         const val = $someValue(option);
         return fold(acc, val);
-      };
+      }
       const value = RTry.branch(
         IFused
           ? fuseFuseImplIFusedIterator_tryFold(
@@ -264,7 +264,7 @@ export const FlattenCompat = {
       }
       flattenCompat.backiter = undefined;
       const fuse = flattenCompat.iter;
-      const fold$1 = (acc, iter) => {
+      function fold$1(acc, iter) {
         const value = IItemIntoIterator.intoIter(iter);
         const value$1 = $some(value);
         if (flattenCompat.backiter != null) {
@@ -275,7 +275,7 @@ export const FlattenCompat = {
         const option = $some(x);
         const val = $someValue(option);
         return fold(acc, val);
-      };
+      }
       const value = RTry.branch(
         IFused
           ? fuseFuseImplIFusedIterator_tryRfold(
@@ -7140,12 +7140,12 @@ export function stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIIt
   if (stepBy.firstTake) {
     const n$1 = (stepBy.stepMinusOne + 1) >>> 0;
     const n = n$1 === 0 ? undefined : n$1;
-    const f = (n$1) => {
+    function f(n$1) {
       if (n$1 === 0) {
         return 0;
       }
       return (1 + ($div((n$1 - 1) >>> 0, n) >>> 0)) >>> 0;
-    };
+    }
     return [
       low === 0 ? 0 : (1 + ($div((low - 1) >>> 0, n) >>> 0)) >>> 0,
       high != null ? f(high) : undefined,

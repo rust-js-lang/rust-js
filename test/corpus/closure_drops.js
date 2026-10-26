@@ -23,11 +23,11 @@ function run(f) {
 function main() {
   let maybe$live = false;
   const a = "a";
-  const tick = () => {
+  function tick() {
     console.log(`tick ${a}`);
     console.log(`drop ${a}`);
     return 1;
-  };
+  }
   console.log("before");
   let tick$live = false;
   console.log(`${tick()}`);
@@ -35,14 +35,14 @@ function main() {
 
   const b = ["b"];
   const c = ["c"];
-  const once = () => {
+  function once() {
     const kept = b;
     const held = c;
     console.log(`once ${kept[0]} ${held[0]}`);
     console.log(`drop ${kept[0]}`);
     console.log(`drop ${c[0]}`);
     return 2;
-  };
+  }
   console.log(`${once()}`);
   const d = "d";
   const d2 = ["d2"];
@@ -62,9 +62,9 @@ function main() {
 
   let r = ["r1"];
   const captured = r;
-  const take = () => {
+  function take() {
     console.log(`drop ${captured[0]}`);
-  };
+  }
   r = ["r2"];
   try {
     take();
@@ -109,10 +109,10 @@ function main() {
     throw error;
   }
   const g = ["g"];
-  const read = () => {
+  function read() {
     const held = g;
     return $byteLen(held[0]);
-  };
+  }
   let tmp$1;
   try {
     tmp$1 = read();
@@ -133,9 +133,9 @@ function main() {
   for (let i = 0; i < 2; i++) {
     const h = i === 0 ? "h0" : "h1";
     maybe$live = true;
-    const maybe = () => {
+    function maybe() {
       console.log(`drop ${h}`);
-    };
+    }
     if (i === 1) {
       maybe$live = false;
       try {

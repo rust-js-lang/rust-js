@@ -89,9 +89,9 @@ function main() {
   f.note = "n";
   const value$6 = $eq(e, f);
   console.log(`${entryDebug_fmt(e)} ${entryDebug_fmt(f)} ${value$6}`);
-  const value = () => {};
+  function value() {}
   const option = 1;
-  const map = () => {};
+  function map() {}
   console.log(
     `${(table.length > 1 ? $some(value()) : undefined) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))(option != null ? $some(map(option)) : undefined)} ${((value) => (value == null ? "None" : "Some(())"))({ $someNone: 0 })}`,
   );

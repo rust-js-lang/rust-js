@@ -1,7 +1,9 @@
 # 0882. A field that's a closure of statements is a method
 
 Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
-to one an object's field holds.
+to one an object's field holds. Amended below (the user's decision,
+2026-10-26): a closure of statements a `let` binds is a function declared,
+`function deleteChild(..) { .. }`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a method and an arrow differ in their `this` and their
@@ -106,3 +108,45 @@ a field's start as any other's:
 Test: `lowering-comments`'s ReactNoopUpdateQueue's fields, a comment and
 a blank line before each. Mutation: a method's start left out.
 
+## Amendment: a `let`'s closure of statements is a function declared
+
+The user's decision (2026-10-26). React's ChildFiber makes its
+reconcilers by a factory whose helpers are nested functions:
+
+```js
+function createChildReconciler(shouldTrackSideEffects) {
+  function deleteChild(returnFiber, childToDelete) {
+    if (!shouldTrackSideEffects) {
+      return;
+    }
+    ..
+  }
+  ..
+}
+```
+
+Its port's `let delete_child = |return_fiber, child_to_delete| { .. };`
+printed `const deleteChild = (returnFiber, childToDelete) => { .. };`,
+which ADR 0037's amendment for the factory left open.
+
+**A `const` whose value is an arrow of statements is a function declared,
+`function deleteChild(..) { .. }`, `async function` of an async one**
+(`prepare::declared_functions`, on the completed tree, as `method` is a
+field's). One of a value alone stays an arrow, `const double = (n) => n *
+2`, as a field's does; so does one that reads `this` or `arguments`,
+which a function has of its own, a class's method's closure reading its
+`this` (ADR 0761).
+
+Case N, as before: where hoisting can't change what runs. The binding is
+a `const`, which nothing sets again; no read of its name comes before it
+in its block, as JS's `const` throws there and the block's names are given
+apart (ADR 0357), so a function declared from the block's start is read
+where the `const` was; and a function and an arrow differ in `this`,
+`arguments`, `new` and `prototype` alone, which no Rust closure reads but
+the `this` that keeps one an arrow.
+
+About 315 places in 129 of the committed JS outputs change, the corpus's
+and the snapshots' re-blessed; held by `test/lowering-arrows.test.ts`, "a
+let's closure of statements is a function declared", and the mutations
+`let-closure-stays-arrow`, `let-closure-of-this-declared`,
+`let-closure-of-a-value-declared` and `let-closure-async-unmarked`.

@@ -48,12 +48,12 @@ function main() {
   }
   console.log("");
   console.log(`${scaled(3)}`);
-  const shifted = (by) => {
+  function shifted(by) {
     const captured = by;
     const at = () => captured;
     by = (by + 10) | 0;
     return (((at() * 100) | 0) + by) | 0;
-  };
+  }
   console.log(`${shifted(1)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -68,11 +68,11 @@ function bothLeft() {
   );
   try {
     const one = $next(it);
-    const map = (l) => {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     console.log(`one ${one != null ? map(one) : 0}`);
   } finally {
     it.return();

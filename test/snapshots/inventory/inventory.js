@@ -163,9 +163,9 @@ export function report() {
   const arg = events.filter((e) => e.TAG === "Sale").length;
   out += `[${prices.map((item) => $debugF64(item)).join(", ")}] [${cheap.map((item) => $debugF64(item)).join(", ")}] ${arg}\n`;
   let counter = 0;
-  const bump = (n) => {
+  function bump(n) {
     counter = (counter + n) | 0;
-  };
+  }
   for (const n of [-3, 0, 4, 7, 12]) {
     bump(n);
     out += `${classify(n)} `;

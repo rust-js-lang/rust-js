@@ -63,10 +63,10 @@ function main() {
     $unborrow(writing);
   }
   const value = $tryBorrow(cell);
-  const value$1 = (v) => {
+  function value$1(v) {
     $unborrow(v);
     return v.length;
-  };
+  }
   const map = value.TAG === "Ok" ? { TAG: "Ok", _0: value$1(value._0) } : value;
   const value$2 = $tryBorrow(cell, true);
   try {

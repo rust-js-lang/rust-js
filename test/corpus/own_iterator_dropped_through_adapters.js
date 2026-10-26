@@ -689,11 +689,11 @@ function main() {
     let second;
     try {
       const nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
-      const value$1 = (l) => {
+      function value$1(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      };
+      }
       second = nth ? value$1(nth) : undefined;
     } finally {
       value.return();

@@ -95,11 +95,11 @@ export function spawned() {
 export function started() {
   const log = [];
   const taskLog = log;
-  const loading = async () => {
+  async function loading() {
     taskLog.push(1);
     await setTimeout(0, 0);
     taskLog.push(3);
-  };
+  }
   loading();
   log.push(2);
   return log;

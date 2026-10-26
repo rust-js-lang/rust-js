@@ -23,10 +23,10 @@ function loudDrop_drop(loud) {
 }
 
 function countIterator_next(count) {
-  const value = () => {
+  function value() {
     count.at = (count.at + 1) | 0;
     return count.at;
-  };
+  }
   return count.at < count.end ? value() : undefined;
 }
 function countIterator_nth(count, n) {

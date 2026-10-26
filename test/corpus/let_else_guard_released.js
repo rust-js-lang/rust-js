@@ -28,14 +28,14 @@ function main() {
   // Borrowed while the initializer runs, and free in the `else`.
   const cell = { value: 4 };
   const borrow = $borrow(cell, true);
-  const map = (v) => {
+  function map(v) {
     const tryBorrowMut = $tryBorrow(cell, true);
     const result = [v, tryBorrowMut.TAG === "Ok"];
     if (tryBorrowMut.TAG === "Ok") {
       $unborrow(tryBorrowMut._0);
     }
     return result;
-  };
+  }
   let tmp;
   try {
     tmp = borrow.value != null ? map(borrow.value) : undefined;

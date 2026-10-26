@@ -77,11 +77,11 @@ function main() {
         loudDrop_drop(f);
       }
       const c = value$1;
-      const map = (l) => {
+      function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      };
+      }
       console.log(`c ${c != null ? map(c) : 0}`);
       const condition$1 = false;
       const f$1 = [5];
@@ -131,11 +131,11 @@ function main() {
             }
           }
           const f = value$1;
-          const map = (l) => {
+          function map(l) {
             const result$2 = l[0];
             loudDrop_drop(l);
             return result$2;
-          };
+          }
           console.log(`f ${f != null ? map(f) : 0}`);
           let g = { TAG: "Err", _0: 1 };
           const f$2 = [12];
@@ -170,11 +170,11 @@ function main() {
                 }
               }
               const i$1 = value;
-              const map = (l) => {
+              function map(l) {
                 const result = l[0];
                 loudDrop_drop(l);
                 return result;
-              };
+              }
               console.log(`i ${i$1.TAG === "Ok" ? map(i$1._0) : 0}`);
 
               const result = { TAG: "Err", _0: [20] };
@@ -246,11 +246,11 @@ function main() {
                   console.log(`m ${!m}`);
                   try {
                     const k = maybe(true, [27], loudDrop_drop);
-                    const map = (l) => {
+                    function map(l) {
                       const result = l[0];
                       loudDrop_drop(l);
                       return result;
-                    };
+                    }
                     console.log(`k ${k != null ? map(k) : 0}`);
                     const first = firstOr($iterator([0], genIterator_next), [40], loudDrop_drop);
                     console.log(`first ${first[0]}`);

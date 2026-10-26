@@ -81,11 +81,11 @@ function main() {
     }
     throw error;
   }
-  const map = (loud) => {
+  function map(loud) {
     const result = loud[0];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$1 = nth ? map(nth) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = iterator_peekable(
@@ -142,11 +142,11 @@ function main() {
     }
     throw error;
   }
-  const map$1 = (loud) => {
+  function map$1(loud) {
     const result = loud[0];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$3 = nth ? map$1(nth) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = iterator_fuse(
@@ -187,11 +187,11 @@ function main() {
     }
     throw error;
   }
-  const map$2 = (loud) => {
+  function map$2(loud) {
     const result = loud[0];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$6 = nth ? map$2(nth) : undefined;
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   // And an `enumerate()`'s, its source's `nth`, counted (#277).
@@ -230,11 +230,11 @@ function main() {
     }
     throw error;
   }
-  const map$3 = ([at, loud]) => {
+  function map$3([at, loud]) {
     const result = [at, loud[0]];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$8 = nth ? map$3(nth) : undefined;
   console.log(`${value$8 == null ? "None" : `Some((${value$8[0]}, ${value$8[1]}))`}`);
   // A `step_by` over a `take` past its end: the item its source's `nth`
@@ -283,9 +283,9 @@ function main() {
     value$11.return();
     throw error;
   }
-  const inspect = (loud) => {
+  function inspect(loud) {
     console.log(`see ${loud[0]}`);
-  };
+  }
   const value$12 = Iterator.from(
     $skipping(value$11, tmp$7, loudDrop_drop).map((item) => {
       inspect(item);
@@ -392,11 +392,11 @@ function main() {
     }),
     loudDrop_drop,
   );
-  const map$4 = (loud) => {
+  function map$4(loud) {
     const result = loud[0];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$17 = last ? map$4(last) : undefined;
   console.log(`${value$17 == null ? "None" : `Some(${value$17})`}`);
   // An `inspect`'s `nth`, std's default: `advance_by` by its `try_fold`,
@@ -409,9 +409,9 @@ function main() {
     value$18.return();
     throw error;
   }
-  const inspect$1 = (loud) => {
+  function inspect$1(loud) {
     console.log(`see ${loud[0]}`);
-  };
+  }
   const value$19 = $held(
     Iterator.from(
       $skipping(value$18, tmp$14, loudDrop_drop).map((item) => {
@@ -434,11 +434,11 @@ function main() {
     }
     throw error;
   }
-  const map$5 = (loud) => {
+  function map$5(loud) {
     const result = loud[0];
     loudDrop_drop(loud);
     return result;
-  };
+  }
   const value$20 = nth ? map$5(nth) : undefined;
   console.log(`${value$20 == null ? "None" : `Some(${value$20})`}`);
 }

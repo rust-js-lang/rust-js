@@ -319,6 +319,8 @@ createChildReconciler(true);`, its Rust call `reconcileChildFibers(..)`.
   (returnFiber, childToDelete) => { .. }`, where upstream writes nested
   `function deleteChild(..) { .. }`: which form a closure of statements
   bound by `let` takes is a decision of every closure's, left open.
+  (Decided since by ADR 0882's amendment: a function declared,
+  `function deleteChild(..) { .. }`.)
 
 Held by `test/corpus/thread_local_made_by_boxed_closure.rs`, against
 native Rust and its snapshot, and the mutation `maker-boxed-closure-lazy`.

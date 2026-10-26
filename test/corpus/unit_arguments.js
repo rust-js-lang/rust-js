@@ -19,16 +19,16 @@ function each(f, value) {
 }
 
 function main() {
-  const h = () => {
+  function h() {
     console.log("h");
-  };
+  }
   h();
   apply(h, (n) => {
     console.log(`g ${n}`);
   });
-  const k = () => {
+  function k() {
     console.log("k");
-  };
+  }
   noted();
   k();
   each(() => {

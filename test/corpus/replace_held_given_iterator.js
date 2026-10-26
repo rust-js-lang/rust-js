@@ -27,11 +27,11 @@ function restartIterator_next(restart, IIterator, IClone) {
   const next = IIterator.next(restart.iter);
   const captured = restart.iter;
   const captured$1 = restart.orig;
-  const fallback = () => {
+  function fallback() {
     const orig = $take(captured$1, IClone.clone(captured));
     $assign(captured, orig);
     return IIterator.next(captured);
-  };
+  }
   return next ?? fallback();
 }
 

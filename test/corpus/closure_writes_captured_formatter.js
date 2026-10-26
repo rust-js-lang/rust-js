@@ -42,9 +42,9 @@ function formatWithDisplay_fmt(formatWith, options, IIterator) {
 export const eachDisplay = { fmt: eachDisplay_fmt };
 function eachDisplay_fmt(each, options) {
   let f = "";
-  const show = (x) => {
+  function show(x) {
     f += x.impl.fmt(x.value, options);
-  };
+  }
   for (const x of each[0]) {
     show({ value: x, impl: { fmt: (value, options) => $formatted(String(value), options, true) } });
     show({ value: "|", impl: { fmt: $formatted } });

@@ -7,9 +7,9 @@ export function entry() {
 }
 
 function main() {
-  const inspect = (o) => {
+  function inspect(o) {
     console.log(`${o == null ? "None" : `Some(${o})`}`);
-  };
+  }
   const seen = [1, undefined, 3]
     .values()
     .map((item) => {

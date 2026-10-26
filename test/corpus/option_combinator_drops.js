@@ -264,11 +264,11 @@ function main() {
           try {
             const value = make(10);
             const value$1 = [11];
-            const value$2 = (d) => {
+            function value$2(d) {
               const result = [(d[0] + 100) >>> 0];
               dDrop_drop(d);
               return result;
-            };
+            }
             let mapped;
             if (value != null) {
               try {
@@ -362,11 +362,11 @@ function main() {
                       const d = value._0[0];
                       value$0$1$live = false;
                       const e = value._0[1];
-                      const map = (e) => {
+                      function map(e) {
                         const result = e[0];
                         dDrop_drop(e);
                         return result;
-                      };
+                      }
                       try {
                         console.log(`pair ${d[0]} ${e != null ? map(e) : 0}`);
                       } finally {

@@ -10,7 +10,7 @@ export function TodoItem({ todo, dispatch }) {
   // goes with it isn't another.
   const ended = useRef(false);
   const id = todo.id;
-  const save = () => {
+  function save() {
     if (ended.current) {
       return;
     }
@@ -22,21 +22,21 @@ export function TodoItem({ todo, dispatch }) {
       dispatch({ TAG: "Edit", _0: id, _1: title });
     }
     setEditing(false);
-  };
+  }
   const title = todo.title;
-  const edit = () => {
+  function edit() {
     ended.current = false;
     setDraft(title);
     setEditing(true);
-  };
-  const keys = (e) => {
+  }
+  function keys(e) {
     if (e.key === "Enter") {
       save();
     } else if (e.key === "Escape") {
       ended.current = true;
       setEditing(false);
     }
-  };
+  }
   let class$;
   if (todo.completed) {
     class$ = editing ? "completed editing" : "completed";

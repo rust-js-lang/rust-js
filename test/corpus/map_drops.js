@@ -31,11 +31,11 @@ function main() {
       console.log(`drop ${value[0]}`);
     }
     const old = $insert(sorted, 2, ["b2"]);
-    const map = (n) => {
+    function map(n) {
       const result = n[0];
       console.log(`drop ${n[0]}`);
       return result;
-    };
+    }
     console.log(`replaced ${(old ? map(old) : undefined) ?? "none"}`);
     const taken = $remove(sorted, 1);
     console.log(`took ${!!taken} ${sorted.size}`);

@@ -69,11 +69,11 @@ function discardResult(value, keep, dropT) {
 
 function main() {
   const d = make(1);
-  const map = (d) => {
+  function map(d) {
     const result = (d[0] + 10) >>> 0;
     dDrop_drop(d);
     return result;
-  };
+  }
   const read = d ? map(d) : undefined;
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);

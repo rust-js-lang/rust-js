@@ -42,11 +42,11 @@ function main() {
     }
   }
   const a = value;
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   console.log(`a ${a != null ? map(a) : 0}`);
   const option$1 = undefined;
   const f$1 = [3];
@@ -87,11 +87,11 @@ function main() {
     const fallback = 0;
     let mapped;
     if (c$1.TAG === "Ok") {
-      const map = (l) => {
+      function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      };
+      }
       mapped = map(c$1._0);
     } else {
       mapped = fallback;
@@ -121,11 +121,11 @@ function main() {
     try {
       try {
         const e = pick([8], [9], loudDrop_drop, loudDrop_drop);
-        const map = (l) => {
+        function map(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
-        };
+        }
         console.log(`e ${e != null ? map(e) : 0}`);
         const f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
         console.log(`f ${!f}`);

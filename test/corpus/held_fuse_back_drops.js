@@ -51,10 +51,10 @@ function padDoubleEndedIterator_nextBack(
 }
 
 function countdownIterator_next(countdown) {
-  const value = () => {
+  function value() {
     countdown[0] = (countdown[0] + 1) >>> 0;
     return (countdown[0] - 1) >>> 0;
-  };
+  }
   return countdown[0] < countdown[1] ? value() : undefined;
 }
 
@@ -64,10 +64,10 @@ function countdownIterator_sizeHint(countdown) {
 }
 
 function countdownDoubleEndedIterator_nextBack(countdown) {
-  const value = () => {
+  function value() {
     countdown[1] = (countdown[1] - 1) >>> 0;
     return countdown[1];
-  };
+  }
   return countdown[0] < countdown[1] ? value() : undefined;
 }
 

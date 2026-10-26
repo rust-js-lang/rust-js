@@ -32,10 +32,10 @@ function noisy() {
  */
 function mapped() {
   const n = 2;
-  const map = (n) => {
+  function map(n) {
     console.log(`mapped ${n}`);
     return (n * 2) >>> 0;
-  };
+  }
   return createCursor(n != null ? map(n) : undefined);
 }
 

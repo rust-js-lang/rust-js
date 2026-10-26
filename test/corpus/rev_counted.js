@@ -24,10 +24,10 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`f${x}`);
     return (x * 10) | 0;
-  };
+  }
   const v = [1, 2, 3, 4, 5, 6];
   console.log(`[${v.slice(2).toReversed().join(", ")}]`);
   console.log(`[${v.slice(0, 4).toReversed().join(", ")}]`);

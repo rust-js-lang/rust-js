@@ -7,10 +7,10 @@ export function entry() {
 }
 
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`t${x}`);
     return x;
-  };
+  }
   const cmp = $iterCmp($iter([1, 2]), $iter([1, 3]), $cmp);
   console.log(
     `${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>

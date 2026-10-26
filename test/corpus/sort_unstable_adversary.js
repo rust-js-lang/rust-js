@@ -26,7 +26,7 @@ function adversary(n, select) {
   let solid = 0;
   let candidate = 0;
   let asked = 0;
-  const compare = (x, y) => {
+  function compare(x, y) {
     asked = (asked + 1) >>> 0;
     const v = values;
     if ($index(v, x) === gas && $index(v, y) === gas) {
@@ -45,7 +45,7 @@ function adversary(n, select) {
       candidate = y;
     }
     return $cmp($index(v, x), $index(v, y));
-  };
+  }
   const items = $range(0, n, 4);
   if (select != null) {
     $selectNthUnstable(items, select, (a, b) => compare(a, b) < 0, "network", true);

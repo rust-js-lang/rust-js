@@ -40,12 +40,12 @@ export function buildTree(paths) {
  * `geometry/` ("." sorts before "/").
  */
 export function inOrder(tree, first) {
-  const key = ([name, entry]) => {
+  function key([name, entry]) {
     if (entry.TAG === "Folder") {
       return `${name}/`;
     }
     return name;
-  };
+  }
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
   const entries = tree.slice();
   entries.sort((a, b) => {

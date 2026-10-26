@@ -92,11 +92,11 @@ function main() {
   console.log(`${$addr(boxed, 12) !== at} ${addressOf(record, 12) === at}`);
 
   // Hashed by address: one place hashes the same, two differently.
-  const hashed = (pointer) => {
+  function hashed(pointer) {
     const hasher = new $SipHasher(1, 3);
     hasher.writeUsize($addr(pointer, 4));
     return hasher.finish();
-  };
+  }
   console.log(`${hashed(p) === hashed(again)} ${hashed(p) === hashed(second)}`);
 
   // A reference's address is its object's; a zero-sized value's its

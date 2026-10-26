@@ -25,10 +25,10 @@ export function entry() {
 }
 
 function countdownIterator_next(countdown) {
-  const value = () => {
+  function value() {
     countdown.left = (countdown.left - 1) >>> 0;
     return countdown.left;
-  };
+  }
   return countdown.left > 0 ? value() : undefined;
 }
 function louds(n) {

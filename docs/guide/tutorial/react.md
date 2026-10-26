@@ -357,14 +357,14 @@ export function TodoList() {
     document.title = `${left} left`;
   }, [left]);
 
-  const add = (e) => {
+  function add(e) {
     e.preventDefault();
     const title = $trim(draft);
     if (title) {
       dispatch({ TAG: "Add", _0: title });
       setDraft("");
     }
-  };
+  }
 
   return (
     <section>

@@ -112,10 +112,10 @@ function main() {
   const value$16 = reset(d);
   d.n = (d.n + value$16) | 0;
   let e = 1;
-  const inc = () => {
+  function inc() {
     e = (e + 10) | 0;
     return 2;
-  };
+  }
   const value$17 = inc();
   e = (e + value$17) | 0;
   console.log(`${d.n} ${e}`);

@@ -167,12 +167,12 @@ import { Toaster, toast } from "sonner";
 export function App() {
   const [last, setLast] = useState(undefined);
 
-  const save = () => {
+  function save() {
     const details = {
       description: "Your changes are on the server.",
     };
     setLast(toast.success("Saved", details));
-  };
+  }
 
   return (
     <main>

@@ -12,7 +12,7 @@ function main() {
   const deep = 7;
   const held = [undefined, undefined, [1]];
   console.log(`${deep == null ? "None" : `Some(${deep})`} ${!!held[2]}`);
-  const dropS0 = (s0) => {
+  function dropS0(s0) {
     if (s0[0][0] != null) {
       noisyDrop_drop(s0[0][0][0][0]);
       noisyDrop_drop(s0[0][0][0][1]);
@@ -37,164 +37,164 @@ function main() {
       noisyDrop_drop(s0[1][1][1][0]);
       noisyDrop_drop(s0[1][1][1][1]);
     }
-  };
-  const dropS0$1 = (s0) => {
+  }
+  function dropS0$1(s0) {
     dropS0(s0[0]);
     dropS0(s0[1]);
-  };
-  const dropS1 = (s1) => {
+  }
+  function dropS1(s1) {
     if (s1[0] != null) {
       dropS0$1(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$1(s1[1]);
     }
-  };
-  const dropS2 = (s2) => {
+  }
+  function dropS2(s2) {
     if (s2[0] != null) {
       dropS1(s2[0]);
     }
     if (s2[1] != null) {
       dropS1(s2[1]);
     }
-  };
-  const dropS0$2 = (s0) => {
+  }
+  function dropS0$2(s0) {
     dropS2(s0[0]);
     dropS2(s0[1]);
-  };
-  const dropS0$3 = (s0) => {
+  }
+  function dropS0$3(s0) {
     dropS0$2(s0[0]);
     dropS0$2(s0[1]);
-  };
-  const dropS1$1 = (s1) => {
+  }
+  function dropS1$1(s1) {
     if (s1[0] != null) {
       dropS0$3(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$3(s1[1]);
     }
-  };
-  const dropS0$4 = (s0) => {
+  }
+  function dropS0$4(s0) {
     dropS1$1(s0[0]);
     dropS1$1(s0[1]);
-  };
-  const dropS0$5 = (s0) => {
+  }
+  function dropS0$5(s0) {
     dropS0$4(s0[0]);
     dropS0$4(s0[1]);
-  };
-  const dropS1$2 = (s1) => {
+  }
+  function dropS1$2(s1) {
     if (s1[0] != null) {
       dropS0$5(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$5(s1[1]);
     }
-  };
-  const dropS2$1 = (s2) => {
+  }
+  function dropS2$1(s2) {
     if (s2[0] != null) {
       dropS1$2(s2[0]);
     }
     if (s2[1] != null) {
       dropS1$2(s2[1]);
     }
-  };
-  const dropS3 = (s3) => {
+  }
+  function dropS3(s3) {
     if (s3[0] != null) {
       dropS2$1(s3[0]);
     }
     if (s3[1] != null) {
       dropS2$1(s3[1]);
     }
-  };
-  const dropS0$6 = (s0) => {
+  }
+  function dropS0$6(s0) {
     dropS3(s0[0]);
     dropS3(s0[1]);
-  };
-  const dropS0$7 = (s0) => {
+  }
+  function dropS0$7(s0) {
     dropS0$6(s0[0]);
     dropS0$6(s0[1]);
-  };
-  const dropS1$3 = (s1) => {
+  }
+  function dropS1$3(s1) {
     if (s1[0] != null) {
       dropS0$7(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$7(s1[1]);
     }
-  };
-  const dropS0$8 = (s0) => {
+  }
+  function dropS0$8(s0) {
     dropS1$3(s0[0]);
     dropS1$3(s0[1]);
-  };
-  const dropS0$9 = (s0) => {
+  }
+  function dropS0$9(s0) {
     dropS0$8(s0[0]);
     dropS0$8(s0[1]);
-  };
-  const dropS1$4 = (s1) => {
+  }
+  function dropS1$4(s1) {
     if (s1[0] != null) {
       dropS0$9(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$9(s1[1]);
     }
-  };
-  const dropS2$2 = (s2) => {
+  }
+  function dropS2$2(s2) {
     if (s2[0] != null) {
       dropS1$4(s2[0]);
     }
     if (s2[1] != null) {
       dropS1$4(s2[1]);
     }
-  };
-  const dropS0$10 = (s0) => {
+  }
+  function dropS0$10(s0) {
     dropS2$2(s0[0]);
     dropS2$2(s0[1]);
-  };
-  const dropS0$11 = (s0) => {
+  }
+  function dropS0$11(s0) {
     dropS0$10(s0[0]);
     dropS0$10(s0[1]);
-  };
-  const dropS1$5 = (s1) => {
+  }
+  function dropS1$5(s1) {
     if (s1[0] != null) {
       dropS0$11(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$11(s1[1]);
     }
-  };
-  const dropS0$12 = (s0) => {
+  }
+  function dropS0$12(s0) {
     dropS1$5(s0[0]);
     dropS1$5(s0[1]);
-  };
-  const dropS0$13 = (s0) => {
+  }
+  function dropS0$13(s0) {
     dropS0$12(s0[0]);
     dropS0$12(s0[1]);
-  };
-  const dropS1$6 = (s1) => {
+  }
+  function dropS1$6(s1) {
     if (s1[0] != null) {
       dropS0$13(s1[0]);
     }
     if (s1[1] != null) {
       dropS0$13(s1[1]);
     }
-  };
-  const dropS2$3 = (s2) => {
+  }
+  function dropS2$3(s2) {
     if (s2[0] != null) {
       dropS1$6(s2[0]);
     }
     if (s2[1] != null) {
       dropS1$6(s2[1]);
     }
-  };
-  const dropS3$1 = (s3) => {
+  }
+  function dropS3$1(s3) {
     if (s3[0] != null) {
       dropS2$3(s3[0]);
     }
     if (s3[1] != null) {
       dropS2$3(s3[1]);
     }
-  };
-  const dropS4 = (s4) => {
+  }
+  function dropS4(s4) {
     if (s4[0] != null) {
       dropS3$1(s4[0]);
     }
@@ -204,7 +204,7 @@ function main() {
     if (s4[2] != null) {
       noisyDrop_drop(s4[2]);
     }
-  };
+  }
   dropS4(held);
 }
 //# sourceMappingURL=case.js.map

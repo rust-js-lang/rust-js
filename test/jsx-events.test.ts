@@ -143,9 +143,9 @@ pub fn Parsed(text: String) -> JSX::Element {
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("const handleCopy = async () => {\n    await Promise.resolve();\n    setCopied(true);\n  };");
+  expect(jsx).toContain("async function handleCopy() {\n    await Promise.resolve();\n    setCopied(true);\n  }");
   // One that may return early, as react.dev's does, takes no event either.
-  expect(jsx.match(/const handleCopy = async \(\) => \{/g)?.length).toBe(2);
+  expect(jsx.match(/async function handleCopy\(\) \{/g)?.length).toBe(2);
   expect(jsx).not.toContain("(async");
   const { Button } = await import(join(dir, "lib.jsx"));
   let clicked = false;

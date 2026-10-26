@@ -52,12 +52,12 @@ export function Todos() {
   const [draft, setDraft] = useState("");
   const id = useId();
   const left = useMemo(() => todos.filter((t) => !t.done).length, [todos]);
-  const add = () => {
+  function add() {
     if (draft) {
       dispatch({ TAG: "Add", _0: draft });
       setDraft("");
     }
-  };
+  }
   const t = todos.at(-1);
   return (
     <Card title="Todos">

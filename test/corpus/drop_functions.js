@@ -29,12 +29,12 @@ function list(n) {
 const sevenMake = {
   size: sevenMake_size,
   make(self) {
-    const dropList = (list) => {
+    function dropList(list) {
       if (list.TAG === "Cons") {
         console.log(`drop ${list._0[0]}`);
         dropList(list._1);
       }
-    };
+    }
     const made = {
       TAG: "Cons",
       _0: [sevenMake_size(self)],
@@ -63,7 +63,7 @@ function main() {
   }
   const _two = [undefined, tmp];
   console.log("two made");
-  const dropMany = (many) => {
+  function dropMany(many) {
     console.log(`drop ${many.a[0]}`);
     console.log(`drop ${many.b[0]}`);
     console.log(`drop ${many.c[0]}`);
@@ -73,18 +73,18 @@ function main() {
     console.log(`drop ${many.g[0]}`);
     console.log(`drop ${many.h[0]}`);
     console.log(`drop ${many.i[0]}`);
-  };
-  const dropTwo = (two) => {
+  }
+  function dropTwo(two) {
     if (two[0] != null) {
       dropMany(two[0]);
     }
     if (two[1] != null) {
       dropMany(two[1]);
     }
-  };
+  }
   dropTwo(_two);
   const _first = [many(20), undefined];
-  const dropMany$1 = (many) => {
+  function dropMany$1(many) {
     console.log(`drop ${many.a[0]}`);
     console.log(`drop ${many.b[0]}`);
     console.log(`drop ${many.c[0]}`);
@@ -94,36 +94,36 @@ function main() {
     console.log(`drop ${many.g[0]}`);
     console.log(`drop ${many.h[0]}`);
     console.log(`drop ${many.i[0]}`);
-  };
-  const dropTwo$1 = (two) => {
+  }
+  function dropTwo$1(two) {
     if (two[0] != null) {
       dropMany$1(two[0]);
     }
     if (two[1] != null) {
       dropMany$1(two[1]);
     }
-  };
+  }
   dropTwo$1(_first);
   const _list = list(3);
   try {
     console.log(`made ${sevenMake.make(undefined)}`);
   } catch (error) {
-    const dropList = (list) => {
+    function dropList(list) {
       if (list.TAG === "Cons") {
         console.log(`drop ${list._0[0]}`);
         dropList(list._1);
       }
-    };
+    }
     dropList(_list);
     throw error;
   }
   console.log("end");
-  const dropList = (list) => {
+  function dropList(list) {
     if (list.TAG === "Cons") {
       console.log(`drop ${list._0[0]}`);
       dropList(list._1);
     }
-  };
+  }
   dropList(_list);
 }
 //# sourceMappingURL=case.js.map

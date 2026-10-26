@@ -148,21 +148,21 @@ function main() {
       }
     }
     const next = $next(zipped);
-    const value = ([a, b]) => {
+    function value([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
-    };
+    }
     const value$1 = next ? value(next) : undefined;
     console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     const value$2 = $next(zipped);
-    const value$3 = ([a, b]) => {
+    function value$3([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
-    };
+    }
     const value$4 = value$2 ? value$3(value$2) : undefined;
     console.log(`zip ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
   } finally {
@@ -186,11 +186,11 @@ function main() {
   let chained$live;
   try {
     const loud = $next(chained);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$1 = loud ? value(loud) : undefined;
     console.log(`chain ${value$1 == null ? "None" : `Some(${value$1})`}`);
     chained$live = false;
@@ -216,11 +216,11 @@ function main() {
   let kept$live;
   try {
     const value = $next(kept);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`filter ${value$2 == null ? "None" : `Some(${value$2})`}`);
     kept$live = false;
@@ -232,11 +232,11 @@ function main() {
   let numbered$live;
   try {
     const value = $next(numbered);
-    const value$1 = ([i, l]) => {
+    function value$1([i, l]) {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`enumerate ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
     numbered$live = false;
@@ -258,11 +258,11 @@ function main() {
   let skipping$live;
   try {
     const value = $next(skipping);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`skip_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
     skipping$live = false;
@@ -282,11 +282,11 @@ function main() {
   let taking$live;
   try {
     const value = $next(taking);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`take_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
     const value$3 = $next(taking);
@@ -310,19 +310,19 @@ function main() {
   let stepped$live;
   try {
     const value = $next(stepped);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`step_by ${value$2 == null ? "None" : `Some(${value$2})`}`);
     const value$3 = $next(stepped);
-    const value$4 = (l) => {
+    function value$4(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$5 = value$3 ? value$4(value$3) : undefined;
     console.log(`step_by ${value$5 == null ? "None" : `Some(${value$5})`}`);
     stepped$live = false;
@@ -330,9 +330,9 @@ function main() {
     stepped.return();
   }
 
-  const value$5 = (l) => {
+  function value$5(l) {
     console.log(`see ${l[0]}`);
-  };
+  }
   const total = $closing($iter(louds(110, 3)), $dropEach(loudDrop_drop))
     .map((item) => {
       value$5(item);
@@ -356,11 +356,11 @@ function main() {
   let fused$live;
   try {
     const value = $next(fused);
-    const value$1 = (l) => {
+    function value$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$2 = value ? value$1(value) : undefined;
     console.log(`fuse ${value$2 == null ? "None" : `Some(${value$2})`}`);
     fused$live = false;

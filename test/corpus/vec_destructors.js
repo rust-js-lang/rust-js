@@ -181,10 +181,10 @@ function main() {
             noisyDrop_drop,
           );
           console.log(`[${ids(w).join(", ")}]`);
-          const key = (n) => {
+          function key(n) {
             console.log(`key ${n[0]}`);
             return (n[0] / 4) >>> 0;
-          };
+          }
           $dedupBy(w, (a, b) => key(a) === key(b), noisyDrop_drop);
           console.log(`[${ids(w).join(", ")}]`);
           $truncate(w, 3, noisyDrop_drop);

@@ -16,10 +16,10 @@ export function entry() {
 }
 
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`t${x}`);
     return x;
-  };
+  }
   const a = $collectOptions(
     [1, 2, 3].values().map((x) => {
       if (x < 3) {

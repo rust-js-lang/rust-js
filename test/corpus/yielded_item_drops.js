@@ -141,11 +141,11 @@ function main() {
   Skipper.skip(skipper, { next: genIterator_next }, loudDrop_drop);
   console.log("skipped");
   const kept = second($iterator([0], genIterator_next), loudDrop_drop);
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   console.log(`kept ${kept != null ? map(kept) : 0}`);
   const value = second($lazyRange(0, 3));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
@@ -157,18 +157,18 @@ function main() {
     ),
     loudDrop_drop,
   );
-  const map$1 = (l) => {
+  function map$1(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   console.log(`made ${made != null ? map$1(made) : 0}`);
   const relay = relayed($iterator([1], genIterator_next), loudDrop_drop);
-  const map$2 = (l) => {
+  function map$2(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   console.log(`relayed ${relay != null ? map$2(relay) : 0}`);
   console.log(
     `${counted(

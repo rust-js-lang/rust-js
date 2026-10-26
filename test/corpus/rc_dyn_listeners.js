@@ -64,13 +64,13 @@ function main() {
       let parent;
       try {
         const upgrade = $upgrade(borrow.value);
-        const value = (p) => {
+        function value(p) {
           const result = p.value.name;
           $rcDrop(p, (value) => {
             $weakDrop(value.parent);
           });
           return result;
-        };
+        }
         parent = (upgrade ? value(upgrade) : undefined) ?? "";
       } finally {
         $unborrow(borrow);

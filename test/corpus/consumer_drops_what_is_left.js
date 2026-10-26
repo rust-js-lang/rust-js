@@ -346,11 +346,11 @@ function consume(n) {
   const stepped = $held($lazyChain(value$9, tmp$5));
   try {
     const next = $next(stepped);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$1 = next ? value(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const loud = $next(stepped);

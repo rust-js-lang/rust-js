@@ -69,11 +69,11 @@ function popped() {
   try {
     $roomFor(v.length + 4, 1);
     const popped = $popIf(v, (l) => l[0] === 8);
-    const map = (l) => {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value = popped ? map(popped) : undefined;
     console.log(`popped ${value == null ? "None" : `Some(${value})`}`);
     const none = $popIf(v, (l) => l[0] === 0);

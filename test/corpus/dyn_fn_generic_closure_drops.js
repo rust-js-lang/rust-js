@@ -12,10 +12,10 @@ function guardDrop_drop(guard) {
 
 function listened(result) {
   const listeners = [];
-  const add = (listener) => {
+  function add(listener) {
     listeners.push(listener);
     return listeners.length;
-  };
+  }
   return [result, add];
 }
 
@@ -30,10 +30,10 @@ function holding(value, dropT) {
 
 function guarded(result$1, guard) {
   const captured = guard[0];
-  const result = () => {
+  function result() {
     console.log(`guard ${captured}`);
     return result$1;
-  };
+  }
   guardDrop_drop(guard);
   return result;
 }

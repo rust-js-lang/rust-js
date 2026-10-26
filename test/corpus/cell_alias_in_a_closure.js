@@ -5,16 +5,16 @@ export function entry() {
 }
 
 function reset(context) {
-  const again = () => {
+  function again() {
     context.value = 5;
-  };
+  }
   again();
 }
 
 function bumpTwice(context) {
-  const bump = () => {
+  function bump() {
     context.value = (context.value + 1) >>> 0;
-  };
+  }
   bump();
   bump();
   return context.value;

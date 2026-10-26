@@ -135,11 +135,11 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           );
-          const value = (l) => {
+          function value(l) {
             const result = l[0];
             loudDrop_drop(l);
             return result;
-          };
+          }
           const value$1 = loud ? value(loud) : undefined;
           console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
         } finally {
@@ -160,11 +160,11 @@ function main() {
           $dropEach(loudDrop_drop),
           loudDrop_drop,
         );
-        const value$1 = (l) => {
+        function value$1(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
-        };
+        }
         const value$2 = value ? value$1(value) : undefined;
         console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
       } finally {

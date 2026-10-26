@@ -5,9 +5,9 @@
 /** Captured by reference: the closure changes the variable itself. */
 export function byReference(a, b) {
   let total = 0;
-  const add = (x) => {
+  function add(x) {
     total = (total + x) | 0;
-  };
+  }
   add(a);
   add(b);
   return total;
@@ -28,10 +28,10 @@ export function moveCopies(n) {
 export function ownState(start) {
   const count = start;
   let count$1 = count;
-  const next = () => {
+  function next() {
     count$1 = (count$1 + 1) | 0;
     return count$1;
-  };
+  }
   next();
   next();
   return [next(), count];
@@ -44,10 +44,10 @@ export function freshCopyEachTime(times) {
   let i = 0;
   while (i < times) {
     let n$1 = n;
-    const bump = () => {
+    function bump() {
       n$1 = (n$1 + 1) | 0;
       return n$1;
-    };
+    }
     total = (total + ((((bump() * 10) | 0) + bump()) | 0)) | 0;
     i++;
   }
@@ -58,10 +58,10 @@ export function freshCopyEachTime(times) {
 export function structCopy(x) {
   const p = { x, y: 0 };
   let captured = p.x;
-  const shift = () => {
+  function shift() {
     captured = (captured + 1) | 0;
     return captured;
-  };
+  }
   shift();
   p.y = 5;
   return [shift(), (p.x + p.y) | 0];

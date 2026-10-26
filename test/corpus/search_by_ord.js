@@ -100,14 +100,14 @@ function main() {
     { TAG: "High", name: "x" },
     { TAG: "High", name: "y" },
   ];
-  const key$1 = (l) => {
+  function key$1(l) {
     if (l.value.TAG === "High") {
       return "high";
     }
     if (l.value.TAG === "Mid") {
       return "mid";
     }
-  };
+  }
   $dedupByCells(levels, (a, b) => {
     const aKey = key$1(a);
     const bKey = key$1(b);

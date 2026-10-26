@@ -51,10 +51,10 @@ function main() {
     // How many times std asks, which each small sort asks as many as it does.
     let asked = 0;
     const tags = base.map((p) => [p[0], p[1]]);
-    const compare = (a, b) => {
+    function compare(a, b) {
       asked = (asked + 1) | 0;
       return $cmp(a[0], b[0]);
-    };
+    }
     $sortUnstable(tags, (a, b) => compare(a, b) < 0, "general8");
     console.log(`${n}: ${tags.map((t) => String(t[1])).join(",")} after ${asked}`);
     const mids = base.map((p) => ({ key: p[0], rest: new Array(7).fill(p[1]) }));

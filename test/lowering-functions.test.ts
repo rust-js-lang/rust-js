@@ -833,7 +833,7 @@ pub fn dropped(n: u32) -> u32 {
   expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
   expect(js).toContain(`const g = (a) => (a * 2) >>> 0;`);
   // What it's given and drops, it's given.
-  expect(js).toMatch(/const h = \(_\d*\) =>/);
+  expect(js).toMatch(/function h\(_\d*\) \{/);
 });
 
 test("a closure from MIR names its `&x` parameter and knows the `bool`s it captures", async () => {

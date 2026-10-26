@@ -55,11 +55,11 @@ function main() {
     ),
     loudDrop_drop,
   );
-  const map = (l) => {
+  function map(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$1 = l ? map(l) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const l$1 = $lastDropping(
@@ -69,11 +69,11 @@ function main() {
     ),
     loudDrop_drop,
   );
-  const map$1 = (l) => {
+  function map$1(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$2 = l$1 ? map$1(l$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = $iter(louds(7, 2));
@@ -101,11 +101,11 @@ function main() {
     $lazyChain(chain, $closing($iter(tmp$2), $dropEach(loudDrop_drop))),
     loudDrop_drop,
   );
-  const map$2 = (l) => {
+  function map$2(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$4 = l$2 ? map$2(l$2) : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const value$5 = $iter(louds(12, 3));
@@ -129,11 +129,11 @@ function main() {
     ),
     loudDrop_drop,
   );
-  const map$3 = (l) => {
+  function map$3(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$6 = l$3 ? map$3(l$3) : undefined;
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = $rev($closing($iter(louds(18, 2)), $dropEach(loudDrop_drop)));
@@ -147,11 +147,11 @@ function main() {
   const value$8 = $held($lazyChain(value$7, $closing($iter(tmp$4), $dropEach(loudDrop_drop))));
   try {
     const nth = $nthDropping($lent(value$8), 2, loudDrop_drop, false);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$1 = nth ? value(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
@@ -243,11 +243,11 @@ function main() {
     }
     throw error;
   }
-  const map$4 = (l) => {
+  function map$4(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$13 = stepped ? map$4(stepped) : undefined;
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
   const skip = $skipping($closing($iter(louds(39, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
@@ -274,11 +274,11 @@ function main() {
     }
     throw error;
   }
-  const map$5 = (l) => {
+  function map$5(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$15 = skipped ? map$5(skipped) : undefined;
   console.log(`${value$15 == null ? "None" : `Some(${value$15})`}`);
   // `Chain::count`: each side's own, a `Take`'s advancing a reversed
@@ -327,11 +327,11 @@ function main() {
     }
     throw error;
   }
-  const map$6 = (l) => {
+  function map$6(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$18 = fused ? map$6(fused) : undefined;
   console.log(`${value$18 == null ? "None" : `Some(${value$18})`}`);
   // Std's `advance_by` through a `take` of a held `fuse()` of a `rev()`:
@@ -374,11 +374,11 @@ function main() {
     }
     throw error;
   }
-  const map$7 = (l) => {
+  function map$7(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$21 = advanced ? map$7(advanced) : undefined;
   console.log(`${value$21 == null ? "None" : `Some(${value$21})`}`);
   // Of two `fuse()`s, neither with an item drop of its own: the one its
@@ -427,11 +427,11 @@ function main() {
     }
     throw error;
   }
-  const map$8 = (l) => {
+  function map$8(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$24 = both ? map$8(both) : undefined;
   console.log(`${value$24 == null ? "None" : `Some(${value$24})`}`);
   // A `skip`'s `last` past a `fuse()`'s items, which it drops (#285).
@@ -457,11 +457,11 @@ function main() {
     ),
     loudDrop_drop,
   );
-  const map$9 = (l) => {
+  function map$9(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$26 = last ? map$9(last) : undefined;
   console.log(`${value$26 == null ? "None" : `Some(${value$26})`}`);
   // A `skip`'s `advance_by`, its source's of what it skips and more: a
@@ -493,11 +493,11 @@ function main() {
     }
     throw error;
   }
-  const map$10 = (l) => {
+  function map$10(l) {
     const result = l[0];
     loudDrop_drop(l);
     return result;
-  };
+  }
   const value$29 = skipped ? map$10(skipped) : undefined;
   console.log(`${value$29 == null ? "None" : `Some(${value$29})`}`);
   // A peekable's and a fuse's `count`, their source's own: a `take`'s of a

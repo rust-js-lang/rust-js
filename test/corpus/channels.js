@@ -73,9 +73,9 @@ function main() {
       console.log(`${$send(tx$1, 5).TAG === "Err"}`);
 
       const [tx, rx] = $channel();
-      const notify = () => {
+      function notify() {
         $unwrapOk($send(tx, "done"), undefined, (e) => "SendError { .. }");
-      };
+      }
       try {
         try {
           notify();

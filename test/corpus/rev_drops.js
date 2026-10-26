@@ -14,11 +14,11 @@ function main() {
   const r = $rev($closing($iter(v), $dropEach(loudDrop_drop)));
   try {
     const next = $next(r);
-    const value = (l) => {
+    function value(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     const value$1 = next ? value(next) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
@@ -64,11 +64,11 @@ function main() {
     const back = $rev($closing(held, $dropEach(loudDrop_drop)));
     try {
       const value = $next(back);
-      const value$1 = (l) => {
+      function value$1(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      };
+      }
       const value$2 = value ? value$1(value) : undefined;
       console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
     } finally {

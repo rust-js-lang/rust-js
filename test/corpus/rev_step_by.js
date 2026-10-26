@@ -21,10 +21,10 @@ export function entry() {
 }
 
 function main() {
-  const t = (x) => {
+  function t(x) {
     console.log(`f${x}`);
     return x;
-  };
+  }
   const v = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   console.log(
     `[${$rev(

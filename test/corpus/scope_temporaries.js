@@ -133,12 +133,12 @@ function main() {
   }
 
   pair$0$live = false;
-  const check = (n) => {
+  function check(n) {
     const noisy = make(n);
     const result = Noisy.big(noisy);
     console.log(`drop ${noisy[0]}`);
     return result;
-  };
+  }
   console.log(`check ${check(10)}`);
   pair = (stop) => {
     const noisy = make(11);

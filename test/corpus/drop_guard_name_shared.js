@@ -17,11 +17,11 @@ function main() {
     })
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
-  const fresh = (n) => {
+  function fresh(n) {
     const counted = (n + 1) >>> 0;
     console.log(`drop ${counted}`);
     return counted;
-  };
+  }
   console.log(`${fresh(1013)}`);
 }
 //# sourceMappingURL=case.js.map

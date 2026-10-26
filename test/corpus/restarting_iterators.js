@@ -60,7 +60,7 @@ function main() {
   console.log(
     `enumerate ([${value$2[0].join(", ")}], [${value$2[1].join(", ")}], [${value$2[2].join(", ")}])`,
   );
-  const inspect = () => {};
+  function inspect() {}
   const value$3 = twice(
     $iterator(f(), flakyIterator_next).map((item) => {
       inspect(item);

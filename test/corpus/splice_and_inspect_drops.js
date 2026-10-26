@@ -76,11 +76,11 @@ function main() {
     const it = $iter($splice(v, 0, 1, []));
     try {
       const next = $next(it);
-      const value = (l) => {
+      function value(l) {
         const result = l[0];
         console.log(`drop ${l[0]}`);
         return result;
-      };
+      }
       const value$1 = next ? value(next) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
@@ -91,30 +91,30 @@ function main() {
     console.log(`[${v.map((l) => l[0]).join(", ")}]`);
     const option = [7];
     if (option != null) {
-      const inspected = (l) => {
+      function inspected(l) {
         console.log(`saw ${l[0]}`);
-      };
+      }
       inspected(option);
     }
     const o = option;
-    const map = (l) => {
+    function map(l) {
       const result = l[0];
       console.log(`drop ${l[0]}`);
       return result;
-    };
+    }
     const value = o ? map(o) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const r = { TAG: "Ok", _0: [8] };
     if (r.TAG === "Ok") {
-      const inspected = (l) => {
+      function inspected(l) {
         console.log(`ok ${l[0]}`);
-      };
+      }
       inspected(r._0);
     }
     if (r.TAG === "Err") {
-      const inspected = (e) => {
+      function inspected(e) {
         console.log(`err ${e}`);
-      };
+      }
       inspected(r._0);
     }
     console.log(`${r.TAG === "Ok"}`);

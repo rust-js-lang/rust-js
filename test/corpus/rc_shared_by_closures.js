@@ -7,14 +7,14 @@ export function entry() {
 }
 
 function settle(payload, fulfil, value) {
-  const onResolve = (value) => {
+  function onResolve(value) {
     payload.status = 1;
     payload.result = value;
-  };
-  const onReject = (error) => {
+  }
+  function onReject(error) {
     payload.status = 2;
     payload.result = -error;
-  };
+  }
   if (fulfil) {
     onResolve(value);
   } else {
@@ -28,9 +28,9 @@ function settle(payload, fulfil, value) {
 function swapped(payload, other) {
   const first = payload;
   payload = other;
-  const mark = () => {
+  function mark() {
     first.status = 9;
-  };
+  }
   mark();
   console.log(`${payload.status}`);
 }

@@ -22,9 +22,9 @@ function main() {
   b = 4;
   console.log(`${b}`);
   let c = 0;
-  const add = (k) => {
+  function add(k) {
     c = (c + k) | 0;
-  };
+  }
   add(5);
   add(6);
   console.log(`${c}`);

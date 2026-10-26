@@ -27,9 +27,9 @@ function square(x) {
 
 function main() {
   let count = 0;
-  const tick = () => {
+  function tick() {
     count = (count + 1) | 0;
-  };
+  }
   call(tick);
   passedOn(tick);
   const r = tick;

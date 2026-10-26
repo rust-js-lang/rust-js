@@ -19,10 +19,10 @@ function main() {
   const ps = [{ x: 1 }, { x: 2 }];
   const arr = [{ x: 5 }, { x: 6 }];
   const v = [10, 20, 30];
-  const at = (i) => {
+  function at(i) {
     log.push(i);
     return i;
-  };
+  }
   const value = at(1);
   if (value >= 2) {
     throw new Error(`index out of bounds: the len is 2 but the index is ${value}`);

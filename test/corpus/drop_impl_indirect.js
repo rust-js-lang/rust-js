@@ -39,9 +39,9 @@ const $wrapPass = new WeakMap();
 function wrapPass(dropT) {
   return $traitImpl($wrapPass, [dropT], () => ({
     pass(self) {
-      const dropSelf = (wrap) => {
+      function dropSelf(wrap) {
         dropT?.(wrap[0]);
-      };
+      }
       helperTaking(self, dropSelf);
     },
     $drop(wrap) {
@@ -65,9 +65,9 @@ const $wrapTake = new WeakMap();
 function wrapTake(dropT) {
   return $traitImpl($wrapTake, [dropT], () => ({
     take(self) {
-      const dropSelf = (wrap) => {
+      function dropSelf(wrap) {
         dropT?.(wrap[0]);
-      };
+      }
       dropSelf?.(self);
     },
     $drop(wrap) {
@@ -81,10 +81,10 @@ const $pairTake = new WeakMap();
 function pairTake(dropA, dropB) {
   return $traitImpl($pairTake, [dropA, dropB], () => ({
     take(self) {
-      const dropSelf = (pair) => {
+      function dropSelf(pair) {
         dropA?.(pair[0]);
         dropB?.(pair[1]);
-      };
+      }
       dropSelf?.(self);
     },
     $drop(pair) {

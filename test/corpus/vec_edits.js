@@ -25,10 +25,10 @@ function main() {
   v.push(5, 1, 4, 1, 3);
   // What it's given still runs.
   let asked = 0;
-  const ask = () => {
+  function ask() {
     asked = (asked + 1) >>> 0;
     return asked;
-  };
+  }
   const n$1 = ask();
   $roomFor(v.length + n$1, 4);
   const n$2 = ask();

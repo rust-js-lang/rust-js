@@ -20,37 +20,37 @@ export function mutable(button) {
 
 export function sharedMutable(button) {
   let count = 0;
-  const callback = () => {
+  function callback() {
     count = (count + 1) | 0;
     globalThis.record(count);
-  };
+  }
   button.addEventListener("click", callback);
   button.addEventListener("click", callback);
 }
 
 export function removed(button) {
-  const listener = (e) => {
+  function listener(e) {
     globalThis.record(e.clientX);
-  };
+  }
   button.addEventListener("click", listener);
   button.removeEventListener("click", listener);
 }
 
 export function duplicate(button) {
-  const listener = (e) => {
+  function listener(e) {
     globalThis.record(e.clientX);
-  };
+  }
   button.addEventListener("click", listener);
   button.addEventListener("click", listener);
 }
 
 export function different(button) {
-  const first = (e) => {
+  function first(e) {
     globalThis.record(e.clientX);
-  };
-  const second = (e) => {
+  }
+  function second(e) {
     globalThis.record(e.clientX);
-  };
+  }
   button.addEventListener("click", first);
   button.removeEventListener("click", second);
 }
@@ -82,18 +82,18 @@ export function aborted(button) {
 }
 
 export function capture(button) {
-  const listener = (e) => {
+  function listener(e) {
     globalThis.record(e.clientX);
-  };
+  }
   button.addEventListener("click", listener, true);
   // Removal without the capture flag must leave the capture listener installed.
   button.removeEventListener("click", listener);
 }
 
 export function captureRemoved(button) {
-  const listener = (e) => {
+  function listener(e) {
     globalThis.record(e.clientX);
-  };
+  }
   button.addEventListener("click", listener, true);
   button.removeEventListener("click", listener, true);
 }
@@ -117,17 +117,17 @@ export function namedOnce(button) {
 }
 
 export function namedRemoved(button) {
-  const callback = () => {
+  function callback() {
     globalThis.record(1);
-  };
+  }
   button.addEventListener("custom", callback);
   button.removeEventListener("custom", callback);
 }
 
 export function namedCaptureRemoved(button) {
-  const callback = () => {
+  function callback() {
     globalThis.record(1);
-  };
+  }
   button.addEventListener("custom", callback, true);
   button.removeEventListener("custom", callback, { capture: true });
 }

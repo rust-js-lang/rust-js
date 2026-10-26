@@ -46,11 +46,11 @@ function stoppedEarly() {
   try {
     const e = Iterator.from($extractIf(w, 1, undefined, () => true));
     const first = $next(e);
-    const map = (l) => {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    };
+    }
     console.log(`first ${first != null ? map(first) : 0} left [${ids(w).join(", ")}]`);
   } finally {
     for (const item of w) {

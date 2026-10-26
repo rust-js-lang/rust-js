@@ -111,9 +111,9 @@ function putTwice(w) {
 
 // A `Result`'s method that makes a write's result of a value's: `map`.
 function written(r) {
-  const map = (n) => {
+  function map(n) {
     console.log(`wrote ${n}`);
-  };
+  }
   $writeCheck($writeOf(r.TAG === "Ok" ? { TAG: "Ok", _0: map(r._0) } : r));
 }
 

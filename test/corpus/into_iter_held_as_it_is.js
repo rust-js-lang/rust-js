@@ -17,10 +17,10 @@ function twice(items, TIntoIterator, TIntoIterClone) {
 function twiceIterator_next(twice, IIterator, IClone) {
   const next = IIterator.next(twice.iter);
   const captured = twice.iter;
-  const fallback = () => {
+  function fallback() {
     $assign(captured, IClone.clone(twice.orig));
     return IIterator.next(captured);
-  };
+  }
   return next ?? fallback();
 }
 

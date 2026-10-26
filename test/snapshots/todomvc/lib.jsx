@@ -30,13 +30,13 @@ export function App() {
   useEffect(() => save(todos), [todos]);
   const active = todos.filter((todo) => !todo.completed).length;
   const completed = (todos.length - active) >>> 0;
-  const add = (e) => {
+  function add(e) {
     const title = $trim(draft);
     if (e.key === "Enter" && title) {
       dispatch({ TAG: "Add", _0: title });
       setDraft("");
     }
-  };
+  }
   const selected = (route) => (filter === route ? "selected" : "");
   return (
     <>

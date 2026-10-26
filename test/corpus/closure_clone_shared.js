@@ -11,9 +11,9 @@ function main() {
   console.log(`${add(1)} ${add2(2)}`);
 
   let count = 0;
-  const counter = () => {
+  function counter() {
     count = (count + 1) | 0;
-  };
+  }
   const counter2 = counter;
   counter();
   counter2();

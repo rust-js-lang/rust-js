@@ -33,13 +33,13 @@ function insert(root, word) {
   try {
     iter = $iter(Array.from(word));
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(cur, dropNode);
     throw error;
   }
@@ -49,13 +49,13 @@ function insert(root, word) {
     try {
       tmp = $next(iter);
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -67,26 +67,26 @@ function insert(root, word) {
     try {
       borrow = $borrow(cur.value, true);
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
     try {
       $unborrow(borrow);
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -97,13 +97,13 @@ function insert(root, word) {
       borrowMut = $borrowMut(cur.value, true);
     } catch (error) {
       console.log(`drop ${$debugStr(label[0])}`);
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -118,13 +118,13 @@ function insert(root, word) {
       if (label$live) {
         console.log(`drop ${$debugStr(label[0])}`);
       }
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -145,13 +145,13 @@ function insert(root, word) {
           try {
             parent = $downgrade(tmp$1);
           } catch (error) {
-            const dropNode = (node) => {
+            function dropNode(node) {
               console.log(`drop ${$debugStr(node.label[0])}`);
               for (const [, value] of $sortedEntries(node.children, $cmp)) {
                 $rcDrop(value, dropNode);
               }
               $weakDrop(node.parent);
-            };
+            }
             for (const [, value] of $sortedEntries(tmp, $cmp)) {
               $rcDrop(value, dropNode);
             }
@@ -175,13 +175,13 @@ function insert(root, word) {
       );
     } catch (error) {
       $unborrow(borrowMut);
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -189,67 +189,67 @@ function insert(root, word) {
       next = $rcClone($mutGet(entry$1._0[0], entry$1._0[1]).value);
     } catch (error) {
       $unborrow(borrowMut);
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
     try {
       $unborrow(borrowMut);
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(next, dropNode);
-      const dropNode$1 = (node) => {
+      function dropNode$1(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode$1);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode$1);
       throw error;
     }
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     try {
       $rcDrop(cur, dropNode);
     } catch (error) {
       cur = next;
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
     cur = next;
   }
-  const dropNode = (node) => {
+  function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode);
     }
     $weakDrop(node.parent);
-  };
+  }
   $rcDrop(cur, dropNode);
 }
 
@@ -262,13 +262,13 @@ function depth(node) {
     try {
       borrow = $borrow(cur.value, true);
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -276,13 +276,13 @@ function depth(node) {
       parent = $upgrade(borrow.parent);
     } catch (error) {
       $unborrow(borrow);
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
@@ -290,44 +290,44 @@ function depth(node) {
       $unborrow(borrow);
     } catch (error) {
       if (parent) {
-        const dropNode = (node) => {
+        function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
             $rcDrop(value, dropNode);
           }
           $weakDrop(node.parent);
-        };
+        }
         $rcDrop(parent, dropNode);
       }
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
     if (parent) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       try {
         $rcDrop(cur, dropNode);
       } catch (error) {
         cur = parent;
-        const dropNode = (node) => {
+        function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
             $rcDrop(value, dropNode);
           }
           $weakDrop(node.parent);
-        };
+        }
         $rcDrop(cur, dropNode);
         throw error;
       }
@@ -337,36 +337,36 @@ function depth(node) {
     }
     try {
       if (parent) {
-        const dropNode = (node) => {
+        function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
             $rcDrop(value, dropNode);
           }
           $weakDrop(node.parent);
-        };
+        }
         $rcDrop(parent, dropNode);
       }
     } catch (error) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(cur, dropNode);
       throw error;
     }
     break;
   }
   const result = depth;
-  const dropNode = (node) => {
+  function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode);
     }
     $weakDrop(node.parent);
-  };
+  }
   $rcDrop(cur, dropNode);
   return result;
 }
@@ -394,13 +394,13 @@ function main() {
   try {
     iter = $iter(["ab", "ac", "b"]);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(root, dropNode);
     throw error;
   }
@@ -410,13 +410,13 @@ function main() {
       tmp = $next(iter);
     } catch (error) {
       if (root$live) {
-        const dropNode = (node) => {
+        function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
             $rcDrop(value, dropNode);
           }
           $weakDrop(node.parent);
-        };
+        }
         $rcDrop(root, dropNode);
       }
       throw error;
@@ -429,13 +429,13 @@ function main() {
       insert(root, word);
     } catch (error) {
       if (root$live) {
-        const dropNode = (node) => {
+        function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
             $rcDrop(value, dropNode);
           }
           $weakDrop(node.parent);
-        };
+        }
         $rcDrop(root, dropNode);
       }
       throw error;
@@ -446,13 +446,13 @@ function main() {
     borrow = $borrow(root.value, true);
   } catch (error) {
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -463,13 +463,13 @@ function main() {
   } catch (error) {
     $unborrow(borrow);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -477,22 +477,22 @@ function main() {
   try {
     $unborrow(borrow);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -501,22 +501,22 @@ function main() {
   try {
     tmp$1 = $borrow(a.value, true);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -526,22 +526,22 @@ function main() {
     ab = $rcClone($unwrap(tmp$1.children.get("b"), "no entry found for key"));
   } catch (error) {
     $unborrow(tmp$1);
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -549,30 +549,30 @@ function main() {
   try {
     $unborrow(tmp$1);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -581,30 +581,30 @@ function main() {
   try {
     tmp$2 = depth(root);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -613,30 +613,30 @@ function main() {
   try {
     tmp$3 = depth(a);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -644,30 +644,30 @@ function main() {
   try {
     console.log(`${tmp$2} ${tmp$3} ${depth(ab)}`);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -676,30 +676,30 @@ function main() {
   try {
     borrowMut = $borrowMut(a.value, true);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -709,30 +709,30 @@ function main() {
     taken = $remove(borrowMut.children, "c");
   } catch (error) {
     $unborrow(borrowMut);
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
@@ -740,134 +740,134 @@ function main() {
   try {
     $unborrow(borrowMut);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     if (taken != null) {
       $rcDrop(taken, dropNode);
     }
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode$1);
-    const dropNode$2 = (node) => {
+    function dropNode$2(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$2);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$2);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
   }
   console.log(`taken ${!!taken}`);
-  const dropNode = (node) => {
+  function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode);
     }
     $weakDrop(node.parent);
-  };
+  }
   try {
     if (taken != null) {
       $rcDrop(taken, dropNode);
     }
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
-    const dropNode$1 = (node) => {
+    function dropNode$1(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode$1);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(a, dropNode$1);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
   }
-  const dropNode$1 = (node) => {
+  function dropNode$1(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode$1);
     }
     $weakDrop(node.parent);
-  };
+  }
   try {
     $rcDrop(a, dropNode$1);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     if (root$live) {
-      const dropNode = (node) => {
+      function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
           $rcDrop(value, dropNode);
         }
         $weakDrop(node.parent);
-      };
+      }
       $rcDrop(root, dropNode);
     }
     throw error;
   }
   console.log("root dropped next");
   root$live = false;
-  const dropNode$2 = (node) => {
+  function dropNode$2(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode$2);
     }
     $weakDrop(node.parent);
-  };
+  }
   try {
     $rcDrop(root, dropNode$2);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     throw error;
   }
@@ -875,13 +875,13 @@ function main() {
   try {
     tmp$4 = $borrow(ab.value, true);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     throw error;
   }
@@ -890,60 +890,60 @@ function main() {
     upgrade = $upgrade(tmp$4.parent);
   } catch (error) {
     $unborrow(tmp$4);
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     throw error;
   }
   console.log(`ab's parent is gone: ${!upgrade}`);
-  const dropNode$3 = (node) => {
+  function dropNode$3(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode$3);
     }
     $weakDrop(node.parent);
-  };
+  }
   try {
     if (upgrade != null) {
       $rcDrop(upgrade, dropNode$3);
     }
   } catch (error) {
     $unborrow(tmp$4);
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     throw error;
   }
   try {
     $unborrow(tmp$4);
   } catch (error) {
-    const dropNode = (node) => {
+    function dropNode(node) {
       console.log(`drop ${$debugStr(node.label[0])}`);
       for (const [, value] of $sortedEntries(node.children, $cmp)) {
         $rcDrop(value, dropNode);
       }
       $weakDrop(node.parent);
-    };
+    }
     $rcDrop(ab, dropNode);
     throw error;
   }
-  const dropNode$4 = (node) => {
+  function dropNode$4(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
       $rcDrop(value, dropNode$4);
     }
     $weakDrop(node.parent);
-  };
+  }
   $rcDrop(ab, dropNode$4);
 }
 //# sourceMappingURL=case.js.map

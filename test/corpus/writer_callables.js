@@ -111,13 +111,13 @@ function titleDisplay_fmt(title, options) {
 export const numberedDisplay = { fmt: numberedDisplay_fmt };
 function numberedDisplay_fmt(numbered, options) {
   let n = numbered[1];
-  const numbered$1 = (word, options) => {
+  function numbered$1(word, options) {
     let f = "";
     n = (n + 1) >>> 0;
     f += `${n}.`;
     f += word;
     return f;
-  };
+  }
   return transform(numbered[0], numbered$1, (options) => ", ", options);
 }
 

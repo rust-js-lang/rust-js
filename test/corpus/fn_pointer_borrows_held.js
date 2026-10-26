@@ -33,7 +33,7 @@ function main() {
   const root = {
     log: [],
   };
-  const pushed = (root) => {
+  function pushed(root) {
     const borrowMut = $borrowMut(root.log, true);
     try {
       borrowMut.push(2);
@@ -41,7 +41,7 @@ function main() {
       $unborrow(borrowMut);
     }
     return 2;
-  };
+  }
   console.log(`${(touch(root) + pushed(root)) >>> 0}`);
   const reports = [quiet, quiet, touch];
   for (const f of reports) {

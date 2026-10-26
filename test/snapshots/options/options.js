@@ -61,10 +61,10 @@ export function expected(n) {
 /** `unwrap_or` evaluates its argument even when it isn't needed. */
 export function eager(n) {
   let calls = 0;
-  const bump = () => {
+  function bump() {
     calls = (calls + 1) | 0;
     return 7;
-  };
+  }
   const option = half(n);
   const fallback = bump();
   const v = option ?? fallback;
@@ -118,10 +118,10 @@ export function mapped(n) {
 export function mappedMore(n) {
   let calls = 0;
   const h = half(n);
-  const map = (h) => {
+  function map(h) {
     calls = (calls + 1) >>> 0;
     return (h - 1) | 0;
-  };
+  }
   const counted = h != null ? map(h) : undefined;
   const option = pair(n);
   const value = option ? Math.imul(option[0], option[1]) : undefined;
@@ -142,10 +142,10 @@ export function chained(n) {
 /** A `let` after another is only computed if everything before it held. */
 export function chainedTwice(n) {
   let calls = 0;
-  const counted = (m) => {
+  function counted(m) {
     calls = (calls + 1) >>> 0;
     return half(m);
-  };
+  }
   const h = half(n);
   let v = 0;
   if (h) {
@@ -160,10 +160,10 @@ export function chainedTwice(n) {
 /** An `else` of more than one statement, reached from each level by a label. */
 export function chainedLongElse(n) {
   let calls = 0;
-  const counted = (m) => {
+  function counted(m) {
     calls = (calls + 1) | 0;
     return half(m);
-  };
+  }
   const h = half(n);
   if (h != null) {
     const q = counted(h);

@@ -178,12 +178,12 @@ import { useRef } from "react";
 
 export function Search() {
   const input = useRef(undefined);
-  const focus = () => {
+  function focus() {
     const element = input.current;
     if (element) {
       element.focus();
     }
-  };
+  }
   return (
     <>
       <input ref={input} />
