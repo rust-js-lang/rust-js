@@ -95,12 +95,18 @@ pub fn count() -> usize {
 pub fn only(value: u32) {
     CALLBACKS.set(vec![value]);
 }
+
+pub fn total() -> usize {
+    CALLBACKS.with_borrow(|items| items.len())
+}
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const callbacksJs = readFileSync(join(dir, "callbacks.js"), "utf8");
   expect(callbacksJs).toContain("export let callbacks = [];\n");
   expect(callbacksJs).toContain("  callbacks = [];\n");
   expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  $assign(callbacks, [value]);\n");
+  // Another module's, as its import reads it (ADR 0866, amended).
+  expect(readFileSync(join(dir, "users.js"), "utf8")).toContain("  return $withBorrow(callbacks, (items) => items.length, true);\n");
   expect(readFileSync(join(dir, "callbacks.d.ts"), "utf8")).toContain("export let callbacks: number[];\n");
   writeFileSync(join(dir, "reader.js"), 'import { callbacks } from "./callbacks.js";\nexport const read = () => callbacks;\n');
   const reader = await import(join(dir, "reader.js"));

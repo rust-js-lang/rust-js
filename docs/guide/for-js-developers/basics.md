@@ -1939,6 +1939,12 @@ export function isAdult(p) {
   read again, it's `const task = fiber._debugTask;`, the value the test
   read
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended).
+  And an `if let`'s binding of a thread-local that's its module's
+  variable, `if let Some(last_fiber) = LAST_FIBER.with_borrow(Clone::clone)
+  && last_fiber.index == fiber.index`, only its test reads: the variable,
+  `if (lastFiber != null && lastFiber.index === fiber.index)`, as the
+  test runs no code
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

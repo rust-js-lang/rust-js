@@ -353,3 +353,75 @@ pub fn root_tag(fiber: &Rc<Fiber>) -> u32 {
   const child = { return: { return: root, tag: 1 }, tag: 0 };
   expect([lib.rootTag(child), lib.rootTag(root)]).toEqual([3, 3]);
 });
+
+// React's ReactFiberCacheComponent and ReactFiberThenable test a module
+// variable in place, `if (lastFiber !== null && lastFiber.index ===
+// fiber.index)`. The port's `if let Some(last_fiber) =
+// LAST_FIBER.with_borrow(Clone::clone) && ..` was `const lastFiber$1 =
+// lastFiber; if (lastFiber$1 != null && ..)`: a thread-local's value an `if
+// let` binds, read only in its test, is the variable read there (ADR 0866,
+// amended). Read after the variable is set, or past a call that may set it,
+// it's its own `const`.
+test("an if let's binding of a thread-local only its test reads is the variable", async () => {
+  const dir = fixture("thread-local-tested-in-place");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub index: f64,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static LAST_FIBER: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
+    static COUNT: Cell<Option<f64>> = const { Cell::new(None) };
+}
+
+pub fn remember(index: f64) {
+    LAST_FIBER.set(Some(Rc::new(Fiber { index })));
+}
+
+pub fn check(fiber: &Fiber) -> bool {
+    if let Some(last_fiber) = LAST_FIBER.with_borrow(Clone::clone)
+        && last_fiber.index == fiber.index
+    {
+        LAST_FIBER.set(None);
+        return true;
+    }
+    false
+}
+
+pub fn forget() -> f64 {
+    if let Some(last) = LAST_FIBER.with_borrow(Clone::clone) {
+        LAST_FIBER.set(None);
+        return last.index;
+    }
+    -1.0
+}
+
+fn bump() -> f64 {
+    COUNT.set(Some(COUNT.get().unwrap_or(0.0) + 1.0));
+    1.0
+}
+
+pub fn counted() -> f64 {
+    COUNT.set(Some(5.0));
+    if let Some(count) = COUNT.get()
+        && bump() < count
+    {
+        return count;
+    }
+    0.0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (lastFiber != null && lastFiber.index === fiber.index) {\n    lastFiber = null;\n    return true;\n  }\n");
+  expect(js).toContain("const last = lastFiber;");
+  expect(js).toContain("const count$1 = count;");
+  const lib = await import(join(dir, "lib.js"));
+  lib.remember(3);
+  expect([lib.check({ index: 2 }), lib.check({ index: 3 }), lib.check({ index: 3 })]).toEqual([false, true, false]);
+  lib.remember(4);
+  expect([lib.forget(), lib.forget(), lib.counted()]).toEqual([4, -1, 5]);
+});

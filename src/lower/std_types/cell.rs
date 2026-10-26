@@ -445,6 +445,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // the cell, the `{ value }` box a `&mut` to one is (ADR 0074);
                 // a `RefCell` of an object's, the cell, the object (ADR 0863).
                 let itself = self.is_value_cell(self.ref_cell_of(generic_args.type_at(0)));
+                // Of this module's thread-local that's its variable, whose
+                // borrows nothing counts (`QuietCells`), `f` given it where
+                // it's called, as `plain_statics` would: what tidy reads,
+                // `const last = LAST.value` a place's read (ADR 0866, amended).
+                if call.quiet {
+                    let [key, f] = <[Expr; 2]>::try_from(given).ok().expect("a key and a function");
+                    let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {
+                        true => key,
+                        false => Expr::held(key),
+                    };
+                    return Ok(Some(crate::lower::calls::apply(f, vec![given])));
+                }
                 let name = match mutable {
                     true => {
                         if itself || !self.is_object(generic_args.type_at(0)) {

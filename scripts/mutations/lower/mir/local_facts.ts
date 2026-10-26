@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "quiet-with-borrow-of-another-module",
+    breaks: "another module's quiet thread-local's `with_borrow` is given its value where it's lowered, not as that module's import reads it (ADR 0866, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        && tcx.parent_module_from_def_id(key) == self.module =>\n",
+    replace: "                        =>\n",
+    tests: ["test/lowering-module-variables.test.ts"],
+  },
+  {
     name: "facts-held-arms-unjoined",
     breaks: "a guard that holds still tests in each alternative of its arm, its graph made without the arms it goes on to (ADR 0790)",
     file: "src/lower/mir/local_facts.rs",

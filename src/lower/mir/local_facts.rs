@@ -63,9 +63,10 @@ pub(super) struct LocalFacts<'m, 'tcx> {
 /// can meet another, none of which is checked (ADR 0863, amended): of a
 /// struct's field (`RefCells::quiet_field`), `x.f.borrow()`'s, and
 /// `drop(guard)` of a guard of one, and of a thread-local that's its
-/// module's variable (`quiet_locals`, ADR 0270), `KEY.set(v)`'s: the block
-/// of each; and each local a guard of a field is, whose drop releases
-/// nothing.
+/// module's variable (`quiet_locals`, ADR 0270), `KEY.set(v)`'s, and this
+/// module's one's `KEY.with_borrow(f)`, whose `f` is given what it holds
+/// (ADR 0866, amended): the block of each; and each local a guard of a
+/// field is, whose drop releases nothing.
 #[derive(Default)]
 pub(super) struct QuietCells {
     pub(super) calls: HashSet<BasicBlock>,
@@ -319,6 +320,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(first) = args.first() else { continue };
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
+                // A `with_borrow` of one of this module's, given what it
+                // holds where it's called (`cell_call`, ADR 0866, amended).
+                Some(Std::LocalBorrow { .. })
+                    if let Some(key) = local_key(&first.node)
+                        && let Some(key) = key.as_local()
+                        && self.krate.quiet_locals.contains(&key)
+                        && tcx.parent_module_from_def_id(key) == self.module =>
+                {
+                    quiet.calls.insert(block);
+                }
                 Some(Std::CellSet | Std::CellReplace | Std::CellTake) if let Some(key) = local_key(&first.node) => {
                     if key.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)) {
                         quiet.calls.insert(block);

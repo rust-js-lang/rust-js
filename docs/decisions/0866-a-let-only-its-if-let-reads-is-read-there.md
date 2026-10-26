@@ -2,7 +2,8 @@
 
 Status: Accepted; amended below: a `let` of a cast is no `let` that ends a
 borrow; and a let chain's binding of a field its
-test read is read again where the body reads it first. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+test read is read again where the body reads it first; and an `if let`'s
+binding of a thread-local's value only its test reads. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -186,3 +187,42 @@ it's the variable as before (ADR 0598, amended).
 Held by `test/lowering-parts.test.ts`, "a let of a cast an if let tests
 keeps its name", run in JS, and the mutation
 `cast-let-of-a-place-tested-in-its-place` (`lower/mir/patterns.ts`).
+
+## Amendment: an `if let`'s binding of a thread-local
+
+React's ReactFiberCacheComponent and ReactFiberThenable test a module
+variable where it is, `if (lastFiber !== null && lastFiber.index ===
+fiber.index)`. The port's `if let Some(last_fiber) =
+LAST_FIBER.with_borrow(Clone::clone) && last_fiber.index == fiber.index {
+LAST_FIBER.set(None) }` was `const lastFiber$1 = lastFiber; if (lastFiber$1
+!= null && lastFiber$1.index === fiber.index)`: the binding is no `let`,
+and where tidy saw it, the thread-local's read was `$withBorrow(..)`, a
+call, which only module assembly (`plain_statics`) made the variable.
+
+**What an `if let`'s pattern binds of a thread-local's value, `get`'s or
+`with_borrow`'s, is taken apart as such a `let` is**, read in the test
+where only the test reads it and runs no code, as a copy of a variable is
+the variable (ADR 0434): `if (lastFiber != null && lastFiber.index ===
+fiber.index) { lastFiber = null; }`. And a `with_borrow` of the module's
+own thread-local that's its variable (`quiet_locals`, ADR 0270), whose
+borrows nothing counts, is its function given what the cell holds where
+it's lowered (`QuietCells`), as `plain_statics` gives it, so tidy reads a
+place, `LAST_FIBER.value`, not a call. Another module's is as its import
+reads it, `$withBorrow(callbacks, (items) => items.length, true)`.
+
+- **Not a binding of a field**, which a let chain reads once (ADR 0842):
+  `const count = counts.count; if (count != null && count > 3)` stays.
+- **Not one read after a call**, `if let Some(count) = COUNT.get() &&
+  bump() < count`: the test runs code, which may set the variable, so the
+  binding is its own `const`, as ADR 0277's amendment holds after it too.
+- Upstream tests `!== null` where rust-js tests `!= null`: a nullable
+  thread-local's `None` is `null`, but which test a nullable place's
+  presence is read by is the nullable rules' (ADR 0586), apart from this.
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)): the test runs no
+code, so the variable holds what the binding read. Tested by
+`test/lowering-shadows.test.ts`'s "an if let's binding of a thread-local
+only its test reads", run, and the module variables test's another
+module's `with_borrow`; its mutations are
+`thread-local-binding-not-taken-apart`, `field-binding-taken-apart`,
+`quiet-with-borrow-called-late` and `quiet-with-borrow-of-another-module`.

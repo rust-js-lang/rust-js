@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "quiet-with-borrow-called-late",
+    breaks: "this module's quiet thread-local's `with_borrow(Clone::clone)` is `$withBorrow(..)` where tidy reads it, a call, so an `if let`'s binding of it stays a copy (ADR 0866, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if call.quiet {\n                    let [key, f] =",
+    replace: "                if false {\n                    let [key, f] =",
+    tests: ["test/lowering-shadows.test.ts", "-t", "thread-local only its test"],
+  },
+  {
     name: "atomic-fetch-new-value",
     breaks: "an atomic's `fetch_add` and the like give the new value, not the old",
     file: "src/lower/std_types/cell.rs",
