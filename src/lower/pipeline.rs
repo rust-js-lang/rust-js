@@ -980,6 +980,12 @@ pub fn lower_crate<'tcx>(
         let info = &fns[&id];
         let name = info.owner.as_ref().unwrap_or(&info.name).clone();
         let (export, local) = match info.owner {
+            // A class's member, by its class, which may be its module's
+            // default (ADR 0761).
+            Some(_) if let Some(class) = super::classes::class_of(tcx, id) => (
+                super::default_exports::exported_as(tcx, class, &name),
+                renamed_in(tcx, from).remove(&class).unwrap_or_else(|| name.clone()),
+            ),
             Some(_) => (name.clone(), name.clone()),
             None => (
                 super::default_exports::exported_as(tcx, id, &name),
@@ -1178,6 +1184,10 @@ pub fn lower_crate<'tcx>(
                 }
                 for function in (pass.functions.entry(module).or_default().iter_mut()).filter(|f| f.name == name) {
                     function.export = false;
+                }
+                // A class, its constructor and prototype (ADR 0761).
+                for class in (pass.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name == name) {
+                    class.export = false;
                 }
             }
             let no_ref_cells = super::drops::RefCells::default();

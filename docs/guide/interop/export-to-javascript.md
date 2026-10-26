@@ -899,7 +899,10 @@ export default page;
 ```
 
 A module has one default export. A `thread_local!` can be it too, a
-`memo`'s component ([Context, refs, memo](../react/api.md)).
+`memo`'s component ([Context, refs, memo](../react/api.md)), and so can a
+[JS class](#js-classes), JS's `export default class`: its constructor
+function is the default, and a module that uses it imports the default
+([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)).
 
 ## TypeScript declarations
 

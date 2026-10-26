@@ -379,3 +379,58 @@ impl Counter {
   const reader = new Counter(4).reader();
   expect([reader.read(1), reader.plain(1)]).toEqual([10, 4]);
 });
+
+// A class is its module's default, `js::export_default!(Complex)`, as JS's
+// `export default class Complex` (#345): its constructor function exported
+// as the default alone, declared a class, and imported as the default by
+// a module that uses it.
+test("a class is its module's default export", async () => {
+  const dir = fixture("class-default");
+  writeFileSync(join(dir, "complex.rs"), `#[cfg_attr(rust_js, rust_js::class)]
+pub struct Complex {
+    pub re: f64,
+    pub im: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Complex {
+    pub fn new(re: f64, im: f64) -> Self {
+        Complex { re, im }
+    }
+
+    pub fn radius(&self) -> f64 {
+        (self.re * self.re + self.im * self.im).sqrt()
+    }
+}
+
+js::export_default!(Complex);
+`);
+  writeFileSync(join(dir, "lib.rs"), `mod complex;
+
+use complex::Complex;
+
+pub fn unit(turn: f64) -> f64 {
+    Complex::new(turn.cos(), turn.sin()).radius()
+}
+
+pub fn real(re: f64) -> Complex {
+    Complex::new(re, 0.0)
+}
+`);
+  run([compiler, ...flags(dir)]);
+  const complex = readFileSync(join(dir, "complex.js"), "utf8");
+  expect(complex).toContain("\nfunction Complex(re, im) {\n");
+  expect(complex).toContain("\nexport default Complex;\n");
+  expect(complex).not.toContain("export function Complex");
+  const declared = readFileSync(join(dir, "complex.d.ts"), "utf8");
+  expect(declared).toContain("declare class Complex {\n");
+  expect(declared).toContain("\nexport default Complex;\n");
+  const lib = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(lib).toContain('import Complex from "./complex.js";');
+  expect(lib).toContain("new Complex(");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain('import type Complex from "./complex.js";');
+  const { default: Default } = await import(join(dir, "complex.js"));
+  expect(new Default(3, 4).radius()).toBe(5);
+  const { unit } = await import(join(dir, "lib.js"));
+  expect(unit(1)).toBeCloseTo(1, 12);
+});

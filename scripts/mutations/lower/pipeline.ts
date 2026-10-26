@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-class-exported-by-name",
+    breaks: "a class that's its module's default is `export function Complex` too",
+    file: "src/lower/pipeline.rs",
+    find: "                    class.export = false;\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
+  {
+    name: "default-class-imported-by-name",
+    breaks: "a module that uses another's default class imports `{ Complex }`, which isn't exported",
+    file: "src/lower/pipeline.rs",
+    find: "            Some(_) if let Some(class) = super::classes::class_of(tcx, id) => (\n",
+    replace: "            Some(_) if let Some(class) = super::classes::class_of(tcx, id).filter(|_| false) => (\n",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
+  {
     name: "static-lock-refused",
     breaks: "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",
     file: "src/lower/pipeline.rs",

@@ -145,9 +145,15 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
                     ] => match tcx.hir_item(*item).kind {
                         // A function, or a `thread_local!`'s const, a memo'd
                         // component's (ADR 0248), or a binding's static (ADR 0633).
-                        ItemKind::Use(path, _) => match path.res.value_ns {
-                            Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)) => {
-                                Some(function)
+                        // Or a JS class, its constructor (ADR 0761), `export
+                        // default class` in JS.
+                        ItemKind::Use(path, _) => match (path.res.value_ns, path.res.type_ns) {
+                            (
+                                Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)),
+                                _,
+                            ) => Some(function),
+                            (_, Some(Res::Def(DefKind::Struct, class))) if super::classes::is_class(tcx, class) => {
+                                Some(class)
                             }
                             _ => None,
                         },

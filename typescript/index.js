@@ -17,7 +17,7 @@ import * as f from "typescript/ast/factory";
  * An `export` from a module whose one name is `["*", ns]` is `export * as
  * ns from`, its namespace by a name.
  *
- * @typedef {{ kind: "import", from: string, names: string[], typeOnly: boolean }
+ * @typedef {{ kind: "import", from: string, names: string[], default?: string, typeOnly: boolean }
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
  *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
  *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
@@ -458,8 +458,10 @@ function statement(declaration) {
         undefined,
         f.createImportClause(
           declaration.typeOnly ? SyntaxKind.TypeKeyword : undefined,
-          undefined,
-          f.createNamedImports(declaration.names.map((name) => f.createImportSpecifier(false, undefined, id(name)))),
+          declaration.default ? id(declaration.default) : undefined,
+          declaration.names.length
+            ? f.createNamedImports(declaration.names.map((name) => f.createImportSpecifier(false, undefined, id(name))))
+            : undefined,
         ),
         string(declaration.from),
       );

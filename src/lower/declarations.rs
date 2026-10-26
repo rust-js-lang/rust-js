@@ -139,6 +139,8 @@ pub(super) fn module<'tcx>(
             out.erased = out.erased(def_id);
             let mut declared = match tcx.def_kind(def_id) {
                 DefKind::Fn => out.function(def_id),
+                // A class, its constructor (ADR 0761).
+                DefKind::Struct => out.class(def_id),
                 _ => out.constant(def_id),
             };
             declared["exported"] = json!(false);
@@ -171,14 +173,15 @@ pub(super) fn module<'tcx>(
     }
     // `import type { RouteItem } from "./routes.js";`, of the crate's other
     // modules, by their path, which the output makes their file's (ADR 0210).
-    let mut paths: Vec<&Vec<String>> = out.module_imports.iter().map(|(path, _)| path).collect();
+    // Its default too, `import type Complex, { Parts } from ..`.
+    let mut paths: Vec<&Vec<String>> = out.module_imports.iter().map(|(path, ..)| path).collect();
     paths.dedup();
     for path in paths {
-        let names: Vec<&str> = (out.module_imports.iter())
-            .filter(|(p, _)| p == path)
-            .map(|(_, n)| n.as_str())
-            .collect();
-        declarations.push(json!({ "kind": "import", "module": path, "names": names, "typeOnly": true }));
+        let of = |default: bool| (out.module_imports.iter()).filter(move |(p, _, d)| p == path && *d == default);
+        let names: Vec<&str> = of(false).map(|(_, n, _)| n.as_str()).collect();
+        let default = of(true).map(|(_, n, _)| n.as_str()).next();
+        declarations
+            .push(json!({ "kind": "import", "module": path, "names": names, "default": default, "typeOnly": true }));
     }
     // `export { Challenges } from "./Challenges.js";`, its `pub use` of another
     // module's function, as its JS has it (ADR 0240).
@@ -327,7 +330,9 @@ struct Declarations<'a, 'tcx> {
     /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
     imports: BTreeSet<(String, String)>,
     /// The types of the crate's other modules it names, by their path.
-    module_imports: BTreeSet<(Vec<String>, String)>,
+    /// Each by its module's path, its name, and whether it's that module's
+    /// default, a class (ADR 0761).
+    module_imports: BTreeSet<(Vec<String>, String, bool)>,
     /// What it names that it doesn't export, by name: another crate's
     /// untagged enums, and its own private types. Each one's declaration,
     /// `None` while it's being made, as a field or a payload names it.
@@ -342,6 +347,13 @@ struct Declarations<'a, 'tcx> {
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
+    /// `name`, another module's item `did`, imported from its `file`, as its
+    /// default where it's that, a class (ADR 0761).
+    fn imported(&mut self, file: Vec<String>, did: DefId, name: String) {
+        let default = super::default_exports::exported_as(self.tcx, did, &name) == "default";
+        self.module_imports.insert((file, name, default));
+    }
+
     /// `["C"]`: an item's type parameters, but those `impl Trait` stands
     /// for, and those that are a type of TypeScript's.
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
@@ -604,8 +616,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let home = self.tcx.parent_module_from_def_id(local);
         let name = self.tcx.item_name(did).to_string();
         if home != self.module {
-            let file = self.files.get(&home)?;
-            self.module_imports.insert((file.clone(), name.clone()));
+            let file = self.files.get(&home)?.clone();
+            self.imported(file, did, name.clone());
         }
         let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args.map(|args| args.args).unwrap_or_default())
             .iter()
@@ -1433,8 +1445,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let Some(path) = self.files.get(&home) else {
                         return keyword("any");
                     };
-                    self.module_imports
-                        .insert((path.clone(), tcx.item_name(did).to_string()));
+                    self.imported(path.clone(), did, tcx.item_name(did).to_string());
                 }
                 let type_args = self.type_args(did, args);
                 reference(tcx.item_name(did).as_str(), type_args)

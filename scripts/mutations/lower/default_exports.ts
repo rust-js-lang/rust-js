@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-class-refused",
+    breaks: "`js::export_default!(Complex)` of a class is refused, not `export default Complex;`",
+    file: "src/lower/default_exports.rs",
+    find: "                            (_, Some(Res::Def(DefKind::Struct, class))) if super::classes::is_class(tcx, class) => {\n",
+    replace: "                            (_, Some(Res::Def(DefKind::Struct, class))) if false => {\n",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
+  {
     name: "default-never-declared",
     breaks: "`js::export_default! { fn noop() {} }` is `function noop() {} export default noop;`",
     file: "src/lower/default_exports.rs",
@@ -22,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "default-export-function-only",
     breaks: "`js::export_default!(Memoized)` of a `thread_local!` memo'd component is an error, not `export default Memoized;`",
     file: "src/lower/default_exports.rs",
-    find: "Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)) => {",
-    replace: "Some(Res::Def(DefKind::Fn | DefKind::Static { .. }, function)) => {",
+    find: "Some(Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function)),",
+    replace: "Some(Res::Def(DefKind::Fn | DefKind::Static { .. }, function)),",
     tests: ["test/declarations.test.ts","-t","thread-local default"],
   },
   {

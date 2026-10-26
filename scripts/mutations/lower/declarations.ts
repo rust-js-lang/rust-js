@@ -5,6 +5,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "default-class-declared-const",
+    breaks: "a default class is declared `declare const Complex: Complex;`, not a class",
+    file: "src/lower/declarations.rs",
+    find: "                DefKind::Struct => out.class(def_id),\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
+  {
+    name: "default-class-type-imported-by-name",
+    breaks: "a module's declarations import another's default class `import type { Complex }`",
+    file: "src/lower/declarations.rs",
+    find: "        let default = super::default_exports::exported_as(self.tcx, did, &name) == \"default\";\n",
+    replace: "        let default = false;\n",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
+  {
     name: "declaration-erased-of-the-last-item",
     breaks: "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
     file: "src/lower/declarations.rs",
@@ -216,7 +232,7 @@ export const mutations: Mutation[] = [
     name: "module-type-not-imported",
     breaks: "another module's type is named, `RouteItem[]`, but not imported",
     file: "src/lower/declarations.rs",
-    find: "                    self.module_imports\n                        .insert((path.clone(), tcx.item_name(did).to_string()));\n",
+    find: "                    self.imported(path.clone(), did, tcx.item_name(did).to_string());\n",
     replace: "",
     tests,
   },
@@ -626,7 +642,7 @@ export const mutations: Mutation[] = [
     name: "written-alias-unimported",
     breaks: "another module's alias is named but not imported, and TypeScript finds no `Toc`",
     file: "src/lower/declarations.rs",
-    find: "            self.module_imports.insert((file.clone(), name.clone()));",
+    find: "            self.imported(file, did, name.clone());",
     replace: "            let _ = file;",
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },

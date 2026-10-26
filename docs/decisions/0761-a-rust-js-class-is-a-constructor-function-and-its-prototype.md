@@ -232,3 +232,21 @@ ComplexNumber, `let complex_number = self.to_complex_number(number)`).
 its own, `const point = new Point(this.x + by)`. Held by
 `test/corpus/class_local_named_as_self.rs` and the mutations
 `class-receiver-left-to-tidy` and `class-self-not-this`.
+
+## Amendment: a class may be its module's default (#345)
+
+trekhleb/javascript-algorithms' ComplexNumber is `export default class
+ComplexNumber`, and `js::export_default!(ComplexNumber)` was refused: the
+naming form read Rust's value namespace alone, where a braced struct
+isn't. **A class is a value, its constructor function, so it may be its
+module's default**: `function ComplexNumber(parts) { .. } .. export
+default ComplexNumber;`, exported by no name of its own, as a default
+function is (ADR 0611); declared `declare class ComplexNumber { .. }
+export default ComplexNumber;`; and a module of the crate that uses it
+imports the default, `import ComplexNumber from "../complex_number/mod.js"`,
+and its type, `import type ComplexNumber from ..`. Only a class: any
+other struct is a type, no value to export. Held by `classes.test.ts`'s
+"a class is its module's default export" and the mutations
+`default-class-refused`, `default-class-exported-by-name`,
+`default-class-imported-by-name`, `default-class-declared-const` and
+`default-class-type-imported-by-name`.
