@@ -470,4 +470,12 @@ export const mutations: Mutation[] = [
     replace: "                let a_place = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_field_made.rs$"],
   },
+  {
+    name: "thread-local-take-of-key",
+    breaks: "a thread-local `RefCell`'s `take` is the key's, not its cell's, so the array is read as a `{ value }`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let held = crate::lower::recognition::cell_of_key(self.tcx, tys[0].peel_refs());\n",
+    replace: "                let held = tys[0].peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take"],
+  },
 ];

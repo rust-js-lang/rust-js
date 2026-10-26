@@ -366,6 +366,11 @@ Its `set(v)` is its `replace`, what it held dropped: of a `RefCell` that's
 the array it holds, the array written in place, `$assign(taskQueue, [1,
 0])`, checked first where a borrow of it may be held
 ([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md),
+amended). Its `take()` and `replace(v)` are its cell's, each a write of
+it as `set` is: `$take(taskQueue, [])` of the array, `const old = count;
+count = 10;` of a number, `$take($borrowMut(ports), [])` where a borrow of
+it may be held, which throws as Rust panics
+([0595](../decisions/0595-a-thread-local-cells-take-is-its-cells.md),
 amended).
 
 **A thread-local's `with(|x| ..)` is its closure's body where it's

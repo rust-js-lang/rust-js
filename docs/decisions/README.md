@@ -477,7 +477,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0592 An impl's dictionary is its module's `const`](0592-a-dictionary-is-its-modules-const.md)
 - [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](0593-a-lazy-argument-is-its-value.md)
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
-- [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md)
+- [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md) *(amended: a `RefCell` key's too)*
 - [0596 A `pub use` of a module's own item exports it by that name](0596-a-pub-use-of-a-modules-own-item-exports-it.md) *(amended: an item its own module renames is exported by that name alone, which every importer imports; amended by 0874: a private `use`'s `#[rust_js::name]` is its import's name)*
 - [0597 Whether the host has a global is `js::is_defined`'s](0597-whether-the-host-has-a-global-is-is-defined.md) *(amended by 0645: a static is given as itself; extended by 0811: a member no TypeScript lib declares is an optional property; by 0887: of a std function that's `Math`'s; by 0891: of a window's constructor)*
 - [0598 A temporary is no part of a named variable's pattern](0598-a-temporary-is-no-part-of-a-names-pattern.md) *(amended: a `let` of a name alone is its own statement, and a cast's is the variable; amended: a binding of a variable rust-js named names it; amended: `let`s side by side, each named as its part, are one destructuring; a tuple assigned to variables is a destructuring assignment)*

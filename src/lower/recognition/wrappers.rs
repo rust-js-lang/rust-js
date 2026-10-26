@@ -558,9 +558,9 @@ pub(in crate::lower) fn is_local_borrow(tcx: TyCtxt<'_>, id: DefId) -> bool {
     local_key_access(tcx, id) == Some(false) && tcx.item_name(id).as_str() != "get"
 }
 
-/// Is `id` a thread-local's `get`, `set`, `with_borrow` or
-/// `with_borrow_mut`, which only reads or sets what it holds (ADR 0270)?
-/// `Some(true)` of `set`, which sets it.
+/// Is `id` a thread-local's `get`, `set`, `take`, `replace`, `with_borrow`
+/// or `with_borrow_mut`, which only reads or sets what it holds (ADRs 0270,
+/// 0595)? `Some(true)` of `set`, `take` and `replace`, which set it.
 pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
     let imp = tcx.inherent_impl_of_assoc(id)?;
     let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
@@ -568,7 +568,7 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
         return None;
     }
     match tcx.item_name(id).as_str() {
-        "set" => Some(true),
+        "set" | "take" | "replace" => Some(true),
         "get" | "with_borrow" | "with_borrow_mut" => Some(false),
         _ => None,
     }
@@ -583,11 +583,23 @@ pub(in crate::lower) fn is_local_with(tcx: TyCtxt<'_>, id: DefId) -> bool {
     }) && tcx.item_name(id).as_str() == "with"
 }
 
-/// Whether `key`, a `LocalKey`, holds a `Cell`: one whose `take` and
-/// `replace` are its cell's, a read and a write, not a borrow (ADR 0595).
-pub(in crate::lower) fn local_key_of_cell(tcx: TyCtxt<'_>, key: Ty<'_>) -> bool {
-    matches!(key.kind(), ty::Adt(_, args)
-        if args.types().next().is_some_and(|held| matches!(held.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::Cell))))
+/// The cell `ty` is, as a `Cell`'s or a `RefCell`'s own method has it:
+/// of a thread-local's key of one, the cell it holds, whose `take` and
+/// `replace` its own are, a `Cell`'s a read and a write, a `RefCell`'s a
+/// mutable borrow (ADR 0595, amended); else `ty` itself.
+pub(in crate::lower) fn cell_of_key<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    match ty.kind() {
+        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) => match args.types().next() {
+            Some(held)
+                if matches!(held.kind(), ty::Adt(cell, _)
+                    if is_std_def(tcx, cell.did(), StdItem::Cell) || is_std_def(tcx, cell.did(), StdItem::RefCell)) =>
+            {
+                held
+            }
+            _ => ty,
+        },
+        _ => ty,
+    }
 }
 
 /// `std::panic::AssertUnwindSafe`, the value it holds (ADR 0660).

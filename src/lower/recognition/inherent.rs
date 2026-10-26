@@ -18,8 +18,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let result = self.is_std_type(owner, StdItem::Result);
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
         let local_key = adt(StdItem::LocalKey);
-        // A thread-local of a `Cell`, whose own `take` and `replace` it has.
-        let local_cell = local_key && local_key_of_cell(tcx, owner);
+        // A thread-local of a cell, whose own `take` and `replace` it has.
+        let local_cell = local_key && cell_of_key(tcx, owner) != owner;
         let rc = rc_pointee(tcx, owner).is_some();
         let weak = weak_pointee(tcx, owner).is_some();
         let lazy = self.is_std_type(owner, StdItem::LazyCell);

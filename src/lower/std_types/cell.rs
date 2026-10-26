@@ -220,7 +220,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => self.default_value(item, span)?,
                     },
                 );
-                let held = tys[0].peel_refs();
+                // A thread-local's, its cell's (ADR 0595, amended).
+                let held = crate::lower::recognition::cell_of_key(self.tcx, tys[0].peel_refs());
                 // A `RefCell` of an object is the object (ADR 0863): its
                 // contents taken in place, as a `&mut` to it would, borrowed
                 // to do it where it's counted. Not a field's no borrow of

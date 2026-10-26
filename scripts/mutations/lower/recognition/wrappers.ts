@@ -308,4 +308,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "thread-local-refcell-take-refused",
+    breaks: "a thread-local `RefCell`'s own `take` and `replace` aren't its cell's, so React's `QUEUE.take()` is refused",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "                    if is_std_def(tcx, cell.did(), StdItem::Cell) || is_std_def(tcx, cell.did(), StdItem::RefCell)) =>\n",
+    replace: "                    if is_std_def(tcx, cell.did(), StdItem::Cell)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take.rs$"],
+  },
+  {
+    name: "thread-local-take-boxes-it",
+    breaks: "a thread-local's `take` and `replace` aren't its reads and writes, so one taken is its `{ value }`, every borrow of it counted, `$withBorrowMut(queue, ..)`",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        \"set\" | \"take\" | \"replace\" => Some(true),\n",
+    replace: "        \"set\" => Some(true),\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take.rs$"],
+    snapshots: true,
+  },
 ];
