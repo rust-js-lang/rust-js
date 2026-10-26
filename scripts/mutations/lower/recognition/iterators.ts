@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "boxed-array-into-iter-unknown",
+    breaks: "a `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, isn't its array's items: with std's structs alone a `rev()` of one is refused, and `Array.from(names).map(f)` copies what `names.map(f)` reads (ADR 0941)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::boxed::BoxedArrayIntoIter\"\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
+  },
+  {
     name: "nths-a-slice-not-through-enumerate",
     breaks: "a `step_by` of an `Enumerate` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#277)",
     file: "src/lower/recognition/iterators.rs",
@@ -490,8 +499,8 @@ export const mutations: Mutation[] = [
     name: "map-into-iter-not-owning",
     breaks: "a map's or a set's `into_iter()` of values with a destructor is refused, as a std type holding one",
     file: "src/lower/recognition/iterators.rs",
-    find: "                    | \"std::collections::btree_map::IntoIter\"\n                    | \"std::collections::hash_set::IntoIter\"\n                    | \"std::collections::btree_set::IntoIter\"\n            );",
-    replace: "            );",
+    find: "                    | \"std::collections::btree_map::IntoIter\"\n                    | \"std::collections::hash_set::IntoIter\"\n                    | \"std::collections::btree_set::IntoIter\"\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
   {

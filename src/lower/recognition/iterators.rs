@@ -215,6 +215,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     | "std::collections::btree_map::IntoIter"
                     | "std::collections::hash_set::IntoIter"
                     | "std::collections::btree_set::IntoIter"
+                    // A `Box<[T; N]>`'s `into_iter()`, 1.99's, its array (ADR
+                    // 0941).
+                    | "std::boxed::BoxedArrayIntoIter"
             );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
