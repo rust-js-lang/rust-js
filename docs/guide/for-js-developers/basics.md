@@ -2037,10 +2037,14 @@ pub fn same_list(a: &[i32], b: &[i32]) -> bool {
 pub fn same_ref(a: &Point, b: &Point) -> bool {
     std::ptr::eq(a, b)
 }
+
+pub fn is_first(points: &[Point], p: &Point) -> bool {
+    std::ptr::eq(&points[0], p)
+}
 ```
 
 ```js
-import { $eq } from "@rust-js/runtime";
+import { $eq, $index } from "@rust-js/runtime";
 
 export function sameName(a, b) {
   return a === b;
@@ -2057,13 +2061,19 @@ export function sameList(a, b) {
 export function sameRef(a, b) {
   return a === b;
 }
+
+export function isFirst(points, p) {
+  return $index(points, 0) === p;
+}
 ```
 
 - Numbers, strings and `bool`s compare with `===`.
 - A struct compares field by field, an array item by item, where JS's
   `===` would ask whether they're the same object. `#[derive(PartialEq)]`
   is what lets you write `==` for your struct.
-- "Is it the same object?" is `std::ptr::eq` ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
+- "Is it the same object?" is `std::ptr::eq` ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)),
+  of an item of a list too, whose index is checked as `points[0]` is
+  ([ADR 0285](../../decisions/0285-ptr-eq.md), amended).
 
 ## `typeof` checks
 

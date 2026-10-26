@@ -7,7 +7,8 @@ capacity [0419](0419-a-vecs-capacity-kept-where-asked.md) keeps is
 checked as well (#183). Amended: a string's `repeat` is JS's own,
 unchecked, as the user decided; and room for a length that's asked,
 `resize`'s, a range's `collect()`'s and a hash table's, is checked
-(#190, below).
+(#190, below). Amended (2026-10-26): a signed count of text that isn't
+empty is given as it is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's, paid for in
 output, `$roomFor(n, 4)`; but of items whose size a type parameter gives,
@@ -178,3 +179,35 @@ wasm32 hashbrown's `try_reserve` first says `CapacityOverflow`, and at
 the byte where a table of 4 or 16 buckets ends; and by `bound-maps`, of
 hashbrown's and indexmap's own maps. The Consequences' growth (#190) is
 this amendment's.
+
+## Amendment: a signed count of `repeat` is given as it is (2026-10-26)
+
+React's hydration diff indents by an `i32` that may go below 0, which
+its port gives `repeat` as a `usize`:
+
+```rust
+"  ".to_owned() + &"  ".repeat(indent as usize)
+```
+
+That read `"  ".repeat(indent >>> 0)`, where upstream's is
+`'  '.repeat(indent)`. **The cast of a signed integer of 32 bits or fewer
+to `usize` that's the count of a `repeat` of text written there that isn't
+empty is the integer as it is** (`repeat_counts`, a kept cast): a negative
+`i32` is `2^31` or more as a `usize`, so its repeat is `2^31` bytes or
+more, past `isize::MAX`, which std panics `capacity overflow` of; JS's
+`repeat` throws a `RangeError` of a negative count, as it does of one
+that large, in every engine, a JS string being at most `2^31 - 1` units.
+So each throws what it threw, the engine's `RangeError` where std panics,
+this decision's difference already, in V8 and JavaScriptCore alike;
+only its message, which this decision already leaves to the engine,
+says `Invalid count value: -1` where it said `Invalid string length`.
+
+- **Of empty text it's cast as before**: `"".repeat(-1 as usize)` is `""`
+  in Rust, `"".repeat(4294967295)` in JS, where `"".repeat(-1)` throws.
+- **Of text the body doesn't write**, a variable's, which may be empty,
+  as before.
+
+Case B, this decision's own, as before: no new difference. Held by
+`test/corpus/ptr_eq_items_and_counts.rs`, the port's `indentation`,
+`"".repeat(indent as usize)` of `-1`, `""`, and `"  "`'s a panic, run
+against native Rust, and the mutation `repeat-count-of-empty-text`.

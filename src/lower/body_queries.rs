@@ -118,8 +118,9 @@ pub(super) struct BodyFacts<'tcx> {
     /// there, named (`named_callbacks`).
     pub(super) named_callbacks: HashSet<LocalVarId>,
     /// The casts whose value is what they cast as it is: of an `f64` known
-    /// to be a whole number in the integer's range (`whole_casts`), and of
-    /// an integer the body's ranges show in its target's (`ranges`).
+    /// to be a whole number in the integer's range (`whole_casts`), of an
+    /// integer the body's ranges show in its target's (`ranges`), and of a
+    /// signed one that's the count of text's `repeat` (`repeat_counts`).
     pub(super) kept_casts: HashSet<ExprId>,
     /// The function of each `OnceCell::set` whose cell the body's ranges
     /// show still empty there, every time it's reached (`ranges`, ADR 0847).
@@ -157,7 +158,10 @@ impl<'tcx> BodyFacts<'tcx> {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
         let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None, &HashSet::new());
         Self {
-            kept_casts: whole_casts(tcx, thir),
+            kept_casts: whole_casts(tcx, thir)
+                .into_iter()
+                .chain(repeat_counts(tcx, thir))
+                .collect(),
             named_callbacks: named_callbacks(tcx, thir),
             registered_reads: registered_reads(tcx, thir),
             registered_equalities: registered_equalities(tcx, thir),
@@ -410,6 +414,46 @@ struct Compared {
     var: LocalVarId,
     op: BinOp,
     with: f64,
+}
+
+/// The casts to `usize` of a signed integer of 32 bits or fewer that are
+/// the count of a `repeat` of text that isn't empty, `"  ".repeat(indent as
+/// usize)`, each the integer as it is (ADR 0774, amended): a negative one is
+/// `2^31` or more as a `usize`, past `isize::MAX` bytes of text that isn't
+/// empty, which std panics of and JS's `repeat` throws its `RangeError` of,
+/// as it does of a negative count.
+fn repeat_counts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
+    let pointer_bits = tcx.data_layout.pointer_size().bits();
+    // Text written, `"  "`, through each borrow of it.
+    let text_of = |mut e: ExprId| loop {
+        e = strip(thir, e);
+        match thir[e].kind {
+            ExprKind::Deref { arg } | ExprKind::Borrow { arg, .. } => e = arg,
+            ExprKind::Literal { lit, .. } => match lit.node {
+                rustc_ast::LitKind::Str(text, _) => return Some(text),
+                _ => return None,
+            },
+            _ => return None,
+        }
+    };
+    (thir.exprs.iter())
+        .filter_map(|expr| {
+            let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                return None;
+            };
+            let (def_id, _) = fn_def(thir[strip(thir, fun)].ty)?;
+            let &[text, count] = &args[..] else { return None };
+            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text)?.as_str().is_empty() {
+                return None;
+            }
+            let count = strip(thir, count);
+            let ExprKind::Cast { source } = thir[count].kind else {
+                return None;
+            };
+            let signed = matches!(*thir[source].ty.kind(), ty::Int(i) if i.bit_width().unwrap_or(pointer_bits) <= 32);
+            (signed && thir[count].ty.is_usize()).then_some(count)
+        })
+        .collect()
 }
 
 /// The casts to an integer of an `f64` variable known there to be a whole

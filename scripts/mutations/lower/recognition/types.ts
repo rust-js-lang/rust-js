@@ -303,4 +303,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
   },
+  {
+    name: "repeat-of-any-is-js",
+    breaks: "a slice's `repeat` is taken as a string's, JS's own, unchecked and no array's method",
+    file: "src/lower/recognition/types.rs",
+    find: "            .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())\n",
+    replace: "            .is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
 ];

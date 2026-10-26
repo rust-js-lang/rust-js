@@ -304,7 +304,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0282 One method API for event listeners](0282-event-listener-methods.md)
 - [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to; extended by 0887: `Math` is std's items as values too)*
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)
-- [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md)
+- [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md) *(amended: an item that's an object and an object, `items[i] === r`, its index checked)*
 - [0286 A component that sometimes renders nothing returns an `Option`](0286-components-that-render-nothing.md)
 - [0287 A cell only its function reads and sets is a `let`](0287-cells-as-variables.md) *(amended by 0791: one written through is its place where it's used)*
 - [0288 A `Cell` in a field is the property it holds](0288-cell-fields.md) *(extended by 0847: a `OnceCell`'s too, absent until it's set)*
@@ -458,7 +458,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0855: a parameter's `#[rust_js::name]`)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md) *(amended: a nullable result is declared `T | null`)*
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
-- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty)*
+- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty; amended: a `*const` of a shared reference's changes nothing, a `String`'s text is read)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md) *(amended by 0922: an exported one keeps its Rust name only beside another export)*
@@ -621,7 +621,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
 - [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*
-- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked)*
+- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked; a signed count of text that isn't empty as it is)*
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*

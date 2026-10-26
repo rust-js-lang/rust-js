@@ -602,3 +602,23 @@ pub fn written_twice(v: &mut Vec<u32>, mut i: usize) -> usize {
   const v = [0, 0, 0];
   expect([lib.setAt(v, 0, 7), lib.held(v, 1), lib.writtenTwice(v, 2), v]).toEqual([1, 2, 3, [7, 5, 6]]);
 });
+
+// ADR 0285, amended: `ptr::eq` of an item and a reference is `items[i] ===
+// r` of an object alone. Of a type parameter's item, which may be a
+// number, it's by the handles, whose size it doesn't know, refused, never
+// `1 === 1` of two places.
+test("ptr::eq of a type parameter's item is by its place", () => {
+  const dir = fixture("ptr-eq-generic-item");
+  writeFileSync(join(dir, "lib.rs"), `fn is_first<T>(items: &[T], item: &T) -> bool {
+    std::ptr::eq(&items[0], item)
+}
+
+pub fn second_number() -> bool {
+    let numbers = vec![1u32, 1];
+    is_first(&numbers, &numbers[1])
+}
+`);
+  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+    "rust-js does not support `size_of` of a type parameter yet",
+  );
+});

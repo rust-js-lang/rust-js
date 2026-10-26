@@ -494,6 +494,20 @@ pub(in crate::lower) fn is_rc_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args
         && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())
 }
 
+/// A `String`'s `Deref`, std's, its text as a `&str`, which reads it and
+/// runs nothing: `s.len()` of a `String`'s `deref`.
+pub(in crate::lower) fn is_string_deref<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+        && args.types().next().is_some_and(|of| match of.kind() {
+            ty::Adt(adt, _) => tcx.is_lang_item(adt.did(), LangItem::String),
+            _ => false,
+        })
+}
+
 /// What an `rc::Weak` or `sync::Weak` points at (ADR 0320).
 pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {

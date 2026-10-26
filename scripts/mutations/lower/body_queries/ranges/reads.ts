@@ -27,4 +27,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
     snapshots: true,
   },
+  {
+    name: "string-deref-not-read",
+    breaks: "a `String`'s `deref` isn't a read, so a test of `firstDiff < serverText.length` of a `String` narrows nothing, and `firstDiff++` below it keeps its wrap",
+    file: "src/lower/body_queries/ranges/reads.rs",
+    find: "                        || is_string_deref(tcx, def_id, generic_args)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
+    snapshots: true,
+  },
 ];

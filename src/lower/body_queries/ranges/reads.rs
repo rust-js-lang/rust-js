@@ -6,7 +6,7 @@ use super::reads_utf16_length;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{CellView, SliceLength, cell_view, makes_utf16_units, slice_length};
+use crate::lower::recognition::{CellView, SliceLength, cell_view, is_string_deref, makes_utf16_units, slice_length};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::TyCtxt;
@@ -47,6 +47,8 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
                         slice_length(tcx, def_id, generic_args),
                         Some(SliceLength::Len | SliceLength::IsEmpty)
                     ) || reads_string_length(tcx, def_id)
+                        // A `String`'s text, `&server_text` of a `&str`.
+                        || is_string_deref(tcx, def_id, generic_args)
                         // A `RefCell`'s read of what it holds, `queue.borrow()`,
                         // and its guard's `deref`, the value (ADR 0881).
                         || matches!(

@@ -1218,3 +1218,31 @@ pub fn room(n: usize) -> usize {
   // Past the engine's string length: its RangeError, where std panics.
   expect(() => lib.padded("ab", 2 ** 30)).toThrow(RangeError);
 });
+
+// ADR 0774, amended: a signed count of written text's `repeat`, as React's
+// hydration diff indents, `'  '.repeat(indent)`: a negative one throws
+// JS's `RangeError` as its `usize`, 2^31 or more, does, where std panics.
+// Of text not written there, which may be empty, and of an integer wider
+// than 32 bits, it's cast.
+test("a repeat's count of a signed integer is the integer", async () => {
+  const dir = fixture("string-repeat-signed");
+  writeFileSync(join(dir, "lib.rs"), `pub fn indentation(indent: i32) -> String {
+    "  ".to_owned() + &"  ".repeat(indent as usize)
+}
+
+pub fn of_text(text: &str, n: i8) -> String {
+    text.repeat(n as usize)
+}
+
+pub fn wide(n: i64) -> String {
+    "ab".repeat(n as usize)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return "  " + "  ".repeat(indent);\n');
+  expect(js).toContain("  return text.repeat(n >>> 0);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.indentation(1), lib.ofText("", -1), lib.wide(2n ** 32n + 1n)]).toEqual(["    ", "", "ab"]);
+  expect(() => lib.indentation(-1)).toThrow(RangeError);
+});

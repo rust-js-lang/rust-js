@@ -164,7 +164,11 @@ Differences:
   the engine's `RangeError`, which in Node and Chrome is before any string
   std would refuse is made. In Safari and Bun, whose strings are longer, a
   string of text not all ASCII past a billion units may be made where std
-  panics ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md)).
+  panics. A signed count of text written there that isn't empty,
+  `"  ".repeat(indent as usize)`, is given as it is, `"  ".repeat(indent)`:
+  a negative one is past `isize::MAX` bytes as a `usize`, and JS throws
+  its `RangeError` of it alike
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
 
 What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 
@@ -886,10 +890,10 @@ React and JSX are [their own pages](README.md#react).
     function's `Vec::<T>::with_capacity(n)`, is checked by their count
     alone, as if they had none, where std checks their bytes against
     `isize::MAX` (ADR 0774).
-24. A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
-    `RangeError` where std panics `capacity overflow`; in Safari and
-    Bun, of text not all ASCII past a billion units, it may be made
-    (ADR 0774).
+24. A string's `repeat(n)` past `isize::MAX` bytes, a negative signed
+    count's `as usize` too, throws the engine's `RangeError` where std
+    panics `capacity overflow`; in Safari and Bun, of text not all ASCII
+    past a billion units, it may be made (ADR 0774).
 25. A thread-local whose initializer calls only std's and bindings'
     functions is made as its module loads, where Rust makes each at its
     first use: what a binding's call does, or a std call's panic, happens

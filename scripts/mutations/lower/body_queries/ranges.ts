@@ -454,4 +454,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },
+  {
+    name: "const-pointer-of-shared-volatile",
+    breaks: "a `*const` of what a shared reference refers to makes its variable volatile, so `ptr::eq(&node.children[0], skip)` leaves `node.children[diffIdx]` below its length `$index`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            } if through_shared(thir, arg) => None,\n",
+    replace: "            } if false => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
+    snapshots: true,
+  },
 ];

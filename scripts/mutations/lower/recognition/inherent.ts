@@ -362,12 +362,4 @@ export const mutations: Mutation[] = [
     replace: "\"encode_utf16\" if owner.is_char() && false =>",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
-  {
-    name: "repeat-of-any-is-js",
-    breaks: "a slice's `repeat` is taken as a string's, JS's own, unchecked and no array's method",
-    file: "src/lower/recognition/inherent.rs",
-    find: '            "repeat" if owner.is_str() => Std::Method("repeat"),\n',
-    replace: '            "repeat" => Std::Method("repeat"),\n',
-    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
-  },
 ];

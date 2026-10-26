@@ -304,6 +304,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("applied arrows", |b, _| js::each_expr_mut(b, &mut applied_arrows)),
             // An element's place checked, then set: the place the check gives.
             pass("checked sets", |b, _| js::statement_lists(b, &mut checked_sets)),
+            // Two handles compared, each read in place now, of an item and an
+            // object: whether the object is the item, `items[i] === r`.
+            pass("same objects", |b, _| {
+                js::each_expr_mut(b, &mut crate::lower::pointers::same_object_in_place)
+            }),
             // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
             // } }`: what it's a copy of.
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),

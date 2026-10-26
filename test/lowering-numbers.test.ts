@@ -1371,3 +1371,27 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
   expect([lib.flushed(3 as never), lib.summed([1, 2, 3] as never), lib.counted(4 as never)]).toEqual([14, 6, 4]);
   expect([lib.skipped([7] as never, 0 as never), lib.skipped([7] as never, 4294967295 as never)]).toEqual([7, 0]);
 });
+
+// ADR 0576, amended: a `*const` of what a shared reference refers to
+// changes nothing but a cell, by a call the walk sees: a `RefCell`'s vec
+// cleared through one, its index below the length tested before is checked
+// still, Rust's panic.
+test("a const pointer to a cell keeps its variable unknown", async () => {
+  const dir = fixture("const-pointer-to-cell");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let p: *const RefCell<Vec<u32>> = v;
+    if i < v.borrow().len() {
+        unsafe { (*p).borrow_mut().clear() };
+        return v.borrow()[i];
+    }
+    0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    return $index(v, i);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.read([1, 2], 0)).toThrow("index out of bounds: the len is 0 but the index is 0");
+});

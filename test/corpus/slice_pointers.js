@@ -83,7 +83,15 @@ function droppedTail() {
     }
     throw error;
   }
-  const first = items[0];
+  let first;
+  try {
+    first = items[$at(items, 0)];
+  } catch (error) {
+    for (const item of items) {
+      console.log(`drop ${item[0]}`);
+    }
+    throw error;
+  }
   console.log(`${first[0]}`);
   console.log(`drop ${first[0]}`);
 }

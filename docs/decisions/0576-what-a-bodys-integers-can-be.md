@@ -8,7 +8,8 @@ whose functions are given what their calls give them, and by
 [0682](0682-a-js-strings-length-is-at-most-int32-max.md) lowers so two
 lengths add without a wrap. Replaces [0292](0292-known-bounds.md)'s
 regions, whose cases it keeps, and narrows where [0011](0011-numbers.md)'s
-wraps are written.
+wraps are written. Amended (2026-10-26): a `*const` of what a shared
+reference refers to changes nothing, and a `String`'s text is read.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for each. Nothing a
 program does changes: an index left unchecked is one Rust's check would
@@ -178,3 +179,32 @@ b.hi`, at most `b` by its bound**, as `a..b`'s is at most `b - 1`. Held
 by `lowering-numbers.test.ts`'s "an integer below another's value doesn't
 wrap" and the mutations `inclusive-for-unranged` and
 `inclusive-for-past-its-end`.
+
+## Amendment: what a `*const` of a shared reference's can't change, and a `String`'s text (2026-10-26)
+
+React's hydration diff, ported, read `$index(node.children, diffIdx)`
+where `diffIdx < node.children.length` bounds it, and `firstDiff =
+(firstDiff + 1) >>> 0` where `firstDiff < serverText.length` does:
+
+- **A `*const` made of what a shared reference refers to changes nothing
+  the walk knows**: `std::ptr::eq(&node.children[0], skip_to_node)`
+  coerces each side to one, and every variable a raw pointer was made of
+  was volatile, never known, so `node`'s children's length was forgotten
+  for the body. What a shared reference refers to changes only in a cell,
+  through a call the walk sees and forgets what it held at, `(*p).borrow_mut()`
+  as `v.borrow_mut()`; any other write through such a pointer is undefined
+  behavior. A `*mut`, and a `*const` of a place no shared reference
+  reaches, `&raw const i`, are volatile as before (`through_shared`).
+- **A `String`'s `deref`, its text, is a read**: `string::length(&server_text)`
+  of a `String` is `length(String::deref(&server_text))`, which wasn't
+  among the calls a condition's side may make (`read_vars`), so its test
+  narrowed nothing. std's `Deref` of a `String` runs nothing
+  (`is_string_deref`).
+
+Case A, as before: an index left unchecked is one Rust's check would
+pass, and a wrap left out one that changes nothing. Held by
+`test/corpus/ptr_eq_items_and_counts.rs`'s snapshot, `node.children[diffIdx]`
+and `firstDiff++`, run against native Rust; `lowering-numbers.test.ts`'s "a
+const pointer to a cell keeps its variable unknown", a `RefCell`'s vec
+cleared through one, its index checked still; and the mutations
+`const-pointer-of-shared-volatile` and `string-deref-not-read`.

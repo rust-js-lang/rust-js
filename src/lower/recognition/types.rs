@@ -1186,3 +1186,13 @@ pub(crate) fn is_async_block(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         ))
     )
 }
+
+/// `str::repeat`, std's, a string's `repeat(n)`, JS's own (ADR 0774): what
+/// `classify` names `Std::Method("repeat")`, and a body's query asks of a
+/// call's function.
+pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_std_item(tcx, def_id)
+        && tcx.item_name(def_id).as_str() == "repeat"
+        && (tcx.inherent_impl_of_assoc(def_id))
+            .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())
+}

@@ -674,13 +674,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An array's item's is the array's handle on it, an object's too,
         // whose address is the item's in the array (ADR 0562); `$ptrTo` of
         // the object is equal to it, where the object is the item.
-        match place.kind {
-            js::ExprKind::Index(object, index) => return Ok(handle(*object, *index, None)),
-            js::ExprKind::Call(ref callee, ref args) if callee.helper_name() == Some("$index") && args.len() >= 2 => {
-                let (items, index) = (args[0].clone(), args[1].clone());
-                return Ok(handle(items, index, None));
-            }
-            _ => {}
+        // An item `$index` checks is one `$at` checks the index of, with the
+        // message `$index` was given: past the end, Rust's panic.
+        if let Some(args) = checked_item(&place) {
+            let at = Expr::call(Expr::helper("$at"), args.to_vec());
+            return Ok(handle(args[0].clone(), at, None));
+        }
+        if let js::ExprKind::Index(object, index) = place.kind {
+            return Ok(handle(*object, *index, None));
         }
         // An object's, by the object, wherever it's reached from: a copy of
         // what a pointer points to is a copy (`mutation.rs`), so the object
@@ -733,32 +734,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an empty array's address is of; of two `dyn`'s pairs, the same value,
     /// `$dynPtrEq`, as `ptr::addr_eq` asks too. The one place it's written.
     pub(super) fn pointers_equal(&mut self, a: Expr, b: Expr, pointee: Ty<'tcx>, span: Span) -> R<Expr> {
-        // Of two objects, one handle each: the same object, `a === b`.
-        let object_of = |e: &Expr| match &e.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptrTo") && args.len() == 1 => {
-                Some(args[0].clone())
-            }
-            _ => None,
-        };
-        if let (Some(x), Some(y)) = (object_of(&a), object_of(&b)) {
-            return Ok(Expr::bin(Op::Eq, x, y));
-        }
-        // Of one field of two objects, `$ptr(x, "value", 0)`, a counted
-        // `Rc`'s value's: the same field where it's the same object.
-        let field_of = |e: &Expr| match &e.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptr") => match args.as_slice() {
-                [object, key, rest @ ..] if let js::ExprKind::Str(key) = &key.kind => {
-                    Some((object.clone(), key.clone(), rest.first().and_then(Expr::as_int)))
-                }
-                _ => None,
-            },
-            _ => None,
-        };
-        if let (Some((x, key, at)), Some((y, other, other_at))) = (field_of(&a), field_of(&b))
-            && key == other
-            && at == other_at
-        {
-            return Ok(Expr::bin(Op::Eq, x, y));
+        // An item's place is the object it holds only where the pointee is an
+        // object, never a type parameter's, which may be a number.
+        let items = self.is_object(pointee) && !self.is_cell_pointee(pointee);
+        if let Some(same) = same_object(&a, &b, items) {
+            return Ok(same);
         }
         if self.is_pair_dyn_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$dynPtrEq"), vec![a, b]));
@@ -1378,4 +1358,75 @@ fn impls_are_arrays(
                     .is_some_and(|&x| tcx.type_of(x).instantiate_identity().skip_normalization() == *element)
             })
         })
+}
+
+/// `$index(items, i)`'s arguments, the message too where it's given: an
+/// item whose index is checked where it's reached.
+fn checked_item(e: &Expr) -> Option<&[Expr]> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$index") && args.len() >= 2 => Some(args),
+        _ => None,
+    }
+}
+
+/// Two handles' `$ptrEq` that's whether two objects are one, `x === y`
+/// (ADRs 0285, 0407): `$ptrTo` of each; one field of each, `$ptr(x, "value",
+/// 0)`, a counted `Rc`'s value's; and, where `items` says the pointee is an
+/// object, an array's item and an object, `items[i] === object`, `$ptrTo`
+/// of the item being its place, its index checked where the handle's was,
+/// `$index`. `None` of any other.
+pub(in crate::lower) fn same_object(a: &Expr, b: &Expr, items: bool) -> Option<Expr> {
+    let object_of = |e: &Expr| match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptrTo") && args.len() == 1 => {
+            Some(args[0].clone())
+        }
+        _ => None,
+    };
+    let handle = |e: &Expr| match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptr") => Some(args.clone()),
+        _ => None,
+    };
+    let item_of = |e: &Expr| match handle(e)?.as_slice() {
+        [items, at] if !matches!(at.kind, js::ExprKind::Str(_)) => Some(match &at.kind {
+            js::ExprKind::Call(check, given)
+                if check.helper_name() == Some("$at") && given.first().is_some_and(|of| js::same_path(of, items)) =>
+            {
+                Expr::call(Expr::helper("$index"), given.clone())
+            }
+            _ => Expr::index(items.clone(), at.clone()),
+        }),
+        _ => None,
+    };
+    let field_of = |e: &Expr| match handle(e)?.as_slice() {
+        [object, key, rest @ ..] if let js::ExprKind::Str(key) = &key.kind => {
+            Some((object.clone(), key.clone(), rest.first().and_then(Expr::as_int)))
+        }
+        _ => None,
+    };
+    let (x, y) = match (object_of(a), object_of(b)) {
+        (Some(x), Some(y)) => (x, y),
+        (None, Some(y)) if items => (item_of(a)?, y),
+        (Some(x), None) if items => (x, item_of(b)?),
+        _ => {
+            let ((x, key, at), (y, other, other_at)) = (field_of(a)?, field_of(b)?);
+            if key != other || at != other_at {
+                return None;
+            }
+            (x, y)
+        }
+    };
+    Some(Expr::bin(Op::Eq, x, y))
+}
+
+/// `$ptrEq(p, q, size)`, whose pointee's size is known, so never a type
+/// parameter's, its `$ptrTo` an object's: `x === y` where `same_object`
+/// says so, once what each was made of is read in place.
+pub(in crate::lower) fn same_object_in_place(e: &mut Expr) {
+    if let js::ExprKind::Call(callee, args) = &e.kind
+        && callee.helper_name() == Some("$ptrEq")
+        && let [a, b, _] = args.as_slice()
+        && let Some(same) = same_object(a, b, true)
+    {
+        *e = Expr { span: e.span, ..same };
+    }
 }
