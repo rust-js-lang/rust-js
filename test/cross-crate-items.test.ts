@@ -524,3 +524,53 @@ pub fn count_later(thenable: &Thenable) {
   abort();
   expect(heard).toEqual(["one", "true"]);
 });
+
+// ADR 0605, amended: React's ReactStartTransition writes
+// `returnValue.then(noop, reportGlobalError)`, `noop` shared's. A closure
+// given to a binding's `FnOnce` callback that only passes its call on to a
+// library's function is that function, as to the crate's own: a library's
+// compiled Rust takes what Rust gives it alone. Not one of rest arguments,
+// which reads all JS gives it.
+test("a once-callback that passes its call on to a library's function is the function", async () => {
+  const dir = fixture("cross-crate-passed-on");
+  const { app } = compiled(dir, `use std::cell::Cell;
+
+thread_local! {
+    static COUNT: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn noop() {
+    COUNT.set(COUNT.get() + 1);
+}
+
+pub fn bump(by: u32) {
+    COUNT.set(COUNT.get() + by * 10);
+}
+
+pub fn many(#[cfg_attr(rust_js, rust_js::rest)] xs: &[u32]) {
+    COUNT.set(COUNT.get() + xs.len() as u32 * 100);
+}
+
+pub fn count() -> u32 {
+    COUNT.get()
+}
+`, `/// \`callback.call(undefined, a, b)\`: JS calls the callback once.
+#[cfg_attr(rust_js, rust_js::link_name = "call")]
+fn once_with(this: Box<dyn FnOnce(u32, u32)>, this_arg: (), a: u32, b: u32) {
+    let () = this_arg;
+    this(a, b)
+}
+
+pub fn run() -> u32 {
+    once_with(Box::new(|_, _| dep::noop()), (), 1, 2);
+    once_with(Box::new(|by, _| dep::bump(by)), (), 3, 4);
+    once_with(Box::new(|x, _| dep::many(&[x])), (), 5, 6);
+    dep::count()
+}
+`);
+  expect(app).toContain("  noop.call(undefined, 1, 2);\n");
+  expect(app).toContain("  bump.call(undefined, 3, 4);\n");
+  expect(app).toContain("  ((x) => {\n    many(x);\n  }).call(undefined, 5, 6);\n");
+  const { run: ran } = await import(join(dir, "app", "lib.js"));
+  expect(ran()).toBe(131);
+});

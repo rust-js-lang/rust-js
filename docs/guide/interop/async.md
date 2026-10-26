@@ -276,7 +276,8 @@ A browser has no `setImmediate`: `js::is_defined(js::set_immediate)` asks
 A closure given to a binding's `FnOnce` callback, `then`'s, `setTimeout`'s,
 `queueMicrotask`'s or any binding's `impl FnOnce` or `Box<dyn FnOnce>`
 parameter, that only passes its call on to a function of the crate's, or
-a closure, is that function:
+of a library rust-js compiled (`shared::noop`, `then(noop, ..)`), or a
+closure, is that function:
 
 ```rust
 use js::Promise;

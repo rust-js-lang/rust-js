@@ -82,7 +82,8 @@ react.dev's TopNav passes the same closure instead.
 - **A once-callback passed on is the function it calls**, the second
   case's, which the user decided (2026-10-26): a closure given to a
   binding's `FnOnce` callback that only passes its call on to a function
-  of the crate's, or a closure, `p.then(|_| ping(), |_| ping())`, is
+  of the crate's or of a library rust-js compiled (ADR 0605, amended), or
+  a closure, `p.then(|_| ping(), |_| ping())`, is
   `p.then(ping, ping)`. Only the callback's identity tells it from a fresh
   closure's, which JS doesn't compare of a callback it calls once. Listed
   in the guide's differences (`semantics.md`, 27), below.
@@ -175,7 +176,8 @@ with what it isn't (ADR 0605, amended):
 - **What JS gives the function is what the closure's caller gives**, so
   the function is it only where it reads no more than the closure gives
   it: the crate's function, which takes the arguments Rust gives it alone,
-  or a closure. Not a binding's JS function, a `dyn Fn` or a generic `impl
+  a library's that rust-js compiled from its Rust too (ADR 0605's second
+  amendment), or a closure. Not a binding's JS function, a `dyn Fn` or a generic `impl
   Fn`, which may be a JS caller's of more parameters, nor a function of
   rest arguments, which reads them all.
 - **What the callback gives is read**, `then`'s value: the closure gives

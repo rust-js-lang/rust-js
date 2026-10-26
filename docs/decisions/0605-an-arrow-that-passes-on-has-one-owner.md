@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0198](0198-optional-handlers.md) and
 [0279](0279-callbacks-passed-on.md). Amended below: `passed_on.rs` owns
 the question with each position's rule, and a binding's `FnOnce` callback
-is one ([0262](0262-when-rust-and-js-disagree.md), amended).
+is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
+library's function is passed on as the crate's is.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -96,3 +97,29 @@ each position a `Taker`, its rule there:
 - `scripts/mutations/lower/passed_on.ts`, with the mutations moved there
   from `jsx.rs`, `iterators/eager.rs`, `iterators/ends.rs` and
   `mir/tidy/values.rs`.
+
+## Amendment: a library's function is Rust too
+
+`forwarded_to` said `Own` of the crate's functions alone, so a closure
+that passes its call on to a library's function kept its arrow: React's
+ReactStartTransition, `return_value.then(|_| noop(), report_global_error)`
+of shared's `pub fn noop()`, was `then(() => { noop(); },
+reportGlobalError)`, where upstream writes `then(noop,
+reportGlobalError)`. Found porting React.
+
+**A library rust-js compiled is the crate's kind of function** (`Own`):
+its JS is compiled from its Rust as the crate's is, and takes the
+arguments Rust gives it alone. `Foreign::is_library` says which crates
+are: one rust-js built for this crate to use, not `@rust-js/std`, whose
+hand-modeled calls may be a runtime helper's. The exclusions stay: a
+binding's JS function, and a function of rest arguments, a library's
+`#[rust_js::rest]` as its manifest says (`Foreign::takes_rest`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the second, the
+exception the user decided, widened only in what it may pass on to; it
+reads no more of what JS gives than the crate's own function does.
+
+Held by `test/cross-crate-items.test.ts`, "a once-callback that passes
+its call on to a library's function is the function", which runs what it
+wrote, and `scripts/mutations/lower/passed_on.ts`'s
+`library-callee-not-rust` and `library-rest-callee-passed-on`.

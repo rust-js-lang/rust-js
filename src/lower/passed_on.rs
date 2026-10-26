@@ -62,8 +62,9 @@ pub(in crate::lower) struct Forwarding {
 /// What a closure's one call calls.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(in crate::lower) enum Callee {
-    /// A function of the crate's that takes no rest arguments, or a
-    /// closure: its JS takes the arguments Rust gives it alone.
+    /// A function of the crate's, or of a library rust-js compiled, that
+    /// takes no rest arguments, or a closure: its JS takes the arguments
+    /// Rust gives it alone.
     Own,
     /// A generic `impl Fn`'s, which a JS caller may give a JS function of
     /// more parameters than its type says.
@@ -246,8 +247,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 }
             }
-            _ => (def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id) && !self.takes_rest(def_id))
-                .then_some(Callee::Own),
+            // The crate's, or a library's, whose JS rust-js compiled from
+            // its Rust as it compiles the crate's (ADR 0605, amended).
+            _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
+                && !super::bindings::is_binding(self.tcx, def_id)
+                && !self.takes_rest(def_id))
+            .then_some(Callee::Own),
         }
     }
 }
