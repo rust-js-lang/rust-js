@@ -168,7 +168,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                *unwind = UnwindAction::Unreachable;\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "a binding that can't throw"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_temporaries.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-writer-options-dropped",

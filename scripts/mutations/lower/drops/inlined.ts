@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/inlined.rs",
     find: "            js::each_block_mut(&mut made, &mut |stmts| unwrapped_tries(stmts));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^future_size_unwinds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
     snapshots: true,
   },
 ];

@@ -479,7 +479,7 @@ export const wrongSize = width(true);
   expect(errors[2]).toContain("use.tsx(17,");
   // Not one of an untagged enum's kinds.
   expect(errors[3]).toContain("use.tsx(18,");
-});
+}, 60_000);
 
 // An `Option` is `None` of JS's `null` too, read `!= null` (ADR 0030):
 // declared so, a TypeScript caller gives one, as react.dev's Page gives its

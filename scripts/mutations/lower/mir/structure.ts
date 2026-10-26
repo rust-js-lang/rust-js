@@ -80,7 +80,9 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "keeps its branch first"],
+    // Its own case, `if !active { .. }`, reads as written again by tidy; a
+    // loop's `if !descriptor.enumerable` doesn't.
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a loop's body that ends in an if of a continue"],
   },
   {
     name: "mir-written-return-past-drops",

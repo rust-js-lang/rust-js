@@ -90,7 +90,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                        *broken = None;\n",
     replace: "                        let _ = broken;\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_ends_branch.rs$"],
+    snapshots: true,
   },
   {
     name: "loop-ending-block-not-last",

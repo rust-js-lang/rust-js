@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.push(kind.at(last.span));\n            }\n",
     replace: "            stmts.push(last);\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "an if let a macro's function ends with"],
+    tests: ["test/lowering-module-variables.test.ts", "-t", "React's BadMapPolyfill is its export let"],
   },
   {
     name: "mir-tidy-inner-let-else-kept",

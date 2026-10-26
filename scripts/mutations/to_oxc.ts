@@ -353,8 +353,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)\n",
     replace: "                        false\n",
-    tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments in an else"],
   },
   {
     name: "comments-end-not-orphaned",

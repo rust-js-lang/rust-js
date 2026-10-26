@@ -313,7 +313,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"written order steps\", |b, _| {\n                js::statement_lists(b, &mut |s| written_order_steps(s))\n            }),\n",
     replace: "",
-    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-tried-last",

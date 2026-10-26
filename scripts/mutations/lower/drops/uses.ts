@@ -48,7 +48,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/uses.rs",
     find: "            passed.then(|| (**callee).clone())\n",
     replace: "            passed.then(|| (**callee).clone()).filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
+    tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
+    snapshots: true,
   },
   {
     name: "generic-drop-not-given",
