@@ -2,7 +2,8 @@
 
 Status: Accepted, the user's choice of 2026-10-26; amended: `js::null()`, of any
 `Option`, replaces `js::NULL`; amended: an array's or a tuple's `js::null()`,
-and no nullable function of one. Extends
+and no nullable function of one; amended: a plain `Option` field `js::null()`
+is written to is declared `| null`. Extends
 [0586](0586-a-nullable-field-is-an-option.md) (a nullable `const`) and
 [0225](0225-unknown-values.md) (`js::Unknown`).
 
@@ -218,3 +219,41 @@ array's and a tuple's js::null() are null, and a nullable function of one
 is refused": React's siblings array and a tuple, run as JS, its
 `hostSiblings[0] || hostSiblings[1]` `=== null`. Mutation
 `nullable-result-js-null-unnamed` (`bindings.rs`).
+
+## Amendment: a plain `Option` field `js::null()` is written to is declared `| null`
+
+Status: Accepted, the user's choice of 2026-10-26, which the amendment
+above left open.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; a declaration says
+what JS may find there, which a write of `js::null()` makes `null`.
+
+**Decision.** **A plain `Option` field a `js::null()` is written to is
+declared `| null`**, `name?: string | null | undefined`, as React's
+`_debugStack: Error | null` is; every other plain `Option` field stays
+`?: T | undefined`, as @types/react's props are. A write is the crate's
+fact, `body_queries::null_written_fields`, of every body and constant
+(`AnalyzedCrate::null_fields`), read by the declarations
+(`declarations.rs`'s `structure`):
+
+- **where the struct is made**, `Fiber { name: js::null(), .. }`, in a
+  constant too;
+- **an assignment**, `fiber.index = js::null()`, through a `&mut` to the
+  field, a variable made of one too, `let slot = &mut fiber.ref_; *slot
+  = js::null()`;
+- **a call it's lent to mutably with one**, `mem::replace(&mut
+  fiber.title, js::null())`.
+
+A cell's field, `Cell<Option<T>>`, is declared as its `Option` is given,
+`T | null | undefined`, as it was.
+
+**What it doesn't see.** A `js::null()` a function's `&mut Option<T>`
+parameter is written, given a field by its caller, `fn clear(slot: &mut
+Option<u32>) { *slot = js::null() }`: a fact of where each parameter
+comes from, across functions. Write the `js::null()` where the field is.
+
+**What holds it.** `test/lowering-nullable-constants.test.ts`, "a plain
+Option field js::null() is written to is declared | null, and no other".
+Mutations `js-null-made-undeclared`, `js-null-assigned-undeclared`,
+`js-null-lent-undeclared`, `js-null-through-a-variable-undeclared`
+(`body_queries.rs`) and `js-null-fields-unread` (`declarations.rs`).

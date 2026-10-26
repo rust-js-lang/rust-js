@@ -420,6 +420,75 @@ pub(super) fn orders_by_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, 
         && units_of(second) == Some(params[1])
 }
 
+/// The fields of structs `thir` writes a `js::null()` to, which may then
+/// hold `null` where a plain `Option` field holds `undefined` (ADR 0935,
+/// amended): a struct literal's, `Fiber { name: js::null() }`; an
+/// assignment's, `fiber.name = js::null()`, through a `&mut` too; and one
+/// lent mutably to a call given a `js::null()`, `mem::replace(&mut
+/// fiber.name, js::null())`. Each is declared `| null`.
+pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
+    let is_null = |e: ExprId| match thir[strip(thir, e)].kind {
+        ExprKind::Call { fun, .. } => {
+            super::fn_def(thir[fun].ty).is_some_and(|(f, _)| super::bindings::is_js_null(tcx, f))
+        }
+        _ => false,
+    };
+    // What each variable is made of, `let slot = &mut fiber.name;`.
+    let made: HashMap<LocalVarId, ExprId> = (thir.stmts.iter())
+        .filter_map(|stmt| match stmt.kind {
+            thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                ..
+            } => match pattern.kind {
+                PatKind::Binding { var, .. } => Some((var, init)),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    // The field a place is, through its borrows and derefs, and a variable
+    // made of one.
+    let field_of = |mut e: ExprId| loop {
+        e = strip(thir, e);
+        match thir[e].kind {
+            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+            ExprKind::VarRef { id } if thir[e].ty.is_ref() => e = *made.get(&id)?,
+            ExprKind::Field {
+                lhs,
+                variant_index,
+                name,
+            } => {
+                return match thir[lhs].ty.peel_refs().kind() {
+                    ty::Adt(adt, _) => Some(adt.variant(variant_index).fields[name].did),
+                    _ => None,
+                };
+            }
+            _ => return None,
+        }
+    };
+    let lent_mutably = |e: ExprId| matches!(thir[strip(thir, e)].kind, ExprKind::Borrow { borrow_kind, .. } if borrow_kind.mutability().is_mut());
+    let mut written = Vec::new();
+    for e in thir.exprs.iter() {
+        match e.kind {
+            ExprKind::Adt(ref made) => {
+                let fields = &made.adt_def.variant(made.variant_index).fields;
+                written.extend(
+                    (made.fields.iter())
+                        .filter(|f| is_null(f.expr))
+                        .map(|f| fields[f.name].did),
+                );
+            }
+            ExprKind::Assign { lhs, rhs } if is_null(rhs) => written.extend(field_of(lhs)),
+            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => {
+                written.extend(args.iter().filter(|&&a| lent_mutably(a)).filter_map(|&a| field_of(a)))
+            }
+            _ => {}
+        }
+    }
+    written
+}
+
 /// Is `thir`, a constant's initializer, written of other constants that
 /// are read by their names (`by_name`), `A | B` or `EventPriority(NO_LANE)`,
 /// and of no call of a function `by_name` says is compiled, whose body would

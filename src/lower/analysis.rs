@@ -581,6 +581,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What each module holds of a binding, and where a path reads one
     /// through it (ADR 0633).
     pub held: bindings::Held,
+    /// The fields a `js::null()` is written to, whose `.d.ts` says `| null`
+    /// (ADR 0935, amended).
+    pub null_fields: HashSet<DefId>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -804,6 +807,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
+    // The fields a `js::null()` is written to, declared `| null` (ADR 0935,
+    // amended).
+    let null_fields: HashSet<DefId> = (all_bodies.iter().copied().chain(initializers))
+        .flat_map(|body| super::body_queries::null_written_fields(tcx, &body.thir))
+        .collect();
     // Each thing named in JS, the crate's functions among them.
     let item_set: HashSet<DefId> = items.iter().copied().collect();
     // What dropping `ty` runs, of `counted`'s `Rc`s, asked where `owner` is,
@@ -1155,6 +1163,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         local_functions,
         local_consts,
         held,
+        null_fields,
     })
 }
 

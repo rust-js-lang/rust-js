@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     name: "every-option-field-nullable",
     breaks: "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) {\n",
+    find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
     replace: "                    match true || is_nullable(self.tcx, field) {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
@@ -821,5 +821,13 @@ export const mutations: Mutation[] = [
     find: "            if !self.tcx.visibility(method).is_public() {\n",
     replace: "            if true {\n",
     tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
+  {
+    name: "js-null-fields-unread",
+    breaks: "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match is_nullable(self.tcx, field) {\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
 ];

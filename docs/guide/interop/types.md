@@ -923,7 +923,10 @@ export function ratio(a, b) {
   `[js::null(), js::null()]`'s `[null, null]`, React's `const result:
   [Fiber | null, Fiber | null] = [null, null]`. A function returning
   one isn't `#[rust_js::nullable]`, which is of an `Option` result: the
-  error says its `None`s are written `js::null()`
+  error says its `None`s are written `js::null()`. A plain `Option` field
+  it's written to, where it's made, assigned or lent to a call with it,
+  is declared `| null`, `name?: string | null | undefined`; every other
+  is `?: T | undefined`
   ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md),
   amended).
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
@@ -990,6 +993,22 @@ export function copy(workInProgress, current) {
 export function hasState(fiber) {
   return fiber.memoizedState != null;
 }
+```
+
+```ts
+export interface Fiber {
+    memoizedState: unknown | null | undefined;
+    debugStack: any | null | undefined;
+    name?: string | null | undefined;
+}
+
+export function createFiber(): Fiber;
+
+export function setState(fiber: Fiber, state?: unknown | null | undefined): void;
+
+export function copy(workInProgress: Fiber, current: Fiber): void;
+
+export function hasState(fiber: Fiber): boolean;
 ```
 
 An array of them, which JS reads `siblings[0] || siblings[1]` of and

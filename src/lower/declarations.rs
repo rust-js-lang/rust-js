@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::program::Reexport;
 use rustc_hir as hir;
@@ -47,7 +47,11 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[Reexport],
     aliases: &[(DefId, (String, String))],
-    (ref_cells, counted): (&super::drops::RefCells<'tcx>, &super::analysis::Counted<'tcx>),
+    (ref_cells, counted, null_fields): (
+        &super::drops::RefCells<'tcx>,
+        &super::analysis::Counted<'tcx>,
+        &HashSet<DefId>,
+    ),
     (fns, held, variables): (
         &HashMap<DefId, super::FnInfo>,
         &[super::bindings::HeldBinding],
@@ -63,6 +67,7 @@ pub(super) fn module<'tcx>(
         files,
         ref_cells,
         counted,
+        null_fields,
         imports: BTreeSet::new(),
         library_imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
@@ -325,6 +330,8 @@ struct Declarations<'a, 'tcx> {
     /// The `Rc`s counted, `{ value, strong, weak }`: every other, and its
     /// `Weak`, is the value it points at (ADRs 0320, 0843).
     counted: &'a super::analysis::Counted<'tcx>,
+    /// The fields a `js::null()` is written to, `| null` (ADR 0935, amended).
+    null_fields: &'a HashSet<DefId>,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
@@ -957,7 +964,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let (optional, ty) = match option {
                 Some(inner) => {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
-                    match is_nullable(self.tcx, field) {
+                    // Nullable, or a plain one a `js::null()` is written
+                    // to, which may hold `null` (ADR 0935, amended).
+                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {
                         true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),
                     }

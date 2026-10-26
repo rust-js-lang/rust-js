@@ -143,6 +143,7 @@ pub fn lower_crate<'tcx>(
         local_functions,
         local_consts,
         held,
+        null_fields,
     } = match analyze_crate(
         tcx,
         all_bodies,
@@ -1302,7 +1303,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 &lowered.reexports,
                 &aliased_items,
-                (ref_cells, &counted),
+                (ref_cells, &counted, &null_fields),
                 (&fns, module_held, &module_variables),
             );
             // A `Drop` impl's `drop` of this module no other module calls,

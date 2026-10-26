@@ -323,3 +323,63 @@ pub fn siblings() -> [Option<u8>; 2] {
     "`#[rust_js::nullable]` of a function is of its result, which isn't an `Option`; a `None` in it that's `null` is written `js::null()`",
   );
 });
+
+// A plain `Option` field a `js::null()` is written to may hold `null`, so
+// its `.d.ts` says so, React's `_debugStack: Error | null`; every other
+// plain `Option` field is `?: T | undefined`, as @types/react's props are
+// (ADR 0935, amended). Written where it's made, by an assignment, through
+// a `&mut`, by a call it's lent to with one, and in a constant. A cell's
+// is its `Option`'s, `T | null | undefined`, as it was.
+test("a plain Option field js::null() is written to is declared | null, and no other", () => {
+  const dir = fixture("js-null-declared");
+  const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Fiber {
+    pub name: Option<String>,
+    pub key: Option<String>,
+    pub debug_stack: Cell<Option<u32>>,
+    pub index: Option<u32>,
+    pub title: Option<String>,
+    pub ref_: Option<u32>,
+}
+
+pub struct Props {
+    pub on_click: Option<fn()>,
+    pub label: Option<String>,
+}
+
+pub const EMPTY: Props = Props {
+    on_click: None,
+    label: js::null(),
+};
+
+pub fn create_fiber(key: Option<String>) -> Fiber {
+    Fiber {
+        name: js::null(),
+        key,
+        debug_stack: Cell::new(js::null()),
+        index: None,
+        title: None,
+        ref_: None,
+    }
+}
+
+pub fn reset(fiber: &mut Fiber) -> Option<String> {
+    fiber.index = js::null();
+    let r#ref = &mut fiber.ref_;
+    *r#ref = js::null();
+    std::mem::replace(&mut fiber.title, js::null())
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const ts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(ts).toContain("    name?: string | null | undefined;\n");
+  expect(ts).toContain("    key?: string | undefined;\n");
+  expect(ts).toContain("    debugStack: number | null | undefined;\n");
+  expect(ts).toContain("    index?: number | null | undefined;\n");
+  expect(ts).toContain("    title?: string | null | undefined;\n");
+  expect(ts).toContain("    ref_?: number | null | undefined;\n");
+  expect(ts).toContain("    onClick?: (() => void) | undefined;\n");
+  expect(ts).toContain("    label?: string | null | undefined;\n");
+});
