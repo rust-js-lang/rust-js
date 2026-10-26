@@ -163,7 +163,7 @@ for (const [name, source, message] of [
     "`#[rust_js::rest]` is a function's last parameter, not a closure's: a closure takes rest arguments as a value, `args: &dyn js::Rest<T>`, which its type says"],
   ["a trait method's parameter", "pub trait T { fn f(&self, xs: &[f64]) -> usize; }\npub struct S;\nimpl T for S { fn f(&self, #[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> usize { xs.len() } }",
     "`#[rust_js::rest]` is a function's last parameter, not a trait method's, which each impl's call gives alike"],
-  ["a function given a dictionary", "pub fn f<T: Clone>(#[cfg_attr(rust_js, rust_js::rest)] xs: &[T]) -> Vec<T> { xs.to_vec() }\npub fn g() -> Vec<u32> { f(&[1, 2]) }",
+  ["a function given a dictionary", "pub fn f<T: std::fmt::Display>(#[cfg_attr(rust_js, rust_js::rest)] xs: &[T]) -> Vec<String> { xs.iter().map(|x| x.to_string()).collect() }\npub fn g() -> Vec<String> { f(&[1, 2]) }",
     "a function whose last parameter is `#[rust_js::rest]` given a dictionary, a fact, a drop or its caller's location, which JS's rest parameter can't come before"],
   ["a pattern", "pub fn f(#[cfg_attr(rust_js, rust_js::rest)] &[..]: &[f64]) -> usize { 0 }",
     "`#[rust_js::rest]` is a parameter's name, `args: &[T]`, not a pattern's: JS's rest parameter is an array"],
