@@ -47,9 +47,10 @@ async function call(url, init, ok) {
     const problem = result.TAG === "Ok" ? result._0 : Problem.new(`the server answered ${status}`);
     return { TAG: "Err", _0: { TAG: "Refused", _0: status, _1: problem } };
   }
-  return signal != null && signal.aborted
-    ? { TAG: "Err", _0: "Aborted" }
-    : { TAG: "Err", _0: "Network" };
+  if (signal != null && signal.aborted) {
+    return { TAG: "Err", _0: "Aborted" };
+  }
+  return { TAG: "Err", _0: "Network" };
 }
 
 function get(signal) {
