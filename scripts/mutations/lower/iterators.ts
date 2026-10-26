@@ -258,4 +258,12 @@ export const mutations: Mutation[] = [
     replace: "                    || (false\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "impl-trait-hides-held-into-iter",
+    breaks: "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` isn't given its dictionary and is refused (ADR 0920)",
+    file: "src/lower/iterators.rs",
+    find: "        .any(|ty| holds(ty) || hidden(ty));\n",
+    replace: "        .any(|ty| holds(ty) || false && hidden(ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
+  },
 ];

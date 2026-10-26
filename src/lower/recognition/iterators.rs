@@ -752,6 +752,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "from_iter" if self.is_from_iterator(trait_id) => IterMethod::FromIter,
             "next_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NextBack,
             "nth_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NthBack,
+            "advance_back_by" if self.double_ended_iterator() == Some(trait_id) => IterMethod::AdvanceBackBy,
             "rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFold,
             "rfind" if self.double_ended_iterator() == Some(trait_id) => IterMethod::RFind,
             "try_rfold" if self.double_ended_iterator() == Some(trait_id) => IterMethod::TryRFold,
@@ -1367,6 +1368,9 @@ pub(crate) enum IterMethod {
     /// `nth_back(n)`, `rfold(init, f)`, `rfind(p)`: stepped from the back
     /// (ADR 0455).
     NthBack,
+    /// `advance_back_by(n)`, which std's own bodies call: `Ok(())`, or
+    /// `Err` of how many there weren't (ADR 0920).
+    AdvanceBackBy,
     RFold,
     RFind,
     /// `try_rfold(init, f)`: `try_fold` from the back (ADR 0531).
@@ -1418,7 +1422,11 @@ impl IterMethod {
     pub(crate) fn steps_from_its_back(self) -> bool {
         matches!(
             self,
-            IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind | IterMethod::TryRFold
+            IterMethod::NthBack
+                | IterMethod::AdvanceBackBy
+                | IterMethod::RFold
+                | IterMethod::RFind
+                | IterMethod::TryRFold
         )
     }
 

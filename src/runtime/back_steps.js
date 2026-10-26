@@ -31,6 +31,30 @@ function $nthBack(it, n, found = (item) => item, drop, slices = true) {
   return undefined;
 }
 
+// `it.advance_back_by(m)`, as std's own bodies call it, given as `$nthBack`
+// is: its own, `advanceBackBy`; of an array's items it owns, what it passes
+// over dropped as one slice, front to back (#234); else each `next_back`,
+// given to `drop`. `Ok(())`, or `Err` of how many there weren't (ADR 0920).
+function $advanceBackBy(it, m, _found, drop, slices = true) {
+  let left = m;
+  if (it.advanceBackBy !== undefined) {
+    left = it.advanceBackBy(m, drop);
+  } else if (slices && drop !== undefined && it.items !== undefined) {
+    const k = Math.min(m, it.len());
+    const passed = it.items.slice(it.end - k, it.end);
+    it.end -= k;
+    for (const item of passed) drop(item);
+    left = m - k;
+  } else {
+    for (; left > 0; left--) {
+      const step = it.back();
+      if (step.done) break;
+      drop?.(step.value);
+    }
+  }
+  return left === 0 ? { TAG: "Ok" } : { TAG: "Err", _0: left };
+}
+
 // `it.rfold(init, f)`: `f` of each item from the back, given what it gave;
 // its own `rfold`, where it reaches the crate's (#220). Consuming it, it
 // closes it, as Rust's `rfold` drops what it takes at its end (#206).

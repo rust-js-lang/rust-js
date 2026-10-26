@@ -768,7 +768,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let of = (self.tcx)
                     .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
                     .unwrap_or(of);
-                let dictionary = self.iterator_dictionary(of, span)?;
+                // A type parameter's given as it is, its own, as what an
+                // `I: Iterator` makes is itself (ADR 0920).
+                let dictionary = match self.iterator_evidence(of, bound.def_id) {
+                    Some(given) => given,
+                    None => self.iterator_dictionary(of, span)?,
+                };
                 steps.push(Prop::Field(
                     name,
                     Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),

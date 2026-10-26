@@ -279,6 +279,19 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("StepBy", Some("DoubleEndedIterator"), "nth_back"),
     ("StepBy", Some("DoubleEndedIterator"), "rfold"),
     ("StepBy", Some("Clone"), "clone"),
+    ("Chain", Some("Iterator"), "next"),
+    ("Chain", Some("Iterator"), "size_hint"),
+    ("Chain", Some("Iterator"), "count"),
+    ("Chain", Some("Iterator"), "fold"),
+    ("Chain", Some("Iterator"), "try_fold"),
+    ("Chain", Some("Iterator"), "advance_by"),
+    ("Chain", Some("Iterator"), "nth"),
+    ("Chain", Some("Iterator"), "last"),
+    ("Chain", Some("DoubleEndedIterator"), "next_back"),
+    ("Chain", Some("DoubleEndedIterator"), "nth_back"),
+    ("Chain", Some("DoubleEndedIterator"), "rfold"),
+    ("Chain", Some("Clone"), "clone"),
+    ("Chain", Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -295,6 +308,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "skip"),
     ("Iterator", "take"),
     ("Iterator", "step_by"),
+    ("Iterator", "chain"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
@@ -313,6 +327,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Skip", "skip", true),
     ("Take", "take", true),
     ("StepBy", "step_by", false),
+    ("Chain", "chain", false),
 ];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s

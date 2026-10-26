@@ -375,8 +375,8 @@ export const mutations: Mutation[] = [
     name: "try-rfold-not-from-back",
     breaks: "`try_rfold` isn't seen to step from the back, and is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: "            IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind | IterMethod::TryRFold\n",
-    replace: "            IterMethod::NthBack | IterMethod::RFold | IterMethod::RFind\n",
+    find: "                | IterMethod::RFind\n                | IterMethod::TryRFold\n",
+    replace: "                | IterMethod::RFind\n",
     tests: ["test/corpus.test.ts", "-t", "^try_rfold.rs$"],
   },
   {

@@ -357,8 +357,8 @@
 + Result::unwrap_or_default	safe
 + Result::unwrap_or_else	safe
 + Result::unwrap_unchecked	safe
-# Rc 12 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
-- Rc::as_ptr	memory
+# Rc 13 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
++ Rc::as_ptr	memory
 - Rc::assume_init	memory
 - Rc::decrement_strong_count	memory
 + Rc::downcast	memory
@@ -381,8 +381,8 @@
 + Rc::try_unwrap	memory
 + Rc::unwrap_or_clone	memory
 + Rc::weak_count	memory
-# Arc 12 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
-- Arc::as_ptr	memory
+# Arc 13 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
++ Arc::as_ptr	memory
 - Arc::assume_init	memory
 - Arc::decrement_strong_count	memory
 + Arc::downcast	memory
@@ -1053,19 +1053,19 @@
 + Scan::next	safe
 + Scan::size_hint	safe
 - Scan::try_fold	spec
-# Chain 7 of 13; bodies: 8 safe, 2 spec, 0 opaque, 3 memory, 0 none
+# Chain 11 of 13; bodies: 8 safe, 2 spec, 0 opaque, 3 memory, 0 none
 + Chain::count	safe
 + Chain::find	safe
 + Chain::fold	safe
 + Chain::last	safe
 + Chain::next	safe
-- Chain::next_back	safe
++ Chain::next_back	safe
 + Chain::nth	memory
-- Chain::nth_back	memory
++ Chain::nth_back	memory
 - Chain::rfind	safe
-- Chain::rfold	safe
++ Chain::rfold	safe
 + Chain::size_hint	memory
-- Chain::try_fold	spec
++ Chain::try_fold	spec
 - Chain::try_rfold	spec
 # Zip 4 of 5; bodies: 0 safe, 5 spec, 0 opaque, 0 memory, 0 none
 + Zip::fold	spec

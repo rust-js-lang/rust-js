@@ -414,4 +414,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(TryKind::ControlFlow) => Ok(Expr::helper(\"$neverShortCircuitTry\")),\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "made-steps-of-a-js-iterator",
+    breaks: "what an `I: Iterator` makes, itself, is stepped as a JS iterator in its `IntoIterator` dictionary, not by `I`'s own, so std's `chain` of two ranges given as they are throws (ADR 0920)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                let dictionary = match self.iterator_evidence(of, bound.def_id) {\n",
+    replace: "                let dictionary = match None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+  },
 ];

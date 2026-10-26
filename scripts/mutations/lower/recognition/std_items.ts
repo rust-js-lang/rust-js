@@ -226,4 +226,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "chain-not-held",
+    breaks: "a held `chain()` is the recognizers' JS iterator, not std's `Chain`",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Chain\", \"chain\", false),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+  },
 ];

@@ -313,11 +313,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
         let mut values = values.into_iter();
         let it = values.next().expect("the receiver");
-        // Of what has a back, the iterator it steps, as `next_back`'s;
-        // another made one, a range's of its bounds, stepped in place.
-        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) {
-            true => it,
-            false => self.as_double_ended(it, iter_ty, span)?,
+        // Of what has a back, the iterator it steps, as `next_back`'s, std's
+        // struct given its compiled back where it's asked, as `rev()`'s is
+        // (ADR 0920); another made one, a range's of its bounds, stepped in
+        // place.
+        let revealed = self.reveal(iter_ty.peel_refs());
+        let knowing = match self.compiled_struct_at(revealed, span) {
+            true => self.knowing_held(it.clone(), revealed, span)?,
+            false => None,
+        };
+        let it = match knowing {
+            Some(knowing) => knowing,
+            None if self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty) => it,
+            None => self.as_double_ended(it, iter_ty, span)?,
         };
         // `try_rfold`: `try_fold` of it reversed, which gives its items as
         // its own function does (ADR 0531).
@@ -336,13 +344,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of one that owns an array's items and drops each it passes
         // over, not as one slice as a `Vec`'s does, `false` (#234).
-        let each = method == IterMethod::NthBack && drop.is_some() && self.passes_each_owned(iter_ty);
+        let each = matches!(method, IterMethod::NthBack | IterMethod::AdvanceBackBy)
+            && drop.is_some()
+            && self.passes_each_owned(iter_ty);
         given.extend(drop);
         if each {
             given.push(Expr::bool(false));
         }
         let helper = match method {
             IterMethod::NthBack => "$nthBack",
+            IterMethod::AdvanceBackBy => "$advanceBackBy",
             IterMethod::RFold => "$foldBack",
             _ => "$findBack",
         };

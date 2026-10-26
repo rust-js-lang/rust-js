@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^step_by_nth_back.rs$"],
   },
+  {
+    name: "advance-back-by-short",
+    breaks: "`advance_back_by` says it went as far as it was asked where it ran short, so a held chain's `nth_back` past its back side's end gives the wrong item (ADR 0920)",
+    file: "src/runtime/back_steps.js",
+    find: "  return left === 0 ? { TAG: \"Ok\" } : { TAG: \"Err\", _0: left };\n",
+    replace: "  return { TAG: \"Ok\" };\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
+  },
 ];

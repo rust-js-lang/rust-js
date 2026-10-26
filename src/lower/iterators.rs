@@ -227,6 +227,22 @@ fn held_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
             _ => false,
         })
     };
+    // And what an `impl Trait` it gives hides, `Chain<I::IntoIter,
+    // J::IntoIter>` of an `impl Iterator`, which std's `chain` holds (ADR
+    // 0920).
+    let hidden = |ty: Ty<'tcx>| {
+        ty.walk().any(|part| match part.as_type().map(|t| *t.kind()) {
+            Some(ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Opaque { def_id },
+                    args,
+                    ..
+                },
+            )) if def_id.is_local() => holds(tcx.type_of(def_id).instantiate(tcx, args).skip_normalization()),
+            _ => false,
+        })
+    };
     let held = matches!(
         tcx.def_kind(id),
         rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
@@ -236,7 +252,7 @@ fn held_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
         .skip_binder()
         .inputs_and_output
         .iter()
-        .any(holds);
+        .any(|ty| holds(ty) || hidden(ty));
     read || held
 }
 
