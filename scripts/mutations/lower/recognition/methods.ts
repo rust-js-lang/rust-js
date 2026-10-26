@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "min-value-unknown",
+    breaks: "an integer's `min_value()` and `max_value()` are refused where MIR keeps the call, and a crate that calls them, num-integer, is refused (#327)",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"min_value\" if !float => NumOp::Bound { max: false },\n",
+    replace: "",
+    tests: ["test/lowering-numbers.test.ts", "-t", "min_value"],
+  },
+  {
     name: "str-bytes-unrecognized",
     breaks: "`s.bytes()` is an error, not the string's UTF-8 bytes",
     file: "src/lower/recognition/methods.rs",

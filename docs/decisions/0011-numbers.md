@@ -131,3 +131,13 @@ of values**: `s.value = s.value !== c`, `!!(a & b)`. Held by the corpus case
 `$lazyZip($iter($mutItems(state)), chunk)`, which grew
 `docs/readability.txt`'s `$iter` share: #320.
 
+## Amendment: `min_value()` and `max_value()` (#327)
+
+An integer's `min_value()` and `max_value()`, deprecated for `MIN` and
+`MAX`, were refused where MIR keeps the call, `Self::min_value()` in an
+impl's method, and given as a value: num-integer's gcd calls them, so
+rust-js refused num-integer, and num-bigint after it. **They're the
+constants their bodies give**, `-128`, `65535n`. Held by the lowering test
+"an integer's min_value() and max_value() are its MIN and MAX" and the
+mutations `min-value-unknown` and `max-value-the-min`.
+

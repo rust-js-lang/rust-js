@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "max-value-the-min",
+    breaks: "an integer's `max_value()` is its `MIN` (#327)",
+    file: "src/lower/std_types/number.rs",
+    find: "            return Ok(num.literal(if max { hi as i128 } else { lo }));\n",
+    replace: "            return Ok(num.literal(if max { lo } else { lo }));\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "min_value"],
+  },
+  {
     name: "bit-width-of-its-own-width",
     breaks: "a narrow integer's `bit_width()` is its own bits less `Math.clz32`'s zeros, which count 32 bits: `u8`'s is off by 24 (#317)",
     file: "src/lower/std_types/number.rs",

@@ -116,6 +116,11 @@ pub(in crate::lower) enum NumOp {
     DivEuclid,
     Signum,
     LeadingZeros,
+    /// `min_value()` or `max_value()` (`max`) of an integer, deprecated for
+    /// `MIN` and `MAX`, which their bodies give.
+    Bound {
+        max: bool,
+    },
     /// `bit_width()` of an unsigned integer: its bits but its leading
     /// zeros, as std's body has it.
     BitWidth,
@@ -513,6 +518,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let num = Num::of(ty).expect("a number's method");
+        if let NumOp::Bound { max } = op {
+            let (lo, hi) = num.range();
+            return Ok(num.literal(if max { hi as i128 } else { lo }));
+        }
         let values = match self.bits_call(op, values, num)? {
             Ok(value) => return Ok(value),
             Err(values) => values,
@@ -570,6 +579,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | NumOp::BytesEqIgnoreAsciiCase => {
                 unreachable!("lowered by either_width_call")
             }
+            NumOp::Bound { .. } => unreachable!("lowered first"),
             // An `f32`'s, rounded to one: `Math`'s are `math::function`'s.
             NumOp::Math(name) => {
                 let list = values.collect();

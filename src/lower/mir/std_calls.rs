@@ -1449,7 +1449,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.
                     let ty = match (op, output.kind()) {
                         (NumOp::FromStrRadix, ty::Adt(_, result)) => result.type_at(0),
-                        (NumOp::FromBytes { .. } | NumOp::FloatFromBytes { .. } | NumOp::FromBits, _) => output,
+                        (
+                            NumOp::FromBytes { .. }
+                            | NumOp::FloatFromBytes { .. }
+                            | NumOp::FromBits
+                            | NumOp::Bound { .. },
+                            _,
+                        ) => output,
                         _ => arg_tys.first().copied().map(|t| t.peel_refs()).expect("a number"),
                     };
                     let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;

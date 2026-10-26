@@ -543,6 +543,36 @@ pub fn code(c: Color) -> i32 {
   expect(js).toContain("return { Red: 0, Green: 5, Blue: 6 }[c];");
 });
 
+// `min_value()` and `max_value()`, deprecated for `MIN` and `MAX`, which
+// their bodies give, as a crate of crates.io's still calls them: num-integer's
+// gcd asks them of `Self` in an impl, where MIR keeps the call (#327).
+test("an integer's min_value() and max_value() are its MIN and MAX", async () => {
+  const dir = fixture("min-max-value");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(deprecated)]
+pub trait Extremes {
+    fn at_an_end(&self) -> bool;
+}
+impl Extremes for i8 {
+    fn at_an_end(&self) -> bool {
+        *self == Self::min_value() || *self == Self::max_value()
+    }
+}
+pub fn ends(n: i8) -> bool {
+    n.at_an_end()
+}
+pub fn top() -> u16 {
+    let f: fn() -> u16 = u16::max_value;
+    f()
+}
+pub fn bottom() -> i128 {
+    i128::min_value()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.ends(-128), lib.ends(5), lib.ends(127), lib.top(), lib.bottom()]).toEqual([true, false, true, 65535, -(2n ** 127n)]);
+});
+
 // A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and
 // one of negative zeros are -0.0, not 0.
 test("a float's sum from MIR keeps the sign of zero", async () => {
