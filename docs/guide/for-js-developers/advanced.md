@@ -914,6 +914,9 @@ export function twoLoggers() {
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)):
   a `borrow_mut()` while another borrow is alive panics with
   `RefCell already borrowed`, as in native Rust ([ADR 0328](../../decisions/0328-refcell-borrow-counts.md)).
+  A guard lives as long as Rust keeps it: a let-else's, `let Some(next) =
+  update.next.borrow().clone() else { break };`, only while its
+  initializer runs, so that borrow meets no other (ADR 0863, amended).
 - **An element of one is its place**, as a `&mut` to one is: what
   `borrow_mut()[index]` reads and writes is the array's element, its
   index checked as Rust checks it

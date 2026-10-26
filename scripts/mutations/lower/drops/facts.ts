@@ -197,4 +197,13 @@ export const mutations: Mutation[] = [
     replace: "                    None => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_pointer_borrows_held.rs$"],
   },
+  {
+    name: "let-else-guard-held-through-else",
+    breaks: "a let-else's scrutinee's guard is taken to live through its `else`, so React's `update.next.borrow().clone()` counts the field's every borrow, `$cellReplace($borrowMut($fieldCell(update, \"next\", true)), ..)`",
+    file: "src/lower/drops/facts.rs",
+    find: "                initializer,\n                ..\n            } => (init_scope, initializer),\n",
+    replace: "                initializer,\n                else_block,\n                ..\n            } => (init_scope, initializer.filter(|_| else_block.is_none())),\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_guard_released.rs$"],
+    snapshots: true,
+  },
 ];

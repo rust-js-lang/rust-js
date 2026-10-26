@@ -615,3 +615,28 @@ before.
   `thread-local-init-a-value`, `field-made-of-any-value`
   (`lower/drops/ref_cells.ts`) and `quiet-replace-through-a-reference`
   (`lower/std_types/cell.ts`).
+
+## Amendment: a let-else's guard is dropped before its `else`
+
+React walks to the last update, `let Some(next) =
+update.next.borrow().clone() else { break };`. The guard is the
+initializer's temporary, which Rust drops before the `else` runs, in
+either edition, as an `if let`'s is before its `else` (edition 2024); the
+JS released it there, `$unborrow(borrow)` before `break`. But the drop
+facts gave a let-else's statement no extent for its temporaries
+(`statements` in `drops/facts.rs`), so its borrow wasn't momentary: it
+was counted, and so was every borrow of `Update::next` crate-wide,
+`$cellReplace($borrowMut($fieldCell(update, "next", true)), next)`
+where it was `update.next = next`.
+
+**A let-else's temporaries live while its initializer runs**, as a
+`let`'s do: its guard is momentary where nothing the initializer runs
+may ask of its cell, and the field stays its value, by its place's rule
+above. One the initializer's code may meet, `cell.borrow().map(|v| (v,
+cell.try_borrow_mut().is_ok()))`, is counted as before.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): Rust's drop, and no
+check where none can fail.
+
+Held by `test/corpus/let_else_guard_released.rs`, against native Rust,
+and the mutation `let-else-guard-held-through-else`.

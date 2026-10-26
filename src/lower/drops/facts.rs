@@ -785,14 +785,16 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
         {
             self.lets.insert(*init, pattern);
         }
+        // A `let`'s temporaries live while its initializer runs, a
+        // let-else's too, which drops them before its `else` runs, as
+        // Rust does in either edition (ADR 0863, amended).
         self.statements.push(match stmt.kind {
             ThirStmt::Expr { scope, expr } => (scope, Some(expr)),
             ThirStmt::Let {
                 init_scope,
                 initializer,
-                else_block,
                 ..
-            } => (init_scope, initializer.filter(|_| else_block.is_none())),
+            } => (init_scope, initializer),
         });
         visit::walk_stmt(self, stmt);
         self.statements.pop();
