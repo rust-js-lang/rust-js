@@ -7,7 +7,8 @@ whose comments are before the statement whose code follows them, and
 [0730](0730-a-loops-early-break-is-in-the-if-it-was-written-in.md): a loop
 body's last `if` is an early `continue` only where the program wrote one.
 Amended below: a loop's `break` the program wrote is where it wrote it too
-(#298).
+(#298); and a `for…in`'s guards, with their comments, as React's
+hydration diffs write them.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads, and
 a comment, which nothing runs.
@@ -153,3 +154,61 @@ Case: N, as above. A comment, and where it is, which nothing runs.
 - Mutations `mir-loop-breaks-of-blocks`, `written-break-unplaced`,
   `written-break-or-unread`, `jump-tested-at-its-test-alone` and
   `written-at-its-own-span`.
+
+## Amendment: a `for…in`'s guards, as React's hydration diffs write them
+
+React's `ReactFiberHydrationDiffs`, ported, writes each `for (const
+propName in props)` as upstream does, two `continue`s first:
+
+```rust
+for prop_name in js::keys_in(props) {
+    if !object::has_own_property.call(props, prop_name.as_str()) {
+        continue;
+    }
+    if prop_name == "children" {
+        // Ignored.
+        continue;
+    }
+    ..
+}
+```
+
+Its JS read four ways upstream's doesn't:
+
+- **`// Ignored.` before the `for`.** `continued`, which puts back an
+  `if` of a `continue` the program wrote, gave the `continue` the `if`'s
+  place, so `written jumps`, which places only a `continue` of no place,
+  left it at the `if`, before its comment, and the comment found no
+  statement in the loop to be before. **A `continue` `continued` puts
+  back has no place of its own**: `written jumps` gives it where the
+  program wrote it, its comment before it.
+- **The two guards one `if (a && b) { ..; continue; }`**, in a loop that
+  `break`s: MIR ends each turn with a `continue` of the loop, which the
+  `break`'s block leaves after the guards' `if`, so `continued` found no
+  `if` last and put none back. **MIR's `continue` that ends a turn, after
+  an `if` of one the program wrote, goes** (with what can't follow it),
+  and the guards are put back as in a loop with no `break`.
+- **A comment inside a let-chain's test before the `for`**, `// Only do
+  the diff ..` before `&& (b.len() > 2 || ..)`: the operand, placed
+  nowhere, started where the first of its parts did, and `a` of `if let
+  Some(a) = a` reads where its pattern binds it, before the comment, so
+  the comment was before no start. **A part placed is all of it**: what's
+  read inside it isn't where it is (`to_oxc.rs`'s `written_extent`), and
+  the comment is before its operand, as upstream has it (ADR 0444).
+- **`let propName;` before `for (let propName in value)`**: a `for mut`
+  binding is declared first, for MIR's assignment each turn, and `loops`
+  takes that `let` only where it's beside the loop. **A `let` of no value
+  a function declares that only loops binding it now name goes**
+  (`loop_bound_lets`), wherever in the function the loop is.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A `continue` that
+ends a turn goes where the turn's end does; a `let` nothing reads, and
+comments, run nothing.
+
+- No corpus case's or snapshot's JS changed but the new one's.
+- `test/lowering-written-branches.test.ts`, "a for…in's continues are as
+  written, their comments in place, its mut binding its own", run;
+  `test/corpus/continues_before_break.rs` against native Rust.
+- Mutations `restored-continue-at-its-if`, `loop-tail-continue-kept`
+  (`tidy/jumps/continues.ts`), `loop-bound-let-kept` (`tidy/loops.ts`)
+  and `written-extent-of-a-binding` (`to_oxc.ts`).

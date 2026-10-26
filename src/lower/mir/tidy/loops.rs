@@ -46,6 +46,34 @@ pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>
     }
 }
 
+/// Of `body`, a function's, each `let` of no value its own statements
+/// declare that a loop binds now, `for (let propName in value)` of `for mut
+/// prop_name in js::keys_in(value)`, declared first for MIR's assignment
+/// each turn, where nothing but such loops names it: gone, as `loops` takes
+/// one beside its loop, wherever in the function the loop is.
+pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
+    let bound_by = |stmt: &Stmt| match &stmt.kind {
+        StmtKind::ForOf {
+            pattern: js::Pattern::Name(name),
+            ..
+        } => Some(name.clone()),
+        _ => None,
+    };
+    let mut bound = HashSet::new();
+    js::each_list(body, &mut |stmts| bound.extend(stmts.iter().filter_map(bound_by)));
+    if bound.is_empty() {
+        return;
+    }
+    let mut without = body.clone();
+    js::statement_lists(&mut without, &mut |stmts| {
+        stmts.retain(|s| bound_by(s).is_none_or(|name| !bound.contains(&name)))
+    });
+    body.retain(|s| {
+        !matches!(&s.kind, StmtKind::Let(name, None)
+            if bound.contains(name) && js::mentions_in(&without, name) == 0)
+    });
+}
+
 /// The step of an `Iterator` dictionary, `IIterator.next(it)` (ADR 0411).
 const DICTIONARY: &str = "dictionary";
 

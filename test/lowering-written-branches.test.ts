@@ -749,3 +749,123 @@ pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
   clearing._debugTask = task;
   expect(lib.probedBefore(clearing as never, (n: number) => n)).toBe(102);
 });
+
+// React's ReactFiberHydrationDiffs, ported: `for (const propName in props)
+// { if (!props.hasOwnProperty(propName)) { continue; } if (propName ===
+// 'children') { // Ignored.\n continue; } .. }`. Each `continue` the program
+// wrote is where it wrote it, its comment before it, in a loop that breaks
+// too; a comment inside a let-chain's test is before its operand; and a
+// `for mut` binding is the loop's `let`, no other declared (ADR 0684,
+// amended).
+test("a for…in's continues are as written, their comments in place, its mut binding its own", async () => {
+  const { js, lib } = await compiled(
+    "written-continues-in-keys",
+    `use js::Unknown;
+
+fn own(props: &Unknown, name: &str) -> bool {
+    js::get(props, name).is_some()
+}
+
+pub fn element(props: &Unknown, mut max_length: f64) -> String {
+    let mut content = String::new();
+    for prop_name in js::keys_in(props) {
+        if !own(props, prop_name.as_str()) {
+            continue;
+        }
+        if prop_name == "children" {
+            // Ignored.
+            continue;
+        }
+        let prop_value = prop_name.repeat(2);
+        max_length -= prop_name.len() as f64 + prop_value.len() as f64 + 2.0;
+        if max_length < 0.0 {
+            content += " ...";
+            break;
+        }
+        content += &(" ".to_owned() + &prop_name + "=" + &prop_value);
+    }
+    "<".to_owned() + &content + ">"
+}
+
+pub fn diffed(client: &Unknown, a: Option<&str>, b: Option<&str>) -> String {
+    let mut content = String::new();
+    for prop_name in js::keys_in(client) {
+        if !own(client, prop_name.as_str()) {
+            continue;
+        }
+        if prop_name == "children" {
+            // Handled below.
+            continue;
+        }
+        if let Some(a) = a
+            && let Some(b) = b
+            && a.len() > 1
+            // Only do the diff if the object has a lot of keys or was shortened.
+            && (b.len() > 2 || a.contains("..."))
+        {
+            content += a;
+        } else {
+            content += &prop_name;
+        }
+    }
+    content
+}
+
+pub fn described(value: Option<&Unknown>, on: bool) -> String {
+    match js::type_of(value).as_str() {
+        "string" => "text".to_string(),
+        "object" => {
+            let Some(value) = value else {
+                return "null".to_string();
+            };
+            if on {
+                let mut properties = String::new();
+                for mut prop_name in js::keys_in(value) {
+                    if prop_name.len() > 3 {
+                        prop_name = format!("{prop_name:?}");
+                    }
+                    properties += &prop_name;
+                }
+                return "{".to_owned() + &properties + "}";
+            }
+            String::new()
+        }
+        _ => "other".to_string(),
+    }
+}
+`,
+  );
+  expect(js).toContain(`  for (const propName in props) {
+    if (!own(props, propName)) {
+      continue;
+    }
+    if (propName === "children") {
+      // Ignored.
+      continue;
+    }
+    const propValue = propName.repeat(2);
+`);
+  expect(js).toContain(`    if (propName === "children") {
+      // Handled below.
+      continue;
+    }
+    if (
+      a != null &&
+      b != null &&
+      $byteLen(a) > 1 &&
+      // Only do the diff if the object has a lot of keys or was shortened.
+      ($byteLen(b) > 2 || a.includes("..."))
+    ) {
+`);
+  expect(js).toContain(`        let properties = "";
+        for (let propName in value) {
+`);
+  expect(js.match(/let propName;/g)).toBeNull();
+  expect(lib.element({ a: 1, children: 2, bb: 3 } as never, 100 as never)).toBe("< a=aa bb=bbbb>");
+  expect(lib.element({ a: 1, bbbbbb: 3 } as never, 10 as never)).toBe("< a=aa ...>");
+  expect(lib.diffed({ x: 1, children: 2, y: 3 } as never, "ab" as never, "c" as never)).toBe("xy");
+  expect(lib.diffed({ x: 1 } as never, "ab" as never, "cde" as never)).toBe("ab");
+  expect(lib.diffed({ x: 1 } as never, undefined as never, "cde" as never)).toBe("x");
+  expect(lib.described({ ab: 1, abcd: 2 } as never, true as never)).toBe('{ab"abcd"}');
+  expect([lib.described(undefined as never, true as never), lib.described({ ab: 1 } as never, false as never)]).toEqual(["other", ""]);
+});

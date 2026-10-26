@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/tidy/jumps/continues.rs (ADR 0093).
 import type { Mutation } from "../../../../../mutations";
 
+const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are as written"];
+
 export const mutations: Mutation[] = [
   {
     name: "tail-continued-label-kept",
@@ -214,5 +216,21 @@ export const mutations: Mutation[] = [
     find: "            at = e.span;\n",
     replace: "            at = test.span;\n",
     tests: ["test/port-scheduler.test.ts"],
+  },
+  {
+    name: "restored-continue-at-its-if",
+    breaks: "a `continue` restored where the program wrote it is placed at its `if`, so `written jumps` leaves it there and its comment is before the loop",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "vec![StmtKind::Continue(None).at(js::Span::NONE)]",
+    replace: "vec![StmtKind::Continue(None).at(span)]",
+    tests: keysIn,
+  },
+  {
+    name: "loop-tail-continue-kept",
+    breaks: "MIR's `continue` a loop that breaks ends its turn with stays after the `if` of one the program wrote, so its guards are one `if (a && b) { ..; continue; }`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            && tests_continue(guards, before.span)\n        {\n            body.pop();\n",
+    replace: "            && tests_continue(guards, before.span)\n        {\n",
+    tests: keysIn,
   },
 ];

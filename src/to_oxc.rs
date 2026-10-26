@@ -1121,13 +1121,17 @@ fn else_if_starts(module: &Module) -> std::collections::HashMap<u32, u32> {
 
 /// Where the Rust of `e` is, from the first of its parts placed to the end
 /// of the last: an `||` tidy made of guards is placed nowhere, its
-/// operands where they're written.
+/// operands where they're written. A part placed is all of it: what's in
+/// it is within it, or is read where it's written elsewhere, a variable
+/// where its pattern binds it, `a` of `if let Some(a) = a && ..`, which
+/// isn't where `e` is (ADR 0444, amended).
 fn written_extent(e: &js::Expr) -> Option<(u32, u32)> {
     let mut extent: Option<(u32, u32)> = None;
     e.clone().each_mut(&mut |part| {
         if !part.span.is_none() {
             let (lo, hi) = extent.unwrap_or((part.span.lo, part.span.hi));
             extent = Some((lo.min(part.span.lo), hi.max(part.span.hi)));
+            *part = js::Expr::undefined();
         }
     });
     extent

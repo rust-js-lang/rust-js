@@ -97,6 +97,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("loops", |b, h| {
                 let mut taken = mentions(b);
                 bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers));
+                loop_bound_lets(b);
             }),
             // A match's tree of tests, its arms reached through a block MIR
             // made: the chain of its arms, now that the loops are made.

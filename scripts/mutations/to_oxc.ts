@@ -566,6 +566,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
   },
   {
+    name: "written-extent-of-a-binding",
+    breaks: "an operand placed nowhere starts where a variable it reads is bound, `a` of `if let Some(a) = a && ..`, before a comment inside the test, which is then before the loop",
+    file: "src/to_oxc.rs",
+    find: "            *part = js::Expr::undefined();\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "continues are as written"],
+  },
+  {
     name: "start-rules-asked-once",
     breaks: "a comment past an operand isn't asked again whether it's outside a call's part, so one after `if` is in the test's call, `$index(\\n // c\\n entanglements, index)`",
     file: "src/to_oxc.rs",

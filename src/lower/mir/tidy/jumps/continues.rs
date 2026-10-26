@@ -15,6 +15,19 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
             | StmtKind::For { label, body, .. } => (label.clone(), body),
             _ => continue,
         };
+        // MIR's `continue` of the loop after an `if` of one the program
+        // wrote, the turn's end, which a `break` the loop has makes it
+        // write, and what can't follow it: the `if` the body's end, as
+        // without the `break`, its `continue`s each restored as below.
+        unreachable_after(body);
+        if let [.., before, last] = &body[..]
+            && matches!(&last.kind, StmtKind::Continue(l) if l.is_none() || *l == looped)
+            && last.span.is_none()
+            && matches!(&before.kind, StmtKind::If(..))
+            && tests_continue(guards, before.span)
+        {
+            body.pop();
+        }
         loop {
             match body.last().map(|s| &s.kind) {
                 Some(StmtKind::Labeled(..)) => {
@@ -47,7 +60,7 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                         unreachable!("matched")
                     };
                     if !then.last().is_some_and(ends) {
-                        then.push(StmtKind::Continue(None).at(span));
+                        then.push(StmtKind::Continue(None).at(js::Span::NONE));
                     }
                     body.push(StmtKind::If(test, then, None).at(span));
                     body.extend(otherwise);
@@ -63,7 +76,12 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                         unreachable!("matched")
                     };
                     body.push(
-                        StmtKind::If(test.negated_test(), vec![StmtKind::Continue(None).at(span)], None).at(span),
+                        StmtKind::If(
+                            test.negated_test(),
+                            vec![StmtKind::Continue(None).at(js::Span::NONE)],
+                            None,
+                        )
+                        .at(span),
                     );
                     body.extend(then);
                 }

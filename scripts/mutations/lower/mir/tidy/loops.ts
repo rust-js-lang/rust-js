@@ -323,4 +323,12 @@ export const mutations: Mutation[] = [
     replace: "        while let Some(next) = tested.next_if(|e| written(e) == of && false) {\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "an if of a break the program wrote its if"],
   },
+  {
+    name: "loop-bound-let-kept",
+    breaks: "a `for mut` binding's `let`, declared first in its function for MIR's assignment, stays beside the loop's own, `let propName; for (let propName in value)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    body.retain(|s| {\n        !matches!(&s.kind, StmtKind::Let(name, None)\n",
+    replace: "    body.retain(|s| {\n        true || !matches!(&s.kind, StmtKind::Let(name, None)\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "continues are as written"],
+  },
 ];

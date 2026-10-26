@@ -1759,7 +1759,10 @@ export function lastNamed(names) {
   0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md));
   a `continue` that ends an arm of a chain of `if`s too, `else if (..) {
   ..; continue; }`, with no label where the arms meet ([ADR
-  0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md)).
+  0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md));
+  and guards of `continue`s first in a loop that `break`s, each its own
+  `if`, its comment inside it, as React's hydration diffs write a `for…in`
+  ([ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md), amended).
 - A `while`'s test is the loop's own: an `if` of a `break` first in its
   body is the `if` the program wrote, not joined to the test, and a
   comment before a `break` or a `continue` is before it, inside its `if`,
