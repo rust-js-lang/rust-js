@@ -576,4 +576,20 @@ export const mutations: Mutation[] = [
     replace: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
   },
+  {
+    name: "branch-value-placed-nowhere",
+    breaks: "an `if`'s branches made one conditional, read in a struct literal's field, are placed nowhere, so the comment before the field is before the `return {` (ADR 0708, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                if value.span.is_none() && at_condition {\n",
+    replace: "                if false {\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field of an if's value"],
+  },
+  {
+    name: "branch-value-placed-at-pattern",
+    breaks: "an `if let`'s branches made one conditional are placed where its pattern is, so the comment before the `+` its operand follows is before the statement (ADR 0708, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                if value.span.is_none() && at_condition {\n",
+    replace: "                if value.span.is_none() {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands is before its right one"],
+  },
 ];

@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md)
 and [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md),
 whose starts a comment is before were a statement's and a conditional's
-branch's. Amended below: a `const` argument is placed where it's written.
+branch's. Amended below: a `const` argument is placed where it's written;
+and a field's value of an `if` or a method call is its field's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -193,3 +194,41 @@ mutations `object-end-comment-unplaced`, `object-end-comment-of-any-code-after`,
 `object-end-comment-printed-twice` (`to_oxc/closing.ts`),
 `object-end-comment-a-line-of-nothing-before` (`to_oxc.ts`) and
 `param-trailing-comment-after-the-line` (`to_oxc/trailing.ts`).
+
+## Amendment: a field's value of an `if` or a method call is its field's
+
+React's `getSuspendedCache` returns, after a blank line,
+
+```js
+  return {
+    // We must also save the parent, so that when we resume we can detect
+    // a refresh.
+    parent: isPrimaryRenderer
+      ? CacheContext._currentValue
+      : CacheContext._currentValue2,
+    pool: cacheFromPool,
+  };
+```
+
+whose port reads the parent through a thread-local, `parent:
+CACHE_CONTEXT.with(|cache_context| if IS_PRIMARY_RENDERER { .. } else {
+.. }).unwrap()`. Its comment was before `return {`, the blank line
+before it lost: the field's start wasn't one, so the comment went to the
+statement it's inside, from where its line is. Two things took it:
+
+- **A conditional tidy makes of an `if`'s branches was placed nowhere**:
+  `x = c ? a : b` kept the `if`'s span on its statement, not its value,
+  which a struct literal's field reads once its `const` is read in place.
+  The conditional is now placed where the `if` is (`branch_values`), as
+  what's written.
+- **Two parts that start at one place**, the field's value, `$unwrap(..)`
+  of a method call, and that call's first argument, its receiver: the
+  inner took the start, a call the comment is before, not inside, which
+  the comment skips. The outer's is kept (`part_starts`), whose whole the
+  comment may be inside.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
+Held by `test/lowering-comment-fields.test.ts`, "a comment before a field
+of an if's value or a method call's is the field's", and the mutations
+`branch-value-placed-nowhere` (`mir/tidy/branches.rs`) and
+`inner-part-start-kept` (`to_oxc.rs`).

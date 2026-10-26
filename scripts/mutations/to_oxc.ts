@@ -677,4 +677,12 @@ export const mutations: Mutation[] = [
     replace: "                let block = true;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
   },
+  {
+    name: "inner-part-start-kept",
+    breaks: "a comment before a struct literal's field whose value is a method call, `parent: x.unwrap()`, is before the `return {`, as the call's receiver's part takes its start (ADR 0708, amended)",
+    file: "src/to_oxc.rs",
+    find: "                    starts.entry(s.lo).or_insert((e.span.lo, field));\n",
+    replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field of an if's value"],
+  },
 ];

@@ -150,3 +150,93 @@ pub fn last(props: u32) -> Element {
   const keys = [lib.createContext(), lib.element(1 as never, 2 as never), lib.last(1 as never)].map((made) => Object.keys(made as object));
   expect(keys).toEqual([["_threadCount", "Provider", "Consumer"], ["props", "_owner", "ref"], ["props", "_owner", "ref", "_store"]]);
 });
+
+// React's getSuspendedCache: `return {\n // We must also save the parent ..\n
+// parent: isPrimaryRenderer ? CacheContext._currentValue : ..`, after a
+// blank line. A comment before a field whose value is an `if`, or a method
+// call on what a thread-local's `with` gives, is the field's, where the
+// `if`'s conditional or the call is read, and the blank line before the
+// literal its statement's (ADR 0708, amended).
+test("a comment before a field of an if's value or a method call's is the field's", async () => {
+  const { js, lib } = await compiled("commented-if-field", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub const IS_PRIMARY_RENDERER: bool = true;
+
+pub struct Context {
+    pub current_value: RefCell<Option<Rc<String>>>,
+    pub current_value2: RefCell<Option<Rc<String>>>,
+}
+
+thread_local! {
+    static CACHE_CONTEXT: Context = Context {
+        current_value: RefCell::new(Some(Rc::new("a".to_string()))),
+        current_value2: RefCell::new(None),
+    };
+}
+
+pub struct Pooled {
+    pub parent: Rc<String>,
+    pub pool: Rc<String>,
+}
+
+fn peek(x: u32) -> Option<Rc<String>> {
+    if x > 1 {
+        Some(Rc::new(x.to_string()))
+    } else {
+        None
+    }
+}
+
+pub fn suspended(x: u32) -> Option<Pooled> {
+    let pool = peek(x)?;
+
+    Some(Pooled {
+        // We must also save the parent, so that when we resume we can detect
+        // a refresh.
+        parent: CACHE_CONTEXT
+            .with(|context| {
+                if IS_PRIMARY_RENDERER {
+                    context.current_value.borrow().clone()
+                } else {
+                    context.current_value2.borrow().clone()
+                }
+            })
+            .unwrap(),
+        pool,
+    })
+}
+
+pub struct Pair {
+    pub first: u32,
+    pub second: u32,
+}
+
+pub fn pair(x: u32, a: u32, b: u32) -> Pair {
+    let first = x + 1;
+
+    Pair {
+        first,
+        // Which one.
+        second: if x > 2 { a } else { b },
+    }
+}
+`);
+  expect(js).toContain(`  if (pool == null) {
+    return;
+  }
+
+  return {
+    // We must also save the parent, so that when we resume we can detect
+    // a refresh.
+    parent: $unwrap(`);
+  expect(js).toContain(`  const first = (x + 1) >>> 0;
+
+  return {
+    first,
+    // Which one.
+    second: x > 2 ? a : b,
+  };`);
+  expect([(lib.suspended(2 as never) as { parent: string }).parent, lib.suspended(1 as never)]).toEqual(["a", undefined]);
+  expect(lib.pair(3 as never, 5 as never, 6 as never)).toEqual({ first: 4, second: 5 });
+});

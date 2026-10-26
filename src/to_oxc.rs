@@ -1195,9 +1195,15 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
                 }
                 _ => (Vec::new(), false),
             };
+            // Of two parts that start at one place, the outer's, whose
+            // whole a comment before them may be inside: a struct literal's
+            // field's, `// c\n parent: x.unwrap()`, not its value's call's
+            // receiver's, `$unwrap(x)`'s, which starts there too (ADR 0708,
+            // amended).
             if !e.span.is_none() {
-                let spans = spans.into_iter().filter(|s| !s.is_none());
-                starts.extend(spans.map(|s| (s.lo, (e.span.lo, field))));
+                for s in spans.into_iter().filter(|s| !s.is_none()) {
+                    starts.entry(s.lo).or_insert((e.span.lo, field));
+                }
             }
         });
     };
