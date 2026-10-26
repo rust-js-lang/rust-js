@@ -2,7 +2,8 @@
 
 Status: Accepted. Amended: a nullable function's result, kept in a
 variable or a `Drop` guard's field, is stored as it is, and a trait's
-method's isn't taken as one; stored again where it's read in place. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
+method's isn't taken as one; stored again where it's read in place; an
+`and_then` of one is `null` for `None` wherever it's kept. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
 whose `Storage::written` kept as it is only a constant and what MIR's
 `nulled` says; and [0781](0781-a-none-only-nullables-read-is-null-where-its-made.md),
 whose variable only nullable fields read was of `Option`s made, now of a
@@ -245,3 +246,32 @@ Case A, as before. Held by `test/lowering-module-variables.test.ts`, "a
 nullable thread-local of an Option is null where it's made, and what it
 gives is as it is", the task in and out of DEV, and the mutation
 `mir-tidy-stored-again-off`.
+
+## Amendment: an `and_then` of a nullable function is `null` for `None`, wherever it's kept
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The program reads
+`null` and `undefined` alike as `None` (ADR 0030; a map's `Option` key
+too, ADR 0121, amended), so which one a `None` is shows only to JS, and
+here only upstream's text tells them apart.
+
+React's `const ownerName = owner ? getComponentNameFromOwner(owner) :
+null; if (ownerName) ..`, ported `owner.filter(|owner|
+js::truthy(Some(*owner))).and_then(get_component_name_from_owner)`, was
+`owner ? getComponentNameFromOwner(owner) : undefined`: the `None` of
+`and_then` was `null` only where a nullable place stored it (above),
+and `undefined` in a variable.
+
+**An `and_then` of a function that `calls::gives_null_for_none` gives
+`null` where what it's of is `None`** (`calls::and_then_given`), so the
+whole `Option` is the function's, `null` for `None` both ways, as
+upstream writes it: `owner ? nameOfOwner(owner) : null`, `fiber != null
+? nameOf(fiber) : null`. A filter's and an `and_then`'s of one are both
+so; an optional chain, `o?.name()`, whose `None` is `undefined`, isn't
+written where `null` is asked for. A function that may give `undefined`
+is as before, `: undefined`.
+
+Held by `test/lowering-nullable.test.ts`, "an and_then of a nullable
+function is stored as it is", now with a variable tested for truth and
+one tested `is_some()`, run; mutations `and-then-of-nullable-none-undefined`
+(`lower/calls.ts`) and `filtered-and-then-none-undefined`
+(`lower/combinators.ts`).

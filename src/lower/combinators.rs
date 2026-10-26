@@ -331,7 +331,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = parts.iter().map(|part| Expr::spread(part.clone())).collect();
             return self.concat_copies(Expr::array(items), subject_ty, span);
         }
-        if let Some(value) = self.read_once(comb, boxed, subject_ty, &subject, &mut values, span, out)? {
+        if let Some(value) = self.read_once(comb, boxed, tys, &subject, &mut values, span, out)? {
             return Ok(value);
         }
         // The subject is read more than once.
@@ -493,8 +493,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::AndThen => {
                 let then = self.call_with(next(), vec![value], "then", out);
-                let then = super::calls::given_by(self.tcx, tys[1], then);
-                super::std_types::option::and_then_of(out, spilled_at.filter(|_| !boxed), some, then)
+                let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
+                super::std_types::option::and_then_of(out, spilled_at.filter(|_| !boxed), some, then, none)
             }
             // A value with a destructor its test doesn't keep is dropped once
             // the test says so, or throws (ADR 0179).
@@ -917,12 +917,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         comb: Comb,
         boxed: bool,
-        subject_ty: Ty<'tcx>,
+        tys: &[Ty<'tcx>],
         subject: &Expr,
         values: &mut Vec<Expr>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
+        let subject_ty = tys[0].peel_refs();
         // `as_deref` of an `Rc` that isn't counted, which is what it points
         // at (ADR 0023): the subject as it is, read where it's read, with
         // no `const` of it, `$index(stack, i) !== fiber`.
@@ -961,7 +962,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((kept, value)) = super::std_types::option::filtered(subject)
         {
             let then = self.call_with(values.remove(0), vec![value], "then", out);
-            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));
+            let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
+            return Ok(Some(Expr::cond(kept, then, none)));
         }
         // `filter` by the truth of what it holds, `|v| js::truthy(Some(*v))`:
         // what JS's `||` keeps of it, `o || undefined`, read once, which a

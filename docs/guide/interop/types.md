@@ -861,9 +861,12 @@ export function ratio(a, b) {
   `createTask ? createTask("lazy()") : null`; so is a nullable
   function's result, a binding's too, kept in a variable or a `Drop`
   guard's field, `ReactSharedInternals.T = prevTransition;`, or what an
-  `and_then` of one gives, `source != null ? nameOf(source) : null`, but not a
-  trait's method's, whose impl may give `undefined`
-  ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)).
+  `and_then` of one gives, `source != null ? nameOf(source) : null`, its
+  `None` `null` wherever it's kept, a variable too, `const ownerName =
+  owner ? nameOfOwner(owner) : null`, but not a trait's method's, whose
+  impl may give `undefined`
+  ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md),
+  amended).
   What's read of a nullable field is `null` or its value, so a variable
   holding it is stored as it is too, `const returnFiber = node.return;
   sibling.return = returnFiber;`, but an optional one's, absent until it's

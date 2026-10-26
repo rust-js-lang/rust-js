@@ -590,4 +590,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && self.compiled_struct_at(iterable, span)\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
+  {
+    name: "filtered-and-then-none-undefined",
+    breaks: "an `and_then` of a nullable function after a `filter` gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream writes `null` (ADR 0841, amended)",
+    file: "src/lower/combinators.rs",
+    find: "            return Ok(Some(Expr::cond(kept, then, none)));\n",
+    replace: "            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
 ];

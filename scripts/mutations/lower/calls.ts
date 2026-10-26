@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "        ty::FnDef(..) => value.defined(),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
   },
+  {
+    name: "and-then-of-nullable-none-undefined",
+    breaks: "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
+    file: "src/lower/calls.rs",
+    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),\n        _ => Expr::undefined(),\n    };\n",
+    replace: "        _ => Expr::undefined(),\n    };\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
 ];

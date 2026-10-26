@@ -238,6 +238,20 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
     super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()
 }
 
+/// What an `and_then` of `f` gives, of `then`, `f`'s call: `then`, as
+/// `given_by` has it, where what it's of is `Some`, and its `None` where
+/// that's `None`, `null` where `f` `gives_null_for_none`, as `f`'s own
+/// `None` is, so the whole `Option` is `f`'s, React's `owner ?
+/// getComponentNameFromOwner(owner) : null` (ADR 0841, amended); else
+/// `undefined`, as a `None` is.
+pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Expr) -> (Expr, Expr) {
+    let none = match f.kind() {
+        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),
+        _ => Expr::undefined(),
+    };
+    (given_by(tcx, f, then), none)
+}
+
 /// `value`, what a call of `f` gave, marked never `undefined` where `f` is
 /// a function item that `gives_null_for_none`: `and_then(name_of)`'s, which
 /// a nullable place stores as it is, as `map`'s `Some` (ADR 0841, amended).
