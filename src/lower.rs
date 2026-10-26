@@ -756,7 +756,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let js_span = self.js_span(span);
-        if let Some(why) = self.krate.foreign.unlisted(def_id) {
+        // A library's function its manifest doesn't list; not a trait's
+        // method, `Zero::is_zero`, which is its impl's, as a call of it is.
+        if self.tcx.trait_of_assoc(def_id).is_none()
+            && let Some(why) = self.krate.foreign.unlisted(def_id)
+        {
             return Err(self.tcx.dcx().span_err(span, why));
         }
         if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {

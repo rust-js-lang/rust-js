@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-trait-method-value-unlisted",
+    breaks: "a library trait's method given as a value, `all(Zero::is_zero)`, is refused as one its manifest doesn't list, not taken for its impl's",
+    file: "src/lower.rs",
+    find: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n",
+    replace: "        if let Some(why) = self.krate.foreign.unlisted(def_id)\n",
+    tests: ["test/crates.test.ts", "-t", "trait_method_as_value"],
+  },
+  {
     name: "fn-item-conversion-unasked",
     breaks: "a function given as a value whose call converts an argument, an `Option` an `IntoIterator` takes, is its name, so `map(total)` iterates the `Option`'s value and throws (#281)",
     file: "src/lower.rs",

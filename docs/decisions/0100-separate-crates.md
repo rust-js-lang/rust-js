@@ -312,3 +312,16 @@ parameter. The user allowed breaking the contract while nobody uses it.
   the JS's parameters stay as they are.
 - Held by the crate tests, `test/manifest.test.ts`'s validation of a
   record and of what isn't one, and the library mutations, retargeted.
+
+## Amendment: a library trait's method as a value is its impl's (#328)
+
+A library's function given as a value is refused where its manifest
+doesn't list it. That check ran on a trait's method too, `all(Zero::is_zero)`
+of num-traits' `Zero`, which is no item a manifest lists: it's the impl's
+it resolves to, as a call of it is. num-bigint does this, so rust-js
+refused it. **A trait's method as a value is its impl's**, imported by the
+impl's name, `every((item) => u8Zero_isZero(item))`; a function that's no
+trait's method is checked as before. Held by the crate pair
+`trait_method_as_value` and the mutation
+`library-trait-method-value-unlisted`.
+
