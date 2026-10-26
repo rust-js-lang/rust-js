@@ -4,7 +4,7 @@
 use super::super::Body;
 use super::super::body_queries::strip;
 use super::super::fn_def;
-use super::super::recognition::{StdItem, is_local_borrow, is_std_def, local_key_access};
+use super::super::recognition::{StdItem, is_local_borrow, is_local_with, is_std_def, local_key_access};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, GenericArgsRef, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
@@ -26,12 +26,15 @@ fn given<'tcx>(thir: &rustc_middle::thir::Thir<'tcx>, f: rustc_middle::thir::Exp
     }
 }
 
-/// The thread-locals only read and set, by `get`, `set`, `with_borrow` and
-/// `with_borrow_mut`: nothing shares their cell, so each is its module's
-/// variable, without a `{ value }`, exported or not, as another module
-/// only reads it (`outside_writes`, ADR 0270, amended). What a
+/// The thread-locals only read and set, by `get`, `set`, `with_borrow`,
+/// `with_borrow_mut` and `with`: nothing shares their cell, so each is its
+/// module's variable, without a `{ value }`, exported or not, as another
+/// module only reads it (`outside_writes`, ADR 0270, amended). What a
 /// `with_borrow` runs must be `quiet` of its key, borrowing nothing that
-/// may be its cell, as nothing counts its borrows (ADRs 0328, 0580, 0587).
+/// may be its cell, as nothing counts its borrows (ADRs 0328, 0580, 0587);
+/// and what a `with` runs, lent the cell itself, as one may borrow it
+/// there. Where what it's lent is handed on, its module keeps the cell
+/// (`plain_statics`).
 pub(super) fn plain_thread_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
@@ -46,10 +49,11 @@ pub(super) fn plain_thread_locals<'tcx>(
         for expr in thir.exprs.iter() {
             if let ExprKind::Call { fun, ref args, .. } = expr.kind
                 && let Some((id, _)) = fn_def(thir[fun].ty)
-                && local_key_access(tcx, id).is_some()
+                && let lends = (is_local_borrow(tcx, id) || is_local_with(tcx, id))
+                && (lends || local_key_access(tcx, id).is_some())
                 && let Some(&first) = args.first()
                 && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
-                && (!is_local_borrow(tcx, id) || {
+                && (!lends || {
                     matches!((given(thir, args[1]), &thir[strip(thir, arg)].kind),
                         (Some(given), ExprKind::NamedConst { def_id: key, .. })
                             if key.is_local() && quiet(given, *key))
@@ -75,7 +79,7 @@ pub(super) fn plain_thread_locals<'tcx>(
 /// object it holds (ADR 0863), which a write replaces. A `RefCell` of an
 /// array or an object is that object, changed in place, as any module may
 /// change an object it imports.
-pub(super) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
+pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
     if !matches!(tcx.def_kind(key), rustc_hir::def::DefKind::Const { .. }) {
         return false;
     }

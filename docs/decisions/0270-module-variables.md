@@ -2,7 +2,10 @@
 
 Status: Accepted. Amends [0037](0037-thread-locals.md). Amended below: an
 exported one is its `export let`, which only its module sets; one of an
-array or an object its module sets whole is given the new one there.
+array or an object its module sets whole is given the new one there; a
+`with_borrow_mut` given its `{ value }`, and a `with` its cell, used in
+place, leave it its variable, and an exported one its module needs the
+cell of is refused.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -179,3 +182,95 @@ module sets is its export let", read from a JS module; corpus
 `thread_local_refcell_set`'s `ports = [1, 0]`. Mutations
 `module-array-set-in-place`, `module-array-set-const` and
 `module-array-set-unexported` (`std_types/cell.rs`).
+
+## Amendment: what a borrow lends, used in place, is the variable; an exported one that needs its cell is refused
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C for what a JS
+importer reads, which the box changed, a wrong answer; A for the rest,
+each module reading and setting what it did.
+
+React's ReactFiberTransition imports `entangledTransitionTypes`, an
+`export let` of ReactFiberTransitionTypes that starts `null`, and tests
+it `!== null` before it steps it. Its port fills the `Option` where it's
+first needed:
+
+```rust
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static ENTANGLED: RefCell<Option<Vec<String>>> = const { RefCell::new(None) };
+}
+
+pub fn entangle(types: &[String]) {
+    ENTANGLED.with_borrow_mut(|entangled| {
+        let queued = entangled.get_or_insert_with(Vec::new);
+        ..
+```
+
+A `with_borrow_mut` of a number, text or an `Option` gives its closure
+the cell's `{ value }`, the box its `&mut` is (ADR 0074), which
+`plain_statics` left a `$withBorrowMut(entangled, (entangled) => {
+entangled.value ??= []; .. }, true)`: the cell stayed its box, `export
+const entangled = { value: null }`, which the importer's `!== null`
+always passed, and its `for (const t of ..)` then threw. React's
+`ReactCurrentFiber`'s `current`, set so, was `export const current = {}`
+too (`refcell_field_places`).
+
+**A quiet `with_borrow_mut`'s closure given the box is called with the
+cell itself, in place; where its body reads and sets the box only by its
+`value`, the box is the variable**, as one only set is:
+
+```js
+export let entangled = null;
+
+export function entangle(types) {
+  entangled ??= [];
+  const queued = entangled;
+  ..
+```
+
+So are `Rc::clone(shared.get_or_insert_with(..))`, `get_or_insert_default()`
+and `*n += 1`. **A `with` is read as a `with_borrow` is**: what it runs
+must be quiet of its key, and lent the cell itself, used in place,
+`COUNT.with(|count| count.set(count.get() + 1))`, is `count = (count + 1)
+>>> 0`.
+
+**Where its module needs the cell itself, one it exports is refused**, at
+its declaration: it hands on the cell, `with(bump)`, or the `&mut` of what
+it holds, `with_borrow_mut(|depth| fill(depth))` or `with_borrow_mut(fill)`;
+or it borrows it in a `with`, `with(|label| label.borrow().len())`, or
+again while a `with_borrow` of it runs (ADR 0328). The error says to read
+and set it with `get`, `set`, `with_borrow` and `with_borrow_mut`, using
+in their closures what they give, or to keep it in its module, read by a
+`pub fn`. This takes the place of "one its module hands out keeps its
+`{ value }`" above for one it exports; one it keeps is its box, as
+before, as nothing outside reads it.
+
+- **A counted `Rc`** (ADR 0852) that `get_or_insert_with` writes over may
+  run a destructor that `cell_borrows` can't see through, so its closure
+  isn't quiet, and an exported one is refused.
+
+Alternatives:
+
+- **Exporting the box**, as before: a JS importer reads an object where
+  Rust has the value, a wrong answer, which AGENTS.md ranks first.
+- **A copy of the variable in a box of its own where it's handed on**,
+  `const d = { value: depth }; fill(d); depth = d.value;`: a box and a copy
+  back upstream doesn't write, at each call, for a form the port can write
+  in the closure; left for a port that needs it.
+- **A setter written for it**: rejected above, for its export upstream
+  has none of.
+
+The corpus reads shorter: `refcell_field_places`' `current` and
+`thread_local_refcell_set`'s `count` are variables, their
+`$withBorrowMut`s gone.
+
+What holds it: `test/lowering-module-variables.test.ts`, "an exported
+Option a with_borrow_mut fills in place is its export let", read from a
+JS module, and "an exported cell its module needs the cell of is
+refused", each form refused, kept where it's private, and a `with` used in
+place a variable; `test/modules.test.ts`, "MIR's thread-local number
+changed by with_borrow_mut is its let"; corpus
+`exported_cell_filled_in_place`, against native Rust. Mutations
+`mir-quiet-box-kept`, `kept-box-refused` (`std_types/cell.rs`),
+`exported-box-unrefused` (`pipeline.rs`), `local-with-never-quiet` and
+`local-with-unasked` (`analysis/plain_locals.rs`).

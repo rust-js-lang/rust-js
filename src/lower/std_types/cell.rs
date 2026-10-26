@@ -462,25 +462,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// make its name (ADR 0270, amended): the names of those it exports so, the
 /// module's variables. One `quiet`, whose borrows ask nothing of borrows,
 /// gives the closure of each what it holds, an object's, which it shares
-/// (ADR 0328).
+/// (ADR 0328). And of `held_values`, its thread-locals of a value
+/// (`holds_a_value`), those it exports still their `{ value }`, which the
+/// caller refuses (ADR 0270, amended).
 pub(in crate::lower) fn plain_statics(
     items: &mut [js::Item],
-    quiet: &std::collections::HashSet<&str>,
-) -> Vec<(String, bool)> {
-    // The module's `{ value }` cells; a `RefCell` of an object is the
-    // object (ADR 0863), given itself, as its `with_borrow`'s third
-    // argument says.
-    let boxes: HashSet<String> = (items.iter())
-        .filter_map(|item| match item {
-            js::Item::Const(c)
-                if matches!(&c.value.kind, js::ExprKind::Object(props, ..)
-                    if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
-            {
-                Some(c.name.clone())
-            }
-            _ => None,
-        })
-        .collect();
+    quiet: &HashSet<&str>,
+    held_values: &HashSet<&str>,
+) -> (Vec<(String, bool)>, Vec<String>) {
+    // Each quiet borrow's closure, called with what its third argument says
+    // it's given: the cell itself, a `RefCell` of an object's, the object
+    // (ADR 0863), and a `with_borrow_mut`'s of a number, text or `Option`,
+    // its `{ value }`, the box its `&mut` is (ADR 0074), which its body
+    // reads and sets by `value` in place, as the variable it then is; or
+    // what it holds. One that hands its `&mut` on reads the box whole, and
+    // keeps it (ADR 0270, amended).
     js::each_item_expr_mut(items, &mut |e| {
         if let js::ExprKind::Call(callee, args) = &mut e.kind
             && matches!(callee.helper_name(), Some("$withBorrow" | "$withBorrowMut"))
@@ -488,11 +484,7 @@ pub(in crate::lower) fn plain_statics(
             && let js::ExprKind::Var(name) = &key.kind
             && quiet.contains(name.as_str())
         {
-            let itself =
-                matches!(rest, [flag] if matches!(flag.kind, js::ExprKind::Bool(true))) && !boxes.contains(name);
-            if !rest.is_empty() && !itself {
-                return;
-            }
+            let itself = matches!(rest, [flag] if matches!(flag.kind, js::ExprKind::Bool(true)));
             let (key, f) = (args.remove(0), args.remove(0));
             let given = match itself {
                 true => key,
@@ -510,11 +502,7 @@ pub(in crate::lower) fn plain_statics(
     applied_in_place(items);
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c)
-                if (!c.export || quiet.contains(c.name.as_str()))
-                    && matches!(&c.value.kind, js::ExprKind::Object(props, ..)
-                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
-            {
+            js::Item::Const(c) if (!c.export || quiet.contains(c.name.as_str())) && is_box(&c.value) => {
                 Some(c.name.clone())
             }
             _ => None,
@@ -600,13 +588,7 @@ pub(in crate::lower) fn plain_statics(
     // module writes the one it reads in place, as before.
     let objects: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c)
-                if quiet.contains(c.name.as_str())
-                    && !matches!(&c.value.kind, js::ExprKind::Object(props, ..)
-                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
-            {
-                Some(c.name.clone())
-            }
+            js::Item::Const(c) if quiet.contains(c.name.as_str()) && !is_box(&c.value) => Some(c.name.clone()),
             _ => None,
         })
         .collect();
@@ -654,7 +636,24 @@ pub(in crate::lower) fn plain_statics(
             }
         }
     }
-    exported
+    // Each exported one of a value still its `{ value }`, its cell handed
+    // out or its borrows asked of: a JS module importing it reads the box,
+    // not what it holds, so the caller refuses it (ADR 0270, amended).
+    let boxed = (items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c) if c.export && held_values.contains(c.name.as_str()) && is_box(&c.value) => {
+                Some(c.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    (exported, boxed)
+}
+
+/// Whether `made` is a thread-local's cell as its `{ value }`.
+fn is_box(made: &Expr) -> bool {
+    matches!(&made.kind, js::ExprKind::Object(props, ..)
+        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD))
 }
 
 /// Whether a function of `items`, or what the module runs when it's

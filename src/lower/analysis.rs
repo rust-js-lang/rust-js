@@ -45,6 +45,7 @@ use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names,
 };
+pub(super) use plain_locals::holds_a_value;
 use rc_counts::counted_rcs;
 pub(super) use rc_counts::{Counted, Head, head};
 use rustc_hir::def::DefKind;

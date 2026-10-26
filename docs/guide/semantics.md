@@ -355,7 +355,12 @@ borrowed while it runs, `$withBorrowMut(log, (log) => ..)`, and a second
 borrow throws as Rust's panics
 ([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 [0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
-So is one handed out by `with(|cell| ..)`, or read by another module.
+So is one whose module hands on its cell, `with(bump)`, or the `&mut`
+of what it holds, `with_borrow_mut(|depth| fill(depth))`; a `with` lends
+its closure the cell, which, used in place, is the variable too,
+`count = (count + 1) >>> 0`. One it exports so is refused, as a JS module
+importing it would read the box
+([0270](../decisions/0270-module-variables.md), amended).
 Its `set(v)` is its `replace`, what it held dropped: of a `RefCell` that's
 the array it holds, the array written in place, `$assign(taskQueue, [1,
 0])`, checked first where a borrow of it may be held

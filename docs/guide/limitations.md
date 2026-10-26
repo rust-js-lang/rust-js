@@ -73,6 +73,7 @@ depends on what the program does:
 - A `pub use` of every name of a module, `pub use m::*;`, where it has JS, which isn't re-exported yet: `pub use` each by its name ([ADR 0874](../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)): `mod shapes { pub fn area() -> u32 { 1 } } pub use shapes::*; println!("{}", area());`
 - A `pub use` of std's function or constant, in no JS module of rust-js's to be re-exported from: `pub use std::cmp::max; println!("{}", max(1, 2));`
 - A `pub use` of another rust-js crate's module, whose namespace no file of this crate's is: `pub use` each of its items by its name.
+- An exported thread-local whose module needs its cell, which a JS module importing it would read in place of what it holds: it hands on the cell or the `&mut` of what it holds, or borrows it in a `with`. Use what `with_borrow_mut` gives in its closure ([ADR 0270](../decisions/0270-module-variables.md), amended): `mod depth { use std::cell::RefCell; thread_local! { pub static DEPTH: RefCell<Option<u32>> = const { RefCell::new(None) }; } fn fill(d: &mut Option<u32>) { d.get_or_insert(3); } pub fn deepen() { DEPTH.with_borrow_mut(|d| fill(d)); } } depth::deepen(); println!("{:?}", depth::DEPTH.with_borrow(|d| *d));`
 - An impl's dictionary made where its module loads, in an import cycle
   with a module that runs code where it loads, a `thread_local!` made by
   a binding's call, or `js::on_load!`, that may reach the dictionary before

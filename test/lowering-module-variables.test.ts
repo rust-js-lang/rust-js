@@ -379,3 +379,123 @@ pub fn bump() {
   );
 });
 
+
+// React's ReactFiberTransition imports `entangledTransitionTypes`, an
+// `export let` that starts `null`, and tests it `!== null`. Its port fills
+// the `Option` where it's first needed, in place, in the closure of a
+// `with_borrow_mut`, which was given the cell's `{ value }`, the box its
+// `&mut` is: the box was exported, never `null` to a JS importer, whose
+// `for (const t of entangledTransitionTypes)` then threw. Read and set
+// there by `value` alone, the box is the variable (ADR 0270, amended).
+test("an exported Option a with_borrow_mut fills in place is its export let", async () => {
+  const dir = fixture("exported-option-filled");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static ENTANGLED: RefCell<Option<Vec<String>>> = const { RefCell::new(None) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static SHARED: RefCell<Option<Rc<Vec<u32>>>> = const { RefCell::new(None) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static DEPTH: RefCell<Option<u32>> = const { RefCell::new(None) };
+}
+
+pub fn entangle(types: &[String]) {
+    ENTANGLED.with_borrow_mut(|entangled| {
+        let queued = entangled.get_or_insert_with(Vec::new);
+        for t in types {
+            if !queued.contains(t) {
+                queued.push(t.clone());
+            }
+        }
+    });
+}
+
+pub fn first_shared() -> Rc<Vec<u32>> {
+    SHARED.with_borrow_mut(|shared| Rc::clone(shared.get_or_insert_with(|| Rc::new(vec![1]))))
+}
+
+pub fn deeper() -> u32 {
+    DEPTH.with_borrow_mut(|depth| {
+        let depth = depth.get_or_insert_default();
+        *depth += 1;
+        *depth
+    })
+}
+
+pub fn clear() {
+    ENTANGLED.set(None);
+    DEPTH.set(None);
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const libJs = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(libJs).toContain("export let entangled = null;\nexport let shared = null;\nexport let depth = null;\n");
+  expect(libJs).toContain("  entangled ??= [];\n  const queued = entangled;\n");
+  expect(libJs).toContain("  entangled = null;\n  depth = null;\n");
+  expect(libJs).not.toContain(".value");
+  expect(libJs).not.toContain("$withBorrowMut");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export let entangled: string[] | null;\n");
+  // A JS module imports it, as ReactFiberTransition.js does, and reads it.
+  writeFileSync(join(dir, "reader.js"), `import { depth, entangled } from "./lib.js";
+export const read = () => [entangled !== null ? [...entangled] : null, depth];
+`);
+  const reader = await import(join(dir, "reader.js"));
+  const lib = await import(join(dir, "lib.js"));
+  expect(reader.read()).toEqual([null, null]);
+  lib.entangle(["a", "b"]);
+  lib.entangle(["b", "c"]);
+  expect([lib.deeper(), lib.deeper()]).toEqual([1, 2]);
+  expect(reader.read()).toEqual([["a", "b", "c"], 2]);
+  expect(lib.firstShared()).toBe(lib.firstShared());
+  lib.clear();
+  expect(reader.read()).toEqual([null, null]);
+});
+
+// Where its module needs the cell itself, a JS importer of it would read
+// the box, not what it holds: an exported one is refused, saying how to
+// read and set it; one its module keeps compiles, as before; and one a
+// `with` lends its cell, used in place, is its variable (ADR 0270, amended).
+test("an exported cell its module needs the cell of is refused", () => {
+  const dir = fixture("exported-cell-boxed");
+  const compiled = (name: string, visibility: string, body: string) => {
+    mkdirSync(join(dir, name), { recursive: true });
+    writeFileSync(join(dir, name, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+thread_local! {
+    ${visibility}static DEPTH: RefCell<Option<u32>> = const { RefCell::new(None) };
+    ${visibility}static COUNT: Cell<u32> = const { Cell::new(0) };
+    ${visibility}static LABEL: RefCell<String> = const { RefCell::new(String::new()) };
+}
+
+fn fill(depth: &mut Option<u32>) {
+    depth.get_or_insert(3);
+}
+
+pub fn used() -> u32 {
+    ${body}
+}
+`);
+    const out = runSync([compiler, join(dir, name, "lib.rs"), "-o", join(dir, name, "lib.js"), "--", ...js], root, 120_000);
+    return [out.code, out.stderr, out.code === 0 ? readFileSync(join(dir, name, "lib.js"), "utf8") : ""];
+  };
+  for (const [name, body, refused] of [
+    ["mut-handed-on", "DEPTH.with_borrow_mut(|depth| fill(depth));\n    0", "DEPTH"],
+    ["fn-given", "DEPTH.with_borrow_mut(fill);\n    0", "DEPTH"],
+    ["borrowed-in-with", "LABEL.with(|label| label.borrow().len() as u32)", "LABEL"],
+  ]) {
+    const [code, stderr] = compiled(name, "pub ", body);
+    expect([name, code === 0, stderr]).toEqual([
+      name,
+      false,
+      expect.stringContaining(`\`${refused}\` is exported, so a JS module imports it as what its cell holds, its module's \`export let\`, but its module needs the cell itself`),
+    ]);
+    const [kept, keptErr] = compiled(`${name}-kept`, "", body);
+    expect([name, kept, keptErr]).toEqual([name, 0, expect.not.stringContaining("error")]);
+  }
+  const [code, stderr, withJs] = compiled("with-in-place", "pub ", "COUNT.with(|count| count.set(count.get() + 1));\n    COUNT.get()");
+  expect([code, stderr]).toEqual([0, expect.not.stringContaining("error")]);
+  expect(withJs).toContain("export let count = 0;\n");
+  expect(withJs).toContain("  count = (count + 1) >>> 0;\n  return count;\n");
+});

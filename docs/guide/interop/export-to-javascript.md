@@ -747,9 +747,13 @@ export function click() {
   ES's live binding, and `export const` where nothing sets it. Only its
   module sets it: another module's `set`, `replace`, `take` or
   `with_borrow_mut` of it, or its cell handed out by `with`, is refused,
-  so write a `pub fn` in its module that sets it, as JS does. One its own
-  module hands out by `with` is `{ value }`
-  ([ADR 0270](../../decisions/0270-module-variables.md)). A `RefCell` of
+  so write a `pub fn` in its module that sets it, as JS does. Its own
+  module's `with_borrow_mut(|depth| depth.get_or_insert_default())` sets
+  it in place, `depth ??= 0`. One whose own module needs its cell, which
+  it hands on, `with_borrow_mut(fill)`, or borrows in a `with`, is
+  refused: read and set it with `get`, `set`, `with_borrow` and
+  `with_borrow_mut`, using in their closures what they give
+  ([ADR 0270](../../decisions/0270-module-variables.md), amended). A `RefCell` of
   an array, a `Map`, a `Set` or an object is that object, which any
   module changes in place
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).

@@ -19,6 +19,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
   },
   {
+    name: "local-with-never-quiet",
+    breaks: "a thread-local a `with` lends its cell, used in place, `COUNT.with(|count| count.set(count.get() + 1))`, keeps its `{ value }`, and exported, is refused (ADR 0270, amended)",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                && let lends = (is_local_borrow(tcx, id) || is_local_with(tcx, id))\n                && (lends || local_key_access(tcx, id).is_some())\n",
+    replace: "                && let lends = is_local_borrow(tcx, id)\n                && (lends || local_key_access(tcx, id).is_some())\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module needs the cell of is refused"],
+  },
+  {
+    name: "local-with-unasked",
+    breaks: "what a `with` runs is never asked whether it borrows its cell: `LABEL.with(|label| label.borrow().len())` is its module's variable, its borrows uncounted (ADR 0270, amended)",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                && let lends = (is_local_borrow(tcx, id) || is_local_with(tcx, id))\n                && (lends || local_key_access(tcx, id).is_some())\n",
+    replace: "                && let lends = is_local_borrow(tcx, id)\n                && (lends || is_local_with(tcx, id) || local_key_access(tcx, id).is_some())\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module needs the cell of is refused"],
+  },
+  {
     name: "outside-writes-allowed",
     breaks: "another module's `flags::ENABLED.set(true)` of an exported cell compiles, a write to an import JS can't make (ADR 0270, amended)",
     file: "src/lower/analysis/plain_locals.rs",

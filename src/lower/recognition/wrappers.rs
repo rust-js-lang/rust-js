@@ -571,6 +571,15 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
     }
 }
 
+/// Is `id` a thread-local's `with`, which lends its closure the cell
+/// itself (ADR 0037)?
+pub(in crate::lower) fn is_local_with(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.inherent_impl_of_assoc(id).is_some_and(|imp| {
+        let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        matches!(owner.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
+    }) && tcx.item_name(id).as_str() == "with"
+}
+
 /// Whether `key`, a `LocalKey`, holds a `Cell`: one whose `take` and
 /// `replace` are its cell's, a read and a write, not a borrow (ADR 0595).
 pub(in crate::lower) fn local_key_of_cell(tcx: TyCtxt<'_>, key: Ty<'_>) -> bool {

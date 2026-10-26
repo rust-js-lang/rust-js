@@ -1134,9 +1134,35 @@ pub fn lower_crate<'tcx>(
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
+            // Its thread-locals of a value, each its module's variable
+            // where it's plain, by its name.
+            let held_values: HashMap<&str, rustc_span::def_id::LocalDefId> = (thread_local_inits.values())
+                .filter(|&&key| {
+                    tcx.parent_module_from_def_id(key) == module
+                        && super::analysis::holds_a_value(tcx, key.to_def_id())
+                })
+                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))
+                .collect();
             // Those it exports as its variables, `export let x`, which
-            // their importers read by name (ADR 0270, amended).
-            let made = super::std_types::cell::plain_statics(&mut lowered.items, &quiet);
+            // their importers read by name (ADR 0270, amended); one it
+            // exports still its `{ value }`, which a JS module importing
+            // it would read as the box, refused.
+            let (made, boxed) = super::std_types::cell::plain_statics(
+                &mut lowered.items,
+                &quiet,
+                &held_values.keys().copied().collect(),
+            );
+            for name in boxed {
+                let key = held_values[name.as_str()].to_def_id();
+                let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+                let name = tcx.item_name(key);
+                tcx.dcx().span_err(
+                    span,
+                    format!(
+                        "rust-js: `{name}` is exported, so a JS module imports it as what its cell holds, its module's `export let`, but its module needs the cell itself: it hands on the cell or the `&mut` of what it holds, or borrows it in a `with`, or again within a borrow of it; read and set it with `get`, `set`, `with_borrow` and `with_borrow_mut`, using in their closures what they give, or keep it private to its module and export a `pub fn` that reads it (ADR 0270, amended)"
+                    ),
+                );
+            }
             let module_variables: HashMap<DefId, bool> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
                 .filter_map(|key| {

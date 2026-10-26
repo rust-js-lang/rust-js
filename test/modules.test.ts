@@ -100,10 +100,10 @@ pub fn tick() {
   expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
 });
 
-// A thread-local `RefCell` of a number that `with_borrow_mut` changes is a
-// cell from MIR: its closure is given the cell, a box, to change, as a plain
-// number can't be.
-test("MIR's thread-local number changed by with_borrow_mut stays a cell", async () => {
+// A thread-local `RefCell` of a number that `with_borrow_mut` changes is its
+// module's `let` too: its closure, given the cell's box to change, reads and
+// sets it by `value` alone, in place, as the variable (ADR 0270, amended).
+test("MIR's thread-local number changed by with_borrow_mut is its let", async () => {
   const dir = fixture("module-let-number");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
 
@@ -117,7 +117,7 @@ pub fn bump() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("const n = { value: 0 };");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("let n = 0;\n\nexport function bump() {\n  n = (n + 1) >>> 0;\n  return n;\n}\n");
   const { bump } = await import(join(dir, "mir.js"));
   expect([bump(), bump()]).toEqual([1, 2]);
 });
