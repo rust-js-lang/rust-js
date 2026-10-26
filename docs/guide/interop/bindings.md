@@ -249,6 +249,11 @@ export function celebrate() {
 }
 ```
 
+- **A namespace is named by what it's imported from**, `greet`, where its
+  bindings are in a file of other code too; a module of no code of its own,
+  its bindings and the props they take, `mod ContextMenu`, names it,
+  `import * as ContextMenu`
+  ([ADR 0256](../../decisions/0256-namespace-import-names.md), amended).
 - **`js::import!(f)` loads a binding's module when it's asked for**:
   `js::import!(highlight).await` is `const { highlight } = await
   import("./highlight.js")`, and nothing imports it statically

@@ -429,8 +429,16 @@ test("a namespace import is named as the module of its bindings", async () => {
   writeFileSync(join(dir, "menu.js"), "export function Root() { return 1; }\nexport function Item() { return 2; }\n");
   writeFileSync(join(dir, "lib.rs"), `#[allow(non_snake_case)]
 mod ContextMenu {
+    // The props its parts take, and what's derived of them: no code of
+    // its own.
+    #[derive(Clone, Copy)]
+    pub struct RootProps {
+        pub modal: bool,
+    }
+
     #[cfg_attr(rust_js, rust_js::link_name = "./menu.js#*.Root")]
-    pub fn Root() -> u32 {
+    pub fn Root(props: RootProps) -> u32 {
+        let _ = props;
         unreachable!()
     }
 
@@ -447,19 +455,54 @@ mod side_menu {
     }
 }
 
+mod cache {
+    #[cfg_attr(rust_js, rust_js::link_name = "./scheduler.js#*.unstable_now")]
+    fn now() -> u32 {
+        unreachable!()
+    }
+
+    pub fn later() -> u32 {
+        now() + 1
+    }
+}
+
+mod clock_parts {
+    #[cfg_attr(rust_js, rust_js::link_name = "./timers.js#*.start")]
+    pub fn start() -> u32 {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "./clock.js#tick")]
+    pub fn tick() -> u32 {
+        unreachable!()
+    }
+}
+
 pub fn both() -> u32 {
-    ContextMenu::Root() + ContextMenu::Item() + side_menu::open()
+    ContextMenu::Root(ContextMenu::RootProps { modal: true }) + ContextMenu::Item() + side_menu::open() + cache::later()
+}
+
+pub fn timed() -> u32 {
+    clock_parts::start() + clock_parts::tick()
 }
 `);
+  writeFileSync(join(dir, "timers.js"), "export function start() { return 16; }\n");
+  writeFileSync(join(dir, "clock.js"), "export function tick() { return 32; }\n");
   writeFileSync(join(dir, "side.js"), "export function open() { return 4; }\n");
+  writeFileSync(join(dir, "scheduler.js"), "export function unstable_now() { return 8; }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import * as ContextMenu from "./menu.js";');
-  expect(js).toContain("ContextMenu.Root() + ContextMenu.Item()");
+  expect(js).toContain("ContextMenu.Root({ modal: true }) + ContextMenu.Item()");
   // A module's name as every Rust name is, camelCase (ADR 0573).
   expect(js).toContain('import * as sideMenu from "./side.js";');
+  // A module of other code too, which only calls a member, names it by
+  // what it's imported from, as the crate's root does (ADR 0256, amended).
+  expect(readFileSync(join(dir, "cache.js"), "utf8")).toContain('import * as scheduler from "./scheduler.js";');
+  // And one that holds another module's binding too.
+  expect(js).toContain('import * as timers from "./timers.js";');
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.both()).toBe(7);
+  expect([lib.both(), lib.timed()]).toEqual([16, 48]);
 });
 
 // A default import used only for its statics, a class's in a module named

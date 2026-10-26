@@ -57,3 +57,35 @@ was `side_menu`; `mod ContextMenu` is `ContextMenu` still. Found porting
 React's `shared/ReactSharedInternals`, whose `react#*` binding its module
 `react_shared_internals` holds: `reactSharedInternals`.
 
+## Amendment: only a module of the namespace's own (2026-10-26)
+
+A module that held the bindings of a namespace was its name, whatever
+else it held: React's `ReactFiberCacheComponent`, a module of the
+reconciler's code that binds two of `scheduler#*`'s members, imported it
+as `import * as cache from "scheduler"`, named after the importer, and
+`ReactSharedInternals`, a module of types too, `import * as
+reactSharedInternals from "react"`. A file of other code isn't the
+namespace; `mod ContextMenu`, holding only its parts, is, as JS's
+`import * as ContextMenu` is.
+
+**A module names the namespace only where it holds no code of its own**:
+bindings of the namespace, the types they take, their props, with what a
+derive or a macro writes of them (`jsx!`'s `impl Lifetimes` and props
+macro, ADR 0213) and impls of bindings, and `use`s. One of other code
+too, a function, a static or a `const` that isn't a binding of it, or of
+another module's bindings, leaves it named by what it's imported from, as
+the crate's root does: `import * as scheduler from "scheduler"`, `import *
+as react from "react"`. Upstream's `Scheduler` and `React` are capitalized: only a
+module of the namespace's own named so, `mod Scheduler`, gives that, and
+rustc's `non_snake_case` lint warns of it, so a lint-clean port reads
+`scheduler`. Case N
+([0262](0262-when-rust-and-js-disagree.md)): a name.
+
+Held by `test/modules.test.ts`'s namespace test, which adds a module of
+code calling `./scheduler.js#*.unstable_now`, one holding
+`./timers.js#*.start` beside `./clock.js#tick`, and props that derive
+`Clone` to `mod ContextMenu`; `test/jsx.test.ts`'s `<Menu.Item>`, whose
+props `jsx!` writes of; and the mutations
+`namespace-of-any-holding-module`, `namespace-module-of-other-items`,
+`namespace-module-of-another-namespace`, `namespace-module-of-props-unread`,
+`namespace-module-written-impls-unread` and `namespace-module-jsx-macro-unread`.

@@ -175,9 +175,11 @@ pub(super) fn name_imports(
                 _ => None,
             };
             // A namespace whose bindings a Rust module holds, `mod ContextMenu`,
-            // is that module's name (ADR 0256); a default class whose statics
-            // one holds, `mod app`, is the class's, `App` (ADR 0355): a module of
-            // its crate's, or of a bindings crate's, `next::app::app`.
+            // is that module's name (ADR 0256), where the module is the
+            // namespace's, holding nothing else (`holds_only`); a default
+            // class whose statics one holds, `mod app`, is the class's, `App`
+            // (ADR 0355): a module of its crate's, or of a bindings crate's,
+            // `next::app::app`.
             let module_of = |id: &DefId| {
                 let mut module = tcx.parent(*id);
                 while tcx.def_kind(module) != DefKind::Mod {
@@ -189,7 +191,7 @@ pub(super) fn name_imports(
                 let mut modules = held.iter().map(module_of);
                 let first = modules.next()?;
                 (!first.is_crate_root() && modules.all(|module| module == first))
-                    .then(|| tcx.item_name(first).to_string())
+                    .then(|| (tcx.item_name(first).to_string(), first))
             });
             let statics = uses
                 .bound_to
@@ -198,10 +200,13 @@ pub(super) fn name_imports(
             let base = match (export.as_str(), held_by, holder) {
                 _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),
                 ("default", Some(name), _) => name,
-                ("default", None, Some(module)) if statics => crate::lower::upper_first(&camel_case(&module)),
+                ("default", None, Some((module, _))) if statics => crate::lower::upper_first(&camel_case(&module)),
                 // As every Rust name is, camelCase, `side_menu` as `sideMenu`
-                // (ADR 0256, amended for ADR 0573).
-                ("*", _, Some(module)) => camel_case(&module),
+                // (ADR 0256, amended for ADR 0573). A module of other items
+                // too, a file that calls a few of its members, names it by
+                // what it's imported from, `scheduler`, as the crate's root
+                // does (ADR 0256, amended).
+                ("*", _, Some((module, id))) if holds_only(tcx, id, from) => camel_case(&module),
                 ("default" | "*", _, _) => module_binding(from),
                 _ => export.clone(),
             };
@@ -254,6 +259,52 @@ pub(super) fn name_imports(
             (module, names)
         })
         .collect()
+}
+
+/// Whether `module` is `from`'s namespace's own, of no code: what it holds
+/// are bindings of the namespace, `#*`, and the types they take, their
+/// props, with what a derive or a macro writes of them and bindings of
+/// their own, and its `use`s. `mod ContextMenu` is, as an `import * as`
+/// is; a file of other code that calls a few of its members isn't, nor a
+/// module of another module's bindings too (ADR 0256, amended).
+fn holds_only(tcx: TyCtxt<'_>, module: DefId, from: &str) -> bool {
+    let of_it = |id: DefId| {
+        let path = js_path(tcx, id);
+        path.as_deref()
+            .and_then(js_import)
+            .is_some_and(|((f, export), _)| f == from && export == "*")
+    };
+    // What declares and runs nothing: a type, a trait, and a macro, as
+    // `jsx!` writes one of a component's props (ADR 0213).
+    let a_type = |kind: DefKind| {
+        matches!(
+            kind,
+            DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait | DefKind::Macro(_)
+        )
+    };
+    let Some(local) = module.as_local() else {
+        return tcx.module_children(module).iter().all(|child| match child.res {
+            Res::Def(DefKind::Fn | DefKind::Static { .. }, id) => of_it(id),
+            Res::Def(kind, _) => a_type(kind),
+            _ => false,
+        });
+    };
+    let items = tcx.hir_module_items(LocalModId::new_unchecked(local));
+    let free = items.free_items().all(|id| {
+        let item = tcx.hir_item(id);
+        let def_id = item.owner_id.to_def_id();
+        match item.kind {
+            ItemKind::Use(..) | ItemKind::ForeignMod { .. } => true,
+            // A derive's, or what a macro writes of the props, `jsx!`'s
+            // `impl Lifetimes for PartProps` (ADR 0213), or one of bindings.
+            ItemKind::Impl(..) => {
+                item.span.from_expansion()
+                    || (tcx.associated_item_def_ids(def_id).iter()).all(|&id| is_binding(tcx, id))
+            }
+            _ => a_type(tcx.def_kind(def_id)) || of_it(def_id),
+        }
+    });
+    free && items.foreign_items().all(|id| of_it(id.owner_id.to_def_id()))
 }
 
 /// Whether a binding holds a JS module's export itself, `next/app#default`,
