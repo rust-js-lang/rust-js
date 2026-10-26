@@ -110,3 +110,21 @@ if (newLast == null) {
   `else-binding-copy-kept` and `binding-copy-kept-where-set-after`
   (`lower/mir/tidy/copied.ts`); `alias-read-placeless` by
   `test/lowering-written-loops.test.ts`.
+
+## Amendment: a `while let`'s binding too (2026-10-26)
+
+React's getNearestMountedFiber walks up, `while (parent !== null) { node =
+parent; parent = node.return; }`. Its port's `while let Some(parent_fiber)
+= parent { node = parent_fiber; parent = node.r#return.borrow().clone(); }`
+binds each step after the loop's exit, `if (parent == null) break; const
+parentFiber = parent;`, the shape a `let`-`else`'s binding has after the
+test that leaves (`copied_bindings`), which was kept wherever `parent` was
+set again. **That binding is the variable as the amendment above says**, where
+each read of it is before the variable is set: `while (parent != null) {
+node = parent; parent = node.return; }`, as React writes it. Case A, as
+above.
+
+Held by `test/lowering-shadows.test.ts`, "a while let binding read before
+its variable is set again is the variable", run in JS; the corpus case
+`binding_read_before_set.rs`'s walk of its list, against native Rust; and
+the mutation `while-let-binding-kept` (`lower/mir/tidy/copied.ts`).

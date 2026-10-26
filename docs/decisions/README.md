@@ -453,7 +453,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0431 std's conversions are one list of what's converted into what](0431-std-conversions-are-one-list.md)
 - [0432 A `return` is written where its value is made](0432-a-return-is-written-where-its-value-is-made.md)
 - [0433 What's written after a loop is after it](0433-whats-written-after-a-loop-is-after-it.md)
-- [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md) *(amended: a copy, a pattern's binding's too, is the variable where each read is before it's set, on every way)*
+- [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md) *(amended: a copy, a pattern's binding's too, is the variable where each read is before it's set, on every way; amended: a `while let`'s binding too)*
 - [0435 Rust's world and React's: each its own names, JSX the boundary](0435-rust-and-react-two-worlds.md)
 - [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0855: a parameter's `#[rust_js::name]`)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md) *(amended: a nullable result is declared `T | null`)*

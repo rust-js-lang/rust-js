@@ -99,9 +99,8 @@ function main() {
   let walk = linked([1, 2, 3, 4]);
   const seen = [];
   while (walk != null) {
-    const n = walk;
-    seen.push(n.value);
-    walk = n.next;
+    seen.push(walk.value);
+    walk = walk.next;
   }
   console.log(`[${seen.join(", ")}]`);
   console.log(`${chosen([1, 2, 3], false)} ${chosen([1, 2, 3], true)}`);

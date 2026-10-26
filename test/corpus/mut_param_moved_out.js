@@ -43,9 +43,8 @@ function main() {
   };
   let node = reverse(list);
   while (node != null) {
-    const n = node;
-    $print(`${n.value} `);
-    node = n.next;
+    $print(`${node.value} `);
+    node = node.next;
   }
   console.log("");
   console.log(`${scaled(3)}`);

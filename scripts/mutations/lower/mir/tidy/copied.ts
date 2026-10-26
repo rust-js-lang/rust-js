@@ -30,8 +30,16 @@ export const mutations: Mutation[] = [
     name: "binding-copy-kept-where-set-after",
     breaks: "a binding whose variable the block sets again past each of its reads stays `const last = newLast;`, as one set anywhere",
     file: "src/lower/mir/tidy/copied.rs",
-    find: "            let set = rebinds(rest, &a) && (declares(rest, &a) || !read_before_set(rest, &b, &a, &mut false));\n",
-    replace: "            let set = rebinds(rest, &a);\n",
+    find: "    rebinds(stmts, a) && (declares(stmts, a) || !read_before_set(stmts, b, a, &mut false))\n",
+    replace: "    rebinds(stmts, a)\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a binding of a variable set again past its reads is the variable"],
+  },
+  {
+    name: "while-let-binding-kept",
+    breaks: "`while let Some(parent_fiber) = parent { node = parent_fiber; parent = .. }` keeps `const parentFiber = parent;`, as `parent` is set again past its read",
+    file: "src/lower/mir/tidy/copied.rs",
+    find: "            if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {\n",
+    replace: "            if !rebinds(rest, &a) && !rebinds(rest, &b) && !in_closure(rest, &b) {\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a while let binding read before its variable is set again is the variable"],
   },
 ];

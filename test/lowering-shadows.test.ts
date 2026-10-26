@@ -319,3 +319,37 @@ pub fn swapped(lanes: &[i32]) -> i32 {
   const last = lib.append([1, 2, 3]) as { lane: number };
   expect([last.lane, lib.swapped([1, 2, 3])]).toEqual([3, 3]);
 });
+
+// React's getNearestMountedFiber walks up: `while (parent !== null) { node =
+// parent; parent = node.return; }`. Its port binds each step, `while let
+// Some(parent_fiber) = parent { node = parent_fiber; .. }`, read before
+// `parent` is set again: `parent`, not `const parentFiber = parent;`.
+test("a while let binding read before its variable is set again is the variable", async () => {
+  const dir = fixture("while-let-binding-read-before-set");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+    pub tag: Cell<u32>,
+}
+
+pub fn root_tag(fiber: &Rc<Fiber>) -> u32 {
+    let mut node = Rc::clone(fiber);
+    let mut parent = node.r#return.borrow().clone();
+    while let Some(parent_fiber) = parent {
+        node = parent_fiber;
+        parent = node.r#return.borrow().clone();
+    }
+    node.tag.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  while (parent != null) {\n    node = parent;\n    parent = node.return;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  const root = { return: null, tag: 3 };
+  const child = { return: { return: root, tag: 1 }, tag: 0 };
+  expect([lib.rootTag(child), lib.rootTag(root)]).toEqual([3, 3]);
+});

@@ -50,8 +50,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
             // The variable set again only past each read of the binding,
             // `last.next = clone; newLast = clone;`.
             let rest = &block[1..];
-            let set = rebinds(rest, &a) && (declares(rest, &a) || !read_before_set(rest, &b, &a, &mut false));
-            if set || rebinds(rest, &b) || in_closure(rest, &b) {
+            if set_before_read(rest, &a, &b) || rebinds(rest, &b) || in_closure(rest, &b) {
                 continue;
             }
             block.remove(0);
@@ -77,7 +76,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
         {
             let (a, b) = (a.clone(), b.clone());
             let rest = &stmts[i + 2..];
-            if !rebinds(rest, &a) && !rebinds(rest, &b) && !in_closure(rest, &b) {
+            if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
                 stmts.remove(i + 1);
                 js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                     if let ExprKind::Var(v) = &mut e.kind
@@ -90,6 +89,12 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
         }
         i += 1;
     }
+}
+
+/// Whether `stmts` declare `a` again, or set it before a read of `b`, its
+/// copy, on a way to it (ADR 0434, amended): `b` is then no `a`.
+fn set_before_read(stmts: &[Stmt], a: &str, b: &str) -> bool {
+    rebinds(stmts, a) && (declares(stmts, a) || !read_before_set(stmts, b, a, &mut false))
 }
 
 /// `const old = x; .. if (old) { const updatesForLane = old; .. }` of a
