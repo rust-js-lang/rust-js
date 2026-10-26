@@ -454,17 +454,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// A module's own `const X = { value: init }`, a thread-local's cell MIR reads
-/// by its `value`, that its module reads and sets only so, by name: `let X =
-/// init`, `X` where it's read, `const` where nothing sets it (ADR 0270). One
-/// it exports is one only where it's `quiet`, which another module only
-/// reads, by `get` and a quiet `with_borrow`, `imported_variables`'s to
+/// A module's own `const X = { value: init }`, a thread-local's cell or a
+/// `static mut` (ADR 0096, amended) MIR reads by its `value`, that its
+/// module reads and sets only so, by name: `let X = init`, `X` where it's
+/// read, `const` where nothing sets it (ADR 0270). A handle on its place,
+/// a pointer given on, `$ptr(X, "value")`, reads it whole and keeps it. One
+/// it exports is one only where it's `quiet`, as a `static mut` is, which
+/// another module only reads, by `get`, a quiet `with_borrow` or a `static
+/// mut`'s name, `imported_variables`'s to
 /// make its name (ADR 0270, amended): the names of those it exports so, the
 /// module's variables. One `quiet`, whose borrows ask nothing of borrows,
 /// gives the closure of each what it holds, an object's, which it shares
 /// (ADR 0328). And of `held_values`, its thread-locals of a value
-/// (`holds_a_value`), those it exports still their `{ value }`, which the
-/// caller refuses (ADR 0270, amended).
+/// and `static mut`s (`holds_a_value`), those it exports still their `{
+/// value }`, which the caller refuses (ADR 0270, amended).
 pub(in crate::lower) fn plain_statics(
     items: &mut [js::Item],
     quiet: &HashSet<&str>,

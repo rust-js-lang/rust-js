@@ -24,9 +24,11 @@ for (const { item, example } of examples()) {
     writeFileSync(join(dir, "main.rs"), `#![allow(unused)]\nfn main() {\n${example}\n}\n`);
     const result = Bun.spawnSync([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js")], { cwd: dir });
     const stderr = result.stderr.toString();
-    // Refused by rust-js, not rustc's error of an example written wrong.
+    // Refused by rust-js, not rustc's error of an example written wrong: a
+    // feature it lacks, `rust-js does not support`, or a rule of its own,
+    // `rust-js: ..`, as another module's write of a module's variable is.
     expect(
-      [result.exitCode === 0, stderr.includes("rust-js does not support")],
+      [result.exitCode === 0, /error: rust-js( does not support|:)/.test(stderr)],
       result.exitCode === 0 ? `it compiles: take "${item}" out of docs/guide/limitations.md` : stderr,
     ).toEqual([false, true]);
   });

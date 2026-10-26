@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "static-mut-initializer-unboxed",
-    breaks: "a `static mut` another module may write is its initializer's value, not its `{ value }`",
+    breaks: "a `static mut` of a function is its initializer's value, not its `{ value }`, which its module's variable is made of (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",
     find: "                    Some(mutability) if mutability.is_mut() => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
     replace: "",
@@ -592,5 +592,29 @@ export const mutations: Mutation[] = [
     find: "    let bound = used.chain(users).chain(effects);\n",
     replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
+  },
+  {
+    name: "static-mut-exported-boxed",
+    breaks: "a `pub static mut` isn't one of its module's variables to `plain_statics`, so it stays its `{ value }` and is refused (ADR 0096, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "                .chain(&statics)\n                .map(|key| fns[&key.to_def_id()].name.as_str())\n",
+    replace: "                .map(|key| fns[&key.to_def_id()].name.as_str())\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a pub static mut its module alone writes"],
+  },
+  {
+    name: "static-mut-pointer-export-unrefused",
+    breaks: "a `pub static mut` a pointer to is given on is `export const TOTAL = { value: 0 }`, which a JS importer reads as the box (ADR 0096, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "                .chain(&statics)\n                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
+    replace: "                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a static mut a pointer to is given on"],
+  },
+  {
+    name: "static-mut-variable-unsaid",
+    breaks: "a `static mut` that's its module's `export let` isn't one of its variables to its importers, which read its `.value`, nor to its `.d.ts` or its library's contract (ADR 0096, amended)",
+    file: "src/lower/pipeline.rs",
+    find: "                .chain(&statics)\n                .filter_map(|key| {\n",
+    replace: "                .filter_map(|key| {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "static mut"],
   },
 ];

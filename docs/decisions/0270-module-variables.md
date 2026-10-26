@@ -5,7 +5,8 @@ exported one is its `export let`, which only its module sets; one of an
 array or an object its module sets whole is given the new one there; a
 `with_borrow_mut` given its `{ value }`, and a `with` its cell, used in
 place, leave it its variable, and an exported one its module needs the
-cell of is refused.
+cell of is refused; and a `static mut` is its module's variable by the same
+rule (ADR 0096, amended).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -148,10 +149,14 @@ Alternatives, which the user weighed:
   one construct, which JS's importer can't tell apart, chosen by what
   some other module does.
 
-`static mut` (ADR 0096) is `{ value }` in its own module too, written
-from any: the same rule would make each its module's `let`, and refuse
-another module's write, which `static_mut.rs` makes. Left as it is, for
-the user to decide.
+`static mut` (ADR 0096) was `{ value }` in its own module too, written
+from any. The user decided (2026-10-26) it follows this rule: its module's
+`let`, `export let` where it's `pub`, read by its importers by name, and
+another module's write refused, `holds_a_value`'s and `outside_writes`'
+as a thread-local's is; `static_mut.rs` sets it by a `pub fn` of its
+module now (ADR 0096, amended). Where its module gives on a pointer to
+it, a handle on its box, one it exports is refused as one here its module
+needs the cell of is (below).
 
 What holds it: `test/lowering-module-variables.test.ts`, a crate's modules, a JS
 module importing one, each refused write, and a library and its
@@ -274,3 +279,14 @@ changed by with_borrow_mut is its let"; corpus
 `mir-quiet-box-kept`, `kept-box-refused` (`std_types/cell.rs`),
 `exported-box-unrefused` (`pipeline.rs`), `local-with-never-quiet` and
 `local-with-unasked` (`analysis/plain_locals.rs`).
+
+## Since: a `static mut` is one too
+
+A `static mut` is its module's state as a thread-local of a value is, one
+rule for both (ADR 0096, amended): `holds_a_value` says so of one of the
+crate's or a library's, `plain_statics` makes it its module's variable,
+`outside_writes` refuses another module's write of it, whole, of a field
+or an item, or a raw pointer taken to it, and one its module exports that
+a pointer it gives on keeps in its box is refused at its declaration
+(`refuse_boxed_export`). A library's manifest says it's a variable,
+`Calling.variable`, as of a thread-local.

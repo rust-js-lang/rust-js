@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
   },
+  {
+    name: "static-mut-pointer-refused",
+    breaks: "a raw pointer to a `static mut`, `&raw mut TOTAL`, is refused as an address, not a handle on its place (ADR 0096, amended)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                Some(_) if raw => continue,\n",
+    replace: "                Some(_) if raw => Refused::Memory(\"raw addresses of statics\"),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a static mut a pointer to is given on"],
+  },
+  {
+    name: "static-pointer-unrefused",
+    breaks: "a raw pointer to an immutable `static`, `&raw const LIMIT`, compiles, which rust-js has no place of (ADR 0096)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory(\"raw addresses of statics\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^static_raw_address.rs$"],
+  },
 ];

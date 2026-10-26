@@ -1,6 +1,8 @@
-// A `static mut` is its module's `{ value }` (ADR 0096): reads and writes
-// are of `.value`, from its own module or another. Each is read by value
-// here; a shared reference to one is in static_mut_shared.rs.
+// A `static mut` is its module's variable (ADR 0096, amended): a `let`, or
+// an `export let` that another module reads by its name, as ES's live
+// binding, and sets by a `pub fn` of its module, as JS lets only that module
+// set it. Each is read by value here; a shared reference to one is in
+// static_mut_shared.rs, and a pointer to one in static_mut_pointers.rs.
 #[derive(Clone, Copy, Debug)]
 struct Stats {
     calls: u32,
@@ -19,6 +21,12 @@ mod log {
         unsafe {
             LINES += 1;
             LINES
+        }
+    }
+
+    pub fn set_lines(lines: usize) {
+        unsafe {
+            LINES = lines;
         }
     }
 }
@@ -51,8 +59,9 @@ fn main() {
     println!("{:?} {} {} {}", stats, calls, last, slot);
     let (slots, wrap) = unsafe { (SLOTS, WRAP) };
     println!("{:?} {}", slots, wrap);
-    unsafe {
-        log::LINES = 10;
-    }
-    println!("{} {}", log::line(), log::line());
+    log::set_lines(10);
+    let set = unsafe { log::LINES };
+    println!("{} {} {}", set, log::line(), log::line());
+    let read = unsafe { log::LINES };
+    println!("{} {}", set, read);
 }

@@ -642,6 +642,81 @@ export function last() {
   ([ADR 0580](../../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
   [ADR 0587](../../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
 
+### A `static mut`
+
+A `static mut` is its module's variable by the same rule, named as written
+([ADR 0096](../../decisions/0096-statics.md), amended). Rust's own advice is
+a thread-local of a `Cell`, above; a port of code that keeps one gets the
+same JS:
+
+```rust
+// src/lib.rs
+pub mod counter;
+
+pub fn restart() -> usize {
+    counter::set_lines(10);
+    unsafe { counter::LINES }
+}
+```
+
+```rust
+// src/counter.rs
+static mut CALLS: u32 = 0;
+pub static mut LINES: usize = 0;
+
+pub fn line() -> usize {
+    unsafe {
+        CALLS += 1;
+        LINES += 1;
+        LINES
+    }
+}
+
+pub fn set_lines(lines: usize) {
+    unsafe { LINES = lines }
+}
+```
+
+```js
+// src/lib.js
+import { LINES, setLines } from "./counter.js";
+
+export function restart() {
+  setLines(10);
+  return LINES;
+}
+```
+
+```js
+// src/counter.js
+let CALLS = 0;
+export let LINES = 0;
+
+export function line() {
+  CALLS = (CALLS + 1) >>> 0;
+  LINES = (LINES + 1) >>> 0;
+  return LINES;
+}
+
+export function setLines(lines) {
+  LINES = lines;
+}
+```
+
+- **A `let`, `export let` where it's `pub`**, or another module reads it,
+  `const` where nothing writes it whole; its `.d.ts` is its type, `export
+  let LINES: number;`.
+- **Another module reads it by its name**, as it is now, ES's live
+  binding, a library's consumer too. **Only its module writes it**:
+  another's write of it, whole, a field or an item, or a pointer taken to
+  it, `&raw mut counter::LINES`, is refused, so its module writes a `pub
+  fn` that sets it, as `set_lines` does.
+- **A raw pointer to it, `&raw mut COUNT` or `addr_of_mut!(COUNT)`, is a
+  handle on its place**: written through where it's taken, `*addr_of_mut!
+  (COUNT) += 1`, it's the variable written. Given on, `add(&raw mut COUNT)`,
+  it writes the static's box, `{ value }`, which its module keeps it in; one
+  it exports is refused, as a JS module importing it would read the box.
+
 ### One chosen when the module loads
 
 A thread-local an `if` makes is a `let` each branch assigns, as JS picks

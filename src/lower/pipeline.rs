@@ -903,7 +903,8 @@ pub fn lower_crate<'tcx>(
     let edges = (pass.references.iter(), pass.held.iter(), pass.package_uses.iter());
     let imports = module_imports(&places, &fns, edges, &imported, js_modules);
     refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
-    // The exported thread-locals their modules made their variables.
+    // The exported thread-locals and `static mut`s their modules made
+    // their variables.
     let mut variables: HashSet<DefId> = HashSet::new();
     let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
@@ -1130,17 +1131,21 @@ pub fn lower_crate<'tcx>(
                     _ => {}
                 }
             }
+            // Its `static mut`s, each its module's variable as a
+            // thread-local of a value is (ADR 0096, amended).
+            let statics = super::analysis::module_statics(tcx, &consts, module);
             let quiet: HashSet<&str> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+                .chain(&statics)
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
-            // Its thread-locals of a value, each its module's variable
-            // where it's plain, by its name.
+            // Its thread-locals of a value, and its `static mut`s, each its
+            // module's variable where it's plain, by its name.
             let held_values: HashMap<&str, rustc_span::def_id::LocalDefId> = (thread_local_inits.values())
                 .filter(|&&key| {
-                    tcx.parent_module_from_def_id(key) == module
-                        && super::analysis::holds_a_value(tcx, key.to_def_id())
+                    tcx.parent_module_from_def_id(key) == module && super::analysis::holds_a_value(tcx, key.to_def_id())
                 })
+                .chain(&statics)
                 .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))
                 .collect();
             // Those it exports as its variables, `export let x`, which
@@ -1153,18 +1158,11 @@ pub fn lower_crate<'tcx>(
                 &held_values.keys().copied().collect(),
             );
             for name in boxed {
-                let key = held_values[name.as_str()].to_def_id();
-                let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
-                let name = tcx.item_name(key);
-                tcx.dcx().span_err(
-                    span,
-                    format!(
-                        "rust-js: `{name}` is exported, so a JS module imports it as what its cell holds, its module's `export let`, but its module needs the cell itself: it hands on the cell or the `&mut` of what it holds, or borrows it in a `with`, or again within a borrow of it; read and set it with `get`, `set`, `with_borrow` and `with_borrow_mut`, using in their closures what they give, or keep it private to its module and export a `pub fn` that reads it (ADR 0270, amended)"
-                    ),
-                );
+                super::analysis::refuse_boxed_export(tcx, held_values[name.as_str()].to_def_id());
             }
             let module_variables: HashMap<DefId, bool> = (quiet_locals.iter())
                 .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+                .chain(&statics)
                 .filter_map(|key| {
                     let name = &fns[&key.to_def_id()].name;
                     let &(_, set) = made.iter().find(|(made, _)| made == name)?;

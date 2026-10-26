@@ -1,6 +1,6 @@
 // A `static mut` whose value rustc can't say, a function's, is its
-// initializer's, in its `{ value }` (ADR 0096): one module's own is a `let`,
-// one another may write its cell.
+// initializer's, and its module's variable (ADR 0096, amended): a `let`, and
+// one it exports its `export let`, which only its module sets.
 fn double(x: i32) -> i32 {
     2 * x
 }

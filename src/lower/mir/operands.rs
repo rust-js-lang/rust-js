@@ -167,11 +167,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             // A pointer to a `static mut`, a handle on its `{ value }`'s place
-            // (ADRs 0096, 0407); a reference to one, the place.
+            // (ADRs 0096, 0407); a reference to one, the place. A library's
+            // is read by its name, its module's variable, as `.value` of the
+            // crate's another module reads (`cell::imported_variables`, ADR
+            // 0096, amended), and nothing outside its module writes it
+            // (`analysis::plain_locals::outside_writes`).
             Operand::Constant(c)
                 if let Some(def_id) = self.const_static(c)
                     && self.tcx.is_mutable_static(def_id)
-                    && self.krate.fns.contains_key(&def_id) =>
+                    && self.is_rust_fn(def_id) =>
             {
                 Ok(match self.is_handle_pointer(c.ty()) {
                     true => Value::Expr(Expr::call(

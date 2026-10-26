@@ -13,7 +13,7 @@ function square(x) {
 }
 
 let CURRENT = double;
-export const HANDLER = { value: { run: double, name: "double" } };
+export let HANDLER = { run: double, name: "double" };
 const TABLE = [double, square];
 
 let REGISTRY = { names: [], fallback: double };
@@ -23,13 +23,13 @@ function main() {
   CURRENT = square;
   const arg = CURRENT(5);
   console.log(`${before} ${arg}`);
-  let name = HANDLER.value.name;
-  let run = HANDLER.value.run;
+  let name = HANDLER.name;
+  let run = HANDLER.run;
   const arg$1 = run(3);
   console.log(`${name} ${arg$1}`);
-  HANDLER.value = { run: square, name: "square" };
-  name = HANDLER.value.name;
-  run = HANDLER.value.run;
+  HANDLER = { run: square, name: "square" };
+  name = HANDLER.name;
+  run = HANDLER.run;
   const arg$2 = run(3);
   console.log(`${name} ${arg$2}`);
   TABLE[0] = square;

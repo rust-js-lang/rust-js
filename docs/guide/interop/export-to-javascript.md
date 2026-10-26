@@ -757,6 +757,13 @@ export function click() {
   an array, a `Map`, a `Set` or an object is that object, which any
   module changes in place
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+- A `pub static mut` is its module's variable by the same rule, `export
+  let`, named as written: an importer reads it as it is now, only its
+  module writes it, and another module's write of it, or a pointer taken
+  to it there, is refused. One its module gives a pointer to on,
+  `add(&raw mut TOTAL)`, is refused, as its box is what the pointer writes
+  ([ADR 0096](../../decisions/0096-statics.md), amended;
+  [Module variables](global-scope.md#a-static-mut)).
 
 ## Modules and `pub use`
 

@@ -45,7 +45,7 @@ use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names,
 };
-pub(super) use plain_locals::holds_a_value;
+pub(super) use plain_locals::{holds_a_value, module_statics, refuse_boxed_export};
 use rc_counts::counted_rcs;
 pub(super) use rc_counts::{Counted, Head, head};
 use rustc_hir::def::DefKind;
@@ -871,8 +871,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),
         &quiet,
     );
-    // Another module's write of a thread-local of a value, its module's
-    // variable, which JS lets only that module set (ADR 0270, amended).
+    // Another module's write of a thread-local of a value or a `static
+    // mut`, its module's variable, which JS lets only that module set (ADRs
+    // 0270, 0096, amended).
     let variable = |key: DefId| {
         foreign
             .item(key)
@@ -881,12 +882,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let refused = plain_locals::outside_writes(tcx, all_bodies, &variable, &quiet);
     for &(span, key) in &refused {
         let name = tcx.item_name(key);
-        tcx.dcx().span_err(
-            span,
-            format!(
+        let message = match tcx.is_mutable_static(key) {
+            true => format!(
+                "rust-js: this writes `{name}`, or takes a pointer to it, from outside the module it's declared in, but `{name}` is its module's variable, which JS lets only that module set: write a `pub fn` in that module that sets it, and call that; another module reads it by its name (ADRs 0096, 0270, amended)"
+            ),
+            false => format!(
                 "rust-js: this sets `{name}`, or hands out its cell, from outside the module it's declared in, but `{name}` is its module's variable, which JS lets only that module set: write a `pub fn` in that module that sets it, and call that; another module reads it with `get` or `with_borrow` (ADR 0270, amended)"
             ),
-        );
+        };
+        tcx.dcx().span_err(span, message);
     }
     if !refused.is_empty() {
         return None;

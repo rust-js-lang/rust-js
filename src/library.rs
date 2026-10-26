@@ -77,9 +77,10 @@ pub enum ItemFact {
     /// It's a thread-local made where it's first used, read by calling it,
     /// `START()` (ADR 0037, amended).
     Lazy,
-    /// It's a thread-local that's its module's variable of what its cell
-    /// holds, `export let hasBadMapPolyfill`, read by its name, which only
-    /// its module sets (ADR 0270, amended).
+    /// It's its module's variable, read by its name, which only its module
+    /// sets: a thread-local of what its cell holds, `export let
+    /// hasBadMapPolyfill` (ADR 0270, amended), or a `static mut`, `export
+    /// let LINES` (ADR 0096, amended).
     Variable,
 }
 

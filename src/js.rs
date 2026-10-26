@@ -571,7 +571,7 @@ pub enum Known {
     /// ADR 0693, amended).
     Item,
     /// A read of another module's variable, an imported `export let x`
-    /// that its module sets (ADR 0270, amended): what it is where it's
+    /// that its module sets (ADRs 0270, 0096, amended): what it is where it's
     /// read, as ES's live binding, never another name's that read it
     /// before.
     Live,

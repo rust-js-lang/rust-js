@@ -60,8 +60,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) fields: Vec<crate::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
     pub(super) lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
-    /// The exported thread-locals that are their module's variables (ADR
-    /// 0270, amended).
+    /// The exported thread-locals and `static mut`s that are their module's
+    /// variables (ADRs 0270, 0096, amended).
     pub(super) variables: &'a HashSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],

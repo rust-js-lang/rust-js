@@ -119,8 +119,11 @@ pub(super) fn reject_unsupported(
 }
 
 /// Report each reference rust-js can't make to a static yet (ADR 0096): a
-/// `&mut` to a `static mut` or a part of one, and a raw address of any. A
-/// shared one is the value it points to, as any is. False if there was one.
+/// `&mut` to a `static mut` or a part of one, and a raw address of an
+/// immutable one. A shared one is the value it points to, as any is; a raw
+/// pointer to a `static mut`, `&raw mut COUNT`, a handle on its place (ADRs
+/// 0096, amended, 0407), which its module keeps its box for where it's
+/// given on (`std_types/cell.rs::plain_statics`). False if there was one.
 pub(super) fn reject_static_references(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
     let mut valid = true;
     for body in all_bodies {
@@ -136,7 +139,8 @@ pub(super) fn reject_static_references(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]
             };
             let refused = match static_of(thir, arg) {
                 Some(d) if tcx.is_foreign_item(d) => continue,
-                Some(_) if raw => Refused::Memory("raw addresses of statics"),
+                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory("raw addresses of statics"),
+                Some(_) if raw => continue,
                 Some(d) if tcx.is_mutable_static(d) => Refused::Feature("`&mut` references to a `static mut`"),
                 _ => continue,
             };

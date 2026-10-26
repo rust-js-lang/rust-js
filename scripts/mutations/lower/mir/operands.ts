@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "            Operand::Copy(place) | Operand::Move(place) if false && self.whole_property_cell(state, *place) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
   },
+  {
+    name: "library-static-mut-unread",
+    breaks: "a consumer's read of a library's `static mut`, `dep::LINES`, its `export let`, is refused as a constant it can't make (ADR 0096, amended)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    && self.is_rust_fn(def_id) =>\n",
+    replace: "                    && self.krate.fns.contains_key(&def_id) =>\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's static mut"],
+  },
 ];

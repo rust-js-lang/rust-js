@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0031](0031-consts.md) and [0037](0037-thread-locals.md).
 Amended: a `static mut` whose value rustc can't say is its initializer's,
 in its `{ value }`, and a static that refers to another's number is that
-number (below).
+number; a `static mut` is its module's variable, `export let` where it's
+`pub`, which only its module writes, and a raw pointer to one a handle on
+its place (below).
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -73,7 +75,8 @@ export function moved(dx) {
   still an error: that static's value may not be made yet where the
   module loads it. (Amended: each was an error.)
 
-**A `static mut` is its module's `{ value }`,** as a thread-local's `Cell`
+**A `static mut` is its module's `{ value }`** (amended below: its module's
+variable, `let COUNT = 0`), as a thread-local's `Cell`
 is (ADR 0037), holding the value rustc computed for it:
 
 ```rust
@@ -89,7 +92,8 @@ export function bump() {
 }
 ```
 
-- **Reads and writes are `COUNT.value`,** from any module: an imported JS
+- **Reads and writes are `COUNT.value`,** from any module (amended below:
+  another module reads it by its name, and can't write it): an imported JS
   binding can't be assigned, and an object's field can.
 - **A shared reference to one, `&COUNT`, is the value it points to**, as
   any shared reference is (ADR 0023): a number's is its value then, and an
@@ -99,7 +103,8 @@ export function bump() {
   `&self`. (Amended: the first version rejected every reference; 22 of
   rustc's tests stopped there, most of them counting drops; 8 more pass,
   and of the 15 left, 6 stop at what destructors don't do yet, ADR 0098.)
-- **`&mut COUNT` and `&raw mut COUNT` are rejected** for now: a `&mut` of a
+- **`&mut COUNT` and `&raw mut COUNT` are rejected** for now (amended below:
+  `&raw mut COUNT` is a handle on its place): a `&mut` of a
   number has no JS value yet.
 
 **An atomic is a `{ value }` too, as a `Cell` is**, as `static N:
@@ -119,7 +124,8 @@ their arguments do, are evaluated, as any argument is.
 
 **Rejected, with an error that says so:** an `extern` static (a foreign
 symbol), a `#[thread_local]` static (unstable), a raw address of any
-static (`&raw const X`, `addr_of!`), and a static whose value has no value
+static (`&raw const X`, `addr_of!`; amended below: of a `static mut`, a
+handle on its place), and a static whose value has no value
 tree and isn't an atomic's, as one holding a reference to another static,
 a function pointer, or a `dyn`.
 
@@ -150,7 +156,8 @@ a function pointer, or a `dyn`.
   nothing for it to run.
 - `Sync` means nothing on one thread: a static rustc accepts is one JS
   value, whatever its type's `Sync` says.
-- A `pub static mut` is an exported `{ value }` that JS can change, as
+- A `pub static mut` is an exported `{ value }` that JS can change (amended
+  below: its `export let`, which only its module writes), as
   Rust code can, in `unsafe`.
 - **A `static mut` whose value rustc can't say**, a function's, or a
   struct of one, is its initializer's, as a `static`'s is, in its `{ value
@@ -185,3 +192,111 @@ a function pointer, or a `dyn`.
   JS needs none of (ADR 0037): it isn't one of the crate's statics.
 - `#[thread_local]` is unstable, so the corpus, whose cases are modules,
   can't enable it: its rejection is a diagnostics test.
+
+## Amendment: a `static mut` is its module's variable, which only its module writes
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C for what a JS importer
+reads, a box where Rust has the value, which Rust's behavior keeps; A for
+the rest, each module reading and writing what it did. The user's choice
+(2026-10-26): the rule ADR 0270, amended, made for an exported thread-local
+of a value, one rule for a module's state, not a second mechanism.
+
+A `pub static mut LINES: usize` was `export const LINES = { value: 0 }`,
+which any module wrote, `LINES.value = 10`: a JS module importing it read
+the box, its `.d.ts` said `number`, and a library's consumer couldn't read
+it at all, "this constant, from its MIR". A thread-local of a `Cell` is its
+module's `export let` since ADR 0270's amendment, which only its module
+sets; a `static mut` had two forms of one job beside it.
+
+**A `static mut` is its module's variable, as a thread-local of a value
+is:** a `let`, `export let` where it's `pub` or another module reads it,
+`const` where nothing writes it whole; named as written.
+
+```rust
+pub mod counter {
+    pub static mut LINES: usize = 0;
+
+    pub fn line() -> usize {
+        unsafe {
+            LINES += 1;
+            LINES
+        }
+    }
+
+    pub fn set_lines(lines: usize) {
+        unsafe { LINES = lines }
+    }
+}
+```
+
+```js
+export let LINES = 0;
+
+export function line() {
+  LINES = (LINES + 1) >>> 0;
+  return LINES;
+}
+
+export function setLines(lines) {
+  LINES = lines;
+}
+```
+
+- **Its module writes it**, whole, `STATS = { calls: 0 }`, or a field or
+  an item in place, `STATS.calls = ..`, `SLOTS[i] = ..`; its `.d.ts` is
+  its type, `export let LINES: number;`.
+- **Another module reads it by its name**, `import { LINES }`, ES's live
+  binding, `Known::Live` as an exported cell's read is
+  (`cell::imported_variables`); a library's manifest says it's a variable,
+  `Calling.variable`, so its consumers read it so too.
+- **Another module's write is refused**, in the crate or a consumer's:
+  whole, `counter::LINES = 3`, `+= 1`, a field's or an item's, or a raw
+  pointer taken to it, `&raw mut counter::LINES` or `addr_of!`
+  (`analysis/plain_locals.rs::outside_writes`). The error says to write a
+  `pub fn` in its module that sets it, as JS's module exports one.
+- **A raw pointer to it is a handle on its place** (ADR 0407), as one to a
+  local is: `&raw mut COUNT` and `addr_of_mut!(COUNT)` were refused as an
+  address. One read or written through where it's taken, `*addr_of_mut!
+  (COUNT) += 2`, or reborrowed there, `&mut *addr_of_mut!(COUNT)`, is the
+  variable read or written. **One given on**, `add(&raw mut TOTAL, 3)`, is
+  `$ptr(TOTAL, "value")`, a handle on its box: its module keeps it its
+  `{ value }` (`plain_statics` reads it whole), and **one it exports is
+  refused at its declaration**, as an exported cell its module needs the
+  cell of is, saying to read and write it by its name, or through a
+  pointer only where it's taken, or to keep it private and export a `pub
+  fn` that reads it. A pointer to an immutable `static` is still refused,
+  and so is `&mut COUNT`, which Rust 2024 denies too (`static_mut_refs`).
+
+What carries it is ADR 0270's: `analysis::plain_locals::holds_a_value`
+says a `static mut` of the crate's or a library's is its module's state of
+a value, `module_statics` lists a module's, `plain_statics` makes each its
+variable as it makes a thread-local's, `outside_writes` refuses another
+module's write, `refuse_boxed_export` an exported box, and the library's
+`variables` say which are variables.
+
+Alternatives:
+
+- **Keep the `{ value }`**: one form for a JS importer, which reads the
+  box, a wrong answer, and another for a thread-local's state.
+- **A setter rust-js writes**, `export function setLines(v)`: an export
+  the Rust has none of, ADR 0270's reason; the program's own `pub fn` is
+  what JS writes.
+- **Keep the box only where another module writes it**: two forms of one
+  construct, chosen by what some other module does.
+
+`test/corpus/static_mut.rs` set `log::LINES = 10` from its crate's root;
+it calls `log::set_lines(10)` now, and reads `log::LINES` before and after
+its module writes it, against native Rust. `static_mut_fns.rs`'s `HANDLER`
+is `export let HANDLER = { run: double, name: "double" }`, set whole by its
+module. `static_mut_pointers.rs`, against native Rust, gives pointers on,
+compares them, writes through them and reborrows them.
+
+What holds it: `test/lowering-module-variables.test.ts`, "a pub static
+mut its module alone writes is its export let", read by a JS module and
+another of the crate's; "a private static mut is its module's let"; each
+write from another module refused; a library's read by its consumer and
+its write refused; and "a static mut a pointer to is given on is its box,
+refused where it's exported". The mutations `static-mut-*`,
+`static-pointer-unrefused` and `library-static-mut-unread`. Of rustc's 46
+run-pass tests in scope that use a `static mut` or a raw pointer to a
+place, none changed: 35 pass, and 11 still stop where they did.

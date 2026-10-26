@@ -1,5 +1,6 @@
-//! The thread-locals that are their module's `let` or `const` (ADR 0270),
-//! and the cells that are their function's `let` (ADR 0287).
+//! The thread-locals and `static mut`s that are their module's `let` or
+//! `const` (ADRs 0270, 0096), and the cells that are their function's
+//! `let` (ADR 0287).
 
 use super::super::Body;
 use super::super::body_queries::strip;
@@ -7,7 +8,7 @@ use super::super::fn_def;
 use super::super::recognition::{StdItem, is_local_borrow, is_local_with, is_std_def, local_key_access};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, GenericArgsRef, TyCtxt};
-use rustc_span::def_id::{DefId, LocalDefId};
+use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::HashSet;
 
 /// What a `with_borrow` is given to run: a closure made there, or a
@@ -74,12 +75,16 @@ pub(super) fn plain_thread_locals<'tcx>(
     plain
 }
 
-/// Whether `key`, a thread-local's, holds a cell whose JS is the value it
-/// holds or its `{ value }`: a `Cell`, or a `RefCell` of what isn't the
-/// object it holds (ADR 0863), which a write replaces. A `RefCell` of an
-/// array or an object is that object, changed in place, as any module may
-/// change an object it imports.
+/// Whether `key` is its module's state whose JS is the value it holds or
+/// its `{ value }`, which a write replaces: a `static mut` of the crate's or
+/// a library's (ADR 0096, amended), or a thread-local of a `Cell`, or of a
+/// `RefCell` of what isn't the object it holds (ADR 0863). A thread-local
+/// `RefCell` of an array or an object is that object, changed in place, as
+/// any module may change an object it imports.
 pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
+    if tcx.is_mutable_static(key) {
+        return !tcx.is_foreign_item(key);
+    }
     if !matches!(tcx.def_kind(key), rustc_hir::def::DefKind::Const { .. }) {
         return false;
     }
@@ -97,12 +102,43 @@ pub(in crate::lower) fn holds_a_value(tcx: TyCtxt<'_>, key: DefId) -> bool {
     }
 }
 
+/// `module`'s `static mut`s, of the crate's `consts`: each its module's
+/// variable, as a thread-local of a value is (ADR 0096, amended).
+pub(in crate::lower) fn module_statics(tcx: TyCtxt<'_>, consts: &[LocalDefId], module: LocalModId) -> Vec<LocalDefId> {
+    (consts.iter().copied())
+        .filter(|&key| {
+            tcx.parent_module_from_def_id(key) == module
+                && tcx.is_mutable_static(key.to_def_id())
+                && holds_a_value(tcx, key.to_def_id())
+        })
+        .collect()
+}
+
+/// Refuse `key`, which its module exports, where `plain_statics` left it its
+/// `{ value }`, as its module needs the box: a JS module importing it would
+/// read the box, not what it holds (ADRs 0270, 0096, amended).
+pub(in crate::lower) fn refuse_boxed_export(tcx: TyCtxt<'_>, key: DefId) {
+    let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+    let name = tcx.item_name(key);
+    let message = match tcx.is_mutable_static(key) {
+        true => format!(
+            "rust-js: `{name}` is exported, so a JS module imports it as its module's `export let`, but its module gives on a pointer to it, `&raw mut {name}` or `addr_of!({name})`, a handle on its place, which needs it in a box: read and write it by its name, or through a pointer only where it's taken, `*addr_of_mut!({name}) += 1`, or keep it private to its module and export a `pub fn` that reads it (ADRs 0096, 0270, amended)"
+        ),
+        false => format!(
+            "rust-js: `{name}` is exported, so a JS module imports it as what its cell holds, its module's `export let`, but its module needs the cell itself: it hands on the cell or the `&mut` of what it holds, or borrows it in a `with`, or again within a borrow of it; read and set it with `get`, `set`, `with_borrow` and `with_borrow_mut`, using in their closures what they give, or keep it private to its module and export a `pub fn` that reads it (ADR 0270, amended)"
+        ),
+    };
+    tcx.dcx().span_err(span, message);
+}
+
 /// Each use of a thread-local of a value (`holds_a_value`) from outside its
 /// module, another of the crate's or a consumer's, that isn't a read of
 /// it, `get` or `with_borrow`: a `set`, a `replace`, a `take`, a
-/// `with_borrow_mut`, or its cell handed out, `with` or `&KEY`. Its
-/// module's JS is its `export let`, which JS lets only that module set
-/// (ADR 0270, amended), so each is refused. A library's that's its
+/// `with_borrow_mut`, or its cell handed out, `with` or `&KEY`; and of a
+/// `static mut`, each write of it, whole, of a field or an item, and each
+/// raw pointer taken to it (ADR 0096, amended). Its module's JS is its
+/// `export let`, which JS lets only that module set (ADR 0270, amended), so
+/// each is refused. A library's thread-local that's its
 /// module's variable (`variable`) is read by `with_borrow` only where what
 /// that runs is `quiet`, as nothing counts its borrows.
 pub(super) fn outside_writes<'tcx>(
@@ -148,6 +184,19 @@ pub(super) fn outside_writes<'tcx>(
             if let ExprKind::NamedConst { def_id, .. } = expr.kind
                 && outside(def_id)
                 && !read.contains(&id)
+                && holds_a_value(tcx, def_id)
+            {
+                refused.push((expr.span, def_id));
+            }
+            // A `static mut`'s, written whole, a field or an item of it, or
+            // a pointer taken to it, a handle on its place.
+            let written = match expr.kind {
+                ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => lhs,
+                ExprKind::RawBorrow { arg, .. } => arg,
+                _ => continue,
+            };
+            if let Some(def_id) = super::validation::static_of(thir, written)
+                && outside(def_id)
                 && holds_a_value(tcx, def_id)
             {
                 refused.push((expr.span, def_id));
