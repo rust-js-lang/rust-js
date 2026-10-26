@@ -1338,18 +1338,17 @@ fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
 /// only of a `return` of a value or a `throw`, a `return;` of nothing or
 /// of `undefined` being the function's end `tail_returns` writes as a
 /// guard clause, and a `break` or `continue` a loop's, `early_breaks`'. A
-/// branch that is only the tail stays, an arm
-/// `decisions` merges with the one alike; one that reads what a branch
-/// declares stays in it; and a branch's copy written in a `let … else`'s
-/// `else` (`let_elses`), the guard's exit, stays the guard's, which
-/// `let_else_first` puts first, not the tail it's alike (ADR 0879, amended).
-pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
+/// branch that is only the tail stays, an arm `decisions` merges with the
+/// one alike; one that reads what a branch declares stays in it; one in a
+/// `let … else`'s `else` stays the guard's (ADR 0879, amended); a
+/// `switch`'s arms each keep theirs, as written (ADR 0956).
+pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span], switches: &[Switch]) {
     let guards = |tail: &[Stmt]| {
         (tail.iter()).any(|s| !s.span.is_none() && let_elses.iter().any(|e| e.lo <= s.span.lo && s.span.hi <= e.hi))
     };
     let mut i = 0;
     while i < stmts.len() {
-        let StmtKind::If(_, then, otherwise) = &stmts[i].kind else {
+        let StmtKind::If(test, then, otherwise) = &stmts[i].kind else {
             i += 1;
             continue;
         };
@@ -1359,6 +1358,7 @@ pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
                 let (kept_then, kept_else) = (&then[..then.len() - shared], &otherwise[..otherwise.len() - shared]);
                 let tail = &then[then.len() - shared..];
                 if shared == 0
+                    || super::switches::switched(test, stmts[i].span, switches)
                     || tail.last().is_some_and(ends)
                     || kept_then.is_empty()
                     || reads_declared(tail, kept_then.iter().chain(kept_else))

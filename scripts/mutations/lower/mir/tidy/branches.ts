@@ -600,4 +600,12 @@ export const mutations: Mutation[] = [
     replace: "        && !(updates(x, yes) && updates(x, no))\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "adds to its variable"],
   },
+  {
+    name: "switch-arms-tail-shared",
+    breaks: "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    || super::switches::switched(test, stmts[i].span, switches)\n",
+    replace: "                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
+  },
 ];

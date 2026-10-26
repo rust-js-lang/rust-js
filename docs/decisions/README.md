@@ -740,6 +740,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0953 Two values' truths joined are the truth of the two, `!!(a && b)`](0953-truths-joined-are-the-truth-of-the-two.md)
 - [0954 A call that never returns ends what it's in](0954-a-call-that-never-returns-ends.md)
 - [0955 A `return` of a function's call of values is copied as one value is, React's getTag one switch](0955-a-returned-call-of-values-is-one-value.md)
+- [0956 The arms of a `switch` keep their statements, a tail they share too](0956-switch-arms-keep-their-tails.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

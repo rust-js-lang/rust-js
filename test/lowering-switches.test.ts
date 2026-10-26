@@ -1325,3 +1325,78 @@ test("an or-pattern of an Option's strings leaves its None arm the default", () 
   }
 }`);
 });
+
+// ADR 0956: React's commitAttachRef, a `switch` of a case per tag, two
+// arms of which end in the same value: each case's statements as written,
+// not their tail shared after a smaller `switch` of an `if` chain's `else`.
+test("arms of a switch that end alike are each their case's", async () => {
+  const dir = fixture("switch-arms-sharing-a-tail");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Fiber {
+    pub tag: Cell<u8>,
+    pub state_node: Cell<Option<&'static js::Unknown>>,
+}
+
+pub const HOST_COMPONENT: u8 = 5;
+pub const FRAGMENT: u8 = 7;
+pub const VIEW_TRANSITION_COMPONENT: u8 = 30;
+pub const ENABLE_VIEW_TRANSITION: bool = true;
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsPublic", rust_js::nullable)]
+fn get_public_instance(instance: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    let _ = instance;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsFragment")]
+fn create_fragment_instance(fiber: &Fiber) -> &'static js::Unknown {
+    let _ = fiber;
+    unreachable!()
+}
+
+pub fn attach(finished_work: &Fiber) -> Option<&'static js::Unknown> {
+    let instance_to_use = match finished_work.tag.get() {
+        HOST_COMPONENT => get_public_instance(finished_work.state_node.get()),
+        VIEW_TRANSITION_COMPONENT => {
+            if ENABLE_VIEW_TRANSITION {
+                get_public_instance(None)
+            } else {
+                finished_work.state_node.get()
+            }
+        }
+        FRAGMENT => {
+            if finished_work.state_node.get().is_none() {
+                finished_work
+                    .state_node
+                    .set(Some(create_fragment_instance(finished_work)));
+            }
+            finished_work.state_node.get()
+        }
+        _ => finished_work.state_node.get(),
+    };
+    instance_to_use
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  switch (finishedWork.tag) {\n    case HOST_COMPONENT:\n");
+  expect(js).toContain(
+    "    case FRAGMENT:\n      finishedWork.stateNode ??= rustJsFragment(finishedWork);\n      instanceToUse = finishedWork.stateNode;\n      break;\n    default:\n      instanceToUse = finishedWork.stateNode;\n  }\n",
+  );
+  const global = globalThis as Record<string, unknown>;
+  global.rustJsPublic = (x: unknown) => ["public", x ?? null];
+  global.rustJsFragment = () => "fragment";
+  const lib = await import(join(dir, "lib.js"));
+  const node = {};
+  expect([
+    lib.attach({ tag: 5, stateNode: node }),
+    lib.attach({ tag: 30, stateNode: node }),
+    lib.attach({ tag: 7, stateNode: null }),
+    lib.attach({ tag: 7, stateNode: node }),
+    lib.attach({ tag: 1, stateNode: node }),
+  ]).toEqual([["public", node], ["public", null], "fragment", node, node]);
+});
