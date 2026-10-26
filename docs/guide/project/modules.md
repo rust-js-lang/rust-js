@@ -759,7 +759,10 @@ functions, is set apart as a person sets it ([ADR
 
 A comment written on a struct literal's field is the field's, after its
 value on its line or on lines of their own before it, and a field that's
-`None`, which JS leaves out, keeps its key for it, `v: undefined, // why`
+`None`, which JS leaves out, keeps its key for it, `v: undefined, // why`;
+one on lines of their own speaks of the `None`s written right after its
+field too, up to another field or a blank line, `// We'll initialize these
+at the root.` of two, and each keeps its key
 ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 One before an `unsafe` block is its code's
 ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):

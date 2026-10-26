@@ -128,8 +128,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// index, a comment is written on: after its value on its line, `v:
     /// Cell::new(None), // why`, in it, or on lines of their own right
     /// before it. A `None`'s keeps its key there, the comment's place (ADR
-    /// 0280, amended).
-    fn commented_fields(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
+    /// 0280, amended). One on lines of their own speaks of the `None`s
+    /// written right after its field too, `written_none` of their declared
+    /// index, as `// We'll initialize these at the root.` does of
+    /// `current_value` and `current_value2`: each keeps its key with it, up
+    /// to another field, a blank line or another comment (ADR 0280,
+    /// amended again).
+    fn commented_fields(
+        &self,
+        adt: &ty::AdtDef<'tcx>,
+        variant_index: VariantIdx,
+        span: Span,
+        written_none: &dyn Fn(usize) -> bool,
+    ) -> Vec<usize> {
         use rustc_lexer::TokenKind;
         let Some(made) = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Adt(made)
@@ -163,7 +174,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .and_then(|(_, first)| text[..first.start].rfind('{'))
             .map_or(0, |brace| brace + 1);
         let close = text.rfind('}').unwrap_or(text.len());
-        (0..fields.len())
+        // What's written between a field's value and the one before.
+        let between = |k: usize| {
+            let before = if k == 0 { open } else { fields[k - 1].1.end };
+            text.get(before..fields[k].1.start)
+        };
+        // Whether a comment on lines of their own is right before it.
+        let headed =
+            |k: usize| (between(k).and_then(|lead| lead.find('\n').map(|n| &lead[n..]))).is_some_and(commented);
+        let mut at: Vec<usize> = (0..fields.len())
             .filter(|&k| {
                 let value = &fields[k].1;
                 // From the line after what's before it, to its line's end.
@@ -176,8 +195,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let end = tail.find('\n').map_or(next, |n| value.end + n);
                 text.get(start..end).is_some_and(commented)
             })
-            .map(|k| fields[k].0.as_usize())
-            .collect()
+            .collect();
+        // The `None`s right after a field a comment heads, each on the line
+        // after the one before it, with no comment between.
+        for k in (0..fields.len()).filter(|&k| headed(k)) {
+            for (j, (name, _)) in fields.iter().enumerate().skip(k + 1) {
+                let next_line = between(j).is_some_and(|gap| !commented(gap) && gap.matches('\n').count() <= 1);
+                if !next_line || !written_none(name.as_usize()) {
+                    break;
+                }
+                at.push(j);
+            }
+        }
+        at.sort_unstable();
+        at.dedup();
+        at.into_iter().map(|k| fields[k].0.as_usize()).collect()
     }
 
     /// How the struct or variant literal made at `span` is written, which
@@ -333,7 +365,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
-                commented = (self.commented_fields(&adt_def, variant_index, span).into_iter())
+                let written_none = |i: usize| given.get(i) == Some(&Given::WrittenNone);
+                let at = self.commented_fields(&adt_def, variant_index, span, &written_none);
+                commented = (at.into_iter())
                     .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
                     .collect();
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))

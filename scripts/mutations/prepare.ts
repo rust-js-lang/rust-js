@@ -671,7 +671,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: " && !layout.commented.contains(key))",
     replace: ")",
-    tests: ["test/lowering-comments.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
   },
   {
     name: "assigned-test-unmade",
