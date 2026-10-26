@@ -208,3 +208,12 @@ and `firstDiff++`, run against native Rust; `lowering-numbers.test.ts`'s "a
 const pointer to a cell keeps its variable unknown", a `RefCell`'s vec
 cleared through one, its index checked still; and the mutations
 `const-pointer-of-shared-volatile` and `string-deref-not-read`.
+
+## Amendment: a loop over a range's `rev()` (#356)
+
+`for i in (0..v.len()).rev()` gave `i` no range, where the same loop over
+`0..v.len()` puts `i` below `v`'s length, so `v[i]` was `$index(v, i)`.
+**A range's `rev()` is the range's items, in the other order**: `walk_for`
+reads `Iterator::rev` of a range as the range. Held by
+`lowering-numbers.test.ts`'s "an integer below another's value doesn't
+wrap" and the mutation `rev-for-unranged`.

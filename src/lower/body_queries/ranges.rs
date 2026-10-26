@@ -9,7 +9,7 @@
 
 use super::*;
 use crate::lower::bindings::reads_string_length;
-use crate::lower::recognition::{VecView, counts_utf16_units, once_method, vec_view};
+use crate::lower::recognition::{VecView, counts_utf16_units, is_iterator_rev, once_method, vec_view};
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
@@ -1156,7 +1156,15 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// slice: the range's end is its length as the loop began.
     fn walk_for(&mut self, for_loop: ForLoop<'a, 'tcx>, known: &mut Option<Known>) {
         let thir = self.thir;
-        let head = strip(thir, for_loop.head);
+        let mut head = strip(thir, for_loop.head);
+        // A range's `rev()`, its items the same, from its end (#356).
+        if let ExprKind::Call { fun, ref args, .. } = thir[head].kind
+            && let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
+            && is_iterator_rev(self.tcx, def_id)
+            && let [range] = args[..]
+        {
+            head = strip(thir, range);
+        }
         // Its start and end, and how far below its end its last item is:
         // `a..b`'s 1, `a..=b`'s, `RangeInclusive::new(a, b)`, 0.
         let bounds = match thir[head].kind {

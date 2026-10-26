@@ -822,6 +822,24 @@ pub fn through(n: u32) -> Vec<u32> {
     found
 }
 
+pub fn backwards(v: &[u32]) -> u32 {
+    let mut s = 0;
+    for i in (0..v.len()).rev() {
+        s += v[i] * i as u32;
+    }
+    s
+}
+
+pub fn back_through(v: &[u32], n: usize) -> u32 {
+    let mut s = 0;
+    if n < v.len() {
+        for i in (0..=n).rev() {
+            s += v[i];
+        }
+    }
+    s
+}
+
 pub fn sum_below(xs: &[u32], n: usize) -> u32 {
     let mut sum = 0;
     let mut i = 0;
@@ -842,11 +860,14 @@ pub fn sum_below(xs: &[u32], n: usize) -> u32 {
   expect(js).toContain("    found.push((n - k) >>> 0);\n");
   expect(js).toContain("      return (n - k - 1 - 1) >>> 0;\n");
   expect(js).toContain("      sum = (sum + xs[i]) >>> 0;\n");
+  // A range's \`rev()\` is the range's items (#356).
+  expect(js).toContain("    s = (s + (Math.imul(v[i], i) >>> 0)) >>> 0;\n");
+  expect(js).toContain("      s = (s + v[i]) >>> 0;\n");
   // \`k\` of \`1..=n\` is from 1 to \`n\` (#337).
   expect(js).toContain("    found.push(Math.imul(k - 1, n - k) >>> 0);\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.reversed(3), lib.coefficients(3), lib.coefficients(0xffffffff)]).toEqual([[2, 1, 0], [3, 2, 1], []]);
-  expect([lib.tested(5, 2), lib.tested(5, 9), lib.past(1), lib.shrunk(5, 3), lib.sumBelow([1, 2, 3], 2), lib.through(3)]).toEqual([2, 4, [1, 0, 0xffffffff], 0xffffffff, 3, [0, 1, 0]]);
+  expect([lib.tested(5, 2), lib.tested(5, 9), lib.past(1), lib.shrunk(5, 3), lib.sumBelow([1, 2, 3], 2), lib.through(3), lib.backwards([1, 2, 3]), lib.backThrough([1, 2, 3], 1)]).toEqual([2, 4, [1, 0, 0xffffffff], 0xffffffff, 3, [0, 1, 0], 8, 3]);
 });
 
 // ADR 0682: a JS string's `length` is at most 2^31 - 1, as every engine's

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "rev-for-unranged",
+    breaks: "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "            && is_iterator_rev(self.tcx, def_id)\n",
+    replace: "            && !is_iterator_rev(self.tcx, def_id)\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+  },
+  {
     name: "inclusive-for-unranged",
     breaks: "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
     file: "src/lower/body_queries/ranges.rs",
