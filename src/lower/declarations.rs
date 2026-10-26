@@ -26,9 +26,11 @@ use super::representation::Num;
 
 mod comments;
 mod imports;
+mod parts;
 mod written;
 
 use comments::documented;
+use parts::{flattened_keys, opaque_fn_signature};
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -81,6 +83,15 @@ pub(super) fn module<'tcx>(
     let mut items = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
+        // A class whose struct is another module's, declared where its
+        // constructor function is (ADR 0761, amended).
+        if let Some(class) = super::classes::declared_by(tcx, def_id, module)
+            .filter(|&class| class != def_id && tcx.visibility(class).is_public())
+        {
+            out.erased = out.erased(class);
+            items.push(documented(out.class(class), tcx, class));
+            continue;
+        }
         let held = held_default == Some(def_id);
         if !(held || tcx.visibility(def_id).is_public()) || is_mark(tcx, def_id) || named_default == Some(def_id) {
             continue;
@@ -88,7 +99,9 @@ pub(super) fn module<'tcx>(
         out.erased = out.erased(def_id);
         let declaration = match tcx.def_kind(def_id) {
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
-            DefKind::Struct if super::classes::is_class(tcx, def_id) => Some(out.class(def_id)),
+            DefKind::Struct if super::classes::is_class(tcx, def_id) => {
+                super::classes::declared_by(tcx, def_id, module).map(|class| out.class(class))
+            }
             DefKind::Struct => out.structure(def_id),
             DefKind::Enum => Some(out.enumeration(def_id)),
             DefKind::Union => Some(out.union_type(def_id)),
@@ -189,6 +202,11 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
         DefKind::Enum | DefKind::Union => true,
         _ => false,
     }
+}
+
+/// The name a crate's type is declared by: a class's its JS name.
+fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
+    super::classes::name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())
 }
 
 /// An item's type parameters bound by a trait that says what it is to
@@ -847,7 +865,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         members.splice(0..0, constructor);
         json!({
             "kind": "class",
-            "name": self.tcx.item_name(def_id).as_str(),
+            "name": type_name(self.tcx, def_id),
             "exported": true,
             "declare": true,
             "members": members,
@@ -1404,7 +1422,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if !declares_type(tcx, did) {
                     return keyword("any");
                 }
-                let home = tcx.parent_module_from_def_id(local);
+                // A class's where its constructor function is.
+                let home = super::classes::home(tcx, did).unwrap_or_else(|| tcx.parent_module_from_def_id(local));
                 // This module's own private type, `struct DiagramGroupProps`,
                 // which its exported function names: declared here, not
                 // exported (ADR 0385). Another module's isn't its to declare.
@@ -1439,58 +1458,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let Some(path) = self.files.get(&home) else {
                         return keyword("any");
                     };
-                    self.imported(path.clone(), did, tcx.item_name(did).to_string());
+                    self.imported(path.clone(), did, type_name(tcx, did));
                 }
                 let type_args = self.type_args(did, args);
-                reference(tcx.item_name(did).as_str(), type_args)
+                reference(&type_name(tcx, did), type_args)
             }
             _ => keyword("any"),
         }
     }
-}
-
-/// What an `impl Fn(A, B) -> R` takes and gives, by its bounds, `Fn`'s and
-/// its `Output`, of `alias`'s arguments: `None` of another `impl Trait`.
-fn opaque_fn_signature<'tcx>(tcx: TyCtxt<'tcx>, alias: ty::AliasTy<'tcx>) -> Option<(Vec<Ty<'tcx>>, Ty<'tcx>)> {
-    let mut inputs = None;
-    let mut output = tcx.types.unit;
-    let ty::Opaque { def_id } = alias.kind else { return None };
-    let bounds = tcx
-        .explicit_item_bounds(def_id)
-        .iter_instantiated_copied(tcx, alias.args);
-    for (clause, _) in bounds.map(|bound| bound.skip_normalization()) {
-        if let Some(bound) = clause.as_trait_clause().map(|b| b.skip_binder())
-            && tcx.fn_trait_kind_from_def_id(bound.def_id()).is_some()
-            && let ty::Tuple(items) = bound.trait_ref.args.type_at(1).kind()
-        {
-            inputs = Some(items.to_vec());
-        }
-        if let Some(projection) = clause.as_projection_clause().map(|p| p.skip_binder())
-            && tcx.is_lang_item(projection.def_id(), LangItem::FnOnceOutput)
-            && let Some(given) = projection.term.as_type()
-        {
-            output = given;
-        }
-    }
-    Some((inputs?, output))
-}
-
-/// The JS names of `ty`'s fields, a flattened struct's, or one's it
-/// refers to, and of those of the flattened struct in it (ADR 0205).
-fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<String> {
-    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
-        return Vec::new();
-    };
-    if !adt.is_struct() {
-        return Vec::new();
-    }
-    let mut keys = Vec::new();
-    for field in &adt.non_enum_variant().fields {
-        if is_flatten(tcx, field) {
-            keys.extend(flattened_keys(tcx, field.ty(tcx, args).skip_normalization()));
-        } else {
-            keys.push(field_key(tcx, field));
-        }
-    }
-    keys
 }

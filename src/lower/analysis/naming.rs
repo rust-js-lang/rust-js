@@ -501,9 +501,11 @@ pub(super) fn name_items(
         let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));
         let (name, owner) = match owner_type {
             Some(ty) => {
-                let owner = owners
-                    .entry((module, ty))
-                    .or_insert_with(|| fresh_in(names, tcx.item_name(ty).as_str()));
+                // A class is its constructor function, named as its struct's
+                // `#[rust_js::name]` says, `FiberNode` of React's `Fiber`, as
+                // a binding's class is (ADR 0761, amended).
+                let named = crate::lower::classes::name(tcx, ty).unwrap_or_else(|| tcx.item_name(ty).to_string());
+                let owner = owners.entry((module, ty)).or_insert_with(|| fresh_in(names, &named));
                 // A property, so a name JS reserves for variables, like `new`, is fine.
                 let names = methods.entry((module, ty)).or_default();
                 let name = crate::names::fresh_apart(names, &js_name);

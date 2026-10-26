@@ -289,6 +289,7 @@ test("what a class is refused says what to write", () => {
     ["class-tuple", "#[cfg_attr(rust_js, rust_js::class)]\npub struct C(pub u32);\n#[cfg_attr(rust_js, rust_js::class)]\nimpl C {\n    pub fn new() -> Self {\n        C(0)\n    }\n}\n", "is a struct of named fields"],
     ["class-method-of-a-field", `${head}${marked}${made}    pub fn n(&self) -> u32 {\n        self.n\n    }\n}\n`, "has no method or constant named as its field, `n`, which `this.n` would hide"],
     ["class-of-no-class", "pub struct S;\npub fn f() -> &'static js::Class {\n    js::class::<S>()\n}\n", "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct"],
+    ["class-instance-set-again", `${head}${marked}    pub fn new(fresh: bool) -> Self {\n        let mut c = C { n: 0 };\n        if fresh {\n            c = C { n: 1 };\n        }\n        c\n    }\n}\n`, "a constructor whose instance is set again, not changed in place"],
   ];
   for (const [name, rust, message] of cases) {
     expect(refused(name, rust)).toContain(message);
@@ -621,4 +622,166 @@ pub fn all(positions: &[QueenPosition]) -> String {
   const position = new QueenPosition(2, 1);
   expect([position.toString(), String(position), `${position}`]).toEqual(["2,1", "2,1", "2,1"]);
   expect([shown(position), text(position), all([position, new QueenPosition(0, 3)])]).toEqual(["at 2,1", "2,1", "2,1 0,3"]);
+});
+
+// ADR 0761, amended: React's `function FiberNode(tag, ..) { this.tag =
+// tag; ..; if (enableProfilerTimer) { this.actualDuration = -0; } if
+// (__DEV__) { this._debugOwner = null; Object.preventExtensions(this); }
+// }`. A constructor's statements are the constructor function's: the
+// variable it returns, made of a struct literal, is `this`, its fields set
+// where it's made, a `None`'s left out as an object's is (ADR 0280), and
+// each read of it `this`, a handle on its field's place the instance's,
+// named. The struct's `#[rust_js::name]` is the class's, `FiberNode` of
+// `Fiber`, declared where its constructor function is, though its struct
+// is another module's, ReactInternalTypes'.
+test("a constructor's statements set this, of a class named apart from its struct, in another module", async () => {
+  const dir = fixture("class-constructor-statements");
+  writeFileSync(join(dir, "lib.rs"), `pub mod internal_types {
+    use std::cell::Cell;
+
+    use js::Unknown;
+
+    /// A fiber.
+    #[cfg_attr(rust_js, rust_js::class, rust_js::name = "FiberNode")]
+    pub struct Fiber {
+        pub tag: Cell<u8>,
+        pub memoized_state: Cell<Option<&'static Unknown>>,
+        pub actual_duration: Cell<Option<f64>>,
+        #[cfg_attr(rust_js, rust_js::name = "_debugOwner")]
+        pub debug_owner: Cell<Option<&'static Unknown>>,
+        pub reads: Cell<u32>,
+    }
+
+    unsafe impl js::Defined for Fiber {}
+}
+
+pub mod fiber {
+    use std::cell::Cell;
+
+    use crate::internal_types::Fiber;
+
+    thread_local! {
+        static ENABLE_PROFILER_TIMER: Cell<bool> = const { Cell::new(true) };
+    }
+
+    fn bump(count: &Cell<u32>) {
+        count.set(count.get() + 1);
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Fiber {
+        pub fn new(tag: u8, dev: bool) -> Self {
+            let fiber = Fiber {
+                tag: Cell::new(tag),
+                memoized_state: Cell::new(js::NULL),
+                actual_duration: Cell::new(None),
+                debug_owner: Cell::new(None),
+                reads: Cell::new(0),
+            };
+            if ENABLE_PROFILER_TIMER.get() {
+                fiber.actual_duration.set(Some(-0.0));
+            }
+            if dev {
+                fiber.debug_owner.set(js::NULL);
+                bump(&fiber.reads);
+                js::object::prevent_extensions(&fiber);
+            }
+            fiber
+        }
+
+        pub fn work_tag(&self) -> u8 {
+            self.tag.get()
+        }
+    }
+
+    pub fn create_fiber(tag: u8, dev: bool) -> Fiber {
+        Fiber::new(tag, dev)
+    }
+
+    pub fn profile(on: bool) {
+        ENABLE_PROFILER_TIMER.set(on);
+    }
+}
+`);
+  run([compiler, ...flags(dir)]);
+  const js = readFileSync(join(dir, "fiber.js"), "utf8");
+  const ts = readFileSync(join(dir, "fiber.d.ts"), "utf8");
+  expect(js).toContain(`/** A fiber. */
+export function FiberNode(tag, dev) {
+  const fiberNode = this;
+  this.tag = tag;
+  this.memoizedState = null;
+  this.reads = 0;
+  if (enableProfilerTimer) {
+    this.actualDuration = -0;
+  }
+  if (dev) {
+    this._debugOwner = null;
+`);
+  expect(js).toContain("    Object.preventExtensions(this);\n  }\n}\n");
+  expect(js).toContain("  return new FiberNode(tag, dev);\n");
+  expect(ts).toContain("export declare class FiberNode {\n    constructor(tag: number, dev: boolean);\n");
+  expect(ts).toContain("export function createFiber(tag: number, dev: boolean): FiberNode;\n");
+  const { FiberNode, createFiber, profile } = await import(join(dir, "fiber.js"));
+  const fiber = createFiber(3, true);
+  expect(fiber).toBeInstanceOf(FiberNode);
+  expect([fiber.workTag(), fiber.reads, Object.is(fiber.actualDuration, -0), fiber._debugOwner, Object.isExtensible(fiber)])
+    .toEqual([3, 1, true, null, false]);
+  profile(false);
+  const plain = createFiber(5, false);
+  expect(["actualDuration" in plain, "_debugOwner" in plain, Object.isExtensible(plain)]).toEqual([false, false, true]);
+});
+
+// A class whose `==` is its address's and whose `Hash` is too, React's
+// fibers in a `Set`: `ptr::eq` and `ptr::hash`, equal only to itself, as
+// JS's `===` and a `Set` are of an object (ADR 0864); its impls have no JS
+// of their own, so a class may have them (ADR 0761, amended).
+test("a class equal only to itself compares by ===", async () => {
+  const { js, dir } = compiled("class-identity", `use std::cell::Cell;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct FiberNode {
+    pub tag: Cell<u8>,
+}
+
+unsafe impl js::Defined for FiberNode {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl FiberNode {
+    pub fn new(tag: u8) -> Self {
+        FiberNode { tag: Cell::new(tag) }
+    }
+}
+
+impl PartialEq for FiberNode {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FiberNode {}
+
+impl Hash for FiberNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(self, state);
+    }
+}
+
+pub fn counted() -> (bool, bool, usize) {
+    let a = Rc::new(FiberNode::new(1));
+    let b = Rc::new(FiberNode::new(1));
+    let mut set = HashSet::new();
+    set.insert(Rc::clone(&a));
+    set.insert(Rc::clone(&a));
+    set.insert(Rc::clone(&b));
+    (a == Rc::clone(&a), a == b, set.len())
+}
+`);
+  expect(js).not.toContain("$eq");
+  expect(js).not.toContain("fiberNodePartialEq");
+  const { counted } = await import(join(dir, "lib.js"));
+  expect(counted()).toEqual([true, false, 2]);
 });

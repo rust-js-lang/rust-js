@@ -3,7 +3,11 @@
 Status: Accepted, by the user's decision of 2026-10-24. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
-constructor function's (below). Extended by
+constructor function's (below). Amended (2026-10-26, the user's
+decision): a constructor of statements makes its instance in a variable,
+`this`; the struct's `#[rust_js::name]` names the class, declared where
+its constructor is; a `PartialEq` and a `Hash` of its address are
+allowed. Extended by
 [0911](0911-a-bindings-class-is-the-global-typescript-names.md):
 `js::class::<T>()` of a binding's type is the global class TypeScript
 names it.
@@ -325,3 +329,79 @@ mutations `class-display-no-member`, `class-display-refused`,
 `class-writer-called-by-name`, `class-to-string-given-undefined`,
 `class-display-dictionary-impl`, `class-display-dictionary-emitted` and
 `class-to-string-undeclared`.
+
+## Amendment: a constructor of statements, a class's name, its home and its identity (2026-10-26)
+
+React's ReactFiber.js makes a fiber with a constructor function of
+statements, of a struct ReactInternalTypes declares:
+
+```js
+function FiberNode(tag, pendingProps, key, mode) {
+  this.tag = tag;
+  ..
+  if (enableProfilerTimer) {
+    this.actualDuration = -0;
+    ..
+  }
+  if (__DEV__) {
+    this._debugOwner = null;
+    ..
+    Object.preventExtensions(this);
+  }
+}
+```
+
+A class's `new` was one struct literal, so it couldn't set a field on a
+flag nor call anything on `this`; a `None` field was `this.x =
+undefined;`; the class was named as its struct, `Fiber`; a struct of
+another module had its declaration nowhere, `createFiber(): any`; and a
+fiber's `PartialEq` of `ptr::eq` and `Hash` of `ptr::hash`, which a `Set`
+of fibers needs, were refused as a trait's methods. The user decided
+(2026-10-26) the form to build: an extension of the class form, one way.
+
+- **A constructor of statements makes its instance in a variable**, the
+  one its last statement returns, made of a struct literal, as Rust
+  writes a value it changes before giving it: `let fiber = Fiber { .. };
+  if on { fiber.actual_duration.set(Some(-0.0)); } fiber`. That value is
+  `this` (`classes::instance_as_this`): its literal's fields are set on
+  `this` where it's made, each read of it is `this`, an early `return
+  fiber` is `return;`, and a handle on its field is on the instance, named
+  outside the handle's accessors, as a method's is (#359). Set again,
+  `fiber = Fiber { .. }`, it's refused, as `this` can't be.
+- **A `None` field is left out**, `this.actualDuration` set only where the
+  flag sets it, as an object's is (ADR 0280): `js::undefined_keys`, moved
+  from preparation to the owned AST so the constructor's lowering and
+  preparation ask one rule.
+- **The struct's `#[rust_js::name]` names the class**, its constructor
+  function, its `new` calls and its declaration, `FiberNode` of `Fiber`,
+  as a binding's class is named (`bindings::class_name`).
+- **A class is where its constructor function is** (`classes::home`):
+  its declaration is in that module's `.d.ts`, imported from there, though
+  its struct is another module's.
+- **A `PartialEq` and a `Hash` of its address**, `ptr::eq` and
+  `ptr::hash`, of a class equal only to itself (ADR 0864), are allowed:
+  `==` is `===` and a `HashSet` a `Set` of the objects, with no JS of
+  their own. The check runs where the crate's trait impls are known.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A; a `None` field left
+out is ADR 0280's A, what reads it reads `undefined` either way.
+
+The corpus's share of `return;` in docs/readability.txt grew, 10.2 to
+10.3 in 10,000 lines: `class_constructor_statements`'s early `return
+fiber`, which a constructor function returns as `return;`, as above.
+
+Not decided here: React's `createFiberImplObject`, the object form
+`enableObjectFiber` picks, is a struct literal of the class outside its
+`new`, still refused.
+
+Held by `test/classes.test.ts`, "a constructor's statements set this, of
+a class named apart from its struct, in another module", "a class equal
+only to itself compares by ===" and the refusals' "class-instance-set-
+again", run in Node; corpus `class_constructor_statements`, against
+native Rust; and mutations `class-instance-not-this`,
+`class-instance-set-again-allowed`, `class-constructor-none-set`,
+`class-constructor-handle-on-this`, `class-instance-return-kept`,
+`class-identity-impls-refused`, `class-home-the-structs`
+(`lower/classes.rs`), `class-declared-by-its-struct-name`,
+`class-of-another-modules-struct-undeclared` (`lower/declarations.rs`) and
+`class-named-by-its-struct` (`lower/analysis/naming.rs`).

@@ -13,6 +13,7 @@ mod expr_walk;
 mod make;
 pub mod result;
 mod stmt_walk;
+pub mod undefined_keys;
 mod walk;
 mod writes;
 

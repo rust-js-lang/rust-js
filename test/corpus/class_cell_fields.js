@@ -11,7 +11,6 @@ function bump(count) {
 export function Counted(row) {
   this.row = row;
   this.reads = 0;
-  this.last = undefined;
 }
 
 Counted.prototype.rowCounted = function () {

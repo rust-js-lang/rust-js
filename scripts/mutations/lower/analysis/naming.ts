@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "        return \"show\".to_owned();\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
+  {
+    name: "class-named-by-its-struct",
+    breaks: "a class's `#[rust_js::name = \"FiberNode\"]` is ignored, its constructor function `Fiber`",
+    file: "src/lower/analysis/naming.rs",
+    find: "                let named = crate::lower::classes::name(tcx, ty).unwrap_or_else(|| tcx.item_name(ty).to_string());\n",
+    replace: "                let named = tcx.item_name(ty).to_string();\n",
+    tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
+  },
 ];

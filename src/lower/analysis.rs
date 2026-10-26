@@ -626,7 +626,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         || !reject_flatten_misuse(tcx, &all_bodies)
         || !reject_rest_misuse(tcx)
         || !reject_parameter_name_misuse(tcx)
-        || !super::classes::reject_misuse(tcx, &all_bodies)
     {
         return None;
     }
@@ -657,6 +656,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             }
             impls
         });
+    // A class's misuse, which asks whether it's equal only to itself, of
+    // its impls (ADR 0761, amended).
+    let classes_recognition = Recognition {
+        tcx,
+        typing_env: ty::TypingEnv::fully_monomorphized(),
+        trait_impls: &trait_impls,
+        foreign: &foreign,
+    };
+    if !super::classes::reject_misuse(&classes_recognition, &all_bodies) {
+        return None;
+    }
     // The impls that get a dictionary: not `From`'s (ADR 0052), nor serde's,
     // whose evidence is a codec (ADR 0081), nor a JS object's `Deref` to the
     // class it extends, which is never lowered: its dictionary is std's,

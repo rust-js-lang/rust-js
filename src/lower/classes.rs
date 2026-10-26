@@ -149,6 +149,38 @@ pub(crate) fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
         .find(|&item| member(tcx, item) == Some(Member::Constructor))
 }
 
+/// The module a class `adt`, the crate's, is in: its constructor
+/// function's, its `fn new`'s impl's, where its declaration is too, though
+/// its struct is another module's, React's `Fiber` of ReactInternalTypes
+/// made in ReactFiber (ADR 0761, amended); `None` of what's no class.
+pub(crate) fn home(tcx: TyCtxt<'_>, adt: DefId) -> Option<rustc_span::def_id::LocalModId> {
+    Some(tcx.parent_module_from_def_id(constructor_of(tcx, adt)?.as_local()?))
+}
+
+/// The class `module`'s item `item` declares: a class's struct, where its
+/// constructor function is too, or the impl of its constructor, where its
+/// struct is another module's (ADR 0761, amended).
+pub(crate) fn declared_by(tcx: TyCtxt<'_>, item: DefId, module: rustc_span::def_id::LocalModId) -> Option<DefId> {
+    let adt = match tcx.def_kind(item) {
+        DefKind::Struct => item,
+        DefKind::Impl { of_trait: false } => class_of_impl(tcx, item).filter(|&adt| {
+            constructor_of(tcx, adt).and_then(|new| tcx.inherent_impl_of_assoc(new)) == Some(item)
+                && adt
+                    .as_local()
+                    .is_some_and(|struct_| tcx.parent_module_from_def_id(struct_) != module)
+        })?,
+        _ => return None,
+    };
+    (is_class(tcx, adt) && home(tcx, adt).is_none_or(|home| home == module)).then_some(adt)
+}
+
+/// The JS name of `adt`, a class: its constructor function's, its
+/// struct's `#[rust_js::name]`, `FiberNode` of React's `Fiber`, as a
+/// binding's class is named (ADR 0761, amended); `None` of what's no class.
+pub(crate) fn name(tcx: TyCtxt<'_>, adt: DefId) -> Option<String> {
+    is_class(tcx, adt).then(|| crate::lower::bindings::class_name(tcx, adt))
+}
+
 fn is_constructor_name(name: Symbol) -> bool {
     name.as_str() == CONSTRUCTOR
 }
@@ -169,7 +201,12 @@ pub(crate) fn const_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 
 /// Report what a crate does with a class that rust-js refuses (ADR 0761).
 /// False if there was one.
-pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
+pub(super) fn reject_misuse<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    bodies: &[&Body<'tcx>],
+) -> bool {
+    let tcx = recognition.tcx;
+    let by_id: std::collections::HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|&body| (body.def_id, body)).collect();
     let mut valid = true;
     let mut refuse = |span, what: &str| {
         tcx.dcx()
@@ -275,12 +312,21 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
             }
             // A trait's methods would be a dictionary's, given the value,
             // not the prototype's: only a marker's, of no items, `unsafe
-            // impl js::Defined`, and `Display`'s, its `toString` (#358).
+            // impl js::Defined`, and `Display`'s, its `toString` (#358); and
+            // a `PartialEq` and a `Hash` of its address, `ptr::eq` and
+            // `ptr::hash`, of one equal only to itself, which JS's `===` and
+            // a `Set` are of an object, with no JS of their own (ADR 0864;
+            // ADR 0761, amended).
             DefKind::Impl { of_trait: true } if displayed_class(tcx, id).is_none() => {
                 let self_ty = tcx.type_of(id).instantiate_identity().skip_normalization();
+                let trait_id = tcx.impl_trait_id(id);
+                let identity = (tcx.lang_items().eq_trait() == Some(trait_id)
+                    || opt_std_item(tcx, StdItem::Hash) == Some(trait_id))
+                    && crate::lower::std_impls::equal_only_to_itself(recognition, &by_id, self_ty);
                 if let ty::Adt(adt, _) = self_ty.kind()
                     && is_class(tcx, adt.did())
                     && !tcx.associated_item_def_ids(id).is_empty()
+                    && !identity
                 {
                     let name = tcx.def_path_str(tcx.impl_trait_id(id));
                     refuse(
@@ -333,7 +379,9 @@ pub(super) fn as_member(
         return Ok(());
     };
     match member {
-        Member::Constructor => set_this(&mut function.body),
+        // Its instance a handle may be kept on the place of, a field's, as
+        // a method's `this` (#359).
+        Member::Constructor => set_this(&mut function.body).map(|()| this_outside_accessors(class, &mut function.body)),
         Member::Method | Member::Getter => {
             this_outside_accessors(class, &mut function.body);
             Ok(())
@@ -424,10 +472,92 @@ pub(super) fn receiver_as_this(
     Ok(())
 }
 
+/// The assignments to `this` of a constructor's struct literal's fields,
+/// `this.a = a;`, each where its value is, or at `span`: not of a field
+/// that's `undefined`, a `None`, which an object leaves out (ADR 0280), as
+/// JS's constructor function sets no property it hasn't a value of.
+fn fields_set(props: Vec<Prop>, layout: &js::ObjectLayout, span: js::Span) -> Result<Vec<Stmt>, &'static str> {
+    let mut props = props;
+    js::undefined_keys::left_out(&mut props, layout);
+    let mut out = Vec::with_capacity(props.len());
+    for prop in props {
+        match prop {
+            Prop::Field(name, value) => {
+                // Where its value is, which its comment is before.
+                let at = if value.span.is_none() { span } else { value.span };
+                out.push(StmtKind::Assign(Expr::member(Expr::this(), name), value).at(at));
+            }
+            _ => return Err("a constructor whose struct literal has a field of no name"),
+        }
+    }
+    Ok(out)
+}
+
+/// Of a constructor's `body`, the variable its last statement returns,
+/// made of a struct literal where it's declared and never set again,
+/// `let fiber = Fiber { .. }; if on { fiber.x.set(..); } fiber`: that
+/// value is `this`, its literal's fields set on it where it's declared,
+/// each read of it `this`, `Object.preventExtensions(this)`, and each
+/// `return fiber` `return;`, the body's last none (ADR 0761, amended).
+fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
+    let Some(Stmt {
+        kind: StmtKind::Return(Some(Expr {
+            kind: ExprKind::Var(instance),
+            ..
+        })),
+        ..
+    }) = body.last()
+    else {
+        return Ok(());
+    };
+    let instance = instance.clone();
+    let Some(at) = body.iter().position(|stmt| {
+        matches!(&stmt.kind,
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))
+                if *name == instance && matches!(value.kind, ExprKind::Object(..)))
+    }) else {
+        return Ok(());
+    };
+    let mut set_again = false;
+    js::each_list(body, &mut |list| {
+        set_again |= list.iter().any(
+            |stmt| matches!(&stmt.kind, StmtKind::Assign(Expr { kind: ExprKind::Var(v), .. }, _) if *v == instance),
+        );
+    });
+    if set_again {
+        return Err("a constructor whose instance is set again, not changed in place");
+    }
+    let made = body.remove(at);
+    let (StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))) = made.kind else {
+        unreachable!("the instance's declaration")
+    };
+    let ExprKind::Object(props, layout) = value.kind else {
+        unreachable!("a struct literal")
+    };
+    let fields = fields_set(props, &layout, made.span)?;
+    body.splice(at..at, fields);
+    body.pop();
+    js::statement_lists(body, &mut |list| {
+        for stmt in list.iter_mut() {
+            if matches!(&stmt.kind, StmtKind::Return(Some(Expr { kind: ExprKind::Var(v), .. })) if *v == instance) {
+                stmt.kind = StmtKind::Return(None);
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if *v == instance) {
+            e.kind = ExprKind::This;
+        }
+    });
+    Ok(())
+}
+
 /// Each `return { a, b }` of `body` its fields set on `this`, `this.a =
 /// a; this.b = b;`, and `return;` where it's not the body's last; not a
-/// closure's, whose `return` is its own.
+/// closure's, whose `return` is its own. Or the instance a variable holds,
+/// `instance_as_this`.
 fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
+    instance_as_this(body)?;
     let mut fine = Ok(());
     let mut outermost = true;
     js::statement_lists(body, &mut |list| {
@@ -443,22 +573,15 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             }
             let span = stmt.span;
             let StmtKind::Return(Some(Expr {
-                kind: ExprKind::Object(props, ..),
+                kind: ExprKind::Object(props, layout),
                 ..
             })) = stmt.kind
             else {
                 unreachable!("a struct literal returned")
             };
-            for prop in props {
-                match prop {
-                    Prop::Field(name, value) => {
-                        // Where its value is, which its comment is before.
-                        let at = if value.span.is_none() { span } else { value.span };
-                        let field = Expr::member(Expr::this(), name);
-                        out.push(StmtKind::Assign(field, value).at(at));
-                    }
-                    _ => fine = Err("a constructor whose struct literal has a field of no name"),
-                }
+            match fields_set(props, &layout, span) {
+                Ok(fields) => out.extend(fields),
+                Err(why) => fine = Err(why),
             }
             if Some(i + 1) != last {
                 out.push(StmtKind::Return(None).at(span));

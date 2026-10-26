@@ -754,8 +754,98 @@ export function mounted(props?: unknown | null | undefined): Component;
 
 - **Its fields are `this`'s**, and its `fn new(..) -> Self` is the
   constructor function: the struct literal it returns is `this.props =
-  props;`, each field in the order it's written. The struct's `///` doc
-  is the constructor function's JSDoc, before `new`'s own.
+  props;`, each field in the order it's written, a `None`'s left out, as
+  an object leaves it out. The struct's `///` doc is the constructor
+  function's JSDoc, before `new`'s own.
+- **A constructor of statements makes its instance in a variable**, as
+  React's `FiberNode` sets fields on its flags and calls
+  `Object.preventExtensions(this)`: the variable it returns, made of a
+  struct literal, is `this`, its fields set where it's made, and what's
+  done with it in between is done with `this`. Set again, `fiber = Fiber
+  { .. }`, it's refused:
+
+```rust
+use std::cell::Cell;
+
+use js::Unknown;
+
+thread_local! {
+    static ENABLE_PROFILER_TIMER: Cell<bool> = const { Cell::new(true) };
+}
+
+#[cfg_attr(rust_js, rust_js::class, rust_js::name = "FiberNode")]
+pub struct Fiber {
+    pub tag: Cell<u8>,
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+    pub actual_duration: Cell<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::name = "_debugOwner")]
+    pub debug_owner: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Fiber {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Fiber {
+    pub fn new(tag: u8, dev: bool) -> Self {
+        let fiber = Fiber {
+            tag: Cell::new(tag),
+            memoized_state: Cell::new(js::NULL),
+            actual_duration: Cell::new(None),
+            debug_owner: Cell::new(None),
+        };
+        if ENABLE_PROFILER_TIMER.get() {
+            fiber.actual_duration.set(Some(-0.0));
+        }
+        if dev {
+            fiber.debug_owner.set(js::NULL);
+            js::object::prevent_extensions(&fiber);
+        }
+        fiber
+    }
+}
+
+pub fn create_fiber(tag: u8, dev: bool) -> Fiber {
+    Fiber::new(tag, dev)
+}
+```
+
+```js
+const enableProfilerTimer = true;
+
+export function FiberNode(tag, dev) {
+  this.tag = tag;
+  this.memoizedState = null;
+  if (enableProfilerTimer) {
+    this.actualDuration = -0;
+  }
+  if (dev) {
+    this._debugOwner = null;
+    Object.preventExtensions(this);
+  }
+}
+
+export function createFiber(tag, dev) {
+  return new FiberNode(tag, dev);
+}
+```
+
+```ts
+export declare class FiberNode {
+    constructor(tag: number, dev: boolean);
+    tag: number;
+    memoizedState: unknown | null | undefined;
+    actualDuration: number | null | undefined;
+    _debugOwner: unknown | null | undefined;
+}
+
+export function createFiber(tag: number, dev: boolean): FiberNode;
+```
+
+- **The struct's `#[rust_js::name]` names the class**, `FiberNode` of
+  React's `Fiber`, as a binding's class is named, in its JS and its
+  declaration. The class is where its impl is, its constructor function
+  and its declaration both, though its struct is another module's, as
+  React's `Fiber` is ReactInternalTypes' and its `FiberNode` ReactFiber's.
 - **A method of `&self` or `&mut self` is the prototype's**, a `function`
   reading `this`, not an arrow, so `this` is the instance it's called on,
   a JS subclass's too. A Rust call of it is a call of it on the value,
@@ -779,6 +869,10 @@ export function mounted(props?: unknown | null | undefined): Component;
   `{p}` and `p.to_string()` are JS's text of it, `${p}`, so JS's
   `String(p)` gives Rust's text too, and a `T: Display` given it shows it
   by `String`. It's declared `toString(): string`.
+- **Its `PartialEq` of `std::ptr::eq` and `Hash` of `std::ptr::hash`**,
+  equal only to itself, as React's fibers in a `Set` are, have no JS of
+  their own: `a == b` is `a === b`, and a `HashSet` of them a `Set` of
+  the objects ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).
 - **`js::class::<T>()` is the constructor itself**, `Component`, a
   `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
   a prototype chain is written with, as JS writes it. Of a binding's
@@ -798,9 +892,10 @@ export function mounted(props?: unknown | null | undefined): Component;
   which the attribute, where Rust meets JS, says.
 - **Refused, each with what to write**: a tuple or unit struct; a generic
   one; a struct literal of it outside its `new`, which would be no
-  instance; a trait impl of it with items but `Display`'s, a
-  `derive(Clone)` among them, whose methods would be a dictionary's, not
-  the prototype's; a method of
+  instance; a trait impl of it with items but `Display`'s and those of
+  its address, a `derive(Clone)` among them, whose methods would be a
+  dictionary's, not the prototype's; a constructor's instance set again; a
+  method of
   `self` by value; a method or constant named as a field, which
   `this.name` would hide; a class of no `new`; and the attribute on one
   of the struct and its impl alone.

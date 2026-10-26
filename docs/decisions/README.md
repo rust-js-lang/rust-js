@@ -616,7 +616,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
-- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; extended by 0911: a binding's class is the global TypeScript names)*
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
