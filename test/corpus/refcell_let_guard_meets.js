@@ -11,9 +11,8 @@ function main() {
   const v = $borrow(cell, true);
   const n = v.length;
   console.log(`${n}`);
-  const p = cell;
   try {
-    const borrowMut = $borrowMut(p, true);
+    const borrowMut = $borrowMut(cell, true);
     try {
       borrowMut.push(0);
     } finally {

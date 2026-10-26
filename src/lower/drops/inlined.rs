@@ -116,7 +116,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             for guard in given {
                 if alone(&function.params, &made, &guard, true) {
                     fields_of(&mut made, &function.params, &guard);
-                    one_field_of(&mut made, &guard);
+                    one_field_of(&mut made, &function.params, &guard);
                     continue;
                 }
                 js::each_expr_mut(&mut made, &mut |e| {
@@ -124,7 +124,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
                         && alone(params, body, &guard, false)
                     {
                         fields_of(body, params, &guard);
-                        one_field_of(body, &guard);
+                        one_field_of(body, params, &guard);
                     }
                 });
             }
@@ -410,8 +410,10 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
 
 /// `const guard = [x];`, a one-field tuple struct's guard, each of whose
 /// reads is `guard[0]`, none written: `const guard = x;`, read as `guard`,
-/// the field it's of (ADR 0608).
-fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
+/// the field it's of (ADR 0608); and of a variable that nothing sets once
+/// the guard's made, read as that variable, `previousFiber`, as a named
+/// field of one is (`fields_of`, ADR 0705).
+fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     let mut made = None;
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
@@ -420,13 +422,14 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
                 && let ExprKind::Array(items) = &value.kind
                 && let [item] = items.as_slice()
             {
-                made.get_or_insert(item.facts);
+                made.get_or_insert(item.clone());
             }
         }
     });
-    let Some(known) = made else {
+    let Some(item) = made else {
         return;
     };
+    let known = item.facts;
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
             if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
@@ -443,13 +446,18 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
     if written || reads != js::mentions_in(body, guard) {
         return;
     }
-    // Read now, so not by Rust's name for what's only dropped, `_restore`,
-    // where `restore` is free.
+    // The variable it was made of; or read now, so not by Rust's name for
+    // what's only dropped, `_restore`, where `restore` is free.
+    let variable = match &item.kind {
+        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) => Some(v.clone()),
+        _ => None,
+    };
     let mut names = HashSet::new();
     js::names_in(body, &mut names);
     // Not a word JS keeps, `_in`'s `in`.
-    let read = match guard.trim_start_matches('_') {
-        free if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
+    let read = match (&variable, guard.trim_start_matches('_')) {
+        (Some(v), _) => v.clone(),
+        (None, free) if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
         _ => guard.to_string(),
     };
     // Never `undefined` where that's what was known of it (ADR 0841,
@@ -465,11 +473,17 @@ fn one_field_of(body: &mut Vec<Stmt>, guard: &str) {
     });
     js::each_expr_mut(body, &mut Expr::store_again);
     js::each_block_mut(body, &mut |stmts| {
+        let made = |s: &Stmt| {
+            matches!(&s.kind, StmtKind::Const(n, value)
+                if n == guard && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
+        };
+        if variable.is_some() {
+            stmts.retain(|s| !made(s));
+        }
         for s in stmts.iter_mut() {
-            if let StmtKind::Const(n, value) = &mut s.kind
-                && n == guard
+            if made(s)
+                && let StmtKind::Const(n, value) = &mut s.kind
                 && let ExprKind::Array(items) = &mut value.kind
-                && items.len() == 1
             {
                 *n = read.clone();
                 *value = items.remove(0);

@@ -960,7 +960,7 @@ pub fn peeked_queue(internals: &Internals, queue: &Queue) -> bool {
   expect(js).toContain("    prevTransition = other;\n  }\n  internals.T = prevTransition ?? null;\n}");
   expect(js).toContain("  } finally {\n    internals.T = prevTransition;\n  }");
   expect(js).toContain("    prev = other;\n  } finally {\n    internals.T = prev ?? null;\n");
-  expect(js).toContain("  } finally {\n    sharedInternals.T = reset;\n");
+  expect(js).toContain("  } finally {\n    sharedInternals.T = prevTransition;\n");
   expect(js).toContain("  internals.T = PPeek.peek(queue) ?? null;\n");
   expect(js).toContain("  internals.T = first ?? null;\n");
   const lib = await import(join(dir, "lib.js"));

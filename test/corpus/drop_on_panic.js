@@ -16,13 +16,12 @@ function count(to) {
   try {
     let i;
     while ((i = $rangeInclusiveNext(iter)) != null) {
-      const step = i;
       try {
         if (i === 3) {
           throw new Error(`gave up at ${i}`);
         }
       } finally {
-        console.log(`drop ${step}`);
+        console.log(`drop ${i}`);
       }
     }
     const never = 200;

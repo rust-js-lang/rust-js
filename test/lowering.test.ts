@@ -357,8 +357,8 @@ pub fn shows(n: u32) -> u32 {
   // amended); and the same where JS's scopes let it be, \`bumped\` beside
   // an \`if\`'s.
   expect(js).not.toContain("twiceDrop_drop");
-  expect(js).toContain("  const twice = doubled;\n  const doubled$1 = (twice * 2) >>> 0;\n  console.log(`doubled ${doubled$1}`);\n");
-  expect(js).toContain("  } finally {\n    const bumped = (guard + 1) >>> 0;\n    console.log(`bumped ${bumped}`);\n  }");
+  expect(js).toContain("export function doubles(doubled) {\n  const doubled$1 = (doubled * 2) >>> 0;\n  console.log(`doubled ${doubled$1}`);\n");
+  expect(js).toContain("  } finally {\n    const bumped = (n + 1) >>> 0;\n    console.log(`bumped ${bumped}`);\n  }");
   expect(js).toContain("  return () => {\n    const level = depth;\n    depth = n;\n    try {\n      return work(n);\n    } finally {\n      depth = level;\n    }\n  };");
   expect(js).toContain("  let more = true;\n  try {\n    more = work(n) > 3;\n  } finally {\n    console.log(`more ${more}`);\n  }");
   expect(js).toContain('const name = "b";\n  console.log(`drop ${name}`);\n  console.log(`drop ${_a.name}`);');

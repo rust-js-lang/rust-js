@@ -43,9 +43,8 @@ function tagged(prefix, mapped, child) {
   let tmp;
   const value = prefix;
   if (mapped != null && (child == null || child != mapped)) {
-    const loud = mapped;
-    tmp = `${loud}/`;
-    console.log(`drop ${loud}`);
+    tmp = `${mapped}/`;
+    console.log(`drop ${mapped}`);
   } else {
     tmp = "";
   }

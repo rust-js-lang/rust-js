@@ -6,7 +6,8 @@ apart, and whose guard stayed an object where a field's name was taken;
 and [0589](0589-a-drop-dropped-once-is-its-body-there.md), whose guard
 was its fields only where no name of the function was a field's. Amended
 below: a `while`'s test the scope held apart joins the loop's, and a loop
-that ends a block MIR made breaks as a loop. Extended by
+that ends a block MIR made breaks as a loop; a one-field tuple guard's
+field of a variable is that variable too. Extended by
 [0859](0859-a-loop-that-ends-a-branch-breaks-as-a-loop.md): each of the
 loop's `break`s of the block, as a `loop` that ends an `if`'s branch has.
 
@@ -237,3 +238,35 @@ Both loops now read as upstream's, and the third is `while (s >= 1 && c
   `tail-continues-unwritten-kept` (`mir/tidy/stages.rs`), of the pass
   where it runs now, held by "a loop that ends a block breaks as a loop"
   too.
+
+## Amendment: a one-field tuple guard's field of a variable is that variable
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same value
+read where the guard's field was; only how the JS reads changes.
+
+React's `runWithFiberInDEV` restores `setCurrentFiber(previousFiber)` in
+its `finally`. Its port's guard is a tuple struct, `struct
+Restore(Option<Fiber>)`, made `Restore(previous_fiber)`, which ADR 0608
+takes apart into a `const` of its own, named after the guard, `const
+restore = previousFiber;`, read `setCurrentFiber(restore)`; a named
+field's guard, `Restore { previous }`, read `previous` itself, by this
+ADR's rule.
+
+**A one-field tuple guard made of a variable that nothing sets once the
+guard's made, and the function declares once, reads as that variable**,
+its `const` gone, as a named field's does: the same `kept_variables`
+answers both (`drops/inlined.rs::one_field_of`). Any other field is a
+`const` of its own, as ADR 0608 made it: `let mut previous = n; let
+_restore = Restore(previous); previous += 1;` reads `restore`, what the
+guard was made of.
+
+Six corpus programs read their guard's variable where they read a copy
+of it, `console.log(`drop ${n}`)`, and a shadow of it named apart goes,
+`noisy$1` (`shadow_set_in_cases`): five fewer renamed names
+(`docs/readability.txt`).
+
+Held by `test/lowering-drop-guards.test.ts`, "a one-field guard of a
+variable reads as that variable", run in JS, and its variable set later;
+the corpus case `drop_guard_early_return` against native Rust; and the
+mutations `one-field-variable-copied`, `one-field-variable-set-later` and
+`one-field-variable-guard-kept` (`drops/inlined.rs`).

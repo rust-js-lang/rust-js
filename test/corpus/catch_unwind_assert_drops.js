@@ -7,13 +7,12 @@ export function entry() {
 }
 
 function boom(n) {
-  const held = n;
   try {
     if (n > 0) {
       throw new Error(`boom ${n}`);
     }
   } finally {
-    console.log(`drop ${held}`);
+    console.log(`drop ${n}`);
   }
   return n;
 }

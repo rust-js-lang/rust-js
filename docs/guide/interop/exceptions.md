@@ -374,7 +374,8 @@ function or a constant it returns last after them, `return noop;`, as the
 drop can't change it, and the drop's body is in it, what it declares
 named apart from the function's where JS's scopes need it ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md)).
 The scope reads as it would without the guard, and the guard's fields
-are the variables it was made of, `name` above, where nothing sets them
+are the variables it was made of, `name` above, a tuple struct's one
+field too, `Restore(previous)` read `previous`, where nothing sets them
 once it's made ([ADR 0705](../../decisions/0705-a-guards-scope-reads-as-any-body.md)).
 
 ## `RefCell` borrows

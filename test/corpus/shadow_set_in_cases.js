@@ -102,20 +102,19 @@ function readAfter(level) {
 }
 
 function droppedAfter(n) {
-  const noisy = n;
-  let noisy$1;
+  let noisy;
   switch (n) {
     case 1:
     case 2:
     case 3:
-      noisy$1 = [n * 10];
+      noisy = [n * 10];
       break;
     default:
-      noisy$1 = [0];
+      noisy = [0];
   }
-  console.log(`made ${noisy$1[0]}`);
-  console.log(`drop ${noisy$1[0]}`);
-  console.log(`drop ${noisy}`);
+  console.log(`made ${noisy[0]}`);
+  console.log(`drop ${noisy[0]}`);
+  console.log(`drop ${n}`);
 }
 
 function main() {
