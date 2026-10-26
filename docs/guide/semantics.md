@@ -291,7 +291,8 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be
-  anything
+  anything; one whose signature holds a `dyn`, `function::bind`'s of a
+  `fn(&dyn Fn() -> u32) -> u32`, makes no other type anything
   ([0907](../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)):
 
 ```rust

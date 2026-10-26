@@ -693,7 +693,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`; amended: a guard that falls to nothing beside one that falls to the next is a case too)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
-- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
+- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are)*
 - [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md)
 - [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md) *(amended: an `Option` made where it's tested is its test before its branches are one value)*
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = (recognition, ty);\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
   },
+  {
+    name: "fn-pointer-of-a-dyn-opens-all",
+    breaks: "a fn pointer type of a `dyn`, `function::bind`'s result, makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADR 0907, amended)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    if let Some(key) = key(tcx, part) {\n",
+    replace: "                    held.any |= key(tcx, part).is_none();\n                    if let Some(key) = key(tcx, part) {\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a fn pointer of a dyn given from outside"],
+  },
 ];

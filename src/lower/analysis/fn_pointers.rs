@@ -135,10 +135,15 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
         let tcx = recognition.tcx;
         for part in ty.walk().filter_map(|part| part.as_type()) {
             match part.kind() {
-                ty::FnPtr(..) => match key(tcx, part) {
-                    Some(key) => _ = held.keys.insert(key),
-                    None => held.any = true,
-                },
+                // One of no key, whose signature holds a fn pointer or a
+                // `dyn`, is anything already, and no keyed type's value
+                // can be one: no coercion or subtyping makes one of the
+                // other. What its signature holds, the walk goes on to.
+                ty::FnPtr(..) => {
+                    if let Some(key) = key(tcx, part) {
+                        held.keys.insert(key);
+                    }
+                }
                 ty::Alias(
                     _,
                     ty::AliasTy {

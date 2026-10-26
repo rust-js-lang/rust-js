@@ -165,3 +165,81 @@ pub fn touch(root: &Root) {
   expect(lib.apply(r, (n: number) => n + 1)).toBe(1);
   expect(() => lib.apply(r, () => (lib.touch(r), 0))).toThrow("already borrowed");
 });
+
+// React's ReactFiberCallUserSpace binds each frame's function in DEV,
+// `fn(&dyn Fn() -> u32) -> u32`, which `function::bind` gives from outside:
+// a type of no key, which no `fn(u32) -> u32` can be, so ReactFiberLane's
+// `clz32` under a borrow still runs only what the crate made it of. What
+// such a type's signature holds may come from outside with it (ADR 0907,
+// amended).
+test("a fn pointer of a dyn given from outside leaves other fn pointers what the crate made them of", async () => {
+  const dir = fixture("fn-pointer-dyn-outside");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+use js::function;
+
+pub struct Root {
+    pub times: RefCell<Vec<u32>>,
+    pub given: RefCell<Vec<u32>>,
+}
+
+pub fn root() -> Root {
+    Root {
+        times: RefCell::new(vec![1; 32]),
+        given: RefCell::new(vec![2]),
+    }
+}
+
+thread_local! {
+    pub static CLZ32: fn(u32) -> u32 = u32::leading_zeros;
+}
+
+pub fn expire(root: &Root, lanes: u32) -> u32 {
+    let mut times = root.times.borrow_mut();
+    let index = CLZ32.with(|clz32| clz32(lanes)) as usize;
+    times[index] = 0;
+    times.iter().sum()
+}
+
+pub type CallAdd = fn(&dyn Fn() -> u32) -> u32;
+
+struct CallFrame {
+    react_stack_bottom_frame: CallAdd,
+}
+
+const CALL_ADD: CallFrame = CallFrame {
+    react_stack_bottom_frame: |component| component(),
+};
+
+thread_local! {
+    pub static CALL_ADD_IN_DEV: CallAdd =
+        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD));
+}
+
+pub fn call_add(root: &Root) -> u32 {
+    let given = root.given.borrow();
+    CALL_ADD_IN_DEV.with(|call| call(&|| given[0] + 1))
+}
+
+pub fn apply_made(root: &Root, make: fn() -> fn(u8) -> u8) -> u8 {
+    let f = make();
+    let given = root.given.borrow();
+    f(given[0] as u8)
+}
+
+pub fn touch(root: &Root) {
+    root.given.borrow_mut().push(1);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function expire(root, lanes) {\n  const times = root.times;\n  const index = clz32(lanes);\n");
+  // What a fn pointer JS gives returns may be any function: counted.
+  expect(js).toContain("$borrow(root.given, true)");
+  const lib = await import(join(dir, "lib.js"));
+  const r = lib.root();
+  expect(lib.expire(r, 1)).toBe(31);
+  expect(lib.callAdd(r)).toBe(3);
+  expect(lib.applyMade(r, () => (n: number) => n + 1)).toBe(3);
+  expect(() => lib.applyMade(r, () => () => (lib.touch(r), 0))).toThrow("already borrowed");
+});

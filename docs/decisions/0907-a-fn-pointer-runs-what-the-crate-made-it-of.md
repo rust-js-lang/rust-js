@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 (what a call may borrow) to a call of a fn pointer, which ran "what
-rust-js can't see".
+rust-js can't see". Amended: a fn pointer type of a `dyn` from outside
+leaves the other types as they are, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet: a fn pointer only
@@ -180,3 +181,31 @@ export function entangledLanes(root, lanes) {
   `fn-pointer-never-from-outside`; in `cell_borrows.ts`,
   `fn-pointer-call-runs-anything`; in `drops/facts.ts`,
   `pointer-call-beside-guard-asks-nothing`.
+
+## Amendment: a type of a `dyn` from outside leaves the others as they are
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as before. React's
+ReactFiberCallUserSpace binds each DEV frame's function, `const
+callComponentInDEV = callComponent.react_stack_bottom_frame.bind(callComponent)`,
+whose port is `function::bind(CALL_ADD.react_stack_bottom_frame,
+Some(&CALL_ADD))` of a `fn(&dyn Fn() -> u32) -> u32`. A binding's result
+comes from outside, and a fn pointer type whose signature holds a `dyn`
+or a fn pointer has no key, its binders not compared; held, such a type
+made *every* fn pointer type anything. So ReactFiberLane's `clz32`, a
+`fn(u32) -> u32` the crate made of `Math.clz32` alone, ran anything
+again, and each borrow held across it was `$borrowMut` and a `try`/`finally`.
+
+**A fn pointer type of no key, given from outside, is anything itself,
+as before, and leaves every other type as it is**: no coercion or
+subtyping makes a value of one into a value of a type that has a key,
+whose signature holds neither a `dyn` nor a fn pointer. What its
+signature holds may come from outside with it, a `fn() -> fn(u8) -> u8`'s
+`fn(u8) -> u8`, which the walk of what a type holds reaches anyway.
+What still makes every type anything is a type rustc can't normalize.
+
+- `test/lowering-cell-borrows.test.ts`, "a fn pointer of a dyn given
+  from outside leaves other fn pointers what the crate made them of":
+  `clz32` under a borrow uncounted beside the bound frame, the frame's
+  call counted, and a fn pointer a JS function returns counted, which
+  throws `already borrowed` where it borrows the cell.
+- Mutation `fn-pointer-of-a-dyn-opens-all`.
