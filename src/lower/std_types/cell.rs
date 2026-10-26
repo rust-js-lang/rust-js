@@ -225,8 +225,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // contents taken in place, as a `&mut` to it would, borrowed
                 // to do it where it's counted. Not a field's no borrow of
                 // which can meet another, which nothing else reaches: the
-                // object in the field replaced, as a property is.
-                if self.is_value_cell(held) && !call.quiet {
+                // object in the field replaced, as a property is, where
+                // the cell is the field's place, `c.current`; through a
+                // reference to it, a variable, in place.
+                let a_place = matches!(cell.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..));
+                if self.is_value_cell(held) && !(call.quiet && a_place) {
                     let cell = match self.quiet_ref_cell(held) {
                         true => cell,
                         false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),

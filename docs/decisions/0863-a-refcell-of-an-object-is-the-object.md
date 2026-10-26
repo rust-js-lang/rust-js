@@ -15,7 +15,8 @@ field). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.m
 (what std's impls and derives run is what their bounds say); amended
 (a `#[repr(transparent)]` struct's `RefCell`, and a thread-local
 `RefCell`'s `set`, a field's plain one by its declaration, and each
-place's by that place, a struct's field by its declaration, below).
+place's by that place, a struct's field by its declaration, and a
+thread-local and a field made where its struct is each its own, below).
 Amended by [0897](0897-an-element-a-guard-reaches-is-its-place.md): a
 guard a temporary holds is its object where it's read, as `&mut guard`
 given to `deref_mut` writes only what it guards.
@@ -535,3 +536,82 @@ guard's drop asks of its type.
 - Mutations in `scripts/mutations/lower/drops/ref_cells.ts`,
   `representation.ts`, `mir/local_facts.ts`, `std_types/cell.ts` and
   `runtime/borrow.ts`.
+
+## Amendment: a thread-local is a place of its own, and a field made where its struct is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same run; what
+was refused compiles. The `{ value }` a generic `RefCell<T>` is stays
+the generic value's.
+
+React's `ReactFiberStack` keeps its stack in a thread-local,
+`VALUE_STACK: RefCell<Vec<Option<&Unknown>>>`, beside a generic
+`create_cursor<T>` that makes a `StackCursor { current: RefCell::new(v) }`;
+`shared`, which the reconciler uses, hands it the same `RefCell` type as
+the array, its internals' `thrownErrors`. The reconciler was refused:
+"this crate has `RefCell<Vec<Option<&Unknown>>>` as a `{ value }`, of its
+generic code's `RefCell<T>` of any `T` .. but `shared` .. shares one with
+it as the object it holds". Two things stood for a value of that type that
+no code has:
+
+- **The thread-local's own storage**: the closure its macro makes of its
+  key, `EagerStorage<RefCell<..>>`, and the key, `VALUE_STACK` of
+  `VALUE_STACK.with_borrow_mut(..)`, `LocalKey<RefCell<..>>`, and what its
+  `init` gives, `RefCell::new(vec![..])`. A thread-local is a place, as a
+  struct's field is: its module's variable, the array, where only its
+  module reads and sets it (ADR 0270), and its cell's type's where it's
+  lent, by what it's lent to, `with(|cell| f(cell))`'s closure.
+- **A field's `RefCell` made where its struct is made**, `current:
+  RefCell::new(default_value)`, which was a `RefCell<T>` of any value:
+  every `RefCell` of an object the crate has was then `{ value }`. The
+  field holds its value by its declaration (above), so the cell it's made
+  of is the field's, as a read of it was already.
+
+**A thread-local's key, its storage and what its `init` gives, and the
+`RefCell` a struct's field is made of where the struct is, are those
+places' own, no value of their cell's type**: neither what the crate is
+said to have of a type, which a library must agree with, nor a `RefCell<T>`
+of any value. A generic `RefCell<T>` made and given, `cell_of<T>(v) ->
+RefCell<T>`, is still `{ value }`, and every `RefCell` of an object with
+it, so generic code reads one representation.
+
+```rust
+thread_local! {
+    static VALUE_STACK: RefCell<Vec<Option<&'static Unknown>>> = const { RefCell::new(Vec::new()) };
+}
+pub fn cell_of<T>(value: T) -> RefCell<T> { RefCell::new(value) }
+pub fn clear() { VALUE_STACK.with_borrow_mut(|value_stack| value_stack[0] = None); }
+```
+
+```js
+const valueStack = [];
+
+export function cellOf(value) {
+  return { value };
+}
+
+export function clear() {
+  valueStack[$at(valueStack, 0)] = undefined;
+}
+```
+
+A crate with no generic `RefCell<T>` value but a generic struct's field
+made so now has its other `RefCell`s of objects as those objects: corpus
+`refcell_generic_field_made`'s `log` is `[4, 5]`, `{ value: [4, 5] }`
+before. Its `c.current.replace(vec![8])` found a wrong answer this change
+uncovered: a quiet field's `RefCell` of an object replaced through a
+reference to it, a variable, assigned the variable, `replaced = [8]`, not
+the field. Through a reference it's replaced in place, `$take(c.current,
+[8])`; at the field's place, `c.current`, the property is written, as
+before.
+
+### What holds it
+
+- `test/crates.test.ts`, "a thread-local's RefCell is its own, whatever
+  generic code's RefCell<T> is", of `test/crates/pairs/thread_local_cell`,
+  against native Rust: a `const` thread-local and one made by its `init`,
+  each the array, beside a generic `RefCell<T>`'s `{ value }`.
+- Corpus `refcell_generic_field_made`, against native Rust.
+- Mutations `thread-local-storage-a-value`, `thread-local-key-a-value`,
+  `thread-local-init-a-value`, `field-made-of-any-value`
+  (`lower/drops/ref_cells.ts`) and `quiet-replace-through-a-reference`
+  (`lower/std_types/cell.ts`).

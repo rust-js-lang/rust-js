@@ -318,6 +318,20 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   expect(consumer).toContain("      value.value.push(3);\n");
 }, 300_000);
 
+// ADR 0863, amended: a thread-local is a place of its own, as a struct's
+// field is. A crate whose generic code makes a `RefCell<T>` of any value,
+// `{ value }`, beside thread-locals of the `RefCell` type its library shares
+// as the array, as React's `ReactFiberStack` has beside `shared`'s
+// `thrownErrors`, isn't refused: each thread-local is its module's variable,
+// the array, and only the generic value is a `{ value }`.
+test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is", () => {
+  const out = chain(pairs, "thread_local_cell", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("const valueStack = [];\nconst names = [\"first\"];\n");
+  expect(app).toContain("export function cellOf(value) {\n  return { value };\n}");
+  expect(app).toContain("  valueStack[$at(valueStack, 0)] = undefined;\n");
+}, 300_000);
+
 /** The library contract of `out`'s `dep`. */
 function contract(out: string) {
   return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;

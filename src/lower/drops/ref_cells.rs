@@ -604,18 +604,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
         for body in bodies {
+            // A thread-local's storage, which its macro makes of its key, is
+            // the thread-local's own place, not a value of its cell's type
+            // (ADR 0863, amended).
+            if thread_local_key(tcx, tcx.typeck_root_def_id(body.def_id)) {
+                continue;
+            }
             let thir = &body.thir;
             // A read of a generic struct's field that holds its value, which
             // reads it as `{ value }` of any type, and what's made of it
             // there, its guard: not one of any value, which code given one
             // reads, nor one of what may be boxed.
             let reads = property_reads(tcx, thir);
+            // The cell a place is made of, its own (ADR 0863, amended): no
+            // value of its type at all.
+            let places = made_places(tcx, body);
             let types = (thir.exprs.iter_enumerated())
+                .filter(|(id, _)| !places.contains(id))
                 .map(|(id, e)| (e.ty, reads.contains(&id)))
                 .chain(thir.params.iter().map(|p| (p.ty, false)));
             for (ty, read) in types {
                 of_objects(ty, &mut boxed);
-                for part in ty.walk().filter_map(|part| part.as_type()) {
+                for part in held_parts(tcx, ty) {
                     all |= !read && any_value(part);
                     if refcell(part) {
                         seen.insert(tcx.erase_and_anonymize_regions(part));
@@ -940,6 +950,83 @@ fn borrows_its_cell<'tcx>(
                 | Std::CellReplaceWith
         )
     )
+}
+
+/// Whether `id` is a thread-local's key, the `const` of a `LocalKey` its
+/// macro makes.
+fn thread_local_key(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Const { .. })
+        && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), StdItem::LocalKey))
+}
+
+/// The types `ty` is made of, but what a thread-local's key holds, which is
+/// the thread-local's own place, whatever its type (ADR 0863, amended).
+fn held_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+    let mut parts = Vec::new();
+    let mut walk = ty.walk();
+    while let Some(part) = walk.next() {
+        let Some(part) = part.as_type() else { continue };
+        if let ty::Adt(key, _) = part.kind()
+            && crate::lower::recognition::is_std_def(tcx, key.did(), StdItem::LocalKey)
+        {
+            walk.skip_current_subtree();
+            continue;
+        }
+        parts.push(part);
+    }
+    parts
+}
+
+/// Of a body, each expression whose value is the cell a place is made of,
+/// the place's own and no value of its cell's type (ADR 0863, amended): of a
+/// struct's literal, each `RefCell` field's that holds its value by its
+/// declaration (`RefCells::holds_value`), `current: RefCell::new(value)`;
+/// and of a thread-local's `init`, what it gives, the thread-local's cell.
+fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> HashSet<rustc_middle::thir::ExprId> {
+    let thir = &body.thir;
+    let mut made: Vec<rustc_middle::thir::ExprId> = Vec::new();
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Adt(ref adt) = expr.kind
+            && adt.adt_def.is_struct()
+        {
+            for field in adt.fields.iter() {
+                let def = &adt.adt_def.non_enum_variant().fields[field.name];
+                let declared = tcx.type_of(def.did).instantiate_identity().skip_normalization();
+                if matches!(declared.kind(), ty::Adt(cell, _) if crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell))
+                    && struct_field(tcx, def.did)
+                {
+                    made.push(field.expr);
+                }
+            }
+        }
+    }
+    if tcx
+        .opt_parent(body.def_id)
+        .is_some_and(|parent| thread_local_key(tcx, parent))
+    {
+        made.push(body.expr);
+    }
+    // Each, and what it's the scope of, of the same value.
+    let mut places = HashSet::new();
+    for mut at in made {
+        loop {
+            places.insert(at);
+            at = match thir[at].kind {
+                ExprKind::Scope { value: inner, .. }
+                | ExprKind::Use { source: inner }
+                | ExprKind::NeverToAny { source: inner }
+                | ExprKind::ValueTypeAscription { source: inner, .. }
+                | ExprKind::PlaceTypeAscription { source: inner, .. } => inner,
+                ExprKind::Block { block } if thir[block].stmts.is_empty() => match thir[block].expr {
+                    Some(tail) => tail,
+                    None => break,
+                },
+                _ => break,
+            };
+        }
+    }
+    places
 }
 
 /// Of a body, each read of a generic struct's `RefCell<T>` field, which

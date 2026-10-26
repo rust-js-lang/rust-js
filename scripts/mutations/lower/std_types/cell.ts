@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     name: "quiet-field-replaced-in-place",
     breaks: "a `replace` of a struct's field of an object no borrow of which can meet another moves its contents in place, `$take(slot.items, [4])`, where the field is replaced (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "                if self.is_value_cell(held) && !call.quiet {\n",
+    find: "                if self.is_value_cell(held) && !(call.quiet && a_place) {\n",
     replace: "                if self.is_value_cell(held) {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
   },
@@ -461,5 +461,13 @@ export const mutations: Mutation[] = [
     find: "                    exported.push((name.clone(), true));\n",
     replace: "",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+  },
+  {
+    name: "quiet-replace-through-a-reference",
+    breaks: "a quiet field's `RefCell` of an object replaced through a reference to it, a variable, assigns the variable, `replaced = [8]`, not the field (ADR 0863, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let a_place = matches!(cell.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..));\n",
+    replace: "                let a_place = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_generic_field_made.rs$"],
   },
 ];
