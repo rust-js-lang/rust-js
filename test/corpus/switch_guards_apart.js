@@ -81,7 +81,7 @@ function main() {
   for (const tag of [0, 5, 11, 15, 16, 30, 99]) {
     for (const owned of [false, true]) {
       for (let flags = 0; flags < 4; flags++) {
-        const flags$1 = [(flags & 1) >>> 0 !== 0, (flags & 2) >>> 0 !== 0];
+        const flags$1 = [(flags & 1) !== 0, (flags & 2) !== 0];
         const info = described(tag, owned, flags$1, log);
         const arg = $take(log, []);
         console.log(
