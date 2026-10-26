@@ -426,9 +426,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let steps = self.made_steps(tr, span)?;
             if self.recognition().iterates_as_itself(ty) {
+                // Itself, but of an iterator that's an iterable in JS, a
+                // char's `escape_unicode()`'s text, the JS iterator of it
+                // (ADR 0939).
+                let into_iter = match crate::lower::recognition::is_text_escape(self.tcx, ty) {
+                    true => Expr::arrow(
+                        vec!["items".into()],
+                        vec![StmtKind::Return(Some(self.js_iterator(Expr::var("items")))).at(js::Span::NONE)],
+                    ),
+                    false => itself,
+                };
                 let mut props = vec![Prop::Field(
                     bindings::trait_method_name(self.tcx, tr.def_id, "into_iter"),
-                    itself,
+                    into_iter,
                 )];
                 props.extend(steps);
                 return Ok(Expr::object(props));

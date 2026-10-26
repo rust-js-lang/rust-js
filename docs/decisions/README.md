@@ -723,6 +723,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0936 An iterator extension's bound on a parameter's associated type is given its own dictionary](0936-an-extension-bound-on-an-associated-type-is-given.md)
 - [0937 A `&mut` to a type parameter steps from its back by the dictionary the parameter was given](0937-a-mut-to-a-parameter-steps-by-its-dictionary.md)
 - [0938 `Copied` is compiled as its meaning, and a type parameter whose copy is itself is given no copy function where std's code asks one](0938-copied-compiled-as-its-meaning.md)
+- [0939 An iterator that's an iterable in JS is made the JS iterator it steps where its `IntoIterator` dictionary gives it](0939-an-iterable-s-into-iter-is-its-js-iterator.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
