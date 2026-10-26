@@ -626,7 +626,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
 - [0780 An or-pattern's tests are in the order written, of a field read in place](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md) *(amended: an `if let`'s and a reference's too)*
-- [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too)*
+- [0781 A `None` only nullables read is `null` where it's made](0781-a-none-only-nullables-read-is-null-where-its-made.md) *(amended by 0841: a call's `Option` too; amended: a local's `None` read otherwise stays `undefined`, as nothing sees it)*
 - [0782 A promise's executor may borrow, and `then` takes two handlers](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md) *(amended: a promise of a `Copy` value is `Copy`; what rejects one takes any value; what was caught is a value of any shape, `as_unknown()`)*
 - [0791 A `Cell`'s storage says what it stores, however it's reached](0791-a-cells-storage-says-what-it-stores.md) *(amended by 0841: what's never `undefined` is stored as it is)*
 - [0800 A drop of what JS drops nothing of never unwinds](0800-a-drop-of-nothing-never-unwinds.md)

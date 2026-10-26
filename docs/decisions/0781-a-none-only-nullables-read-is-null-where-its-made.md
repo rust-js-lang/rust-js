@@ -6,6 +6,7 @@ nullable field's, was already `null` where it's made, to a variable MIR
 copies before a field or a binding's parameter takes it. Amended by
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md):
 a call's `Option` only they read is written so where the call's made.
+Amended: a local's `None` read otherwise stays `undefined`, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: `null` and
 `undefined` are each `None` to the program, which reads either as one
@@ -65,3 +66,33 @@ nullable field takes it as `owner ?? null`.
   returned, each run.
 - Mutations `null-none-copy-ungiven`, `null-none-param-ungiven`,
   `null-none-copy-read-elsewhere` (`mir/patterns.rs`).
+
+## Amendment: a local's `None` read otherwise stays `undefined`, as nothing sees it
+
+The reconciler's port has two locals upstream makes `null` and rust-js
+`undefined`: ReactFiberNewContext's `let next_fiber = None` (and its
+`next_fiber = None`s), upstream's `nextFiber = null`, and `let contexts;`,
+upstream's `let contexts = null`. Each was checked for what reads it:
+
+- `nextFiber` is tested `!= null`, compared `=== workInProgress`, a
+  fiber, never `null` or `undefined`, and given only to the local
+  `fiber`, itself tested `!= null`.
+- `contexts` is filled `contexts ??= []`, tested `if (contexts)`, given
+  to `propagateContextChanges` only where it holds an array, and
+  returned `!!contexts`.
+
+Neither's `None` reaches anything that tells `null` from `undefined`: no
+`=== null`, no nullable place, no binding, no export. **So a local's
+`None` stays `undefined`, ADR 0030's, unless only nullable places read
+it**, as this ADR decided: Case A ([0262](0262-when-rust-and-js-disagree.md)),
+no observable difference. A `None` that does reach JS is stored as its
+place says: a nullable field's, a nullable parameter's, a nullable
+function's result's or a nullable `const`'s is `null` there
+(`Storage::NullForNone`, ADRs 0275, 0586, 0791, 0841), and any other
+`Option`'s JS is `T | undefined`, as its `.d.ts` says. Writing `null`
+for every local's `None` would be a second spelling of one value with
+nothing to tell it by, the alternative this ADR rejected.
+
+So the port's `let nextFiber;` and `nextFiber = undefined` stay where
+upstream writes `null`, a difference left to the user to accept
+(AGENTS.md's ports): what JS reads of either is the same.
