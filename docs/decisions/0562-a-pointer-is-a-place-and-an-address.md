@@ -484,3 +484,35 @@ a `$ptrTo` handle's allocation is the object it's to, so two handles to
 one object are equal whether or not they're one: `$ptrTo` keeps one per
 object to make none twice, not for `==`. Its mutation,
 `ptr-to-uncached`, which nothing caught, is removed (#194).
+
+## Amendment: `Rc::as_ptr`, and two pointers to one field
+
+React's update queue compares two updates by identity,
+`a.as_ref().map(Rc::as_ptr) != b.as_ref().map(Rc::as_ptr)`, which was
+refused: `Rc::as_ptr` was no pointer operation.
+
+- **`Rc::as_ptr(&rc)` and `Arc::as_ptr` are `&raw const **rc`**,
+  `PointerOp::RcAsPtr`: `pointer_to` of what the `Rc` points at, an
+  object's `$ptrTo(object)`, a counted `Rc`'s value's place, `$ptr(rc,
+  "value", 0)`. So `Rc::as_ptr(a) == Rc::as_ptr(b)` is `a === b`, as
+  `Rc::ptr_eq(a, b)` is, and `*Rc::as_ptr(&rc)` reads what it points at.
+- **It counts an `Rc` as `ptr_eq` does** (`reads_rc_count`): not one of an
+  object, whose identity is the object's (ADR 0582), but one of a number or
+  text, whose identity is its box's, `{ value, strong, weak }`.
+- **Two pointers to one field are equal where they're of one object**
+  (`pointers_equal`): `$ptr(x, "value", 0) == $ptr(y, "value", 0)` is `x
+  === y`, as two `$ptrTo`s are, since no two objects share a field. Of
+  another field, or another offset, `$ptrEq` compares them. A `static
+  mut`'s `ptr::eq(&raw const TOTAL, &raw const OTHER)` is `TOTAL ===
+  OTHER` too.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): a pointer's identity is
+its place's, as Rust's address is.
+
+Held by `test/corpus/rc_as_ptr.rs`, against native Rust, and the mutations
+`rc-as-ptr-refused`, `rc-as-ptr-of-counted-box`,
+`rc-as-ptr-of-number-uncounted`, `rc-as-ptr-of-object-counted` and
+`field-pointers-equal-of-any-field`. An `Option` of two such pointers,
+`.map(Rc::as_ptr)`, compares by `$ptrEq` of what each holds: written as
+React writes it, `a != b` of two `Option<Rc<Update>>` whose `PartialEq` is
+identity is `a !== b` (ADR 0864).

@@ -592,4 +592,28 @@ export const mutations: Mutation[] = [
     replace: "        let function = false;\n",
     tests: ["test/bindings.test.ts", "-t", "a function JS gives is a dyn Fn"],
   },
+  {
+    name: "rc-as-ptr-refused",
+    breaks: "`Rc::as_ptr` isn't a pointer to what the `Rc` points at, so React's `a.as_ref().map(Rc::as_ptr)` is refused",
+    file: "src/lower/pointers.rs",
+    find: "    (\"std::rc::Rc::<T, A>::as_ptr\", PointerOp::RcAsPtr),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
+  },
+  {
+    name: "rc-as-ptr-of-counted-box",
+    breaks: "a counted `Rc`'s `as_ptr` points at the `Rc` itself, not its value's place, which JS can't point at",
+    file: "src/lower/pointers.rs",
+    find: "                    true => self.counted_pointee(rc, pointee),\n                    false => rc,\n",
+    replace: "                    true => rc,\n                    false => rc,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
+  },
+  {
+    name: "field-pointers-equal-of-any-field",
+    breaks: "two pointers to fields of one object are equal whichever fields they are, `ptr::eq(&p.x, &p.y)` true",
+    file: "src/lower/pointers.rs",
+    find: "            && key == other\n            && at == other_at\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
+  },
 ];

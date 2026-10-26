@@ -110,7 +110,7 @@ for (const [name, source, message, crate] of [
   // `*p` of a `P: DerefMut` is its dictionary's (ADR 0394), std's of a pointer
   // whose target is a cell or the same JS value: not a `LazyCell`'s, made when read.
   ["a LazyCell given as a DerefMut", 'fn f<P: std::ops::DerefMut<Target = u32>>(mut p: P) { *p = 1; }\npub fn g() { f(std::cell::LazyCell::new(|| 1u32)) }', "implementation evidence for `<std::cell::LazyCell"],
-  ["an Rc's raw pointer", 'pub fn f(r: &std::rc::Rc<u32>) -> bool { std::rc::Rc::as_ptr(r).is_null() }', "does not support"],
+  ["an Rc made a raw pointer", 'pub fn f(r: std::rc::Rc<u32>) -> *const u32 { std::rc::Rc::into_raw(r) }', "does not support"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["flatten of an Option of an Option of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(a: Option<Option<D>>) -> bool { a.flatten().is_some() }', "`std::option::Option::<std::option::Option<T>>::flatten` of a value with a destructor"],

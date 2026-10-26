@@ -62,6 +62,10 @@ pub(in crate::lower) enum PointerOp {
     /// it points to, as a `Box` is what it holds.
     IntoRaw,
     FromRaw,
+    /// `Rc::as_ptr(&rc)`, `Arc::as_ptr`: a pointer to what it points at,
+    /// as `&raw const **rc` is, `$ptrTo` of an object, so two compare as
+    /// the `Rc`s do, `a === b`.
+    RcAsPtr,
     /// `p.cast::<U>()`, `cast_mut()`, `cast_const()`: the same handle, where
     /// what it points to stays what it is, or is `()`.
     Cast,
@@ -190,6 +194,8 @@ const POINTER_FNS: &[(&str, PointerOp)] = &[
     ("std::boxed::Box::<T>::into_raw", PointerOp::IntoRaw),
     ("std::boxed::Box::<T>::from_raw", PointerOp::FromRaw),
     ("std::boxed::Box::<T, A>::from_raw", PointerOp::FromRaw),
+    ("std::rc::Rc::<T, A>::as_ptr", PointerOp::RcAsPtr),
+    ("std::sync::Arc::<T, A>::as_ptr", PointerOp::RcAsPtr),
     ("std::ptr::drop_in_place", PointerOp::DropInPlace),
     // A `MaybeUninit`'s, which is its value's place (ADR 0332).
     ("std::mem::MaybeUninit::<T>::as_ptr", PointerOp::FromRef),
@@ -737,6 +743,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let (Some(x), Some(y)) = (object_of(&a), object_of(&b)) {
             return Ok(Expr::bin(Op::Eq, x, y));
         }
+        // Of one field of two objects, `$ptr(x, "value", 0)`, a counted
+        // `Rc`'s value's: the same field where it's the same object.
+        let field_of = |e: &Expr| match &e.kind {
+            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptr") => match args.as_slice() {
+                [object, key, rest @ ..] if let js::ExprKind::Str(key) = &key.kind => {
+                    Some((object.clone(), key.clone(), rest.first().and_then(Expr::as_int)))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        if let (Some((x, key, at)), Some((y, other, other_at))) = (field_of(&a), field_of(&b))
+            && key == other
+            && at == other_at
+        {
+            return Ok(Expr::bin(Op::Eq, x, y));
+        }
         if self.is_pair_dyn_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$dynPtrEq"), vec![a, b]));
         }
@@ -870,6 +893,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             PointerOp::FromRaw => self.pointed_place(arg(), pointee.expect("a pointer")),
+            // What a counted `Rc` points at is its `value`; an uncounted
+            // one is what it points at.
+            PointerOp::RcAsPtr => {
+                let pointee = (tys.first())
+                    .and_then(|t| super::recognition::rc_pointee(self.tcx, t.peel_refs()))
+                    .expect("an `Rc`");
+                let rc = arg();
+                let place = match self.krate.counted.counts(self.tcx, pointee) {
+                    true => self.counted_pointee(rc, pointee),
+                    false => rc,
+                };
+                self.pointer_to(place, pointee, None, span)?
+            }
             PointerOp::Replace => helper("$ptrReplace", vec![arg(), arg()]),
             PointerOp::Swap => helper("$ptrSwap", vec![arg(), arg()]),
             PointerOp::Add => helper("$ptrAdd", vec![arg(), arg()]),

@@ -527,7 +527,9 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
         // which it alone owns (ADR 0863).
         || matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
             if super::is_std_def(tcx, adt.did(), StdItem::RefCell));
-    if object && tcx.item_name(id).as_str() == "ptr_eq" {
+    // An object's identity is the object's: its `ptr_eq` and `as_ptr`
+    // (ADR 0562, amended) ask no count.
+    if object && matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {
         return false;
     }
     let Some(imp) = tcx.inherent_impl_of_assoc(id) else {
@@ -549,6 +551,7 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
                     | "unwrap_or_clone"
                     | "new_cyclic"
                     | "ptr_eq"
+                    | "as_ptr"
             )
 }
 

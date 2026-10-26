@@ -250,6 +250,9 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   destructor ([0320](../decisions/0320-counted-rcs.md)). `Rc::ptr_eq` of
   an `Rc` of a struct with fields is `a === b` of the objects, and counts
   nothing; a `#[repr(transparent)]` one is its field, and counts ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
+  `Rc::as_ptr` is a pointer to what it points at, so `Rc::as_ptr(a) ==
+  Rc::as_ptr(b)` is `a === b` too, and of an `Rc` of a number it counts,
+  as `ptr_eq` does ([0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended).
   A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
   the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
   so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).
