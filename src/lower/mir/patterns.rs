@@ -595,19 +595,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => return e,
             }
         };
-        let cast_of_variable = |e: thir::ExprId| {
+        // A cast, `js::cast(..)`, and of what: `Some(true)` of a variable.
+        let cast_of = |e: thir::ExprId| {
             let thir::ExprKind::Call { fun, ref args, .. } = thir[through(e)].kind else {
-                return false;
+                return None;
             };
             let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
-                return false;
+                return None;
             };
-            bindings::is_binding(self.tcx, def_id)
-                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
-                && matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. }))
+            (bindings::is_binding(self.tcx, def_id)
+                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This))
+            .then(|| matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. })))
         };
         let mut named = Vec::new();
         let mut casts = Vec::new();
+        // A `let` of a cast of anything, `let instance: Option<&Instance> =
+        // unsafe { js::cast(node.state_node.get()) };`: the program's name
+        // for a value of the type it gives, no `let` that ends a borrow.
+        let mut typed = Vec::new();
         let mut lets = Vec::new();
         for stmt in thir.stmts.iter() {
             if let thir::StmtKind::Let {
@@ -619,8 +624,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 named.push(pattern.span);
                 lets.push((var, pattern.span));
-                if initializer.is_some_and(cast_of_variable) {
-                    casts.push(pattern.span);
+                match initializer.and_then(cast_of) {
+                    Some(true) => casts.push(pattern.span),
+                    Some(false) => typed.push(var),
+                    None => {}
                 }
             }
         }
@@ -635,7 +642,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let taken_apart: Vec<Span> = (lets.iter())
-            .filter(|(var, _)| scrutinees.contains(var))
+            .filter(|(var, _)| scrutinees.contains(var) && !typed.contains(var))
             .map(|&(_, span)| span)
             .collect();
         let names = |spans: &[Span]| {

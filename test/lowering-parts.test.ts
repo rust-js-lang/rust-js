@@ -105,3 +105,43 @@ pub fn matched(point: &Labeled) -> f64 {
   expect([lib.resolved(lazy), lib.readAgain(lazy), lib.sum({ x: 1, y: 2 }), lib.patterned({ x: 5, y: 2 }), lib.paired([3, 4]), lib.matched({ x: 2, y: 3, label: "ab" })])
     .toEqual([40, [4, true], 3, 3, 12, 8]);
 });
+
+// React's markUpdateLaneFromFiberToRoot: `const offscreenInstance =
+// fiber.stateNode; if (offscreenInstance !== null && ..)`. Its port types
+// the field's value, `let instance: Option<&Instance> = unsafe {
+// js::cast(node.state_node.get()) };`, and `if let` tests it: the
+// program's name for the value, no `let` that ends a borrow (ADR 0866),
+// so not read twice in the test in its place (ADR 0598, amended).
+test("a let of a cast an if let tests keeps its name", async () => {
+  const dir = fixture("cast-let-tested");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Instance {
+    #[cfg_attr(rust_js, rust_js::name = "_visibility")]
+    pub visibility: Cell<i32>,
+}
+
+pub struct Node {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub state_node: Cell<Option<&'static Unknown>>,
+}
+
+pub fn is_hidden(node: &Node) -> bool {
+    let instance: Option<&Instance> = unsafe { js::cast(node.state_node.get()) };
+    if let Some(instance) = instance
+        && (instance.visibility.get() & 1) == 0
+    {
+        return true;
+    }
+    false
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const instance = node.stateNode;\n  if (instance && !(instance._visibility & 1)) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  const hidden = [{ stateNode: null }, { stateNode: { _visibility: 1 } }, { stateNode: { _visibility: 2 } }];
+  expect(hidden.map((n) => lib.isHidden(n))).toEqual([false, false, true]);
+});

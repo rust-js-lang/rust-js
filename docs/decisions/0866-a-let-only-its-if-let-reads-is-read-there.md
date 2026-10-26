@@ -1,6 +1,7 @@
 # 0866. A `let` only the `if let` that takes it apart reads is read there
 
-Status: Accepted; amended below: a let chain's binding of a field its
+Status: Accepted; amended below: a `let` of a cast is no `let` that ends a
+borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
@@ -157,3 +158,31 @@ against native Rust; and the mutations
 (`tidy/logicals.ts`), `read-again-twice`,
 `read-again-past-code` and `read-again-of-a-later-statement`
 (`tidy/moves.ts`).
+
+## Amendment: not a `let` of a cast (2026-10-26)
+
+React's markUpdateLaneFromFiberToRoot names what it tests:
+
+```js
+const offscreenInstance: OffscreenInstance | null = parent.stateNode;
+if (
+  offscreenInstance !== null &&
+  !(offscreenInstance._visibility & OffscreenVisible)
+) {
+```
+
+Its port gives the field's value its type, `let offscreen_instance:
+Option<&OffscreenInstance> = unsafe { js::cast(parent.state_node.get())
+};`, and an `if let` takes it apart, so it was read in the test's place
+twice, `parent.stateNode && !(parent.stateNode._visibility & 1)`, the
+program's name gone. **A `let` of a `js::cast(..)` is the program's name for
+a value of the type it gives, not a `let` that ends a borrow**: it stays
+a `const`, `const offscreenInstance = parent.stateNode; if
+(offscreenInstance && ..)`, as upstream writes it. Whether it's tested by
+its truth or against `null` is ADR 0298's, by what its payload may be. Of
+a variable, `let lazy: &LazyComponent = unsafe { js::cast(children) };`,
+it's the variable as before (ADR 0598, amended).
+
+Held by `test/lowering-parts.test.ts`, "a let of a cast an if let tests
+keeps its name", run in JS, and the mutation
+`cast-let-of-a-place-tested-in-its-place` (`lower/mir/patterns.ts`).
