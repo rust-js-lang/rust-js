@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "powi-any-power-a-square",
+    breaks: "`x.powi(3)` of a variable is `x * x`, its square",
+    file: "src/lower/std_types/number.rs",
+    find: "                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    replace: "                (x, n) if n.as_int().is_some() && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^powi_square.rs$"],
+  },
+  {
+    name: "powi-square-helper",
+    breaks: "a variable's `powi(2)` is `$powi(x, 2)`, not `x * x`",
+    file: "src/lower/std_types/number.rs",
+    find: "                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    replace: "                (x, n) if false && n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^powi_square.rs$"],
+    snapshots: true,
+  },
+  {
     name: "max-value-the-min",
     breaks: "an integer's `max_value()` is its `MIN` (#327)",
     file: "src/lower/std_types/number.rs",

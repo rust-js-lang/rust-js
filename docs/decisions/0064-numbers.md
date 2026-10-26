@@ -162,3 +162,16 @@ integer, none of a negative; the `_add_signed` and `_add_unsigned` forms,
 checked, wrapping, saturating and overflowing, of their exact sum; and
 `checked_signed_diff`; and a byte's `eq_ignore_ascii_case`. Held by
 `test/corpus/int_overflow_sign_methods.rs`.
+
+## Amendment: a variable's square is `x * x` (#336)
+
+trekhleb/javascript-algorithms' `squareRoot`, ported, read
+`Math.abs(number - $powi(root, 2))` where upstream writes `root ** 2`.
+`$powi(x, 2)` multiplies once, `1 * (x * x)`, as `__powidf2` does, so
+**a variable's `powi(2)` is `x * x`**: read twice with nothing run
+between, it's the same value, of NaN, ±0 and the infinities too (ADR
+0262's case A). Not `x ** 2`, which JS leaves the engine to approximate.
+Another power, and a square of what isn't a variable, `(a + b).powi(2)`,
+stay `$powi`; an `f32`'s stays `$powiF32`, rounded to one. Held by
+`test/corpus/powi_square.rs` and the mutations `powi-any-power-a-square`
+and `powi-square-helper`.

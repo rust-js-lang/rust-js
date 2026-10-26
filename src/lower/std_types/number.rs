@@ -595,7 +595,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if num == Num::I32 { power } else { num.wrap(power) }
             }
             NumOp::Powi if num == Num::F32 => helper("$powiF32", vec![arg(), arg()]),
-            NumOp::Powi => helper("$powi", vec![arg(), arg()]),
+            // A variable's square, which `$powi` multiplies once, `x * x`,
+            // as Rust's does: the same value, read twice with nothing run
+            // between. Not `x ** 2`, whose precision is the engine's.
+            NumOp::Powi => match (arg(), arg()) {
+                (x, n) if n.as_int() == Some(2) && matches!(x.kind, js::ExprKind::Var(_)) => {
+                    Expr::bin(Op::Mul, x.clone(), x)
+                }
+                (x, n) => helper("$powi", vec![x, n]),
+            },
             NumOp::MulAdd if num == Num::F32 => helper("$mulAddF32", vec![arg(), arg(), arg()]),
             NumOp::MulAdd => helper("$mulAdd", vec![arg(), arg(), arg()]),
             // `a ** b`, but where JS's `**` gives NaN, of a base of 1 or -1 to an
