@@ -80,7 +80,7 @@ function main() {
     const n = tmp;
     let insert;
     try {
-      insert = $insert(map, n & 255, [(n * 10) >>> 0]);
+      insert = $insert(map, n, [n * 10]);
     } catch (error) {
       if (map$live) {
         for (const [, value] of $sortedEntries(map, $cmp)) {

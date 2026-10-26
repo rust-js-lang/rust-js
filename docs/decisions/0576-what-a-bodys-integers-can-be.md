@@ -167,3 +167,14 @@ integer below another's value doesn't wrap", and the mutations
 `value-bound-over-length` and `value-joined-with-none`. Not yet: an index
 below a length that grows each turn with its counter, `currentLine[numIndex
 - 1]` of a `push` a turn, which needs the two related round the loop.
+
+## Amendment: a loop over an inclusive range (#337)
+
+A `for` over `a..b` gave its variable `a.lo ..= b.hi - 1`, but one over
+`a..=b`, `RangeInclusive::new(a, b)`, nothing: integerPartition's
+`summand_index - 1` of `for summand_index in 1..=number` kept its wrap
+where no test showed it at least 1. **`a..=b`'s variable is `a.lo ..=
+b.hi`, at most `b` by its bound**, as `a..b`'s is at most `b - 1`. Held
+by `lowering-numbers.test.ts`'s "an integer below another's value doesn't
+wrap" and the mutations `inclusive-for-unranged` and
+`inclusive-for-past-its-end`.

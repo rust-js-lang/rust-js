@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inclusive-for-unranged",
+    breaks: "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                Some((start, end, 0))\n",
+    replace: "                None\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+  },
+  {
+    name: "inclusive-for-past-its-end",
+    breaks: "`for k in 1..=n` is taken to reach `n + 1`, so `n - k` keeps its wrap",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                Some((start, end, 0))\n",
+    replace: "                Some((start, end, -1))\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
+  },
+  {
     name: "value-difference-unbounded",
     breaks: "`n - k` of a `k < n` isn't known at least 1, so `n - k - 1` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
@@ -38,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "value-range-end-unbounded",
     breaks: "`for k in 0..n` doesn't put `k` below `n`, so `n - k - 1` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                let end = end.map(|r| self.bounded_by_itself(r, range.fields[1].expr));\n",
+    find: "                let end = end.map(|r| self.bounded_by_itself(r, end_at));\n",
     replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
@@ -207,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "ranges-for-unknown",
     breaks: "`for i in 0..xs.len()` shows nothing of `i`, so `items[i]` is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-1)))),",
+    find: "                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-past)))),",
     replace: "                    below: None,",
     tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },

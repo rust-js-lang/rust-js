@@ -34,10 +34,10 @@ function oddSquares(limit) {
     if (i % 2 === 0) {
       continue;
     }
-    if (Math.imul(i, i) >>> 0 > 50) {
+    if (i * i > 50) {
       break;
     }
-    found.push(Math.imul(i, i) >>> 0);
+    found.push(i * i);
   }
   return found;
 }
@@ -62,7 +62,7 @@ function pairs(n) {
   const found = [];
   outer: for (let a = 1; a <= n; a++) {
     for (let b = a; b <= n; b++) {
-      if (Math.imul(a, b) >>> 0 > 6) {
+      if (a * b > 6) {
         continue outer;
       }
       found.push([a, b]);

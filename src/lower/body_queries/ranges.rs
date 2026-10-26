@@ -1135,26 +1135,42 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// slice: the range's end is its length as the loop began.
     fn walk_for(&mut self, for_loop: ForLoop<'a, 'tcx>, known: &mut Option<Known>) {
         let thir = self.thir;
-        let each = match thir[strip(thir, for_loop.head)].kind {
+        let head = strip(thir, for_loop.head);
+        // Its start and end, and how far below its end its last item is:
+        // `a..b`'s 1, `a..=b`'s, `RangeInclusive::new(a, b)`, 0.
+        let bounds = match thir[head].kind {
             ExprKind::Adt(ref range) if self.tcx.is_lang_item(range.adt_def.did(), LangItem::Range) => {
                 let [start, end] = &range.fields[..] else {
                     unreachable!("a range's two fields")
                 };
-                let start = self.expr(start.expr, known);
-                let end = self.expr(end.expr, known);
+                Some((start.expr, end.expr, 1))
+            }
+            ExprKind::Call { fun, ref args, .. }
+                if let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
+                    && self.tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew)
+                    && let [start, end] = args[..] =>
+            {
+                Some((start, end, 0))
+            }
+            _ => None,
+        };
+        let each = match bounds {
+            Some((start_at, end_at, past)) => {
+                let start = self.expr(start_at, known);
+                let end = self.expr(end_at, known);
                 let body = thir[for_loop.body].span.source_callsite();
                 let unchanged = |(path, var): Slice| {
                     let changed = (self.changes.get(&var)).is_some_and(|at| at.iter().any(|at| body.contains(*at)));
                     (!changed).then_some((path, var))
                 };
-                let end = end.map(|r| self.bounded_by_itself(r, range.fields[1].expr));
+                let end = end.map(|r| self.bounded_by_itself(r, end_at));
                 start.zip(end).map(|(start, end)| Range {
                     lo: start.lo,
-                    hi: end.hi - 1,
-                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-1)))),
+                    hi: end.hi - past,
+                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-past)))),
                 })
             }
-            _ => {
+            None => {
                 self.expr(for_loop.head, known);
                 None
             }
