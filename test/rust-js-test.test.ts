@@ -1,4 +1,4 @@
-// `rust-js test` (ADR 0914): a crate's library's `#[test]`s compiled to JS
+// `rust-js test` (ADR 0916): a crate's library's `#[test]`s compiled to JS
 // as `cargo check --profile test --lib` builds them, a dependency's JS
 // too, run by bun, which gives the `test()` each calls. What bun says, and
 // its exit code, are the command's.
@@ -38,11 +38,16 @@ edition = "2021"
   return dir;
 }
 
-/** What `rust-js test -- ..args` says of the crate at `dir`, and its exit code. */
+/** What `rust-js test -- ..args` says of the crate at `dir`, and its exit
+ * code; into `targetDir`, where given. */
 function rustJsTest(dir: string, ...args: string[]) {
+  return rustJsTestIn(dir, undefined, ...args);
+}
+
+function rustJsTestIn(dir: string, targetDir: string | undefined, ...args: string[]) {
   const p = Bun.spawnSync(["bun", join(root, "tooling", "cli.js"), "test", ...(args.length ? ["--", ...args] : [])], {
     cwd: dir,
-    env: { ...process.env, RUST_JS_COMPILER: compiler },
+    env: { ...process.env, RUST_JS_COMPILER: compiler, ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -91,3 +96,16 @@ test("what follows -- is bun's, -t picking the tests to run", () => {
   expect(said).toContain("1 filtered out");
   expect(code).toBe(0);
 });
+
+// Cargo gives a crate the same unit's directory wherever its package is, a
+// project moved or another of the same name sharing its target: the second
+// build's JS replaces the first's there, each crate's tests its own.
+test("two crates of one name at two paths, one target, each run their own tests", () => {
+  const shared = join(fixture("rust-js-test-shared-target"), "target");
+  const first = rustJsTestIn(crate("rust-js-test-first", lib), shared);
+  const failing = lib.replace("assert_eq!(quadruple(3), 12);", "assert_eq!(quadruple(3), 13);");
+  const second = rustJsTestIn(crate("rust-js-test-second", failing), shared);
+  expect([first.code, second.code]).toEqual([0, 1]);
+  expect(second.said).toMatch(/\b1 fail\b/);
+});
+

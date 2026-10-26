@@ -4,7 +4,7 @@ import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
     name: "cargo-tests-rustcs",
-    breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes no `lib.test.js` (ADR 0914)",
+    breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes no `lib.test.js` (ADR 0916)",
     file: "src/cargo.rs",
     find: '    let tests = builds_tests(&flags);\n',
     replace: '    let tests = false;\n',
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cargo-tests-test-twice",
-    breaks: "a test build gives rustc Cargo's `--test` as well as rust-js's, which rustc refuses (ADR 0914)",
+    breaks: "a test build gives rustc Cargo's `--test` as well as rust-js's, which rustc refuses (ADR 0916)",
     file: "src/cargo.rs",
     find: '        if flag.starts_with("--emit=") || flag == "--test" {\n',
     replace: '        if flag.starts_with("--emit=") {\n',

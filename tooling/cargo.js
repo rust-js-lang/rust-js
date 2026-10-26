@@ -156,7 +156,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
-  // Its library's `#[test]`s, `rust-js test`'s (ADR 0914): rustc's `--test`,
+  // Its library's `#[test]`s, `rust-js test`'s (ADR 0916): rustc's `--test`,
   // which the wrapper gives rust-js's.
   if (tests) args.push("--profile", "test", "--lib");
   if (packageName) args.push("-p", packageName);

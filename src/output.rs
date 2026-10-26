@@ -599,7 +599,11 @@ impl OutputPlan {
             if path.exists() {
                 let previous =
                     Manifest::read_from(&path).map_err(|e| format!("invalid manifest `{}`: {e}", path.display()))?;
-                if previous.input != input || previous.output != output {
+                // Of a crate Cargo builds, the directory is its unit's, which
+                // Cargo gives a crate of the same name at another path too, a
+                // project moved, or another sharing its target: what that one
+                // wrote there is this build's to replace.
+                if (previous.input != input || previous.output != output) && !self.settings.cargo {
                     return Err(format!("manifest `{}` belongs to another compilation", path.display()));
                 }
                 for file in previous.artifacts {

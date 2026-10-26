@@ -88,7 +88,7 @@ React. Run `rust-js build` first, or test in CI after `rust-js build
 ## Rust tests compiled to JavaScript
 
 `rust-js test` runs a crate's library's `#[test]`s as JavaScript, as
-`cargo test` runs them natively ([ADR 0914](../../decisions/0914-rust-js-test-runs-a-crates-tests-as-js.md)):
+`cargo test` runs them natively ([ADR 0916](../../decisions/0916-rust-js-test-runs-a-crates-tests-as-js.md)):
 Cargo builds them, with rust-js as its wrapper, each dependency compiled
 to JS as `rust-js build` compiles it, and bun runs them. It writes nothing
 beside the Rust; what follows `--` is bun's.

@@ -166,7 +166,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
 }
 
 /// Whether Cargo builds a library's `#[test]`s, `rust-js test`'s `cargo
-/// check --profile test --lib`: rustc's harness, of no crate type (ADR 0914).
+/// check --profile test --lib`: rustc's harness, of no crate type (ADR 0916).
 fn builds_tests(flags: &[String]) -> bool {
     flags.iter().any(|flag| flag == "--test")
 }
@@ -317,7 +317,7 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     // own, as it has metadata, so a build Cargo has as done is still its JS.
     let dir = out_dir.join("rust-js").join(format!("{name}{extra}"));
     // Its `#[test]`s, rust-js's `--test`, which gives rustc its own (ADR 0026):
-    // `lib.test.js` beside its JS, which `rust-js test` runs (ADR 0914).
+    // `lib.test.js` beside its JS, which `rust-js test` runs (ADR 0916).
     let tests = builds_tests(flags);
     let mut ours: Vec<String> = tests.then(|| "--test".to_string()).into_iter().collect();
     ours.extend([

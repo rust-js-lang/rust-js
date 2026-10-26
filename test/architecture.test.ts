@@ -911,7 +911,7 @@ test("only recognition spells std's names", () => {
 // the compiler is what `rust-js build` runs, not the app's command. Of the
 // two other commands, `rust-js clippy` lints and writes no JS (ADR 0888),
 // and `rust-js test` compiles its tests, out of source, in a target of its
-// own, and runs them (ADR 0914).
+// own, and runs them (ADR 0916).
 test("an app's Rust is compiled one way, rust-js build", () => {
   const workspaces: string[] = JSON.parse(read("package.json")).workspaces;
   expect(workspaces.filter((dir) => /plugin/.test(dir))).toEqual([]);

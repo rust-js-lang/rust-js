@@ -6,7 +6,7 @@
 // asks before a build. `rust-js clippy` lints it with clippy's lints, as
 // rust-js reads it, its lint flags after `--`, `-- -D warnings`, as `cargo
 // clippy`'s are (ADR 0888). `rust-js test` runs its library's `#[test]`s as
-// JS, as `cargo test` runs them natively, bun's flags after `--` (ADR 0914).
+// JS, as `cargo test` runs them natively, bun's flags after `--` (ADR 0916).
 // The compiler is this command's, not the app's to run.
 import { buildApp, clippyApp, testApp } from "./build.js";
 

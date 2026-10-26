@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cargo-unit-of-another-refused",
+    breaks: "a Cargo build into the unit directory a crate of the same name at another path wrote first fails, its manifest taken for another compilation's",
+    file: "src/output.rs",
+    find: "                if (previous.input != input || previous.output != output) && !self.settings.cargo {\n",
+    replace: "                if previous.input != input || previous.output != output {\n",
+    tests: ["test/rust-js-test.test.ts", "-t", "two crates of one name"],
+  },
+  {
     name: "alias-not-exported",
     breaks: "an alias isn't among the module's exports, which what imports it checks",
     file: "src/output.rs",

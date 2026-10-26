@@ -267,7 +267,7 @@ export async function clippyApp({ app, packageName, lints }) {
 }
 
 /**
- * `rust-js test` (ADR 0914): the `#[test]`s of the library of the package
+ * `rust-js test` (ADR 0916): the `#[test]`s of the library of the package
  * `app`'s `Cargo.toml` is of, or `packageName`, compiled to JS as `cargo
  * check --profile test --lib` builds them, with its dependencies' JS as a
  * build has it, in a target directory of its own, out of source; then run by

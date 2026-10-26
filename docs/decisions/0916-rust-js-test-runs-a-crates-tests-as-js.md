@@ -1,4 +1,4 @@
-# 0914. `rust-js test` runs a crate's `#[test]`s as JS, through Cargo
+# 0916. `rust-js test` runs a crate's `#[test]`s as JS, through Cargo
 
 Status: Accepted. Extends [0026](0026-testing.md) and
 [0412](0412-rust-js-build-is-its-own-process.md).
@@ -47,3 +47,16 @@ build --tests` flag: build and test are each one job.
 - Held by `test/rust-js-test.test.ts` (a path dependency's JS, a passing
   and a `should_panic` test, a failing one's exit code and message, `-t`)
   and the mutations `cargo-tests-rustcs` and `cargo-tests-test-twice`.
+
+## Amendment: a unit's directory is Cargo's to give
+
+Cargo gives a package the same unit directory wherever its path is, so two
+crates of one name sharing a `CARGO_TARGET_DIR`, or a project moved, write
+JS to the same `rust-js/<crate><extra>/`, and the second build failed: its
+manifest "belongs to another compilation". **A crate Cargo builds replaces
+what another wrote there**; the guard, which keeps one compilation from
+overwriting another's files, holds outside Cargo, where the directory is
+the user's. Held by the test "two crates of one name at two paths, one
+target, each run their own tests" and the mutation
+`cargo-unit-of-another-refused`.
+
