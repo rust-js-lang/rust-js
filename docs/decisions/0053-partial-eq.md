@@ -86,3 +86,18 @@ might be hand-written.
   `TPartialEq` argument.
 - `Std::Eq`, `Std::LooseEq` and `Std::StructEq` are gone: all `==` goes
   through one function, `eq_value`.
+
+## Amendment: an item-by-item `==`'s arrow names are fresh (#307)
+
+`==` of two `Vec`s or slices of different item types, `Vec<String>` and
+`Vec<&str>`, compares them item by item, `a.length === b.length &&
+a.every((x, i) => ..)`, and its `x` and `i` were written as they are. They
+hid a variable so named, `a == x` reading `a.every((x, i) => x === x[i])`,
+and a nested one's index its outer one's, `rows.every((x, i) => ..
+x.every((x, i) => x === wrong[i][i]))`: `==` said `false` of equal values
+and `true` of unequal ones. TheAlgorithms/rust's n-queens tests, which
+compare a `Vec<Vec<String>>` with the `Vec<Vec<&str>>` they expect, failed.
+**Each is now named fresh**, as a map's `(x, y)` already was:
+`a.every((x$1, i) => x$1 === x[i])`, `x.every((x, i$1) => x ===
+wrong[i][i$1])`; a `RefCell`'s `$withBorrow` arrows too. Held by the corpus
+case `eq_items_of_other_types` and the mutation `eq-items-fixed-names`.

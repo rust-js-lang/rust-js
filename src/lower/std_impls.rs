@@ -1210,18 +1210,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     given
                 };
+                let (x, y) = (self.fresh("x"), self.fresh("y"));
                 let mut body = Vec::new();
-                let eq = self.eq_value(Expr::var("x"), Expr::var("y"), args.type_at(0), span, &mut body)?;
+                let eq = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
                 let inner = Expr::call(
                     Expr::helper("$withBorrow"),
-                    flagged(vec![b, Expr::arrow(vec!["y".into()], body)]),
+                    flagged(vec![b, Expr::arrow(vec![y.into()], body)]),
                 );
                 Ok(Expr::call(
                     Expr::helper("$withBorrow"),
                     flagged(vec![
                         a,
-                        Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
+                        Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
                     ]),
                 ))
             }
@@ -1353,7 +1354,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `a.length === b.length && a.every((x, i) => <x == b[i]>)`, of `a`'s
-    /// items and `b`'s, each held where it's more than a place.
+    /// items and `b`'s, each held where it's more than a place: `x` and `i`
+    /// named fresh, as `b`, or one inside `<x == b[i]>`, may be named so.
     fn eq_items(
         &mut self,
         a: Expr,
@@ -1364,13 +1366,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let a = if a.reads_same() { a } else { self.spill("items", a, out) };
         let b = if b.reads_same() { b } else { self.spill("other", b, out) };
+        let (x, i) = (self.fresh("x"), self.fresh("i"));
         let mut body = Vec::new();
-        let other = Expr::index(b.clone(), Expr::var("i"));
-        let same = self.eq_values(Expr::var("x"), other, (item, other_item), span, &mut body)?;
+        let other = Expr::index(b.clone(), Expr::var(&i));
+        let same = self.eq_values(Expr::var(&x), other, (item, other_item), span, &mut body)?;
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         let every = Expr::call(
             Expr::member(a.clone(), "every"),
-            vec![Expr::arrow(vec!["x".into(), "i".into()], body)],
+            vec![Expr::arrow(vec![x.into(), i.into()], body)],
         );
         let lengths = Expr::bin(Op::Eq, Expr::member(a, "length"), Expr::member(b, "length"));
         Ok(Expr::bin(Op::And, lengths, every))

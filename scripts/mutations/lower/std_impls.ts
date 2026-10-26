@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "eq-items-fixed-names",
+    breaks: "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
+    file: "src/lower/std_impls.rs",
+    find: "        let (x, i) = (self.fresh(\"x\"), self.fresh(\"i\"));\n",
+    replace: "        let (x, i) = (\"x\".to_string(), \"i\".to_string());\n",
+    tests: ["test/corpus.test.ts", "-t", "^eq_items_of_other_types.rs$"],
+  },
+  {
     name: "uncounted-weak-cloned",
     breaks: "a clone of an uncounted `Weak` copies what it points at, or is refused, where it's the same object (ADR 0843)",
     file: "src/lower/std_impls.rs",
