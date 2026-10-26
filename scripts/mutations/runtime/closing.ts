@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
-    name: "closing-closed-again",
+    name: "closing-fold-taken-closed-again",
     breaks: "an iterator std's compiled `fold` took is dropped again when what holds it closes (ADR 0912)",
     file: "src/runtime/closing.js",
     find: "    if (!closed && !it.$closed) {\n",
