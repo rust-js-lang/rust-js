@@ -563,3 +563,62 @@ test("what a getter is refused says what to write", () => {
     expect(refused(name, rust)).toContain(message);
   }
 });
+
+// javascript-algorithms' `QueenPosition`: `toString() { return
+// \`${this.rowIndex},${this.columnIndex}\`; }` (#358). A class's `impl
+// Display` is its prototype's `toString`: Rust's `{p}` and `p.to_string()`
+// are JS's text of it, `${p}`, as JS's `String(p)` is, and a `T: Display`
+// it's given to shows it by `String`.
+test("a class's Display is its prototype's toString", async () => {
+  const { js, ts, dir } = compiled("class-display", `use std::fmt;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct QueenPosition {
+    pub row_index: i32,
+    pub column_index: i32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl QueenPosition {
+    pub fn new(row_index: i32, column_index: i32) -> Self {
+        QueenPosition {
+            row_index,
+            column_index,
+        }
+    }
+}
+
+impl fmt::Display for QueenPosition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{},{}", self.row_index, self.column_index)
+    }
+}
+
+fn joined<T: fmt::Display>(items: &[T]) -> String {
+    items.iter().map(|item| item.to_string()).collect::<Vec<_>>().join(" ")
+}
+
+pub fn shown(position: &QueenPosition) -> String {
+    format!("at {position}")
+}
+
+pub fn text(position: &QueenPosition) -> String {
+    position.to_string()
+}
+
+pub fn all(positions: &[QueenPosition]) -> String {
+    joined(positions)
+}
+`);
+  expect(js).toContain(`QueenPosition.prototype.toString = function () {
+  return \`\${this.rowIndex},\${this.columnIndex}\`;
+};`);
+  expect(js).toContain("return `at ${position}`;");
+  expect(js).not.toContain("queenPositionDisplay");
+  expect(js).toContain("return joined(positions, { fmt: String });");
+  expect(ts).toContain("    toString(): string;\n");
+  const { QueenPosition, shown, text, all } = await import(join(dir, "lib.js"));
+  const position = new QueenPosition(2, 1);
+  expect([position.toString(), String(position), `${position}`]).toEqual(["2,1", "2,1", "2,1"]);
+  expect([shown(position), text(position), all([position, new QueenPosition(0, 3)])]).toEqual(["at 2,1", "2,1", "2,1 0,3"]);
+});

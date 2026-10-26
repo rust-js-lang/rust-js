@@ -8,6 +8,7 @@
 
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
 use crate::lower::Body;
+use crate::lower::recognition::{StdItem, is_std_def, opt_std_item};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir;
 use rustc_middle::ty::{self, TyCtxt};
@@ -74,7 +75,34 @@ pub(crate) fn is_class(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     tcx.def_kind(adt) == DefKind::Struct && marked(tcx, adt)
 }
 
-/// The class an inherent impl is of, if it's a class's.
+/// The class `imp` is its `Display`'s, `impl fmt::Display for
+/// QueenPosition`, whose `fmt` is its prototype's `toString` (#358).
+pub(crate) fn displayed_class(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    let DefKind::Impl { of_trait: true } = tcx.def_kind(imp) else {
+        return None;
+    };
+    if !is_std_def(tcx, tcx.impl_trait_id(imp), StdItem::Display) {
+        return None;
+    }
+    class_of_impl(tcx, imp)
+}
+
+/// The class `def_id` is the `fmt` of the `Display` of, its prototype's
+/// `toString` (#358); `None` of any other item.
+pub(crate) fn shown_class(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+    (tcx.def_kind(def_id) == DefKind::AssocFn)
+        .then(|| displayed_class(tcx, tcx.trait_impl_of_assoc(def_id)?))
+        .flatten()
+}
+
+/// Whether `class` has a `Display`, its prototype's `toString` (#358).
+pub(crate) fn has_to_string(tcx: TyCtxt<'_>, class: DefId) -> bool {
+    opt_std_item(tcx, StdItem::Display).is_some_and(|display| {
+        (tcx.local_trait_impls(display).iter()).any(|imp| displayed_class(tcx, imp.to_def_id()) == Some(class))
+    })
+}
+
+/// The class an impl is of, if it's a class's.
 fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
         ty::Adt(adt, _) if is_class(tcx, adt.did()) => Some(adt.did()),
@@ -87,6 +115,10 @@ fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
     if !matches!(tcx.def_kind(def_id), DefKind::AssocFn | DefKind::AssocConst { .. }) {
         return None;
+    }
+    // Its `Display`'s `fmt`, the prototype's `toString` (#358).
+    if shown_class(tcx, def_id).is_some() {
+        return Some(Member::Method);
     }
     let imp = tcx.inherent_impl_of_assoc(def_id)?;
     class_of_impl(tcx, imp)?;
@@ -103,7 +135,7 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
 /// of any other item.
 pub(crate) fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
     member(tcx, def_id)?;
-    class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?)
+    shown_class(tcx, def_id).or_else(|| class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?))
 }
 
 /// The constructor of `adt`, a class: its `fn new(..) -> Self`; `None` of
@@ -243,8 +275,8 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
             }
             // A trait's methods would be a dictionary's, given the value,
             // not the prototype's: only a marker's, of no items, `unsafe
-            // impl js::Defined`.
-            DefKind::Impl { of_trait: true } => {
+            // impl js::Defined`, and `Display`'s, its `toString` (#358).
+            DefKind::Impl { of_trait: true } if displayed_class(tcx, id).is_none() => {
                 let self_ty = tcx.type_of(id).instantiate_identity().skip_normalization();
                 if let ty::Adt(adt, _) = self_ty.kind()
                     && is_class(tcx, adt.did())
@@ -291,7 +323,15 @@ pub(super) fn reject_misuse<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> 
 /// set, `this.props = props;`. A method's `self` is `this` already, made
 /// so before tidy (`receiver_as_this`). `Err` of a constructor that
 /// returns what's no struct literal.
-pub(super) fn as_member(member: Member, class: &str, function: &mut js::Function) -> Result<(), &'static str> {
+pub(super) fn as_member(
+    tcx: TyCtxt<'_>,
+    def_id: DefId,
+    class: &str,
+    function: &mut js::Function,
+) -> Result<(), &'static str> {
+    let Some(member) = member(tcx, def_id) else {
+        return Ok(());
+    };
     match member {
         Member::Constructor => set_this(&mut function.body),
         Member::Method | Member::Getter => {

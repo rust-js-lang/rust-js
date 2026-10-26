@@ -768,6 +768,11 @@ export function mounted(props?: unknown | null | undefined): Component;
   It's a method of `&self` alone that gives a value: one of `&mut self`,
   of arguments, of no `self`, `async`, or of a struct that's no class is
   refused.
+- **Its `impl fmt::Display` is the prototype's `toString`**, as JS's
+  `toString() { return `${this.rowIndex},${this.columnIndex}`; }`: Rust's
+  `{p}` and `p.to_string()` are JS's text of it, `${p}`, so JS's
+  `String(p)` gives Rust's text too, and a `T: Display` given it shows it
+  by `String`. It's declared `toString(): string`.
 - **`js::class::<T>()` is the constructor itself**, `Component`, a
   `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
   a prototype chain is written with, as JS writes it. Of a binding's
@@ -787,8 +792,9 @@ export function mounted(props?: unknown | null | undefined): Component;
   which the attribute, where Rust meets JS, says.
 - **Refused, each with what to write**: a tuple or unit struct; a generic
   one; a struct literal of it outside its `new`, which would be no
-  instance; a trait impl of it with items, a `derive(Clone)` among them,
-  whose methods would be a dictionary's, not the prototype's; a method of
+  instance; a trait impl of it with items but `Display`'s, a
+  `derive(Clone)` among them, whose methods would be a dictionary's, not
+  the prototype's; a method of
   `self` by value; a method or constant named as a field, which
   `this.name` would hide; a class of no `new`; and the attribute on one
   of the struct and its impl alone.

@@ -673,6 +673,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
         .filter(|&id| serde_impl(tcx, id).is_none())
         .filter(|&id| !is_js_object_deref(tcx, id))
+        // A class's `Display`, its prototype's `toString` (#358).
+        .filter(|&id| super::classes::displayed_class(tcx, id).is_none())
         .collect();
 
     // Closures are lowered inside the function that creates them.

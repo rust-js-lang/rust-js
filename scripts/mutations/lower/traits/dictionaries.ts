@@ -430,4 +430,12 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
+  {
+    name: "class-display-dictionary-impl",
+    breaks: "a `T: Display` of a class is its impl's dictionary, which isn't emitted (#358)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && (!self.has_user_impl(tr.def_id, ty) || shown)\n",
+    replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
 ];

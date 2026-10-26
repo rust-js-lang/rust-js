@@ -327,4 +327,12 @@ export const mutations: Mutation[] = [
     replace: "    if false && std_iterators {\n",
     tests: ["test/iterator-forms.test.ts"],
   },
+  {
+    name: "class-display-dictionary-emitted",
+    breaks: "a class's `impl Display` is emitted as a dictionary too, `queenPositionDisplay`, besides its `toString` (#358)",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&id| super::classes::displayed_class(tcx, id).is_none())\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
 ];

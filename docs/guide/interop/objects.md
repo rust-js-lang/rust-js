@@ -505,7 +505,8 @@ export function show(p) {
 - **`Display` is a function that gives the text**, and `{p}` is its
   call. A struct has no `toString()`: JS's `String(p)` is
   `"[object Object]"`. JS that wants Rust's text calls
-  `pointDisplay.fmt(p)`.
+  `pointDisplay.fmt(p)`. A [class's](export-to-javascript.md#js-classes)
+  `Display` is its `toString()`.
 - **An operator of your own is its method's call**: `q + other` is
   `pointAdd_add(q, other)`. An operator of numbers stays JS's, `+`.
 

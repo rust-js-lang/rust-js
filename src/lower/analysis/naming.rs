@@ -416,6 +416,9 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
         let function = tcx.typeck_root_def_id(def_id);
         return format!("{}Const", crate::lower::lower_first(tcx.item_name(function).as_str()));
     }
+    if crate::lower::classes::shown_class(tcx, def_id).is_some() {
+        return "toString".to_owned();
+    }
     if tcx.def_kind(def_id) == DefKind::AssocFn && tcx.inherent_impl_of_assoc(def_id).is_none() {
         let parent = tcx.parent(def_id);
         let prefix = if trait_impls.contains(&parent) {
@@ -494,6 +497,8 @@ pub(super) fn name_items(
                 _ => None,
             }
         });
+        // A class's `Display`'s `fmt`, its prototype's `toString` (#358).
+        let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));
         let (name, owner) = match owner_type {
             Some(ty) => {
                 let owner = owners

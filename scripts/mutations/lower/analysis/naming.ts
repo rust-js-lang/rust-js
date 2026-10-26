@@ -333,4 +333,20 @@ export const mutations: Mutation[] = [
     replace: "        if exported(def_id) && false {\n            match exports.entry(",
     tests: ["test/lowering-module-variables.test.ts", "-t", "two exports of one JS name are refused"],
   },
+  {
+    name: "class-display-owned-apart",
+    breaks: "a class's `Display`'s `fmt` is a function of its own, not its class's prototype's `toString` (#358)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
+  {
+    name: "class-display-named-fmt",
+    breaks: "a class's `Display`'s `fmt` is named `queenPositionDisplay_fmt` on its prototype, which JS's `String` never calls (#358)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        return \"toString\".to_owned();\n",
+    replace: "        return \"show\".to_owned();\n",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
 ];

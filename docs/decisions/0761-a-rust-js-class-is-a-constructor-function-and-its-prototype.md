@@ -300,3 +300,28 @@ getter is refused says what to write", `test/corpus/class_getters.rs`, and
 the mutations `getter-a-method`, `getter-of-no-class-allowed`,
 `getter-of-any-shape-allowed`, `getter-called`, `getter-value-unread` and
 `getter-printed-as-method`.
+
+## Amendment: its `Display` is its prototype's `toString` (#358)
+
+Decided by the user (2026-10-26). trekhleb/javascript-algorithms'
+`QueenPosition` has `toString() { return `${this.rowIndex},${this.columnIndex}`; }`,
+which its test calls; a class's trait impl with items was refused, so
+`impl fmt::Display` couldn't be written. **A class's `impl Display` is its
+prototype's `toString`**, its `fmt` a method (`classes::shown_class`)
+named `toString` on its class, no dictionary of its own. Case A
+([0262](0262-when-rust-and-js-disagree.md)): JS's text of the value,
+`${p}`, calls `toString` with nothing, which is what Rust's `{p}` writes
+where the crate gives no `Formatter` options, so `{p}` and `p.to_string()`
+are `${p}`, and a `T: Display` it's given shows it by `String`. Where the
+crate's writers take options (ADR 0137), `{p:>6}` is `p.toString({ width:
+6, .. })`, and a plain one `p.toString()`, as its other writers are
+given them. It's declared `toString(): string`. Only `Display`: another
+trait's methods would still be a dictionary's. Held by `classes.test.ts`'s
+"a class's Display is its prototype's toString",
+`test/corpus/class_display.rs`, `test/corpus/class_to_string.rs`, and the
+mutations `class-display-no-member`, `class-display-refused`,
+`class-display-owned-apart`, `class-display-named-fmt`,
+`class-display-called`, `class-display-template-arrow`,
+`class-writer-called-by-name`, `class-to-string-given-undefined`,
+`class-display-dictionary-impl`, `class-display-dictionary-emitted` and
+`class-to-string-undeclared`.

@@ -798,4 +798,12 @@ export const mutations: Mutation[] = [
     replace: "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made|a nullable const's None is null"],
   },
+  {
+    name: "class-to-string-undeclared",
+    breaks: "a class's `toString` is left out of its declaration (#358)",
+    file: "src/lower/declarations.rs",
+    find: "        if crate::lower::classes::has_to_string(self.tcx, def_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
 ];

@@ -839,6 +839,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 members.push(documented(declared, self.tcx, item));
             }
         }
+        // Its `Display`, its prototype's `toString` (#358).
+        if crate::lower::classes::has_to_string(self.tcx, def_id) {
+            let returns = keyword("string");
+            members.push(json!({ "kind": "method", "name": "toString", "static": false, "typeParameters": [], "params": [], "returns": returns }));
+        }
         members.splice(0..0, constructor);
         json!({
             "kind": "class",

@@ -249,9 +249,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .types()
                 .nth(1)
                 .is_some_and(|rhs| rhs.peel_refs() != ty.peel_refs());
+        // A class's `Display` is its `toString`, which JS's `String` calls (#358).
+        let shown = (display || to_string) && self.is_shown_class(ty);
         if (default || clone || eq || display || to_string || debug || ord || partial_ord)
             && !of_other
-            && !self.has_user_impl(tr.def_id, ty)
+            && (!self.has_user_impl(tr.def_id, ty) || shown)
         {
             if debug {
                 // Given a `Formatter`'s options, where the crate's writers are (ADRs 0058, 0137).

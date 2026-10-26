@@ -463,6 +463,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `#[link_name = "this"]`, `js::shown`'s: its text is what JS's
     /// template makes of the value, `shown_text` (ADR 0312).
     pub(super) fn displays_itself(&self, ty: Ty<'tcx>) -> bool {
+        // A class's, its prototype's `toString`, given no `Formatter`'s
+        // options, which JS's template gives it none of (#358).
+        if self.is_shown_class(ty) && !self.writers_take_options() {
+            return true;
+        }
         let Some(fmt) = self.recognition().display_fmt() else {
             return false;
         };
@@ -470,6 +475,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(self.resolve_instance(fmt, args), Ok(Some(instance))
             if bindings::is_binding(self.tcx, instance.def_id())
                 && matches!(bindings::js_form(self.tcx, instance.def_id()), bindings::JsForm::This))
+    }
+
+    /// Whether `ty` is a class with a `Display`, its prototype's `toString`
+    /// (#358), no dictionary's.
+    pub(super) fn is_shown_class(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::classes::is_class(self.tcx, adt.did()))
+            && self.has_user_impl(self.display_trait(), ty)
     }
 
     /// `ToString`, which is `alloc`'s: a `#![no_std]` crate that doesn't load
@@ -563,11 +575,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "this implementation"))?;
         let evidence = self.evidence_args(instance.def_id(), instance.args, span)?;
         let mut values = vec![value];
-        if self.takes_options(instance.def_id()) {
+        // A class's `toString` given no options is called with none,
+        // `p.toString()` (#358).
+        let plain_to_string = matches!(pretty, Pretty::Plain)
+            && crate::lower::classes::shown_class(self.tcx, instance.def_id()).is_some();
+        if self.takes_options(instance.def_id()) && !plain_to_string {
             values.push(pretty.options());
         }
         values.extend(evidence);
-        Ok(Expr::call(self.fn_ref(instance.def_id()), values))
+        // A class's `toString` is called on the value (#358).
+        Ok(self.crate_called(instance.def_id(), values))
     }
 
     /// `Box<T>` and `Rc<T>`: shown as their `T`, which is the value they are
@@ -607,8 +624,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => (vec!["value".into()], Pretty::Plain),
         };
         let shown = self.display_string_with(Expr::var("value"), ty, span, &pretty)?;
-        // `String(value)` of a number is the function `String`.
-        if let js::ExprKind::Stringed(value) = &shown.kind
+        // `String(value)` of a number is the function `String`, and so is
+        // JS's text of the value, \`${value}\`, a class's `toString`'s (#358).
+        let text_of = match &shown.kind {
+            js::ExprKind::Stringed(value) => Some(&**value),
+            js::ExprKind::Template(_, values, _) if is_shown_text(&shown) && values.len() == 1 => values.first(),
+            _ => None,
+        };
+        if let Some(value) = text_of
             && params.len() == 1
             && is_var(value, "value")
         {

@@ -273,7 +273,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// constructor, `new Component(..)`, and of its method, a call of the
     /// prototype's, `component.setState(..)` (ADR 0761); of any other,
     /// `f(..)`.
-    fn crate_called(&self, def_id: rustc_span::def_id::DefId, mut args: Vec<Expr>) -> Expr {
+    pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, mut args: Vec<Expr>) -> Expr {
         let callee = self.fn_ref(def_id);
         match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
             (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {

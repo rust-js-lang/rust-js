@@ -151,4 +151,20 @@ export const mutations: Mutation[] = [
     replace: "                        && false\n",
     tests: ["test/classes.test.ts", "-t", "what a getter is refused"],
   },
+  {
+    name: "class-display-no-member",
+    breaks: "a class's `Display`'s `fmt` is no prototype method, its `self` no `this` (#358)",
+    file: "src/lower/classes.rs",
+    find: "    if shown_class(tcx, def_id).is_some() {\n",
+    replace: "    if false {\n",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
+  {
+    name: "class-display-refused",
+    breaks: "a class's `impl Display` is refused as any trait impl with items is (#358)",
+    file: "src/lower/classes.rs",
+    find: "            DefKind::Impl { of_trait: true } if displayed_class(tcx, id).is_none() => {\n",
+    replace: "            DefKind::Impl { of_trait: true } => {\n",
+    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
+  },
 ];
