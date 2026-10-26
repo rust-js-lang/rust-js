@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "projection-extension-ungiven",
+    breaks: "an extension's bound on an associated type, `U::IntoIter: DoubleEndedIterator` of std's `FlatMap`'s back, is given no dictionary, so its evidence is the `IntoIterator`'s `IntoIterIterator()`, an `Iterator`'s: `it.back is not a function` (ADR 0936)",
+    file: "src/lower/traits.rs",
+    find: "        && matches!(alias.self_ty().kind(), ty::Param(_))\n",
+    replace: "        && matches!(alias.self_ty().kind(), ty::Param(_))\n        && false\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
+  },
+  {
     name: "supertrait-key-instantiated",
     breaks: "`Pair<u32, String>: Label<A> + Label<B>`'s impl writes its supertraits as `LabelU32` and `LabelString`, and generic code reads `LabelA` and `LabelB`",
     file: "src/lower/traits.rs",

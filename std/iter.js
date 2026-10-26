@@ -18,7 +18,6 @@ import {
   $lastDropping,
   $lent,
   $neverShortCircuitTry,
-  $nextBackSome,
   $nextSome,
   $nthBack,
   $nthDropping,
@@ -3263,6 +3262,7 @@ export function flatMapDoubleEndedIterator_nextBack(
   IIterator,
   IDoubleEndedIterator,
   UIntoIterator,
+  UIntoIterDoubleEndedIterator,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3369,7 +3369,7 @@ export function flatMapDoubleEndedIterator_nextBack(
             ),
         },
         UIntoIterator,
-        { next_back: $nextBackSome },
+        UIntoIterDoubleEndedIterator,
         false,
         (map) => {
           map.return();
@@ -3387,6 +3387,7 @@ export function flatMapDoubleEndedIterator_rfold(
   IIterator,
   IDoubleEndedIterator,
   UIntoIterator,
+  UIntoIterDoubleEndedIterator,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3502,7 +3503,7 @@ export function flatMapDoubleEndedIterator_rfold(
         },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
-        { next_back: $nextBackSome },
+        UIntoIterDoubleEndedIterator,
         (map) => {
           map.return();
         },
@@ -3521,6 +3522,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
   IIterator,
   IDoubleEndedIterator,
   UIntoIterator,
+  UIntoIterDoubleEndedIterator,
   RTry,
   UIntoIterOneShot,
   dropI,
@@ -3641,7 +3643,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
         },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
-        { next_back: $nextBackSome },
+        UIntoIterDoubleEndedIterator,
         RTry,
         false,
         (map) => {

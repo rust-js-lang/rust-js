@@ -720,6 +720,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0933 `FilterMap`, `TakeWhile`, `SkipWhile`, `MapWhile` and `Scan` are compiled as their meaning, and a function given to std's compiled maker is given its state's box](0933-closure-adapters-compiled-as-their-meaning.md)
 - [0934 std's struct compiled for a build drops what its fields hold, as a struct of the crate's does](0934-a-compiled-struct-drops-its-fields.md)
 - [0935 `js::NULL` is `None`, and `null` where it's written](0935-js-null-is-null-where-its-written.md)
+- [0936 An iterator extension's bound on a parameter's associated type is given its own dictionary](0936-an-extension-bound-on-an-associated-type-is-given.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -7,6 +7,7 @@ import {
   $iter,
   $iterator,
   $next,
+  $nextBack,
   $nextBackSome,
   $rev,
 } from "@rust-js/runtime";
@@ -27,10 +28,12 @@ function lastOf(it) {
   return $nextBackSome(it);
 }
 
-function revAll(iterable, IIntoIterator) {
-  return iterator_rev(IIntoIterator.intoIter(iterable), IIntoIterator.IntoIterIterator(), {
-    next_back: $nextBackSome,
-  });
+function revAll(iterable, IIntoIterator, IIntoIterDoubleEndedIterator) {
+  return iterator_rev(
+    IIntoIterator.intoIter(iterable),
+    IIntoIterator.IntoIterIterator(),
+    IIntoIterDoubleEndedIterator,
+  );
 }
 
 function sliceIterator_next(slice) {
@@ -64,10 +67,11 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `${$debugStr(
-      revAll(["a", "b"], {
-        intoIter: (items) => $iter(items),
-        IntoIterIterator: () => ({ next: $next }),
-      })
+      revAll(
+        ["a", "b"],
+        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        { next_back: $nextBack },
+      )
         .toArray()
         .join(""),
     )}`,

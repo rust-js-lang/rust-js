@@ -57,6 +57,7 @@ function main() {
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { next_back: $nextBack },
     false,
   );
   const value$1 = $sizeHint(runs);
@@ -81,6 +82,7 @@ function main() {
     { next: $next },
     { next_back: $nextBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { next_back: $nextBack },
     false,
   );
   const sizeHint = $sizeHint(doubled);
@@ -92,6 +94,7 @@ function main() {
       { next: $next },
       { next_back: $nextBack },
       { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      { next_back: $nextBack },
       false,
     )}`,
   );

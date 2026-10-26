@@ -64,7 +64,6 @@ const differs: Record<string, string> = {
   "copied_structs_apart.rs": "refused: the DoubleEndedIterator of a Copied<slice::Iter>",
   "escape_iterators.rs": "throws: std's struct steps a value that isn't a JS iterator",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
-  "flatten_of_iterators_from_back.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "held_enumerate.rs": "refused: the DoubleEndedIterator of a R",
   "result_given_as_items.rs": "throws: std's `Chain` given `&mut held`, a `Result`, as its `U: IntoIterator`, as it is, whose dictionary takes the box generic code has of a `&mut C`",
   "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",

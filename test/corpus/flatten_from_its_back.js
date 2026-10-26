@@ -85,6 +85,7 @@ function main() {
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { next_back: $nextBack },
     false,
   );
   const value$3 = $next(fm);
@@ -101,6 +102,7 @@ function main() {
             { next: $rangeNext },
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { next_back: $nextBack },
             false,
           ),
         undefined,
@@ -114,6 +116,7 @@ function main() {
             { next: $rangeNext },
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            { next_back: $nextBack },
             $tryOf(broke),
             false,
           ),
@@ -224,6 +227,7 @@ function fused() {
     { next: flakyIterator_next },
     { next_back: flakyDoubleEndedIterator_nextBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    { next_back: $nextBack },
     false,
   );
   const value$5 = $next(g);

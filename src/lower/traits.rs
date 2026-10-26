@@ -248,6 +248,16 @@ fn bound_of<'tcx>(
         let steps = given.stepped.contains(&(id, param.index, tr.def_id)) || foreign.steps(id, param.index, tr.def_id);
         return steps.then_some(tr);
     }
+    // An extension's of an associated type a parameter's bound names,
+    // `U::IntoIter: DoubleEndedIterator` of std's `FlatMap`'s back, which
+    // no `IntoIterator` dictionary carries: its own (ADR 0936).
+    if super::recognition::is_iterator_extension(tcx, tr.def_id)
+        && let ty::Alias(_, alias) = tr.self_ty().kind()
+        && matches!(alias.kind, ty::Projection { .. })
+        && matches!(alias.self_ty().kind(), ty::Param(_))
+    {
+        return Some(tr);
+    }
     // An `IntoIterator` whose `IntoIter` is held as it is: its dictionary,
     // which makes it so (ADR 0552).
     if is_std_def(tcx, tr.def_id, StdItem::IntoIterator)
