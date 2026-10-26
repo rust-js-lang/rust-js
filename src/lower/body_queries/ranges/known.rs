@@ -11,9 +11,21 @@ use std::collections::{HashMap, HashSet};
 /// `queue.borrow()`'s `Vec`, `([CELL], queue)` (ADR 0881).
 pub(super) const CELL: usize = usize::MAX;
 
+/// The step of a bound's path to an integer variable's own value: `i < n`
+/// bounds `i` by `n`, `([VALUE], n)`, as by a slice's length. Only of an
+/// unsigned integer of 32 bits or fewer, which is never below 0 nor past
+/// `u32::MAX`, as a length isn't (`by_value`).
+pub(super) const VALUE: usize = usize::MAX - 1;
+
+/// Whether a bound's `base` is an integer variable's value, not a slice's
+/// length.
+pub(super) fn by_value(base: &Slice) -> bool {
+    base.0 == [VALUE]
+}
+
 /// An upper bound of an integer by a slice's length `L`, `⌊(c·L + b) /
 /// 2^s⌋`: `L - 1` of an index `i < xs.len()`, `L / 2 - 1` of one below its
-/// half.
+/// half; or by another integer's value, `L` that value (`VALUE`).
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) struct Below {
     pub(super) c: i128,
@@ -132,17 +144,29 @@ impl Range {
 
     /// Its bound by `slice`'s length: its own, or of one without, its
     /// most, `⌊(0·L + hi) / 1⌋`, which it is whatever the length.
+    /// Of one bound by another integer's value, which says nothing of a
+    /// slice's length, its most too; but by a value, only its own: a range
+    /// of no bound joined with one by `n`'s value is of none, or a loop's
+    /// counter would never settle.
     pub(super) fn below_of(&self, slice: &Slice) -> Option<Below> {
         match &self.below {
-            Some((s, x)) => (s == slice).then_some(*x),
-            None => Some(Below { c: 0, b: self.hi, s: 0 }),
+            Some((s, x)) if s == slice => Some(*x),
+            _ if by_value(slice) => None,
+            Some((s, _)) if !by_value(s) => None,
+            _ => Some(Below { c: 0, b: self.hi, s: 0 }),
         }
     }
 
     /// A range either is in: of `0` and of an index below `xs.len()`, one
     /// still at most the length.
     pub(super) fn join(&self, other: &Range) -> Range {
-        let slice = (self.below.as_ref()).or(other.below.as_ref()).map(|(s, _)| s);
+        // A slice's length first, which an index is judged by.
+        let slice = (self.below.as_ref())
+            .filter(|(s, _)| !by_value(s))
+            .or(other.below.as_ref().filter(|(s, _)| !by_value(s)))
+            .or(self.below.as_ref())
+            .or(other.below.as_ref())
+            .map(|(s, _)| s);
         Range {
             lo: self.lo.min(other.lo),
             hi: self.hi.max(other.hi),
@@ -233,7 +257,7 @@ impl Known {
     /// `⌈(lo·2^s - b) / c⌉`. So `n == 1` of an `n` that's `xs.len()`, or
     /// `xs.len() >= 2`, puts `xs` at least so long (ADR 0746).
     pub(super) fn at_least(&mut self, (slice, below): &(Slice, Below), lo: i128) {
-        if below.c <= 0 {
+        if below.c <= 0 || by_value(slice) {
             return;
         }
         let least = ((lo << below.s) - below.b + below.c - 1).div_euclid(below.c);

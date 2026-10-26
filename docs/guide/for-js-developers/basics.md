@@ -317,6 +317,10 @@ export function parseAge(s) {
   js::string::length(s)`, or a constant, `i <= LIMIT`, `i += 1` is
   `i++`, in a labeled block too
   ([ADR 0720](../../decisions/0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)).
+  Below another unsigned integer, `for k in 0..n` or `k < n`, `n - k`
+  is at least 1, so `n - k - 1` is JS's own; and `line + 1`, even
+  wrapped, is at most `line + 1`, so below it `line - k` can't wrap
+  ([ADR 0576](../../decisions/0576-what-a-bodys-integers-can-be.md)).
   A JS string's `length` is
   at most `2^31 - 1`, as every engine's is, so two steps below it don't
   wrap either, nor does the sum of two lengths; a third, or a `- 1`,

@@ -128,3 +128,42 @@ is `| 0` as `saturating_mul` is.
 
 Held by `test/corpus/product_sign.rs` and the mutations
 `product-negative-zero-exact` and `saturating-neg-negative-zero`.
+
+## Amendment: a bound by another integer's value (#335)
+
+trekhleb/javascript-algorithms' `pascalTriangle`, ported, read
+`((((lineNumber - numIndex) >>> 0) + 1) >>> 0)` where upstream's is
+`lineNumber - numIndex + 1`: `numIndex < currentLineSize`, and
+`currentLineSize` is `lineNumber + 1`, so `numIndex ≤ lineNumber`. A bound
+was by a slice's length alone. **An integer is bound by another's value
+as by a length**, `([VALUE], n)` for `⌊(c·n + b) / 2^s⌋`
+(`known::VALUE`):
+
+- `for k in a..n`, or a test `k < n`, puts `k` at most `n - 1`, where
+  nothing else bounds it; a slice's length first, which an index is
+  judged by.
+- `n + k`, `n - k`, of a variable `n` bound by nothing else, are at most
+  `n + k`, `n - k`; a sum of an operand not below 0 that may wrap is
+  still at most its bound, as what wraps is less: `line + 1`.
+- **`n - k` of a `k` at most `n + b` is at least `-b`**: `n - k - 1` of a
+  `k < n` can't wrap, `n - k` of a `k ≤ n + 1` can.
+
+The base is an unsigned integer of 32 bits or fewer (`value_base`), never
+below 0 nor past `u32::MAX`, as a length isn't. A bound by `n` is
+forgotten where `n` changes (`Known::changed`), and one by the value a
+variable is set from, `n -= 1`'s by the `n` it was, isn't kept for the
+new. Joined, a range keeps a bound by a value only where both have it:
+a counter of no bound joined with one below `n` would otherwise be at
+most `n`, then `n + 1`, never settling round its loop. ADR 0262's case A:
+a wrap left out is one that changes nothing.
+
+The narrowing of a condition, `refine` and `narrow`, moved to
+`ranges/narrowing.rs`, with its mutations. Held by
+`test/corpus/bounds_by_a_value.rs`, `lowering-numbers.test.ts`'s "an
+integer below another's value doesn't wrap", and the mutations
+`value-difference-unbounded`, `value-difference-past-bound`,
+`value-wrapped-sum-forgets`, `value-assigned-keeps-own-bound`,
+`value-range-end-unbounded`, `value-test-unbounded`,
+`value-bound-over-length` and `value-joined-with-none`. Not yet: an index
+below a length that grows each turn with its counter, `currentLine[numIndex
+- 1]` of a `push` a turn, which needs the two related round the loop.

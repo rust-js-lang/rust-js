@@ -767,6 +767,78 @@ pub fn upto(n: u8) -> u8 {
   expect(lib.hops(0xffffffff, 5)).toEqual([3, 5]);
 });
 
+// ADR 0576 (amended, #335): an integer is bound by another's value as by a
+// slice's length: \`k < n\` puts \`n - k\` at least 1, so \`n - k - 1\` can't
+// wrap; \`line + 1\`, even wrapped, is at most \`line + 1\`, so \`k <
+// size\` puts \`line - k\` at least 0. Where \`k\` may pass \`n\`, or \`n\`
+// changed since, each keeps its wrap; and a slice's length bounds an index
+// before another's value does.
+test("an integer below another's value doesn't wrap", async () => {
+  const dir = fixture("value-bounds");
+  writeFileSync(join(dir, "lib.rs"), `pub fn reversed(n: u32) -> Vec<u32> {
+    let mut found = Vec::new();
+    for k in 0..n {
+        found.push(n - k - 1);
+    }
+    found
+}
+
+pub fn coefficients(line: u32) -> Vec<u32> {
+    let mut found = Vec::new();
+    let size = line + 1;
+    for k in 1..size {
+        found.push(line - k + 1);
+    }
+    found
+}
+
+pub fn tested(n: u32, k: u32) -> u32 {
+    if k < n { n - k - 1 } else { k - n }
+}
+
+pub fn past(n: u32) -> Vec<u32> {
+    let mut found = Vec::new();
+    for k in 0..n + 2 {
+        found.push(n - k);
+    }
+    found
+}
+
+pub fn shrunk(mut n: u32, k: u32) -> u32 {
+    if n > 0 {
+        n -= 1;
+        if k < n {
+            return n - k - 1 - 1;
+        }
+    }
+    0
+}
+
+pub fn sum_below(xs: &[u32], n: usize) -> u32 {
+    let mut sum = 0;
+    let mut i = 0;
+    while i < xs.len() {
+        if i < n {
+            sum += xs[i];
+        }
+        i += 1;
+    }
+    sum
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    found.push(n - k - 1);\n");
+  expect(js).toContain("    found.push(line - k + 1);\n");
+  expect(js).toContain("  return k < n ? n - k - 1 : k - n;\n");
+  expect(js).toContain("    found.push((n - k) >>> 0);\n");
+  expect(js).toContain("      return (n - k - 1 - 1) >>> 0;\n");
+  expect(js).toContain("      sum = (sum + xs[i]) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.reversed(3), lib.coefficients(3), lib.coefficients(0xffffffff)]).toEqual([[2, 1, 0], [3, 2, 1], []]);
+  expect([lib.tested(5, 2), lib.tested(5, 9), lib.past(1), lib.shrunk(5, 3), lib.sumBelow([1, 2, 3], 2)]).toEqual([2, 4, [1, 0, 0xffffffff], 0xffffffff, 3]);
+});
+
 // ADR 0682: a JS string's `length` is at most 2^31 - 1, as every engine's
 // is, so the sum of two is at most 2^32 - 2 and can't wrap: React's
 // ReactSerializationErrors' `str.length + substr.length < 40` is written as

@@ -196,7 +196,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Responsibility | Modules |
 | --- | --- |
 | Crate facts and validation | `analysis.rs`, `analysis/` |
-| Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` |
+| Body facts and integer ranges | `body_queries.rs`, `body_queries/`, `body_queries/ranges/` (a condition's narrowing, `ranges/narrowing.rs`) |
 | std recognition and coverage | `recognition.rs`, `recognition/`, `shortcuts.rs`, `std_coverage.rs` |
 | Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
 | Which of a library's functions the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914) | `instances.rs` |

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "value-joined-with-none",
+    breaks: "a counter of no bound joined with one below `n` is at most `n`, a bound that never settles round a loop, so `while i + 1 < n { i += 1 }` of a `u8` wraps",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "            _ if by_value(slice) => None,\n",
+    replace: "",
+    tests: ["test/lowering-numbers.test.ts", "-t", "a counter below a JS string's length"],
+  },
+  {
     name: "cells-changed-forgets-nothing",
     breaks: "a call that empties the queue between its loop's test and `queue.borrow()[i]` is no change, and the index read unchecked, `undefined` where Rust panics",
     file: "src/lower/body_queries/ranges/known.rs",
@@ -22,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "join-unbound-forgets",
     breaks: "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
     file: "src/lower/body_queries/ranges/known.rs",
-    find: "            None => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
-    replace: "            None => None,\n",
+    find: "            _ => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
+    replace: "            _ => None,\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
   },
   {

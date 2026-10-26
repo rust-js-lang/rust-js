@@ -17,11 +17,12 @@ use rustc_middle::ty::TypeVisitableExt;
 mod cells;
 mod empty;
 mod known;
+mod narrowing;
 mod present;
 mod reads;
 
 use cells::reads_a_cell;
-use known::{Below, Known, Range, either};
+use known::{Below, Known, Range, VALUE, by_value, either};
 use reads::{calls, pure, read_vars};
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
@@ -359,6 +360,22 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         self.slice_through(e).map(|(slice, _)| slice)
     }
 
+    /// The base `e`'s value bounds others by, where it's a variable of an
+    /// unsigned integer of 32 bits or fewer: `n` of `i < n` (`VALUE`).
+    fn value_base(&self, e: ExprId) -> Option<Slice> {
+        let var = var_of(self.thir, e)?;
+        let (lo, hi) = type_range(self.thir[e].ty)?;
+        (lo == 0 && hi <= u32::MAX as i128 && !self.volatile.contains(&var)).then(|| (vec![VALUE], var))
+    }
+
+    /// `range`, of `e`, at most `e`'s value where nothing else bounds it.
+    fn bounded_by_itself(&self, mut range: Range, e: ExprId) -> Range {
+        if range.below.is_none() {
+            range.below = self.value_base(e).map(|base| (base, Below::LENGTH));
+        }
+        range
+    }
+
     /// What a call asks of a slice's length, and of which.
     fn asks(&self, e: ExprId) -> Option<(SliceLength, ExprId)> {
         let thir = self.thir;
@@ -510,7 +527,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 let l = self.expr(lhs, known);
                 let r = self.expr(rhs, known);
                 match (l, r, ty_range) {
-                    (Some(l), Some(r), Some(bounds)) => Some(self.op(e, op, &l, &r, bounds)),
+                    (Some(l), Some(r), Some(bounds)) => {
+                        let of = (self.value_base(lhs), self.value_base(rhs));
+                        Some(self.op(e, op, (&l, &r), bounds, of))
+                    }
                     _ => top(),
                 }
             }
@@ -531,7 +551,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 let current = self.expr(lhs, known);
                 let r = self.expr(rhs, known);
                 let value = match (current, r, type_range(thir[lhs].ty)) {
-                    (Some(l), Some(r), Some(bounds)) => Some(self.op(e, op.into(), &l, &r, bounds)),
+                    (Some(l), Some(r), Some(bounds)) => {
+                        let of = (self.value_base(lhs), self.value_base(rhs));
+                        Some(self.op(e, op.into(), (&l, &r), bounds, of))
+                    }
                     _ => None,
                 };
                 self.assign(lhs, value, known);
@@ -862,9 +885,13 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         self.place(lhs, known);
         if let Some(var) = var_of(thir, lhs) {
             self.forget(Some(var), known);
-            if let (Some(value), Some(k)) = (value, known.as_mut())
+            if let (Some(mut value), Some(k)) = (value, known.as_mut())
                 && !self.volatile.contains(&var)
             {
+                // `i = i + 1`'s bound by the `i` it was is none of the new.
+                if value.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
+                    value.below = None;
+                }
                 k.vars.insert(var, value);
             }
             return;
@@ -1068,8 +1095,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                         // is, up to its type's most: the length holds it,
                         // not a `+ 1` that can't wrap (ADR 0709).
                         let type_most = *most.get(&v)?;
+                        // A bound by another's value is at most what that
+                        // one's type holds.
+                        let base_most = |s: &Slice| match by_value(s) {
+                            true => most.get(&s.1).copied(),
+                            false => length_most.get(s).copied(),
+                        };
                         let hi = match &below {
-                            Some((s, x)) => type_most.min(x.most(*length_most.get(s).unwrap_or(&(u32::MAX as i128)))),
+                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),
                             None => type_most - 1,
                         };
                         (was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {
@@ -1114,6 +1147,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     let changed = (self.changes.get(&var)).is_some_and(|at| at.iter().any(|at| body.contains(*at)));
                     (!changed).then_some((path, var))
                 };
+                let end = end.map(|r| self.bounded_by_itself(r, range.fields[1].expr));
                 start.zip(end).map(|(start, end)| Range {
                     lo: start.lo,
                     hi: end.hi - 1,
@@ -1135,235 +1169,21 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         *known = either(known.take(), target.breaks);
     }
 
-    /// What `cond` being `holds` shows, narrowing what's known: of a
-    /// variable compared, `i < half`, and of a slice's length,
-    /// `!xs.is_empty()`. Where it can't hold, nothing goes on.
-    fn refine(&mut self, cond: ExprId, holds: bool, known: &mut Option<Known>) {
-        let thir = self.thir;
-        let e = strip(thir, cond);
-        match thir[e].kind {
-            ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, !holds, known),
-            // Where an item's there, its index is below a length (`present`).
-            ExprKind::Let { expr, ref pat } if holds && present::some_pattern(self.tcx, pat) => {
-                if let Some(var) = present::present_index(self.tcx, thir, expr, self.bodies) {
-                    present::below_most(var, self.volatile.contains(&var), known);
-                }
-            }
-            // A variable that holds a test, the test's (ADR 0806).
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. }
-                if let Some((test, _)) = known.as_ref().and_then(|k| k.tests.get(&id)) =>
-            {
-                self.refine(*test, holds, known)
-            }
-            ExprKind::LogicalOp { op, lhs, rhs } if matches!(op, LogicalOp::And) == holds => {
-                self.refine(lhs, holds, known);
-                self.refine(rhs, holds, known);
-            }
-            _ if let Some((SliceLength::IsEmpty, items)) = self.asks(e) => {
-                if !holds
-                    && let Some(slice) = self.slice(items)
-                    && let Some(k) = known.as_mut()
-                {
-                    let least = k.lengths.entry(slice).or_insert(0);
-                    *least = (*least).max(1);
-                }
-            }
-            ExprKind::Binary { op, lhs, rhs } if pure(self.tcx, thir, lhs) && pure(self.tcx, thir, rhs) => {
-                let op = match (op, holds) {
-                    (op, true) => op,
-                    (BinOp::Lt, false) => BinOp::Ge,
-                    (BinOp::Le, false) => BinOp::Gt,
-                    (BinOp::Gt, false) => BinOp::Le,
-                    (BinOp::Ge, false) => BinOp::Lt,
-                    (BinOp::Eq, false) => BinOp::Ne,
-                    (BinOp::Ne, false) => BinOp::Eq,
-                    _ => return,
-                };
-                let flipped = match op {
-                    BinOp::Lt => BinOp::Gt,
-                    BinOp::Le => BinOp::Ge,
-                    BinOp::Gt => BinOp::Lt,
-                    BinOp::Ge => BinOp::Le,
-                    op => op,
-                };
-                // Each side's value, which the condition's own walk judged.
-                let (Some(l), Some(r)) = (self.value_of(lhs, known), self.value_of(rhs, known)) else {
-                    return;
-                };
-                self.narrow(lhs, op, &r, known);
-                self.narrow(rhs, flipped, &l, known);
-                if op == BinOp::Ne {
-                    self.below_length(lhs, rhs, known);
-                    self.below_length(rhs, lhs, known);
-                }
-                // `xs.len() > k`: it's at least so long.
-                for (side, op, other) in [(lhs, op, &r), (rhs, flipped, &l)] {
-                    if let Some((SliceLength::Len, items)) = self.asks(side)
-                        && let Some(slice) = self.slice(items)
-                        && let Some(k) = known.as_mut()
-                    {
-                        let least = match op {
-                            BinOp::Gt => other.lo + 1,
-                            BinOp::Ge | BinOp::Eq => other.lo,
-                            BinOp::Ne if other.constant() == Some(0) => 1,
-                            _ => continue,
-                        };
-                        k.at_least(&(slice, Below::LENGTH), least);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    /// The integer `e` is through each `as` that keeps it, `s` of `s as
-    /// usize` where `s >= 0`, and `xs.len()` of `xs.len() as isize` of
-    /// sized items (ADR 0701): what it is, the integer it's of is.
-    fn uncast(&self, mut e: ExprId, known: &Option<Known>) -> ExprId {
-        let thir = self.thir;
-        loop {
-            e = strip(thir, e);
-            let ExprKind::Cast { source } = thir[e].kind else {
-                return e;
-            };
-            let (Some((lo, hi)), Some(of)) = (type_range(thir[e].ty), self.cast_of(source, known)) else {
-                return e;
-            };
-            if !(lo <= of.0 && of.1 <= hi) {
-                return e;
-            }
-            e = source;
-        }
-    }
-
-    /// What `source`, an `as`'s, is without walking it: a variable's range
-    /// as known, or of its type; a slice's `len()`, from 0 to its most
-    /// (ADR 0709).
-    fn cast_of(&self, source: ExprId, known: &Option<Known>) -> Option<(i128, i128)> {
-        let thir = self.thir;
-        if let Some(var) = var_of(thir, source) {
-            return (known.as_ref())
-                .and_then(|k| k.vars.get(&var).map(|r| (r.lo, r.hi)))
-                .or_else(|| type_range(thir[source].ty));
-        }
-        match thir[strip(thir, source)].kind {
-            ExprKind::Call { fun, .. } if matches!(self.asks(source), Some((SliceLength::Len, _))) => {
-                Some((0, self.length_most_of(fun)))
-            }
-            _ => None,
-        }
-    }
-
-    /// `side != xs.len()` of a `side` at most the length: below it, and
-    /// so through each `as` that keeps either, `s != xs.len() as isize`.
-    fn below_length(&self, side: ExprId, length: ExprId, known: &mut Option<Known>) {
-        let Some((SliceLength::Len, items)) = self.asks(self.uncast(length, known)) else {
-            return;
-        };
-        let (Some(slice), Some(var)) = (self.slice(items), var_of(self.thir, self.uncast(side, known))) else {
-            return;
-        };
-        if let Some(range) = known.as_mut().and_then(|k| k.vars.get_mut(&var))
-            && range.below == Some((slice.clone(), Below::LENGTH))
-        {
-            range.below = Some((slice, Below::LENGTH.offset(-1)));
-        }
-    }
-
-    /// A variable `side` that's `op` `other`, narrowed; and of `i + k`
-    /// that can't have wrapped, `i` that's `op` `other - k` (ADR 0632).
-    fn narrow(&self, side: ExprId, op: BinOp, other: &Range, known: &mut Option<Known>) {
-        let thir = self.thir;
-        if let ExprKind::Binary {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } = thir[strip(thir, side)].kind
-        {
-            for (term, k) in [(lhs, rhs), (rhs, lhs)] {
-                let (Some(k), Some((_, most)), Some(var)) =
-                    (literal(thir, k), type_range(thir[term].ty), var_of(thir, term))
-                else {
-                    continue;
-                };
-                let hi = (known.as_ref())
-                    .and_then(|known| known.vars.get(&var))
-                    .map_or(most, |r| r.hi);
-                if k >= 0 && hi + k <= most {
-                    let less = Range {
-                        lo: other.lo - k,
-                        hi: other.hi - k,
-                        below: (other.below.as_ref()).map(|(s, b)| (s.clone(), b.offset(-k))),
-                    };
-                    self.narrow(term, op, &less, known);
-                }
-            }
-            return;
-        }
-        let side = self.uncast(side, known);
-        let Some(var) = var_of(thir, side) else { return };
-        let Some((lo, hi)) = type_range(thir[side].ty) else {
-            return;
-        };
-        if self.volatile.contains(&var) {
-            return;
-        }
-        let Some(k) = known.as_mut() else { return };
-        let current = k.vars.get(&var).cloned().unwrap_or(Range::of(lo, hi));
-        let below = |by: i128| {
-            (other.below.as_ref())
-                .map(|(s, x)| (s.clone(), x.offset(by)))
-                .or(current.below.clone())
-        };
-        let narrowed = match op {
-            BinOp::Lt => Range {
-                hi: current.hi.min(other.hi - 1),
-                below: below(-1),
-                ..current
-            },
-            BinOp::Le => Range {
-                hi: current.hi.min(other.hi),
-                below: below(0),
-                ..current
-            },
-            BinOp::Eq => Range {
-                lo: current.lo.max(other.lo),
-                hi: current.hi.min(other.hi),
-                below: below(0),
-            },
-            BinOp::Gt => Range {
-                lo: current.lo.max(other.lo + 1),
-                ..current
-            },
-            BinOp::Ge => Range {
-                lo: current.lo.max(other.lo),
-                ..current
-            },
-            BinOp::Ne if other.constant() == Some(current.lo) => Range {
-                lo: current.lo + 1,
-                ..current
-            },
-            BinOp::Ne if other.constant() == Some(current.hi) => Range {
-                hi: current.hi - 1,
-                ..current
-            },
-            _ => return,
-        };
-        if narrowed.lo > narrowed.hi {
-            *known = None;
-            return;
-        }
-        // At least so much, and at most a length: the slice at least so long.
-        if let Some(below) = &narrowed.below {
-            k.at_least(below, narrowed.lo);
-        }
-        k.vars.insert(var, narrowed);
-    }
-
     /// `l op r` of integers in `(lo, hi)`, at `site`: its range, and whether
-    /// it stays in them, which its site's judgement keeps.
-    fn op(&mut self, site: ExprId, op: BinOp, l: &Range, r: &Range, (lo, hi): (i128, i128)) -> Range {
+    /// it stays in them, which its site's judgement keeps. `of`, the
+    /// variables `l` and `r` are where they're one (`value_base`): `n + k`
+    /// is at most `n + k` by `n`'s value, and `n - i` of an `i ≤ n + b` at
+    /// least `-b`.
+    fn op(
+        &mut self,
+        site: ExprId,
+        op: BinOp,
+        (l, r): (&Range, &Range),
+        (lo, hi): (i128, i128),
+        of: (Option<Slice>, Option<Slice>),
+    ) -> Range {
         let bound = |r: &Range, by: &dyn Fn(Below) -> Below| r.below.as_ref().map(|(s, x)| (s.clone(), by(*x)));
+        let by_itself = |base: &Option<Slice>, by: i128| base.clone().map(|base| (base, Below::LENGTH.offset(by)));
         let made = match op {
             BinOp::Add => Some(Range {
                 lo: l.lo + r.lo,
@@ -1371,14 +1191,22 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 below: match (&l.below, &r.below) {
                     (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.plus(*y))),
                     (Some(_), _) => bound(l, &|x| x.offset(r.hi)),
-                    (None, _) => bound(r, &|y| y.offset(l.hi)),
+                    (None, Some(_)) => bound(r, &|y| y.offset(l.hi)),
+                    (None, None) => by_itself(&of.0, r.hi).or_else(|| by_itself(&of.1, l.hi)),
                 },
             }),
-            BinOp::Sub => Some(Range {
-                lo: l.lo - r.hi,
-                hi: l.hi - r.lo,
-                below: bound(l, &|x| x.offset(-r.lo)),
-            }),
+            BinOp::Sub => {
+                // `n - i` of an `i` at most `n + b`: at least `-b`.
+                let floor = match (&of.0, &r.below) {
+                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,
+                    _ => i128::MIN,
+                };
+                Some(Range {
+                    lo: (l.lo - r.hi).max(floor),
+                    hi: l.hi - r.lo,
+                    below: bound(l, &|x| x.offset(-r.lo)).or_else(|| by_itself(&of.0, -r.lo)),
+                })
+            }
             BinOp::Mul => {
                 let products = [l.lo * r.lo, l.lo * r.hi, l.hi * r.lo, l.hi * r.hi];
                 Some(Range {
@@ -1404,7 +1232,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             BinOp::Rem if l.lo >= 0 && r.lo > 0 => Some(Range::of(0, (r.hi - 1).min(l.hi))),
             _ => None,
         };
-        let within = made.filter(|m| m.lo >= lo && m.hi <= hi);
+        let within = made.clone().filter(|m| m.lo >= lo && m.hi <= hi);
         // Of constants alone, one of them named, `usize::BITS - 1`: a
         // constant, whose wrap is folded where it's written, `31`, not
         // judged (ADR 0720).
@@ -1418,8 +1246,17 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             *self.ops.entry(site).or_insert(true) &=
                 within.is_some() && !(op == BinOp::Mul && l.may_make_negative_zero(r));
         }
-        // What wraps is anything in its type.
-        within.unwrap_or(Range::of(lo, hi))
+        // What wraps is anything in its type; a sum that can only pass its
+        // most, of an operand not below 0, still at most its bound, as what
+        // wraps is less.
+        match (within, made) {
+            (Some(within), _) => within,
+            (None, Some(made)) if op == BinOp::Add && (l.lo >= 0 || r.lo >= 0) => Range {
+                below: made.below,
+                ..Range::of(lo, hi)
+            },
+            _ => Range::of(lo, hi),
+        }
     }
 
     /// `items[range]` at `site`, of a `range` written `start..end`,
