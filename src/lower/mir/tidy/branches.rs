@@ -292,12 +292,10 @@ pub(super) fn branch_values(
             {
                 // A value the program wrote with an `if`, not `&&` or `||`.
                 let written_if = written_branches(span, then, otherwise, elses);
-                // Placed where the `if`'s condition is, as its statement is,
-                // where that's the condition the program wrote, which a
-                // comment before it is before wherever the value's read, a
-                // struct literal's field's, `// c\n parent: if a { .. }`
-                // (ADR 0708, amended): not an `if let`'s, placed at its
-                // pattern.
+                // Placed where the `if`'s condition is, as its statement is, where that's the condition
+                // the program wrote, which a comment before it is before wherever the value's read, a
+                // struct literal's field's, `parent: if a { .. }`; not an `if let`'s, placed at its
+                // pattern (ADR 0708, amended).
                 let at_condition = elses.iter().any(|&(condition, ..)| condition == span);
                 let mut value = match one.no_first {
                     true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),

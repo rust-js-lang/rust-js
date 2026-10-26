@@ -8,7 +8,7 @@
   "library": {
     "version": 9,
     "name": "rust_js_std",
-    "crate_hash": "5b9f3151e23840f2bbbc2557f7b99ed6",
+    "crate_hash": "19a0e4576ca58c33ae9d17a524470402",
     "items": [
       {
         "key": "608f92abc48d28dac5a4dece6c13d6e7",
@@ -1039,7 +1039,21 @@
           "iter"
         ],
         "export": "filterClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da2e933671a932f5c0",
@@ -1048,7 +1062,21 @@
           "iter"
         ],
         "export": "filterClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dabac00efbe76799b8",
@@ -1422,7 +1450,21 @@
           "iter"
         ],
         "export": "filterMapClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daaf2f23dc9228d6a3",
@@ -1431,7 +1473,21 @@
           "iter"
         ],
         "export": "filterMapClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dafbc34d0dc11992ab",
@@ -4411,7 +4467,21 @@
           "iter"
         ],
         "export": "mapWhileClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28daed83b168f41c1b12",
@@ -4420,7 +4490,21 @@
           "iter"
         ],
         "export": "mapWhileClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da78a5b2c09981211b",
@@ -5452,7 +5536,27 @@
           "iter"
         ],
         "export": "scanClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dad80524548a17a4e3",
@@ -5461,7 +5565,27 @@
           "iter"
         ],
         "export": "scanClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dac6a03e2f69a7b89c",
@@ -6163,7 +6287,21 @@
           "iter"
         ],
         "export": "skipWhileClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da6b6f4e7487b8a07",
@@ -6172,7 +6310,21 @@
           "iter"
         ],
         "export": "skipWhileClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da7ebf7747a363359f",
@@ -7610,7 +7762,21 @@
           "iter"
         ],
         "export": "takeWhileClone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28da6bf42a266442c76d",
@@ -7619,7 +7785,21 @@
           "iter"
         ],
         "export": "takeWhileClone_clone",
-        "member": null
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
       },
       {
         "key": "608f92abc48d28dac4a75e9ac4e50fc3",
