@@ -16,10 +16,6 @@ export function entry() {
   main();
 }
 
-function loudDrop_drop(loud) {
-  console.log("drop loud");
-}
-
 const counterSink = {
   take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
   total: counterSink_total,
@@ -36,7 +32,7 @@ const loudSink = {
   take: loudSink_take,
   total: loudSink_total,
   $drop(loud) {
-    loudDrop_drop({ value: loud });
+    console.log("drop loud");
   },
 };
 function loudSink_take(loud, n) {

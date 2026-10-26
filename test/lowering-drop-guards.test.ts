@@ -308,3 +308,94 @@ pub fn named(n: Option<String>) {
   }
   expect(logged).toEqual(['Some("x")', "a", "b", 'Some("y")', 'Some(2) Some("abc")']);
 });
+
+// React's ReactFiberCallUserSpace, ported: a closure coerced to a `fn` in a
+// `const`, `callComponentInDEV`'s, whose guard restores what it changed.
+// Its `Drop` is its body there, as in a function or a boxed closure (ADR
+// 0608, amended): upstream's `try { .. } finally { setIsRendering(..) }`.
+test("a guard in a closure that's a const fn is its drop's body there", async () => {
+  const { js, dir } = compiled(
+    "drop-in-const-closure",
+    `use std::cell::Cell;
+
+thread_local! {
+    pub static IS_RENDERING: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn set_is_rendering(rendering: bool) {
+    IS_RENDERING.set(rendering);
+}
+
+struct Restore(bool);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        set_is_rendering(self.0);
+    }
+}
+
+pub const CALL: fn(&dyn Fn() -> bool) -> bool = |f| {
+    let was_rendering = IS_RENDERING.get();
+    set_is_rendering(true);
+    let _restore = Restore(was_rendering);
+    f()
+};
+
+pub type Call = fn(&dyn Fn() -> bool) -> bool;
+
+struct Frame {
+    #[cfg_attr(rust_js, rust_js::name = "react_stack_bottom_frame")]
+    react_stack_bottom_frame: Call,
+}
+
+#[cfg_attr(rust_js, rust_js::name = "callComponent")]
+const CALL_COMPONENT: Frame = Frame {
+    react_stack_bottom_frame: |f| {
+        let was_rendering = IS_RENDERING.get();
+        set_is_rendering(true);
+        let _restore = Restore(was_rendering);
+        f()
+    },
+};
+
+pub const CALL_COMPONENT_IN_DEV: Call = CALL_COMPONENT.react_stack_bottom_frame;
+
+pub fn rendering() -> bool {
+    IS_RENDERING.get()
+}
+`,
+  );
+  // A struct's field of one, as React's \`callComponent\` is.
+  expect(js).toContain(`const callComponent = {
+  react_stack_bottom_frame(f) {
+    const wasRendering = isRendering;
+    setIsRendering(true);
+    try {
+      return f();
+    } finally {
+      setIsRendering(wasRendering);
+    }
+  },
+};
+`);
+  expect(js).toContain(`export const CALL = (f) => {
+  const wasRendering = isRendering;
+  setIsRendering(true);
+  try {
+    return f();
+  } finally {
+    setIsRendering(wasRendering);
+  }
+};
+`);
+  expect(js).not.toContain("_drop");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.CALL(() => lib.rendering()), lib.rendering()]).toEqual([true, false]);
+  expect([lib.CALL_COMPONENT_IN_DEV(() => lib.rendering()), lib.rendering()]).toEqual([true, false]);
+  expect(() =>
+    lib.CALL(() => {
+      throw new Error("thrown");
+    }),
+  ).toThrow("thrown");
+  expect(lib.rendering()).toBe(false);
+});

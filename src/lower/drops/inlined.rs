@@ -76,11 +76,11 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         if i == at {
             continue;
         }
-        each_function(item, &mut |function| {
-            if js::mentions_in(&function.body, name) == 0 {
+        each_function(item, &mut |own_params, own_body| {
+            if js::mentions_in(own_body, name) == 0 {
                 return;
             }
-            let mut made = function.body.clone();
+            let mut made = own_body.clone();
             let mut given = Vec::new();
             loop {
                 let whole = made.clone();
@@ -114,10 +114,10 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             // value, whose `d[0]` is no guard's field (#239); so, of one
             // named twice, in each closure where it's its own.
             for guard in given {
-                if alone(&function.params, &made, &guard, true) {
+                if alone(own_params, &made, &guard, true) {
                     unread_writes(&mut made, &guard, false);
-                    fields_of(&mut made, &function.params, &guard);
-                    one_field_of(&mut made, &function.params, &guard);
+                    fields_of(&mut made, own_params, &guard);
+                    one_field_of(&mut made, own_params, &guard);
                     continue;
                 }
                 js::each_expr_mut(&mut made, &mut |e| {
@@ -141,9 +141,9 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
         if i == at {
             continue;
         }
-        each_function(item, &mut |function| {
-            if js::mentions_in(&function.body, name) > 0 {
-                function.body = bodies.next().expect("one made of each");
+        each_function(item, &mut |_, body| {
+            if js::mentions_in(body, name) > 0 {
+                *body = bodies.next().expect("one made of each");
             }
         });
     }
@@ -322,12 +322,41 @@ fn mentions_in_item(item: &Item, name: &str) -> usize {
     }
 }
 
-/// Each function `item` is or holds: a type's methods.
-fn each_function(item: &mut Item, f: &mut dyn FnMut(&mut js::Function)) {
+/// What's asked of each function: its parameters and its body.
+type EachFunction<'f> = dyn FnMut(&[Pattern], &mut Vec<Stmt>) + 'f;
+
+/// Each function `item` is or holds, its parameters and its body: a type's
+/// methods, and each arrow a `const` is or is made of, a closure coerced
+/// to a `fn`, `const CALL: fn(..) = |f| { .. }`, or a field of a struct
+/// or a tuple of them, React's `callComponent = { react_stack_bottom_frame:
+/// |..| { .. } }`, as a function is.
+fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
+    fn arrow(value: &mut Expr, f: &mut EachFunction<'_>) {
+        match &mut value.kind {
+            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => f(params, body),
+            ExprKind::Object(props, _) => {
+                for prop in props {
+                    if let Prop::Field(_, value) | Prop::Method(_, value) = prop {
+                        arrow(value, f);
+                    }
+                }
+            }
+            ExprKind::Array(items) => items.iter_mut().for_each(|item| arrow(item, f)),
+            _ => {}
+        }
+    }
     match item {
-        Item::Function(function) => f(function),
-        Item::Namespace(namespace) => namespace.methods.iter_mut().for_each(f),
-        Item::Const(_) | Item::Statements(_) => {}
+        Item::Function(function) => f(&function.params, &mut function.body),
+        Item::Namespace(namespace) => {
+            for method in &mut namespace.methods {
+                f(&method.params, &mut method.body);
+            }
+            for constant in &mut namespace.constants {
+                arrow(&mut constant.value, f);
+            }
+        }
+        Item::Const(constant) => arrow(&mut constant.value, f),
+        Item::Statements(_) => {}
     }
 }
 

@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 function many(base) {
   return {
     a: [base],
@@ -35,7 +31,7 @@ const sevenMake = {
   make(self) {
     const dropList = (list) => {
       if (list.TAG === "Cons") {
-        noisyDrop_drop(list._0);
+        console.log(`drop ${list._0[0]}`);
         dropList(list._1);
       }
     };
@@ -68,15 +64,15 @@ function main() {
   const _two = [undefined, tmp];
   console.log("two made");
   const dropMany = (many) => {
-    noisyDrop_drop(many.a);
-    noisyDrop_drop(many.b);
-    noisyDrop_drop(many.c);
-    noisyDrop_drop(many.d);
-    noisyDrop_drop(many.e);
-    noisyDrop_drop(many.f);
-    noisyDrop_drop(many.g);
-    noisyDrop_drop(many.h);
-    noisyDrop_drop(many.i);
+    console.log(`drop ${many.a[0]}`);
+    console.log(`drop ${many.b[0]}`);
+    console.log(`drop ${many.c[0]}`);
+    console.log(`drop ${many.d[0]}`);
+    console.log(`drop ${many.e[0]}`);
+    console.log(`drop ${many.f[0]}`);
+    console.log(`drop ${many.g[0]}`);
+    console.log(`drop ${many.h[0]}`);
+    console.log(`drop ${many.i[0]}`);
   };
   const dropTwo = (two) => {
     if (two[0] != null) {
@@ -89,15 +85,15 @@ function main() {
   dropTwo(_two);
   const _first = [many(20), undefined];
   const dropMany$1 = (many) => {
-    noisyDrop_drop(many.a);
-    noisyDrop_drop(many.b);
-    noisyDrop_drop(many.c);
-    noisyDrop_drop(many.d);
-    noisyDrop_drop(many.e);
-    noisyDrop_drop(many.f);
-    noisyDrop_drop(many.g);
-    noisyDrop_drop(many.h);
-    noisyDrop_drop(many.i);
+    console.log(`drop ${many.a[0]}`);
+    console.log(`drop ${many.b[0]}`);
+    console.log(`drop ${many.c[0]}`);
+    console.log(`drop ${many.d[0]}`);
+    console.log(`drop ${many.e[0]}`);
+    console.log(`drop ${many.f[0]}`);
+    console.log(`drop ${many.g[0]}`);
+    console.log(`drop ${many.h[0]}`);
+    console.log(`drop ${many.i[0]}`);
   };
   const dropTwo$1 = (two) => {
     if (two[0] != null) {
@@ -114,7 +110,7 @@ function main() {
   } catch (error) {
     const dropList = (list) => {
       if (list.TAG === "Cons") {
-        noisyDrop_drop(list._0);
+        console.log(`drop ${list._0[0]}`);
         dropList(list._1);
       }
     };
@@ -124,7 +120,7 @@ function main() {
   console.log("end");
   const dropList = (list) => {
     if (list.TAG === "Cons") {
-      noisyDrop_drop(list._0);
+      console.log(`drop ${list._0[0]}`);
       dropList(list._1);
     }
   };

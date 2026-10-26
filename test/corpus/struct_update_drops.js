@@ -4,15 +4,11 @@ export function entry() {
   main();
 }
 
-function noisyDrop_drop(noisy) {
-  console.log(`drop ${noisy[0]}`);
-}
-
 export const partialDefault = {
   default: partialDefault_default,
   $drop(partial) {
-    noisyDrop_drop(partial.x);
-    noisyDrop_drop(partial.y);
+    console.log(`drop ${partial.x[0]}`);
+    console.log(`drop ${partial.y[0]}`);
   },
 };
 function partialDefault_default() {
@@ -28,7 +24,7 @@ function swapY(p) {
     p$x$live = false;
   } catch (error) {
     if (p$x$live) {
-      noisyDrop_drop(p.x);
+      console.log(`drop ${p.x[0]}`);
     }
     throw error;
   }
@@ -38,7 +34,7 @@ function swapY(p) {
 function keep(n) {
   console.log(`keep ${n[0]}`);
   const result = [(n[0] + 10) & 255];
-  noisyDrop_drop(n);
+  console.log(`drop ${n[0]}`);
   return result;
 }
 
@@ -49,12 +45,12 @@ function rebuild(p, stop) {
       ...p,
       y: [9],
     };
-    noisyDrop_drop(p.y);
+    console.log(`drop ${p.y[0]}`);
     return result;
   }
   result = undefined;
-  noisyDrop_drop(p.x);
-  noisyDrop_drop(p.y);
+  console.log(`drop ${p.x[0]}`);
+  console.log(`drop ${p.y[0]}`);
   return result;
 }
 
@@ -62,9 +58,9 @@ function main() {
   const p = { x: [1], y: [2], n: 1 };
   const q = { ...p, y: [3] };
   console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
-  noisyDrop_drop(q.x);
-  noisyDrop_drop(q.y);
-  noisyDrop_drop(p.y);
+  console.log(`drop ${q.x[0]}`);
+  console.log(`drop ${q.y[0]}`);
+  console.log(`drop ${p.y[0]}`);
   console.log("after p");
 
   const swapped = swapY({ x: [4], y: [5], n: 2 });
@@ -72,7 +68,7 @@ function main() {
 
   const partial = { x: [7], y: [8], n: 3 };
   const fromTemp = { y: [6], x: partial.x, n: partial.n };
-  noisyDrop_drop(partial.y);
+  console.log(`drop ${partial.y[0]}`);
   console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
 
   const noisy = [22];
@@ -84,11 +80,11 @@ function main() {
           try {
             tmp = partialDefault_default();
           } catch (error) {
-            noisyDrop_drop(noisy);
+            console.log(`drop ${noisy[0]}`);
             throw error;
           }
           const defaults = { x: noisy, y: tmp.y, n: tmp.n };
-          noisyDrop_drop(tmp.x);
+          console.log(`drop ${tmp.x[0]}`);
           console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
 
           try {
@@ -96,44 +92,44 @@ function main() {
               const value = rebuild({ x: [10], y: [11], n: 4 }, true);
               console.log(`stopped ${!value}`);
               if (value != null) {
-                noisyDrop_drop(value.x);
-                noisyDrop_drop(value.y);
+                console.log(`drop ${value.x[0]}`);
+                console.log(`drop ${value.y[0]}`);
               }
               const built = rebuild({ x: [12], y: [13], n: 5 }, false);
               let built$0$live = true;
               if (built) {
                 built$0$live = false;
                 console.log(`built ${built.x[0]} ${built.y[0]}`);
-                noisyDrop_drop(built.x);
-                noisyDrop_drop(built.y);
+                console.log(`drop ${built.x[0]}`);
+                console.log(`drop ${built.y[0]}`);
               } else {
                 console.log("none");
               }
               if (built) {
                 if (built$0$live) {
-                  noisyDrop_drop(built.x);
-                  noisyDrop_drop(built.y);
+                  console.log(`drop ${built.x[0]}`);
+                  console.log(`drop ${built.y[0]}`);
                 }
               }
               built$0$live = false;
               console.log("end");
             } finally {
-              noisyDrop_drop(defaults.x);
+              console.log(`drop ${defaults.x[0]}`);
             }
           } finally {
-            noisyDrop_drop(defaults.y);
+            console.log(`drop ${defaults.y[0]}`);
           }
         } finally {
-          noisyDrop_drop(fromTemp.x);
+          console.log(`drop ${fromTemp.x[0]}`);
         }
       } finally {
-        noisyDrop_drop(fromTemp.y);
+        console.log(`drop ${fromTemp.y[0]}`);
       }
     } finally {
-      noisyDrop_drop(swapped.x);
+      console.log(`drop ${swapped.x[0]}`);
     }
   } finally {
-    noisyDrop_drop(swapped.y);
+    console.log(`drop ${swapped.y[0]}`);
   }
 }
 //# sourceMappingURL=case.js.map

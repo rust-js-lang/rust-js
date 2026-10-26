@@ -1,7 +1,8 @@
 # 0608. A `Drop` is its body at each drop
 
 Status: Accepted; amended (a name its body shares with the caller is
-named apart). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
+named apart; a closure a `const` is made of is a function a drop is its
+body in). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: each drop runs the
 same code where it ran.
@@ -149,3 +150,67 @@ Held by `test/corpus/drop_unit_guard.rs` and the corpus's
 `drop_scopes`, `lock_destructors` and `refcell_unwind_releases`; the
 mutations `unused-parameter-argument-kept` (`js/applied.ts`) and
 `empty-finally-kept` (`drops/inlined.ts`).
+
+## Amended (2026-10-26): a closure a `const` is made of is a function a drop's in
+
+React's `ReactFiberCallUserSpace`, ported, keeps each of its user-space
+calls in a `const` struct of a `fn` field, `callComponent`'s, as upstream
+keeps a function in an object so its name survives minifiers:
+
+```rust
+const CALL_COMPONENT: CallComponentFrame = CallComponentFrame {
+    react_stack_bottom_frame: |component, props, second_arg| {
+        let was_rendering = IS_RENDERING.get();
+        set_is_rendering(true);
+        let _restore = RestoreIsRendering(was_rendering);
+        component(props, second_arg)
+    },
+};
+```
+
+Its JS kept the drop a function, `const _restore = [wasRendering]; try {
+.. } finally { restoreIsRenderingDrop_drop(_restore); }`. The same
+closure written as a `fn`, or boxed, is upstream's `try { .. } finally {
+setIsRendering(wasRendering); }`. Each call of the drop was counted, the
+`const`'s too, but only a function's body or a method's was a place the
+drop's body was written in, so the two counts never matched and the
+function stayed.
+
+**Each arrow a `const` is made of is a function a drop is its body in**,
+with its parameters and its body as a function's (`inlined.rs`'s
+`each_function`): a closure coerced to a `fn`, `const CALL: fn(..) = |f|
+{ .. }`, a field of a struct or a tuple of them, and an associated
+`const`'s. An arrow anywhere else in a `const`, an argument of a call,
+still counts its drop's calls, and the drop stays a function, as before.
+Case A: the same code runs, in the same order.
+
+So `callComponent` is upstream's:
+
+```js
+const callComponent = {
+  react_stack_bottom_frame(component, props, secondArg) {
+    const wasRendering = isRendering;
+    setIsRendering(true);
+    try {
+      return component(props, secondArg);
+    } finally {
+      setIsRendering(wasRendering);
+    }
+  },
+};
+```
+
+A dictionary's `$drop`, a method of the `const` object a trait's impl
+is (`partialDefault`, `loudSink`), and a `const` object's method that
+drops a field, `sevenMake.make`'s, are such arrows too: in
+`drop_functions`, `struct_update_drops` and `rc_dyn_sinks`, the drop
+that was a function there and elsewhere, `noisyDrop_drop(many.a)`, is
+its body at each, ``console.log(`drop ${many.a[0]}`)``, and the function
+goes. No other corpus case's or snapshot's JS changed, and
+`docs/readability.txt`'s renamed share went down.
+
+Held by `test/lowering-drop-guards.test.ts`, "a guard in a closure
+that's a const fn is its drop's body there", run, and
+`test/corpus/drop_in_const_closure.rs` against native Rust; the
+mutations `const-closure-drop-kept`, `const-field-closure-drop-kept` and
+`associated-const-closure-drop-kept` (`drops/inlined.ts`).

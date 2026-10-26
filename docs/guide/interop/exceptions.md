@@ -378,7 +378,9 @@ holds however it's left, after what's returned is made: a guard whose
 one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, a
 function or a constant it returns last after them, `return noop;`, as the
 drop can't change it, and the drop's body is in it, what it declares
-named apart from the function's where JS's scopes need it ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md)).
+named apart from the function's where JS's scopes need it, of a closure
+a `const` is made of too, `const CALL: fn(..) = |f| { .. }` or a `const`
+struct's `fn` field ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md), amended).
 The scope reads as it would without the guard, and the guard's fields
 are the variables it was made of, `name` above, a tuple struct's one
 field too, `Restore(previous)` read `previous`, where nothing sets them
