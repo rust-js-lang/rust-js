@@ -237,6 +237,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(StmtKind::Expr(check).at(self.js_span(span)));
     }
 
+    /// `room_for` of `count` items, whose value rustc knows where it's a
+    /// constant read by its name, `vec![None; TOTAL_LANES]`'s: none where
+    /// that value surely fits, `room_fits` (ADR 0774, amended).
+    pub(in crate::lower) fn room_for_count(
+        &mut self,
+        (count, value): (Expr, Option<u64>),
+        size: Expr,
+        span: rustc_span::Span,
+        out: &mut Vec<Stmt>,
+    ) {
+        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {
+            return;
+        }
+        self.room_for((None, count), size, span, out);
+    }
+
     /// The size of each of `count` `item`s a helper makes, which it asks
     /// std's room for first, `$resize`'s or `$range`'s (ADR 0774): none
     /// where they surely fit, `room_fits`.

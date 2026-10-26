@@ -60,6 +60,9 @@ function pastHalf() {
   return ((4294967295 / 2) >>> 0) + 1;
 }
 
+const LANES = 31;
+const ALL = 4294967295;
+
 function main() {
   check("Vec<u8>::with_capacity", () => {
     const n = pastHalf();
@@ -155,6 +158,13 @@ function main() {
     return value.length;
   });
   check("vec![(); n]", () => new Array(0).fill(undefined).length);
+  // A count that's a constant read by its name: its value, which rustc
+  // knows, says whether std's check can fail (ADR 0774, amended).
+  check("vec![None; LANES]", () => new Array(LANES).fill(undefined).length);
+  check("vec![0u32; ALL]", () => {
+    $roomFor(ALL, 4);
+    return new Array(ALL).fill(0).length;
+  });
 
   check("empty repeat", () => $byteLen("".repeat(4294967295)));
   check("repeat(3)", () => "ab".repeat(3));

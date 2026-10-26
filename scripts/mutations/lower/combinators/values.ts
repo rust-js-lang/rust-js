@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "from-elem-room-unchecked",
     breaks: "`vec![x; n]` past `isize::MAX` bytes is no panic",
     file: "src/lower/combinators/values.rs",
-    find: "            self.room_for((None, n.clone()), size.clone(), span, out);\n",
+    find: "            self.room_for_count((n.clone(), known), size.clone(), span, out);\n",
     replace: "",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },

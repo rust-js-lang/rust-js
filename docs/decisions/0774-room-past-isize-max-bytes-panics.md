@@ -8,7 +8,8 @@ checked as well (#183). Amended: a string's `repeat` is JS's own,
 unchecked, as the user decided; and room for a length that's asked,
 `resize`'s, a range's `collect()`'s and a hash table's, is checked
 (#190, below). Amended (2026-10-26): a signed count of text that isn't
-empty is given as it is.
+empty is given as it is; and a count a `const` gives that fits isn't
+checked.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's, paid for in
 output, `$roomFor(n, 4)`; but of items whose size a type parameter gives,
@@ -211,3 +212,24 @@ Case B, this decision's own, as before: no new difference. Held by
 `test/corpus/ptr_eq_items_and_counts.rs`, the port's `indentation`,
 `"".repeat(indent as usize)` of `-1`, `""`, and `"  "`'s a panic, run
 against native Rust, and the mutation `repeat-count-of-empty-text`.
+
+## Amendment: a count a `const` gives is its value (2026-10-26)
+
+A count that's a `const` the crate reads by its name, React's
+`vec![None; TOTAL_LANES]` of `TOTAL_LANES = 31`, was checked,
+`$roomFor(TOTAL_LANES, 12)`, though rustc knows it's 31, which fits: the
+check reads the JS it's given, a name, and only a literal's value told
+it that it fits. Found porting React's `createLaneMap`.
+
+**`vec![x; n]`'s count is what rustc evaluates where it's a constant**:
+the call's MIR argument, read where the call is chosen
+(`mir_vec_call`), and `room_for_count` leaves out a check that can't
+fail by `room_fits`, as of a literal. One that doesn't fit is still
+checked by its name, `$roomFor(ALL, 4)` of `ALL = usize::MAX`, and
+panics as std does. Case C still: nothing observable changes, as the
+check left out is one that can't fail.
+
+Held by the corpus's `capacity_overflow.rs`, against native Rust, and
+`scripts/mutations/lower/std_types/vec.ts`'s
+`room-of-a-constant-count-checked` and
+`room-of-a-constant-count-unchecked`.

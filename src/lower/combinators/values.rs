@@ -22,11 +22,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
     }
 
-    /// `vec![item; n]`, of their values (ADR 0364).
+    /// `vec![item; n]`, of their values (ADR 0364), `n`'s value where
+    /// rustc knows it, a constant's.
     pub(in crate::lower) fn copies_values(
         &mut self,
         (item, item_ty): (Expr, Ty<'tcx>),
-        n: Expr,
+        (n, known): (Expr, Option<u64>),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -45,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !n.reads_same() {
                 n = self.spill("n", n, out);
             }
-            self.room_for((None, n.clone()), size.clone(), span, out);
+            self.room_for_count((n.clone(), known), size.clone(), span, out);
         }
         if fills {
             let array = Expr::new_(Expr::var("Array"), vec![n]);

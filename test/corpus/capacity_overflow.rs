@@ -50,6 +50,9 @@ fn past_half() -> usize {
     usize::MAX / 2 + 1
 }
 
+const LANES: usize = 31;
+const ALL: usize = usize::MAX;
+
 fn main() {
     check("Vec<u8>::with_capacity", || Vec::<u8>::with_capacity(past_half()).len());
     check("Vec<u16>::with_capacity", || Vec::<u16>::with_capacity(usize::MAX / 4 + 1).len());
@@ -79,6 +82,10 @@ fn main() {
     check("vec![Noisy; n]", || vec![Noisy("big"); past_half()].len());
     check("vec![Noisy; 2]", || vec![Noisy("two"); 2].len());
     check("vec![(); n]", || vec![(); 0].len());
+    // A count that's a constant read by its name: its value, which rustc
+    // knows, says whether std's check can fail (ADR 0774, amended).
+    check("vec![None; LANES]", || vec![None::<Vec<f64>>; LANES].len());
+    check("vec![0u32; ALL]", || vec![0u32; ALL].len());
 
     check("empty repeat", || "".repeat(usize::MAX).len());
     check("repeat(3)", || "ab".repeat(3));

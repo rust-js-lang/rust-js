@@ -660,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// sorted, split, viewed, written (ADRs 0025, 0324).
     pub(super) fn mir_vec_call<'c>(
         &self,
-        _state: &State<'_, 'tcx>,
+        state: &State<'_, 'tcx>,
         call: StdCall<'c, 'tcx>,
     ) -> Option<StdLowering<'c, 'a, 'tcx>> {
         let this = self;
@@ -823,11 +823,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }))),
             // `vec![item; n]`: each a clone, of what it can't remake.
-            Std::FromElem => lower(move |this, _, values, out| Ok(Value::Expr({
-                let item = this.value_expr(values.next().expect("the item"), span)?;
-                let n = this.value_expr(values.next().expect("the count"), span)?;
-                this.copies_values((item, arg_tys[0]), n, span, out)?
-            }))),
+            // A count rustc knows, a constant's read by its name, is known
+            // to fit where it does (ADR 0774, amended).
+            Std::FromElem => {
+                let known = match &state.body[state.at].terminator().kind {
+                    TerminatorKind::Call { args, .. } => (args.get(1).and_then(|arg| arg.node.constant()))
+                        .and_then(|count| count.const_.try_eval_target_usize(tcx, this.typing_env)),
+                    _ => None,
+                };
+                lower(move |this, _, values, out| Ok(Value::Expr({
+                    let item = this.value_expr(values.next().expect("the item"), span)?;
+                    let n = this.value_expr(values.next().expect("the count"), span)?;
+                    this.copies_values((item, arg_tys[0]), (n, known), span, out)?
+                })))
+            }
             // A `BinaryHeap`'s, and its `peek_mut()` guard's; a `pop()`'s
             // `Some` boxed where its item could look like `None` (ADR 0051).
             Std::Heap(op) => lower(move |this, _, values, _| Ok(Value::Expr({

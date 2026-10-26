@@ -520,7 +520,9 @@ What's refused is in [the limitations](limitations.md).
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,
   `resize(n, x)`, `$resize(v, n, x, 4)`, and a range's `collect()`,
-  `$range(0, n, 4).map(f)`, are checked too; a JS array has no capacity,
+  `$range(0, n, 4).map(f)`, are checked too, where they may fail: not of
+  a count that fits, a literal's or a `const`'s, `vec![None; LANES]`
+  being `new Array(LANES).fill(undefined)`; a JS array has no capacity,
   so what fits is nothing more. A `HashMap`'s or a `HashSet`'s
   `with_capacity` and `reserve` ask hashbrown's room for its table,
   `$tableRoomFor(n, 8, 4)`, which panics `Hash table capacity overflow`

@@ -157,4 +157,21 @@ export const mutations: Mutation[] = [
     replace: "        let fits = |n: i128| n >= 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
+  {
+    name: "room-of-a-constant-count-checked",
+    breaks: "`vec![None; LANES]` of a `const` that fits checks room it can't run out of, `$roomFor(LANES, 12)`",
+    file: "src/lower/std_types/vec.rs",
+    find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
+    replace: "        if false && value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
+  {
+    name: "room-of-a-constant-count-unchecked",
+    breaks: "`vec![0u32; ALL]` of a `const` past `isize::MAX` bytes is no panic",
+    file: "src/lower/std_types/vec.rs",
+    find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
+    replace: "        if value.is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
+  },
 ];

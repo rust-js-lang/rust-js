@@ -621,7 +621,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
 - [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*
-- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked; a signed count of text that isn't empty as it is)*
+- [0774 Room asked past `isize::MAX` bytes is a `capacity overflow` panic](0774-room-past-isize-max-bytes-panics.md) *(amended: a string's `repeat` is JS's own, unchecked; a signed count of text that isn't empty as it is; a `const` count that fits unchecked)*
 - [0775 A `()` given to JS is `undefined`; a list of none is `[]`](0775-a-unit-given-to-js-is-undefined.md)
 - [0776 `js::get`, `js::has`, `js::set` and `js::delete` take any value](0776-get-has-set-take-any-value.md)
 - [0790 A `break` the program wrote is where it's written, a case's `break;` where its block ends a case](0790-a-break-the-program-wrote-is-where-it-is-written.md) *(amended by 0805: its `||` whatever the rest ends with, and a case's `if` with no `else` written none)*
