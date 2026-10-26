@@ -125,3 +125,16 @@ an `IntoIterator`, to `extend`, `chain`, `zip`, `flatten` or a `String`'s
 of what such a value steps, steps a B-tree in its keys' order,
 `in_order_of`'s, and a `String`'s `extend` and `flatten`'s inner values
 ask it too. Held by `test/corpus/btree_given_in_order.rs`.
+
+## Amendment: `m[k]` of a value that could look like `None` (#311)
+
+`m[&k]` was `$unwrap(m.get(k), "no entry found for key")`, which took a
+`None` stored as a value, `undefined`, for a key that isn't there:
+`HashMap<String, Option<String>>`'s `m["ann"]` panicked where Rust gives
+`None`, and TheAlgorithms/rust's Gale-Shapley, `current_partner[woman]`,
+panicked on its first proposal. **Of a value that could look like `None`,
+it's `get`'s `Some`, boxed (ADR 0051), unwrapped**:
+`$someValue($unwrap($someGet(m, k), "no entry found for key"))`; of any
+other, as before. Held by the corpus case `map_index_of_options` and the
+mutation `map-index-of-options-unboxed`.
+

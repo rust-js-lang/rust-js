@@ -656,6 +656,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (m, k) = (arg(), arg());
                 method(m, "get", vec![k])
             }
+            // Of a value that could look like `None`, a `None` that's there
+            // isn't a key that isn't (ADR 0051): its `Some`, boxed, unwrapped.
+            MapOp::Index if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {
+                let got = helper("$someGet", vec![arg(), arg()]);
+                let some = helper("$unwrap", vec![got, Expr::str("no entry found for key")]);
+                helper("$someValue", vec![some])
+            }
             MapOp::Index => {
                 let (m, k) = (arg(), arg());
                 let value = method(m, "get", vec![k]);

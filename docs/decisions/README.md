@@ -47,7 +47,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0056 Indexing: `$index(v, i)` to read, `v[$at(v, i)] = x` to write](0056-indexing.md)
 - [0057 `PartialOrd` and `Ord`: an `Ordering`, and the parts in turn](0057-ordering.md) *(amended by 0687: `max()` and the rest step their iterator as each comes)*
 - [0058 Format options, where Rust applies them](0058-format-options.md)
-- [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](0059-hashmap.md)
+- [0059 `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value](0059-hashmap.md) *(amended: `m[k]` of a value that could look like `None`)*
 - [0060 `{:?}` by the type, and a derived `Debug` is a function](0060-debug.md) *(amended: a pair upcast where it's made by a call, held once)*
 - [0061 `impl Iterator` is the type it hides; a generic iterator is any JS iterable](0061-generic-iterators.md) *(amended by 0715: what an `IntoIterator` bound is given is its items)*
 - [0062 Combinators and adapters: the closure's body in place](0062-combinators.md)
