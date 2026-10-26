@@ -287,8 +287,8 @@ export const mutations: Mutation[] = [
     name: "runs-only-given-ignored",
     breaks: "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "        && (binding_runs_nothing(tcx, def_id) || given_what_runs_nothing(recognition, def_id, args))\n",
-    replace: "        && binding_runs_nothing(tcx, def_id)\n",
+    find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)\n",
+    replace: "    binding_runs_nothing(recognition.tcx, def_id)\n",
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {

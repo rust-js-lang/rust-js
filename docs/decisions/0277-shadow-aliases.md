@@ -1,7 +1,8 @@
 # 0277. A variable shadowed by its own value is the variable
 
 Status: Accepted. Amended: another's variable only where nothing runs
-before it's read (below).
+before it's read (below); and past a `try`'s start and a binding's call
+that runs nothing (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -77,3 +78,81 @@ against native Rust; the playground's `setTheme` and the bindings test's
 `same` keep their copy past a binding's method and getter. Its mutations
 are `shadow-of-outer-variable-aliased`, `outer-shadow-read-past-a-call` and
 `outer-shadow-read-before-a-call-copied`.
+
+## Amendment: past a `try`'s start, and a binding's call that runs nothing (2026-10-26)
+
+The rule above kept React's reconciler's copies where upstream reads the
+variable:
+
+```js
+// ReactFiberAsyncAction.js, startIsomorphicDefaultIndicatorIfNeeded
+const isomorphicDefaultTransitionIndicator$1 = isomorphicDefaultTransitionIndicator;
+if (typeof isomorphicDefaultTransitionIndicator$1 === 'function' && !pendingIsomorphicIndicator) {
+  try {
+    const cleanup = isomorphicDefaultTransitionIndicator$1();
+// ReactFiberHotReloading.js, scheduleFibersWithFamiliesRecursively
+const failedBoundaries$1 = failedBoundaries;
+if (failedBoundaries$1 && (failedBoundaries$1.has(fiber) || (alternate != null && failedBoundaries$1.has(alternate)))) {
+```
+
+Between the copy and each read lies nothing that can set the variable:
+in the first, a read of another module variable, then a `try` whose
+first act is the call that reads it, its callee read before it runs;
+in the second, a weak set's `has(..)`. A module's variable is set only by
+its module's code (ADR 0270), so only code of the program's that runs
+between can set it; what's in question is what each call may run.
+
+- **A `try`'s block is read in its order, as any block is, and its
+  `catch` or `finally` after all of it**: either may run after any of
+  the block, which may have run code before it threw. So the indicator's
+  call in its `try` is the variable's, `isomorphicDefaultTransitionIndicator()`,
+  and a copy read in the `catch` after a call that set the variable, as
+  Rust reads what it copied, stays a copy: `const level$1 = level; try {
+  return raise(); } catch { return level$1 + 100; }`.
+- **A binding's call that runs none of the program's code sets none of
+  its variables**, `failedBoundaries.has(fiber)`. Which calls these are
+  is the bindings' own answer, ADR 0867's and ADR 0898's, which
+  `cell_borrows::binding_call_runs_nothing` gives: one marked
+  `#[rust_js::runs_nothing]`, a weak collection's methods, `new
+  AggregateError(..)`; or one marked `#[rust_js::runs_only_given]` given
+  only numbers and text, `console.error("..")`. Lowering marks its call
+  so (`Known::RunsNothing`), and the rule reads the mark; its callee and
+  arguments are read as any part is, so a call among them still counts.
+- **Any other binding's call may run anything**, given nothing too: JS
+  reaches the program through a callback it holds, one given now or
+  before, `dispatchEvent` running a listener added earlier, and through
+  any function the program exports. Telling which of those may set a
+  variable is a whole program's question, which the rule doesn't ask;
+  only the binding's author knows it runs none, as they know a property
+  is data (ADR 0301). So `before.call(); return failedBoundaries$1.has(fiber);`
+  keeps its copy.
+
+Case "results change" ([0262](0262-when-rust-and-js-disagree.md)), as
+before: Rust's answer, preserved, the copy elided only where no code that
+can set the variable runs before a read. What the rule assumes of a
+marked binding is what the borrow check assumes of it already (ADR 0867):
+a binding marked wrongly is wrong for both.
+
+**Alternatives:**
+
+- **Every binding's call runs nothing of the program's** unless it's given
+  a callback: wrong of `el.click()` and `dispatchEvent`, which run a
+  listener given before, and of a host's JS calling an export.
+- **The variable's writers, by whether JS can reach them**: a whole
+  program's escape analysis, every function given to JS and every export,
+  where React's writers, `markFailedErrorBoundaryForHotReloading` among
+  them, are exported anyway.
+
+Tested by `test/corpus/shadow_of_module_variable_in_try.rs` against
+native Rust, a copy read in a `try` before and after a call that sets the
+variable and in its `catch`, whose kept copies, `indicator$1` and
+`level$1`, are what it's of: `docs/readability.txt`'s `renamed x$1` counts
+10 more with it, 8026 to 8036; and
+`test/lowering-shadows.test.ts`, "a copy
+of a module's variable read past a call that runs nothing is the
+variable", React's `failedBoundaries`, and one past `before.call()`, a
+callback that sets the variable, run as JS. Its mutations are
+`shadow-catch-read-before-its-block`, `shadow-read-in-try-copied`,
+`runs-nothing-runs-code` (`prepare/shadows.rs`),
+`binding-call-runs-nothing-unmarked` and `every-binding-call-runs-nothing`
+(`lower/binding_calls.rs`).

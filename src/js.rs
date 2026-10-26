@@ -591,6 +591,12 @@ pub enum Known {
     /// a function each call of which does, one of the crate's that never
     /// unwinds, `loudDrop_drop` (ADR 0902).
     NeverThrows,
+    /// A binding's call that runs no code but its own, none of the
+    /// program's, so it sets none of its variables: a weak set's `has(key)`,
+    /// `#[rust_js::runs_nothing]`'s, or one that runs only what it's given,
+    /// given only numbers and text (ADRs 0867, 0898). Its callee and
+    /// arguments are read before it as any call's are (ADR 0277, amended).
+    RunsNothing,
     /// A `bool`, as Rust's types tell, where JS's form doesn't show one: a
     /// `bool` constant read by its name, `ENABLED` (ADR 0031, amended),
     /// `true` or `false` alone, which `&&` and `||` give as it is.

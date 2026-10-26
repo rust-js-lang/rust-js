@@ -255,6 +255,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &what));
             }
         };
+        // A call that runs none of the crate's code, `set.has(fiber)` of a
+        // weak set's, sets none of its variables (ADR 0277, amended).
+        let value = match value.kind {
+            js::ExprKind::Call(..) | js::ExprKind::New(..)
+                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args) =>
+            {
+                value.runs_nothing()
+            }
+            _ => value,
+        };
         Ok(self.catching(def_id, generic_args, value))
     }
 

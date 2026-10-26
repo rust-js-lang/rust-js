@@ -7,7 +7,8 @@ and [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) (what
 a call may borrow). Extended by
 [0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs only
 what it's given, `#[rust_js::runs_only_given]`, given only numbers and
-text, borrows nothing.
+text, borrows nothing. Extended by [0277](0277-shadow-aliases.md),
+amended: a call of either sets none of the program's variables.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. `AggregateError`
 is JS's own. A borrow left unchecked is one no other can meet: a binding

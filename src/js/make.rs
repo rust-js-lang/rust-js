@@ -918,6 +918,13 @@ impl Expr {
         self
     }
 
+    /// This, a binding's call that runs none of the program's code
+    /// (`Known::RunsNothing`), beside what else is known of it.
+    pub fn runs_nothing(mut self) -> Expr {
+        self.facts = self.facts.with(Known::RunsNothing);
+        self
+    }
+
     /// This, a reference to one of the program's functions
     /// (`Known::Item`).
     pub fn item(self) -> Expr {

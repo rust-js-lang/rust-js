@@ -363,4 +363,20 @@ export const mutations: Mutation[] = [
     replace: "                let class = { drop(this); self.js_ref(&name) };\n",
     tests: ["test/bindings.test.ts", "-t", "a new binding of a method constructs what its receiver holds"],
   },
+  {
+    name: "binding-call-runs-nothing-unmarked",
+    breaks: "a weak set's `has(fiber)` isn't marked as running none of the program's code, so a copy of a module's variable read past it is kept, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "                value.runs_nothing()\n",
+    replace: "                value\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
+  },
+  {
+    name: "every-binding-call-runs-nothing",
+    breaks: "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args) =>\n",
+    replace: "                if true =>\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
+  },
 ];

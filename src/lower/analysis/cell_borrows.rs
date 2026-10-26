@@ -453,6 +453,20 @@ fn given_what_runs_nothing<'tcx>(
     (sig.skip_binder().inputs().iter()).all(|&input| runs_nothing(recognition, input))
 }
 
+/// Whether a call of `def_id`, a binding, of `args`, runs none of the
+/// crate's code: one that runs nothing (`binding_runs_nothing`), or only
+/// what it's given, given only what runs nothing
+/// (`given_what_runs_nothing`). So a borrow held across it meets no other,
+/// and it sets none of the crate's variables, which lowering marks its
+/// call so (`Known::RunsNothing`, ADR 0277, amended).
+pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)
+}
+
 /// What calling `def_id`, of `args`, runs; `receiver` its first argument,
 /// the cell a borrow is of.
 fn called<'tcx>(
@@ -463,9 +477,7 @@ fn called<'tcx>(
 ) -> Called<'tcx> {
     let tcx = recognition.tcx;
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
-    if !tcx.is_closure_like(def_id)
-        && (binding_runs_nothing(tcx, def_id) || given_what_runs_nothing(recognition, def_id, args))
-    {
+    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args) {
         return Called::Nothing;
     }
     let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) else {

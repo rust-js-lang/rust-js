@@ -3,7 +3,7 @@
 mod back_stepped;
 mod cell_borrows;
 
-pub(super) use cell_borrows::{Borrow, Cell, CellBorrows, borrowed, may_be_cell};
+pub(super) use cell_borrows::{Borrow, Cell, CellBorrows, binding_call_runs_nothing, borrowed, may_be_cell};
 mod clones;
 mod closures;
 mod debug;

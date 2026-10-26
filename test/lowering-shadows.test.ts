@@ -480,3 +480,88 @@ pub fn popped(items: &mut Vec<u32>) -> u32 {
   expect(() => lib.getSuspendedThenable()).toThrow("Expected a suspended thenable.");
   expect([lib.last([1, 2]), lib.last([]), lib.popped([1, 2]), lib.popped([])]).toEqual([3, 0, 4, 0]);
 });
+
+// React's ReactFiberHotReloading `scheduleFibersWithFamiliesRecursively`:
+// `if (failedBoundaries !== null && (failedBoundaries.has(fiber) ||
+// (alternate !== null && failedBoundaries.has(alternate))))`. Its port's
+// copy of the thread-local was `const failedBoundaries$1 =
+// failedBoundaries;`, as the first `has(..)` is a call, which may run
+// code: a weak set's runs none of the program's, so sets none of its
+// variables (`Known::RunsNothing`). A binding's call that may, given a
+// callback, keeps the copy, as Rust reads what it copied (ADR 0277,
+// amended).
+test("a copy of a module's variable read past a call that runs nothing is the variable", async () => {
+  const dir = fixture("shadow-past-runs-nothing");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Fiber {
+    pub tag: u32,
+}
+
+unsafe impl js::WeakKey for Fiber {}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static FAILED_BOUNDARIES: RefCell<Option<&'static js::WeakSet<Fiber>>> =
+        const { RefCell::new(None) };
+}
+
+pub fn needs_remount(fiber: &Fiber, alternate: Option<&Fiber>) -> bool {
+    if let Some(failed_boundaries) = FAILED_BOUNDARIES.with_borrow(|failed_boundaries| *failed_boundaries)
+        && (failed_boundaries.has(fiber)
+            || alternate.is_some_and(|alternate| failed_boundaries.has(alternate)))
+    {
+        return true;
+    }
+    false
+}
+
+pub fn remounts_after(fiber: &Fiber, before: &dyn Fn()) -> bool {
+    if let Some(failed_boundaries) = FAILED_BOUNDARIES.with_borrow(|failed_boundaries| *failed_boundaries) {
+        js::function::call(before, None, ());
+        return failed_boundaries.has(fiber);
+    }
+    false
+}
+
+pub fn remounts_checked(fiber: &Fiber) -> bool {
+    if let Some(failed_boundaries) = FAILED_BOUNDARIES.with_borrow(|failed_boundaries| *failed_boundaries) {
+        return failed_boundaries.has(fiber) && checked(failed_boundaries, fiber);
+    }
+    false
+}
+
+fn checked(failed: &js::WeakSet<Fiber>, fiber: &Fiber) -> bool {
+    failed.has(fiber)
+}
+
+pub fn fail(fiber: &'static Fiber) {
+    FAILED_BOUNDARIES.with_borrow_mut(|failed_boundaries| {
+        failed_boundaries.get_or_insert_with(js::weak_set::new).add(fiber);
+    });
+}
+
+pub fn reset() {
+    FAILED_BOUNDARIES.set(Some(js::weak_set::new()));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function needsRemount(fiber, alternate) {
+  if (
+    failedBoundaries &&
+    (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
+  ) {`);
+  expect(js).toContain("  if (failedBoundaries) {\n    if (!failedBoundaries.has(fiber)) {\n      return false;\n    }\n    return checked(failedBoundaries, fiber);\n");
+  expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1) {\n    before.call();\n");
+  const lib = await import(join(dir, "lib.js"));
+  const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];
+  expect(lib.needsRemount(fiber, undefined)).toBe(false);
+  lib.fail(fiber);
+  expect([lib.needsRemount(fiber, undefined), lib.needsRemount(alternate, fiber), lib.needsRemount(other, alternate)]).toEqual([true, true, false]);
+  expect([lib.remountsChecked(fiber), lib.remountsChecked(other)]).toEqual([true, false]);
+  // What `before` sets, a new set, isn't what the copy holds.
+  expect(lib.remountsAfter(fiber, () => lib.reset())).toBe(true);
+  expect(lib.needsRemount(fiber, undefined)).toBe(false);
+});

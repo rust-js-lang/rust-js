@@ -120,8 +120,9 @@ fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
 /// Whether each read of `alias` in `stmts`, in JS's order, is before
 /// anything that may run code, a call, a getter or a setter, a module's
 /// variable then what it was: `ran` whether something did already. A
-/// branch's way each its own; what a loop, a `try` or a `switch` reads of
-/// it, only where it runs nothing.
+/// branch's way each its own; a `try`'s block in its order, its `catch`
+/// or `finally` after all of it; what a loop or a `switch` reads of it,
+/// only where it runs nothing.
 fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
     for stmt in stmts {
         let ok = match &stmt.kind {
@@ -140,6 +141,13 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
                     read_before_code(a, alias, ran) && read_before_code(b.as_deref().unwrap_or(&[]), alias, &mut other);
                 *ran |= other;
                 first && ok
+            }
+            // A `try`'s `catch` or `finally` runs after any of its block,
+            // which may have run code before it threw: `ran` is what the
+            // block leaves it, whether anything in it ran (ADR 0277,
+            // amended).
+            StmtKind::Try(block, after) | StmtKind::TryCatch(block, _, after) => {
+                read_before_code(block, alias, ran) && read_before_code(after, alias, ran)
             }
             StmtKind::Let(_, None)
             | StmtKind::Break(_)
@@ -196,20 +204,18 @@ fn read_first(e: &Expr, alias: &str, ran: &mut bool) -> bool {
 /// Whether `stmts` may run code where they run: a call, `new`, an
 /// `await`, a JSX element, a dynamic import, or a binding's getter or
 /// setter (`Known::Getter`, `Known::Setter`); not a closure made, whose
-/// body runs where it's called.
+/// body runs where it's called, nor a binding's call that runs none of
+/// the program's code (`Known::RunsNothing`), which can set none of its
+/// variables, whose callee and arguments are looked at as any part is.
 fn runs_code(stmts: &[Stmt]) -> bool {
     let mut runs = false;
     let mut stmts = stmts.to_vec();
     js::each_expr_mut(&mut stmts, &mut |e| {
         runs |= matches!(
             e.kind,
-            ExprKind::Call(..)
-                | ExprKind::New(..)
-                | ExprKind::OptionalCall(..)
-                | ExprKind::Await(..)
-                | ExprKind::Jsx(..)
-                | ExprKind::Import(..)
-        ) || e.facts.has(js::Known::Getter)
+            ExprKind::Call(..) | ExprKind::New(..) | ExprKind::OptionalCall(..) if !e.facts.has(js::Known::RunsNothing)
+        ) || matches!(e.kind, ExprKind::Await(..) | ExprKind::Jsx(..) | ExprKind::Import(..))
+            || e.facts.has(js::Known::Getter)
             || e.facts.has(js::Known::Setter);
     });
     runs
