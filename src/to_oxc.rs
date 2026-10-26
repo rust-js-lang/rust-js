@@ -21,6 +21,7 @@
 
 mod arguments;
 mod cases;
+mod closing;
 mod expressions;
 mod loads;
 mod openings;
@@ -101,6 +102,7 @@ pub fn emit(
         trailing,
         arms,
         tops,
+        closing,
     } = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
@@ -219,6 +221,10 @@ pub fn emit(
                 splits.entry(line).or_default().push((start as u32, texts.as_slice()));
             }
         }
+        // And an object's `}`, its comments before it (ADR 0708, amended).
+        for (line, column, texts) in closing::splits(&closing, map, &generated_lines, &offset) {
+            splits.entry(line).or_default().push((column, texts));
+        }
     }
     for list in splits.values_mut() {
         list.sort_by_key(|&(column, _)| column);
@@ -257,6 +263,18 @@ pub fn emit(
             let Some(head) = line.get(at as usize..column as usize).filter(|_| column > at) else {
                 continue;
             };
+            // What's first on its line, an object's `}`: its comments the
+            // lines before it, no line of nothing (ADR 0708, amended).
+            if head.trim().is_empty() && end.is_none() {
+                for text in texts {
+                    code.push_str(text);
+                    code.push('\n');
+                }
+                added += texts.len() as u32;
+                at = column;
+                placed.push((column, header_lines + i + added));
+                continue;
+            }
             let (head, moved) = with_inside_comments(head.trim_end(), &inside_of(at, column));
             code.push_str(&head);
             widened
@@ -375,6 +393,8 @@ struct Commented {
     trailing: Vec<Trailing>,
     arms: ArmComments,
     tops: std::collections::HashMap<u32, u32>,
+    /// Each object literal's `}` and the comments before it (`closing::end_of`).
+    closing: closing::Closing,
 }
 
 fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
@@ -406,6 +426,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
     let argument_ends = arguments::argument_ends(module);
+    let object_ends = closing::object_ends(module);
+    let mut closing = Vec::new();
+    let param_starts = trailing::param_starts(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
     // What's first on its line is of these alone.
     let mut statement_starts = starts.clone();
@@ -475,12 +498,16 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let before_value = (sources.text[line_start..c.lo as usize].trim_end())
                     .strip_suffix('=')
                     .is_some_and(|before| !before.ends_with(|c: char| "=!<>+-*/%&|^".contains(c)));
+                let after_param = (!block)
+                    .then(|| trailing::after_param(&sources.text, (line_start, c.lo as usize), &param_starts))
+                    .flatten();
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
                     inside,
                     before_value,
                     text: written.to_string(),
+                    after_param,
                 });
             }
         }
@@ -500,6 +527,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     inside: true,
                     before_value: true,
                     text: sources.text[c.lo as usize..c.hi as usize].to_string(),
+                    after_param: None,
                 });
             }
         }
@@ -533,6 +561,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         let (ending, own_line): (Vec<&crate::program::Comment>, Vec<&crate::program::Comment>) = own_line
             .into_iter()
             .partition(|c| arguments::end_of(c, &argument_ends, sources, &file.comments).is_some());
+        // One after an object literal's last field, before its `}` (ADR
+        // 0708, amended).
+        let (own_line, closed) = closing::taken(own_line, (&object_ends, &mut closing), sources, &file.comments);
         found.extend(
             ending
                 .iter()
@@ -720,6 +751,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         let unattached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))
             .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo) && !ending.iter().any(|e| e.lo == c.lo))
+            .filter(|c| !closed.contains(&c.lo))
             .filter_map(|c| {
                 let (lo, _) = (spans.iter())
                     .filter(|&&(lo, hi)| lo < c.lo && c.hi <= hi && in_file(lo) && !items.contains(&(lo, hi)))
@@ -918,6 +950,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         trailing,
         arms: arm_comments,
         tops,
+        closing,
     }
 }
 

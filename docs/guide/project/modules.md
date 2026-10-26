@@ -929,6 +929,41 @@ export function warn(message) {
 }
 ```
 
+So is one after a struct literal's last field, before its `}`; and a
+line comment after a parameter on its line is after that parameter
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
+
+```rust
+pub struct Info {
+    pub name: &'static str,
+    pub start: f64,
+}
+
+pub fn track(
+    name: &'static str,
+    start: f64, // DEV-only
+) -> Info {
+    Info {
+        name,
+        start,
+        // We don't know the owner.
+    }
+}
+```
+
+```js
+export function track(
+  name,
+  start, // DEV-only
+) {
+  return {
+    name,
+    start,
+    // We don't know the owner.
+  };
+}
+```
+
 One inside an array literal isn't yet: oxc writes no comment between an
 array's elements, so it's before the argument after the array.
 

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "param-trailing-comment-after-the-line",
+    breaks: "a line comment after a function's last parameter on its line, `start: f64, // DEV-only`, is after the `{`, the body's first line (ADR 0708, amended)",
+    file: "src/to_oxc/trailing.rs",
+    find: "        if let Some((line, column)) = comment.after_param\n",
+    replace: "        if let Some((line, column)) = comment.after_param.filter(|_| false)\n",
+    tests: ["test/lowering-comments-ends.test.ts"],
+  },
+  {
     name: "trailing-comment-dropped",
     breaks: "a comment after code on its line, `let n = 1; // why`, is lost",
     file: "src/to_oxc/trailing.rs",

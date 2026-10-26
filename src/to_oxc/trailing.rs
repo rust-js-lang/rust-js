@@ -19,6 +19,37 @@ pub(super) struct Trailing {
     pub(super) inside: bool,
     pub(super) before_value: bool,
     pub(super) text: String,
+    /// Of a line comment after a function's parameter on its line, `start:
+    /// f64, // DEV-only`, where the parameter starts, its line and column:
+    /// it's after that parameter's JS, the list's rest on the next line
+    /// (ADR 0708, amended).
+    pub(super) after_param: Option<(u32, u32)>,
+}
+
+/// Where each function's parameter starts, by where it ends: a line
+/// comment after it on its line is after it (ADR 0708, amended).
+pub(super) fn param_starts(module: &crate::js::Module) -> HashMap<u32, u32> {
+    (module.items.iter())
+        .filter_map(|item| match item {
+            crate::js::Item::Function(f) => Some(f),
+            _ => None,
+        })
+        .flat_map(|f| f.param_spans.iter().filter(|s| !s.is_none()).map(|s| (s.hi, s.lo)))
+        .collect()
+}
+
+/// Of a comment at `at` of its line, from `line_start`, in `text`, the
+/// line and column of the parameter it's after there, past its `,`.
+pub(super) fn after_param(
+    text: &str,
+    (line_start, at): (usize, usize),
+    param_starts: &HashMap<u32, u32>,
+) -> Option<(u32, u32)> {
+    let code = text[line_start..at].trim_end();
+    let code = code.strip_suffix(',').unwrap_or(code).trim_end();
+    let &lo = param_starts.get(&((line_start + code.len()) as u32))?;
+    let start = text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
+    Some((text[..lo as usize].matches('\n').count() as u32, lo - start as u32))
 }
 
 /// Where in its line of JS a comment inside an expression is (ADR 0630),
@@ -79,6 +110,24 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 Some((line, found as u32 + 1))
             })
         };
+        // One after a parameter: after its name, `start // DEV-only`, the
+        // rest of the line, `) {`, on the next, as the list's next
+        // parameter is (ADR 0708, amended).
+        if let Some((line, column)) = comment.after_param
+            && let Some(found) = (map.get_tokens())
+                .filter(|t| t.get_src_line() == line && t.get_src_col() == column)
+                .find_map(|t| {
+                    let text = generated_lines.get(t.get_dst_line() as usize)?;
+                    let end = word_end(text, t.get_dst_col())?;
+                    text[end..]
+                        .trim_start()
+                        .starts_with(')')
+                        .then_some((t.get_dst_line(), end as u32))
+                })
+        {
+            ends.entry(found.0).or_default().push((found.1, &comment.text));
+            continue;
+        }
         if comment.inside
             && comment.before_value
             && let Some((line, column)) = equals()

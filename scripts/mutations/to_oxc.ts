@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "object-end-comment-a-line-of-nothing-before",
+    breaks: "a comment before an object's `}` first on its line has a line of nothing before it, which oxfmt keeps",
+    file: "src/to_oxc.rs",
+    find: "            if head.trim().is_empty() && end.is_none() {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering-comments-ends.test.ts"],
+  },
+  {
     name: "printed-first-of-its-span-alone",
     breaks: "a blank line and a comment before an `if let`'s line are before its `if`, past what its test's `take()` prints first",
     file: "src/to_oxc.rs",

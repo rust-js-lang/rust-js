@@ -150,3 +150,46 @@ Held by `test/lowering-comments.test.ts`, "a comment after a call's last
 argument is before its parenthesis", run, the guide's `warn`, and the
 mutations `argument-end-comment-unplaced`, `argument-end-of-any-comment-inside`
 and `argument-end-of-the-outermost` (`to_oxc/arguments.ts`).
+
+## Amendment: a comment after a struct literal's last field, and after a parameter
+
+React's ReactPerformanceTrack and ReactFiberCacheComponent write a
+comment after an object literal's last property, `{ name, start, // We
+don't know the owner. }`, and one after a parameter on its line,
+`startTime: number, // DEV-only`. Their ports write them there too, and
+both moved: the object's was before the `return`, as a comment inside a
+statement nothing places is before it ("never lost"), and the parameter's
+after the `{`, the last JS of its line, which oxfmt made the body's first
+line.
+
+- **A comment on lines of its own after a struct literal's last field,
+  only `,` and its `}` after it, is before the object's `}`**, on lines of
+  its own (`to_oxc/closing.rs`). oxc's printer writes no comment there, so
+  the printed line is split where the `}` is, by the map, as a
+  conditional's branch's is (ADR 0658); one that's first on its line has
+  no line of nothing before it.
+- **A line comment after a parameter on its line, past its `,`, is after
+  that parameter's JS**, the rest of the line, `) {`, on the next, as a
+  comment after a parameter the next one follows already was (ADR 0733):
+  `start, // DEV-only`, Prettier then laying the list out a parameter a
+  line (`trailing::after_param`).
+
+```js
+export function track(
+  name,
+  start, // DEV-only
+) {
+  return {
+    name,
+    start,
+    // We don't know the owner.
+  };
+}
+```
+
+Case N: comments, which nothing runs. Held by
+`test/lowering-comments-ends.test.ts`, run, and the guide's `track`; the
+mutations `object-end-comment-unplaced`, `object-end-comment-of-any-code-after`,
+`object-end-comment-printed-twice` (`to_oxc/closing.ts`),
+`object-end-comment-a-line-of-nothing-before` (`to_oxc.ts`) and
+`param-trailing-comment-after-the-line` (`to_oxc/trailing.ts`).
