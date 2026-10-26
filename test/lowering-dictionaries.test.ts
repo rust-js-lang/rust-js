@@ -254,3 +254,84 @@ pub mod counts {
   expect(cyclic.exitCode).not.toBe(0);
   expect(cyclic.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
 });
+
+// ADR 0864, amended: a `PartialEq` whose `eq` is `ptr::eq(self, other)`
+// alone, whatever its `Hash`, is `===`: `a != b` of two `Option<Rc<_>>` is
+// `a != b`, and generic code is given `===`. A library writes its
+// dictionary for its consumers, which no code of its own reads, so no
+// load cycle reaches it, as React's update queue and hidden context
+// import each other.
+test("an identity PartialEq is ===, and its dictionary no load cycle reaches", async () => {
+  const program = `pub mod queue {
+    use std::rc::Rc;
+
+    pub struct Update {
+        pub lane: u32,
+    }
+
+    // An update is itself: two are equal only where they're one.
+    impl PartialEq for Update {
+        fn eq(&self, other: &Self) -> bool {
+            std::ptr::eq(self, other)
+        }
+    }
+
+    pub fn differ(a: &Option<Rc<Update>>, b: &Option<Rc<Update>>) -> bool {
+        a != b
+    }
+
+    pub fn same(a: &Update, b: &Update) -> bool {
+        a == b && super::hidden::has(&[a], b)
+    }
+
+    pub fn values(a: Update, b: Update) -> bool {
+        a == b
+    }
+}
+
+pub mod hidden {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "tick")]
+    fn tick() -> u32 {
+        unreachable!()
+    }
+
+    thread_local! {
+        static FIRST: Cell<u32> = Cell::new(tick());
+    }
+
+    pub fn has<T: PartialEq>(items: &[T], item: T) -> bool {
+        items.iter().any(|x| *x == item)
+    }
+
+    pub fn first() -> String {
+        let update = Rc::new(super::queue::Update { lane: FIRST.get() });
+        let other = Rc::new(super::queue::Update { lane: update.lane });
+        format!(
+            "{} {} {} {}",
+            super::queue::differ(&Some(Rc::clone(&update)), &Some(Rc::clone(&update))),
+            super::queue::differ(&Some(Rc::clone(&update)), &Some(other)),
+            super::queue::differ(&None, &Some(Rc::clone(&update))),
+            super::queue::same(&update, &update),
+        )
+    }
+}
+`;
+  const dir = fixture("identity-eq-in-a-load-cycle");
+  writeFileSync(join(dir, "lib.rs"), program);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const queue = readFileSync(join(dir, "queue.js"), "utf8");
+  expect(queue).toContain("return a != b;");
+  expect(queue).toContain("return a === b && has([a], b, { eq: (a, b) => a === b });");
+  expect(queue).toContain("export function values(a, b) {\n  return a === b;\n}");
+  expect(queue).not.toContain("PartialEq");
+  (globalThis as { tick?: () => number }).tick = () => 3;
+  expect((await import(join(dir, "hidden.js"))).first()).toBe("false true true true");
+
+  const library = fixture("identity-eq-in-a-library-load-cycle");
+  writeFileSync(join(library, "lib.rs"), program);
+  run([compiler, join(library, "lib.rs"), "-o", join(library, "lib.js"), "--library", "--manifest", join(library, "m.json")]);
+  expect(readFileSync(join(library, "queue.js"), "utf8")).toContain("export const updatePartialEq = { eq: updatePartialEq_eq };");
+});

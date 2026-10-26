@@ -29,7 +29,8 @@ struct Pass {
     /// `thread_local!`s' values, made from their lowered `init`s.
     local_consts: HashMap<LocalModId, Vec<js::Const>>,
     /// Each dictionary that's its module's `const`, or whose cache is, by
-    /// its impl (ADR 0592), and the names of the `const`s each makes.
+    /// its impl (ADR 0592), that the crate's own code reaches; and the
+    /// names of the `const`s each dictionary makes.
     dictionary_consts: Vec<(LocalModId, DefId)>,
     dictionary_names: HashSet<String>,
     /// What fills each item's hole, by its index.
@@ -554,13 +555,15 @@ pub fn lower_crate<'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
-    let identity_eq = |id: DefId, trait_id: DefId| {
+    // A `PartialEq` whose `==` is `===`, whatever its `Hash`; and of a
+    // type equal only to itself, whose `Hash` is its address's too.
+    let identity_eq = |id: DefId, trait_id: DefId, keyed: bool| {
+        let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
         tcx.is_lang_item(trait_id, rustc_hir::attrs::lang_items::LangItem::PartialEq)
-            && super::std_impls::equal_only_to_itself(
-                &recognition,
-                &function_bodies,
-                tcx.type_of(id).instantiate_identity().skip_normalization(),
-            )
+            && match keyed {
+                true => super::std_impls::equal_only_to_itself(&recognition, &function_bodies, ty),
+                false => super::std_impls::eq_by_address(&recognition, &function_bodies, ty),
+            }
     };
     // Its types equal only to themselves, which its contract lists for its
     // consumers (ADR 0864, amended).
@@ -572,6 +575,7 @@ pub fn lower_crate<'tcx>(
                     .instantiate_identity()
                     .skip_normalization()
                     .def_id,
+                true,
             )
         })
         .filter_map(|&id| tcx.type_of(id).instantiate_identity().skip_normalization().ty_adt_def())
@@ -588,7 +592,7 @@ pub fn lower_crate<'tcx>(
             super::recognition::known_derive(tcx, id)
                 || super::traits::is_marker(tcx, &foreign, trait_id)
                 || super::recognition::is_hashing(tcx, trait_id)
-                || identity_eq(id, trait_id)
+                || identity_eq(id, trait_id, false)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         .chain(trait_impls.iter().copied().filter(|&id| {
@@ -614,10 +618,14 @@ pub fn lower_crate<'tcx>(
         })
         .map(|(_, to)| to)
         .collect();
-    let roots = edges
-        .clone()
+    let own_roots = (edges.clone())
         .filter(|(from, _)| !derived.contains(from))
-        .map(|(_, to)| to)
+        .map(|(_, to)| to);
+    // What the crate's own code reaches: a dictionary its consumers alone
+    // read is read once every module of the crate has loaded, so no load
+    // cycle of the crate's reaches it (ADR 0592, amended).
+    let reached_here = crate::reachability::reachable(own_roots.clone(), edges.clone());
+    let roots = own_roots
         // A library's consumers may reach one (ADR 0100).
         .chain(
             derived
@@ -650,7 +658,9 @@ pub fn lower_crate<'tcx>(
                 export,
                 span,
             };
-            pass.dictionary_consts.push((module, def_id));
+            if reached_here.contains(&def_id) {
+                pass.dictionary_consts.push((module, def_id));
+            }
             let consts = pass.local_consts.entry(module).or_default();
             let made = consts.len();
             if let Some(cache) = cache_values.remove(&def_id) {

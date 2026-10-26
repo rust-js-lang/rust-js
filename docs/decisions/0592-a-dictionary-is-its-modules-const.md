@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0049](0049-traits-and-generics.md), whose
 dictionary was a function caching it in a `var`, and
 [0019](0019-one-js-file-per-module.md)'s "cycles are fine". Decided with
-the user.
+the user. (Amended: a cycle refuses only a dictionary the crate's own
+code reaches.)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where it compiles: a
 dictionary made where its module loads is the one every use reads. Where
@@ -93,3 +94,24 @@ the cycle.
 - Mutations: a dictionary a function again, one read called, each kind of
   evidence unseen, the cycle allowed, a load-time call unseen, the cache
   never made, a cache taken for load-time code.
+
+## Amendment: a dictionary only a library's consumers read is no cycle's
+
+React's reconciler is a library: its update queue's `Update`, whose
+`PartialEq` is `ptr::eq`, has its dictionary written for its consumers
+(ADR 0864, amended), and the queue's module and the hidden context's,
+whose load runs code, import each other. The cycle was refused, though
+nothing of the reconciler's reads that dictionary: its `==` is `===`.
+
+**The cycle refuses only a dictionary the crate's own code reaches**, by
+what its functions, impls and load-time code read (`reached_here`, the
+pipeline's reachability of the crate's own items, not its consumers').
+One only consumers read is read once every module of the crate has
+loaded, after any cycle of its own: no load of the crate's reaches it.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)): no program can
+read it before it's made.
+
+Held by `test/lowering-dictionaries.test.ts`, "an identity PartialEq is
+===, and its dictionary no load cycle reaches", built as a library, and
+the mutation `consumers-dictionary-refused-in-cycle`.

@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "identity-eq-impl-called",
     breaks: "`a == b` of two values of a type equal only to itself calls its `eq`, `fiberPartialEq_eq(a, b)`, not `a === b` as of references to them (ADR 0864, amended)",
     file: "src/lower/traits/calls.rs",
-    find: "            && self.equal_only_to_itself(tr.self_ty());\n",
+    find: "            && self.eq_by_address(tr.self_ty());\n",
     replace: "            && false;\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
   },
@@ -356,5 +356,13 @@ export const mutations: Mutation[] = [
     find: "                        Some((_, dictionary)) => values.push(dictionary.clone()),\n",
     replace: "                        Some(_) => values.push(self.dictionary(bound, span)?),\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "identity-eq-trait-call-resolved",
+    breaks: "a trait call of `==` of a type whose `PartialEq` is `ptr::eq` without a `Hash` resolves to the impl's `eq`",
+    file: "src/lower/traits/calls.rs",
+    find: "            && self.eq_by_address(tr.self_ty());\n",
+    replace: "            && self.equal_only_to_itself(tr.self_ty());\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
   },
 ];

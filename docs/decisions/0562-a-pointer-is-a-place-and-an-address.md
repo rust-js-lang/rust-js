@@ -515,4 +515,5 @@ Held by `test/corpus/rc_as_ptr.rs`, against native Rust, and the mutations
 `field-pointers-equal-of-any-field`. An `Option` of two such pointers,
 `.map(Rc::as_ptr)`, compares by `$ptrEq` of what each holds: written as
 React writes it, `a != b` of two `Option<Rc<Update>>` whose `PartialEq` is
-identity is `a !== b` (ADR 0864).
+`ptr::eq` is `a != b`, as of any `Option` of what `===` compares (ADR 0864,
+amended).

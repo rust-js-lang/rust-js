@@ -432,7 +432,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.recognition().trait_call(id, trait_id),
             Some(TraitCall::Equality { .. })
         ) && tr.args.type_at(1) == tr.self_ty()
-            && self.equal_only_to_itself(tr.self_ty());
+            && self.eq_by_address(tr.self_ty());
         // A library's function the call resolves to: an impl's method, or
         // a std trait's provided method compiled into `@rust-js/std`, which
         // is a function over `Self` (ADR 0185, 0561).

@@ -3,7 +3,8 @@
 Status: Accepted. Amended: `==` of two values of one is `===` too, and
 its `PartialEq`'s dictionary is written only where it's reached; and a
 library's contract lists its, which its consumers key by themselves;
-and an `Rc` of one is equal only to itself too.
+and an `Rc` of one is equal only to itself too; and a `PartialEq` of
+`ptr::eq` alone is `===`, whatever its `Hash`.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and
@@ -254,3 +255,36 @@ Corpus `rc_identity_set` (uncounted, a root's set) and
 `rc_identity_set_counted` (counted: inserting one already there drops
 the clone, as std's does) run it against native Rust; mutation
 `rc-identity-unread` (`lower/std_impls.ts`).
+
+## Amendment: `==` of a `PartialEq` of `ptr::eq` is `===`, whatever its `Hash`
+
+React's update queue compares two updates, each an `Rc<Update>`, by
+identity, upstream's `a !== b`. Its `Update` has the `PartialEq` this
+decision names, `ptr::eq(self, other)`, and no `Hash`, as no set or map
+keys it: so it wasn't equal only to itself, `a != b` of two
+`Option<Rc<Update>>` was `!(a == null || b == null ? a == b :
+updatePartialEq_eq(a, b))`, its dictionary was written, and, the queue's
+module in an import cycle with one whose load runs code, refused (ADR
+0592).
+
+**`==` of a type whose `PartialEq` is `ptr::eq(self, other)` alone, its
+`ne` std's, is `===`, whatever its `Hash`** (`std_impls::eq_by_address`):
+`a == b` and `a != b` of two values, of references, of `Rc`s and of
+`Option`s of them, `a != b` of two `Option<Rc<Update>>`, as of any
+`Option` of what `===` compares; and its `PartialEq`'s dictionary is
+written only where it's reached, as an identity key's is. Generic code
+given it is given `===`, `{ eq: (a, b) => a === b }`. Its `Hash` matters
+only to a set or a map, which still ask `equal_only_to_itself`, both
+impls, to key a JS `Set` or `Map` by each object; and a library's
+contract lists those alone.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)): `===` is what
+its own `eq` does.
+
+Held by `test/lowering-dictionaries.test.ts`, "an identity PartialEq is
+===, and its dictionary no load cycle reaches", and the mutations
+`identity-eq-value-called`, `identity-eq-option-called`,
+`identity-eq-needs-hash`, `identity-eq-dictionary-always-written` and
+`identity-eq-trait-call-resolved`. Corpus `unknown_option_equality`'s
+`Value`, whose `PartialEq` is `ptr::eq`, no longer writes the dictionary
+nothing read.

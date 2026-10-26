@@ -933,10 +933,24 @@ pub(crate) fn trait_method(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) -> DefI
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// The crate's own `eq` of `adt`, its impl's of `PartialEq`, where it
+    /// has no `ne` of its own, which may say otherwise (ADR 0864).
+    pub(in crate::lower) fn own_eq(&self, adt: DefId) -> Option<DefId> {
+        self.own_impl_method(adt, self.tcx.lang_items().eq_trait()?, "eq")
+    }
+
     /// The crate's own `eq` and `hash` of `adt`, its impls' of `PartialEq`
-    /// and `Hash`, where its `PartialEq` has no `ne` of its own, which may
-    /// say otherwise (ADR 0864).
+    /// and `Hash`, `own_eq`'s and its `Hash`'s (ADR 0864).
     pub(in crate::lower) fn eq_and_hash(&self, adt: DefId) -> Option<(DefId, DefId)> {
+        Some((
+            self.own_eq(adt)?,
+            self.own_impl_method(adt, std_item(self.tcx, StdItem::Hash), "hash")?,
+        ))
+    }
+
+    /// The method `method` of the crate's impl of `trait_id` for `adt`; of
+    /// `PartialEq`, none where it has a `ne` of its own.
+    fn own_impl_method(&self, adt: DefId, trait_id: DefId, method: &str) -> Option<DefId> {
         let tcx = self.tcx;
         let own = |trait_id: DefId, method: &str| -> Option<DefId> {
             let imp = (tcx.all_local_trait_impls(()).get(&trait_id).into_iter().flatten()).find(|&&imp| {
@@ -950,8 +964,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             implementors.get(&trait_method(tcx, trait_id, method)).copied()
         };
-        let partial_eq = tcx.lang_items().eq_trait()?;
-        Some((own(partial_eq, "eq")?, own(std_item(tcx, StdItem::Hash), "hash")?))
+        own(trait_id, method)
     }
 }
 

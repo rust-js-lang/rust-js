@@ -6,12 +6,6 @@ export function entry() {
   main();
 }
 
-/** The same value, as JS's `===` has it. */
-export const valuePartialEq = { eq: valuePartialEq_eq };
-function valuePartialEq_eq(value, other) {
-  return value === other;
-}
-
 function equal(a, b) {
   return (a ?? null) === (b ?? null);
 }

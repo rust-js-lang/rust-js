@@ -26,19 +26,40 @@ pub(super) enum JsEq {
 /// `fn eq(&self, other: &Self) -> bool { ptr::eq(self, other) }`, and whose
 /// `Hash` is too, `ptr::hash(self, state)`, its `ne` std's: equal only to
 /// itself, as JS's `===` of an object is (ADR 0864). Of a value JS holds as
-/// an object: a struct of fields or a JS object's binding. The one answer,
-/// which `==`, a set's and a map's keys ask, and the pipeline of which
-/// impls' dictionaries are written only where they're reached.
+/// an object: a struct of fields or a JS object's binding. The one answer
+/// a set's and a map's keys ask, and a library's contract lists.
 pub(super) fn equal_only_to_itself<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
     bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
     ty: Ty<'tcx>,
 ) -> bool {
+    identity(recognition, bodies, ty, true)
+}
+
+/// Whether `==` of `ty` is its address's, `equal_only_to_itself`'s
+/// `PartialEq` whatever its `Hash`, which a set and a map alone ask: `==`
+/// of two is `===`, and its `PartialEq`'s dictionary is written only where
+/// it's reached (ADR 0864, amended). The one answer `==` and the pipeline
+/// ask.
+pub(super) fn eq_by_address<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    ty: Ty<'tcx>,
+) -> bool {
+    identity(recognition, bodies, ty, false)
+}
+
+fn identity<'tcx>(
+    recognition: &super::recognition::Recognition<'_, 'tcx>,
+    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    ty: Ty<'tcx>,
+    hashed: bool,
+) -> bool {
     // An `Rc` or `Arc` of one, whose `==` and `Hash` are what it points
     // at's: its JS value, what it points at or the `{ value, strong, weak }`
     // every clone of it shares (ADR 0320), is one allocation's.
     if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty) {
-        return equal_only_to_itself(recognition, bodies, pointee);
+        return identity(recognition, bodies, pointee, hashed);
     }
     let ty::Adt(adt, _) = ty.kind() else { return false };
     // A library's, as its contract says.
@@ -48,13 +69,16 @@ pub(super) fn equal_only_to_itself<'tcx>(
     if !adt.is_struct() {
         return false;
     }
-    let Some((eq, hash)) = recognition.eq_and_hash(adt.did()) else {
-        return false;
-    };
     let calls = |id: DefId, known: super::recognition::Std| {
         (bodies.get(&id))
             .and_then(|body| super::body_queries::forwards_to(&body.thir))
             .is_some_and(|(callee, args)| recognition.classify(callee, args) == Some(known))
+    };
+    if !hashed {
+        return (recognition.own_eq(adt.did())).is_some_and(|eq| calls(eq, super::recognition::Std::PtrEq));
+    }
+    let Some((eq, hash)) = recognition.eq_and_hash(adt.did()) else {
+        return false;
     };
     calls(eq, super::recognition::Std::PtrEq)
         && calls(
@@ -880,6 +904,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         equal_only_to_itself(&self.recognition(), self.krate.bodies, ty)
     }
 
+    /// Whether `==` of `ty` is `===` (ADR 0864, amended), as
+    /// `eq_by_address` answers.
+    pub(super) fn eq_by_address(&self, ty: Ty<'tcx>) -> bool {
+        eq_by_address(&self.recognition(), self.krate.bodies, ty)
+    }
+
     /// Whether `ty`, through its references, is a JS value of any shape,
     /// `js::Unknown` (`declarations::any_shape`), which `===` compares.
     fn any_shape(&self, ty: Ty<'tcx>) -> bool {
@@ -1051,7 +1081,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        if self.js_eq(ty).is_some() {
+        // One whose `==` is its address's, its `Hash` whatever it is: the
+        // object's `===` (ADR 0864, amended).
+        if self.js_eq(ty).is_some() || self.eq_by_address(ty) {
             return Ok(Expr::bin(Op::Eq, a, b));
         }
         // A type of a type parameter whose `PartialEq` a bound gives, a
@@ -1116,7 +1148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `==`, so that `null` and `undefined` are both `None`; of a
             // `Some` that's its payload, not one boxed, an object of its own
             // (ADR 0051), which compares by what's in it.
-            if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {
+            if (self.js_eq(inner).is_some() || self.eq_by_address(inner)) && !self.boxed_payload(inner) {
                 // Of a value of any shape, `(a ?? null) === (b ?? null)`:
                 // two `None`s are equal, whichever of `null` and `undefined`
                 // each is, and two `Some`s by `===`, as `==` can't, which

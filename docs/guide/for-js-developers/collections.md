@@ -707,7 +707,10 @@ export function at(b, row, col) {
   code is given it, `T: PartialEq`. An `Rc` of one is too, a
   `HashSet<Rc<Fiber>>` a `Set` of the fibers; and another crate's, as its
   library's contract says: the reconciler's set of `react`'s fibers
-  ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)):
+  ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).
+  A `PartialEq` of `ptr::eq` alone, with no `Hash`, is `===` too, React's
+  update, `a != b` of two `Option<Rc<Update>>` `a != b`; only a set or a
+  map of it asks for the `Hash` (ADR 0864, amended):
 
 ```rust
 use std::collections::HashSet;
