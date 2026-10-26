@@ -3,9 +3,11 @@
 import {
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
+  chainDoubleEndedIterator_tryRfold,
   iterator_chain,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
   $chainEnds,
@@ -16,6 +18,7 @@ import {
   $next,
   $nextBack,
   $rev,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -85,6 +88,17 @@ function main() {
             { next: $next },
             { next_back: $nextBack },
           ),
+        (iterator, init, f, broke) =>
+          chainDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: downIterator_next },
+            { next_back: downDoubleEndedIterator_nextBack },
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+          ),
       ),
     )
       .toArray()
@@ -92,8 +106,24 @@ function main() {
   );
   console.log(
     `[${$rev(
-      $knowing(mapped(), (iterator) =>
-        mapDoubleEndedIterator_nextBack(iterator, { next_back: downDoubleEndedIterator_nextBack }),
+      $knowing(
+        mapped(),
+        (iterator) =>
+          mapDoubleEndedIterator_nextBack(iterator, {
+            next_back: downDoubleEndedIterator_nextBack,
+          }),
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: downIterator_next },
+            { next_back: downDoubleEndedIterator_nextBack },
+            $tryOf(broke),
+          ),
       ),
     )
       .toArray()

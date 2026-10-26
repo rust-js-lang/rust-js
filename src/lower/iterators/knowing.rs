@@ -662,7 +662,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // And its `try_fold`, std's compiled one, in the JS iterator's
         // terms (ADR 0913).
-        if let Some(try_fold) = self.compiled_try_fold(ty, span)? {
+        if let Some(try_fold) = self.compiled_try_fold(ty, (iterator, "try_fold"), span)? {
             props.push(crate::js::Prop::Field("tryFold".into(), try_fold));
         }
         // Its `count`, std's compiled one, a peekable's what it peeked at
@@ -857,8 +857,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is `$tryOf(broke)`, as a JS iterator's `tryFold` folds (ADR 0913).
     /// Given no drops of what it folds, as `fold` is, so its `B` is `()`,
     /// its `F` a function of it and its `R` a `ControlFlow<(), ()>`, which
-    /// nothing drops. `None` where std's isn't compiled.
-    pub(in crate::lower) fn compiled_try_fold(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    /// nothing drops. `None` where std's isn't compiled. Of `method`, a
+    /// trait's: `Iterator`'s `try_fold` or `DoubleEndedIterator`'s
+    /// `try_rfold`, `tryRfold` (ADR 0930).
+    pub(in crate::lower) fn compiled_try_fold(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        (trait_id, method): (DefId, &str),
+        span: Span,
+    ) -> R<Option<Expr>> {
         let tcx = self.tcx;
         let Some(item) = self.iterator_item(ty) else {
             return Ok(None);
@@ -874,7 +881,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::FnSigKind::default().set_safety(rustc_hir::Safety::Safe),
             )),
         );
-        let try_fold = trait_method(tcx, std_item(tcx, StdItem::Iterator), "try_fold");
+        let try_fold = trait_method(tcx, trait_id, method);
         let args = tcx.mk_args(&[ty.into(), unit.into(), by.into(), tried.into()]);
         let Some(instance) = (self.resolve_instance(try_fold, args)?)
             .filter(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()))
@@ -1018,7 +1025,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             };
-            let own = [rfold, nth_back];
+            // And its `try_rfold`, compiled, which `rfind` and what folds it
+            // from its back by `try_rfold` ask (ADR 0930).
+            let try_rfold = match double_ended {
+                Some(back) => self.compiled_try_fold(ty, (back, "try_rfold"), span)?,
+                None => None,
+            };
+            let own = [rfold, nth_back, try_rfold];
             let mut given = vec![
                 it,
                 back.unwrap_or_else(Expr::undefined),

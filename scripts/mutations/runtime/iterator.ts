@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-try-rfold-dropped",
+    breaks: "a value given as it is, by a dictionary with a `try_rfold`, steps from its back by `next_back` where that `try_rfold` asks one `nth_back` (ADR 0930)",
+    file: "src/runtime/iterator.js",
+    find: "  if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^held_back_folds_by_try_rfold with"],
+  },
+  {
     name: "given-js-iterator-wrapped",
     breaks: "a compiled `Peekable`'s source that is a JS iterator is stepped through a wrapper, so `chain(..).peekable().last()` drops each item as it passes it, not by each side's `last` (#276)",
     file: "src/runtime/iterator.js",

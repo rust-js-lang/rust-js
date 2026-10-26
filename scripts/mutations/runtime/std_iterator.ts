@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "knowing-try-rfold-uninstalled",
+    breaks: "std's struct made knowing its compiled `try_rfold` doesn't take it: `rfind` steps it by `next_back` (ADR 0930)",
+    file: "src/runtime/std_iterator.js",
+    find: "    if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(it, init, f, broke);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_back_folds_by_try_rfold.rs$"],
+  },
+  {
     name: "std-iterator-nth-unhooked",
     breaks: "a fuse's compiled `nth` isn't its JS iterator's, so `nth` steps by `next`",
     file: "src/runtime/std_iterator.js",

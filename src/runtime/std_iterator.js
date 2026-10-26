@@ -71,11 +71,13 @@ function $stdIterator(struct, steps) {
     it.last = () => step(steps.last(it));
     it.ownLast = true;
   }
-  it.knowing = (back, len, rfold, nthBack) => {
+  it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);
     if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
+    // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
+    if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(it, init, f, broke);
   };
   return it;
 }

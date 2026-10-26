@@ -714,6 +714,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0927 A held `Skip` and `Take` fold from their back by std's own `rfold`, and a std body is given what the std body it calls steps](0927-skip-and-take-fold-from-their-back-as-std-s.md)
 - [0928 A `&mut I` folds from its back by `I`'s `try_rfold`, never `I`'s own `rfold`](0928-a-mut-i-folds-from-its-back-by-try-rfold.md)
 - [0929 A flag a test made is the test's value](0929-a-flag-a-test-made-is-the-tests-value.md)
+- [0930 std's structs fold from their back by their own compiled `try_rfold`, given where they're given and where they're held](0930-std-s-structs-fold-from-their-back-by-their-try-rfold.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

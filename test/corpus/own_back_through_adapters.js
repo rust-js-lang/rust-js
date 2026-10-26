@@ -4,11 +4,13 @@ import {
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
+  fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
   $chainEnds,
@@ -31,6 +33,7 @@ import {
   $rev,
   $skipping,
   $taking,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -553,6 +556,17 @@ function main() {
             false,
             loudDrop_drop,
           ),
+        (iterator, init, f, broke) =>
+          fuseDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: loudIterator_next },
+            { next_back: loudDoubleEndedIterator_nextBack, rfold: loudDoubleEndedIterator_rfold },
+            $tryOf(broke),
+            false,
+            loudDrop_drop,
+          ),
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
@@ -673,6 +687,20 @@ function main() {
             },
             false,
           ),
+        (iterator, init, f, broke) =>
+          fuseDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            $tryOf(broke),
+            false,
+          ),
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
@@ -734,6 +762,20 @@ function main() {
               },
               false,
             ),
+          (iterator, init, f, broke) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              $tryOf(broke),
+              false,
+            ),
         ),
         5,
       ),
@@ -775,6 +817,19 @@ function main() {
               rfold: countDoubleEndedIterator_rfold,
               nthBack: countDoubleEndedIterator_nthBack,
             },
+          ),
+        tryRfold: (iterator, init, f, broke) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            $tryOf(broke),
           ),
       },
     )}`,
@@ -824,6 +879,20 @@ function main() {
                 rfold: countDoubleEndedIterator_rfold,
                 nthBack: countDoubleEndedIterator_nthBack,
               },
+              false,
+            ),
+          (iterator, init, f, broke) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              $tryOf(broke),
               false,
             ),
         ),

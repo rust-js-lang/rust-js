@@ -2,6 +2,7 @@
 
 import {
   flatMapDoubleEndedIterator_nextBack,
+  flatMapDoubleEndedIterator_tryRfold,
   flattenDoubleEndedIterator_nextBack,
   iterator_flatMap,
   iterator_flatten,
@@ -20,6 +21,7 @@ import {
   $rangeNthBack,
   $rev,
   $roomFor,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -91,14 +93,30 @@ function main() {
   );
   console.log(
     `[${$rev(
-      $knowing(fm, (iterator) =>
-        flatMapDoubleEndedIterator_nextBack(
-          iterator,
-          { next: $rangeNext },
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-          { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-          false,
-        ),
+      $knowing(
+        fm,
+        (iterator) =>
+          flatMapDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            false,
+          ),
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke) =>
+          flatMapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            $tryOf(broke),
+            false,
+          ),
       ),
     )
       .toArray()

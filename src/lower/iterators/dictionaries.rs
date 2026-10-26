@@ -115,7 +115,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),
                 false => None,
             };
-            for (method, own) in [("rfold", passed_rfold(rfold)), ("nth_back", nth_back)] {
+            // And its `try_rfold`, which std's compiled code of it asks, a
+            // `Skip`'s of its `Take`: as a JS iterator's `tryRfold` (ADR 0930).
+            let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?;
+            for (method, own) in [
+                ("rfold", passed_rfold(rfold)),
+                ("nth_back", nth_back),
+                ("try_rfold", try_rfold),
+            ] {
                 if let Some(own) = own {
                     props.push(js::Prop::Field(
                         crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),

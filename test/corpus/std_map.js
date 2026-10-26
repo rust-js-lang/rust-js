@@ -7,6 +7,7 @@ import {
   mapDebug_fmt,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
   revDoubleEndedIterator_nextBack,
   revExactSizeIterator_len,
@@ -26,6 +27,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $sizeHint,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -197,12 +199,32 @@ function main() {
       cubes,
       (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
       (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+      undefined,
+      undefined,
+      (iterator, init, f, broke) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+        ),
     ),
     { next: $next, fold: $foldOf },
     {
       next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
       rfold: (iterator, init, f) =>
         mapDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, { next_back: $nextBack }),
+      tryRfold: (iterator, init, f, broke) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+        ),
     },
   );
   const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next, fold: $foldOf });

@@ -3,6 +3,7 @@
 import {
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
+  chainDoubleEndedIterator_tryRfold,
   iterator_chain,
 } from "@rust-js/std/iter.js";
 import {
@@ -16,6 +17,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $sizeHint,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -86,6 +88,17 @@ function main() {
           { next_back: $nextBack },
           { next: $rangeNext },
           { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+      (iterator, init, f, broke) =>
+        chainDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          $tryOf(broke),
         ),
     ),
     (x) => x % 2 === 0,

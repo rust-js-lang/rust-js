@@ -3,9 +3,11 @@
 import {
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
+  chainDoubleEndedIterator_tryRfold,
   iterator_chain,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
 import {
@@ -22,6 +24,7 @@ import {
   $rest,
   $rev,
   $rposition,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -61,8 +64,21 @@ function main() {
   const b = [[1, 2, 3, 4, 6]];
   console.log(
     `[${$rev(
-      $knowing(Bag.oddSquares(b), (iterator) =>
-        mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
+      $knowing(
+        Bag.oddSquares(b),
+        (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+          ),
       ),
     )
       .toArray()
@@ -81,6 +97,17 @@ function main() {
         Bag.doubled(b),
         (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
         (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+        undefined,
+        undefined,
+        (iterator, init, f, broke) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+          ),
       ),
     )
       .toArray()
@@ -99,6 +126,17 @@ function main() {
             d,
             (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
             (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $next },
+                { next_back: $nextBack },
+                $tryOf(broke),
+              ),
           ),
         ),
       ),
@@ -136,6 +174,17 @@ function main() {
             { next: $next },
             { next_back: $nextBack },
           ),
+        (iterator, init, f, broke) =>
+          chainDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+          ),
       ),
     )
       .take(3)
@@ -162,6 +211,17 @@ function main() {
           { next: $next },
           { next_back: $nextBack },
         ),
+      (iterator, init, f, broke) =>
+        chainDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+        ),
     ),
     (x) => x % 3 === 0,
   );
@@ -172,6 +232,17 @@ function main() {
       Bag.doubled(b),
       (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
       (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+      undefined,
+      undefined,
+      (iterator, init, f, broke) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+        ),
     ),
     (x) => x === 4,
   );

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dictionary-try-rfold-ungiven",
+    breaks: "std's struct's `DoubleEndedIterator` dictionary has no `try_rfold`, so std's `Skip::try_rfold` steps its `Take` by `next_back`: `nth_back(4)`, `nth_back(0)` where Rust asks `nth_back(3)` (ADR 0930)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            let try_rfold = self.compiled_try_fold(ty, (trait_id, \"try_rfold\"), span)?;\n",
+    replace: "            let try_rfold = self.compiled_try_fold(ty, (trait_id, \"try_rfold\"), span)?.filter(|_| false);\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^held_back_folds_by_try_rfold with"],
+  },
+  {
     name: "lent-rfold-passed",
     breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on `I`'s own `rfold`, which std's `&mut I` folds by `I`'s `try_rfold`: `(&mut it).rev().sum()` calls the crate's `rfold` where Rust doesn't (ADR 0928)",
     file: "src/lower/iterators/dictionaries.rs",

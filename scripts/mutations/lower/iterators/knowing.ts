@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "knowing-try-rfold-ungiven",
+    breaks: "a held `skip()` over a `take()` stepped by `rfind` steps each from its back, not by std's `Take::try_rfold`, one `nth_back` of the crate's iterator (ADR 0930)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            let own = [rfold, nth_back, try_rfold];\n",
+    replace: "            let own = [rfold, nth_back, try_rfold.filter(|_| false)];\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_back_folds_by_try_rfold.rs$"],
+  },
+  {
     name: "iterator-evidence-of-any-param",
     breaks: "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
     file: "src/lower/iterators/knowing.rs",
@@ -449,7 +457,7 @@ export const mutations: Mutation[] = [
     name: "compiled-try-fold-unlisted",
     breaks: "std's struct has no compiled `try_fold`, so std's default `nth` through it asks a `skip`'s source `nth(n)` where Rust's asks `nth(n - 1)` (ADR 0913)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if let Some(try_fold) = self.compiled_try_fold(ty, span)? {\n",
+    find: "        if let Some(try_fold) = self.compiled_try_fold(ty, (iterator, \"try_fold\"), span)? {\n",
     replace: "        if let Some(try_fold) = None::<Expr> {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },

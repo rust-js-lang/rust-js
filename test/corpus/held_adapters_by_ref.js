@@ -4,6 +4,7 @@ import {
   iterator_skip,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
   $exactLen,
@@ -14,6 +15,7 @@ import {
   $nextBack,
   $rev,
   $sizeHint,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -55,6 +57,15 @@ function main() {
       undefined,
       (iterator, k) =>
         skipDoubleEndedIterator_nthBack(iterator, k, { next: $next }, { next_back: $nextBack }),
+      (iterator, init, f, broke) =>
+        skipDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+        ),
     ),
   )
     .take(2)

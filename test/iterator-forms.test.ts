@@ -44,6 +44,7 @@ const few = [
   "rev_of_lazy_chains.rs",
   "range_hints_given.rs",
   "rev_own_back_methods.rs",
+  "held_back_folds_by_try_rfold.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -64,7 +65,6 @@ const differs: Record<string, string> = {
   "flatten_of_iterators_from_back.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "held_enumerate.rs": "refused: the DoubleEndedIterator of a R",
   "lazy_iterator_clone.rs": "throws: std's struct clones a function the recognizers made",
-  "own_back_through_adapters.rs": "refused: the DoubleEndedIterator of a Take<Count>",
   "rev_of_lazy_chains.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "result_given_as_items.rs": "refused: a std type holding a value with a destructor, Chain<array::IntoIter<Loud, 1>, result::IntoIter<Loud>>",
   "std_map.rs": "throws: std's struct clones a function the recognizers made",

@@ -5,6 +5,7 @@ import {
   enumerateExactSizeIterator_len,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
+  fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_enumerate,
   iterator_fuse,
@@ -23,6 +24,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -66,6 +68,16 @@ function fusedBack(it, IFused) {
           k,
           { next: $next },
           { next_back: $nextBack },
+          IFused,
+        ),
+      (iterator, init, f, broke) =>
+        fuseDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
           IFused,
         ),
     ),

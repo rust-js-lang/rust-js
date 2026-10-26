@@ -3,6 +3,7 @@
 import {
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
+  flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
 } from "@rust-js/std/iter.js";
 import {
@@ -19,6 +20,7 @@ import {
   $nextSome,
   $rev,
   $sizeHint,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -220,19 +222,41 @@ function main() {
   );
   console.log(
     `[${$rev(
-      $knowing(counted, (iterator) =>
-        flattenDoubleEndedIterator_nextBack(
-          iterator,
-          { next_back: $nextBack },
-          {
-            intoIter: (items) => items,
-            IntoIterIterator: () => ({ next: countdownIterator_next }),
-          },
-          { next: countdownIterator_next },
-          { next_back: countdownDoubleEndedIterator_nextBack },
-          true,
-          false,
-        ),
+      $knowing(
+        counted,
+        (iterator) =>
+          flattenDoubleEndedIterator_nextBack(
+            iterator,
+            { next_back: $nextBack },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: countdownIterator_next }),
+            },
+            { next: countdownIterator_next },
+            { next_back: countdownDoubleEndedIterator_nextBack },
+            true,
+            false,
+          ),
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke) =>
+          flattenDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: countdownIterator_next }),
+            },
+            { next: countdownIterator_next },
+            { next_back: countdownDoubleEndedIterator_nextBack },
+            $tryOf(broke),
+            true,
+            false,
+          ),
       ),
     )
       .toArray()

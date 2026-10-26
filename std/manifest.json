@@ -8,7 +8,7 @@
   "library": {
     "version": 8,
     "name": "rust_js_std",
-    "crate_hash": "56990f9c076d3cee6b8777e4a9865a1d",
+    "crate_hash": "e45f9c3992e32c9790fb43fde2d87491",
     "items": [
       {
         "key": "608f92abc48d28da30bea7a011c6feef",
@@ -178,6 +178,61 @@
           },
           {
             "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da53da913399155418",
+        "rust_path": "rust_js_std::<core::iter::Chain<A, B> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "chainDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
             "marks": [
               "drop"
             ]
@@ -627,6 +682,52 @@
         ]
       },
       {
+        "key": "608f92abc48d28dad1d7c278d627b434",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da3a379d10e24d06ca",
         "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::ExactSizeIterator>::len",
         "module": [
@@ -985,6 +1086,78 @@
         ]
       },
       {
+        "key": "608f92abc48d28da81fd14e32690ddb2",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 7,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 8,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28dab9de2b0e11025159",
         "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::fold",
         "module": [
@@ -1317,6 +1490,73 @@
           },
           {
             "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daeea5f02aef4a313",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
             "marks": [
               "drop"
             ]
@@ -1666,6 +1906,54 @@
           },
           {
             "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da30dcc4fb8e4349ba",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
             "marks": [
               "drop"
             ]
@@ -2300,6 +2588,96 @@
         ]
       },
       {
+        "key": "608f92abc48d28da4fa1f34d8435ebd2",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplI_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da9427580b637b4f73",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::adapters::fuse::FuseImpl<I>>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseFuseImplIFusedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da3e5edc2e363066bd",
         "rust_path": "rust_js_std::<core::iter::Inspect<I, F> as core::clone::Clone>",
         "module": [
@@ -2434,6 +2812,57 @@
           },
           {
             "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da4fd60649efc0ea0",
+        "rust_path": "rust_js_std::<core::iter::Inspect<I, F> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "inspectDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
             "marks": [
               "drop"
             ]
@@ -2784,6 +3213,63 @@
         ]
       },
       {
+        "key": "608f92abc48d28da787a8706650c4c51",
+        "rust_path": "rust_js_std::<core::iter::Map<I, F> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "mapDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daa21b85dffc0a310c",
         "rust_path": "rust_js_std::<core::iter::Map<I, F> as core::iter::ExactSizeIterator>::len",
         "module": [
@@ -3121,6 +3607,51 @@
         ]
       },
       {
+        "key": "608f92abc48d28da3c4fd8f7fc93ae31",
+        "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "peekableDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da2b45c09784066f3f",
         "rust_path": "rust_js_std::<core::iter::Peekable<I> as core::iter::Iterator>::count",
         "module": [
@@ -3430,6 +3961,50 @@
         ]
       },
       {
+        "key": "608f92abc48d28dacd8b29f6cdcbbdb9",
+        "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "revDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da1f985c92ce6015e1",
         "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::ExactSizeIterator>::len",
         "module": [
@@ -3600,6 +4175,51 @@
           },
           {
             "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da5ec5ca193a11b9e4",
+        "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "revIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
             "marks": [
               "drop"
             ]
@@ -4170,6 +4790,52 @@
         ]
       },
       {
+        "key": "608f92abc48d28da5119d1536cff9da3",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da20947e55fe64e69c",
         "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::fold",
         "module": [
@@ -4419,6 +5085,52 @@
           },
           {
             "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dad9298057e2534856",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByBackImpl<I>>::spec_try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByBackImplI_specTryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
             "marks": [
               "drop"
             ]
@@ -5339,6 +6051,130 @@
           },
           {
             "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da936e23eaf16e6e85",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUDoubleEndedIterator_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daf1a3e46059fb3ee",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUDoubleEndedIterator2_tryRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
             "marks": [
               "drop"
             ]
@@ -6378,6 +7214,66 @@
         ]
       },
       {
+        "key": "608f92abc48d28daa045547735129d19",
+        "rust_path": "rust_js_std::core::iter::adapters::flatten::FlattenCompat::<I, U>::iter_try_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "FlattenCompat",
+        "member": "iterTryRfold",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daa7c3aa8575dc65ac",
         "rust_path": "rust_js_std::core::iter::adapters::flatten::and_then_or_clear",
         "module": [
@@ -6536,6 +7432,7 @@
         "peekableIterator_tryFold",
         "peekableDoubleEndedIterator_nextBack",
         "peekableDoubleEndedIterator_rfold",
+        "peekableDoubleEndedIterator_tryRfold",
         "peekableClone_clone",
         "peekableDebug_fmt",
         "fuseIterator_next",
@@ -6550,6 +7447,7 @@
         "fuseFuseImplIFusedIterator_advanceBy",
         "fuseDoubleEndedIterator_nextBack",
         "fuseDoubleEndedIterator_rfold",
+        "fuseDoubleEndedIterator_tryRfold",
         "fuseDoubleEndedIterator_nthBack",
         "fuseExactSizeIterator_len",
         "fuseFuseImplI_next",
@@ -6569,9 +7467,11 @@
         "revIterator_nth",
         "revIterator_find",
         "revIterator_fold",
+        "revIterator_tryFold",
         "revDoubleEndedIterator_nextBack",
         "revDoubleEndedIterator_nthBack",
         "revDoubleEndedIterator_rfold",
+        "revDoubleEndedIterator_tryRfold",
         "revDoubleEndedIterator_rfind",
         "revExactSizeIterator_len",
         "revClone_clone",
@@ -6586,6 +7486,7 @@
         "enumerateDoubleEndedIterator_nextBack",
         "enumerateDoubleEndedIterator_nthBack",
         "enumerateDoubleEndedIterator_rfold",
+        "enumerateDoubleEndedIterator_tryRfold",
         "enumerateExactSizeIterator_len",
         "enumerateClone_clone",
         "enumerateDebug_fmt",
@@ -6595,6 +7496,7 @@
         "mapIterator_tryFold",
         "mapDoubleEndedIterator_nextBack",
         "mapDoubleEndedIterator_rfold",
+        "mapDoubleEndedIterator_tryRfold",
         "mapExactSizeIterator_len",
         "mapClone_clone",
         "mapDebug_fmt",
@@ -6604,6 +7506,7 @@
         "inspectIterator_tryFold",
         "inspectDoubleEndedIterator_nextBack",
         "inspectDoubleEndedIterator_rfold",
+        "inspectDoubleEndedIterator_tryRfold",
         "inspectExactSizeIterator_len",
         "inspectClone_clone",
         "inspectDebug_fmt",
@@ -6613,12 +7516,14 @@
         "flattenIterator_tryFold",
         "flattenDoubleEndedIterator_nextBack",
         "flattenDoubleEndedIterator_rfold",
+        "flattenDoubleEndedIterator_tryRfold",
         "flatMapIterator_next",
         "flatMapIterator_sizeHint",
         "flatMapIterator_fold",
         "flatMapIterator_tryFold",
         "flatMapDoubleEndedIterator_nextBack",
         "flatMapDoubleEndedIterator_rfold",
+        "flatMapDoubleEndedIterator_tryRfold",
         "skipIterator_next",
         "skipIterator_sizeHint",
         "skipIterator_nth",
@@ -6660,6 +7565,7 @@
         "stepByDoubleEndedIterator_nextBack",
         "stepByDoubleEndedIterator_nthBack",
         "stepByDoubleEndedIterator_rfold",
+        "stepByDoubleEndedIterator_tryRfold",
         "stepByClone_clone",
         "chainIterator_next",
         "chainIterator_sizeHint",
@@ -6672,6 +7578,7 @@
         "chainDoubleEndedIterator_nextBack",
         "chainDoubleEndedIterator_nthBack",
         "chainDoubleEndedIterator_rfold",
+        "chainDoubleEndedIterator_tryRfold",
         "chainClone_clone",
         "chainABDebug_fmt",
         "iterator_peekable",
@@ -6686,6 +7593,8 @@
         "iterator_take",
         "iterator_stepBy",
         "iterator_chain",
+        "fuseFuseImplI_tryRfold",
+        "fuseFuseImplIFusedIterator_tryRfold",
         "andThenOrClear",
         "flattenCompatIUIterator_next",
         "flattenCompatIUIterator2_next",
@@ -6699,6 +7608,8 @@
         "flattenCompatIUDoubleEndedIterator2_nextBack",
         "flattenCompatIUDoubleEndedIterator_rfold",
         "flattenCompatIUDoubleEndedIterator2_rfold",
+        "flattenCompatIUDoubleEndedIterator_tryRfold",
+        "flattenCompatIUDoubleEndedIterator2_tryRfold",
         "takeSpecTake_specFold",
         "stepByStepByImplI_specNext",
         "stepByStepByImplI_specSizeHint",
@@ -6708,6 +7619,7 @@
         "stepByStepByBackImplI_specNextBack",
         "stepByStepByBackImplI_specNthBack",
         "stepByStepByBackImplI_specRfold",
+        "stepByStepByBackImplI_specTryRfold",
         "andThenOrClear$1",
         "andThenOrClear$2",
         "tSpecRangeSetupT_setup",
@@ -6738,7 +7650,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "131459f9f48409e1"
+      "hash": "ddf67bc180806a34"
     },
     {
       "file": "iter.js.map",

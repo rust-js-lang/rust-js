@@ -538,8 +538,9 @@ export function $shift(items) {
 // an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
 // crate's impl's, std's consumers call them (#162); and its own `rfold` and
 // `nth_back`, which std's consumers and adapters stepped from the back call
-// (#220).
-export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
+// (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
+// folds it from its back asks (ADR 0930).
+export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // its `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
@@ -571,9 +572,10 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
     it.ownRfold = true;
   }
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
+  if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -599,10 +601,10 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
 // back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
 // `$stdIterator`'s, given its own, and its compiled `rfold` and `nth_back`,
 // which pass the crate's own on (#224).
-export function $knowing(it, back, len, rfold, nthBack) {
+export function $knowing(it, back, len, rfold, nthBack, tryRfold) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len, rfold, nthBack);
+  source.knowing?.(back, len, rfold, nthBack, tryRfold);
   return it;
 }
 
@@ -634,6 +636,7 @@ export function $given(value, iterator, boxed = false, back, len) {
     iterator.last,
     back?.rfold,
     back?.nthBack,
+    back?.tryRfold,
   );
 }
 
@@ -1870,11 +1873,12 @@ export function $closing(it, drop, slices = true) {
   // Its iterator's back and length, a use site's, given it where it's
   // asked, as `$knowing` gives a compiled std iterator's (ADR 0561, #225).
   if (it.knowing !== undefined) {
-    closing.knowing = (back, size, rfold, nthBack) => {
-      it.knowing(back, size, rfold, nthBack);
+    closing.knowing = (back, size, rfold, nthBack, tryRfold) => {
+      it.knowing(back, size, rfold, nthBack, tryRfold);
       if (it.len !== undefined) closing.len = () => it.len();
       if (it.rfold !== undefined) closing.rfold = rfoldClosing;
       if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
+      if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
     };
   }
   // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
@@ -10004,11 +10008,13 @@ export function $stdIterator(struct, steps) {
     it.last = () => step(steps.last(it));
     it.ownLast = true;
   }
-  it.knowing = (back, len, rfold, nthBack) => {
+  it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);
     if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
+    // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
+    if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(it, init, f, broke);
   };
   return it;
 }

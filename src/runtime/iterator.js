@@ -8,8 +8,9 @@
 // an `ExactSizeIterator`'s (ADR 0456). Given its own `fold` and `nth`, the
 // crate's impl's, std's consumers call them (#162); and its own `rfold` and
 // `nth_back`, which std's consumers and adapters stepped from the back call
-// (#220).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack) {
+// (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
+// folds it from its back asks (ADR 0930).
+function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // its `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
@@ -41,9 +42,10 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     it.ownRfold = true;
   }
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
+  if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -69,10 +71,10 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
 // back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
 // `$stdIterator`'s, given its own, and its compiled `rfold` and `nth_back`,
 // which pass the crate's own on (#224).
-function $knowing(it, back, len, rfold, nthBack) {
+function $knowing(it, back, len, rfold, nthBack, tryRfold) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len, rfold, nthBack);
+  source.knowing?.(back, len, rfold, nthBack, tryRfold);
   return it;
 }
 
@@ -104,5 +106,6 @@ function $given(value, iterator, boxed = false, back, len) {
     iterator.last,
     back?.rfold,
     back?.nthBack,
+    back?.tryRfold,
   );
 }

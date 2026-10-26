@@ -6,6 +6,7 @@ import {
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
+  fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
 } from "@rust-js/std/iter.js";
@@ -23,6 +24,7 @@ import {
   $rangeNthBack,
   $rev,
   $sizeHint,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -93,6 +95,16 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
       (it, init, f) => $fuseRfold(it, init, f, IIterator, IDoubleEndedIterator),
       (iterator, k) =>
         fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
+      (iterator, init, f, broke) =>
+        fuseDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          IIterator,
+          IDoubleEndedIterator,
+          $tryOf(broke),
+          IFused,
+        ),
     ),
   ).toArray();
   const total = fuseDoubleEndedIterator_rfold(

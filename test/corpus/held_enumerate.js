@@ -5,6 +5,7 @@ import {
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
 } from "@rust-js/std/iter.js";
@@ -26,6 +27,7 @@ import {
   $rev,
   $sizeHint,
   $traitImpl,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -54,6 +56,7 @@ function positionsDoubleEndedIterator_nextBack(
   IExactSizeIterator,
 ) {
   const f = positions.f;
+  const f$1 = f;
   return $lent(
     $rev(
       $knowing(
@@ -70,10 +73,20 @@ function positionsDoubleEndedIterator_nextBack(
             IExactSizeIterator,
             IDoubleEndedIterator,
           ),
+        (iterator, init, f, broke) =>
+          enumerateDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            IIterator,
+            IExactSizeIterator,
+            IDoubleEndedIterator,
+            $tryOf(broke),
+          ),
       ),
     ),
   )
-    .map(([count, val]) => (f(val) ? count : undefined))
+    .map(([count, val]) => (f$1(val) ? count : undefined))
     .find((item) => item != null);
 }
 

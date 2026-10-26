@@ -4,6 +4,7 @@ import {
   iterator_map,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
   $filterEnds,
@@ -14,6 +15,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -75,6 +77,15 @@ function main() {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             ),
+          tryRfold: (iterator, init, f, broke) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+            ),
         },
       ),
     true,
@@ -99,6 +110,15 @@ function main() {
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
             ),
+          tryRfold: (iterator, init, f, broke) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+            ),
         },
       ),
     true,
@@ -121,6 +141,15 @@ function main() {
           f,
           { next: $rangeNext },
           { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+      tryRfold: (iterator, init, f, broke) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          $tryOf(broke),
         ),
     },
   );

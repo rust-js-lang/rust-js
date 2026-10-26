@@ -3,11 +3,13 @@
 import {
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
+  fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std/iter.js";
 import {
   $byteLen,
@@ -32,6 +34,7 @@ import {
   $skipping,
   $stepByEnds,
   $taking,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -46,6 +49,15 @@ function main() {
     next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
     rfold: (iterator, init, f) =>
       mapDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, { next_back: $nextBack }),
+    tryRfold: (iterator, init, f, broke) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        $tryOf(broke),
+      ),
   });
   let first = $next(odd);
   console.log(
@@ -110,6 +122,16 @@ function main() {
             k,
             { next: $next },
             { next_back: $nextBack },
+            true,
+          ),
+        (iterator, init, f, broke) =>
+          fuseDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
             true,
           ),
       ),

@@ -3,6 +3,7 @@
 import {
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
   flattenDoubleEndedIterator_nextBack,
   iterator_enumerate,
@@ -10,6 +11,7 @@ import {
   iterator_rev,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
+  revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
 import {
@@ -26,6 +28,7 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $tryOf,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -72,6 +75,16 @@ function main() {
               { len: (iterator) => iterator.len() },
               { next_back: $nextBack },
             ),
+          (iterator, init, f, broke) =>
+            enumerateDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { len: (iterator) => iterator.len() },
+              { next_back: $nextBack },
+              $tryOf(broke),
+            ),
         ),
       ),
       0,
@@ -91,6 +104,8 @@ function main() {
         (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
         undefined,
         (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+        (iterator, init, f, broke) =>
+          revDoubleEndedIterator_tryRfold(iterator, init, f, { next: $rangeNext }, $tryOf(broke)),
       ),
     ),
   );

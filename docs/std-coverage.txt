@@ -925,7 +925,7 @@
 - DoubleEndedIterator::try_rfold	spec
 # ExactSizeIterator 0 of 1; bodies: 1 safe, 0 spec, 0 opaque, 0 memory, 0 none
 - ExactSizeIterator::len	safe
-# Map 7 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Map 8 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Map::fold	safe
 + Map::len	safe
 + Map::next	safe
@@ -933,7 +933,7 @@
 + Map::rfold	safe
 + Map::size_hint	safe
 + Map::try_fold	safe
-- Map::try_rfold	safe
++ Map::try_rfold	safe
 # Filter 4 of 8; bodies: 7 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + Filter::count	spec
 + Filter::fold	safe
@@ -951,7 +951,7 @@
 + FilterMap::size_hint	safe
 - FilterMap::try_fold	safe
 - FilterMap::try_rfold	safe
-# Peekable 13 of 16; bodies: 13 safe, 2 spec, 0 opaque, 1 memory, 0 none
+# Peekable 14 of 16; bodies: 13 safe, 2 spec, 0 opaque, 1 memory, 0 none
 + Peekable::count	safe
 + Peekable::fold	safe
 + Peekable::last	safe
@@ -967,8 +967,8 @@
 + Peekable::rfold	safe
 + Peekable::size_hint	memory
 + Peekable::try_fold	spec
-- Peekable::try_rfold	spec
-# Fuse 12 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
++ Peekable::try_rfold	spec
+# Fuse 13 of 14; bodies: 6 safe, 8 spec, 0 opaque, 0 memory, 0 none
 + Fuse::count	safe
 + Fuse::find	spec
 + Fuse::fold	safe
@@ -982,8 +982,8 @@
 + Fuse::rfold	safe
 + Fuse::size_hint	safe
 + Fuse::try_fold	spec
-- Fuse::try_rfold	spec
-# Enumerate 10 of 11; bodies: 11 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ Fuse::try_rfold	spec
+# Enumerate 11 of 11; bodies: 11 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Enumerate::count	safe
 + Enumerate::fold	safe
 + Enumerate::len	safe
@@ -994,8 +994,8 @@
 + Enumerate::rfold	safe
 + Enumerate::size_hint	safe
 + Enumerate::try_fold	safe
-- Enumerate::try_rfold	safe
-# Rev 10 of 12; bodies: 12 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ Enumerate::try_rfold	safe
+# Rev 12 of 12; bodies: 12 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Rev::find	safe
 + Rev::fold	safe
 + Rev::len	safe
@@ -1006,8 +1006,8 @@
 + Rev::rfind	safe
 + Rev::rfold	safe
 + Rev::size_hint	safe
-- Rev::try_fold	safe
-- Rev::try_rfold	safe
++ Rev::try_fold	safe
++ Rev::try_rfold	safe
 # Skip 11 of 11; bodies: 5 safe, 1 spec, 0 opaque, 5 memory, 0 none
 + Skip::count	safe
 + Skip::fold	safe
@@ -1053,7 +1053,7 @@
 + Scan::next	safe
 + Scan::size_hint	safe
 - Scan::try_fold	spec
-# Chain 11 of 13; bodies: 8 safe, 2 spec, 0 opaque, 3 memory, 0 none
+# Chain 12 of 13; bodies: 8 safe, 2 spec, 0 opaque, 3 memory, 0 none
 + Chain::count	safe
 + Chain::find	safe
 + Chain::fold	safe
@@ -1066,7 +1066,7 @@
 + Chain::rfold	safe
 + Chain::size_hint	memory
 + Chain::try_fold	spec
-- Chain::try_rfold	spec
++ Chain::try_rfold	spec
 # Zip 4 of 5; bodies: 0 safe, 5 spec, 0 opaque, 0 memory, 0 none
 + Zip::fold	spec
 + Zip::next	spec
@@ -1077,7 +1077,7 @@
 + Cycle::next	safe
 + Cycle::size_hint	safe
 - Cycle::try_fold	spec
-# StepBy 8 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
+# StepBy 9 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
 + StepBy::fold	safe
 + StepBy::next	safe
 + StepBy::next_back	memory
@@ -1086,8 +1086,8 @@
 + StepBy::rfold	memory
 + StepBy::size_hint	memory
 + StepBy::try_fold	spec
-- StepBy::try_rfold	memory
-# Flatten 8 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ StepBy::try_rfold	memory
+# Flatten 9 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Flatten::count	safe
 + Flatten::fold	safe
 + Flatten::last	safe
@@ -1096,8 +1096,8 @@
 + Flatten::rfold	safe
 + Flatten::size_hint	safe
 + Flatten::try_fold	safe
-- Flatten::try_rfold	safe
-# FlatMap 8 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ Flatten::try_rfold	safe
+# FlatMap 9 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + FlatMap::count	safe
 + FlatMap::fold	safe
 + FlatMap::last	safe
@@ -1106,8 +1106,8 @@
 + FlatMap::rfold	safe
 + FlatMap::size_hint	safe
 + FlatMap::try_fold	safe
-- FlatMap::try_rfold	safe
-# Inspect 7 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
++ FlatMap::try_rfold	safe
+# Inspect 8 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Inspect::fold	safe
 + Inspect::len	safe
 + Inspect::next	safe
@@ -1115,7 +1115,7 @@
 + Inspect::rfold	safe
 + Inspect::size_hint	safe
 + Inspect::try_fold	safe
-- Inspect::try_rfold	safe
++ Inspect::try_rfold	safe
 # Copied 6 of 11; bodies: 11 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Copied::count	safe
 + Copied::fold	safe
