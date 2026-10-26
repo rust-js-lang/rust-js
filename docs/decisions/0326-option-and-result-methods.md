@@ -97,3 +97,18 @@ as a call of `IntoIterator::into_iter`, and comparing or sorting
 `Result` orders as the derive has it, the crate's tagged enums' way: by
 variant, `Ok` before `Err`, then by the value. Held by
 `test/corpus/result_iter_and_order.rs`.
+
+## Amendment: an `Rc`'s `as_deref`, read where it's read
+
+`as_deref()` of an `Option` or a `Result` of an `Rc` that isn't counted
+is the subject itself, as Since says, but it was put in a `const option`
+first, as a combinator that reads its subject more than once does. So
+React's `popProvider` check, `__DEV__ && FIBER_STACK.with_borrow(|s|
+s[index].as_deref() != Some(fiber))`, was a closure called where it's
+made in the `&&`, its body `const option = $index(s, index); return
+option !== fiber;`. Now it's read once, as `filter`'s by truth is, before
+any `const`: `__DEV__ && $index(fiberStack, index) !== fiber`. Case A
+([0262](0262-when-rust-and-js-disagree.md)): the value is the same, read
+once. Held by `test/corpus/as_deref_rc_in_place.rs`, against native Rust,
+and the mutations `as-deref-rc-rebuilt` and
+`as-deref-counted-rc-in-place`.

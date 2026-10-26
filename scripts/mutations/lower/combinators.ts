@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "as-deref-rc-rebuilt",
     breaks: "`as_deref()` of an `Rc` that isn't counted is refused",
     file: "src/lower/combinators.rs",
-    find: "                if self.is_rc(inner) && self.counted_rc(inner).is_none() {",
-    replace: "                if false {",
+    find: "            && self.is_rc(inner)\n            && self.counted_rc(inner).is_none()\n",
+    replace: "            && false\n",
     tests: ["test/corpus.test.ts","-t","^as_deref\\.rs"],
   },
   {
@@ -573,5 +573,13 @@ export const mutations: Mutation[] = [
     replace: "        if comb == Comb::IsSomeAnd\n            && false\n            && self.drops(",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
     snapshots: true,
+  },
+  {
+    name: "as-deref-counted-rc-in-place",
+    breaks: "`as_deref()` of an `Option` of a counted `Rc`, `{ value, count }`, is the `Rc` itself, not what it points at",
+    file: "src/lower/combinators.rs",
+    find: "            && self.is_rc(inner)\n            && self.counted_rc(inner).is_none()\n        {\n            return Ok(Some(subject.clone()));",
+    replace: "            && self.is_rc(inner)\n        {\n            return Ok(Some(subject.clone()));",
+    tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
 ];

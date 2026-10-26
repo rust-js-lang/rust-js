@@ -658,15 +658,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::AsSlice => Expr::cond(some, Expr::array(vec![value]), Expr::array(Vec::new())),
             Comb::AsDeref => {
                 let option = self.option_of(subject_ty);
-                let inner = match (option, subject_ty.kind()) {
-                    (Some(inner), _) => inner,
-                    (None, ty::Adt(_, sides)) => sides.type_at(0),
-                    _ => return Err(self.unsupported(span, "`as_deref` of this")),
+                let Some(inner) = self.dereffed(subject_ty) else {
+                    return Err(self.unsupported(span, "`as_deref` of this"));
                 };
-                // An `Rc` that isn't counted is what it points at (ADR 0023).
-                if self.is_rc(inner) && self.counted_rc(inner).is_none() {
-                    return Ok(subject);
-                }
                 let given = if option.is_some() { value } else { inside() };
                 let pointee = self.deref_value(given, inner, span, out)?;
                 match option {
@@ -904,9 +898,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         None
     }
 
+    /// What `as_deref` of an `Option` or a `Result` of `subject_ty` derefs:
+    /// what's in the `Some`, or in the `Ok`.
+    fn dereffed(&self, subject_ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match (self.option_of(subject_ty), subject_ty.kind()) {
+            (Some(inner), _) => Some(inner),
+            (None, ty::Adt(_, sides)) => Some(sides.type_at(0)),
+            _ => None,
+        }
+    }
+
     /// What `comb` gives of `subject`, of type `subject_ty`, read once where
     /// it is, `None` where it's read more than once: a fallback's, `o ?? b`,
-    /// and a `filter`'s by truth, `o || undefined`.
+    /// a `filter`'s by truth, `o || undefined`, and `as_deref`'s of an `Rc`
+    /// that's what it points at.
     #[allow(clippy::too_many_arguments)]
     fn read_once(
         &mut self,
@@ -918,6 +923,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
+        // `as_deref` of an `Rc` that isn't counted, which is what it points
+        // at (ADR 0023): the subject as it is, read where it's read, with
+        // no `const` of it, `$index(stack, i) !== fiber`.
+        if comb == Comb::AsDeref
+            && let Some(inner) = self.dereffed(subject_ty)
+            && self.is_rc(inner)
+            && self.counted_rc(inner).is_none()
+        {
+            return Ok(Some(subject.clone()));
+        }
         // A `Some` not boxed is read once by `??`, and the default made only
         // where it's `None`, as Rust makes it: `get(n) ?? ""`; and `f` called
         // only there, `get(n) ?? root`, a closure of statements its arrow,
