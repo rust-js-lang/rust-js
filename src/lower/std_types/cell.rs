@@ -213,6 +213,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
+                // What a cell that stores `null` for `None` held, a nullable
+                // field's or thread-local's, is `null` or a value already,
+                // as each of its writes made it (`Known::Defined`).
+                let stores_null =
+                    null_for_none || matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::NullForNone));
                 let next = written(
                     &cell,
                     match known {
@@ -250,7 +255,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let old = self.spill("old", place.clone(), out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
-                old
+                match stores_null {
+                    true => old.defined(),
+                    false => old,
+                }
             }
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
@@ -697,7 +705,8 @@ fn binds_name(items: &mut [js::Item], name: &str) -> bool {
 
 /// A nullable thread-local's cell as it's made, `{ value: undefined }` of
 /// `RefCell::new(None)`: its `None` `null`, `{ value: null }`, its module's
-/// variable `let current = null` (ADR 0586, amended).
+/// variable `let current = null` (ADR 0586, amended). One that holds the
+/// `Option` itself is made so by its `init` (`null_result`).
 pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
     match made.kind {
         js::ExprKind::Object(mut props, layout) if matches!(props.as_slice(), [Prop::Field(key, _)] if key == js::HELD) =>

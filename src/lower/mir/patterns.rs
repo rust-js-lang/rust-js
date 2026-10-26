@@ -232,8 +232,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // A `#[rust_js::nullable]` function's result is read by its return.
-        let result = bindings::nullable_result(self.tcx, body.source.def_id());
+        // A `#[rust_js::nullable]` function's result is read by its return,
+        // and a nullable thread-local's of an `Option`, its `init`'s.
+        let result = bindings::null_result(self.tcx, body.source.def_id());
         (made.into_iter())
             .filter(|&(local, (writes, none))| {
                 // Of a function's result, each write: what isn't an

@@ -522,4 +522,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
   },
+  {
+    name: "nullable-thread-local-of-option-refused",
+    breaks: "a `#[rust_js::nullable]` thread-local of an `Option` itself, React's `callComponentInDEV`, is refused",
+    file: "src/lower/bindings.rs",
+    find: "                    && (nullable_option(tcx, args.type_at(0)).is_some() || made_of_options(tcx, args.type_at(0))));\n",
+    replace: "                    && (nullable_option(tcx, args.type_at(0)).is_some_and(|option| option != args.type_at(0)) || made_of_options(tcx, args.type_at(0))));\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
 ];

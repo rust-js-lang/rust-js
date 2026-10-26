@@ -478,4 +478,12 @@ export const mutations: Mutation[] = [
     replace: "                let held = tys[0].peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take"],
   },
+  {
+    name: "nullable-cell-taken-unknown",
+    breaks: "what a nullable thread-local's `take()` gives may be `undefined`, so a nullable function returns it `old ?? null`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                match stores_null {\n                    true => old.defined(),\n",
+    replace: "                match false {\n                    true => old.defined(),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
 ];

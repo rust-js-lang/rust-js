@@ -5,7 +5,8 @@ nullable fields and [0275](0275-nullable-writes-null.md). Amended by
 [0772](0772-a-nullable-cell-field-writes-null.md): or a `Cell` of one. Amended: or
 a `Vec` of them, each item's `None` `null`; and of a thread-local, and a
 binding's type parameter; and of a generic struct's field of a type
-parameter's value, and a thread-local a generic constructor makes, below.
+parameter's value, and a thread-local a generic constructor makes, below;
+and of a thread-local of an `Option` itself, and what one gives, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.
@@ -235,3 +236,44 @@ amended).
   `nullable-init-of-any-thread-local` (`bindings/nullable.rs`),
   `nullable-init-given-undefined`, `nullable-init-gives-any-parameter` and
   `nullable-init-gives-any-call` (`mir/patterns.rs`).
+
+## Amendment: a nullable thread-local of an `Option` itself, and what one gives (2026-10-26)
+
+React's `ReactFiberCallUserSpace.js` exports each frame's function in DEV,
+`null` otherwise:
+
+```js
+export const callComponentInDEV = __DEV__
+  ? // We use this technique to trick minifiers to preserve the function name.
+    (callComponent.react_stack_bottom_frame.bind(callComponent) as any)
+  : (null as any);
+```
+
+Its port's `thread_local! { pub static CALL_COMPONENT_IN_DEV:
+Option<CallComponent> = if __DEV__ { Some(..) } else { None }; }`, which
+nothing sets, a `const`, couldn't be `#[rust_js::nullable]`, which was of a
+cell of an `Option` alone: its `None` was `undefined`, nine times. And
+`ReactProfilerTimer.js`'s `pushComponentEffectErrors`, a nullable
+function giving a nullable thread-local's `take()`, read `return old ??
+null` where upstream returns it.
+
+- **`#[rust_js::nullable]` is of a thread-local of an `Option` too**,
+  whose `init` writes its `None` `null` as a nullable function's result is
+  (`null_result`): its `const`'s value, the test's `null` branch,
+  `__DEV__ ? f : null`, as preparation writes an exported initializer of
+  a test (ADR 0870, amended). Declared `T | null`.
+- **What a nullable cell gives, its `take`'s and `replace`'s, is `null` or
+  a value already** (`Known::Defined`): each write of it is
+  `Storage::NullForNone`'s, and only its module writes a module variable
+  (ADR 0270). A nullable place, a nullable function's result too, takes
+  it as it is: `const old = componentEffectErrors; componentEffectErrors =
+  null; return old;`.
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)), as before: the program
+reads `null` and `undefined` alike as `None`. Not yet: the `const` is
+`old`, where upstream names it `prevErrors`, a name the Rust doesn't
+write. Held by `test/lowering-module-variables.test.ts`, "a nullable
+thread-local of an Option is null where it's made, and what it gives is as
+it is", its JS, `.d.ts` and values in and out of DEV, and the mutations
+`nullable-thread-local-of-option-refused`, `nullable-option-init-undefined`,
+`nullable-option-local-declared-undefined` and `nullable-cell-taken-unknown`.

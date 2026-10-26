@@ -309,6 +309,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("same objects", |b, _| {
                 js::each_expr_mut(b, &mut crate::lower::pointers::same_object_in_place)
             }),
+            // A nullable place's `made ?? null` of what's now read in place,
+            // a test whose branches are each a value or `undefined`: the
+            // test, `null` for `undefined`.
+            pass("stored again", |b, _| js::each_expr_mut(b, &mut Expr::store_again)),
             // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
             // } }`: what it's a copy of.
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),

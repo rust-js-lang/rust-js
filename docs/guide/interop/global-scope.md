@@ -635,7 +635,11 @@ export function last() {
 - **`#[rust_js::nullable]` on one of a `Cell` or a `RefCell` of an
   `Option` makes its `None` `null`**, where it's made and where it's set,
   `export let current = null;` and `current = null;`, `Fiber | null` to
-  TypeScript, as React's `let current: Fiber | null = null` is
+  TypeScript, as React's `let current: Fiber | null = null` is; what its
+  `get`, `take` or `replace` gives is `null` or a value, given a nullable
+  place as it is. On one of an `Option` itself, a `const`, its `None` is
+  `null` where it's made, `export const callComponentInDEV = __DEV__ ? .. :
+  null;`
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   A `None` a `with_borrow_mut` closure writes is `undefined`, as any a
   closure makes is. On one a generic constructor makes of an `Option`,

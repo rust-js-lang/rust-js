@@ -2,7 +2,7 @@
 
 Status: Accepted. Amended: a nullable function's result, kept in a
 variable or a `Drop` guard's field, is stored as it is, and a trait's
-method's isn't taken as one. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
+method's isn't taken as one; stored again where it's read in place. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
 whose `Storage::written` kept as it is only a constant and what MIR's
 `nulled` says; and [0781](0781-a-none-only-nullables-read-is-null-where-its-made.md),
 whose variable only nullable fields read was of `Option`s made, now of a
@@ -219,3 +219,29 @@ Held by `test/lowering-nullable.test.ts`, "an and_then of a nullable
 function is stored as it is", run, `nullable_and_then.rs` against native
 Rust, and the mutations `and-then-of-nullable-coalesced` and
 `and-then-of-any-function-defined` (`lower/calls.ts`).
+
+## Amendment: stored again where it's read in place (2026-10-26)
+
+React's `ReactProfilerTimer.js` keeps the update's task in DEV:
+
+```js
+blockingUpdateTask = __DEV__ ? fiber._debugTask : null;
+```
+
+Its port, `BLOCKING_UPDATE_TASK.set(if __DEV__ { fiber.debug_task.get() }
+else { None })`, read `(__DEV__ ? fiber._debugTask : undefined) ?? null`:
+MIR makes the `if`'s value in a temporary, which the cell's write coalesced,
+`v ?? null`, before tidy read it in place.
+
+**A nullable place's `made ?? null`, once `made` is read in place, is
+stored again** (tidy's `in place/stored again`, `Expr::store_again`): as
+`Storage::written` would have stored it, the test with `null` for each
+`undefined` branch where every other is never `undefined`, `__DEV__ ?
+fiber._debugTask : null`, a nullable field's read being `null` or a value
+(`Known::Defined`). The one rule is `null_for_none`'s, which `written`
+and `store_again` both ask.
+
+Case A, as before. Held by `test/lowering-module-variables.test.ts`, "a
+nullable thread-local of an Option is null where it's made, and what it
+gives is as it is", the task in and out of DEV, and the mutation
+`mir-tidy-stored-again-off`.

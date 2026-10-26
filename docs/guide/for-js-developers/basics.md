@@ -1989,6 +1989,11 @@ export function label(text) {
   format!("<{n}>"), None => .. }` is `name ? `<${name}>` : ..`, of a
   module's variable too where the arm that reads it does nothing
   ([ADR 0635](../../decisions/0635-a-filter-by-truth-then-a-fallback-is-or.md), amended).
+- A `let … else` of what it keeps is a test of its truth too: `let
+  Some(context_types) = js::get(ty, "contextTypes").filter(|v|
+  js::truthy(Some(*v))) else { return .. };` is `const contextTypes =
+  ty.contextTypes; if (!contextTypes) { return ..; }`, as React's legacy
+  context writes it.
 - A chain held in a `let`, its fallback given after, is one `||` too:
   `let r#type = ..filter(..); r#type.unwrap_or_else(|| "Object".into())`
   is `const type = a || b || "Object"; return type;`, where the fallback

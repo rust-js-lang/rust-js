@@ -446,7 +446,7 @@ pub fn bump() {
 }
 `);
   expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
-    "`#[rust_js::nullable]` of a thread-local is of one of a `Cell` or a `RefCell` of an `Option`",
+    "`#[rust_js::nullable]` of a thread-local is of one of an `Option`, or a `Cell` or a `RefCell` of one",
   );
   // Nor one a generic constructor makes of no `Option`.
   writeFileSync(join(dir, "lib.rs"), `pub struct Wrap<T>(pub T);
@@ -880,4 +880,103 @@ pub fn indexed() -> u32 {
     expect.stringContaining("`sort_index` and `index_for_sorting` are both exported as `sortIndex` in JS"),
   ]);
   expect(out.stderr).toContain("`sortIndex` is exported here first");
+});
+
+// React's ReactFiberCallUserSpace, ProfilerTimer and DevToolsHook, as their
+// port writes them (ADR 0586, amended): a nullable thread-local of an
+// `Option` itself is its module's `const`, `null` where it's made `None`,
+// `export const callDestroyInDEV = __DEV__ ? .. : null`; what a nullable
+// thread-local's `take()` gives is `null` or a value already, returned as
+// it is by a nullable function; and a test of `__DEV__` whose branches are
+// a nullable field's read and `None`, set where `None` is `null`, is the
+// test with `null`, `__DEV__ ? fiber._debugTask : null`.
+test("a nullable thread-local of an Option is null where it's made, and what it gives is as it is", async () => {
+  const dir = fixture("nullable-thread-local-option");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+use js::{Unknown, function};
+
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::name = "_debugTask")]
+    pub debug_task: Cell<Option<&'static Unknown>>,
+}
+
+pub type CallDestroy = fn(&Fiber, u32) -> u32;
+
+struct CallDestroyFrame {
+    #[cfg_attr(rust_js, rust_js::name = "react_stack_bottom_frame")]
+    react_stack_bottom_frame: CallDestroy,
+}
+
+#[cfg_attr(rust_js, rust_js::name = "callDestroy")]
+const CALL_DESTROY: CallDestroyFrame = CallDestroyFrame {
+    react_stack_bottom_frame: |_fiber, lanes| lanes + 1,
+};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "callDestroyInDEV")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static CALL_DESTROY_IN_DEV: Option<CallDestroy> = if __DEV__ {
+        // We use this technique to trick minifiers to preserve the function name.
+        Some(function::bind(CALL_DESTROY.react_stack_bottom_frame, Some(&CALL_DESTROY)))
+    } else {
+        None
+    };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static COMPONENT_EFFECT_ERRORS: RefCell<Option<Vec<String>>> = const { RefCell::new(None) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static BLOCKING_UPDATE_TASK: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+}
+
+pub fn destroyed(fiber: &Fiber) -> u32 {
+    match CALL_DESTROY_IN_DEV.with(|call| *call) {
+        Some(call) => call(fiber, 1),
+        None => 0,
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn push_component_effect_errors() -> Option<Vec<String>> {
+    COMPONENT_EFFECT_ERRORS.take()
+}
+
+pub fn errored(error: &str) {
+    COMPONENT_EFFECT_ERRORS.set(Some(vec![error.to_string()]));
+}
+
+pub fn start_update_timer_by_lane(fiber: &Fiber) {
+    BLOCKING_UPDATE_TASK.set(if __DEV__ { fiber.debug_task.get() } else { None });
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain(
+    "export const callDestroyInDEV = __DEV__\n  ? // We use this technique to trick minifiers to preserve the function name.\n    callDestroy.react_stack_bottom_frame.bind(callDestroy)\n  : null;\n",
+  );
+  expect(out).toContain("  const old = componentEffectErrors;\n  componentEffectErrors = null;\n  return old;\n");
+  expect(out).toContain("  blockingUpdateTask = __DEV__ ? fiber._debugTask : null;\n");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export const callDestroyInDEV: ((fiber: Fiber, value: number) => number) | null;");
+  (globalThis as any).__DEV__ = false;
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    const fiber = { _debugTask: "task" };
+    expect([lib.callDestroyInDEV, lib.destroyed(fiber)]).toEqual([null, 0]);
+    lib.startUpdateTimerByLane(fiber);
+    expect(lib.blockingUpdateTask).toBe(null);
+    (globalThis as any).__DEV__ = true;
+    lib.startUpdateTimerByLane(fiber);
+    expect(lib.blockingUpdateTask).toBe("task");
+    lib.startUpdateTimerByLane({ _debugTask: null });
+    expect(lib.blockingUpdateTask).toBe(null);
+    expect(lib.pushComponentEffectErrors()).toBe(null);
+    lib.errored("boom");
+    expect([lib.pushComponentEffectErrors(), lib.pushComponentEffectErrors()]).toEqual([["boom"], null]);
+  } finally {
+    delete (globalThis as any).__DEV__;
+  }
 });

@@ -19,8 +19,8 @@ function clearedName(name) {
 }
 
 function shouted() {
-  const name = componentName || undefined;
-  const shout = name != null ? clearedName(name) : "-";
+  const name = componentName;
+  const shout = name ? clearedName(name) : "-";
   return shout;
 }
 

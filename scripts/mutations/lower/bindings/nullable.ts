@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "    tcx.opt_parent(body).is_some()\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a generic constructor makes"],
   },
+  {
+    name: "nullable-option-init-undefined",
+    breaks: "a nullable thread-local of an `Option`'s `init` writes its `None` `undefined`, `__DEV__ ? f : undefined`",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    nullable_result(tcx, body) || tcx.opt_parent(body).is_some_and(|key| nullable_local_option(tcx, key))\n",
+    replace: "    nullable_result(tcx, body)\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
 ];

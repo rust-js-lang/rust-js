@@ -1001,17 +1001,19 @@ impl Expr {
     /// This again, where what it stores is known better than where it was
     /// made: a nullable place's `made ?? null` (`Storage::written`) of what's
     /// now never `undefined` (`may_be_undefined`), a `Drop` guard's field
-    /// read where it's dropped as the variable it was made of, is `made`, as
-    /// `Storage::written` would have stored it (ADR 0841, amended). Anything
-    /// else is as it is.
+    /// read where it's dropped as the variable it was made of, is `made`; and
+    /// of a test now read in place whose branches are each so, or
+    /// `undefined`, the test with `null` for `undefined`, `(__DEV__ ?
+    /// fiber._debugTask : undefined) ?? null` `__DEV__ ? fiber._debugTask :
+    /// null`, as `Storage::written` would have stored it (ADR 0841,
+    /// amended). Anything else is as it is.
     pub fn store_again(&mut self) {
-        if let ExprKind::Binary(Op::Coalesce, made, null) = &mut self.kind
+        if let ExprKind::Binary(Op::Coalesce, made, null) = &self.kind
             && matches!(null.kind, ExprKind::Null)
-            && !made.may_be_undefined()
+            && let Some(stored) = null_for_none(made)
         {
-            let made = std::mem::replace(made.as_mut(), Expr::null());
             let span = self.span;
-            *self = made.or_at(span);
+            *self = stored.or_at(span);
         }
     }
 

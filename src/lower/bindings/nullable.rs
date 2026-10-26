@@ -109,6 +109,18 @@ pub(in crate::lower) fn nullable_local(tcx: TyCtxt<'_>, key: DefId) -> bool {
     nullable_alone(tcx, key)
 }
 
+/// Whether `key`, a `#[rust_js::nullable]` thread-local's, holds an
+/// `Option` itself, no cell of one: a `const` of its module, `null` where
+/// it's made `None`, `export const callComponentInDEV = __DEV__ ? .. :
+/// null`, as React's is (ADR 0586, amended).
+pub(in crate::lower) fn nullable_local_option(tcx: TyCtxt<'_>, key: DefId) -> bool {
+    let option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+    nullable_local(tcx, key)
+        && matches!(tcx.type_of(key).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(local_key, args) if crate::lower::recognition::is_std_def(tcx, local_key.did(), crate::lower::recognition::StdItem::LocalKey)
+                && option(args.type_at(0)))
+}
+
 /// Whether `held`, what a `#[rust_js::nullable]` thread-local holds, is
 /// of a generic type one of whose type parameters is an `Option`,
 /// `StackCursor<Option<Rc<HiddenContext>>>`, as a generic constructor
@@ -118,6 +130,14 @@ pub(in crate::lower) fn nullable_local(tcx: TyCtxt<'_>, key: DefId) -> bool {
 pub(in crate::lower) fn made_of_options(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
     let option = |ty: Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
     matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))
+}
+
+/// Whether what `body` gives has its `None` `null`, as it writes it (ADR
+/// 0578): a `#[rust_js::nullable]` function's result; and a nullable
+/// thread-local's `init`, of one that holds the `Option` itself
+/// (`nullable_local_option`), the value it's made, `__DEV__ ? f : null`.
+pub(in crate::lower) fn null_result(tcx: TyCtxt<'_>, body: DefId) -> bool {
+    nullable_result(tcx, body) || tcx.opt_parent(body).is_some_and(|key| nullable_local_option(tcx, key))
 }
 
 /// Whether `body`, a thread-local's `init`, is a `#[rust_js::nullable]`

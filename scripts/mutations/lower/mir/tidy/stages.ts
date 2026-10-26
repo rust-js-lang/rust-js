@@ -655,4 +655,12 @@ export const mutations: Mutation[] = [
     replace: "            pass(\"branch values\", branch_values_of),\n            pass(\"declarations\", |b, _| declarations(b)),\n            pass(\"tested options\", |b, _| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing))\n            }),\n",
     tests: ["test/js-object.test.ts", "-t", "an object.s property read where its test holds is one conditional"],
   },
+  {
+    name: "mir-tidy-stored-again-off",
+    breaks: "a nullable place's `(__DEV__ ? fiber._debugTask : undefined) ?? null`, read in place, isn't stored again, `__DEV__ ? fiber._debugTask : null`",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"stored again\", |b, _| js::each_expr_mut(b, &mut Expr::store_again)),\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
 ];

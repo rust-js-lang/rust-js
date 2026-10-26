@@ -774,4 +774,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && super::bindings::nullable_local(self.tcx, def_id)\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
+  {
+    name: "nullable-option-local-declared-undefined",
+    breaks: "a nullable thread-local of an `Option` is declared `T | undefined`, not `T | null`",
+    file: "src/lower/declarations.rs",
+    find: "            None if super::bindings::nullable_local(self.tcx, def_id)\n                && let Some(inner) = self.option(ty) =>\n",
+    replace: "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
 ];

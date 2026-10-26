@@ -318,7 +318,7 @@ pub fn cleared(log: &mut Vec<String>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const componentNameMessage = componentName\n    ? `An error occurred in the <${componentName}> component.`\n    : \"An error occurred in one of your React components.\";\n");
-  expect(js).toContain("  const name = componentName || undefined;\n  const shout = name != null ? clearedName(name) : \"\";\n");
+  expect(js).toContain("  const name = componentName;\n  const shout = name ? clearedName(name) : \"\";\n");
   const lib = await import(join(dir, "lib.js"));
   const said = [lib.message()];
   lib.set("" as never);
@@ -333,4 +333,35 @@ pub fn cleared(log: &mut Vec<String>) {
   said.push(lib.shouted(), lib.shouted());
   expect(said).toEqual(["An error occurred in one of your React components.", "An error occurred in one of your React components.", "An error occurred in the <App> component.", "APP", ""]);
   expect(log).toEqual(["App", "App"]);
+});
+
+// React's ReactFiberLegacyContext, ported: `let Some(context_types) =
+// js::get(r#type, "contextTypes").filter(..js::truthy..) else { return .. }`.
+// What `filter` keeps of a read that's no variable, `type.contextTypes ||
+// undefined`, then a `let … else` of it, is the read in its `const`, tested
+// by its truth, upstream's `const contextTypes = type.contextTypes; if
+// (!contextTypes)`: past the test it's truthy, which `|| undefined` keeps as
+// it is (ADR 0635, amended).
+test("a let-else of a read kept by its truth is the read tested by its truth", async () => {
+  const dir = fixture("let-else-read-truth");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+pub fn masked(r#type: &Unknown) -> u32 {
+    let Some(context_types) = js::get(r#type, "contextTypes").filter(|context_types| js::truthy(Some(*context_types)))
+    else {
+        return 0;
+    };
+    let mut keys = 0;
+    for _key in js::keys_in(context_types) {
+        keys += 1;
+    }
+    keys
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const contextTypes = type.contextTypes;\n  if (!contextTypes) {\n    return 0;\n  }\n");
+  const lib = await import(join(dir, "lib.js"));
+  const masked = [{ contextTypes: { a: 1, b: 2 } }, { contextTypes: 0 }, { contextTypes: "" }, { contextTypes: null }, {}].map(lib.masked);
+  expect(masked).toEqual([2, 0, 0, 0, 0]);
 });

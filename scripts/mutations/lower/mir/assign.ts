@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     name: "nullable-result-undefined",
     breaks: "a `#[rust_js::nullable]` function's `None` it didn't make is `undefined`, which a JS caller's `!== null` takes for a value",
     file: "src/lower/mir/assign.rs",
-    find: "                || !bindings::nullable_result(self.tcx, state.body.source.def_id()))\n",
+    find: "                || !bindings::null_result(self.tcx, state.body.source.def_id()))\n",
     replace: "                || true)\n",
     tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
   },

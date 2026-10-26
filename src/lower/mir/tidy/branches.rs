@@ -938,7 +938,9 @@ fn kept_by_truth(e: &Expr) -> Option<&Expr> {
 /// `const h = x || undefined; if (h == null) { exit }`, a `let … else`
 /// of what `filter` keeps: `if (!x) { exit }`, `h` and
 /// what binds it then `x`, which it is; and `if (h != null) { s }`, `h`
-/// read there alone, `if (x) { s }`.
+/// read there alone, `if (x) { s }`. Of an `x` that's no variable, a
+/// read, `type.contextTypes`, `h` is kept, its value `x`, which it is where
+/// the test lets it be read: `const h = x; if (!h) { exit }`.
 pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
     for i in 1..stmts.len() {
         let [made, checked] = &stmts[i - 1..=i] else {
@@ -947,12 +949,14 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
         let StmtKind::Const(h, value) = &made.kind else {
             continue;
         };
-        let Some(ExprKind::Var(x)) = kept_by_truth(value).map(|x| &x.kind) else {
+        let Some(x) = kept_by_truth(value) else {
             continue;
         };
-        if changing.contains(x) {
-            continue;
-        }
+        let variable = match &x.kind {
+            ExprKind::Var(x) if changing.contains(x) => continue,
+            ExprKind::Var(x) => Some(x.clone()),
+            _ => None,
+        };
         let StmtKind::If(guard, then, otherwise) = &checked.kind else {
             continue;
         };
@@ -965,7 +969,8 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
             continue;
         }
         let kept = match op {
-            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),
+            // The exit's `h` is `undefined`, which `x` may not be.
+            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,
             _ => {
                 otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)
                     && js::mentions_in(&stmts[i + 1..], h) == 0
@@ -974,12 +979,30 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
         if !kept {
             continue;
         }
+        let Some(x) = variable else {
+            // `h` kept, `x` itself, tested by its truth.
+            let (h, x) = (h.clone(), x.clone());
+            let truth = match op {
+                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&h)),
+                _ => Expr::var(&h),
+            };
+            if let StmtKind::Const(_, value) = &mut stmts[i - 1].kind {
+                *value = Expr { span: value.span, ..x };
+            }
+            if let StmtKind::If(guard, ..) = &mut stmts[i].kind {
+                *guard = Expr {
+                    span: guard.span,
+                    ..truth
+                };
+            }
+            continue;
+        };
         let truth = match op {
-            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(x)),
-            _ => Expr::var(x),
+            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&x)),
+            _ => Expr::var(&x),
         };
         // `h`, read as `x`: it goes.
-        let (h, x) = (h.clone(), x.clone());
+        let h = h.clone();
         stmts.remove(i - 1);
         let mut rest = stmts.split_off(i - 1);
         let StmtKind::If(guard, ..) = &mut rest[0].kind else {

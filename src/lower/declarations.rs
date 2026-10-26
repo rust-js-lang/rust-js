@@ -1122,6 +1122,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] })
             }
             Some(_) => self.ts(ty),
+            // One that holds the `Option` itself, a `const`, alike.
+            None if super::bindings::nullable_local(self.tcx, def_id)
+                && let Some(inner) = self.option(ty) =>
+            {
+                json!({ "kind": "union", "types": [self.ts(inner), keyword("null")] })
+            }
             None => self.as_written(self.written_type(def_id), |out| out.ts(ty)),
         };
         let mut declared = json!({

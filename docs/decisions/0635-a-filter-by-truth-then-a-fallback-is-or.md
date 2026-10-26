@@ -7,7 +7,9 @@ chain's and a nullable result's too. Extended by
 `const`, then its fallback, is one `||` too; and by
 [0651](0651-a-let-then-its-fallback-is-or.md): a `let`, then its
 fallback where it's falsy, is `||`. Amended below: a module variable's
-text kept by its truth, then matched, is tested by its truth.
+text kept by its truth, then matched, is tested by its truth; a let-else
+of a read kept by its truth is the read tested by its truth, and an exit
+that reads the `Option` keeps it.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): no program can tell.
 
@@ -173,3 +175,39 @@ Held by `test/lowering-option-truth.test.ts`, "a module variable's text
 filtered by its truth is tested by its truth", run, `module_text_truth.rs`
 against native Rust, and the mutations `truth-tested-kept` and
 `truth-tested-past-code` (`prepare.ts`).
+
+## Amendment: a let-else of a read kept by its truth, and an exit that reads the `Option` (2026-10-26)
+
+React's `ReactFiberLegacyContext.js` reads a type's `contextTypes` once:
+
+```js
+const contextTypes = type.contextTypes;
+if (!contextTypes) {
+  return emptyContextObject;
+}
+```
+
+Its port, `let Some(context_types) = js::get(r#type, "contextTypes")
+.filter(|context_types| js::truthy(Some(*context_types))) else { return ..
+};`, read `const contextTypes = type.contextTypes || undefined; if
+(contextTypes == null)`: tidy's `filtered_guards` took a `let … else` of
+a variable's `x || undefined` alone.
+
+- **Of a read that's no variable, the `const` is the read, tested by its
+  truth**: past the test, where it's truthy, `x || undefined` is `x`, and a
+  `const` holds what it read, whatever changes after. Of a variable, as
+  before, the variable itself.
+- **A wrong answer fixed: an exit that reads the `Option` it kept keeps
+  it.** Of `let kept = v.filter(..); let Some(x) = kept else { return
+  describe(kept) };`, the exit's `kept` was made `v`, so `describe` was
+  given `""` where Rust gives `None`, `Some("")` printed for `None`. The
+  exit mentions it now and nothing is changed.
+
+Case A for the first, as before; the second, Rust's answer. Held by
+`test/lowering-option-truth.test.ts`, "a let-else of a read kept by its
+truth is the read tested by its truth", and "a module variable's text
+filtered by its truth is tested by its truth", whose arm that runs code
+keeps its `const`, `const name = componentName; .. name ? clearedName(name)
+: ""`; `test/corpus/let_else_read_truth.rs`, run against native Rust; and
+the mutations `mir-tidy-filtered-read-kept` and
+`mir-tidy-filtered-exit-reads-kept`.
