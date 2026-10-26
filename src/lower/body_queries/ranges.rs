@@ -11,7 +11,7 @@ use super::*;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{
     VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_slice_items, is_vec_from_elem, once_method,
-    vec_view,
+    ord_max_or_min, vec_view,
 };
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
@@ -378,6 +378,26 @@ fn reads_utf16_length<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, generic_args: ty::
     (generic_args.types().next()).is_some_and(|iter_ty| counts_utf16_units(tcx, def_id, iter_ty))
 }
 
+/// The range of the larger of `a` and `b`, or the smaller: below a bound
+/// both are below, or, the smaller, either's (#367).
+fn chosen(a: &Range, b: &Range, larger: bool) -> Range {
+    match larger {
+        true => Range {
+            lo: a.lo.max(b.lo),
+            hi: a.hi.max(b.hi),
+            below: match (&a.below, &b.below) {
+                (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.join(*y))),
+                _ => None,
+            },
+        },
+        false => Range {
+            lo: a.lo.min(b.lo),
+            hi: a.hi.min(b.hi),
+            below: a.below.clone().or_else(|| b.below.clone()),
+        },
+    }
+}
+
 impl<'a, 'tcx> Walk<'a, 'tcx> {
     /// The slice a place is, through references: `heap` of `*heap`.
     fn slice(&self, e: ExprId) -> Option<Slice> {
@@ -410,19 +430,21 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         slice_length(self.tcx, def_id, generic_args).map(|asked| (asked, args[0]))
     }
 
-    /// What `init`, a `vec![item; n]`, is as long as: the slice `n` is the
-    /// length of, `terraces` of `terraces.len()`, or `n` itself, an integer
-    /// variable (`VALUE`) (#362).
-    fn made_as_long(&self, init: ExprId) -> Option<Slice> {
+    /// The count of `init` where it's a table, `vec![item; n]`'s `n`.
+    fn table_count(&self, init: ExprId) -> Option<ExprId> {
         let thir = self.thir;
         let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, init)].kind else {
             return None;
         };
         let (def_id, _) = fn_def(thir[strip(thir, fun)].ty)?;
         let [_, count] = args[..] else { return None };
-        if !is_vec_from_elem(self.tcx, def_id) {
-            return None;
-        }
+        is_vec_from_elem(self.tcx, def_id).then_some(count)
+    }
+
+    /// What a table of `count` items is as long as: the slice `count` is the
+    /// length of, `terraces` of `terraces.len()`, or `count` itself, an
+    /// integer variable (`VALUE`) (#362).
+    fn count_base(&self, count: ExprId) -> Option<Slice> {
         match self.asks(count) {
             Some((SliceLength::Len, items)) => self.slice(items),
             _ => self.value_base(count),
@@ -771,6 +793,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         let before = known.clone();
         self.tell_callee(fun, args, &ranges, &before);
+        // An integer's `max` or `min`, `n.max(2)`, which runs no other code:
+        // of both ranges (#367).
+        if let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
+            && let Some(larger) = ord_max_or_min(self.tcx, def_id)
+            && let [Some(a), Some(b)] = &ranges[..]
+        {
+            return Some(chosen(a, b, larger));
+        }
         // A `OnceCell`'s `set`: of a cell still empty, every time it's
         // reached, and set after (ADR 0847). Of another, which may be one
         // of those its variable reaches, none of them is known empty after.
@@ -1000,6 +1030,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 ..
             } => {
                 let value = initializer.and_then(|init| self.expr(init, known));
+                // A table, `vec![x; n]`: what it's as long as (#362), and
+                // how long it is at least, `n`'s least (#367).
+                let table = (initializer.and_then(|init| self.table_count(init)))
+                    .map(|count| (self.count_base(count), self.value_of(count, known)));
                 if let Some(otherwise) = else_block {
                     // It never goes on: nothing it learns is known after.
                     let mut gone = known.clone();
@@ -1031,9 +1065,13 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     if let Some(value) = value {
                         k.vars.insert(var, value);
                     }
-                    // A table as long as another, `vec![0.0; terraces.len()]` (#362).
-                    if let Some(base) = initializer.and_then(|init| self.made_as_long(init)) {
-                        k.same.insert((Vec::new(), var), base);
+                    if let Some((base, count)) = table {
+                        if let Some(base) = base {
+                            k.same.insert((Vec::new(), var), base);
+                        }
+                        if let Some(count) = count {
+                            k.lengths.insert((Vec::new(), var), count.lo);
+                        }
                     }
                     // A test held, `let truncated = xs.len() > 3;` (ADR 0806).
                     if let Some(test) = initializer

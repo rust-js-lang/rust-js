@@ -403,6 +403,10 @@ fn from_the_end(
             || matches!(&e.kind, ExprKind::Member(_, length) if length == "length")
             || matches!(&e.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Sub | Op::Mul | Op::Div | Op::Rem
                 | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr))
+            // `Math.max(to, 0)`, which JS makes a number of anything.
+            || matches!(&e.kind, ExprKind::Call(callee, _) if matches!(&callee.kind,
+                ExprKind::Member(math, name) if matches!(&math.kind, ExprKind::Var(m) if m == "Math")
+                    && matches!(name.as_str(), "max" | "min")))
     };
     let same = range.start.is_constant() || matches!(&range.start.kind, ExprKind::Var(v) if !assigns(body, v));
     if mutable || !number(range.start) || !number(range.end) || !same {

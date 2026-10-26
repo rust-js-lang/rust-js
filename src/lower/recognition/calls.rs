@@ -1276,3 +1276,17 @@ fn to_owned_of(ty: Ty<'_>) -> Std {
 pub(in crate::lower) fn is_vec_from_elem(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("vec_from_elem"), def_id)
 }
+
+/// Whether `def_id` is `Ord::max`, `Some(true)`, or `Ord::min`,
+/// `Some(false)`: of integers, the larger or the smaller (#367).
+pub(in crate::lower) fn ord_max_or_min(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    let ord = tcx.trait_of_assoc(def_id)?;
+    if !tcx.is_diagnostic_item(rustc_span::sym::Ord, ord) {
+        return None;
+    }
+    match tcx.item_name(def_id).as_str() {
+        "max" => Some(true),
+        "min" => Some(false),
+        _ => None,
+    }
+}

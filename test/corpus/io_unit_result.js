@@ -11,7 +11,6 @@ import {
   $ioWriteFmt,
   $parseErrorDyn,
   $parseInt,
-  $slice,
   $stringError,
   $utf8Lossy,
   $writeCaught,
@@ -92,7 +91,7 @@ function limitedWrite_write(limited, bytes) {
     return { TAG: "Err", _0: new $IoError("WriteZero", { value: "full", impl: $stringError() }) };
   }
   const n = Math.min(bytes.length, limited.room);
-  $extend(limited.out, $slice(bytes, 0, n));
+  $extend(limited.out, bytes.slice(0, n));
   limited.room = (limited.room - n) >>> 0;
   return { TAG: "Ok", _0: n };
 }

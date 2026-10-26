@@ -6,7 +6,9 @@ use super::reads_utf16_length;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{CellView, SliceLength, cell_view, is_string_deref, makes_utf16_units, slice_length};
+use crate::lower::recognition::{
+    CellView, SliceLength, cell_view, is_string_deref, makes_utf16_units, ord_max_or_min, slice_length,
+};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::TyCtxt;
@@ -60,6 +62,9 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
                         // its `count()`, its `length` (ADR 0632).
                         || makes_utf16_units(tcx, def_id, thir[e].ty)
                         || reads_utf16_length(tcx, def_id, generic_args)
+                        // An integer's `max` or `min`, which runs no code of
+                        // the program's (#367).
+                        || (ord_max_or_min(tcx, def_id).is_some() && thir[e].ty.is_integral())
                 }) && args.iter().all(|&arg| reads(tcx, thir, arg, vars))
             }
             _ => false,

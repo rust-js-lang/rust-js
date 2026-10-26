@@ -50,6 +50,29 @@ fn shrunk_sum(values: &[u32], shrink: bool) -> Option<u32> {
     Some(sum)
 }
 
+fn staircase(stairs: i32) -> f64 {
+    let Ok(stairs) = usize::try_from(stairs) else {
+        return 0.0;
+    };
+    let mut steps = vec![0.0; stairs.max(2) + 1];
+    steps[1] = 1.0;
+    steps[2] = 2.0;
+    if stairs <= 2 {
+        return steps[stairs];
+    }
+    for step in 3..=stairs {
+        steps[step] = steps[step - 1] + steps[step - 2];
+    }
+    steps[stairs]
+}
+
+fn last_at_most(values: &[u32], i: usize) -> u32 {
+    if values.is_empty() {
+        return 0;
+    }
+    values[i.min(values.len() - 1)]
+}
+
 fn main() {
     for terraces in [
         &[][..],
@@ -63,4 +86,11 @@ fn main() {
     println!();
     println!("{:?} {:?}", prefix_sums(5), prefix_sums(0));
     println!("{:?} {:?}", shrunk_sum(&[1, 2, 3], false), shrunk_sum(&[1, 2, 3], true));
+    println!(
+        "{} {} {} {}",
+        staircase(-1),
+        staircase(2),
+        staircase(10),
+        last_at_most(&[4, 5], 9)
+    );
 }

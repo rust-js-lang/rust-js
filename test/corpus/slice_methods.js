@@ -46,7 +46,7 @@ function main() {
   const item = { n: 0 };
   const cells = Array.from({ length: 2 }, () => ({ ...item }));
   $fill(cells, { n: 3 }, (value) => ({ ...value }));
-  $index(cells, 0).n = 9;
+  cells[0].n = 9;
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);
 
   const target = [0, 0, 0];

@@ -46,11 +46,10 @@ function main() {
   item$3.tag = s.value;
   const item$4 = new Array(3).fill(0);
   const grid = Array.from({ length: 2 }, () => item$4.slice());
-  const items = $index(grid, 1);
-  $index(items, 2);
-  const x$2 = { value: items[2] };
+  $index(grid[1], 2);
+  const x$2 = { value: grid[1][2] };
   inc(x$2);
-  items[2] = x$2.value;
+  grid[1][2] = x$2.value;
   const pairs = [
     [1, 2],
     [3, 4],

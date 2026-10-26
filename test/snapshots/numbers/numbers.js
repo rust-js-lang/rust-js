@@ -131,8 +131,7 @@ export function grids(n) {
   // Each is its own copy: changing one leaves the others.
   const cell = { hits: 0 };
   const cells = Array.from({ length: 3 }, () => ({ ...cell }));
-  const cell2 = $index(cells, 1);
-  cell2.hits = (cell2.hits + 5) >>> 0;
+  cells[1].hits = (cells[1].hits + 5) >>> 0;
   $roomFor(n, 4);
   const flags = new Array(n).fill(1);
   return [t, flags, `[${cells.map((item) => cell2Debug_fmt(item)).join(", ")}]`];

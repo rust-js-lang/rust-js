@@ -28,7 +28,7 @@ function countIterator_next(count) {
   }
 }
 function countIterator_sizeHint(count) {
-  const n = Math.max((count.end - count.at) | 0, 0) >>> 0;
+  const n = Math.max((count.end - count.at) | 0, 0);
   return [n, n];
 }
 function countIterator_nth(count, n) {
@@ -73,7 +73,7 @@ function plainIterator_next(plain) {
   return plain[0] < plain[1] ? value() : undefined;
 }
 function plainIterator_sizeHint(plain) {
-  const n = Math.max((plain[1] - plain[0]) | 0, 0) >>> 0;
+  const n = Math.max((plain[1] - plain[0]) | 0, 0);
   return [n, n];
 }
 

@@ -78,11 +78,11 @@ pub fn scan(rows: &[Vec<i32>]) -> i32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).toContain(
-    "  while (s >= 1) {\n    if ($index(a, s - 1) !== $index(b, s - 1)) {\n      if (s > 1) {\n        found = s;\n      }\n      break;\n    }\n    s--;\n  }\n",
+    "  while (s >= 1) {\n    if (a[s - 1] !== $index(b, s - 1)) {\n      if (s > 1) {\n        found = s;\n      }\n      break;\n    }\n    s--;\n  }\n",
   );
   // The program's `if` and its `else`, the `break` the `else`'s.
   expect(js).toContain(
-    "  while (s >= 1) {\n    if ($index(a, s - 1) === $index(b, s - 1)) {\n      s--;\n    } else {\n      found = s;\n      break;\n    }\n  }\n",
+    "  while (s >= 1) {\n    if (a[s - 1] === $index(b, s - 1)) {\n      s--;\n    } else {\n      found = s;\n      break;\n    }\n  }\n",
   );
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(["a", "Root"]), lib.root(["a"]), lib.root([])]).toEqual([1, 1, 0]);

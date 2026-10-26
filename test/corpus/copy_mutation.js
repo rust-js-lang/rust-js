@@ -59,8 +59,8 @@ function main() {
   for (const p of points) {
     p.y = (p.y * 3) | 0;
   }
-  const first = { ...$index(points, 0) };
-  $index(points, 0).x = 42;
+  const first = { ...points[0] };
+  points[0].x = 42;
   console.log(
     `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] ${pointDebug_fmt(first)}`,
   );

@@ -47,7 +47,7 @@ function countIterator_nth(count, n) {
 }
 
 function countIterator_sizeHint(count) {
-  const n = Math.max((count.end - count.at) | 0, 0) >>> 0;
+  const n = Math.max((count.end - count.at) | 0, 0);
   return [n, n];
 }
 

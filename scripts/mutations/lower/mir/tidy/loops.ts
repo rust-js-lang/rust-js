@@ -331,4 +331,13 @@ export const mutations: Mutation[] = [
     replace: "    body.retain(|s| {\n        true || !matches!(&s.kind, StmtKind::Let(name, None)\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "continues are as written"],
   },
+  {
+    name: "countdown-of-max-unnumbered",
+    breaks: "`(0..to.max(0) as usize).rev()` steps `$iterator({ start: 0, end: Math.max(to, 0) }, $rangeNextBack)`, not `for (let i = Math.max(to, 0) - 1; i >= 0; i--)` (#367)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                    && matches!(name.as_str(), \"max\" | \"min\")))\n",
+    replace: "                    && matches!(name.as_str(), \"none\")))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
+    snapshots: true,
+  },
 ];

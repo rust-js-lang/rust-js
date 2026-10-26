@@ -73,7 +73,7 @@ function counted(from, to) {
     seen.push(i * 10);
   }
   let n = 0;
-  for (let i = (Math.max(to, 0) >>> 0) - 1; i >= 0; i--) {
+  for (let i = Math.max(to, 0) - 1; i >= 0; i--) {
     n = (n + 1) | 0;
   }
   seen.push(n);

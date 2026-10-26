@@ -692,6 +692,40 @@ pub fn celled(terraces: &std::cell::RefCell<Vec<f64>>, change: fn(&std::cell::Re
     sum
 }
 
+pub fn staircase(stairs: u16) -> f64 {
+    let n = stairs as usize;
+    let mut steps = vec![0.0; n.max(2) + 1];
+    steps[1] = 1.0;
+    steps[2] = 2.0;
+    if n <= 2 {
+        return steps[n];
+    }
+    steps[0] + steps[n - 1]
+}
+
+pub fn last_at_most(xs: &[u32], i: usize) -> u32 {
+    if xs.is_empty() {
+        return 0;
+    }
+    xs[i.min(xs.len() - 1)]
+}
+
+pub fn larger_of_two(xs: &[u32]) -> u32 {
+    let mut sum = 0;
+    for i in 0..xs.len() {
+        for j in 0..xs.len() {
+            sum += xs[i.max(j)];
+        }
+    }
+    sum
+}
+
+pub fn unsized_table(n: usize) -> f64 {
+    let mut steps = vec![0.0; n];
+    steps[0] = 1.0;
+    steps[0]
+}
+
 pub fn recounted(mut count: usize) -> u32 {
     let table = vec![1; count];
     count += 1;
@@ -708,9 +742,17 @@ pub fn recounted(mut count: usize) -> u32 {
   expect(js).toContain("counted[i] = Math.imul(i, i) >>> 0;");
   expect(js).toContain("table[i] = counted[i];");
   for (const checked of ["$index(levels, i)", "$index(table, i)"]) expect(js).toContain(checked);
-  expect(js.match(/\$index\(/g)?.length).toBe(5);
+  // A table at least as long as its count's least (#367).
+  for (const write of ["steps[1] = 1;", "steps[2] = 2;", "return steps[n];", "steps[0] + $index(steps, n - 1)"]) expect(js).toContain(write);
+  expect(js).toContain("steps[$at(steps, 0)] = 1;");
+  // An index's `min` and `max`, below what either is below (#367).
+  for (const read of ["return xs[Math.min(i, xs.length - 1)];", "sum = (sum + xs[Math.max(i, j)]) >>> 0;"]) expect(js).toContain(read);
+  expect(js.match(/\$index\(/g)?.length).toBe(7);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.runningMax([1, 3, 2]), lib.squares(3)]).toEqual([[0, 3, 3], [0, 1, 4]]);
+  expect([lib.staircase(1), lib.staircase(4), lib.unsizedTable(2)]).toEqual([1, 0, 1]);
+  expect([lib.lastAtMost([4, 5], 7), lib.lastAtMost([4, 5], 0), lib.largerOfTwo([1, 2])]).toEqual([5, 4, 7]);
+  expect(() => lib.unsizedTable(0)).toThrow();
   const outsides = [() => lib.pushed([1, 2]), () => lib.grown([1, 2]), () => lib.recounted(2), () => lib.branched([1, 2], false)];
   for (const outside of [...outsides, () => lib.celled([1, 2], (cell: number[]) => cell.push(3))]) {
     expect(outside).toThrow();

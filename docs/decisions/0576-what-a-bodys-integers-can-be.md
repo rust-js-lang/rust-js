@@ -255,3 +255,21 @@ outnumber it. Case A ([0262](0262-when-rust-and-js-disagree.md)). Held by
 slice's length", `test/corpus/enumerate_bounds.rs`, and the mutations
 `enumerate-index-unranged`, `enumerate-of-any-slice-fn`,
 `enumerate-slice-rebound-kept` and `enumerate-index-field-missed`.
+
+## Amendment: a table's least length, and an integer's `max` and `min` (#367)
+
+`vec![0.0; stairs.max(2) + 1]` was known as long as nothing, its writes
+`steps[$at(steps, 1)] = 1`. **A `let` of `vec![x; n]` is at least as long
+as `n`'s least** (`Known::lengths`), and **an integer's `max` and `min`,
+`Ord`'s, have a range**: the larger's least is the larger of the leasts,
+and is below a bound both are below; the smaller is below what either is
+below, `xs[i.min(xs.len() - 1)]`. Of integers, they run no code of the
+program's, so they read as pure (`reads.rs`). A count that may wrap, `n +
+1` of a `usize` `n`, still has no least. A `max` with 0 is never
+negative, so `to.max(0) as usize` is `Math.max(to, 0)`, and tidy counts
+a range down to it as it did its `>>> 0` (ADR 0904, `from_the_end`'s
+numbers; the mutation `countdown-of-max-unnumbered`). Case A. Held by
+`lowering-collections.test.ts`'s "a table as long as another is indexed as
+it is", `test/corpus/same_length_tables.rs`, and the mutations
+`table-least-unrecorded`, `min-max-unranged`, `max-least-of-smaller`,
+`min-below-lost`, `max-below-lost` and `min-max-impure`.

@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
     snapshots: true,
   },
+  {
+    name: "min-max-impure",
+    breaks: "an integer's `max` reads as a call that may change anything, so a table's count `n.max(2) + 1` has no range (#367)",
+    file: "src/lower/body_queries/ranges/reads.rs",
+    find: "                        || (ord_max_or_min(tcx, def_id).is_some() && thir[e].ty.is_integral())\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
+  },
 ];

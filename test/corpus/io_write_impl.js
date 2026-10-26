@@ -7,7 +7,6 @@ import {
   $fromUtf8,
   $ioWriteAll,
   $ioWriteFmt,
-  $slice,
   $traitImpl,
   $unwrapOk,
 } from "@rust-js/runtime";
@@ -34,7 +33,7 @@ export function bufWrite(CAP) {
 }
 function bufWrite_write(buf, data, CAP) {
   const len = Math.min((CAP - buf.bytes.length) >>> 0, data.length);
-  $extend(buf.bytes, $slice(data, 0, len));
+  $extend(buf.bytes, data.slice(0, len));
   return { TAG: "Ok", _0: len };
 }
 
