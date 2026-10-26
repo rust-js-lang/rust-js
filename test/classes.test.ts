@@ -785,3 +785,114 @@ pub fn counted() -> (bool, bool, usize) {
   const { counted } = await import(join(dir, "lib.js"));
   expect(counted()).toEqual([true, false, 2]);
 });
+
+// React's ReactFiberScope: `createScopeInstance()` returns `{
+// DO_NOT_USE_queryAllNodes, containsNode, .. }`, an object literal of its
+// module's functions, each reading `this`, the scope it's called on. A
+// struct and its impl marked `#[rust_js::object]` are that (ADR 0943): its
+// `&self` methods its module's functions, its literal holding them, a
+// call of one a call of the object's own property, and its `.d.ts` an
+// interface of its fields and methods.
+test("an object's methods are its literal's own, functions of its module reading this", async () => {
+  const { js, ts, dir } = compiled("object-methods", `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub state_node: Option<&'static Unknown>,
+    pub r#return: Option<&'static Fiber>,
+}
+
+#[cfg_attr(rust_js, rust_js::object)]
+pub struct ScopeInstance {
+    pub queries: Cell<u32>,
+}
+
+unsafe impl js::Defined for ScopeInstance {}
+
+#[cfg_attr(rust_js, rust_js::object)]
+impl ScopeInstance {
+    /// Whether \`fiber\` is in this scope.
+    pub fn contains_node(&self, fiber: Option<&Fiber>) -> bool {
+        let mut fiber = fiber;
+        while let Some(current) = fiber {
+            if js::strict_equals(current.state_node, js::unknown(self)) {
+                return true;
+            }
+            fiber = current.r#return;
+        }
+        false
+    }
+
+    #[cfg_attr(rust_js, rust_js::name = "DO_NOT_USE_queryFirstNode")]
+    pub fn query_first_node(&self, fiber: &Fiber) -> Option<&'static Unknown> {
+        self.queries.set(self.queries.get() + 1);
+        fiber.state_node
+    }
+}
+
+pub fn create_scope_instance() -> ScopeInstance {
+    ScopeInstance {
+        queries: Cell::new(0),
+    }
+}
+
+pub fn contains(scope: &ScopeInstance, fiber: &Fiber) -> bool {
+    scope.contains_node(Some(fiber))
+}
+
+pub fn query() -> fn(&ScopeInstance, &Fiber) -> Option<&'static Unknown> {
+    ScopeInstance::query_first_node
+}
+`);
+  expect(js).toContain("function containsNode(fiber) {\n");
+  expect(js).toContain("    if (fiber.stateNode === this) {\n");
+  expect(js).toContain("function DO_NOT_USE_queryFirstNode(fiber) {\n  this.queries = (this.queries + 1) >>> 0;\n");
+  expect(js).toContain("  return {\n    queries: 0,\n    containsNode,\n    DO_NOT_USE_queryFirstNode,\n  };\n");
+  expect(js).toContain("  return scope.containsNode(fiber);\n");
+  expect(js).toContain("  return (a, b) => a.DO_NOT_USE_queryFirstNode(b);\n");
+  expect(js).not.toContain("export function containsNode");
+  expect(ts).toContain(
+    "export interface ScopeInstance {\n    queries: number;\n    /** Whether `fiber` is in this scope. */\n    containsNode(fiber?: Fiber | null | undefined): boolean;\n    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown | null | undefined;\n}\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const scope = lib.createScopeInstance();
+  const other = lib.createScopeInstance();
+  expect(Object.keys(scope)).toEqual(["queries", "containsNode", "DO_NOT_USE_queryFirstNode"]);
+  const inner = { stateNode: 1, return: { stateNode: scope } };
+  expect([scope.containsNode(inner), other.containsNode(inner), lib.contains(scope, inner)]).toEqual([true, false, true]);
+  expect([scope.DO_NOT_USE_queryFirstNode(inner), lib.query()(scope, inner), scope.queries, other.queries]).toEqual([1, 1, 2, 0]);
+});
+
+// Its literal in another module than its impl's imports the functions.
+test("an object made in another module holds its impl's module's functions", async () => {
+  const dir = fixture("object-elsewhere");
+  writeFileSync(join(dir, "lib.rs"), "pub mod scope;\npub mod types;\n\npub fn made() -> types::Scope {\n    types::Scope { n: 1 }\n}\n");
+  writeFileSync(join(dir, "types.rs"), "#[cfg_attr(rust_js, rust_js::object)]\npub struct Scope {\n    pub n: u32,\n}\n");
+  writeFileSync(
+    join(dir, "scope.rs"),
+    "use crate::types::Scope;\n\n#[cfg_attr(rust_js, rust_js::object)]\nimpl Scope {\n    pub fn get(&self) -> u32 {\n        self.n + 1\n    }\n}\n",
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { get } from "./scope.js";\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.made().get()).toBe(2);
+});
+
+test("what an object is refused says what to write", () => {
+  const head = "#[cfg_attr(rust_js, rust_js::object)]\npub struct S {\n    pub n: u32,\n}\n";
+  const marked = "#[cfg_attr(rust_js, rust_js::object)]\nimpl S {\n";
+  const get = "    pub fn get(&self) -> u32 {\n        self.n\n    }\n";
+  const cases: [string, string, string][] = [
+    ["object-by-value", `${head}${marked}    pub fn take(self) -> u32 {\n        self.n\n    }\n}\n`, "method takes `&self` or `&mut self`, `this`, not `self` by value"],
+    ["object-unmarked-impl", `${head}impl S {\n${get}}\n`, "struct's impl is marked `#[rust_js::object]` too"],
+    ["object-unmarked-struct", `pub struct S {\n    pub n: u32,\n}\n${marked}${get}}\n`, "impl is of a struct marked `#[rust_js::object]`"],
+    ["object-tuple", "#[cfg_attr(rust_js, rust_js::object)]\npub struct S(pub u32);\n", "is a struct of named fields"],
+    ["object-generic", "#[cfg_attr(rust_js, rust_js::object)]\npub struct S<T> {\n    pub n: T,\n}\n", "has no type or const parameters"],
+    ["object-and-class", "#[cfg_attr(rust_js, rust_js::object, rust_js::class)]\npub struct S {\n    pub n: u32,\n}\n", "isn't a `#[rust_js::class]` too"],
+    ["object-method-of-a-field", `${head}${marked}    pub fn n(&self) -> u32 {\n        self.n\n    }\n}\n`, "has no method named as its field, `n`"],
+  ];
+  for (const [name, rust, message] of cases) {
+    expect(refused(name, rust)).toContain(message);
+  }
+});

@@ -36,7 +36,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0035 JS that throws is a `Result`; `?` returns early](0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call; amended: what `?` tries is read once)*
 - [0020 Structs are objects, tuples are arrays](0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](0049-traits-and-generics.md)
-- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's)*
+- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own)*
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md)
@@ -616,7 +616,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
-- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names)*
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md)
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
@@ -727,6 +727,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0940 `collect()` into a `Vec` asks the room its iterator's hint says, as std's `SpecFromIter` does](0940-collect-asks-room-of-its-hint.md)
 - [0941 A `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, steps the array's items it owns](0941-a-boxed-array-s-into-iter-is-its-items.md)
 - [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md)
+- [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

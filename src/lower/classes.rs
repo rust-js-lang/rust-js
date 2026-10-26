@@ -38,12 +38,66 @@ pub(crate) enum Member {
     /// An associated `const`: the prototype's property,
     /// `Component.prototype.isReactComponent = {}`.
     Const,
+    /// A method of `&self` or `&mut self` of a `#[rust_js::object]`'s impl:
+    /// a function of its module reading `this`, `function containsNode(node)
+    /// { .. }`, each literal of the struct's own property, `{ containsNode
+    /// }`, called `scope.containsNode(..)` (ADR 0943).
+    Own,
 }
 
 fn marked(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("class")])
         .next()
         .is_some()
+}
+
+fn marked_object(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("object")])
+        .next()
+        .is_some()
+}
+
+/// Is `adt` an object of methods, a struct marked `#[rust_js::object]`,
+/// whose literal is JS's object literal of its fields and its impl's
+/// methods, which read `this` (ADR 0943)?
+pub(crate) fn is_object(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    tcx.def_kind(adt) == DefKind::Struct && marked_object(tcx, adt)
+}
+
+/// The object of methods an impl is of, if it's one's.
+fn object_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
+        ty::Adt(adt, _) if is_object(tcx, adt.did()) => Some(adt.did()),
+        _ => None,
+    }
+}
+
+/// The object of methods `def_id`, its impl's method, is of; `None` of any
+/// other item.
+pub(crate) fn object_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+    (member(tcx, def_id) == Some(Member::Own))
+        .then(|| object_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?))
+        .flatten()
+}
+
+/// The property an object's method `def_id` is of its literals, its name:
+/// camelCase, or its `#[rust_js::name]`, `DO_NOT_USE_queryAllNodes`, as a
+/// field's is, whatever its function is named in its module (ADR 0943).
+pub(crate) fn property(tcx: TyCtxt<'_>, def_id: DefId) -> String {
+    crate::lower::bindings::fn_name(tcx, def_id)
+}
+
+/// The methods of `adt`, an object of methods, each its literal's own
+/// property, in the order its impls write them (ADR 0943); none of what's
+/// no object.
+pub(crate) fn own_methods(tcx: TyCtxt<'_>, adt: DefId) -> Vec<DefId> {
+    if !is_object(tcx, adt) {
+        return Vec::new();
+    }
+    (tcx.inherent_impls(adt).iter())
+        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .filter(|&item| member(tcx, item) == Some(Member::Own))
+        .collect()
 }
 
 fn marked_getter(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
@@ -121,6 +175,12 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
         return Some(Member::Method);
     }
     let imp = tcx.inherent_impl_of_assoc(def_id)?;
+    // An object's method, its own property; its impl's other items are any
+    // impl's (ADR 0943).
+    if object_of_impl(tcx, imp).is_some() {
+        let method = tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method();
+        return method.then_some(Member::Own);
+    }
     class_of_impl(tcx, imp)?;
     Some(match tcx.def_kind(def_id) {
         DefKind::AssocFn if tcx.associated_item(def_id).is_method() && marked_getter(tcx, def_id) => Member::Getter,
@@ -361,6 +421,87 @@ pub(super) fn reject_misuse<'tcx>(
             }
         }
     }
+    reject_object_misuse(tcx) && valid
+}
+
+/// Report what a crate does with an object of methods that rust-js
+/// refuses (ADR 0943). False if there was one.
+fn reject_object_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    let mut refuse = |span, what: &str| {
+        tcx.dcx()
+            .span_err(span, format!("rust-js: a `#[rust_js::object]` {what} (ADR 0943)"));
+        valid = false;
+    };
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        let id = def_id.to_def_id();
+        let span = tcx.def_span(def_id);
+        match tcx.def_kind(def_id) {
+            DefKind::Struct if marked_object(tcx, id) => {
+                if tcx.adt_def(id).non_enum_variant().ctor.is_some() {
+                    refuse(span, "is a struct of named fields, `struct ScopeInstance { .. }`");
+                }
+                let generic = (tcx.generics_of(id).own_params.iter()).any(|param| param.kind.is_ty_or_const());
+                if generic {
+                    refuse(
+                        span,
+                        "has no type or const parameters: each of its methods is one function for every value",
+                    );
+                }
+                if marked(tcx, id) {
+                    refuse(
+                        span,
+                        "isn't a `#[rust_js::class]` too: its methods are its own, not a prototype's",
+                    );
+                }
+            }
+            DefKind::Enum | DefKind::Union | DefKind::Fn | DefKind::Trait if marked_object(tcx, id) => {
+                refuse(span, "is a struct and its impl, `struct ScopeInstance { .. }`");
+            }
+            DefKind::Impl { of_trait: false } => {
+                let of_object = object_of_impl(tcx, id);
+                match (of_object.is_some(), marked_object(tcx, id)) {
+                    (true, false) => refuse(span, "struct's impl is marked `#[rust_js::object]` too"),
+                    (false, true) => refuse(span, "impl is of a struct marked `#[rust_js::object]`"),
+                    _ => {}
+                }
+                let Some(object) = of_object else {
+                    continue;
+                };
+                let fields: Vec<String> = (tcx.adt_def(object).non_enum_variant().fields.iter())
+                    .map(|field| crate::lower::bindings::field_key(tcx, field))
+                    .collect();
+                for &item in tcx.associated_item_def_ids(id) {
+                    if member(tcx, item) != Some(Member::Own) {
+                        continue;
+                    }
+                    let item_span = tcx.def_span(item);
+                    let named = property(tcx, item);
+                    if fields.contains(&named) {
+                        refuse(
+                            item_span,
+                            &format!(
+                                "has no method named as its field, `{named}`, two values of one key: name one otherwise"
+                            ),
+                        );
+                    }
+                    let receiver = tcx
+                        .fn_sig(item)
+                        .instantiate_identity()
+                        .skip_normalization()
+                        .skip_binder()
+                        .inputs()[0];
+                    if !matches!(receiver.kind(), ty::Ref(_, inner, _) if matches!(inner.kind(), ty::Adt(..))) {
+                        refuse(
+                            item_span,
+                            "method takes `&self` or `&mut self`, `this`, not `self` by value",
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
     valid
 }
 
@@ -386,6 +527,15 @@ pub(super) fn as_member(
             this_outside_accessors(class, &mut function.body);
             Ok(())
         }
+        // Named as its struct is, its function of no type's; exported only
+        // where another module names it, which its callers add (ADR 0943).
+        Member::Own => {
+            let object =
+                object_of(tcx, def_id).map_or_else(|| "object".to_owned(), |adt| tcx.item_name(adt).to_string());
+            this_outside_accessors(&object, &mut function.body);
+            function.export = false;
+            Ok(())
+        }
         Member::Static | Member::Const => Ok(()),
     }
 }
@@ -398,7 +548,7 @@ pub(super) fn place(member: Member, class: &mut js::Class, name: &str) {
         Member::Constructor => class.constructor = name.to_owned(),
         Member::Method => class.prototype.push(name.to_owned()),
         Member::Getter => class.getters.push(name.to_owned()),
-        Member::Static | Member::Const => {}
+        Member::Static | Member::Const | Member::Own => {}
     }
 }
 
@@ -448,7 +598,10 @@ pub(super) fn receiver_as_this(
     body: &mut [Stmt],
     booleans: &mut std::collections::HashSet<String>,
 ) -> Result<(), &'static str> {
-    if !matches!(member(tcx, function), Some(Member::Method | Member::Getter)) {
+    if !matches!(
+        member(tcx, function),
+        Some(Member::Method | Member::Getter | Member::Own)
+    ) {
         return Ok(());
     }
     let receiver = match params.first() {

@@ -499,6 +499,9 @@ pub(super) fn name_items(
         });
         // A class's `Display`'s `fmt`, its prototype's `toString` (#358).
         let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));
+        // An object's method, a function of its module (ADR 0943).
+        let owner_type = owner_type
+            .filter(|_| crate::lower::classes::member(tcx, def_id) != Some(crate::lower::classes::Member::Own));
         let (name, owner) = match owner_type {
             Some(ty) => {
                 // A class is its constructor function, named as its struct's

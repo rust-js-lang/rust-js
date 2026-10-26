@@ -364,4 +364,12 @@ export const mutations: Mutation[] = [
     replace: "            Asked::Function => \"js::is_defined\",\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "refused"],
   },
+  {
+    name: "object-method-called-as-a-function",
+    breaks: "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
+    file: "src/lower/mir/calls.rs",
+    find: "            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {\n",
+    replace: "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
+    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
 ];

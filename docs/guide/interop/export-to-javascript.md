@@ -17,6 +17,7 @@ it writes, without its header comment and source-map line.
 - [Rest parameters](#rest-parameters)
 - [Structs, enums and their methods](#structs-enums-and-their-methods)
 - [JS classes](#js-classes)
+- [Objects of methods](#objects-of-methods)
 - [Constants, statics and thread-locals](#constants-statics-and-thread-locals)
 - [Modules and `pub use`](#modules-and-pub-use)
 - [The default export](#the-default-export)
@@ -899,6 +900,129 @@ export function createFiber(tag: number, dev: boolean): FiberNode;
   `self` by value; a method or constant named as a field, which
   `this.name` would hide; a class of no `new`; and the attribute on one
   of the struct and its impl alone.
+
+## Objects of methods
+
+A struct and its impl marked `#[cfg_attr(rust_js, rust_js::object)]` are
+an object literal of its fields and its methods, each reading `this`, as
+React's `createScopeInstance()` returns `{ containsNode, .. }`, functions
+of its module that read the scope they're called on
+([ADR 0943](../../decisions/0943-an-object-of-methods-reading-this.md)):
+
+```rust
+use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub state_node: Option<&'static Unknown>,
+    pub r#return: Option<&'static Fiber>,
+}
+
+#[cfg_attr(rust_js, rust_js::object)]
+pub struct ScopeInstance {
+    pub queries: Cell<u32>,
+}
+
+unsafe impl js::Defined for ScopeInstance {}
+
+#[cfg_attr(rust_js, rust_js::object)]
+impl ScopeInstance {
+    /// Whether `fiber` is in this scope.
+    pub fn contains_node(&self, fiber: Option<&Fiber>) -> bool {
+        let mut fiber = fiber;
+        while let Some(current) = fiber {
+            if js::strict_equals(current.state_node, js::unknown(self)) {
+                return true;
+            }
+            fiber = current.r#return;
+        }
+        false
+    }
+
+    #[cfg_attr(rust_js, rust_js::name = "DO_NOT_USE_queryFirstNode")]
+    pub fn query_first_node(&self, fiber: &Fiber) -> Option<&'static Unknown> {
+        self.queries.set(self.queries.get() + 1);
+        fiber.state_node
+    }
+}
+
+pub fn create_scope_instance() -> ScopeInstance {
+    ScopeInstance {
+        queries: Cell::new(0),
+    }
+}
+
+pub fn contains(scope: &ScopeInstance, fiber: &Fiber) -> bool {
+    scope.contains_node(Some(fiber))
+}
+```
+
+```js
+/** Whether `fiber` is in this scope. */
+function containsNode(fiber) {
+  while (fiber) {
+    if (fiber.stateNode === this) {
+      return true;
+    }
+    fiber = fiber.return;
+  }
+  return false;
+}
+
+function DO_NOT_USE_queryFirstNode(fiber) {
+  this.queries = (this.queries + 1) >>> 0;
+  return fiber.stateNode;
+}
+
+export function createScopeInstance() {
+  return {
+    queries: 0,
+    containsNode,
+    DO_NOT_USE_queryFirstNode,
+  };
+}
+
+export function contains(scope, fiber) {
+  return scope.containsNode(fiber);
+}
+```
+
+```ts
+export interface Fiber {
+    stateNode?: unknown;
+    return?: Fiber | undefined;
+}
+
+export interface ScopeInstance {
+    queries: number;
+    /** Whether `fiber` is in this scope. */
+    containsNode(fiber?: Fiber | null | undefined): boolean;
+    DO_NOT_USE_queryFirstNode(fiber: Fiber): unknown | null | undefined;
+}
+
+export function createScopeInstance(): ScopeInstance;
+
+export function contains(scope: ScopeInstance, fiber: Fiber): boolean;
+```
+
+- **A method of `&self` or `&mut self` is a function of its impl's
+  module**, a `function` whose `this` is what it's called on, its `self`
+  `this`, as a class's method's is. It's exported only where another
+  module names it.
+- **Each literal of the struct holds them**, after its fields, by the
+  method's name, camelCase or its `#[rust_js::name]`: `{ queries: 0,
+  containsNode }`. A Rust call of one is the object's,
+  `scope.containsNode(..)`, and as a value it's the arrow of that call.
+- **Its declaration is an interface** of its fields and its `pub`
+  methods, `containsNode(fiber?: Fiber | null | undefined): boolean`.
+- **Its impl's other items are any impl's**, a function of no `self` its
+  type's object's, and a trait's impl any type's, its methods a
+  dictionary's.
+- **Refused, each with what to write**: a tuple or unit struct; a
+  generic one; one that's a `#[rust_js::class]` too; a method of `self`
+  by value; a method named as a field; and the attribute on one of the
+  struct and its impl alone.
 
 ## Constants, statics and thread-locals
 

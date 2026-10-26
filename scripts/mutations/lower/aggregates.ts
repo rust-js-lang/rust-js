@@ -242,4 +242,12 @@ export const mutations: Mutation[] = [
     replace: "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
   },
+  {
+    name: "object-literal-without-methods",
+    breaks: "an object of methods' literal holds its fields alone, `{ queries: 0 }`, so `scope.containsNode(..)` isn't a function (ADR 0943)",
+    file: "src/lower/aggregates.rs",
+    find: "            for method in super::classes::own_methods(self.tcx, adt_def.did()) {\n",
+    replace: "            for method in super::classes::own_methods(self.tcx, adt_def.did()).into_iter().skip(1) {\n",
+    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
 ];

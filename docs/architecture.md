@@ -212,7 +212,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
-| JS classes, `#[rust_js::class]` | `classes.rs` |
+| JS classes, `#[rust_js::class]`, and objects of methods, `#[rust_js::object]` (ADR 0943) | `classes.rs` |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;
@@ -299,7 +299,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What `#[rust_js::types]` says a type is to TypeScript, read, or the error saying what it reads | `declarations/written.rs` | `written_types`, `Written`, `validate_types` |
 | Which types a module's declarations declare, another module's or a library's consumer importing them, and a library's type's `.d.ts` and name, its contract's (ADR 0210, amended) | `declarations.rs`; `library.rs` | `declares_type`; `declared_type` |
 | A string's count of UTF-16 units, its `length` | `recognition/types.rs` | `counts_utf16_units` |
-| Whether a type is a JS class, what each item of its impl is of it, and the module it is in, its constructor's (ADR 0761, amended) | `classes.rs` | `is_class`, `member`, `constructor_of`, `home` |
+| Whether a type is a JS class, what each item of its impl is of it, and the module it is in, its constructor's (ADR 0761, amended); whether one is an object of methods, which they are and the property each is of its literals (ADR 0943) | `classes.rs` | `is_class`, `member`, `constructor_of`, `home`; `is_object`, `own_methods`, `object_of`, `property` |
 | The class a binding's type is as a value, the one `instanceof` tests it by where TypeScript names it so (ADR 0911) | `untagged.rs` | `class_value` |
 | What a place stores of what's written, a nullable field's `None` `null`, whether a JS value may be `undefined`, and which places store so, however reached | `js/make.rs`; `representation.rs` | `Storage`, `written`, `may_be_undefined`; `nullable_cell_field`, `nullable_cell_handle` |
 | What JS is given of a `()`: `undefined`, or a list's `[]` | `representation.rs` | `unit_given`, `UnitTo` |

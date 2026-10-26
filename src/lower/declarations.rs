@@ -852,7 +852,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                             "returns": function["returns"],
                         })
                     }
-                    None => continue,
+                    Some(Member::Own) | None => continue,
                 };
                 members.push(documented(declared, self.tcx, item));
             }
@@ -978,6 +978,24 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 "type": ty,
             });
             members.push(documented(property, self.tcx, field.did));
+        }
+        // An object of methods' own, `containsNode(node: unknown): boolean`,
+        // each that's `pub` (ADR 0943).
+        for method in super::classes::own_methods(self.tcx, def_id) {
+            if !self.tcx.visibility(method).is_public() {
+                continue;
+            }
+            let function = self.function(method);
+            let params: Vec<Value> = (function["params"].as_array().into_iter().flatten().skip(1).cloned()).collect();
+            let declared = json!({
+                "kind": "method",
+                "name": super::classes::property(self.tcx, method),
+                "optional": false,
+                "typeParameters": function["typeParameters"],
+                "params": params,
+                "returns": function["returns"],
+            });
+            members.push(documented(declared, self.tcx, method));
         }
         Some(json!({
             "kind": "interface",

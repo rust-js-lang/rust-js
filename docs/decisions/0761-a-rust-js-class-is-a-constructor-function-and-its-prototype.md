@@ -10,7 +10,8 @@ its constructor is; a `PartialEq` and a `Hash` of its address are
 allowed. Extended by
 [0911](0911-a-bindings-class-is-the-global-typescript-names.md):
 `js::class::<T>()` of a binding's type is the global class TypeScript
-names it.
+names it. Extended by [0943](0943-an-object-of-methods-reading-this.md): a
+`#[rust_js::object]`'s methods are its literal's own, not a prototype's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for what's kept, a
 value's fields and its methods' meaning; and a compile error where Rust's

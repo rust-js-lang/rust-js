@@ -365,4 +365,12 @@ export const mutations: Mutation[] = [
     replace: "                let named = tcx.item_name(ty).to_string();\n",
     tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
   },
+  {
+    name: "object-method-its-types",
+    breaks: "an object's method is named as a property of its type's object, `ScopeInstance.containsNode`, where it's a function of its module its literal holds (ADR 0943)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            .filter(|_| crate::lower::classes::member(tcx, def_id) != Some(crate::lower::classes::Member::Own));\n",
+    replace: "            .filter(|_| true);\n",
+    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
 ];

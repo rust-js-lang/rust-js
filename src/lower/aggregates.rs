@@ -375,6 +375,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
         };
         let mut made = assembled(shape, tag, items);
+        // An object of methods holds its impl's, after its fields, each its
+        // module's function (ADR 0943): `{ containsNode }`.
+        if let js::ExprKind::Object(props, _) = &mut made.kind {
+            for method in super::classes::own_methods(self.tcx, adt_def.did()) {
+                props.push(Prop::Field(
+                    super::classes::property(self.tcx, method),
+                    self.fn_ref(method),
+                ));
+            }
+        }
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
             *layout = js::ObjectLayout {
                 commented,

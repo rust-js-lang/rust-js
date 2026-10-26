@@ -814,4 +814,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
   },
+  {
+    name: "object-methods-undeclared",
+    breaks: "an object of methods' interface declares its fields alone, so TypeScript has no `scope.containsNode(..)` (ADR 0943)",
+    file: "src/lower/declarations.rs",
+    find: "            if !self.tcx.visibility(method).is_public() {\n",
+    replace: "            if true {\n",
+    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
 ];

@@ -271,8 +271,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The call of the crate's function `def_id`, given `args`: of a class's
     /// constructor, `new Component(..)`, and of its method, a call of the
-    /// prototype's, `component.setState(..)` (ADR 0761); of any other,
-    /// `f(..)`.
+    /// prototype's, `component.setState(..)` (ADR 0761); of an object's
+    /// method, its own property's, `scope.containsNode(..)` (ADR 0943); of
+    /// any other, `f(..)`.
     pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, mut args: Vec<Expr>) -> Expr {
         let callee = self.fn_ref(def_id);
         match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
@@ -286,6 +287,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A getter's, its read, `position.leftDiagonal` (#357).
             (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {
                 Expr::member(args.remove(0), name)
+            }
+            // An object's method, its own property's (ADR 0943).
+            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {
+                let this = args.remove(0);
+                Expr::call(
+                    Expr::member(this, crate::lower::classes::property(self.tcx, def_id)),
+                    args,
+                )
             }
             (_, kind) => Expr::call(Expr { kind, ..callee }, args),
         }

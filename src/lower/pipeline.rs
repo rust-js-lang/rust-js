@@ -803,18 +803,19 @@ pub fn lower_crate<'tcx>(
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
+                // A class's, its constructor or its prototype's (ADR 0761);
+                // an object's method, its module's function (ADR 0943).
+                let member = super::classes::member(tcx, def_id);
+                let owner = fns[&def_id].owner.as_deref().unwrap_or_default();
+                if let Err(what) = super::classes::as_member(tcx, def_id, owner, &mut lowered.function) {
+                    super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
+                    failed = true;
+                    continue;
+                }
                 lowered.function.export |= called_from_elsewhere.contains(&def_id);
                 match &fns[&def_id].owner {
                     // Its type's object is exported if any of its methods is.
                     Some(owner) => {
-                        // A class's, its constructor or its prototype's
-                        // (ADR 0761).
-                        let member = super::classes::member(tcx, def_id);
-                        if let Err(what) = super::classes::as_member(tcx, def_id, owner, &mut lowered.function) {
-                            super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
-                            failed = true;
-                            continue;
-                        }
                         let module_namespaces = pass.namespaces.entry(module).or_default();
                         let namespace = match module_namespaces.iter().position(|n| n.name == *owner) {
                             Some(at) => &mut module_namespaces[at],
