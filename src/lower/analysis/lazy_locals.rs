@@ -145,6 +145,11 @@ impl<'tcx> Makers<'_, 'tcx> {
 /// `RefCell::new`, `Vec::new`; not a `const` trait's method, `Iterator`'s,
 /// nor one bound by a trait, whose impl may be the crate's, or a closure.
 fn std_makes_only(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    // `Box::new(x)`, which is `x` (ADR 0069), React's
+    // `createChildReconciler(true)`'s boxed closure.
+    if crate::lower::recognition::pure_std(tcx, id) == Some(crate::lower::recognition::PureStd::BoxNew) {
+        return true;
+    }
     let sized = tcx.lang_items().sized_trait();
     tcx.is_const_fn(id)
         && tcx.trait_of_assoc(id).is_none()

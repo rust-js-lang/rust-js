@@ -52,6 +52,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "maker-boxed-closure-lazy",
+    breaks: "a thread-local made by a function that boxes a closure, React's `createChildReconciler(true)`, is `$local(() => ..)`, a getter a JS importer calls and gets the reconciler back (ADR 0037, amended)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "    if crate::lower::recognition::pure_std(tcx, id) == Some(crate::lower::recognition::PureStd::BoxNew) {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_by_boxed_closure.rs$"],
+    snapshots: true,
+  },
+  {
     name: "maker-reads-unseen",
     breaks: "a maker that reads a `static`, `based`, is taken for one that only makes a value, and its thread-local is made as its module loads",
     file: "src/lower/analysis/lazy_locals.rs",

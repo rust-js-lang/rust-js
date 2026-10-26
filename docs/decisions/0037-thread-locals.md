@@ -1,6 +1,6 @@
 # 0037. `thread_local!` is a variable of its module
 
-Status: Accepted.
+Status: Accepted. Amended, below; last: a boxed closure only makes a value.
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -280,3 +280,45 @@ chosen(true);` and `nullable_generic_fields`' `const hidden =
 createCursor(null);` read by their names now. The mutations
 `lazy-local-maker-unseen`, `maker-reads-unseen`, `maker-std-calls-any`,
 `std-maker-bounds-unseen` and `maker-cycle-unseen`.
+
+## Amendment: a boxed closure only makes a value
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)), as the amendment
+above: nothing a program prints, throws or reads can tell when the value
+is made.
+
+React's ReactChildFiber makes its reconcilers by a factory of closures
+that capture its flag, `export const reconcileChildFibers =
+createChildReconciler(true);`. The natural Rust:
+
+```rust
+fn create_child_reconciler(should_track_side_effects: bool) -> Box<ChildReconciler> {
+    Box::new(move |return_fiber, current_first_child, new_child, lanes| { .. })
+}
+
+thread_local! {
+    pub static RECONCILE_CHILD_FIBERS: Box<ChildReconciler> = create_child_reconciler(true);
+}
+```
+
+`Box::new` isn't a `const fn`, so `create_child_reconciler` was no maker,
+and the thread-local was `export const reconcileChildFibers = $local(()
+=> createChildReconciler(true));`, a getter: BeginWork's JS calling
+`reconcileChildFibers(returnFiber, ..)` got the reconciler back.
+
+**`Box::new(x)`, which is `x` (ADR 0069, `PureStd::BoxNew`), only makes
+a value** (`std_makes_only`), as making a closure does, which runs
+nothing: the reconciler is `export const reconcileChildFibers =
+createChildReconciler(true);`, its Rust call `reconcileChildFibers(..)`.
+
+- **A `LazyLock` static stays lazy, `{ init }`** (ADR 0318): its type says
+  it's made where it's first used, which its `$forceLock` keeps; a value
+  made as its module loads is a `thread_local!`, as React's module state
+  is.
+- **The factory's closures stay arrows**, `const deleteChild =
+  (returnFiber, childToDelete) => { .. }`, where upstream writes nested
+  `function deleteChild(..) { .. }`: which form a closure of statements
+  bound by `let` takes is a decision of every closure's, left open.
+
+Held by `test/corpus/thread_local_made_by_boxed_closure.rs`, against
+native Rust and its snapshot, and the mutation `maker-boxed-closure-lazy`.

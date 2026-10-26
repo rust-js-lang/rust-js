@@ -423,8 +423,8 @@ pointer that may only be one of those, `let now: fn() -> f64 =
 js::date::now`, is made as its module loads, as JS writes it; so is one
 that calls a function of the crate's that only makes a value of what it's
 given, reads no `static` or thread-local, may not panic and calls only
-others that do and std's `const fn`s of no trait, React's
-`createCursor(null)`, unless that function's module imports the
+others that do and std's `const fn`s of no trait and `Box::new`, React's
+`createCursor(null)` and `createChildReconciler(true)`, unless that function's module imports the
 thread-local's back, which may load after it
 ([0037](../decisions/0037-thread-locals.md), amended).
 
