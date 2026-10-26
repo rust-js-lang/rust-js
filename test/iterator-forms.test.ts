@@ -26,7 +26,9 @@ beforeAll(() => {
 
 // Of the suite's own run, these: each held and made-in-place adapters std
 // compiles, stepped from either end, sized and dropped; folded through
-// the crate's own, and taken by a `&mut` (ADR 0912).
+// the crate's own, and taken by a `&mut` (ADR 0912); and one `differs`
+// lists, which only the build of std's structs alone gets wrong, so a
+// build that isn't one fails.
 const few = [
   "std_rev.rs",
   "std_inspect.rs",
@@ -39,6 +41,7 @@ const few = [
   "held_skip_take.rs",
   "skip_take_own_nth.rs",
   "chain_sides_own_steps.rs",
+  "rev_of_lazy_chains.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -53,7 +56,6 @@ const differs: Record<string, string> = {
   "back_steps.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "boxed_array_iter.rs": "refused: a std::boxed::BoxedArrayIntoIter<u8, 2> as a DoubleEndedIterator, which rust-js can't step from its back",
   "btree_given_in_order.rs": "rust-js crashes lowering it",
-  "consumer_drops_what_is_left.rs": "refused: the DoubleEndedIterator of a StepBy<Count>",
   "copied_structs_apart.rs": "refused: the DoubleEndedIterator of a Copied<slice::Iter>",
   "escape_iterators.rs": "throws: std's struct steps a value that isn't a JS iterator",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
@@ -71,10 +73,9 @@ const differs: Record<string, string> = {
   "rev_in_place_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Rev<Count>>",
   "rev_of_lazy_chains.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "rev_own_back_methods.rs": "prints otherwise than native Rust",
-  "rev_step_by.rs": "refused: the DoubleEndedIterator of a StepBy<std::ops::Range<i32>>",
+  "rev_step_by.rs": "refused: the ExactSizeIterator of a RangeInclusive<u8>",
   "skip_try_fold.rs": "prints otherwise than native Rust",
   "std_map.rs": "throws: std's struct clones a function the recognizers made",
-  "step_by_nth_back.rs": "refused: the DoubleEndedIterator of a StepBy<Count>",
   "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",
 };
 

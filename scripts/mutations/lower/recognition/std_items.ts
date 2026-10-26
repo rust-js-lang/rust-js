@@ -217,4 +217,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
+  {
+    name: "step-by-not-held",
+    breaks: "a held `step_by()` is the recognizers' JS iterator, not std's `StepBy`",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"StepBy\", \"step_by\", false),\n",
+    replace: "",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

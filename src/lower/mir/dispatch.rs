@@ -521,11 +521,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }) || self.frame.facts.registered_equalities.contains(&span))
     }
 
-    /// A call, `mir_call_values_given`'s, what a `rev()`, an `enumerate()`,
-    /// a `map()` or an `inspect()` made in place makes marked so,
-    /// `Known::InPlace`, as this call is where that's known: what a closure
-    /// gives `flat_map` leaves it by its `return`, which no call is given,
-    /// and is taken apart past it (`made_in_place`, #260).
+    /// A call, `mir_call_values_given`'s, and of what makes std's struct
+    /// where it's no iterator, the JS iterator it is here (ADR 0917).
     fn mir_call_values(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -537,7 +534,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let made = self.mir_call_values_given(state, callee, given, output, span, out)?;
         Ok(match made {
-            Value::Expr(made) if self.adapter_in_place(callee.0, span) => Value::Expr(made.in_place()),
+            // Std's struct a std function made where it's no iterator,
+            // `StepBy::new`'s: the JS iterator it is here, where it's one
+            // (ADR 0917).
+            Value::Expr(made)
+                if crate::lower::recognition::makes_no_iterator(self.tcx, callee.0)
+                    && crate::lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, output) =>
+            {
+                let steps = self.std_iterator_steps(output, span)?;
+                Value::Expr(Expr::call_helper("$stdIterator", vec![made, steps]))
+            }
             made => made,
         })
     }

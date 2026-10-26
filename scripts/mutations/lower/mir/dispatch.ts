@@ -609,19 +609,19 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "in-place-made-unmarked",
-    breaks: "a `map()` a closure gives `flat_map` in place, reversed past it, is given `Map`'s compiled back, which reads the JS iterator as a `Map`'s fields: nothing (#260)",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            Value::Expr(made) if self.adapter_in_place(callee.0, span) => Value::Expr(made.in_place()),\n",
-    replace: "            Value::Expr(made) if false => Value::Expr(made.in_place()),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
-  },
-  {
     name: "other-try-as-written",
     breaks: "`?` of a `ControlFlow` or a type parameter's `Try` in std's bodies is read as an `Option`'s, not by its dictionary (ADR 0913)",
     file: "src/lower/mir/dispatch.rs",
     find: "        self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)\n",
     replace: "        true || self.is_write_result(ty) || self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "no-iterator-made-unwrapped",
+    breaks: "std's `StepBy` `StepBy::new` made where it's no iterator stays a plain struct in `step_by`, which then can't be stepped (ADR 0917)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                if crate::lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
+    replace: "                if false && crate::lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

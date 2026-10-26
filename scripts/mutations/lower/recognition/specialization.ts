@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
       "test/std-package.test.ts"
     ]
   },
+  {
+    name: "step-by-specializations-unoptimizing",
+    breaks: "std's `StepBy` range specializations aren't read as optimizations, so its `SpecRangeSetup::setup` can't be called in generic code (ADR 0917)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecRangeSetup\", \"StepByImpl\", \"StepByBackImpl\"];\n",
+    replace: "const OPTIMIZING_BY_TYPE: &[&str] = &[];\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

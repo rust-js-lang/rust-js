@@ -28,6 +28,16 @@ pub(super) fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec
     };
     let mut made = Vec::new();
     for data in mir.body.basic_blocks.iter() {
+        // And std's struct a std function makes where it's no iterator,
+        // `StepBy::new`'s, which this body makes one (ADR 0917).
+        if let Some(terminator) = &data.terminator
+            && let rustc_middle::mir::TerminatorKind::Call { func, destination, .. } = &terminator.kind
+            && func
+                .const_fn_def()
+                .is_some_and(|(callee, _)| crate::lower::recognition::makes_no_iterator(tcx, callee))
+        {
+            made.push(destination.ty(&mir.body.local_decls, tcx).ty);
+        }
         for statement in &data.statements {
             if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
                 && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1

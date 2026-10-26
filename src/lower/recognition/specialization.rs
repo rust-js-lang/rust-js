@@ -96,6 +96,13 @@ pub(crate) fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
 /// the generic one doesn't (`fact_specialization`).
 const OPTIMIZING: &[(&str, Option<&str>)] = &[("TrustedLen", None), ("TrustedRandomAccess", Some("Take"))];
 
+/// The traits std specializes type by type only to do less work: `StepBy`'s
+/// of each integer range, `SpecRangeSetup`'s, which counts what's left in
+/// the range's `end`, and `StepByImpl`'s and `StepByBackImpl`'s, which step
+/// by that count, each item, hint and count the general impls' (ADR 0917).
+/// Only its `Debug` shows the range so changed, which isn't compiled.
+const OPTIMIZING_BY_TYPE: &[&str] = &["SpecRangeSetup", "StepByImpl", "StepByBackImpl"];
+
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl as a more specific impl may specialize
 /// the one it selects: the selected impl's method, and its arguments, where
@@ -119,6 +126,11 @@ pub(crate) fn optimized_default<'tcx>(
         return None;
     }
     let method = tcx.impl_item_implementor_ids(impl_id).get(&callee).copied()?;
+    let own = &args[tcx.generics_of(callee).parent_count..];
+    let selected_args = || tcx.mk_args_from_iter(selected.args.iter().chain(own.iter().copied()));
+    if OPTIMIZING_BY_TYPE.contains(&tcx.item_name(trait_id).as_str()) {
+        return Some((method, selected_args()));
+    }
     // Each impl that specializes it, bound by what the selected one isn't
     // only where that's an optimization's.
     let bounds = |imp: DefId| -> Vec<DefId> {
@@ -151,11 +163,5 @@ pub(crate) fn optimized_default<'tcx>(
                     .into_iter()
                     .all(|bound| general.contains(&bound) || optimizing(bound))
         });
-    (!specializing.is_empty() && only_optimizing).then(|| {
-        let own = &args[tcx.generics_of(callee).parent_count..];
-        (
-            method,
-            tcx.mk_args_from_iter(selected.args.iter().chain(own.iter().copied())),
-        )
-    })
+    (!specializing.is_empty() && only_optimizing).then(|| (method, selected_args()))
 }

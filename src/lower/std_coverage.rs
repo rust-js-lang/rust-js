@@ -173,7 +173,7 @@ impl Bodies {
         let body = tcx.optimized_mir(def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
         let mut worst = Body::Safe;
-        for block in reachable(body) {
+        for block in reachable(tcx, body) {
             let data = &body.basic_blocks[block];
             for statement in &data.statements {
                 if let StatementKind::Assign(assign) = &statement.kind
@@ -231,10 +231,22 @@ impl Bodies {
     }
 }
 
+/// Whether `data` assumes `UbChecks`, a precondition's broken arm, which
+/// never runs, as rust-js reads it as off (ADRs 0364, 0917).
+pub(in crate::lower) fn assumes_ub_checks(data: &mir::BasicBlockData<'_>) -> bool {
+    data.statements.iter().any(|statement| {
+        matches!(&statement.kind, StatementKind::Intrinsic(intrinsic)
+            if matches!(&**intrinsic, mir::NonDivergingIntrinsic::Assume(Operand::RuntimeChecks(RuntimeChecks::UbChecks))))
+    })
+}
+
 /// The blocks a body runs, with `UbChecks` read as off (ADR 0364): a
-/// precondition check's blocks are left out, as rust-js leaves them out.
-fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
-    let ub_checks: Vec<mir::Local> = (body.basic_blocks.iter())
+/// precondition check's blocks are left out, as rust-js leaves them out,
+/// of `UbChecks` or of `check_language_ub()`, which reads it, and a block
+/// that assumes it, `assume(UbChecks)`, a precondition's broken arm; what
+/// std's bodies compiled call is found in these (ADR 0917).
+pub(in crate::lower) fn reachable(tcx: TyCtxt<'_>, body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
+    let mut ub_checks: Vec<mir::Local> = (body.basic_blocks.iter())
         .flat_map(|data| &data.statements)
         .filter_map(|statement| match &statement.kind {
             StatementKind::Assign(assign)
@@ -248,6 +260,18 @@ fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
             _ => None,
         })
         .collect();
+    ub_checks.extend((body.basic_blocks.iter()).filter_map(|data| {
+        match &data.terminator.as_ref()?.kind {
+            TerminatorKind::Call { func, destination, .. }
+                if func
+                    .const_fn_def()
+                    .is_some_and(|(callee, _)| recognition::is_check_language_ub(tcx, callee)) =>
+            {
+                destination.as_local()
+            }
+            _ => None,
+        }
+    }));
     let mut seen = vec![mir::START_BLOCK];
     let mut at = 0;
     while at < seen.len() {
@@ -268,7 +292,10 @@ fn reachable(body: &mir::Body<'_>) -> Vec<mir::BasicBlock> {
             }
             _ => terminator.successors().collect(),
         };
-        for block in next {
+        for block in next
+            .into_iter()
+            .filter(|&block| !assumes_ub_checks(&body.basic_blocks[block]))
+        {
             if !seen.contains(&block) {
                 seen.push(block);
             }

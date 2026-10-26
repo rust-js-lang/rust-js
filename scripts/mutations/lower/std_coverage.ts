@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                        None => [tcx.types.unit]\n",
     tests: ["test/std-coverage.test.ts"],
   },
+  {
+    name: "ub-checks-assumed-reached",
+    breaks: "a block that assumes `UbChecks`, a precondition's broken arm, is read as run, so std's `StepBy` reaches `NonZero::new_unchecked`'s `precondition_check`, which can't compile (ADR 0917)",
+    file: "src/lower/std_coverage.rs",
+    find: "            .filter(|&block| !assumes_ub_checks(&body.basic_blocks[block]))\n",
+    replace: "            .filter(|_| true)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

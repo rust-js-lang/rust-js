@@ -270,6 +270,15 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Take", Some("ExactSizeIterator"), "len"),
     ("Take", Some("Clone"), "clone"),
     ("Take", Some("Debug"), "fmt"),
+    ("StepBy", Some("Iterator"), "next"),
+    ("StepBy", Some("Iterator"), "size_hint"),
+    ("StepBy", Some("Iterator"), "nth"),
+    ("StepBy", Some("Iterator"), "fold"),
+    ("StepBy", Some("Iterator"), "try_fold"),
+    ("StepBy", Some("DoubleEndedIterator"), "next_back"),
+    ("StepBy", Some("DoubleEndedIterator"), "nth_back"),
+    ("StepBy", Some("DoubleEndedIterator"), "rfold"),
+    ("StepBy", Some("Clone"), "clone"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -285,6 +294,7 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "flat_map"),
     ("Iterator", "skip"),
     ("Iterator", "take"),
+    ("Iterator", "step_by"),
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
@@ -302,6 +312,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("FlatMap", "flat_map", false),
     ("Skip", "skip", true),
     ("Take", "take", true),
+    ("StepBy", "step_by", false),
 ];
 
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
@@ -463,8 +474,13 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
             continue;
         }
         let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
-        for data in tcx.optimized_mir(def_id).basic_blocks.iter() {
-            let Some(terminator) = &data.terminator else { continue };
+        // Of the blocks it runs, a precondition check's left out, as
+        // rust-js reads `UbChecks` as off (ADRs 0364, 0917).
+        let body = tcx.optimized_mir(def_id);
+        for block in crate::lower::std_coverage::reachable(tcx, body) {
+            let Some(terminator) = &body.basic_blocks[block].terminator else {
+                continue;
+            };
             let (TerminatorKind::Call { func, .. } | TerminatorKind::TailCall { func, .. }) = &terminator.kind else {
                 continue;
             };
@@ -539,6 +555,12 @@ pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | "std::intrinsics::black_box"
                 | "std::intrinsics::ub_checks"
         )
+}
+
+/// Whether `id` is std's `ub_checks::check_language_ub`, which reads
+/// `UbChecks`, off as rust-js reads it (ADRs 0364, 0917).
+pub(crate) fn is_check_language_ub(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_crate(tcx, id) && std_path(tcx, id) == "std::ub_checks::check_language_ub"
 }
 
 /// Whether `id` is std's: of `std`, `core` or `alloc`.

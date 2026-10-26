@@ -769,18 +769,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => Given::Unknown,
                     })
                     .collect();
+                // `FromFn(f)`, `iter::from_fn(f)` inlined into std's bodies:
+                // what that makes, `$fromFn(f)`, its `Some` boxed where it
+                // looks like `None` (ADRs 0051, 0917).
+                if crate::lower::recognition::is_from_fn(self.tcx, ty)
+                    && let [f] = &exprs[..]
+                {
+                    let mut given = vec![f.clone()];
+                    if self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item)) {
+                        given.push(Expr::bool(true));
+                    }
+                    return Ok(Value::Expr(Expr::call_helper("$fromFn", given)));
+                }
                 let value = self.adt_value(ty, *variant_index, exprs, &given, order.as_deref(), span)?;
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable`, is the JS iterator it is where
                 // it's made, stepped by the compiled impl's `next` and sized
                 // by its `size_hint`, given this body's dictionaries; in its
                 // `Clone`, which has none of `I: Iterator`'s, as the one it
-                // clones is, `self.$steps` (ADR 0561).
-                if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
-                    let cloning = self.tcx.trait_impl_of_assoc(self.item).is_some_and(|imp| {
-                        self.tcx.is_lang_item(self.tcx.impl_trait_id(imp), LangItem::Clone)
-                            && self.tcx.type_of(imp).instantiate_identity().skip_normalization() == ty
-                    });
+                // clones is, `self.$steps` (ADR 0561). Where it's no iterator,
+                // in `StepBy::new`, the struct, which its caller makes one
+                // (`mir_call_values`, ADR 0917).
+                let cloning = self.tcx.trait_impl_of_assoc(self.item).is_some_and(|imp| {
+                    self.tcx.is_lang_item(self.tcx.impl_trait_id(imp), LangItem::Clone)
+                        && self.tcx.type_of(imp).instantiate_identity().skip_normalization() == ty
+                });
+                if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+                    && (cloning || crate::lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, ty))
+                {
                     let steps = match cloning {
                         true => Expr::member(Expr::var(&state.locals.names[Local::from_u32(1)]), "$steps"),
                         false => self.std_iterator_steps(ty, span)?,

@@ -241,4 +241,12 @@ export const mutations: Mutation[] = [
     replace: "                        if false {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "no-iterator-made-unstepped",
+    breaks: "`step_by` isn't given its `Self`'s dictionary for the `StepBy` it makes an iterator of, so it's refused (ADR 0917)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                .is_some_and(|(callee, _)| crate::lower::recognition::makes_no_iterator(tcx, callee))\n",
+    replace: "                .is_some_and(|(callee, _)| false && crate::lower::recognition::makes_no_iterator(tcx, callee))\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
 ];

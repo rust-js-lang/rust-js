@@ -52,8 +52,9 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   const pkg = JSON.parse(readFileSync(join(root, "std", "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect([pkg.name, pkg.version]).toEqual(["@rust-js/std", version]);
-  // A compile of std's bodies, 1.3 s alone: past 5 s beside check:fast's other jobs.
-}, 30_000);
+  // A compile of std's bodies, 6.2 s alone since std's iterator adapters
+  // compile (ADRs 0908, 0917): past 30 s beside check:fast's other jobs.
+}, 60_000);
 
 // What the compiler writes imports the package by its name, each module by
 // its path: `@rust-js/std/iter.js`, as `@rust-js/runtime` is imported. A

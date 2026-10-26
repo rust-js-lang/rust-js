@@ -399,8 +399,8 @@ export const mutations: Mutation[] = [
     name: "std-struct-not-a-js-iterator",
     breaks: "a compiled std iterator's struct, `Peekable { iter, peeked }`, is made with no `next` of its own, so stepping it as the JS iterator it is fails",
     file: "src/lower/mir/rvalues.rs",
-    find: "                if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n",
-    replace: "                if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) && false {\n",
+    find: "                    && (cloning || crate::lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, ty))\n",
+    replace: "                    && false\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -515,5 +515,13 @@ export const mutations: Mutation[] = [
     find: "                            && let Some(function) = self.math_function(def_id, args)\n                        {\n                            return Ok(Value::Expr(function));\n",
     replace: "                            && let Some(function) = self.math_function(def_id, args).filter(|_| false)\n                        {\n                            return Ok(Value::Expr(function));\n",
     tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+  },
+  {
+    name: "from-fn-a-tuple",
+    breaks: "`FromFn(f)` inlined into std's `StepBy::fold` is a one-item array, not the `$fromFn(f)` iterator `iter::from_fn` makes, so a held `step_by()` throws folding (ADR 0917)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                if crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
+    replace: "                if false && crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

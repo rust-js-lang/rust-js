@@ -273,7 +273,7 @@
 - BinaryHeap::try_reserve	memory
 - BinaryHeap::try_reserve_exact	memory
 + BinaryHeap::with_capacity	memory
-# Option 42 of 46; bodies: 39 safe, 0 spec, 0 opaque, 7 memory, 0 none
+# Option 42 of 46; bodies: 44 safe, 0 spec, 0 opaque, 2 memory, 0 none
 + Option::and	safe
 + Option::and_then	safe
 + Option::as_deref	safe
@@ -289,10 +289,10 @@
 + Option::expect	safe
 + Option::filter	safe
 + Option::flatten	safe
-+ Option::get_or_insert	memory
-+ Option::get_or_insert_default	memory
-+ Option::get_or_insert_with	memory
-+ Option::insert	memory
++ Option::get_or_insert	safe
++ Option::get_or_insert_default	safe
++ Option::get_or_insert_with	safe
++ Option::insert	safe
 + Option::inspect	safe
 + Option::is_none	safe
 + Option::is_none_or	safe
@@ -316,11 +316,11 @@
 + Option::unwrap_or	safe
 + Option::unwrap_or_default	safe
 + Option::unwrap_or_else	safe
-+ Option::unwrap_unchecked	memory
++ Option::unwrap_unchecked	safe
 + Option::unzip	safe
 + Option::xor	safe
 + Option::zip	safe
-# Result 35 of 36; bodies: 34 safe, 0 spec, 0 opaque, 2 memory, 0 none
+# Result 35 of 36; bodies: 36 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Result::and	safe
 + Result::and_then	safe
 + Result::as_deref	safe
@@ -352,11 +352,11 @@
 + Result::transpose	safe
 + Result::unwrap	safe
 + Result::unwrap_err	safe
-+ Result::unwrap_err_unchecked	memory
++ Result::unwrap_err_unchecked	safe
 + Result::unwrap_or	safe
 + Result::unwrap_or_default	safe
 + Result::unwrap_or_else	safe
-+ Result::unwrap_unchecked	memory
++ Result::unwrap_unchecked	safe
 # Rc 12 of 23; bodies: 0 safe, 0 spec, 0 opaque, 23 memory, 0 none
 - Rc::as_ptr	memory
 - Rc::assume_init	memory
@@ -857,7 +857,7 @@
 + char::to_digit	memory
 + char::to_lowercase	memory
 + char::to_uppercase	memory
-# Iterator 44 of 60; bodies: 56 safe, 4 spec, 0 opaque, 0 memory, 0 none
+# Iterator 44 of 60; bodies: 57 safe, 3 spec, 0 opaque, 0 memory, 0 none
 + Iterator::all	safe
 + Iterator::any	safe
 + Iterator::by_ref	safe
@@ -910,7 +910,7 @@
 - Iterator::size_hint	safe
 + Iterator::skip	safe
 + Iterator::skip_while	safe
-+ Iterator::step_by	spec
++ Iterator::step_by	safe
 + Iterator::sum	safe
 + Iterator::take	safe
 + Iterator::take_while	safe
@@ -951,7 +951,7 @@
 + FilterMap::size_hint	safe
 - FilterMap::try_fold	safe
 - FilterMap::try_rfold	safe
-# Peekable 13 of 16; bodies: 11 safe, 2 spec, 0 opaque, 3 memory, 0 none
+# Peekable 13 of 16; bodies: 13 safe, 2 spec, 0 opaque, 1 memory, 0 none
 + Peekable::count	safe
 + Peekable::fold	safe
 + Peekable::last	safe
@@ -962,8 +962,8 @@
 - Peekable::next_if_map	safe
 - Peekable::next_if_map_mut	safe
 + Peekable::nth	safe
-+ Peekable::peek	memory
-+ Peekable::peek_mut	memory
++ Peekable::peek	safe
++ Peekable::peek_mut	safe
 + Peekable::rfold	safe
 + Peekable::size_hint	memory
 + Peekable::try_fold	spec
@@ -1077,15 +1077,15 @@
 + Cycle::next	safe
 + Cycle::size_hint	safe
 - Cycle::try_fold	spec
-# StepBy 4 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
+# StepBy 8 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
 + StepBy::fold	safe
 + StepBy::next	safe
-- StepBy::next_back	memory
++ StepBy::next_back	memory
 + StepBy::nth	memory
-- StepBy::nth_back	memory
-- StepBy::rfold	memory
++ StepBy::nth_back	memory
++ StepBy::rfold	memory
 + StepBy::size_hint	memory
-- StepBy::try_fold	spec
++ StepBy::try_fold	spec
 - StepBy::try_rfold	memory
 # Flatten 7 of 9; bodies: 9 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Flatten::count	safe

@@ -6,11 +6,13 @@ import {
   $controlFlowTry,
   $count,
   $dispose,
+  $div,
   $dropping,
   $findBack,
   $findDropping,
   $foldBack,
   $foldOf,
+  $fromFn,
   $given,
   $lastDropping,
   $lent,
@@ -22,6 +24,7 @@ import {
   $overflowing,
   $peekableHint,
   $pretty,
+  $rem,
   $revAdvanceBy,
   $sizeHint,
   $some,
@@ -32,6 +35,29 @@ import {
   $tryFoldInto,
   $tryOf,
 } from "@rust-js/runtime";
+
+export const StepBy = {
+  new(iter, step, dropI) {
+    if (step === 0) {
+      throw new Error("assertion failed: step != 0");
+    }
+    iter = tSpecRangeSetupT_setup(iter, step, dropI);
+    return { iter, stepMinusOne: (step - 1) >>> 0, firstTake: true };
+  },
+  nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem) {
+    const len = IExactSizeIterator.len(stepBy.iter);
+    const n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+    const n = n$1 === 0 ? undefined : n$1;
+    const rem = $rem(len, n) >>> 0;
+    if (stepBy.firstTake) {
+      if (rem === 0) {
+        return stepBy.stepMinusOne;
+      }
+      return (rem - 1) >>> 0;
+    }
+    return rem;
+  },
+};
 
 export const FlattenCompat = {
   iterFold(
@@ -119,6 +145,7 @@ const $skipClone = new WeakMap();
 const $skipDebug = new WeakMap();
 const $takeClone = new WeakMap();
 const $takeIDebug = new WeakMap();
+const $stepByClone = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -1872,7 +1899,9 @@ export function skipIterator_nth(skip, n, IIterator, dropI, dropIItem) {
   const skip$1 = skip.n;
   skip.n = 0;
   const b = $overflowing((skip$1 + n) >>> 0, skip$1 + n, 0, 4294967295)[1];
-  if (b) {
+  if (!b) {
+    n = (skip$1 + n) >>> 0;
+  } else {
     const option = $nthDropping(
       $lent($given(skip.iter, IIterator, true)),
       (skip$1 - 1) >>> 0,
@@ -1884,8 +1913,6 @@ export function skipIterator_nth(skip, n, IIterator, dropI, dropIItem) {
     }
     const v = $someValue(option);
     dropIItem?.({ TAG: "Continue", _0: v }._0);
-  } else {
-    n = (skip$1 + n) >>> 0;
   }
   return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
 }
@@ -2366,6 +2393,123 @@ export function takeIDebug_fmt(take, options, IDebug) {
   return options?.alternate
     ? $pretty("Take {", [`iter: ${shown}`, `n: ${shown$1}`], "}")
     : `Take { iter: ${shown}, n: ${shown$1} }`;
+}
+
+export function stepByIterator_next(stepBy, IIterator, dropI, dropIItem) {
+  return stepByStepByImplI_specNext(stepBy, IIterator, dropI, dropIItem);
+}
+
+export function stepByIterator_sizeHint(stepBy, IIterator, dropI, dropIItem) {
+  return stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIItem);
+}
+
+export function stepByIterator_nth(stepBy, n, IIterator, dropI, dropIItem) {
+  return stepByStepByImplI_specNth(stepBy, n, IIterator, dropI, dropIItem);
+}
+
+export function stepByIterator_fold(stepBy, acc, f, IIterator, dropI, dropAcc, dropF, dropIItem) {
+  return stepByStepByImplI_specFold(stepBy, acc, f, IIterator, dropI, dropAcc, dropF, dropIItem);
+}
+
+export function stepByIterator_tryFold(
+  stepBy,
+  acc,
+  f,
+  IIterator,
+  RTry,
+  dropI,
+  dropAcc,
+  dropF,
+  dropR,
+  dropIItem,
+) {
+  return stepByStepByImplI_specTryFold(
+    stepBy,
+    acc,
+    f,
+    IIterator,
+    RTry,
+    dropI,
+    dropAcc,
+    dropF,
+    dropR,
+    dropIItem,
+  );
+}
+
+export function stepByDoubleEndedIterator_nextBack(
+  stepBy,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropIItem,
+) {
+  return stepByStepByBackImplI_specNextBack(
+    stepBy,
+    IIterator,
+    IDoubleEndedIterator,
+    IExactSizeIterator,
+    dropI,
+    dropIItem,
+  );
+}
+
+export function stepByDoubleEndedIterator_nthBack(
+  stepBy,
+  n,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropIItem,
+) {
+  return stepByStepByBackImplI_specNthBack(
+    stepBy,
+    n,
+    IIterator,
+    IDoubleEndedIterator,
+    IExactSizeIterator,
+    dropI,
+    dropIItem,
+  );
+}
+
+export function stepByDoubleEndedIterator_rfold(
+  stepBy,
+  init,
+  f,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropAcc,
+  dropF,
+  dropIItem,
+) {
+  return stepByStepByBackImplI_specRfold(
+    stepBy,
+    init,
+    f,
+    IIterator,
+    IDoubleEndedIterator,
+    IExactSizeIterator,
+    dropI,
+    dropAcc,
+    dropF,
+    dropIItem,
+  );
+}
+
+export function stepByClone_clone(stepBy, IClone) {
+  return $stdIterator(
+    {
+      iter: IClone.clone(stepBy.iter),
+      stepMinusOne: stepBy.stepMinusOne,
+      firstTake: stepBy.firstTake,
+    },
+    stepBy.$steps,
+  );
 }
 
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
@@ -2955,6 +3099,42 @@ export function iterator_take(self, n, SelfIterator, dropSelf, dropSelfItem) {
   );
 }
 
+export function iterator_stepBy(self, step, SelfIterator, dropSelf, dropSelfItem) {
+  return $stdIterator(StepBy.new(self, step, dropSelf), {
+    next: (iterator) => stepByIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
+    hint: (iterator) => stepByIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
+    nth: (iterator, n) => stepByIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
+    fold: (iterator, init, f) =>
+      stepByIterator_fold(
+        iterator,
+        init,
+        f,
+        SelfIterator,
+        dropSelf,
+        undefined,
+        undefined,
+        dropSelfItem,
+      ),
+    tryFold: (iterator, init, f, broke) =>
+      stepByIterator_tryFold(
+        iterator,
+        init,
+        f,
+        SelfIterator,
+        $tryOf(broke),
+        dropSelf,
+        undefined,
+        undefined,
+        undefined,
+        dropSelfItem,
+      ),
+    takes: ["fold"],
+    close(iterator) {
+      dropSelf?.(iterator.iter);
+    },
+  });
+}
+
 export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
   let x;
   let option;
@@ -3115,7 +3295,7 @@ export function flattenCompatIUIterator_sizeHint(
     const a = fhi;
     const b = bhi;
     const b$1 = $overflowing((a + b) >>> 0, a + b, 0, 4294967295)[1];
-    return [lo, b$1 ? undefined : (a + b) >>> 0];
+    return [lo, !b$1 ? (a + b) >>> 0 : undefined];
   }
   let sizeHint;
   if (flattenCompat.iter.iter != null) {
@@ -3143,10 +3323,7 @@ export function flattenCompatIUIterator_sizeHint(
       const value = { TAG: "Continue", _0: bhi }._0;
       const b = $overflowing((_0 + value) >>> 0, _0 + value, 0, 4294967295)[1];
       let option;
-      if (b) {
-        option = undefined;
-        upper = undefined;
-      } else {
+      if (!b) {
         option = (_0 + value) >>> 0;
         const v = option;
         const value$1 = { TAG: "Continue", _0: v }._0;
@@ -3159,27 +3336,30 @@ export function flattenCompatIUIterator_sizeHint(
             4294967295,
           );
           let option;
-          if (b$1) {
-            option = undefined;
-            upper = undefined;
-          } else {
+          if (!b$1) {
             option = _84;
             const v = option;
             const value = { TAG: "Continue", _0: v }._0;
             const b = $overflowing((value$1 + value) >>> 0, value$1 + value, 0, 4294967295)[1];
             let option$1;
-            if (b) {
-              option$1 = undefined;
-              upper = undefined;
-            } else {
+            if (!b) {
               option$1 = (value$1 + value) >>> 0;
               const v = option$1;
               upper = { TAG: "Continue", _0: v }._0;
+            } else {
+              option$1 = undefined;
+              upper = undefined;
             }
+          } else {
+            option = undefined;
+            upper = undefined;
           }
         } else {
           upper = undefined;
         }
+      } else {
+        option = undefined;
+        upper = undefined;
       }
     } else {
       upper = undefined;
@@ -3493,6 +3673,263 @@ export function takeSpecTake_specFold(take, init, f, IIterator, dropI, dropB, dr
   return result;
 }
 
+export function stepByStepByImplI_specNext(stepBy, IIterator, dropI, dropIItem) {
+  const stepSize = stepBy.firstTake ? 0 : stepBy.stepMinusOne;
+  stepBy.firstTake = false;
+  return $nthDropping($lent($given(stepBy.iter, IIterator, true)), stepSize, dropIItem, true);
+}
+
+export function stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIItem) {
+  const [low, high] = $sizeHint(stepBy.iter, IIterator);
+  if (stepBy.firstTake) {
+    const n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+    const n = n$1 === 0 ? undefined : n$1;
+    const f = (n$1) => {
+      if (n$1 === 0) {
+        return 0;
+      }
+      return (1 + ($div((n$1 - 1) >>> 0, n) >>> 0)) >>> 0;
+    };
+    return [
+      low === 0 ? 0 : (1 + ($div((low - 1) >>> 0, n) >>> 0)) >>> 0,
+      high != null ? f(high) : undefined,
+    ];
+  }
+  let n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+  n$1 = n$1 === 0 ? undefined : n$1;
+  const f = (n) => $div(n, n$1) >>> 0;
+  return [$div(low, n$1) >>> 0, high != null ? f(high) : undefined];
+}
+
+export function stepByStepByImplI_specNth(stepBy, n, IIterator, dropI, dropIItem) {
+  if (stepBy.firstTake) {
+    stepBy.firstTake = false;
+    const option = IIterator.next(stepBy.iter);
+    if (option == null) {
+      return;
+    }
+    const v = $someValue(option);
+    const first = { TAG: "Continue", _0: v }._0;
+    if (n === 0) {
+      return $some(first);
+    }
+    n = (n - 1) >>> 0;
+    dropIItem?.(first);
+  }
+  let n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+  n$1 = n$1 === 0 ? undefined : n$1;
+  let step = n$1;
+  if (n === 4294967295) {
+    const option = $nthDropping(
+      $lent($given(stepBy.iter, IIterator, true)),
+      (step - 1) >>> 0,
+      dropIItem,
+      true,
+    );
+    if (option == null) {
+      return;
+    }
+    const v = $someValue(option);
+    dropIItem?.({ TAG: "Continue", _0: v }._0);
+  } else {
+    n = (n + 1) >>> 0;
+  }
+  while (true) {
+    const [_62, b$1] = $overflowing(Math.imul(n, step) >>> 0, n * step, 0, 4294967295);
+    let b;
+    let mul;
+    if (!b$1) {
+      mul = _62;
+      b = (mul == null ? 0 : 1) === 1;
+      const val = mul;
+      return $nthDropping(
+        $lent($given(stepBy.iter, IIterator, true)),
+        (val - 1) >>> 0,
+        dropIItem,
+        true,
+      );
+    }
+    mul = undefined;
+    b = (mul == null ? 0 : 1) === 1;
+    const divN = $div(4294967295, n) >>> 0;
+    const divStep = $div(4294967295, step) >>> 0;
+    let nthN = Math.imul(divN, n) >>> 0;
+    const nthStep = Math.imul(divStep, step) >>> 0;
+    if (nthN > nthStep) {
+      step = (step - divN) >>> 0;
+    } else {
+      n = (n - divStep) >>> 0;
+      nthN = nthStep;
+    }
+    const option = $nthDropping(
+      $lent($given(stepBy.iter, IIterator, true)),
+      (nthN - 1) >>> 0,
+      dropIItem,
+      true,
+    );
+    if (option == null) {
+      return;
+    }
+    const v = $someValue(option);
+    dropIItem?.({ TAG: "Continue", _0: v }._0);
+  }
+}
+
+export function stepByStepByImplI_specFold(
+  stepBy,
+  acc,
+  f,
+  IIterator,
+  dropI,
+  dropAcc,
+  dropF,
+  dropIItem,
+) {
+  let result;
+  if (stepBy.firstTake) {
+    stepBy.firstTake = false;
+    const next = IIterator.next(stepBy.iter);
+    if (next == null) {
+      result = acc;
+      dropF?.(f);
+      stepBy.return();
+      return result;
+    }
+    const x = $someValue(next);
+    acc = f(acc, x);
+  }
+  const { iter, stepMinusOne } = stepBy;
+  const f$1 = () =>
+    $nthDropping($lent($given(iter, IIterator, true)), stepMinusOne, dropIItem, true);
+  const value = $fromFn(f$1, true).reduce((a, b) => f(a, b), acc);
+  dropF?.(f);
+  result = value;
+  stepBy.return();
+  return result;
+}
+
+export function stepByStepByImplI_specTryFold(
+  stepBy,
+  _2,
+  f,
+  IIterator,
+  RTry,
+  dropI,
+  dropAcc,
+  dropF,
+  dropR,
+  dropIItem,
+) {
+  bb12: {
+    if (stepBy.firstTake) {
+      stepBy.firstTake = false;
+      const next = IIterator.next(stepBy.iter);
+      let result;
+      if (next == null) {
+        result = RTry.fromOutput(_2);
+      } else {
+        const x = $someValue(next);
+        const value = RTry.branch(f(_2, x));
+        if (value.TAG === "Continue") {
+          _2 = value._0;
+          break bb12;
+        }
+        result = RTry.FromResidual().fromResidual(value._0);
+      }
+      dropF?.(f);
+      return result;
+    }
+  }
+  const { iter, stepMinusOne } = stepBy;
+  const f$1 = () =>
+    $nthDropping($lent($given(iter, IIterator, true)), stepMinusOne, dropIItem, true);
+  const value = $tryFoldInto($fromFn(f$1, true), _2, (a, b) => f(a, b), RTry);
+  dropF?.(f);
+  return value;
+}
+
+export function stepByStepByBackImplI_specNextBack(
+  stepBy,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropIItem,
+) {
+  return $nthBack(
+    $given(stepBy.iter, IIterator, true, IDoubleEndedIterator),
+    StepBy.nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem),
+    $some,
+    dropIItem,
+  );
+}
+
+export function stepByStepByBackImplI_specNthBack(
+  stepBy,
+  n,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropIItem,
+) {
+  let n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+  n$1 = n$1 === 0 ? undefined : n$1;
+  const [_14, b] = $overflowing(Math.imul(n, n$1) >>> 0, n * n$1, 0, 4294967295);
+  let tmp = _14;
+  if (b) {
+    tmp = 4294967295;
+  }
+  n$1 = Math.min(
+    tmp + StepBy.nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem),
+    4294967295,
+  );
+  return $nthBack(
+    $given(stepBy.iter, IIterator, true, IDoubleEndedIterator),
+    n$1,
+    $some,
+    dropIItem,
+  );
+}
+
+export function stepByStepByBackImplI_specRfold(
+  stepBy,
+  init,
+  f,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropAcc,
+  dropF,
+  dropIItem,
+) {
+  const specNextBack = stepByStepByBackImplI_specNextBack(
+    stepBy,
+    IIterator,
+    IDoubleEndedIterator,
+    IExactSizeIterator,
+    dropI,
+    dropIItem,
+  );
+  let result;
+  if (specNextBack == null) {
+    result = init;
+    dropF?.(f);
+  } else {
+    const x = $someValue(specNextBack);
+    const acc = f(init, x);
+    const { iter, stepMinusOne } = stepBy;
+    const f$1 = () =>
+      $nthBack($given(iter, IIterator, true, IDoubleEndedIterator), stepMinusOne, $some, dropIItem);
+    const value = $fromFn(f$1, true).reduce((a, b) => f(a, b), acc);
+    dropF?.(f);
+    result = value;
+  }
+  stepBy.return();
+  return result;
+}
+
 export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   let x;
   let option;
@@ -3513,6 +3950,10 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   x = undefined;
   dropFnOnce?.(f);
   return x;
+}
+
+export function tSpecRangeSetupT_setup(inner, step, dropT) {
+  return inner;
 }
 
 export function peekableClone(IClone, IIterator, IItemClone) {
@@ -3612,6 +4053,12 @@ export function takeClone(IClone) {
 export function takeIDebug(IDebug) {
   return $traitImpl($takeIDebug, [IDebug], () => ({
     fmt: (arg0, arg1) => takeIDebug_fmt(arg0, arg1, IDebug),
+  }));
+}
+
+export function stepByClone(IClone) {
+  return $traitImpl($stepByClone, [IClone], () => ({
+    clone: (arg0) => stepByClone_clone(arg0, IClone),
   }));
 }
 //# sourceMappingURL=iter.js.map

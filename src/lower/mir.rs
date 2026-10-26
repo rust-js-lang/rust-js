@@ -125,6 +125,14 @@ impl<'tcx> Mir<'tcx> {
         // tests, which drop elaboration leaves of a flag it settled, is the
         // way it goes; the discriminant it read and nothing else does, nothing.
         if !body.source.def_id().is_local() {
+            // A block that assumes `UbChecks`, which rust-js reads as off,
+            // never runs (ADR 0917).
+            for data in body.basic_blocks.as_mut() {
+                if crate::lower::std_coverage::assumes_ub_checks(data) {
+                    data.statements.clear();
+                    data.terminator_mut().kind = TerminatorKind::Unreachable;
+                }
+            }
             let unreachable: Vec<BasicBlock> = (body.basic_blocks.iter_enumerated())
                 .filter(|(_, data)| matches!(data.terminator().kind, TerminatorKind::Unreachable))
                 .map(|(block, _)| block)

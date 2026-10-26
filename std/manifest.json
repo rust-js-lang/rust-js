@@ -8,8 +8,25 @@
   "library": {
     "version": 8,
     "name": "rust_js_std",
-    "crate_hash": "8521e813d98c95bb60f1786e23ba65ea",
+    "crate_hash": "e45f9c3992e32c9790fb43fde2d87491",
     "items": [
+      {
+        "key": "608f92abc48d28da30bea7a011c6feef",
+        "rust_path": "rust_js_std::<T as core::iter::adapters::step_by::SpecRangeSetup<T>>::setup",
+        "module": [
+          "iter"
+        ],
+        "export": "tSpecRangeSetupT_setup",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
       {
         "key": "608f92abc48d28da832aed8d16346cb9",
         "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::clone::Clone>",
@@ -3354,6 +3371,536 @@
         ]
       },
       {
+        "key": "608f92abc48d28da3b0f3c8004801789",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByClone",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da3ee2cde981cb94e4",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByClone_clone",
+        "member": null
+      },
+      {
+        "key": "608f92abc48d28da9183dc543ec3ad17",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daaaf22438aacf11af",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::DoubleEndedIterator>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByDoubleEndedIterator_nthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da66874f2080e9430d",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::DoubleEndedIterator>::rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByDoubleEndedIterator_rfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da20947e55fe64e69c",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2f9a198d607c2155",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dad5d469e3367bfa27",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da45aa3a3740d8348e",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da9acc3801b72e360e",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa1740f3a2cf1aadf",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByBackImpl<I>>::spec_next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByBackImplI_specNextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da24aed1961b3abdfd",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByBackImpl<I>>::spec_nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByBackImplI_specNthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa8a80152e64ee525",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByBackImpl<I>>::spec_rfold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByBackImplI_specRfold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dae757bac89500ad63",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByImpl<I>>::spec_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByImplI_specFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da925ee2553e2d5db4",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByImpl<I>>::spec_next",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByImplI_specNext",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da8cc4b4c4b6571fd0",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByImpl<I>>::spec_nth",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByImplI_specNth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da462fdc72ba413b34",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByImpl<I>>::spec_size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByImplI_specSizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dac362b340ff246890",
+        "rust_path": "rust_js_std::<core::iter::StepBy<I> as core::iter::adapters::step_by::StepByImpl<I>>::spec_try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "stepByStepByImplI_specTryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28dab1ffa93dff469a2",
         "rust_path": "rust_js_std::<core::iter::Take<I> as core::clone::Clone>",
         "module": [
@@ -4550,6 +5097,32 @@
         ]
       },
       {
+        "key": "608f92abc48d28dabad8eddb6a9b6e34",
+        "rust_path": "rust_js_std::core::iter::Iterator::step_by",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_stepBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28dac782dffcfa2ba402",
         "rust_path": "rust_js_std::core::iter::Iterator::take",
         "module": [
@@ -4565,6 +5138,49 @@
             ],
             "stepped": [
               "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3ea4974d57c2f3db",
+        "rust_path": "rust_js_std::core::iter::StepBy::<I>::new",
+        "module": [
+          "iter"
+        ],
+        "export": "StepBy",
+        "member": "new",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da6483e5fb3d02f549",
+        "rust_path": "rust_js_std::core::iter::StepBy::<I>::next_back_index",
+        "module": [
+          "iter"
+        ],
+        "export": "StepBy",
+        "member": "nextBackIndex",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e"
             ]
           },
           {
@@ -4743,6 +5359,7 @@
       "608f92abc48d28da308ed4aa16f54459",
       "608f92abc48d28da30ff0abc0758142a",
       "608f92abc48d28da367c3b6a181fb242",
+      "608f92abc48d28da3b0f3c8004801789",
       "608f92abc48d28da3e5edc2e363066bd",
       "608f92abc48d28da43758fc72cefdaa5",
       "608f92abc48d28da58e24fcc247e29aa",
@@ -4750,10 +5367,12 @@
       "608f92abc48d28da5d47d88cb3baf8ee",
       "608f92abc48d28da611f41eb429008a1",
       "608f92abc48d28da625b60302a1e6cdf",
+      "608f92abc48d28da63e359d1fd6fa07c",
       "608f92abc48d28da6ccc1f127504f7e6",
       "608f92abc48d28da705f3215720050d3",
       "608f92abc48d28da70bd5cc01d59342d",
       "608f92abc48d28da7243376338849ce",
+      "608f92abc48d28da7ad7049d4f31a105",
       "608f92abc48d28da7b476087361baa1",
       "608f92abc48d28da7e04e5d5f64639a",
       "608f92abc48d28da82cd2b85463d8a2d",
@@ -4765,6 +5384,7 @@
       "608f92abc48d28da9e25d7d0dc005ec0",
       "608f92abc48d28daa79dd9d70cde8ae6",
       "608f92abc48d28daa7a89bfc86d0be9b",
+      "608f92abc48d28daae98e5f36dd01c5e",
       "608f92abc48d28dab1158ebefa322c0f",
       "608f92abc48d28dab1fea28ef5e5aa1a",
       "608f92abc48d28dab1ffa93dff469a2",
@@ -4774,6 +5394,7 @@
       "608f92abc48d28dac75365ed35f9b4e6",
       "608f92abc48d28dacd4e5382e53ca842",
       "608f92abc48d28dace9bf516d45da1ba",
+      "608f92abc48d28dacf431ee4e51517d",
       "608f92abc48d28dad0cd4d4af9727b88",
       "608f92abc48d28dad472929f0d5c890b",
       "608f92abc48d28dad6ec7372567ce32e",
@@ -4782,6 +5403,7 @@
       "608f92abc48d28dadba2055e241f4a9d",
       "608f92abc48d28dade3ef2f184fe8452",
       "608f92abc48d28dae88ef68b00d41a68",
+      "608f92abc48d28dae9f7cafd1d418964",
       "608f92abc48d28daeb8dedd4e1e2a616",
       "608f92abc48d28daecf15647b7c4ef10",
       "608f92abc48d28daed4d080659d3503e",
@@ -4815,6 +5437,7 @@
       "in_source": "iter.js",
       "imports": [],
       "exports": [
+        "StepBy",
         "FlattenCompat",
         "peekableIterator_next",
         "peekableIterator_nth",
@@ -4932,6 +5555,15 @@
         "takeRepeatWithFExactSizeIterator_len",
         "takeClone_clone",
         "takeIDebug_fmt",
+        "stepByIterator_next",
+        "stepByIterator_sizeHint",
+        "stepByIterator_nth",
+        "stepByIterator_fold",
+        "stepByIterator_tryFold",
+        "stepByDoubleEndedIterator_nextBack",
+        "stepByDoubleEndedIterator_nthBack",
+        "stepByDoubleEndedIterator_rfold",
+        "stepByClone_clone",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -4942,6 +5574,7 @@
         "iterator_flatMap",
         "iterator_skip",
         "iterator_take",
+        "iterator_stepBy",
         "andThenOrClear",
         "flattenCompatIUIterator_next",
         "flattenCompatIUIterator2_next",
@@ -4954,7 +5587,16 @@
         "flattenCompatIUDoubleEndedIterator_rfold",
         "flattenCompatIUDoubleEndedIterator2_rfold",
         "takeSpecTake_specFold",
+        "stepByStepByImplI_specNext",
+        "stepByStepByImplI_specSizeHint",
+        "stepByStepByImplI_specNth",
+        "stepByStepByImplI_specFold",
+        "stepByStepByImplI_specTryFold",
+        "stepByStepByBackImplI_specNextBack",
+        "stepByStepByBackImplI_specNthBack",
+        "stepByStepByBackImplI_specRfold",
         "andThenOrClear$1",
+        "tSpecRangeSetupT_setup",
         "peekableClone",
         "peekableDebug",
         "fuseClone",
@@ -4970,7 +5612,8 @@
         "skipClone",
         "skipDebug",
         "takeClone",
-        "takeIDebug"
+        "takeIDebug",
+        "stepByClone"
       ],
       "links": [],
       "type_links": []
@@ -4979,7 +5622,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "13dc1476c9aec544"
+      "hash": "3c8c84ea367036c6"
     },
     {
       "file": "iter.js.map",

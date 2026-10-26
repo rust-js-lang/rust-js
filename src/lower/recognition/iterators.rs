@@ -1257,6 +1257,36 @@ pub(crate) fn stepped_as_js_iterator<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, arg
 /// `$next`, `for...of` and the helpers, with no dictionary of what it holds
 /// (ADR 0561). The one answer, of what's made a JS iterator and what's
 /// stepped as one.
+/// Whether `ty` is std's `FromFn`, what `iter::from_fn(f)` makes, which
+/// std's own bodies make inlined, `FromFn(f)` (ADR 0917).
+pub(crate) fn is_from_fn(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::FromFn")
+}
+
+/// Whether std's struct of type `ty` is an iterator in `typing_env`, so
+/// the JS iterator it is can be made there, given its steps: not in
+/// `StepBy::new`, whose `I` no bound makes one (ADR 0917).
+pub(crate) fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, iterator, [ty]));
+    tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+}
+
+/// Whether `callee`, a compiled std function, gives back std's struct it
+/// made where it's no iterator, `StepBy::new`: its caller makes it the JS
+/// iterator it is, where it's one (ADR 0917).
+pub(crate) fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
+    let made = tcx
+        .fn_sig(callee)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder()
+        .output();
+    is_compiled_std(tcx, callee)
+        && is_compiled_std_iterator(tcx, made)
+        && !std_struct_steps_in(tcx, ty::TypingEnv::post_analysis(tcx, callee), made)
+}
+
 pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, adt.did())
     && COMPILED_STD.iter().any(|&(type_name, tr, name)| {
