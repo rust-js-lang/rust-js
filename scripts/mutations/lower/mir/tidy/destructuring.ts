@@ -21,6 +21,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
   {
+    name: "rust-js-names-in-a-pattern",
+    breaks: "`Cell::new(update.lane.get())`'s read ahead of the next field's is `const { lane: value, tag: value$1 } = update;`, names the program never gave (ADR 0598, amended)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
+    replace: "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "a struct literal of cells another's read makes reads each in place"],
+  },
+  {
     name: "mir-tidy-destructured-kept",
     breaks: "`const _5 = e; const a = _5[0]; const b = _5[1];` stays, not `const [a, b] = e;`",
     file: "src/lower/mir/tidy/destructuring.rs",

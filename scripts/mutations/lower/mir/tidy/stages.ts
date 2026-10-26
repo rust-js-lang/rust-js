@@ -524,8 +524,8 @@ export const mutations: Mutation[] = [
     name: "destructured-declared-off",
     breaks: "a tuple `let` in a guard's `try` stays its tuple read `[0]`, `[1]`, not `const [a, b] = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| destructured(s, (&HashSet::new(), &h.lets.named)))\n",
-    replace: "                let _ = b;\n",
+    find: "                js::statement_lists(b, &mut |s| {\n                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user))\n                })\n",
+    replace: "                let _ = (b, h);\n",
     tests: ["test/lowering.test.ts", "-t", "a tuple let in a guard's try"],
   },
   {

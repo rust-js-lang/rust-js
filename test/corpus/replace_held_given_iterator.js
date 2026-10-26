@@ -25,7 +25,8 @@ const Restart = {
 
 function restartIterator_next(restart, IIterator, IClone) {
   const next = IIterator.next(restart.iter);
-  const { iter: captured, orig: captured$1 } = restart;
+  const captured = restart.iter;
+  const captured$1 = restart.orig;
   const fallback = () => {
     const orig = $take(captured$1, IClone.clone(captured));
     $assign(captured, orig);

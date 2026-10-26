@@ -8,7 +8,10 @@ use super::*;
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
 /// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
 /// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
-pub(super) fn destructured(stmts: &mut Vec<Stmt>, (patterns, lets): (&HashSet<String>, &HashSet<String>)) {
+pub(super) fn destructured(
+    stmts: &mut Vec<Stmt>,
+    (patterns, lets, user): (&HashSet<String>, &HashSet<String>, &HashSet<String>),
+) {
     let mut i = 0;
     while i < stmts.len() {
         // What the parts are read of, and where they start: a temporary this
@@ -38,6 +41,13 @@ pub(super) fn destructured(stmts: &mut Vec<Stmt>, (patterns, lets): (&HashSet<St
         // `let port = channel.port2(); channel.port1()..` (ADR 0598,
         // amended).
         if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {
+            parts.truncate(k);
+        }
+        // Nor a name rust-js gave, a temporary's, `_2`, or of what an object
+        // made later is made of, `value` of `Cell::new(u.a.get())`'s `{ value
+        // }`: no name of the program's, read where it's used, `{ lane:
+        // update.lane }`, once it's moved there (ADR 0598, amended).
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {
             parts.truncate(k);
         }
         let count = parts.len();

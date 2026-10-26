@@ -941,7 +941,8 @@ export function enumerateIterator_fold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, count$: count } = enumerate;
+  const iter = enumerate.iter;
+  const count = enumerate.count$;
   let count$1 = count;
   const f = $dropping(
     (acc$1, item) => {

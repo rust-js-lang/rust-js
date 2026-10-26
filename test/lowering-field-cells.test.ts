@@ -259,3 +259,39 @@ pub fn walked(node: &Fiber) -> u32 {
   const node = { tag: 1, type: 2, sibling: 3, return: 4 };
   expect([lib.name(node as never), lib.walked(node as never), node.return]).toEqual([12, 8, 3]);
 });
+
+// React's enqueueCapturedUpdate clones each update, `const clone = { lane:
+// update.lane, tag: update.tag, payload: update.payload, .. }`; its port
+// writes `Cell::new(update.lane.get())` of each, whose `{ value }` MIR's
+// lowering reads ahead of the next field's read, a `const` rust-js names.
+// No pattern of names the program never gave, `const { lane: value, tag:
+// value$1 } = update;`: each read where it's used (ADR 0598, amended).
+test("a struct literal of cells another's read makes reads each in place", async () => {
+  const dir = fixture("cells-literal-in-place");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Update {
+    pub lane: Cell<i32>,
+    pub tag: Cell<u8>,
+    pub payload: Cell<Option<&'static str>>,
+}
+
+pub fn clone_update(update: &Update) -> Update {
+    Update {
+        lane: Cell::new(update.lane.get()),
+        tag: Cell::new(update.tag.get()),
+        payload: Cell::new(update.payload.get()),
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return {\n    lane: update.lane,\n    tag: update.tag,\n    payload: update.payload,\n  };\n");
+  const lib = await import(join(dir, "lib.js"));
+  const update = { lane: 4, tag: 1, payload: "p" };
+  const clone = lib.cloneUpdate(update as never);
+  expect([clone, clone === update]).toEqual([update, false]);
+});

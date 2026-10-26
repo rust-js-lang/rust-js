@@ -81,7 +81,8 @@ function main() {
   const nb = { count: 10 };
   const h = { list: xs, node: na };
   $index(h.list, 0);
-  const { list: list$2, node } = h;
+  const list$2 = h.list;
+  const node = h.node;
   h.list = ys;
   h.node = nb;
   list$2[0] = (list$2[0] + 1) | 0;

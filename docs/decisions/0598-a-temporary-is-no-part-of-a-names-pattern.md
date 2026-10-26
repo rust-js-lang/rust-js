@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends tidy's destructuring
 ([0293](0293-cells-read-at-once.md)). Amended (2026-10-26): a binding the
-program names of a variable rust-js named, `old` of `take()`, names both.
+program names of a variable rust-js named, `old` of `take()`, names both;
+no pattern binds a name rust-js gave.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -142,3 +143,36 @@ After "destructured declared", which makes the pattern ("assigned parts").
 Held by the corpus case `tuple_assigned_to_variables` and the mutation
 `assigned-parts-left-apart`.
 
+## Amendment: no pattern of names rust-js gave (2026-10-26)
+
+React's enqueueCapturedUpdate clones each update in place, `const clone =
+{ lane: update.lane, tag: update.tag, payload: update.payload, .. }`. Its
+port writes `Cell::new(update.lane.get())` of each field, and MIR's
+lowering reads the first two ahead of the third's read into `const`s it
+names after the `{ value }` each cell is (`capture_object`): tidy's
+destructuring, which takes two parts of a variable the program names in a
+row as one pattern, made them `const { lane: value, tag: value$1 } =
+update;`, a pattern of names no one wrote, and one case printed `_22`
+the same way. This page's rule, that a pattern binds only names a reader
+would, was `read_together`'s alone.
+
+**A pattern of a variable the program names binds only the program's own
+names**: each part, `let (a, b) = t;`'s `a` and `b`, a local the program
+names (`Locals::user`). Where one isn't, a temporary or what
+`capture_object` named, the parts end there, and each `const` stays what
+it is, which tidy's moves read where it's used: `{ lane: update.lane, tag:
+update.tag, payload: update.payload }`, as React writes it. Where it's
+read more than once and kept, it's its own `const`, which preparation's
+`read_together` still destructures where each is named as its property.
+
+- Case A still: each property is read once, in its order, either way.
+- What changes: todomvc's `Edit` reads `const captured = action._0;` as
+  its `Destroy` does (and so `todos.map(..)`, which the pattern had
+  kept from reading in place); `mut_ref_local.rs`'s `const list$2 =
+  h.list; const node = h.node;`, `replace_held_given_iterator.rs`'s
+  `captured`s and std's `enumerateIterator_fold`'s `count` are two
+  `const`s, as each is named otherwise than its property.
+
+Held by `test/lowering-field-cells.test.ts`, "a struct literal of cells
+another's read makes reads each in place", run in JS, and the mutation
+`rust-js-names-in-a-pattern` (`lower/mir/tidy/destructuring.ts`).

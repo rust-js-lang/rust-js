@@ -157,7 +157,9 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, h.captured))
             }),
             pass("destructured", |b, h| {
-                js::statement_lists(b, &mut |s| destructured(s, (&h.lets.patterns, &h.lets.named)))
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&h.lets.patterns, &h.lets.named, &h.named.user))
+                })
             }),
             pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
             // What an array made for its parts left, `const _5 = 6;`, too.
@@ -197,7 +199,9 @@ pub(super) const STAGES: &[Stage] = &[
             // pattern's one part of what the program names, `const front =
             // d[0];`, which the first pass left as it is (ADR 0705).
             pass("destructured declared", |b, h| {
-                js::statement_lists(b, &mut |s| destructured(s, (&HashSet::new(), &h.lets.named)))
+                js::statement_lists(b, &mut |s| {
+                    destructured(s, (&HashSet::new(), &h.lets.named, &h.named.user))
+                })
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
