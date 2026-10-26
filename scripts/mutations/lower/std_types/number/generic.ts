@@ -3,6 +3,23 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "min-chain-nested",
+    breaks: "`a.min(b).min(c)` is `Math.min(Math.min(a, b), c)`, not `Math.min(a, b, c)`",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
+    replace: "                    js::ExprKind::Call(inner, args) if false && js::same_path(&inner, &callee) => args,\n",
+    tests: ["test/corpus.test.ts", "-t", "^min_max_chains.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "min-chain-of-a-helper-flattened",
+    breaks: "`a.min(b).min(c)` of floats splices `$f64Min`'s arguments into another `$f64Min`, which takes two",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
+    replace: "                    js::ExprKind::Call(inner, args) if js::same_path(&inner, &callee) => args,\n",
+    tests: ["test/corpus.test.ts", "-t", "^min_max_chains.rs$"],
+  },
+  {
     name: "array-of-slice-aliased",
     breaks: "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
     file: "src/lower/std_types/number/generic.rs",

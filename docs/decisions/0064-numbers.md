@@ -185,3 +185,14 @@ where reading it does nothing (`has_effects`): a getter's read, marked so
 read once. Held by `test/corpus/powi_square.rs`, `lowering-numbers.test.ts`'s
 "a square of a field is x * x, of a getter's read $powi" and the mutations
 `square-of-a-getter-read-twice` and `square-of-a-field-helper`.
+
+## Amendment: a chain of `min`s is one `Math.min` (#352)
+
+An integer's `a.min(b).min(c)` was `Math.min(Math.min(a, b), c)`, where
+trekhleb/javascript-algorithms' levenshteinDistance writes `Math.min(a, b,
+c)`. **A `Math.min` or `Math.max` of another of the same is one call of
+each's arguments**: they're evaluated in the same order, and `min` of
+numbers is the same whichever way it's grouped, NaN and -0 included. Not
+a helper's, `$f64Min`'s or `$bigMin`'s, which take two. Held by
+`test/corpus/min_max_chains.rs` and the mutations `min-chain-nested` and
+`min-chain-of-a-helper-flattened`.

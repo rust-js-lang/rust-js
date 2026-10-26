@@ -147,7 +147,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     Expr::member(Expr::var("Math"), if max { "max" } else { "min" })
                 };
-                Expr::call(callee, vec![arg(), arg()])
+                // Of one of `Math`'s of another, `a.min(b).min(c)`, one call,
+                // `Math.min(a, b, c)`: the same order, and the same number.
+                let math = callee.helper_name().is_none();
+                let args = [arg(), arg()].into_iter().flat_map(|a| match a.kind {
+                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,
+                    kind => vec![Expr { kind, ..a }],
+                });
+                Expr::call(callee.clone(), args.collect())
             }
             // An `Ordering` is -1, 0 or 1: `Equal` is the one that's falsy.
             Std::Operator(op) => {
