@@ -366,7 +366,8 @@ that panics while another panic unwinds replaces that panic, where Rust
 aborts.
 
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
-whose `finally` drops what it holds however it's left: a guard whose
+`if (wrap) { return callback(); }` too, whose `finally` drops what it
+holds however it's left, after what's returned is made: a guard whose
 `Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)),
 one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, a
 function or a constant it returns last after them, `return noop;`, as the

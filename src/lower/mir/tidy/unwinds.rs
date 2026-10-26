@@ -14,12 +14,12 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 /// `stmts`, each run of statements a value's drop ends, which a panic in
 /// any of them drops too, one `try { .. } finally { .. }`. The values
 /// made inside it, nested in turn, as `statement_lists` goes on into it.
-/// Whether it made one.
-pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>) -> bool {
+/// `result` is the function's return place. Whether it made one.
+pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str) -> bool {
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
-        if let Some(end) = scope_end(stmts, i) {
+        if let Some(end) = scope_end(stmts, i, result) {
             let drop = stmts[end].clone();
             let mut body = unwound(stmts.drain(i..end).collect(), &drop);
             // From where its first statement is, as the Rust has nothing of
@@ -201,9 +201,9 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
 /// value last, then throws on: where the scope drops it, the statement
 /// written as that drop, if every statement before it that may throw drops
 /// it too and nothing leaves the run another way.
-fn scope_end(stmts: &[Stmt], start: usize) -> Option<usize> {
+fn scope_end(stmts: &[Stmt], start: usize, result: &str) -> Option<usize> {
     let drop = first_drop(std::slice::from_ref(&stmts[start]))?;
-    let run = Run::of(&stmts[start..], drop);
+    let run = Run::of(&stmts[start..], drop, result);
     for (at, stmt) in stmts.iter().enumerate().skip(start) {
         if at > start && alike(stmt, drop) {
             return Some(at);
@@ -228,15 +228,20 @@ fn first_drop(stmts: &[Stmt]) -> Option<&Stmt> {
 
 /// A run's statements, as a `finally` that drops `drop` would end them:
 /// what they declare, which a way out may give, and what closures in them
-/// set, which the drop might too.
+/// set, which the drop might too; and the function's return place,
+/// `result`, which only its own assignments set, as neither a closure nor
+/// a drop names Rust's return place: given wherever it's declared, as a
+/// `return` in the `try` gives it, `try { if (wrap) { return callback(); }
+/// .. } finally { .. }` (ADR 0693, amended).
 struct Run<'a> {
     drop: &'a Stmt,
     declared: HashSet<String>,
     set_by_closures: HashSet<String>,
+    result: &'a str,
 }
 
 impl<'a> Run<'a> {
-    fn of(stmts: &[Stmt], drop: &'a Stmt) -> Run<'a> {
+    fn of(stmts: &[Stmt], drop: &'a Stmt, result: &'a str) -> Run<'a> {
         let mut declared = HashSet::new();
         js::each_list(stmts, &mut |list| {
             for stmt in list {
@@ -249,6 +254,7 @@ impl<'a> Run<'a> {
             drop,
             declared,
             set_by_closures: js::Writes::of(stmts).by_closures(),
+            result,
         }
     }
 
@@ -304,13 +310,15 @@ impl<'a> Run<'a> {
     }
 
     /// Whether `out`, after the drop, leaves the run: a `return` of what the
-    /// drop can't change, a variable of the run's own no closure sets, a
-    /// constant or nothing; or a jump out of it.
+    /// drop can't change, a variable of the run's own no closure sets, the
+    /// function's return place, a constant or nothing; or a jump out of it.
     fn leaves_after_drop(&self, out: &Stmt, loops: usize, labels: &[String]) -> bool {
         match &out.kind {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
-                ExprKind::Var(name) => self.declared.contains(name) && !self.set_by_closures.contains(name),
+                ExprKind::Var(name) => {
+                    name == self.result || self.declared.contains(name) && !self.set_by_closures.contains(name)
+                }
                 _ => value.is_constant(),
             },
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,

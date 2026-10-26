@@ -491,7 +491,7 @@ export const mutations: Mutation[] = [
     name: "finish-drop-scopes-unmade",
     breaks: "each run of statements a value's drop ends isn't one try/finally",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts));\n",
+    find: "                js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts, h.result));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
     snapshots: true,

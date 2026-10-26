@@ -153,24 +153,18 @@ function dropped(early) {
   } catch (thrown) {
     const x = $unwound(thrown);
     const guard = "guard";
-    let option;
-    let len;
     try {
-      option = x.impl.typeId() === "&str" ? x.value : undefined;
-      len = option != null ? $byteLen(option) : 0;
-    } catch (error) {
+      const option = x.impl.typeId() === "&str" ? x.value : undefined;
+      const len = option != null ? $byteLen(option) : 0;
+      console.log(`len ${len}`);
+      if (early) {
+        return 0;
+      }
+      console.log("late");
+      result = len;
+    } finally {
       console.log(`drop ${guard}`);
-      throw error;
     }
-    console.log(`len ${len}`);
-    if (early) {
-      result = 0;
-      console.log(`drop ${guard}`);
-      return result;
-    }
-    console.log("late");
-    result = len;
-    console.log(`drop ${guard}`);
   } finally {
     console.log(`drop ${outer}`);
   }

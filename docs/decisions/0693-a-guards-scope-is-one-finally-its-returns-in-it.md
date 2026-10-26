@@ -1,7 +1,8 @@
 # 0693. A guard's scope is one `finally`, its `if`s, loops and `return`s in it
 
 Status: Accepted; amended (around a `catch`, one `try`, `catch` and
-`finally`; a function or a constant returned last, after it). Amends [0437](0437-a-scopes-drops-are-one-finally.md),
+`finally`; a function or a constant returned last, after it; the
+function's return place given from inside it). Amends [0437](0437-a-scopes-drops-are-one-finally.md),
 whose run of statements a drop ends was flat: an `if` or a loop in it, or
 a `return` from inside it, ended the run.
 Amended by [0705](0705-a-guards-scope-reads-as-any-body.md): what each
@@ -182,3 +183,60 @@ function a nullable place is given is stored as it is"; and the mutations
 `own-item-reference-unknown`, `library-item-reference-unknown`
 (`lower/items.ts`), `item-not-fixed` and `item-may-be-undefined`
 (`js/make.ts`).
+
+## Amended (2026-10-26): the function's return place is given from inside the scope
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same value
+returned and the same drop, run once, after the value's made, on every
+path; only how the JS reads changes.
+
+React's `runWithFiberInDEV` (ReactCurrentFiber.js) returns from inside
+its `try`:
+
+```js
+try {
+  if (arg0 !== undefined && ..) {
+    return callback(arg0, ..);
+  }
+  return callback(arg0, ..);
+} finally {
+  setCurrentFiber(previousFiber);
+}
+```
+
+Its port holds the previous fiber in a guard, `let _restore =
+Restore(previous_fiber);`, and returns early from its scope, `return
+callback(..);`, which MIR writes `result = callback(..); drop(guard);
+return result;`. A way out of the run was a `return` only of a variable
+the run declares, and `result`, the function's return place, is declared
+at the function's top: the early return ended the run, so each way out
+was a scope of its own, `let result; if (wrap) { try { result =
+callback(); } finally { .. } return result; } try { .. } finally { .. }
+return result;`, the drop written twice.
+
+**A `return` of the function's return place, after the drop, is a way
+out of the run wherever the place is declared** (`Run::leaves_after_drop`,
+given `Hints::result`): only its own assignments set it, as Rust's
+closures never capture the return place and no drop names it, so the drop
+can't change it, and the `return` in the `try` gives what Rust returns.
+The run then reads as React's, `const v = e; drop; return v;` being
+`return e;` as before, and `returned_through_finally` the last:
+
+```js
+const previousFiber = current;
+setCurrentFiber(fiber);
+try {
+  if (wrap) {
+    return callback();
+  }
+  return callback();
+} finally {
+  setCurrentFiber(previousFiber);
+}
+```
+
+Held by `test/lowering-drop-guards.test.ts`, "an early return in a
+guard's scope returns in its try", run in JS: each way out, a throw too,
+restores the fiber once; the corpus case `drop_guard_early_return`
+(React's `runWithFiberInDEV`, nested and panicking) against native Rust;
+and the mutation `return-place-out-of-scope` (`mir/tidy/unwinds.rs`).
