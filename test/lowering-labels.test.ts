@@ -629,3 +629,175 @@ pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
   expect(js).toContain('            tag = "lazy";\n            break getTag;\n        }\n      }\n      tag = "throw";\n  }\n  return tag;\n');
   expect(await tags("bare.js")).toEqual(["fragment", "mode", "mode", "context", "memo", "lazy", "throw", "throw", "throw", "throw", "throw"]);
 });
+
+// ADR 0955: React's createFiberFromTypeAndProps whole, whose guarded arms
+// that fall to the next each return a call, `return
+// createFiberFromScope(type, pendingProps, mode, lanes, key);`: MIR shares
+// each arm's body, which a `return` of a call of values is copied into
+// each way there, so the `match` is one `getTag: switch`, no block MIR
+// made.
+test("guarded arms that return calls fall through in one labeled switch", async () => {
+  const dir = fixture("labeled-switch-call-returns");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+const REACT_ACTIVITY_TYPE: SymbolFor = SymbolFor("react.activity");
+const REACT_FRAGMENT_TYPE: SymbolFor = SymbolFor("react.fragment");
+const REACT_STRICT_MODE_TYPE: SymbolFor = SymbolFor("react.strict_mode");
+const REACT_PROFILER_TYPE: SymbolFor = SymbolFor("react.profiler");
+const REACT_SUSPENSE_TYPE: SymbolFor = SymbolFor("react.suspense");
+const REACT_SUSPENSE_LIST_TYPE: SymbolFor = SymbolFor("react.suspense_list");
+const REACT_LEGACY_HIDDEN_TYPE: SymbolFor = SymbolFor("react.legacy_hidden");
+const REACT_VIEW_TRANSITION_TYPE: SymbolFor = SymbolFor("react.view_transition");
+const REACT_SCOPE_TYPE: SymbolFor = SymbolFor("react.scope");
+const REACT_TRACING_MARKER_TYPE: SymbolFor = SymbolFor("react.tracing_marker");
+const REACT_CONTEXT_TYPE: SymbolFor = SymbolFor("react.context");
+const REACT_CONSUMER_TYPE: SymbolFor = SymbolFor("react.consumer");
+const REACT_FORWARD_REF_TYPE: SymbolFor = SymbolFor("react.forward_ref");
+const REACT_MEMO_TYPE: SymbolFor = SymbolFor("react.memo");
+const REACT_LAZY_TYPE: SymbolFor = SymbolFor("react.lazy");
+
+const ENABLE_LEGACY_HIDDEN: bool = false;
+const ENABLE_VIEW_TRANSITION: bool = true;
+const ENABLE_SCOPE_API: bool = false;
+const ENABLE_TRANSITION_TRACING: bool = false;
+const DISABLE_LEGACY_MODE: bool = true;
+
+fn made(kind: &str, mode: u32) -> String {
+    format!("{kind} {mode}")
+}
+
+pub fn create(r#type: Option<&Unknown>, mut mode: u32) -> String {
+    let mut fiber_tag = 0;
+    let mut resolved_type = r#type;
+    if js::type_of(resolved_type) == "function" {
+        fiber_tag = 1;
+    } else if js::type_of(resolved_type) == "string" {
+        fiber_tag = 5;
+    } else {
+        'get_tag: {
+            match SymbolFor::from_value(resolved_type) {
+                Some(REACT_ACTIVITY_TYPE) => {
+                    return made("activity", mode);
+                }
+                Some(REACT_FRAGMENT_TYPE) => {
+                    return made("fragment", mode);
+                }
+                Some(REACT_STRICT_MODE_TYPE) => {
+                    fiber_tag = 8;
+                    mode |= 8;
+                    if DISABLE_LEGACY_MODE || (mode & 1) != 0 {
+                        // Strict effects should never run on legacy roots
+                        mode |= 16;
+                    }
+                }
+                Some(REACT_PROFILER_TYPE) => {
+                    return made("profiler", mode);
+                }
+                Some(REACT_SUSPENSE_TYPE) => {
+                    return made("suspense", mode);
+                }
+                Some(REACT_SUSPENSE_LIST_TYPE) => {
+                    return made("suspense list", mode);
+                }
+                Some(REACT_LEGACY_HIDDEN_TYPE) if ENABLE_LEGACY_HIDDEN => {
+                    return made("legacy hidden", mode);
+                }
+                // falls through
+                Some(REACT_LEGACY_HIDDEN_TYPE | REACT_VIEW_TRANSITION_TYPE)
+                    if ENABLE_VIEW_TRANSITION =>
+                {
+                    return made("view transition", mode);
+                }
+                // falls through
+                Some(REACT_LEGACY_HIDDEN_TYPE | REACT_VIEW_TRANSITION_TYPE | REACT_SCOPE_TYPE)
+                    if ENABLE_SCOPE_API =>
+                {
+                    return made("scope", mode);
+                }
+                // falls through
+                Some(
+                    REACT_LEGACY_HIDDEN_TYPE
+                    | REACT_VIEW_TRANSITION_TYPE
+                    | REACT_SCOPE_TYPE
+                    | REACT_TRACING_MARKER_TYPE,
+                ) if ENABLE_TRANSITION_TRACING => {
+                    return made("tracing marker", mode);
+                }
+                // Fall through
+                _ => {
+                    if js::type_of(resolved_type) == "object" && resolved_type.is_some() {
+                        match SymbolFor::from_value(js::get(resolved_type, "$$typeof")) {
+                            Some(REACT_CONTEXT_TYPE) => {
+                                fiber_tag = 10;
+                                break 'get_tag;
+                            }
+                            Some(REACT_CONSUMER_TYPE) => {
+                                fiber_tag = 9;
+                                break 'get_tag;
+                            }
+                            // Fall through
+                            Some(REACT_FORWARD_REF_TYPE) => {
+                                fiber_tag = 11;
+                                break 'get_tag;
+                            }
+                            Some(REACT_MEMO_TYPE) => {
+                                fiber_tag = 14;
+                                break 'get_tag;
+                            }
+                            Some(REACT_LAZY_TYPE) => {
+                                fiber_tag = 16;
+                                resolved_type = js::null();
+                                break 'get_tag;
+                            }
+                            _ => {}
+                        }
+                    }
+                    let type_string = js::type_of(r#type);
+                    fiber_tag = 29;
+                    mode = type_string.len() as u32;
+                    resolved_type = js::null();
+                }
+            }
+        }
+    }
+    format!("{fiber_tag} {mode} {}", resolved_type.is_some())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain("    getTag: switch (resolvedType) {\n");
+  expect(js).toContain(
+    '      case REACT_SCOPE_TYPE:\n        if (ENABLE_SCOPE_API) {\n          return made("scope", mode);\n        }\n      // falls through\n',
+  );
+  expect(js).toContain("              fiberTag = 16;\n              resolvedType = null;\n              break getTag;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const of = (key: string) => Symbol.for(key);
+  expect([
+    lib.create(() => 1, 0),
+    lib.create("div", 0),
+    lib.create(of("react.activity"), 1),
+    lib.create(of("react.strict_mode"), 0),
+    lib.create(of("react.legacy_hidden"), 2),
+    lib.create(of("react.view_transition"), 2),
+    lib.create(of("react.scope"), 2),
+    lib.create(of("react.tracing_marker"), 2),
+    lib.create({ $$typeof: of("react.lazy") }, 0),
+    lib.create({ $$typeof: of("react.memo") }, 0),
+    lib.create({}, 0),
+    lib.create(undefined, 0),
+  ]).toEqual([
+    "1 0 true",
+    "5 0 true",
+    "activity 1",
+    "8 24 true",
+    "view transition 2",
+    "view transition 2",
+    "29 6 false",
+    "29 6 false",
+    "16 0 false",
+    "14 0 true",
+    "29 6 false",
+    "29 9 false",
+  ]);
+});

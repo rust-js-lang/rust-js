@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "return-into-branches-of-any-value",
     breaks: "a `return` of a call some arms go on to is written in each path, `return complex(array.length);` twice",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "StmtKind::Return(value) if value.as_ref().is_none_or(one_value))\n",
+    find: "StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || call_of_values(e)))\n",
     replace: "StmtKind::Return(value) if value.as_ref().is_none_or(|_| true))\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a match's return of a call"],
   },
@@ -372,5 +372,13 @@ export const mutations: Mutation[] = [
     find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    }\n}\n",
     replace: "    }\n}\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"],
+  },
+  {
+    name: "returned-call-not-one-value",
+    breaks: "React's getTag's arms that return a call keep the blocks MIR made, `break bb127`, no `switch` (ADR 0955)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || call_of_values(e)))\n",
+    replace: "    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || (call_of_values(e) && false)))\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "return calls"],
   },
 ];

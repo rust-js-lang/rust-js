@@ -421,7 +421,15 @@ pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
 pub(in crate::lower::mir::tidy) fn returns_one_value(stmt: &Stmt) -> bool {
     let one_value =
         |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
-    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(one_value))
+    // A function's call of such, `made(kind, mode)`, reads as written
+    // wherever it's put too, React's getTag's `return
+    // createFiberFromScope(type, pendingProps, mode, lanes, key);` (ADR
+    // 0955).
+    let call_of_values = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Call(callee, args)
+            if matches!(callee.kind, ExprKind::Var(_)) && args.iter().all(one_value))
+    };
+    matches!(&stmt.kind, StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || call_of_values(e)))
 }
 
 /// `stmts`, which end where block `label` does, as `returns_into_branches`

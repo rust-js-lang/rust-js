@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0745](0745-a-continue-in-a-chain-is-where-it-is-written.md),
 a block's jumps to the one after it, to a `return` after it, and
 [0754](0754-a-return-arms-go-on-to-is-in-each.md) to the branches of the
-`if` a block ends with.
+`if` a block ends with. Amended by
+[0955](0955-a-returned-call-of-values-is-one-value.md): a call of names and
+constants is one value too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 where a `return` is written, and a test no path needs, is how the JS reads,
