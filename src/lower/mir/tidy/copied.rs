@@ -77,12 +77,33 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
             let (a, b) = (a.clone(), b.clone());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
+                // Of a variable rust-js named, `old` of `take()`'s value,
+                // declared here, and a binding the program named: the
+                // binding's name for both, as an `if let`'s is
+                // (`named_for_bindings`, ADR 0598, amended).
+                let own = (stmts[..i].iter())
+                    .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == a));
+                let named = !user.contains(a.as_str()) && user.contains(b.as_str()) && own;
+                let renamed = named && js::mentions_in(stmts, &b) == js::mentions_in(&stmts[i + 1..], &b);
                 stmts.remove(i + 1);
-                js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                    if let ExprKind::Var(v) = &mut e.kind
-                        && *v == b
+                // The variable named so where it's declared and read, or
+                // the binding read as the variable after it.
+                let (from, to, at) = match renamed {
+                    true => (a, b, 0),
+                    false => (b, a, i + 1),
+                };
+                for stmt in stmts[at..].iter_mut() {
+                    if let StmtKind::Const(n, _) | StmtKind::Let(n, _) = &mut stmt.kind
+                        && *n == from
                     {
-                        *v = a.clone();
+                        *n = to.clone();
+                    }
+                }
+                js::each_expr_mut(&mut stmts[at..], &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == from
+                    {
+                        *v = to.clone();
                     }
                 });
             }

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-else-binding-unnamed",
+    breaks: "a `let`-`else`'s binding of what `take()` gives is `old`, rust-js's name, not the program's, `thenable` (ADR 0598, amended)",
+    file: "src/lower/mir/tidy/copied.rs",
+    find: "                let named = !user.contains(a.as_str()) && user.contains(b.as_str()) && own;\n",
+    replace: "                let named = false;\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "let else's binding"],
+  },
+  {
     "name": "let-else-copy-kept",
     "breaks": "a `let`-`else`'s binding of a variable stays a copy, `const current$1 = current`",
     "file": "src/lower/mir/tidy/copied.rs",

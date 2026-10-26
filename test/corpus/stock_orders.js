@@ -290,11 +290,11 @@ function main() {
   ]);
   const restocked = Array.from(inventory.items)
     .map(([sku, item]) => {
-      const value = restock.get(sku);
-      if (value == null) {
+      const more = restock.get(sku);
+      if (more == null) {
         return;
       }
-      item.stock = (item.stock + value) >>> 0;
+      item.stock = (item.stock + more) >>> 0;
       return [sku, item.stock];
     })
     .filter(Boolean);

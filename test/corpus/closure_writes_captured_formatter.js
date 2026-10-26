@@ -15,12 +15,12 @@ export function formatWithDisplay(IIterator) {
 }
 function formatWithDisplay_fmt(formatWith, options, IIterator) {
   let f = "";
-  const old = formatWith.inner;
+  const t = formatWith.inner;
   formatWith.inner = undefined;
-  if (!old) {
+  if (!t) {
     throw new Error("FormatWith: was already formatted once");
   }
-  const [iter, format] = old;
+  const [iter, format] = t;
   const next = IIterator.next(iter);
   if (next != null) {
     const fst = $someValue(next);

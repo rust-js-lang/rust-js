@@ -425,3 +425,58 @@ pub fn counted() -> f64 {
   lib.remember(4);
   expect([lib.forget(), lib.forget(), lib.counted()]).toEqual([4, -1, 5]);
 });
+
+// React's ReactFiberThenable `getSuspendedThenable`: `const thenable =
+// suspendedThenable; suspendedThenable = null; return thenable;`. Its port's
+// `let Some(thenable) = SUSPENDED_THENABLE.take() else { panic!(..) };`
+// was `const old = suspendedThenable; ..; return old;`, rust-js's name for
+// what `take()` gives: a `let`-`else`'s binding names it, as an `if let`'s
+// does (ADR 0598, amended).
+test("a let else's binding of what take() gives names it", async () => {
+  const dir = fixture("taken-let-else-name");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static SUSPENDED_THENABLE: Cell<Option<&'static str>> = const { Cell::new(None) };
+}
+
+pub fn suspend(thenable: &'static str) {
+    SUSPENDED_THENABLE.set(Some(thenable));
+}
+
+pub fn get_suspended_thenable() -> &'static str {
+    let Some(thenable) = SUSPENDED_THENABLE.take() else {
+        panic!("Expected a suspended thenable.");
+    };
+    thenable
+}
+
+pub fn last(items: &mut Vec<u32>) -> u32 {
+    let Some(item) = items.pop() else {
+        return 0;
+    };
+    item + 1
+}
+
+pub fn popped(items: &mut Vec<u32>) -> u32 {
+    let popped_value = items.pop();
+    let Some(item) = popped_value else {
+        return 0;
+    };
+    item + 2
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const thenable = suspendedThenable;\n  suspendedThenable = null;\n  if (thenable == null) {\n");
+  expect(js).toContain("  return thenable;\n");
+  expect(js).not.toContain("old");
+  // A variable the program named keeps its name.
+  expect(js).toContain("  const poppedValue = items.pop();\n");
+  const lib = await import(join(dir, "lib.js"));
+  lib.suspend("a");
+  expect(lib.getSuspendedThenable()).toBe("a");
+  expect(() => lib.getSuspendedThenable()).toThrow("Expected a suspended thenable.");
+  expect([lib.last([1, 2]), lib.last([]), lib.popped([1, 2]), lib.popped([])]).toEqual([3, 0, 4, 0]);
+});

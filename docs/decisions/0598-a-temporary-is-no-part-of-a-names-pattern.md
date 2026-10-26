@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends tidy's destructuring
 ([0293](0293-cells-read-at-once.md)). Amended (2026-10-26): a binding the
-program names of a variable rust-js named, `old` of `take()`, names both;
+program names of a variable rust-js named, `old` of `take()`, names both,
+a `let`-`else`'s too;
 no pattern binds a name rust-js gave.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
@@ -106,6 +107,21 @@ scope, to a name nothing else there has: case N, nothing that runs changes.
 
 Test: `lowering-shadows`'s "a binding of what take() gives names it", run.
 Mutation `taken-binding-named-old` (`lower/mir/tidy/bindings.ts`).
+
+**A `let`-`else`'s binding too** (amended 2026-10-26): React's
+`getSuspendedThenable` is `const thenable = suspendedThenable;
+suspendedThenable = null; return thenable;`, and its port's `let
+Some(thenable) = SUSPENDED_THENABLE.take() else { panic!(..) }; thenable`
+printed `const old = suspendedThenable; .. return old;`: the `let`-`else`'s
+binding, after the `if` that leaves, read as the variable by the
+variable's name. Where the variable is rust-js's, declared before the
+`if`, and the binding's name is the program's and read only after it,
+both are the binding's, `const thenable = suspendedThenable; ..
+if (thenable == null) { throw .. } return thenable;`, as an `if let`'s
+are; a variable the program named keeps its name. Case N, as above.
+Test: `lowering-shadows`'s "a let else's binding of what take() gives
+names it", run. Mutation `let-else-binding-unnamed`
+(`lower/mir/tidy/copied.ts`).
 
 ## Amendment: `let`s side by side, each named as its part, are one destructuring
 
