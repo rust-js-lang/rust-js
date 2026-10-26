@@ -57,7 +57,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
-        // A `&mut` to one is it, whose impls pass on to its own.
+        // A `&mut` to one is it, whose impls pass on to its own: its
+        // `next_back` and `nth_back`, not its `rfold`, which std's `&mut I`
+        // folds by `I`'s `try_rfold` (ADR 0928).
+        let lent = matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
+        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);
         let ty = self.reveal(ty.peel_refs());
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
@@ -111,7 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),
                 false => None,
             };
-            for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
+            for (method, own) in [("rfold", passed_rfold(rfold)), ("nth_back", nth_back)] {
                 if let Some(own) = own {
                     props.push(js::Prop::Field(
                         crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),
@@ -134,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (false, Some(RangeKind::Inclusive)) if numbers => Some(Expr::helper("$rangeInclusiveNthBack")),
                 (false, _) => None,
             };
-            for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
+            for (method, own) in [("rfold", passed_rfold(rfold)), ("nth_back", nth_back)] {
                 if let Some(own) = own {
                     props.push(js::Prop::Field(
                         crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),

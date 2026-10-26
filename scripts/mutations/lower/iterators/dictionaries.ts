@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-rfold-passed",
+    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on `I`'s own `rfold`, which std's `&mut I` folds by `I`'s `try_rfold`: `(&mut it).rev().sum()` calls the crate's `rfold` where Rust doesn't (ADR 0928)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);\n",
+    replace: "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| lent || !lent);\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^rev_own_back_methods with"],
+  },
+  {
     name: "iterator-dictionary-range-as-js",
     breaks: "a range's `Iterator` dictionary steps it as a JS iterator, `$next`",
     file: "src/lower/iterators/dictionaries.rs",
