@@ -36,6 +36,7 @@ impl Expr {
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
             | ExprKind::Handle(a, _)
+            | ExprKind::Stepped(_, a)
             | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
@@ -199,6 +200,8 @@ impl Expr {
             // What it sets isn't replaced: one that names it is no assignment.
             ExprKind::Assigned(name, _) if with(name).is_some() => return None,
             ExprKind::Assigned(name, value) => ExprKind::Assigned(name.clone(), one(value)?),
+            // What it steps isn't replaced: it's no read alone.
+            ExprKind::Stepped(..) => return None,
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
             ExprKind::Array(items) => ExprKind::Array(all(items)?),
@@ -585,8 +588,8 @@ impl Expr {
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_, _) => false,
             ExprKind::Pair(_, dictionary) => dictionary.has_effects(),
-            // It sets its variable.
-            ExprKind::Assigned(..) => true,
+            // It sets its variable, or steps its place.
+            ExprKind::Assigned(..) | ExprKind::Stepped(..) => true,
             ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
                 object.has_effects() || index.has_effects()
             }

@@ -37,6 +37,7 @@ pub fn module(module: &mut js::Module) {
     js::each_item_block_mut(&mut module.items, &mut tested_assignments);
     reclaim::module(module);
     compound(module);
+    stepped(module);
     read_together(module);
 }
 
@@ -445,6 +446,44 @@ fn compound(module: &mut js::Module) {
                 let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::undefined()));
                 stmt.kind = StmtKind::Compound(op, target, rhs);
             }
+        }
+    };
+    js::each_item_block_mut(&mut module.items, &mut each);
+}
+
+/// `const a = x; x = a + 1;`, a counter's value read and then stepped, as
+/// JS writes it: `const a = x++;`, whose value is the one before the step
+/// (ADR 0948). Of a path `x` that does nothing to read (`same_path`), and a
+/// step of the number literal `1`, which only a number's is, up or down.
+fn stepped(module: &mut js::Module) {
+    let mut each = |stmts: &mut Vec<Stmt>| {
+        let mut i = 0;
+        while i + 1 < stmts.len() {
+            let step = match (&stmts[i].kind, &stmts[i + 1].kind) {
+                (StmtKind::Const(name, read) | StmtKind::Let(name, Some(read)), StmtKind::Assign(target, value))
+                    if js::same_path(read, target) && !read.has_effects() =>
+                {
+                    match &value.kind {
+                        ExprKind::Binary(op @ (Op::Add | Op::Sub), from, one)
+                            if matches!(&from.kind, ExprKind::Var(v) if v == name)
+                                && matches!(one.kind, ExprKind::Num(n) if n == 1.0) =>
+                        {
+                            Some(*op)
+                        }
+                        _ => None,
+                    }
+                }
+                _ => None,
+            };
+            if let Some(op) = step
+                && let StmtKind::Const(_, read) | StmtKind::Let(_, Some(read)) = &mut stmts[i].kind
+            {
+                let span = read.span;
+                let target = std::mem::replace(read, Expr::undefined());
+                *read = Expr::stepped(op, target).or_at(span);
+                stmts.remove(i + 1);
+            }
+            i += 1;
         }
     };
     js::each_item_block_mut(&mut module.items, &mut each);
@@ -1227,6 +1266,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Stringed(a)
         | ExprKind::Handle(a, _)
         | ExprKind::Assigned(_, a)
+        | ExprKind::Stepped(_, a)
         | ExprKind::DropArgument(_, _, a) => expr(a),
         ExprKind::Binary(js::Op::Coalesce, a, b) => {
             expr(a);

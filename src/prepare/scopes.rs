@@ -353,7 +353,8 @@ impl Walk {
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
             | ExprKind::DropArgument(_, _, a)
-            | ExprKind::Handle(a, _) => self.expr(a),
+            | ExprKind::Handle(a, _)
+            | ExprKind::Stepped(_, a) => self.expr(a),
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
             | ExprKind::Binary(_, a, b)

@@ -312,7 +312,10 @@ export function parseAge(s) {
   divided by zero is `Infinity`, as in JS.
 - **A step of one is `++`:** a statement `n += 1` is `n++`, and `n -= 1`
   is `n--`
-  ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)). An
+  ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)); a
+  value read and then stepped, `let id = n; n = id + 1.0;`, is `const id
+  = n++;`
+  ([ADR 0948](../../decisions/0948-a-value-read-then-stepped-is-plus-plus.md)). An
   integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
   shows it can't wrap: below a length, `i < xs.len()` or `i + 1 <
   js::string::length(s)`, or a constant, `i <= LIMIT`, `i += 1` is

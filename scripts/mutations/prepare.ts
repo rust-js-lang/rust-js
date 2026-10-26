@@ -674,4 +674,20 @@ export const mutations: Mutation[] = [
     replace: "        crate::names::is_identifier(property).then_some((object.as_str(), property.as_str(), name.as_str()))\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side of an object's cells, each by its name, are one destructuring"],
   },
+  {
+    name: "post-step-unmade",
+    breaks: "React's `const globalClientId = globalClientIdCounter++;` is a read then `globalClientIdCounter = globalClientId + 1` (ADR 0948)",
+    file: "src/prepare.rs",
+    find: "    stepped(module);\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
+  },
+  {
+    name: "post-step-of-any-number",
+    breaks: "`const a = x; x = a + 2;` is `const a = x++;`, a step of one (ADR 0948)",
+    file: "src/prepare.rs",
+    find: "                                && matches!(one.kind, ExprKind::Num(n) if n == 1.0) =>\n",
+    replace: "                                && matches!(one.kind, ExprKind::Num(_)) =>\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
+  },
 ];

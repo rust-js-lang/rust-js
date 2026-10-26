@@ -484,6 +484,11 @@ impl Expr {
         Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary)))
     }
 
+    /// `target++` or `target--`, its value the one before (ADR 0948).
+    pub fn stepped(op: Op, target: Expr) -> Expr {
+        Expr::new(ExprKind::Stepped(op, Box::new(target)))
+    }
+
     /// `(name = value)`, its value the assignment's (ADR 0860).
     pub fn assigned(name: &str, value: Expr) -> Expr {
         Expr::new(ExprKind::Assigned(name.to_string(), Box::new(value)))

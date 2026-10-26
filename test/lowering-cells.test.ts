@@ -595,7 +595,7 @@ pub fn deferred(key: &'static str) -> impl Fn() {
   expect(js).toContain("\nInternals.count = 1;\n");
   expect(js).toContain("((internals) => {\n  if (internals.count > 5) {\n    return;\n  }\n");
   expect(js).toContain("export function warn(key) {\n  if (didWarn[key]) {\n    return 1;\n  }\n");
-  expect(js).toContain("  const before = Internals.count;\n  Internals.count = before + 1;\n  const n = before;\n  return n * 2;\n");
+  expect(js).toContain("  const before = Internals.count++;\n  const n = before;\n  return n * 2;\n");
   expect(js).toContain("export function capped(limit) {\n  return ((internals) => {\n");
   expect(js).toContain("export function read() {\n  return Internals.count;\n}");
   // In a closure's body too, a \`|&f|\` pattern's (ADR 0840, amended).

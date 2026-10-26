@@ -1033,3 +1033,50 @@ pub fn start_update_timer_by_lane(fiber: &Fiber) {
     delete (globalThis as any).__DEV__;
   }
 });
+
+// ADR 0948: React's getViewTransitionName, `const globalClientId =
+// globalClientIdCounter++;`: a counter's value read, then stepped by one,
+// is `x++`, whose value is the one before; a field's too, and down.
+test("a counter read and then stepped is x++", async () => {
+  const dir = fixture("post-step");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+thread_local! {
+    static GLOBAL_CLIENT_ID_COUNTER: Cell<f64> = const { Cell::new(0.0) };
+}
+
+pub struct Ids {
+    pub left: f64,
+}
+
+pub fn next_id() -> String {
+    let global_client_id = GLOBAL_CLIENT_ID_COUNTER.get();
+    GLOBAL_CLIENT_ID_COUNTER.set(global_client_id + 1.0);
+    js::number::to_string(global_client_id, Some(32))
+}
+
+pub fn take(ids: &mut Ids) -> f64 {
+    let left = ids.left;
+    ids.left = left - 1.0;
+    left * 2.0
+}
+
+pub fn stepped_by_two(ids: &mut Ids) -> f64 {
+    let left = ids.left;
+    ids.left = left + 2.0;
+    left
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("  const globalClientId = globalClientIdCounter++;\n  return globalClientId.toString(32);\n");
+  expect(out).toContain("  const left = ids.left--;\n  return left * 2;\n");
+  expect(out).toContain("  const left = ids.left;\n  ids.left = left + 2;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.nextId(), lib.nextId(), lib.nextId()]).toEqual(["0", "1", "2"]);
+  const ids = { left: 3 };
+  expect([lib.take(ids), lib.take(ids), ids.left, lib.steppedByTwo(ids), ids.left]).toEqual([6, 4, 1, 1, 3]);
+});

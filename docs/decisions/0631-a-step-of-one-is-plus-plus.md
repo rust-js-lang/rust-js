@@ -1,6 +1,8 @@
 # 0631. A step of one is `++`
 
-Status: Accepted. Extends [0011](0011-numbers.md).
+Status: Accepted. Extends [0011](0011-numbers.md). Extended by
+[0948](0948-a-value-read-then-stepped-is-plus-plus.md): a value read and
+then stepped is `x++` in the expression that reads it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: how a step is
 written, not what it computes.

@@ -64,6 +64,15 @@ impl<'a> Cx<'a> {
                 self.expr(value),
                 b,
             ),
+            // `x++`, its value the one before (ADR 0948).
+            ExprKind::Stepped(op, target) => {
+                let operator = match op {
+                    Op::Add => UpdateOperator::Increment,
+                    _ => UpdateOperator::Decrement,
+                };
+                let target = self.assignment_target(target).into_simple_assignment_target();
+                Expression::new_update_expression(sp, operator, false, target, b)
+            }
             ExprKind::Num(n) => self.number(sp, *n),
             // `5n`, and `-5n` as `-` of it, as a number is written.
             ExprKind::BigInt(n) => {

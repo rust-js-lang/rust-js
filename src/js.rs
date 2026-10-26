@@ -803,6 +803,11 @@ pub enum ExprKind {
     /// iterator.next()).done) { .. }` (ADR 0860). Nothing before
     /// preparation makes one, so lowering and tidy never see it.
     Assigned(String, Box<Expr>),
+    /// `target++` or `target--` (`Op::Add`, `Op::Sub`), a step of one whose
+    /// value, the one before the step, is read: what preparation makes of
+    /// `const a = x; x = a + 1;`, `const a = x++;` (ADR 0948). Nothing
+    /// before preparation makes one, so lowering and tidy never see it.
+    Stepped(Op, Box<Expr>),
 }
 
 /// A JSX element (ADR 0040).

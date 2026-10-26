@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "                let (l, r) = (self.expr(l), self.expr(r));\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
   },
+  {
+    name: "post-step-down-is-up",
+    breaks: "`const left = ids.left; ids.left = left - 1;` is `ids.left++` (ADR 0948)",
+    file: "src/to_oxc/expressions.rs",
+    find: "            ExprKind::Stepped(op, target) => {\n                let operator = match op {\n                    Op::Add => UpdateOperator::Increment,\n",
+    replace: "            ExprKind::Stepped(op, target) => {\n                let operator = match op {\n                    Op::Add | Op::Sub => UpdateOperator::Increment,\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
+  },
 ];
