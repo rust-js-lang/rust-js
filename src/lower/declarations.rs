@@ -174,8 +174,7 @@ pub(super) fn module<'tcx>(
     // `import type { RouteItem } from "./routes.js";`, of the crate's other
     // modules, by their path, which the output makes their file's (ADR 0210).
     // Its default too, `import type Complex, { Parts } from ..`.
-    let mut paths: Vec<&Vec<String>> = out.module_imports.iter().map(|(path, ..)| path).collect();
-    paths.dedup();
+    let paths: BTreeSet<&Vec<String>> = out.module_imports.iter().map(|(path, ..)| path).collect();
     for path in paths {
         let of = |default: bool| (out.module_imports.iter()).filter(move |(p, _, d)| p == path && *d == default);
         let names: Vec<&str> = of(false).map(|(_, n, _)| n.as_str()).collect();
@@ -347,8 +346,7 @@ struct Declarations<'a, 'tcx> {
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// `name`, another module's item `did`, imported from its `file`, as its
-    /// default where it's that, a class (ADR 0761).
+    /// Another module's item `did`, imported from `file`, as its default where it is (ADR 0761).
     fn imported(&mut self, file: Vec<String>, did: DefId, name: String) {
         let default = super::default_exports::exported_as(self.tcx, did, &name) == "default";
         self.module_imports.insert((file, name, default));
