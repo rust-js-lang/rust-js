@@ -318,8 +318,8 @@ export const mutations: Mutation[] = [
     name: "thread-local-screaming",
     breaks: "a thread-local keeps its `SCREAMING_SNAKE` name, `let TASK_ID_COUNTER`, where JS names a variable camelCase",
     file: "src/lower/bindings.rs",
-    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => {\n",
-    replace: "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => {\n",
+    find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
+    replace: "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
     tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
   },
   {
