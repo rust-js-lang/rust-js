@@ -7,7 +7,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, compiler, fixture, run } from "./support";
+import { buildNode, buildReact, compiler, fixture, run, target } from "./support";
 
 // React's `formatOwnerStack` (packages/shared/ReactOwnerStackFrames.js), as
 // its port writes it. Its JS was
@@ -564,4 +564,68 @@ pub fn reset() {
   // What `before` sets, a new set, isn't what the copy holds.
   expect(lib.remountsAfter(fiber, () => lib.reset())).toBe(true);
   expect(lib.needsRemount(fiber, undefined)).toBe(false);
+});
+
+// ADR 0952: React's ReactStrictModeWarnings, closures `js::on_load!` sets:
+// each block's `sortedNames` and each loop's `fiber` named as written, as a
+// function's are, not `sortedNames$1`, `fiber$1`; one that would hide a
+// module's name it reads keeps its own.
+test("names in the closures of code that runs at load are named as written", async () => {
+  buildReact();
+  const dir = fixture("on-load-sibling-names");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+#[cfg_attr(rust_js, rust_js::name = "offset")]
+const OFFSET: usize = 100;
+
+pub struct Warnings {
+    pub flush: Cell<fn(&[usize], &[usize]) -> usize>,
+}
+
+thread_local! {
+    pub static WARNINGS: Warnings = Warnings { flush: Cell::new(|_, _| 0) };
+}
+
+js::on_load! {
+    WARNINGS.with(|warnings| {
+        warnings.flush.set(|a, b| {
+            let mut total = 0;
+            for fiber in a {
+                total += fiber;
+            }
+            for fiber in b {
+                total += fiber;
+            }
+            if !a.is_empty() {
+                let sorted_names = a.len();
+                total += sorted_names;
+            }
+            if !b.is_empty() {
+                let sorted_names = b.len();
+                total += sorted_names;
+            }
+            for offset in a {
+                total += offset * OFFSET;
+            }
+            total
+        });
+    });
+}
+
+pub fn flush(a: &[usize], b: &[usize]) -> usize {
+    WARNINGS.with(|warnings| (warnings.flush.get())(a, b))
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/fiber\$|sortedNames\$/);
+  expect(js).toContain("  for (const fiber of b) {\n");
+  expect(js).toContain("    const sortedNames = b.length;\n");
+  // The module's `offset`, which the loop reads: its own name kept.
+  expect(js).toContain("  for (const offset$1 of a) {\n    total = (total + (Math.imul(offset$1, offset) >>> 0)) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.flush([1, 2], [3])).toEqual(1 + 2 + 3 + 2 + 1 + 100 + 200);
 });

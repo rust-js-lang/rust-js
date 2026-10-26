@@ -38,4 +38,12 @@ export const mutations: Mutation[] = [
     replace: "        of_from.iter().all(|r| r.of.is_some() && !passes(r, to))",
     tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
   },
+  {
+    name: "on-load-scopes-unwalked",
+    breaks: "names in closures `js::on_load!` sets keep the names given apart, `fiber$1`, `sortedNames$1` (ADR 0952)",
+    file: "src/prepare/scopes.rs",
+    find: "                walk.tree.module_scope = true;\n                walk.block_in_scope(stmts);\n",
+    replace: "                let _ = stmts;\n                return None;\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "runs at load"],
+  },
 ];

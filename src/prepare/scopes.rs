@@ -28,12 +28,16 @@ pub(super) struct Tree {
     /// The scopes declaring each name: asked of each name renamed, which
     /// a scan of every scope made a function's size times its names.
     declaring: HashMap<String, Vec<usize>>,
+    /// Whether the outermost scope's names are the module's, an `on_load!`
+    /// body's, which no rename of the item's own may take (ADR 0267).
+    module_scope: bool,
 }
 
 impl Tree {
-    /// `item`'s scopes; `None` of an `on_load!` body's, whose names are the
-    /// module's (ADR 0267), or where a scope declares a name twice, which JS
-    /// refuses.
+    /// `item`'s scopes; of an `on_load!` body's, whose outermost names are
+    /// the module's (ADR 0267), the scopes inside it, its closures' and
+    /// blocks' (ADR 0952); `None` where a scope declares a name twice, which
+    /// JS refuses.
     pub(super) fn of(item: &js::Item) -> Option<Tree> {
         let mut walk = Walk::default();
         walk.enter();
@@ -41,7 +45,10 @@ impl Tree {
             js::Item::Function(function) => walk.function(function, false),
             js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| walk.function(m, false)),
             js::Item::Const(constant) => walk.expr(&constant.value),
-            js::Item::Statements(_) => return None,
+            js::Item::Statements(stmts) => {
+                walk.tree.module_scope = true;
+                walk.block_in_scope(stmts);
+            }
         }
         (!walk.twice).then_some(walk.tree)
     }
@@ -58,6 +65,10 @@ impl Tree {
         let Some(declaring) = self.declaring.get(from).filter(|d| !d.is_empty()) else {
             return false;
         };
+        // A name of the module's, an `on_load!` body's own.
+        if self.module_scope && (declaring.contains(&0) || self.declares(0, to)) {
+            return false;
+        }
         if declaring.iter().any(|&s| self.declares(s, to)) {
             return false;
         }
