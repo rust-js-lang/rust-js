@@ -299,11 +299,17 @@ console.log(await fetchCount()); // 1
 - **A generic function takes its trait dictionaries after its
   arguments**, `totalArea(shapes, circleShape)`: see
   [Structs, enums and traits](objects.md#generic-code-takes-a-dictionary).
-- **What a generic function copies or drops by, JS leaves out**: a
-  `T: Copy`'s `TCopy`, a `dropT`. A JS value is its own copy and drops
+- **What a generic function copies, clones or drops by, JS leaves out**:
+  a `T: Copy`'s `TCopy`, a `dropT`. A JS value is its own copy and drops
   nothing, so `createContext(defaultValue)` is how JS calls
   `create_context<T: Copy>`, a library's or a program's alike; a Rust
   caller gives one only for a value that needs it ([ADR 0289](../../decisions/0289-copy-bounds.md)).
+  A `T: Clone` takes its `TClone` only where a caller gives a value that
+  isn't its own clone: a number, text, a reference, an `Rc` that isn't
+  counted and an `Option` of one are, so `read_context<T: Clone>` given
+  them is `readContext(context)`, its clone the value. A program's `Rc` of
+  a `T`'s value is counted only where a caller gives `T` a value whose
+  drop runs a destructor ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md), amended).
   A library's takes one only where its own crate's calls give one, so its
   JS is its program's; another crate whose call needs one compiles its
   own of the function ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)).

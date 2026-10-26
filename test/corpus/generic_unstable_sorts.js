@@ -26,9 +26,9 @@ function sorted(items, compare, TSort) {
   return items;
 }
 
-function smallest(items, k, TOrd, TClone, TSort) {
+function smallest(items, k, TOrd, TSort) {
   $selectNthUnstable(items, k, (a, b) => TOrd.cmp(a, b) < 0, TSort, true);
-  return $slice(items, 0, k).map((item) => TClone.clone(item));
+  return $slice(items, 0, k).map((item) => item);
 }
 
 const $iSorted = new WeakMap();
@@ -58,11 +58,7 @@ function main() {
   ]);
   wide = sorted(wide, (a, b) => $cmp(a[0], b[0]), "general");
   console.log(`${$debugStr(wide.map((t) => t[3]).join(""))}`);
-  console.log(
-    `[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, { clone: (value) => value }, "network").join(
-      ", ",
-    )}]`,
-  );
+  console.log(`[${smallest([9, 3, 7, 1, 8, 2], 3, { cmp: $cmp }, "network").join(", ")}]`);
   console.log(
     `[${iSorted({ next: $next })
       .sortedUnstable($iter([5, 3, 9, 1]), { cmp: $cmp }, "network")

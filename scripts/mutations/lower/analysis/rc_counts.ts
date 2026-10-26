@@ -121,4 +121,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some((def_id, args)) = fn_def(expr.ty).filter(|_| matches!(expr.kind, ExprKind::Call { .. }))\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_count_fn_value.rs$"],
   },
+  {
+    name: "generic-rc-of-any-param-counted",
+    breaks: "a program's `Rc` of a value of a type parameter is counted where its bounds let it have a destructor, whatever its callers give, so the reconciler's `Rc<ReactContext<T>>` is `{ value, strong, weak }` (ADR 0914, amended)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    if given(param.index) && t.needs_drop(tcx, env) {\n",
+    replace: "                    if t.needs_drop(tcx, env) {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+  },
 ];

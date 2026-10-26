@@ -46,8 +46,8 @@ function stackPushT_put(stack, item, TSize) {
   stackExtendT_extend(stack, [item], TSize);
 }
 
-function twice(into, item, CPushT, TClone) {
-  CPushT.put(into, TClone.clone(item));
+function twice(into, item, CPushT) {
+  CPushT.put(into, item);
   CPushT.put(into, item);
 }
 
@@ -55,9 +55,9 @@ function grow(stack, items, TSize) {
   stackExtendT_extend(stack, items, TSize);
 }
 
-function fill(stack, item, TClone, TSize) {
+function fill(stack, item, TSize) {
   const into = { value: stack };
-  twice(into, item, stackPushT(TSize), TClone);
+  twice(into, item, stackPushT(TSize));
   $assign(stack, into.value);
 }
 
@@ -84,8 +84,8 @@ function stackFromStr_fromStr(text, TSize) {
   };
 }
 
-function copied(items, TClone, TSize) {
-  return stackFromTSlice_from(items, TClone, TSize);
+function copied(items, TSize) {
+  return stackFromTSlice_from(items, { clone: (value) => value }, TSize);
 }
 
 function parsed(text, TSize) {
@@ -98,11 +98,11 @@ function main() {
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
   s = stackClone_clone(s, { clone: (value) => value }, 1);
   u = stackClone_clone(u, { clone: (value) => value }, 0);
-  fill(s, 4, { clone: (value) => value }, 1);
-  fill(u, undefined, { clone: (value) => value }, 0);
+  fill(s, 4, 1);
+  fill(u, undefined, 0);
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
-  const a = copied([1, 2], { clone: (value) => value }, 4);
-  const b = copied([undefined, undefined], { clone: (value) => value }, 0);
+  const a = copied([1, 2], 4);
+  const b = copied([undefined, undefined], 0);
   const c = parsed("abc", 2);
   const d = parsed("abc", 0);
   console.log(`${a.sized} ${b.sized} ${c.sized} ${d.sized}`);

@@ -277,7 +277,9 @@ pub(super) struct Analyzed<'a, 'tcx> {
         &'a super::analysis::Counted<'tcx>,
     ),
     pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
-    pub(super) copied: &'a HashSet<(DefId, u32)>,
+    /// The type parameters of its own functions given a copy, and a
+    /// `Clone` dictionary (ADR 0914, amended).
+    pub(super) given: super::traits::Given<'a>,
     pub(super) bodies: Vec<&'a Body<'tcx>>,
 }
 
@@ -292,6 +294,11 @@ struct Calls<'a, 'tcx> {
     drop_params: &'a HashMap<DefId, Vec<u32>>,
     /// The type parameters of the crate's own functions given a copy.
     copied: &'a HashSet<(DefId, u32)>,
+    /// And given a `Clone` dictionary (ADR 0914, amended).
+    clones: &'a HashSet<(DefId, u32)>,
+    /// Whether a value of a type is its own clone, as the crate counts its
+    /// `Rc`s.
+    clones_itself: &'a dyn Fn(Ty<'tcx>) -> bool,
 }
 
 /// The library functions the crate's bodies, its own and the instances it
@@ -309,7 +316,7 @@ pub(super) fn needed<'tcx>(
         trait_impls,
         drops: (library, closure_facts, counted),
         drop_params,
-        copied,
+        given,
         bodies,
     } = analyzed;
     let recognition = super::recognition::Recognition {
@@ -319,12 +326,15 @@ pub(super) fn needed<'tcx>(
         foreign,
     };
     let runs = |t: Ty<'tcx>| super::drops::drop_runs(recognition, (library, closure_facts), counted, t);
+    let clones_itself = |t: Ty<'tcx>| super::analysis::clones_itself(tcx, counted, t);
     let calls = Calls {
         tcx,
         foreign,
         runs: &runs,
         drop_params,
-        copied,
+        copied: given.copied,
+        clones: given.clones,
+        clones_itself: &clones_itself,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     let mut may_drop: HashMap<(DefId, u32), bool> = HashMap::new();
@@ -433,6 +443,7 @@ fn gives_more<'tcx>(
         (item.and_then(|item| item.calling.param(index))).is_some_and(|param| param.has(fact))
     };
     let copied = super::analysis::copy_bounded(tcx, callee);
+    let cloned = super::analysis::clone_bounded(tcx, callee);
     (0..tcx.generics_of(callee).count() as u32).any(|index| {
         let Some(given) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
             return false;
@@ -448,8 +459,15 @@ fn gives_more<'tcx>(
             ty::Param(param) => calls.copied.contains(&(caller, param.index)),
             _ => !super::analysis::copies_itself(tcx, given),
         };
+        // A clone of it that isn't the value, which an export that takes no
+        // `Clone` dictionary can't make (ADR 0914, amended).
+        let clones = match given.kind() {
+            ty::Param(param) => calls.clones.contains(&(caller, param.index)),
+            _ => !(calls.clones_itself)(given),
+        };
         (drops && !takes(index, ParamFact::Drop) && body_may_drop(calls, (callee, index), may_drop))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
+            || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     })
 }
 

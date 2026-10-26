@@ -19,8 +19,10 @@ use std::path::Path;
 /// copy a fact of it, `copy`, and a consumer compiles what more it needs
 /// of it from its MIR (ADR 0914). Its declared `types` (ADR 0210,
 /// amended) are none of a library written before, whose types its
-/// consumers' declarations have as `any`, as they had.
-pub const VERSION: u32 = 8;
+/// consumers' declarations have as `any`, as they had. 9: a type
+/// parameter's `Clone` takes its dictionary only where its own crate's
+/// calls give one, a fact of it, `clone` (ADR 0914, amended).
+pub const VERSION: u32 = 9;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -140,6 +142,9 @@ pub enum ParamFact {
     /// It's given a `TCopy`, what copies a value of it where one may not be
     /// its own copy (ADRs 0289, 0914).
     Copy,
+    /// It's given a `TClone`, its `Clone` dictionary, where a value of it
+    /// may not be its own clone (ADR 0914, amended; library ABI 9).
+    Clone,
     /// It takes no destructor, which its consumers' calls are checked for
     /// (ADR 0190).
     NoDrop,

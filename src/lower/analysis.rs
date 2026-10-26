@@ -39,9 +39,9 @@ use crate::lower::recognition::{
 pub(super) use closures::{ClosureFacts, clone_shares};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
-pub(super) use mutation::copies_by_callers;
-use mutation::{copied_params, mutated_types};
-pub(super) use mutation::{copies_itself, copy_bounded};
+pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
+use mutation::{cloned_params, copied_params, mutated_types};
+pub(super) use mutation::{clones_by_itself, copies_by_callers};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names,
@@ -527,6 +527,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub drop_params: HashMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
     pub copied: HashSet<(DefId, u32)>,
+    /// The type parameters whose `Clone` bound takes its dictionary (ADR
+    /// 0914, amended).
+    pub clones: HashSet<(DefId, u32)>,
     /// The type parameters given as they are whose `Iterator` dictionary,
     /// or an extension's, is given, as they're stepped by it (ADRs 0411,
     /// 0487), with the trait's id.
@@ -743,6 +746,25 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .flat_map(|d| tcx.adt_def(d).variants().iter().filter_map(|v| v.def_id.as_local()))
         .collect();
 
+    // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
+    // which rust-js writes (ADRs 0077 and 0078).
+    // A derived serde impl's method is a codec rust-js writes; a hand-written
+    // one's is its body (ADR 0459).
+    let codecs: Vec<DefId> = trait_impls
+        .iter()
+        .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))
+        .map(|&id| tcx.associated_item_def_ids(id)[0])
+        .collect();
+    // What gets a JS name: functions and methods, `const`s, a numbered
+    // enum's variants, dictionaries, and codecs.
+    let items: Vec<DefId> = bodies
+        .iter()
+        .map(|body| body.def_id)
+        .chain(consts.iter().map(|id| id.to_def_id()))
+        .chain(variants.iter().map(|id| id.to_def_id()))
+        .chain(dictionaries.iter().copied())
+        .chain(codecs.iter().copied())
+        .collect();
     // Each thread-local's `init` function: lowered like any function, its
     // body is the variable's value. Or, of a `const { .. }` one, the `const`
     // in its block, whose value is.
@@ -772,13 +794,51 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
+    // Each thing named in JS, the crate's functions among them.
+    let item_set: HashSet<DefId> = items.iter().copied().collect();
+    // What dropping `ty` runs, of `counted`'s `Rc`s, asked where `owner` is,
+    // as a type it gives may name its own type parameters (ADR 0451).
+    let runs_where = |closure_facts: &ClosureFacts, counted: &Counted<'tcx>, ty: Ty<'tcx>, owner: DefId| {
+        let typing_env = match ty.has_param() {
+            true => ty::TypingEnv::non_body_analysis(tcx, owner),
+            false => ty::TypingEnv::fully_monomorphized(),
+        };
+        let recognition = Recognition {
+            typing_env,
+            ..recognition
+        };
+        super::drops::drop_runs(recognition, (library, closure_facts), counted, ty)
+    };
+    // The `Rc`s counted, and the type parameters given a drop, together: a
+    // program's `Rc` of a value of a type parameter is counted where a
+    // caller gives it one whose drop runs, which counting more may make
+    // more of; both only grow, so they settle (ADR 0914, amended). A
+    // library's, of any its consumers may give, whose `Rc`s share its
+    // counts (ADR 0852).
     let counted_with = |closure_facts: &ClosureFacts| {
-        counted_rcs(
-            tcx,
-            all_bodies,
-            (params_may_drop, &reached.counted_rcs),
-            |counted, pointee| super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee),
-        )
+        let mut given: HashSet<(DefId, u32)> = HashSet::new();
+        loop {
+            let counted = counted_rcs(
+                tcx,
+                all_bodies,
+                (params_may_drop, &reached.counted_rcs, &|owner, index| {
+                    library || given.contains(&(owner, index))
+                }),
+                |counted, pointee| super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee),
+            );
+            if library {
+                return counted;
+            }
+            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);
+            let more: HashSet<(DefId, u32)> = (drop_params(tcx, all_bodies, &item_set, &foreign, library, runs))
+                .into_iter()
+                .flat_map(|(id, indices)| indices.into_iter().map(move |index| (id, index)))
+                .collect();
+            if more.is_subset(&given) {
+                return counted;
+            }
+            given.extend(more);
+        }
     };
     // Whether a function holding a value with a destructor is made a `dyn
     // Fn`, which then drops it (ADR 0521): a library's may be. A captured
@@ -858,6 +918,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         })
     });
     closure_facts.cloned_apart = cloned_apart;
+    // The type parameters whose `Clone` bound takes its dictionary: those a
+    // caller gives what isn't its own clone (ADR 0914, amended).
+    let clones = cloned_params(tcx, all_bodies, &item_set, &foreign, &counted);
 
     // What each body may borrow, of the crate's cells (ADR 0580).
     let cell_borrows = CellBorrows::of_crate(
@@ -868,7 +931,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             trait_impls: &trait_impls,
             foreign: &foreign,
         },
-        all_bodies,
+        (all_bodies, &clones),
         &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
     // What `with_borrow` runs while its thread-local is borrowed, that can't
@@ -891,7 +954,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                     trait_impls: &trait_impls,
                     foreign: &foreign,
                 },
-                (f, args),
+                (key, f, args),
                 None,
                 held,
                 &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
@@ -942,25 +1005,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         return None;
     }
 
-    // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
-    // which rust-js writes (ADRs 0077 and 0078).
-    // A derived serde impl's method is a codec rust-js writes; a hand-written
-    // one's is its body (ADR 0459).
-    let codecs: Vec<DefId> = trait_impls
-        .iter()
-        .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))
-        .map(|&id| tcx.associated_item_def_ids(id)[0])
-        .collect();
-    // What gets a JS name: functions and methods, `const`s, a numbered
-    // enum's variants, dictionaries, and codecs.
-    let items: Vec<DefId> = bodies
-        .iter()
-        .map(|body| body.def_id)
-        .chain(consts.iter().map(|id| id.to_def_id()))
-        .chain(variants.iter().map(|id| id.to_def_id()))
-        .chain(dictionaries.iter().copied())
-        .chain(codecs.iter().copied())
-        .collect();
     // The modules that get a JS file: every module with one of those, in the
     // order the first one appears. The root is no other: a root of `mod`s
     // alone, an app's list of its files, has none (ADR 0382).
@@ -1031,24 +1075,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // lowering's drops give (ADR 0451).
     // Asked where `owner` is, as a type it gives may name its own type
     // parameters, whose drops are passed on as they are.
-    let runs = |ty: Ty<'tcx>, owner: DefId| {
-        let typing_env = match ty.has_param() {
-            true => ty::TypingEnv::non_body_analysis(tcx, owner),
-            false => ty::TypingEnv::fully_monomorphized(),
-        };
-        let recognition = Recognition {
-            tcx,
-            typing_env,
-            trait_impls: &trait_impls,
-            foreign: &foreign,
-        };
-        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
-    };
-    let drop_params = drop_params(tcx, all_bodies, &fns, &foreign, library, runs);
+    let runs = |ty: Ty<'tcx>, owner: DefId| runs_where(&closure_facts, &counted, ty, owner);
+    let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     let given = crate::lower::traits::Given {
         copied: &copied,
+        clones: &clones,
         stepped: &stepped,
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
@@ -1093,6 +1126,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         changed_vecs,
         drop_params,
         copied,
+        clones,
         stepped,
         type_facts,
         failing,

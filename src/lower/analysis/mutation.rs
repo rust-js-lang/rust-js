@@ -210,26 +210,76 @@ pub(in crate::lower) fn copied_params<'tcx>(
     fns: &HashMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> HashSet<(DefId, u32)> {
+    let bounded = |id| copy_bounded(tcx, id);
+    given_params(
+        tcx,
+        all_bodies,
+        (fns.keys(), &|id| fns.contains_key(&id)),
+        foreign,
+        &bounded,
+        &|ty| copies_itself(tcx, ty),
+    )
+}
+
+/// The type parameters whose `Clone` bound takes its dictionary, `TClone`,
+/// as a `Copy` bound takes a copy function (`copied_params`): where a
+/// caller of the crate's gives a value whose clone may not be the value
+/// itself (`clones_itself`), or a function a dictionary may call is
+/// cloned of; a library's consumer that gives one more compiles its own
+/// (ADR 0914, amended). `items` are the crate's, `counted` its `Rc`s whose
+/// clone is one more of the count.
+pub(in crate::lower) fn cloned_params<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    items: &HashSet<DefId>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    counted: &super::Counted<'tcx>,
+) -> HashSet<(DefId, u32)> {
+    let bounded = |id| clone_bounded(tcx, id);
+    let itself = |ty| clones_itself(tcx, counted, ty);
+    given_params(
+        tcx,
+        all_bodies,
+        (items.iter(), &|id| items.contains(&id)),
+        foreign,
+        &bounded,
+        &itself,
+    )
+}
+
+/// The type parameters of `items`, the crate's, whose bound `bounded` says
+/// takes what does to a value what its trait does, a copy or a clone: every
+/// one of a function a dictionary may call, and of the others those a
+/// caller of the crate's gives a value it isn't `itself` of, or a type
+/// parameter of its own that is one.
+fn given_params<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    (items, is_item): (impl Iterator<Item = &'a DefId>, &dyn Fn(DefId) -> bool),
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    bounded: &dyn Fn(DefId) -> Vec<u32>,
+    itself: &dyn Fn(Ty<'tcx>) -> bool,
+) -> HashSet<(DefId, u32)> {
     let mut given = HashSet::new();
-    for &id in fns.keys() {
+    for &id in items {
         if !copies_by_callers(tcx, foreign, id) {
-            given.extend(copy_bounded(tcx, id).into_iter().map(|index| (id, index)));
+            given.extend(bounded(id).into_iter().map(|index| (id, index)));
         }
     }
     let mut passed = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         for (callee, args, _) in crate::lower::instances::calls_of(body) {
-            if !fns.contains_key(&callee) {
+            if !is_item(callee) {
                 continue;
             }
-            for index in copy_bounded(tcx, callee) {
+            for index in bounded(callee) {
                 let Some(given_ty) = args.get(index as usize).and_then(|arg| arg.as_type()) else {
                     continue;
                 };
                 match given_ty.kind() {
                     ty::Param(param) => passed.push(((caller, param.index), (callee, index))),
-                    _ if copies_itself(tcx, given_ty) => {}
+                    _ if itself(given_ty) => {}
                     _ => {
                         given.insert((callee, index));
                     }
@@ -247,6 +297,19 @@ pub(in crate::lower) fn copied_params<'tcx>(
         }
     }
     given
+}
+
+/// Whether `id`'s type parameter `index`'s `Clone` bound takes no
+/// dictionary, its clone the value itself: only the crate's callers give
+/// it, none what isn't its own clone (`clones`, `cloned_params`'s; ADR
+/// 0914, amended).
+pub(in crate::lower) fn clones_by_itself(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    clones: &HashSet<(DefId, u32)>,
+    (id, index): (DefId, u32),
+) -> bool {
+    copies_by_callers(tcx, foreign, id) && !clones.contains(&(tcx.typeck_root_def_id(id), index))
 }
 
 /// Is `id` one only its crate's callers call, whose `Copy` bounds take a
@@ -269,13 +332,27 @@ pub(in crate::lower) fn copies_by_callers(
 /// The type parameters of `id` bound by `Copy`, by their indices, an
 /// impl's with its own.
 pub(in crate::lower) fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
-    let Some(copy) = tcx.lang_items().copy_trait() else {
-        return Vec::new();
-    };
+    match tcx.lang_items().copy_trait() {
+        Some(copy) => bounded_by(tcx, id, copy),
+        None => Vec::new(),
+    }
+}
+
+/// The type parameters of `id` bound by `Clone`, by their indices, an
+/// impl's with its own (ADR 0914, amended).
+pub(in crate::lower) fn clone_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+    match tcx.lang_items().clone_trait() {
+        Some(clone) => bounded_by(tcx, id, clone),
+        None => Vec::new(),
+    }
+}
+
+/// The type parameters of `id` bound by `trait_id`, by their indices.
+fn bounded_by(tcx: TyCtxt<'_>, id: DefId, trait_id: DefId) -> Vec<u32> {
     let mut indices = Vec::new();
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         if let ty::ClauseKind::Trait(predicate) = clause.skip_normalization().kind().skip_binder()
-            && predicate.def_id() == copy
+            && predicate.def_id() == trait_id
             && let ty::Param(param) = predicate.self_ty().kind()
             && !indices.contains(&param.index)
         {
@@ -299,5 +376,22 @@ pub(in crate::lower) fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> 
         ty::Tuple(items) => items.is_empty(),
         ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),
         _ => false,
+    }
+}
+
+/// Is a clone of `ty` the value itself, whatever changes: what's its own
+/// copy (`copies_itself`) but a closure, which may be cloned apart (ADR
+/// 0522); text, `String` too, which nothing changes in place in JS; an
+/// `Rc` or an `Arc` that isn't counted (`counted`), the value it shares
+/// (ADR 0023); and an `Option` of one (ADR 0914, amended).
+pub(in crate::lower) fn clones_itself<'tcx>(tcx: TyCtxt<'tcx>, counted: &super::Counted<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Closure(..) => false,
+        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => {
+            clones_itself(tcx, counted, args.type_at(0))
+        }
+        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,
+        _ if let Some(pointee) = crate::lower::recognition::rc_pointee(tcx, ty) => !counted.counts(tcx, pointee),
+        _ => copies_itself(tcx, ty),
     }
 }

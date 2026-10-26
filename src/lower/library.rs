@@ -38,16 +38,14 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a HashMap<DefId, Vec<u32>>,
     /// The type parameters whose `Copy` bound takes a copy function (ADRs
-    /// 0289, 0914).
-    pub(super) copied: &'a HashSet<(DefId, u32)>,
+    /// 0289, 0914), whose `Clone` bound takes its dictionary (ADR 0914,
+    /// amended), and which are stepped by a trait (ADR 0548).
+    pub(super) given: super::traits::Given<'a>,
     pub(super) failing: &'a HashSet<DefId>,
     pub(super) no_drops: &'a HashMap<DefId, BTreeSet<u32>>,
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// Those that take their caller's location (ADR 0427).
     pub(super) caller_locations: &'a HashSet<DefId>,
-    /// The type parameters each steps as they are, by which trait (ADRs
-    /// 0411, 0548).
-    pub(super) stepped: &'a HashSet<(DefId, u32, DefId)>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
@@ -87,8 +85,11 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     for &index in contracts.drop_params.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::Drop);
     }
-    for &(_, index) in contracts.copied.iter().filter(|&&(of, _)| of == id) {
+    for &(_, index) in contracts.given.copied.iter().filter(|&&(of, _)| of == id) {
         param(&mut params, index).marks.insert(ParamFact::Copy);
+    }
+    for &(_, index) in contracts.given.clones.iter().filter(|&&(of, _)| of == id) {
+        param(&mut params, index).marks.insert(ParamFact::Clone);
     }
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {
         param(&mut params, index).marks.insert(ParamFact::NoDrop);
@@ -96,7 +97,7 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     for &(index, fact) in contracts.type_facts.get(&id).into_iter().flatten() {
         param(&mut params, index).facts.push(fact.word().to_string());
     }
-    for &(_, index, by) in contracts.stepped.iter().filter(|&&(of, _, _)| of == id) {
+    for &(_, index, by) in contracts.given.stepped.iter().filter(|&&(of, _, _)| of == id) {
         param(&mut params, index).stepped.push(key(tcx, by));
     }
     let mut params: Vec<_> = params.into_values().collect();
@@ -158,10 +159,9 @@ pub(super) fn exports<'tcx>(
     let Contracts {
         // What each type parameter is asked, `type_params`'s.
         drop_params: _,
-        copied: _,
         no_drops: _,
         type_facts: _,
-        stepped: _,
+        given: _,
         failing,
         caller_locations,
         keeps_capacity,

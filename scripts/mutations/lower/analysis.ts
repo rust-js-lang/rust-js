@@ -250,8 +250,8 @@ export const mutations: Mutation[] = [
     name: "consumer-rcs-uncounted",
     breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852)",
     file: "src/lower/analysis.rs",
-    find: "            (params_may_drop, &reached.counted_rcs),\n",
-    replace: "            (params_may_drop, &[]),\n",
+    find: "                (params_may_drop, &reached.counted_rcs, &|owner, index| {\n",
+    replace: "                (params_may_drop, &[], &|owner, index| {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type|three crates: rc_generic"],
   },
   {
@@ -358,5 +358,13 @@ export const mutations: Mutation[] = [
     find: "    if closure_facts.makes_dropping_fn_dyns || library {\n",
     replace: "    if closure_facts.makes_dropping_fn_dyns {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library drops a dyn Fn its consumer gives it"],
+  },
+  {
+    name: "rc-drop-params-unsettled",
+    breaks: "the `Rc`s counted are taken before any type parameter is given a drop, so `keep`'s `Rc<Slot<Loud>>` isn't counted and its first clone's drop drops its `Loud` (ADR 0914, amended)",
+    file: "src/lower/analysis.rs",
+    find: "            if more.is_subset(&given) {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
 ];

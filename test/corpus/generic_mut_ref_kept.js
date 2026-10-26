@@ -42,9 +42,9 @@ function toRefs(list) {
   }
 }
 
-function setAll(refs, v, TClone) {
+function setAll(refs, v) {
   for (const r of refs) {
-    r.value = TClone.clone(v);
+    r.value = v;
   }
 }
 
@@ -138,7 +138,7 @@ function main() {
     },
   ];
   console.log(`[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, value$1)}`);
-  setAll(refs, 7, { clone: (value) => value });
+  setAll(refs, 7);
   const n = list.next;
   const second = n != null ? n.value : 0;
   console.log(`${list.value} ${second}`);

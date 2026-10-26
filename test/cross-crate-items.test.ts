@@ -771,6 +771,21 @@ test("a library's export is given the dictionaries its contract says it takes", 
   const { dep, app } = compiled(dir, `pub fn pair<T: Copy, U: std::fmt::Display>(t: T, u: U) -> (T, String) {
     (t, format!("{u}!"))
 }
+
+// Its \`Clone\` too, which takes no dictionary where its crate gives none
+// (ADR 0914, amended)...
+pub fn pair_clone<T: Clone, U: std::fmt::Display>(t: &T, u: U) -> (T, String) {
+    (t.clone(), format!("{u}?"))
+}
+
+// ...and one where it gives a value that isn't its own clone.
+pub fn dup<T: Clone>(value: &T) -> T {
+    value.clone()
+}
+
+pub fn names() -> Vec<String> {
+    dup(&vec!["a".to_string()])
+}
 `, `use std::fmt;
 
 pub struct Wrap(pub u32);
@@ -782,11 +797,121 @@ impl fmt::Display for Wrap {
 }
 
 pub fn run() -> String {
-    dep::pair(1u32, Wrap(2)).1
+    dep::pair(1u32, Wrap(2)).1 + &dep::pair_clone(&1u32, Wrap(3)).1
+}
+
+pub fn twice() -> Vec<u32> {
+    let mut copy = dep::dup(&vec![1u32]);
+    copy.push(2);
+    copy
 }
 `);
   expect(dep).toContain("export function pair(t, u, UDisplay) {");
+  expect(dep).toContain("export function pairClone(t, u, UDisplay) {");
+  expect(dep).toContain("export function dup(value, TClone) {");
   expect(app).toContain("pair(1, [2], wrapDisplay)");
-  const { run } = await import(join(dir, "app", "lib.js"));
-  expect(run()).toBe("w2!");
+  expect(app).toContain("pairClone(1, [3], wrapDisplay)");
+  // The library's own, which its contract says takes a \`TClone\`.
+  expect(app).toContain("dup([1], { clone: ");
+  expect(app).not.toContain("function dup(");
+  const { run, twice } = await import(join(dir, "app", "lib.js"));
+  expect([run(), twice()]).toEqual(["w2!w3?", [1, 2]]);
+});
+
+// A consumer that gives a library's generic function a value that isn't its
+// own clone, where the library's own crate gives none, compiles its own
+// (ADR 0914, amended): its copy is apart from what it was given.
+test("a consumer cloning what isn't its own clone compiles its own of the function", async () => {
+  const dir = fixture("cross-crate-clone-given");
+  const { app } = compiled(dir, `pub fn cloned<T: Clone>(value: &T) -> T {
+    value.clone()
+}
+`, `pub fn apart() -> (Vec<u32>, Vec<u32>) {
+    let original = vec![1u32];
+    let mut copy = dep::cloned(&original);
+    copy.push(2);
+    (original, copy)
+}
+`);
+  expect(app).toContain("function cloned(value, TClone) {");
+  const { apart } = await import(join(dir, "app", "lib.js"));
+  expect(apart()).toEqual([[1], [1, 2]]);
+});
+
+// React's reconciler reads a context, `readContext(CacheContext)`, of
+// `react`'s `ReactContext<T>`, whose `_currentValue` is a `RefCell<T>` it
+// borrows unchecked: `read_context<T: Clone>` clones it under the borrow, and
+// keeps the context, `Rc::clone(context)`, in what it records. Each is
+// judged by what its callers give it, `Option<Rc<Cache>>`, its own clone,
+// which drops nothing: no `TClone`, no borrow held while code runs, no
+// counted `Rc` (ADR 0914, amended).
+test("a generic function's clone and its Rc are judged by what its callers give", async () => {
+  const dir = fixture("cross-crate-clone-context");
+  const { app } = compiled(dir, `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Context<T: 'static> {
+    pub current_value: RefCell<T>,
+}
+
+pub fn create_context<T: Copy>(default_value: T) -> Rc<Context<T>> {
+    Rc::new(Context {
+        current_value: RefCell::new(default_value),
+    })
+}
+
+pub fn set_value<T>(context: &Context<T>, value: T) {
+    context.current_value.replace(value);
+}
+`, `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use dep::Context;
+use js::Unknown;
+
+pub struct Cache {
+    pub size: u32,
+}
+
+thread_local! {
+    pub static CACHE_CONTEXT: Rc<Context<Option<Rc<Cache>>>> = Rc::new(Context {
+        current_value: RefCell::new(None),
+    });
+    static LAST_READ: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+    static READS: Cell<usize> = const { Cell::new(0) };
+}
+
+pub fn read_context<T: Clone + 'static>(context: &Rc<Context<T>>) -> T {
+    let value = context.current_value.borrow().clone();
+    LAST_READ.set(js::any_of(Rc::clone(context)));
+    READS.set(READS.get() + 1);
+    value
+}
+
+pub fn cache_size() -> u32 {
+    CACHE_CONTEXT
+        .with(|context| read_context(context))
+        .map_or(0, |cache| cache.size)
+}
+
+pub fn fill(size: u32) {
+    CACHE_CONTEXT.with(|context| dep::set_value(context, Some(Rc::new(Cache { size }))));
+}
+
+pub fn read_count() -> usize {
+    READS.get()
+}
+
+pub fn last_read() -> Option<&'static Unknown> {
+    LAST_READ.get()
+}
+`);
+  expect(app).toContain("export function readContext(context) {\n  const value = context.currentValue;\n");
+  expect(app).not.toContain("TClone");
+  expect(app).not.toContain("strong");
+  expect(app).not.toContain("$borrow");
+  const { cacheSize, fill, readCount, lastRead, cacheContext } = await import(join(dir, "app", "lib.js"));
+  expect(cacheSize()).toBe(0);
+  fill(4);
+  expect([cacheSize(), readCount(), lastRead() === cacheContext]).toEqual([4, 2, true]);
 });

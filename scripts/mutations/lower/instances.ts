@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                                .map_or(callee, |_| callee),\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
+  {
+    name: "instance-clones-unasked",
+    breaks: "a consumer that gives a library's generic function a value that isn't its own clone, where its export takes no `TClone`, calls the export, whose clone is the value itself, and its copy changes what it was given (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "            || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "compiles its own of the function"],
+  },
 ];

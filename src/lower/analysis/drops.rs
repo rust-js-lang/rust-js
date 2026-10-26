@@ -1,8 +1,8 @@
 //! What dropping takes, crate-wide: the generic parameters given a drop,
 //! and the derives that drop nothing (ADR 0098).
 
+use crate::lower::Body;
 use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
-use crate::lower::{Body, FnInfo};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty;
@@ -18,7 +18,7 @@ use std::collections::{HashMap, HashSet};
 pub(super) fn drop_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
+    fns: &HashSet<DefId>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
     runs: impl Fn(Ty<'tcx>, DefId) -> bool,
@@ -45,7 +45,7 @@ pub(super) fn drop_params<'tcx>(
     // generic impl is given a drop for each type parameter that isn't `Copy`,
     // and so are its methods, unless it's a derive whose body drops none.
     let impls: HashSet<DefId> = fns
-        .keys()
+        .iter()
         .filter_map(|&id| {
             tcx.trait_impl_of_assoc(id)
                 .or((tcx.def_kind(id) == DefKind::Impl { of_trait: true }).then_some(id))
@@ -70,7 +70,7 @@ pub(super) fn drop_params<'tcx>(
     // A trait's generic method, and each impl's of it, is given a drop for
     // each of its own type parameters the trait declares that isn't `Copy`:
     // a caller through a dictionary knows only the trait (ADR 0163).
-    for &id in fns.keys() {
+    for &id in fns.iter() {
         for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {
             given.insert((id, index));
         }
@@ -98,7 +98,7 @@ pub(super) fn drop_params<'tcx>(
     // crate's calls give it; a consumer that gives one more compiles it
     // itself (ADR 0914).
     if library {
-        for &id in fns.keys() {
+        for &id in fns.iter() {
             // A trait impl's, and its methods, are decided above.
             if !crate::lower::recognition::is_compiled_std(tcx, id)
                 || tcx.trait_of_assoc(id).is_some()
@@ -125,7 +125,7 @@ pub(super) fn drop_params<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         for (callee, args, span) in crate::lower::instances::calls_of(body) {
-            if !fns.contains_key(&callee) || tcx.trait_of_assoc(callee).is_some() {
+            if !fns.contains(&callee) || tcx.trait_of_assoc(callee).is_some() {
                 continue;
             }
             // React calls a component, with no drop: one given a type with a

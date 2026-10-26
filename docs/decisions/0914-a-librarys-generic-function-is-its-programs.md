@@ -7,7 +7,8 @@ takes the copies and drops its own crate's calls give it, no more.
 Amended (below): a library's trait impls and copies are its program's too,
 and amends [0100](0100-separate-crates.md) and
 [0185](0185-library-trait-defaults.md); and a consumer gives an export the
-copy functions its contract says it takes.
+copy functions its contract says it takes; and a `Clone` bound, and a
+program's `Rc` of a type parameter's value, are what its callers give.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for
 JS callers, so Rust's behavior holds for Rust callers, and JS's call is
@@ -435,3 +436,101 @@ bound its own callers decide.
 - `test/cross-crate-items.test.ts`, "a library's export is given the
   dictionaries its contract says it takes", run.
 - Mutation `library-copy-bound-recomputed` (`traits.rs`).
+
+## Amendment: a `Clone` bound, and a program's `Rc` of a type parameter's value, are what its callers give
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N for the program,
+which clones and drops as before; C at the boundary, where a JS caller
+calls `readContext(context)` as upstream declares it.
+
+React's reconciler reads a context's value under `react`'s unchecked
+borrow of its `_currentValue`, a `RefCell<T>` (ADR 0863), and records the
+context it read, as upstream's `readContextForConsumer` does:
+
+```rust
+fn read_context_for_consumer<T: Clone + 'static>(consumer: Option<&Rc<Fiber>>, context: &Rc<ReactContext<T>>) -> T {
+    let value = if IS_PRIMARY_RENDERER {
+        context.current_value.borrow().clone()
+    } else {
+        context.current_value2.borrow().clone()
+    };
+    let context_item = Rc::new(ContextDependency {
+        context: unsafe { js::cast(js::any_of(Rc::clone(context))) },
+        ..
+```
+
+`ReactFiberAsyncDispatcher`'s `readContext(CacheContext)`, of an
+`Option<Rc<Cache>>`, which isn't `Copy`, needs it. It was refused twice:
+
+- **The clone of `T` ran any code**: a `T: Clone` took its dictionary,
+  `readContext(context, TClone)`, whose `clone` may be any impl, so the
+  borrow held across it might meet another, which `react`'s contract says
+  none can: "`react_isomorphic` borrows `ReactContext::current_value`
+  unchecked .. holds a borrow of it while code that may borrow it runs".
+- **The `Rc` it kept was counted**: an `Rc<ReactContext<T>>` a body owns,
+  of a type parameter's value that may have a destructor, is counted
+  (ADRs 0494, 0844), where `react` counts none: "this crate counts an
+  `Rc<ReactContext<..>>` but `react_isomorphic` counts none" (ADR 0852).
+
+Each answered for any `T`; every `T` the reconciler gives is an
+`Option<Rc<Cache>>` or an `Option<&Unknown>`, whose clone is the value
+and whose drop runs nothing. As this decision has it, a function is
+compiled for what its crate's calls give it, a consumer that gives more
+compiling its own.
+
+**A `Clone` bound takes its dictionary as a `Copy` bound takes a copy
+function** (`cloned_params`, beside `copied_params`, one rule,
+`given_params`): only where a caller of the crate's gives a value that
+isn't its own clone, or a function a dictionary may call is cloned of. A
+value is its own clone (`clones_itself`) where it's its own copy, but a
+closure, which may be cloned apart (ADR 0522); text, `String` too; an
+`Rc` or an `Arc` the crate doesn't count, the value it shares (ADR 0023);
+and an `Option` of one. Where it takes none, its clone is the value, and
+it runs nothing (`CellBorrows`' `called`, asked of the body's owner), so
+a borrow held across it meets none:
+
+```js
+function readContextForConsumer(consumer, context) {
+  const value = isPrimaryRenderer ? context._currentValue : context._currentValue2;
+```
+
+A library's export says which of its type parameters take a `TClone`,
+`clone`, as it says `copy` (library ABI 9): its consumer gives it only
+those, and one whose call gives a value that isn't its own clone where
+the export takes none compiles its own (`instances::gives_more`).
+
+**A program's `Rc` of a type parameter's value is counted where a caller
+gives that parameter a value whose drop runs a destructor** (its drop
+parameters, `drop_params`), not wherever its bounds let it have one: the
+two only grow together, as counting an `Rc` may make a value's drop run,
+so they're found together until they settle (`analysis.rs`'s
+`counted_with`). A library's still counts one of any type parameter its
+consumers may give, as their `Rc`s share its counts (ADR 0852).
+
+Both read the program as a whole, as rustc's codegen instantiates it:
+what JS gives a `T` is a JS value, its own clone, with no destructor.
+
+- `test/cross-crate-items.test.ts`, "a generic function's clone and its
+  Rc are judged by what its callers give": a library's `Context<T>`,
+  read and recorded as the reconciler does, `const value =
+  context.currentValue;`, no `TClone`, no `strong`, no `$borrow`, run;
+  "a library's export is given the dictionaries its contract says it
+  takes", `pairClone(1, [3], wrapDisplay)` and `dup([1], { clone: .. })`,
+  the library's own; and "a consumer cloning what isn't its own clone
+  compiles its own of the function", its copy apart from what it was
+  given.
+- `test/lowering-field-cells.test.ts`, "a struct's RefCell field holds its
+  value whatever else has its type": a `Cursor<Vec<String>>` read, whose
+  clone takes the dictionary and is counted.
+- Corpus `rc_generic_given_drops`, against native Rust: an `Rc` only
+  generic code has, given a `Loud`, dropped by its last clone, and a
+  counted `Rc` cloned by a `T: Clone`; `refcell_field_places` and the
+  generic cases whose `TClone` is gone, as before.
+- Mutations `clone-given-of-its-own-clone`, `string-clone-not-itself`,
+  `counted-rc-clones-itself` (`analysis/mutation.rs`),
+  `clone-bound-always-given`, `library-clone-bound-recomputed`
+  (`traits.rs`), `library-clone-unwritten` (`lower/library.rs`),
+  `instance-clones-unasked` (`instances.rs`), `own-clone-runs-anything`
+  (`analysis/cell_borrows.rs`), `generic-rc-of-any-param-counted`
+  (`analysis/rc_counts.rs`) and `rc-drop-params-unsettled`
+  (`analysis.rs`).

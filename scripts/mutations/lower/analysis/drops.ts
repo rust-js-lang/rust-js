@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "library-generic-drops-nothing",
     breaks: "a library's generic function isn't given a `dropT`, so a consumer's value with a destructor is never dropped",
     file: "src/lower/analysis/drops.rs",
-    find: "    if library {\n        for &id in fns.keys() {\n",
-    replace: "    if false {\n        for &id in fns.keys() {\n",
+    find: "    if library {\n        for &id in fns.iter() {\n",
+    replace: "    if false {\n        for &id in fns.iter() {\n",
     tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
   },
   {

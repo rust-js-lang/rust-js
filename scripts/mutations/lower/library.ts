@@ -266,4 +266,12 @@ export const mutations: Mutation[] = [
     replace: "        makes_dropping_fn_dyns: false,\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
   },
+  {
+    name: "library-clone-unwritten",
+    breaks: "a library's contract says no export takes a `TClone`, so its consumer gives `dup` none where it takes one (ADR 0914, amended)",
+    file: "src/lower/library.rs",
+    find: "        param(&mut params, index).marks.insert(ParamFact::Clone);\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
+  },
 ];

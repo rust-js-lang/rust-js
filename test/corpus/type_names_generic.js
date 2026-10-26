@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function names(TClone, TName) {
+function names(TName) {
   return [
     `alloc::borrow::Cow<'_, ${TName}>`,
     `alloc::vec::Vec<(${TName}, u8)>`,
@@ -18,8 +18,8 @@ function unsizedName(TName) {
   return TName;
 }
 
-function passedOn(UClone, UName) {
-  return names(UClone, UName)[1];
+function passedOn(UName) {
+  return names(UName)[1];
 }
 
 const $tNamed = new Map();
@@ -32,12 +32,12 @@ function tNamed_named(self, TName) {
 }
 
 function main() {
-  const value = names({ clone: (value) => value }, "u32");
+  const value = names("u32");
   console.log(`(${$debugStr(value[0])}, ${$debugStr(value[1])}, ${$debugStr(value[2])})`);
-  const value$1 = names({ clone: (value) => value }, "alloc::string::String");
+  const value$1 = names("alloc::string::String");
   console.log(`(${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}, ${$debugStr(value$1[2])})`);
   console.log(`${unsizedName("str")} ${unsizedName("[u8]")}`);
-  console.log(`${passedOn({ clone: (value) => value }, "bool")}`);
+  console.log(`${passedOn("bool")}`);
   const shown = { value: 1, impl: tNamed("i32") };
   console.log(`${shown.impl.named(shown.value)} ${tNamed_named(2, "u8")}`);
 }

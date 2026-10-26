@@ -28,19 +28,19 @@ import {
 } from "@rust-js/runtime";
 
 export const Stack = {
-  new(TClone, TDebug) {
+  new(TDebug) {
     return { items: [] };
   },
-  push(stack, x, TClone, TDebug) {
+  push(stack, x, TDebug) {
     stack.items.push(x);
   },
-  pop(stack, TClone, TDebug) {
+  pop(stack, TDebug) {
     return $pop(stack.items);
   },
-  peek(stack, TClone, TDebug) {
+  peek(stack, TDebug) {
     return $someAt(stack.items, stack.items.length - 1);
   },
-  len(stack, TClone, TDebug) {
+  len(stack, TDebug) {
     return stack.items.length;
   },
 };
@@ -222,13 +222,13 @@ export function reverses(a, b) {
 
 export function report() {
   let out = "";
-  const s = Stack.new({ clone: (value) => value }, { fmt: (value) => $debugStr(value) });
+  const s = Stack.new({ fmt: (value) => $debugStr(value) });
   for (const w of ["a", "b", "c"]) {
-    Stack.push(s, w, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
+    Stack.push(s, w, { fmt: (value) => $debugStr(value) });
   }
-  const pop = Stack.pop(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
-  const peek = Stack.peek(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) });
-  out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, { clone: (value) => value }, { fmt: (value) => $debugStr(value) })}\n`;
+  const pop = Stack.pop(s, { fmt: (value) => $debugStr(value) });
+  const peek = Stack.peek(s, { fmt: (value) => $debugStr(value) });
+  out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, { fmt: (value) => $debugStr(value) })}\n`;
   const g = {
     w: 3,
     cells: $range(0, 9),

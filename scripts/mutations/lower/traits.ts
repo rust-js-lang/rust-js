@@ -195,4 +195,20 @@ export const mutations: Mutation[] = [
     replace: "        && let Some(item) = foreign.item(id).filter(|_| false)\n        && !(item.calling.param(param.index))",
     tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
   },
+  {
+    name: "clone-bound-always-given",
+    breaks: "a `T: Clone` only the crate's callers give, none what isn't its own clone, still takes its dictionary, `readContext(context, TClone)` (ADR 0914, amended)",
+    file: "src/lower/traits.rs",
+    find: "            true => super::analysis::clones_by_itself(tcx, foreign, given.clones, (id, param.index)),\n",
+    replace: "            true => false,\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+  },
+  {
+    name: "library-clone-bound-recomputed",
+    breaks: "a consumer gives a library's export a `TClone` its contract says it takes none of, `pairClone(1, [3], undefined, wrapDisplay)`, which puts `undefined` where its `UDisplay` is (ADR 0914, amended)",
+    file: "src/lower/traits.rs",
+    find: "                !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Clone))\n",
+    replace: "                false\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
+  },
 ];

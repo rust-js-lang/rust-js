@@ -46,6 +46,11 @@ pub fn read<T: Clone>(cursor: &Cursor<T>) -> T {
     cursor.current.borrow().clone()
 }
 
+// A clone that isn't the value, whose \`Clone\` may borrow it (ADR 0914, amended).
+pub fn read_names(cursor: &Cursor<Vec<String>>) -> Vec<String> {
+    read(cursor)
+}
+
 pub struct Fiber {
     pub tag: u8,
     #[cfg_attr(rust_js, rust_js::nullable)]

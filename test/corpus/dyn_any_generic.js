@@ -14,11 +14,11 @@ function relay(TId) {
   return same(TId, "u8");
 }
 
-function find(items, TClone, TId) {
+function find(items, TId) {
   return items
     .map((item) => {
       const value = item.impl.typeId() === TId ? $some(item.value) : undefined;
-      return value == null ? value : $some(TClone.clone($someValue(value)));
+      return value == null ? value : $some($someValue(value));
     })
     .filter((item) => item != null)
     .map($someValue);
@@ -50,12 +50,11 @@ function main() {
     { value: 2, impl: { typeId: () => "u8" } },
     erased("e", "alloc::string::String"),
   ];
-  const value = find(items, { clone: (value) => value }, "u8");
-  const value$1 = find(items, { clone: (value) => value }, "&str");
+  const value = find(items, "u8");
+  const value$1 = find(items, "&str");
   console.log(
     `[${value.join(", ")}] [${value$1.map((item) => $debugStr(item)).join(", ")}] [${find(
       items,
-      { clone: (value) => value },
       "alloc::string::String",
     )
       .map((item) => $debugStr(item))

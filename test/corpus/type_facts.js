@@ -12,8 +12,8 @@ function describe(_, TSize, TAlign, TName) {
   return `${TName} ${TSize} ${TAlign}`;
 }
 
-function relay(u, UClone, USize, UAlign, UName) {
-  return describe(UClone.clone(u), USize, UAlign, UName);
+function relay(u, USize, UAlign, UName) {
+  return describe(u, USize, UAlign, UName);
 }
 
 function later(TSize) {
@@ -28,7 +28,7 @@ function main() {
   console.log(`${size(1)} ${size(8)} ${size(6)}`);
   console.log(`${describe(1n, 8, 8, "u64")}`);
   console.log(`${describe(3, 2, 1, "core::option::Option<u8>")}`);
-  console.log(`${relay(7, { clone: (value) => value }, 2, 2, "u16")}`);
+  console.log(`${relay(7, 2, 2, "u16")}`);
   console.log(`${later(8)()} ${both(4, 4)}`);
 }
 //# sourceMappingURL=case.js.map

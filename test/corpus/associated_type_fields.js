@@ -14,8 +14,8 @@ function nodeDebug_fmt(node, KDebug, KKey, KValueDebug) {
   return `Node { key: ${KDebug.fmt(node.key)}, value: ${KValueDebug.fmt(node.value)} }`;
 }
 
-function get(node, KKey, VClone) {
-  return node.value == null ? node.value : $some(VClone.clone($someValue(node.value)));
+function get(node, KKey) {
+  return node.value == null ? node.value : $some($someValue(node.value));
 }
 
 function fill(slot) {
@@ -31,7 +31,7 @@ function fill(slot) {
 function main() {
   const a = { key: 1, value: 22 };
   const b = { key: "k", value: ["x"] };
-  const value = get(a, i32Key, { clone: (value) => value });
+  const value = get(a, i32Key);
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key, { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey, { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
   );

@@ -52,6 +52,9 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     impls: Impls,
     /// What each fn pointer it calls may be (ADR 0907).
     pointers: super::fn_pointers::FnPointers<'tcx>,
+    /// The type parameters whose `Clone` bound takes its dictionary, whose
+    /// clone may run code of the crate's (ADR 0914, amended).
+    clones: HashSet<(DefId, u32)>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -73,7 +76,7 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn of_crate(
         tcx: TyCtxt<'tcx>,
         recognition: &Recognition<'_, 'tcx>,
-        bodies: &[&Body<'tcx>],
+        (bodies, clones): (&[&Body<'tcx>], &HashSet<(DefId, u32)>),
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> Self {
         let mut impls: Impls = HashMap::new();
@@ -86,6 +89,12 @@ impl<'tcx> CellBorrows<'tcx> {
         }
         // What each fn pointer the crate calls may be (ADR 0907).
         let pointers = super::fn_pointers::FnPointers::of_crate(recognition);
+        let mut found = CellBorrows {
+            impls,
+            pointers,
+            clones: clones.clone(),
+            ..CellBorrows::default()
+        };
         let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -93,7 +102,16 @@ impl<'tcx> CellBorrows<'tcx> {
                     typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id)),
                     ..*recognition
                 };
-                (body.def_id, direct(&recognition, &impls, &pointers, &body.thir, drops))
+                let itself = |ty| found.clones_itself(&recognition, body.def_id, ty);
+                (
+                    body.def_id,
+                    direct(
+                        &recognition,
+                        (&found.impls, &found.pointers),
+                        &body.thir,
+                        (drops, &itself),
+                    ),
+                )
             })
             .collect();
         let mut of: HashMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
@@ -125,7 +143,18 @@ impl<'tcx> CellBorrows<'tcx> {
                 break;
             }
         }
-        CellBorrows { of, impls, pointers }
+        found.of = of;
+        found
+    }
+
+    /// Whether `Clone::clone` of `ty` in `owner`'s body is the value itself,
+    /// running nothing: a type parameter's whose bound takes no dictionary
+    /// (`clones_by_itself`, ADR 0914, amended).
+    fn clones_itself(&self, recognition: &Recognition<'_, 'tcx>, owner: DefId, ty: Ty<'tcx>) -> bool {
+        let tcx = recognition.tcx;
+        matches!(ty.kind(), ty::Param(param)
+            if super::clones_by_itself(tcx, recognition.foreign, &self.clones, (owner, param.index))
+                && super::mutation::clone_bounded(tcx, tcx.typeck_root_def_id(owner)).contains(&param.index))
     }
 
     /// Whether running `body`, a closure's, may ask of `held`, a borrow.
@@ -143,13 +172,14 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn call_asks(
         &self,
         recognition: &Recognition<'_, 'tcx>,
-        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        (owner, def_id, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
         receiver: Option<(&Thir<'tcx>, ExprId)>,
         held: Borrow<'tcx>,
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> bool {
         let tcx = recognition.tcx;
-        match called(recognition, def_id, args, receiver) {
+        let itself = |ty| self.clones_itself(recognition, owner, ty);
+        match called(recognition, def_id, args, receiver, &itself) {
             Called::Nothing => false,
             Called::Cell(theirs) => asks(tcx, theirs, held),
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
@@ -230,10 +260,11 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn call_runs_unseen(
         &self,
         recognition: &Recognition<'_, 'tcx>,
-        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        (owner, def_id, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
     ) -> bool {
         let summarized = |body: &DefId| matches!(self.of.get(body), Some(Some(_)));
-        match called(recognition, def_id, args, None) {
+        let itself = |ty| self.clones_itself(recognition, owner, ty);
+        match called(recognition, def_id, args, None, &itself) {
             Called::Nothing | Called::Cell(_) => false,
             Called::Body(body, _) => !summarized(&body),
             Called::Std(id, args) => {
@@ -265,7 +296,7 @@ impl<'tcx> CellBorrows<'tcx> {
         };
         may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
             true => self.runs_asks(tcx, f, Some(args), held, drops),
-            false => self.call_asks(recognition, (f, args), None, held, drops),
+            false => self.call_asks(recognition, (f, f, args), None, held, drops),
         })
     }
 
@@ -282,7 +313,7 @@ impl<'tcx> CellBorrows<'tcx> {
         };
         may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
             true => !matches!(self.of.get(&f), Some(Some(_))),
-            false => self.call_runs_unseen(recognition, (f, args)),
+            false => self.call_runs_unseen(recognition, (f, f, args)),
         })
     }
 
@@ -371,7 +402,9 @@ pub(in crate::lower) fn borrowed<'tcx>(
         return None;
     };
     let (id, generic_args) = fn_def(thir[fun].ty)?;
-    match called(recognition, id, generic_args, args.first().map(|&a| (thir, a))) {
+    match called(recognition, id, generic_args, args.first().map(|&a| (thir, a)), &|_| {
+        false
+    }) {
         Called::Cell(cell) => Some(cell),
         _ => None,
     }
@@ -474,8 +507,15 @@ fn called<'tcx>(
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
     receiver: Option<(&Thir<'tcx>, ExprId)>,
+    clones_itself: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Called<'tcx> {
     let tcx = recognition.tcx;
+    // A clone of what's its own clone, a type parameter's whose `Clone`
+    // bound takes no dictionary, is the value: it runs nothing (ADR 0914,
+    // amended).
+    if tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {
+        return Called::Nothing;
+    }
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
     if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args) {
         return Called::Nothing;
@@ -857,10 +897,9 @@ fn std_impl_bounds<'tcx>(
 /// it may drop, whose destructor runs.
 fn direct<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    impls: &Impls,
-    pointers: &super::fn_pointers::FnPointers<'tcx>,
+    (impls, pointers): (&Impls, &super::fn_pointers::FnPointers<'tcx>),
     thir: &Thir<'tcx>,
-    drops: &dyn Fn(Ty<'tcx>) -> bool,
+    (drops, clones_itself): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) -> Direct<'tcx> {
     let tcx = recognition.tcx;
     let mut found = Direct::default();
@@ -880,7 +919,13 @@ fn direct<'tcx>(
         match e.kind {
             ExprKind::Call { fun, ref args, .. } => match fn_def(thir[fun].ty) {
                 Some((id, generic_args)) => {
-                    let called = called(recognition, id, generic_args, args.first().map(|&a| (thir, a)));
+                    let called = called(
+                        recognition,
+                        id,
+                        generic_args,
+                        args.first().map(|&a| (thir, a)),
+                        clones_itself,
+                    );
                     runs(&mut found, called);
                 }
                 // A fn pointer's, which runs what it may be (ADR 0907): a
@@ -890,7 +935,7 @@ fn direct<'tcx>(
                         for &(f, args) in may_be {
                             let called = match tcx.is_closure_like(f) {
                                 true => Called::Body(f, args),
-                                false => called(recognition, f, args, None),
+                                false => called(recognition, f, args, None, &|_| false),
                             };
                             runs(&mut found, called);
                         }

@@ -24,30 +24,23 @@ function least(it, f) {
   return option == null ? [] : [$someValue(option)];
 }
 
-function most(items, TOrd, TClone) {
-  return $maxByKey(
-    items.values().map((item) => TClone.clone(item)),
-    (x) => TClone.clone(x),
-    TOrd.cmp,
-    true,
-  );
+function most(items, TOrd) {
+  return $maxByKey(items, (x) => x, TOrd.cmp, true);
 }
 
-function unwraps(a, r, TClone) {
+function unwraps(a, r) {
   const value = $someValue(a);
   const value$1 = $someValue(a);
   const value$3 = $someValue(
-    $unwrap(a == null ? a : $some(value == null ? value : $some(TClone.clone($someValue(value))))),
+    $unwrap(a == null ? a : $some(value == null ? value : $some($someValue(value)))),
   );
   const value$2 = $someValue(a);
   const value$4 = $someValue(
-    (a == null ? a : $some(value$1 == null ? value$1 : $some(TClone.clone($someValue(value$1))))) ??
+    (a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)))) ??
       $some(undefined),
   );
-  const option =
-    a == null ? a : $some(value$2 == null ? value$2 : $some(TClone.clone($someValue(value$2))));
-  const result =
-    r.TAG === "Ok" ? { ...r, _0: r._0 == null ? r._0 : $some(TClone.clone($someValue(r._0))) } : r;
+  const option = a == null ? a : $some(value$2 == null ? value$2 : $some($someValue(value$2)));
+  const result = r.TAG === "Ok" ? { ...r, _0: r._0 == null ? r._0 : $some($someValue(r._0)) } : r;
   return [
     value$3,
     value$4,
@@ -80,28 +73,20 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value$2 = most(
-    [undefined, 4, 2],
-    { cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)) },
-    { clone: (value) => value },
-  );
+  const value$2 = most([undefined, 4, 2], {
+    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+  });
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = most(
-    [undefined],
-    { cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)) },
-    { clone: (value) => value },
-  );
+  const value$3 = most([undefined], {
+    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+  });
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
   console.log(
-    `[${unwraps(
-      $some($some(undefined)),
-      { TAG: "Ok", _0: $some(undefined) },
-      { clone: (value) => value },
-    )
+    `[${unwraps($some($some(undefined)), { TAG: "Ok", _0: $some(undefined) })
       .map((item) =>
         item == null
           ? "None"
@@ -110,7 +95,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${unwraps(5, { TAG: "Err", _0: 1 }, { clone: (value) => value })
+    `[${unwraps(5, { TAG: "Err", _0: 1 })
       .map((item) =>
         item == null
           ? "None"

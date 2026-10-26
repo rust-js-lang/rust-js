@@ -555,6 +555,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             cx: self.cx,
             borrows: self.borrows,
             thir: self.thir,
+            owner: self.body_owner,
             own: fun,
             cell,
             quiet: true,
@@ -572,6 +573,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             recognition: &self.cx.recognition,
             borrows: self.borrows,
             thir: self.thir,
+            owner: self.body_owner,
             seen: true,
         };
         for &stmt in stmts {
@@ -650,6 +652,8 @@ struct Seen<'c, 'a, 'tcx> {
     recognition: &'c crate::lower::recognition::Recognition<'c, 'tcx>,
     borrows: &'c CellBorrows<'tcx>,
     thir: &'a Thir<'tcx>,
+    /// The function or closure whose body this is.
+    owner: DefId,
     seen: bool,
 }
 
@@ -664,7 +668,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
         }
         self.seen = match expr.kind {
             ExprKind::Call { fun, .. } => match fn_def(self.thir[fun].ty) {
-                Some((id, args)) => !self.borrows.call_runs_unseen(self.recognition, (id, args)),
+                Some((id, args)) => !self.borrows.call_runs_unseen(self.recognition, (self.owner, id, args)),
                 // A fn pointer's, of what it may be (ADR 0907).
                 None => !self
                     .borrows
@@ -687,6 +691,8 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     cx: &'c DropQuery<'q, 'tcx>,
     borrows: &'c CellBorrows<'tcx>,
     thir: &'a Thir<'tcx>,
+    /// The function or closure whose body this is.
+    owner: DefId,
     own: ExprId,
     cell: Borrow<'tcx>,
     quiet: bool,
@@ -713,8 +719,13 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                 let called = match fn_def(self.thir[fun].ty) {
                     Some((id, generic_args)) => {
                         let receiver = args.first().map(|&receiver| (self.thir, receiver));
-                        self.borrows
-                            .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, drops)
+                        self.borrows.call_asks(
+                            &self.cx.recognition,
+                            (self.owner, id, generic_args),
+                            receiver,
+                            self.cell,
+                            drops,
+                        )
                     }
                     // A fn pointer's, of what it may be (ADR 0907).
                     None => self

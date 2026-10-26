@@ -27,22 +27,14 @@ function mutexSequence_nextValue(mutex, CSequence) {
   }
 }
 
-function described(text, TToString, TClone) {
+function described(text, TToString) {
   return text._0.map((x) => TToString.toString(x)).join(",");
 }
 
 function main() {
   const shared = { value: [4] };
   console.log(`${mutexSequence_nextValue(shared, counterSequence)}`);
-  console.log(
-    `${described(
-      { TAG: "Borrowed", _0: [1, 2] },
-      { toString: String },
-      { clone: (value) => value },
-    )}`,
-  );
-  console.log(
-    `${described({ TAG: "Owned", _0: [3] }, { toString: String }, { clone: (value) => value })}`,
-  );
+  console.log(`${described({ TAG: "Borrowed", _0: [1, 2] }, { toString: String })}`);
+  console.log(`${described({ TAG: "Owned", _0: [3] }, { toString: String })}`);
 }
 //# sourceMappingURL=case.js.map

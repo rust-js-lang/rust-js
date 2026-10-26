@@ -25,7 +25,7 @@ function keyToCmp(key, KOrd, dropF) {
   );
 }
 
-function smallest(items, cmp, TClone, dropF) {
+function smallest(items, cmp, dropF) {
   let best;
   let iter;
   try {
@@ -59,7 +59,7 @@ function smallest(items, cmp, TClone, dropF) {
     }
   }
   try {
-    return best == null ? best : $some(TClone.clone($someValue(best)));
+    return best == null ? best : $some($someValue(best));
   } finally {
     dropF?.(cmp);
   }
@@ -87,7 +87,7 @@ function main() {
       console.log(`drop ${weights[0]}`);
     },
   );
-  const value = smallest([5, 2, 9], cmp, { clone: (value) => value }, $dispose);
+  const value = smallest([5, 2, 9], cmp, $dispose);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const f = byLen();
   try {

@@ -307,4 +307,12 @@ export const mutations: Mutation[] = [
     replace: "                None => match None::<&[(DefId, ty::GenericArgsRef<'tcx>)]> {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
   },
+  {
+    name: "own-clone-runs-anything",
+    breaks: "a clone of a type parameter's whose `Clone` takes no dictionary is taken to run code rust-js can't see, so a library's unchecked borrow held across it is refused (ADR 0914, amended)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "    if tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {\n",
+    replace: "    if false && tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+  },
 ];

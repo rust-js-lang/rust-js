@@ -134,12 +134,14 @@ fn const_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<&ty::GenericParamDef> {
 /// A component has none: React calls it with its props, never a dictionary
 /// (ADR 0201).
 /// What the crate's analyses say of its type parameters' bounds: those
-/// whose `Copy` takes a copy function (ADR 0289), and those whose
-/// `Iterator`, or an extension of it, is given its dictionary (ADRs 0411,
-/// 0487), by their indices, with the trait's.
+/// whose `Copy` takes a copy function (ADR 0289), those whose `Clone`
+/// takes its dictionary (ADR 0914, amended), and those whose `Iterator`,
+/// or an extension of it, is given its dictionary (ADRs 0411, 0487), by
+/// their indices, with the trait's.
 #[derive(Clone, Copy)]
 pub(super) struct Given<'a> {
     pub copied: &'a HashSet<(DefId, u32)>,
+    pub clones: &'a HashSet<(DefId, u32)>,
     pub stepped: &'a HashSet<(DefId, u32, DefId)>,
 }
 
@@ -245,6 +247,20 @@ fn bound_of<'tcx>(
         && let ty::Param(param) = tr.self_ty().kind()
         && let Some(item) = foreign.item(id)
         && !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Copy))
+    {
+        return None;
+    }
+    // So is a `Clone` bound, whose clone of a value that's its own clone is
+    // the value: only the crate's callers give it, none such, or a library's
+    // export's that its contract says takes none (ADR 0914, amended).
+    if tcx.is_lang_item(tr.def_id, LangItem::Clone)
+        && let ty::Param(param) = tr.self_ty().kind()
+        && match super::analysis::copies_by_callers(tcx, foreign, id) {
+            true => super::analysis::clones_by_itself(tcx, foreign, given.clones, (id, param.index)),
+            false => (foreign.item(id)).is_some_and(|item| {
+                !(item.calling.param(param.index)).is_some_and(|param| param.has(crate::library::ParamFact::Clone))
+            }),
+        }
     {
         return None;
     }

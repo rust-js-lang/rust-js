@@ -10,9 +10,9 @@ function longest(it) {
   return $reduce(Iterator.from(it), (a, b) => ($byteLen(b) > $byteLen(a) ? b : a));
 }
 
-function firstSome(items, TClone) {
+function firstSome(items) {
   return $reduce(
-    items.values().map((item) => (item == null ? item : $some(TClone.clone($someValue(item))))),
+    items.values().map((item) => (item == null ? item : $some($someValue(item)))),
     (a, b) => a ?? b,
     true,
   );
@@ -24,15 +24,15 @@ function main() {
   console.log(`${e == null ? "None" : `Some(${e})`} ${s == null ? "None" : `Some(${s})`}`);
   const value = longest($iter(["ab", "abc", "x"]));
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$1 = firstSome([undefined, 2, 3], { clone: (value) => value });
+  const value$1 = firstSome([undefined, 2, 3]);
   console.log(
     `${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
   );
-  const value$2 = firstSome([undefined], { clone: (value) => value });
+  const value$2 = firstSome([undefined]);
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = firstSome([], { clone: (value) => value });
+  const value$3 = firstSome([]);
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );

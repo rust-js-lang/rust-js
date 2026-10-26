@@ -31,8 +31,8 @@ function counterIterator_next(counter) {
   }
 }
 
-function repeated(first, n, TClone) {
-  return $successors($some(first), (item) => $some(TClone.clone(item)), true)
+function repeated(first, n) {
+  return $successors($some(first), (item) => $some(item), true)
     .take(n)
     .toArray();
 }
@@ -121,7 +121,7 @@ function main() {
   );
   const short = $lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2).toArray();
   console.log(
-    `[${short.join(", ")}] [${repeated(undefined, 2, { clone: (value) => value })
+    `[${short.join(", ")}] [${repeated(undefined, 2)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );

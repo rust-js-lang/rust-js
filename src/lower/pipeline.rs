@@ -124,6 +124,7 @@ pub fn lower_crate<'tcx>(
         changed_vecs,
         mut drop_params,
         copied,
+        clones,
         stepped,
         type_facts,
         failing,
@@ -173,21 +174,25 @@ pub fn lower_crate<'tcx>(
         called_from_elsewhere.extend(codecs.iter().copied().filter(|&id| super::library::reachable(tcx, id)));
     }
     let foreign = super::library::Foreign::new(tcx, dependencies, instances);
-    // Which of its libraries' functions may copy what the crate changes in
-    // place, which their JS, copying what their own crates change, may
-    // share (ADR 0914, amended).
+    // Which of its libraries' functions may copy what the crate changes in place, which their
+    // JS, copying what their own crates change, may share (ADR 0914, amended).
     let changed = super::copies::Changed {
         mutated: &mutated,
         vecs: &changed_vecs,
     };
     let copying = super::instances::Copying::new((&trait_impls, &foreign), changed);
+    let given = super::traits::Given {
+        copied: &copied,
+        clones: &clones,
+        stepped: &stepped,
+    };
     // The library functions the crate's calls give more than they take,
     // compiled here first, before anything is lowered (ADR 0914).
     let analyzed = super::instances::Analyzed {
         trait_impls: &trait_impls,
         drops: (export_library, &closure_facts, &counted),
         drop_params: &drop_params,
-        copied: &copied,
+        given,
         bodies: bodies.iter().copied().chain(closures.values().copied()).collect(),
     };
     match super::instances::needed(&foreign, instances, analyzed) {
@@ -384,10 +389,7 @@ pub fn lower_crate<'tcx>(
         generic_consts: &generic_consts,
         changed_vecs: &changed_vecs,
         drop_params: &drop_params,
-        given: super::traits::Given {
-            copied: &copied,
-            stepped: &stepped,
-        },
+        given,
         type_facts: &type_facts,
         failing: &failing,
         throwing: &throwing,
@@ -595,8 +597,7 @@ pub fn lower_crate<'tcx>(
     // anywhere else (`read_only_generically`); and a `PartialEq` of a type
     // equal only to itself, whose `==` is `===` and whose sets and maps
     // are JS's (ADR 0864, amended).
-    // Adjacency lists rather than scanning every edge again for every reached
-    // function.
+    // Adjacency lists rather than scanning every edge again for every reached function.
     let recognition = super::recognition::Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -1419,12 +1420,11 @@ pub fn lower_crate<'tcx>(
                     (&fns, &exported),
                     &super::library::Contracts {
                         drop_params: &drop_params,
-                        copied: &copied,
+                        given,
                         failing: &failing,
                         no_drops: &no_drops,
                         type_facts: &type_facts,
                         caller_locations: &caller_locations,
-                        stepped: &stepped,
                         keeps_capacity,
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,

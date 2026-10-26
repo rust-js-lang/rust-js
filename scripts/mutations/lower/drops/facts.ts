@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-calls",
     breaks: "a call of the crate's beside a guard is taken as asking nothing",
     file: "src/lower/drops/facts.rs",
-    find: "                        self.borrows\n                            .call_asks(&self.cx.recognition, (id, generic_args), receiver, self.cell, drops)\n",
+    find: "                        self.borrows.call_asks(\n                            &self.cx.recognition,\n                            (self.owner, id, generic_args),\n                            receiver,\n                            self.cell,\n                            drops,\n                        )\n",
     replace: "                        false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
