@@ -699,6 +699,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0912 Std's struct folds by its own compiled `fold`, and a `&mut I` steps by what std's impl for it passes on](0912-a-std-struct-folds-by-its-own-compiled-fold.md) *(extended by 0913: std's generic `Try` compiles, held `Skip` and `Take` are std's)*
 - [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
 - [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md)
+- [0915 What's held to be cloned is std's struct](0915-what-s-held-to-be-cloned-is-std-s-struct.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

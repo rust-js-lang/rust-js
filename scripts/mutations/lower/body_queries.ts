@@ -315,4 +315,28 @@ export const mutations: Mutation[] = [
       "^std_flatten.rs$"
     ]
   },
+  {
+    name: "cycle-source-in-place",
+    breaks: "a `rev()` a `cycle()` holds is made in place, a JS iterator, which `cycle()` clones as std's struct, so `(1..4u8).rev().cycle()` throws (#308, ADR 0915)",
+    file: "src/lower/body_queries.rs",
+    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    replace: "                (false || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
+  },
+  {
+    name: "cloned-apart-part-in-place",
+    breaks: "a `rev()` a chain cloned apart holds is made in place, a JS iterator, which the chain's clone clones as std's struct, so a cycled zigzag throws (#308, ADR 0915)",
+    file: "src/lower/body_queries.rs",
+    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    replace: "                (callee == cycle || false) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
+  },
+  {
+    name: "cloned-apart-part-held",
+    breaks: "a `map()` itself cloned apart, part of a `filter()` cloned apart, is held as std's struct, which the filter's maker clones as cloned apart, `$clone`, and throws (ADR 0915)",
+    file: "src/lower/body_queries.rs",
+    find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    replace: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
+  },
 ];

@@ -155,7 +155,7 @@ impl<'tcx> BodyFacts<'tcx> {
     /// looks its answer up, and a closure's are its own body's.
     pub(super) fn collect(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let (jsx_given, jsx_bases) = jsx_given_props(tcx, thir);
-        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None);
+        let (in_place_adapters, in_place_adapter_steps) = in_place_adapters(tcx, thir, None, &HashSet::new());
         Self {
             kept_casts: whole_casts(tcx, thir),
             named_callbacks: named_callbacks(tcx, thir),
@@ -262,7 +262,11 @@ fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
 /// there as a JS iterator: what it gives is made in place
 /// (`in_place_adapters`), its facts made again so. Before lowering, of the
 /// crate's bodies.
-pub(super) fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>]) {
+pub(super) fn results_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &mut [super::Body<'tcx>],
+    cloned: &HashSet<ty::Ty<'tcx>>,
+) {
     let mut given = HashSet::new();
     for body in bodies.iter() {
         for e in body.thir.exprs.iter() {
@@ -275,11 +279,31 @@ pub(super) fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Bod
             }
         }
     }
-    for body in bodies.iter_mut().filter(|body| given.contains(&body.def_id)) {
-        let (adapters, steps) = in_place_adapters(tcx, &body.thir, Some(body.expr));
+    // And each that makes an adapter the crate clones apart, `chain()`'s
+    // of a `cycle()`, whose parts its maker holds (ADR 0915).
+    let clones_apart = |body: &super::Body<'tcx>| {
+        body.thir
+            .exprs
+            .iter()
+            .any(|e| matches!(e.kind, ExprKind::Call { .. }) && cloned_apart(tcx, cloned, e.ty))
+    };
+    for body in bodies.iter_mut() {
+        let flat_mapped = given.contains(&body.def_id);
+        if !flat_mapped && !clones_apart(body) {
+            continue;
+        }
+        let stepped_result = flat_mapped.then_some(body.expr);
+        let (adapters, steps) = in_place_adapters(tcx, &body.thir, stepped_result, cloned);
         body.facts.in_place_adapters = adapters;
         body.facts.in_place_adapter_steps = steps;
     }
+}
+
+/// Whether `ty` is an adapter of two parts the crate clones apart, its
+/// `chain()`'s or `map()`'s cloned: made by a function of its parts, which
+/// holds them (ADR 0525).
+fn cloned_apart<'tcx>(tcx: TyCtxt<'tcx>, cloned: &HashSet<ty::Ty<'tcx>>, ty: ty::Ty<'tcx>) -> bool {
+    super::recognition::cloned_parts(tcx, ty).is_some() && cloned.contains(&tcx.erase_and_anonymize_regions(ty))
 }
 
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
@@ -824,9 +848,13 @@ fn in_place_adapters<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
     stepped_result: Option<ExprId>,
+    cloned: &HashSet<ty::Ty<'tcx>>,
 ) -> (HashSet<Span>, HashSet<Span>) {
     use super::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
+    // `cycle()`, which holds what it's given and clones it, as std's
+    // `Cycle` does (ADR 0915).
+    let cycle = super::recognition::trait_method(tcx, iterator_traits[0], "cycle");
     // Each call of a `rev()`, an `enumerate()` or a `map()` given, as what's called or
     // an argument, borrowed for it or not, to another call: its `fn_span`,
     // and the call's, its callee, and the argument's place.
@@ -854,8 +882,15 @@ fn in_place_adapters<'tcx>(
             let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {
                 continue;
             };
+            // Not one held to be cloned, by `cycle()` or as a part of an
+            // adapter cloned apart, which its maker holds: std's struct,
+            // which its compiled `Clone` clones, but one cloned apart
+            // itself, a `map()`'s, made by its own maker (ADRs 0525, 0915).
+            let held_to_clone =
+                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);
             if let ty::FnDef(maker, _) = *thir[fun].ty.kind()
                 && super::recognition::makes_held_compiled(tcx, maker)
+                && !held_to_clone
             {
                 given.push((fn_span, at, callee, index, maker));
             }

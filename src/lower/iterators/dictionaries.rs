@@ -160,9 +160,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.user_next(ty, iterator, "next", span)?
             }
             // An array's, a struct holds, its `$iter` stepped (ADR 0544),
-            // and an adapter cloned apart, a `map`'s or a `filter`'s, the
-            // JS iterator it is, which its clone makes again (ADR 0525).
-            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {
+            // an adapter cloned apart, a `map`'s or a `filter`'s, the JS
+            // iterator it is, which its clone makes again (ADR 0525), and
+            // std's struct, a `rev()`'s, which its compiled `Clone` clones
+            // (ADR 0915).
+            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
                 (Expr::helper(if boxed { "$nextSome" } else { "$next" }), boxed)
             }

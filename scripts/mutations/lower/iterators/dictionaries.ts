@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-array-unstepped",
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n                let boxed",
-    replace: "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty)) && false => {\n                let boxed",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n                let boxed",
+    replace: "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span)) && false => {\n                let boxed",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "cycle-of-cloned-apart-refused",
     breaks: "`cycle()` of a `map` or a `filter` is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
-    replace: "            None if self.steps_an_array(ty) => {\n",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
+    replace: "            None if self.steps_an_array(ty) || self.compiled_struct_at(ty, span) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
@@ -211,5 +211,13 @@ export const mutations: Mutation[] = [
     find: "                    .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
+  {
+    name: "cycled-std-struct-refused",
+    breaks: "`cycle()` of std's struct, a `rev()`'s, is refused where it steps it as the JS iterator it is (#308, ADR 0915)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
+    replace: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
 ];

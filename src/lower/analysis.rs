@@ -89,7 +89,10 @@ pub(super) use super::recognition::serde_impl;
 /// std's struct (ADR 0908).
 pub fn collect_bodies(tcx: TyCtxt<'_>, std_iterators: bool) -> Vec<Body<'_>> {
     let mut bodies = lowered_bodies(tcx);
-    super::body_queries::results_in_place(tcx, &mut bodies);
+    // The types the crate clones, whose adapters cloned apart hold their
+    // parts (ADRs 0525, 0915).
+    let cloned = clones::cloned_types(tcx, &bodies.iter().collect::<Vec<_>>());
+    super::body_queries::results_in_place(tcx, &mut bodies, &cloned);
     if std_iterators {
         for body in &mut bodies {
             body.facts.in_place_adapters.clear();
