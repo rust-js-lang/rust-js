@@ -6,7 +6,7 @@ mod load_cycles;
 use self::holes::{Holes, fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
-use super::bindings::Export;
+use super::bindings::{Export, nullable_local};
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
@@ -241,8 +241,8 @@ pub fn lower_crate<'tcx>(
         // One written of other constants read by their names, `A | B`, is
         // its initializer's, as it's written, not rustc's value of it, which
         // would lose the names, and what a library's flag says where it's
-        // swapped for another (ADR 0031, amended).
-        let by_name = |id: DefId| fns.contains_key(&id) || foreign.item(id).is_some();
+        // swapped for another (ADR 0031, amended), or `js::NULL`'s `null` (ADR 0935).
+        let by_name = |id: DefId| fns.contains_key(&id) || foreign.item(id).is_some() || nullable_local(tcx, id);
         if let Some(body) = as_code
             && super::body_queries::written_of_constants(&body.thir, &by_name)
         {

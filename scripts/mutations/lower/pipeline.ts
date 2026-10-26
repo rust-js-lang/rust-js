@@ -565,8 +565,8 @@ export const mutations: Mutation[] = [
     name: "const-of-library-consts-folded",
     breaks: "a const written of a library's feature flag is rustc's value of it, the flag's answer baked in, not imported",
     file: "src/lower/pipeline.rs",
-    find: "        let by_name = |id: DefId| fns.contains_key(&id) || foreign.item(id).is_some();\n",
-    replace: "        let by_name = |id: DefId| fns.contains_key(&id);\n",
+    find: "fns.contains_key(&id) || foreign.item(id).is_some() ||",
+    replace: "fns.contains_key(&id) ||",
     tests: ["test/cross-crate-items.test.ts", "-t", "a const written of a library's consts imports them by name"],
   },
   {
@@ -648,5 +648,13 @@ export const mutations: Mutation[] = [
     find: "    if !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
     replace: "    if false && !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
+  {
+    name: "js-null-constant-by-value",
+    breaks: "a constant written of `js::NULL` is rustc's value of it, whose `None` is left out, `export const EMPTY = {}` (ADR 0935)",
+    file: "src/lower/pipeline.rs",
+    find: "foreign.item(id).is_some() || nullable_local(tcx, id);\n",
+    replace: "foreign.item(id).is_some();\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::NULL is null where it's written"],
   },
 ];

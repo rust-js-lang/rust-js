@@ -129,3 +129,83 @@ pub fn counted() -> f64 {
   const lib = await import(join(dir, "app", "lib.js"));
   expect([lib.cacheContext.value, lib.counted()]).toEqual([null, 0]);
 });
+
+// React's Fiber has fields of `any` upstream, `memoizedState`,
+// `updateQueue`, `stateNode`, made `null` and then holding what JS writes,
+// `undefined` too. A plain `Option` field made `None` was left out, which
+// React's dev mode, whose objects keep their shape, can't add later; a
+// nullable one wrote `?? null` on every store, a stored `undefined` read
+// back `null`. `js::NULL` is `None` to Rust and `null` where it's written
+// (ADR 0935).
+test("js::NULL is null where it's written, and what's stored after is as it is", async () => {
+  const dir = fixture("js-null");
+  const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+    pub memoized_props: Option<&'static Unknown>,
+    pub update_queue: Cell<Option<&'static Unknown>>,
+}
+
+pub const EMPTY: Fiber = Fiber {
+    memoized_state: Cell::new(js::NULL),
+    memoized_props: js::NULL,
+    update_queue: Cell::new(None),
+};
+
+thread_local! {
+    static CURRENT: Cell<Option<&'static Unknown>> = const { Cell::new(js::NULL) };
+}
+
+pub fn create_fiber() -> Fiber {
+    Fiber {
+        memoized_state: Cell::new(js::NULL),
+        memoized_props: js::NULL,
+        update_queue: Cell::new(None),
+    }
+}
+
+pub fn set_state(fiber: &Fiber, state: Option<&'static Unknown>) {
+    fiber.memoized_state.set(state);
+}
+
+pub fn reset(fiber: &Fiber) {
+    fiber.memoized_state.set(js::NULL);
+}
+
+pub fn has_state(fiber: &Fiber) -> bool {
+    fiber.memoized_state.get().is_some()
+}
+
+pub fn same_state(fiber: &Fiber, other: &Fiber) -> bool {
+    fiber.memoized_state.get() == other.memoized_state.get()
+}
+
+pub fn current_state() -> Option<&'static Unknown> {
+    CURRENT.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("export const EMPTY = {\n  memoizedState: null,\n  memoizedProps: null,\n};\n");
+  expect(out).toContain("const current = null;\n");
+  expect(out).toContain("  return {\n    memoizedState: null,\n    memoizedProps: null,\n  };\n");
+  expect(out).toContain("  fiber.memoizedState = state;\n");
+  expect(out).toContain("  fiber.memoizedState = null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const fiber = lib.createFiber();
+  expect(Object.keys(fiber)).toEqual(["memoizedState", "memoizedProps"]);
+  expect([lib.hasState(fiber), lib.currentState()]).toEqual([false, null]);
+  // What JS stores is kept as it is: `undefined` isn't made `null`.
+  lib.setState(fiber, undefined);
+  expect("memoizedState" in fiber && fiber.memoizedState === undefined).toBe(true);
+  // Either is `None` to the program, as to Rust.
+  expect([lib.hasState(fiber), lib.sameState(fiber, lib.createFiber())]).toEqual([false, true]);
+  lib.setState(fiber, 0);
+  expect([lib.hasState(fiber), fiber.memoizedState, lib.sameState(fiber, lib.createFiber())]).toEqual([true, 0, false]);
+  lib.reset(fiber);
+  expect(fiber.memoizedState).toBeNull();
+});

@@ -384,4 +384,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(classes::Member::Constructor | classes::Member::Method)\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
+  {
+    name: "js-null-written-undefined",
+    breaks: "`js::NULL` is rustc's value of it, `undefined`, so a fiber made `memoized_state: Cell::new(js::NULL)` has no `memoizedState` (ADR 0935)",
+    file: "src/lower.rs",
+    find: "                true => js::Storage::NullForNone.written(value, false),\n",
+    replace: "                true => value,\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::NULL is null where it's written"],
+  },
 ];

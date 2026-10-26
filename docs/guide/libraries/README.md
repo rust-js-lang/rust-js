@@ -104,7 +104,10 @@ What it has:
   null` and `Array.isArray`, `undefined` and `null` too (ADR 0676);
   `get(value, key)`, `set(value, key, to)` and `has(value, key)` are
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
-  ([ADR 0225](../../decisions/0225-unknown-values.md)). A `Json` is a JSON
+  ([ADR 0225](../../decisions/0225-unknown-values.md)). `js::NULL` is a
+  `None` of one that's `null` where it's written, as an `any` upstream
+  starts `null`
+  ([Option and Result](../interop/types.md#option-and-result)). A `Json` is a JSON
   value to `match`, and a `Dict<T>` a plain object of `T`s by name.
 - **`object` is `Object`'s statics,** each as TypeScript types it:
   `define_property`, `define_properties`, `get_own_property_descriptor`,
