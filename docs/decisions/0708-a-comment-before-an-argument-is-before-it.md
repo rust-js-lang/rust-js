@@ -125,3 +125,28 @@ is before it", run in JS, with its parameter's line in the source map,
 and the mutations `param-spans-unknown` (`lower/mir.ts`),
 `param-comments-unplaced`, `param-comment-first-after-a-comma`
 (`to_oxc.ts`) and `param-mapped-nowhere` (`to_oxc/statements.ts`).
+
+## Amendment: a comment after a call's last argument is before its `)`
+
+React's defaultOnUncaughtError writes `console.warn('%s\n\n%s\n',
+componentNameMessage, errorBoundaryMessage, // We let our console.error
+wrapper ..\n);`, the comment after the last argument. Its port writes it
+there too, in `console::warn((..))`'s tuple; it was no start's, so it was
+before the next statement, the call on one line, and the blank line the
+Rust has before the call was lost with it, the comment now the
+statement's. **A comment on lines of its own after a call's or `new`'s
+last argument, only what closes the call after it, `,` and `)`, is before
+the call's `)`** (`to_oxc/arguments.rs`): attached at the call's end's
+last byte, where oxc writes a comment before the `)`, on lines of its
+own, as Prettier keeps it; of the innermost such call, `f(a, g(b, // c\n))`
+`g`'s. The blank line before the statement is as the Rust has it, as
+before. Case N: comments, which nothing runs.
+
+One after an array literal's last element, `&[a, b, // c\n]`, is still
+before the next argument: oxc's array printer writes no comment between
+or after its elements, a gap for the printer, not this rule.
+
+Held by `test/lowering-comments.test.ts`, "a comment after a call's last
+argument is before its parenthesis", run, the guide's `warn`, and the
+mutations `argument-end-comment-unplaced`, `argument-end-of-any-comment-inside`
+and `argument-end-of-the-outermost` (`to_oxc/arguments.ts`).

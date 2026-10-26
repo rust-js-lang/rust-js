@@ -1403,3 +1403,67 @@ js::export_default! {
   expect(js).toContain("export default function named(tag) {\n  if (tag === 0) {\n    return 1;\n  }\n\n  return null;\n}");
   expect([lib.alone(0 as never), lib.default(1 as never)]).toEqual([1, null]);
 });
+
+// React's defaultOnUncaughtError: `console.warn('%s\n\n%s\n',
+// componentNameMessage, errorBoundaryMessage, // We let our console.error
+// wrapper ..\n);`. A comment after a call's last argument, before its `)`,
+// is there, a call's of a rest too, Prettier laying the list out a line
+// each; and the blank line the Rust has before the call stays (ADR 0708,
+// amended). One before a call's argument after it is still before it.
+test("a comment after a call's last argument is before its parenthesis", async () => {
+  const dir = fixture("comment-after-last-argument");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::console;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./log.js#log")]
+fn log(a: &str, b: &str) -> u32 {
+    unreachable!()
+}
+
+pub fn warned(name: &str) {
+    let component_name_message = format!("in <{name}>");
+
+    let error_boundary_message = "Consider adding an error boundary.";
+
+    console::warn((
+        "%s\\n\\n%s\\n",
+        component_name_message,
+        error_boundary_message,
+        // We let our console.error wrapper add the component stack to the end.
+    ));
+}
+
+pub fn logged(name: &str, message: &str) -> u32 {
+    log(
+        name,
+        message,
+        // The last.
+    ) + log(name, message)
+}
+
+fn shout(a: &str, b: &str) -> String {
+    a.to_uppercase() + b
+}
+
+/// Of a call in the last argument, the innermost's.
+pub fn nested(name: &str, message: &str) -> u32 {
+    log(
+        name,
+        &shout(
+            name,
+            message,
+            // Inner.
+        ),
+    )
+}
+`);
+  writeFileSync(join(dir, "log.js"), "export function log(a, b) { return a.length + b.length; }\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    '  const errorBoundaryMessage = "Consider adding an error boundary.";\n\n  console.warn(\n    "%s\\n\\n%s\\n",\n    componentNameMessage,\n    errorBoundaryMessage,\n    // We let our console.error wrapper add the component stack to the end.\n  );\n',
+  );
+  expect(js).toContain("    (log(\n      name,\n      message,\n      // The last.\n    ) +\n      log(name, message))");
+  const lib = await import(join(dir, "lib.js"));
+  expect(js).toContain("    shout(\n      name,\n      message,\n      // Inner.\n    ),\n  );\n");
+  expect([lib.logged("ab" as never, "c" as never), lib.nested("ab" as never, "c" as never)]).toEqual([6, 5]);
+});

@@ -19,6 +19,7 @@
 //! each node from `program.source_text` and the node's span. We hand it the
 //! *Rust* file as `source_text`, and spans that are byte offsets into it.
 
+mod arguments;
 mod cases;
 mod expressions;
 mod loads;
@@ -402,6 +403,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
+    let argument_ends = arguments::argument_ends(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
     // What's first on its line is of these alone.
     let mut statement_starts = starts.clone();
@@ -516,8 +518,20 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         };
         let after_if = |c: &crate::program::Comment| if_keyword(c).is_some();
-        let mut attached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
+        // One after a call's last argument, before its `)`, `f(a, b, // c\n)`:
+        // there, where oxc writes a comment at the `)` (ADR 0708, amended).
+        let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c))
+            .collect();
+        let (ending, own_line): (Vec<&crate::program::Comment>, Vec<&crate::program::Comment>) = own_line
+            .into_iter()
+            .partition(|c| arguments::end_of(c, &argument_ends, sources, &file.comments).is_some());
+        found.extend(
+            ending
+                .iter()
+                .map(|c| arguments::before_parenthesis(c, &argument_ends, sources, &file.comments)),
+        );
+        let mut attached: Vec<(crate::program::Comment, u32)> = (own_line.iter().copied())
             .filter_map(|c| {
                 // Before a match arm, `IMMEDIATE_PRIORITY => -1.0`, its body's: a start whose text to the next is only a pattern and
                 // its `=>` is the arm's test, which an `else if` isn't a
@@ -692,7 +706,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             .collect();
         let unattached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))
-            .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo))
+            .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo) && !ending.iter().any(|e| e.lo == c.lo))
             .filter_map(|c| {
                 let (lo, _) = (spans.iter())
                     .filter(|&&(lo, hi)| lo < c.lo && c.hi <= hi && in_file(lo) && !items.contains(&(lo, hi)))

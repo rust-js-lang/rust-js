@@ -902,6 +902,34 @@ export function area(width, height) {
 }
 ```
 
+One after a call's last argument is there too, before its `)`
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
+
+```rust
+use webapi::console;
+
+pub fn warn(message: &str) {
+    console::warn((
+        "%s\n",
+        message,
+        // The stack is added at the end.
+    ));
+}
+```
+
+```js
+export function warn(message) {
+  console.warn(
+    "%s\n",
+    message,
+    // The stack is added at the end.
+  );
+}
+```
+
+One inside an array literal isn't yet: oxc writes no comment between an
+array's elements, so it's before the argument after the array.
+
 And one before a binary's right operand, where rustfmt writes its
 operator first, is before the operand in JS, after the operator, where
 JS writes it last
