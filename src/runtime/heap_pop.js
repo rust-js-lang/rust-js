@@ -1,5 +1,7 @@
 
-function $heapPop(heap, cmp) {
+// `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
+// `Some` of it boxed, `boxed`, where it could look like `None` (ADR 0051).
+function $heapPop(heap, cmp, boxed) {
   if (heap.length === 0) {
     return undefined;
   }
@@ -25,5 +27,5 @@ function $heapPop(heap, cmp) {
     heap[pos] = item;
     $siftUp(heap, 0, pos, cmp);
   }
-  return top;
+  return boxed ? $some(top) : top;
 }

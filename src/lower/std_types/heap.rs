@@ -32,12 +32,13 @@ pub(in crate::lower) enum HeapOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `BinaryHeap`'s method, of its arguments' values, the heap's type
-    /// `heap_ty` as it's given.
+    /// `heap_ty` as it's given, and whether an `Option` it gives is of what
+    /// could look like `None`, its `Some` boxed (ADR 0051).
     pub(in crate::lower) fn heap_values(
         &mut self,
         op: HeapOp,
         mut values: Vec<Expr>,
-        heap_ty: Ty<'tcx>,
+        (heap_ty, boxed): (Ty<'tcx>, bool),
         span: Span,
     ) -> R<Expr> {
         let heap_ty = match op {
@@ -69,6 +70,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let compare = self.cmp_fn(item, false, span)?;
         values.push(compare);
+        if op == HeapOp::Pop && boxed {
+            values.push(Expr::bool(true));
+        }
         // What `retain` takes out, dropped as it's met (ADR 0098).
         if op == HeapOp::Retain {
             values.extend(self.std_drop_function(item, span)?);

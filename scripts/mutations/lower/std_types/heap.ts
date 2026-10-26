@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "heap-pop-unboxed",
+    breaks: "a `BinaryHeap`'s `pop()` of items that could look like `None` gives its top unboxed: a `None` it holds is an empty heap's `None` (#318)",
+    file: "src/lower/std_types/heap.rs",
+    find: "        if op == HeapOp::Pop && boxed {\n",
+    replace: "        if op == HeapOp::Pop && boxed && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^heap_pop_of_a_param.rs$"],
+  },
+  {
     name: "heap-drain-kept",
     breaks: "`drain()` leaves its heap full",
     file: "src/lower/std_types/heap.rs",

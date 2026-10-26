@@ -100,3 +100,15 @@ of text were refused (#116). A `Vec` of a slice is its items cloned, of a
 deque its items, as `VecDeque::from(v)` is, `Std::ToVec`; of text its
 bytes, as `into_bytes()` gives them. Held by
 `test/corpus/vec_from_items.rs`.
+
+## Amendment: a heap's `pop()` of what could look like `None` (#318)
+
+`pop()` of a `BinaryHeap` of a type parameter's items, which could be
+`Option`s, was refused, "this call, for an `Option` of what could look like
+`None`": TheAlgorithms/rust's Prüfer code, `queue.pop().unwrap()` of a
+`BinaryHeap<V>`. **Its `Some` is boxed as a `Vec`'s `pop()`'s is** (ADR
+0051): `$heapPop(heap, VOrd.cmp, true)`, given `boxed`, gives `$some(top)`,
+so a `None` the heap holds is `Some(None)`, not an empty heap's `None`; of
+other items, as before. Held by the corpus case `heap_pop_of_a_param` and
+the mutations `heap-pop-unboxed` and `heap-pop-box-ignored`.
+

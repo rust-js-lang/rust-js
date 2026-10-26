@@ -9993,7 +9993,9 @@ export function $heapPush(heap, item, cmp) {
   $siftUp(heap, 0, heap.length - 1, cmp);
 }
 
-export function $heapPop(heap, cmp) {
+// `BinaryHeap::pop`: `None` for an empty one, else its top, sifted out;
+// `Some` of it boxed, `boxed`, where it could look like `None` (ADR 0051).
+export function $heapPop(heap, cmp, boxed) {
   if (heap.length === 0) {
     return undefined;
   }
@@ -10019,7 +10021,7 @@ export function $heapPop(heap, cmp) {
     heap[pos] = item;
     $siftUp(heap, 0, pos, cmp);
   }
-  return top;
+  return boxed ? $some(top) : top;
 }
 
 export function $heapSorted(items, cmp) {

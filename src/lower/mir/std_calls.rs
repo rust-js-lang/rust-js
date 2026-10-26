@@ -851,10 +851,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let n = this.value_expr(values.next().expect("the count"), span)?;
                 this.copies_values((item, arg_tys[0]), n, span, out)?
             }))),
-            // A `BinaryHeap`'s, and its `peek_mut()` guard's.
+            // A `BinaryHeap`'s, and its `peek_mut()` guard's; a `pop()`'s
+            // `Some` boxed where its item could look like `None` (ADR 0051).
             Std::Heap(op) => lower(move |this, _, values, _| Ok(Value::Expr({
                 let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                this.heap_values(op, exprs, arg_tys[0], span)?
+                let boxed = this.option_of(output).is_some_and(|item| this.boxed_payload(item));
+                this.heap_values(op, exprs, (arg_tys[0], boxed), span)?
             }))),
             // What was there, taken out.
             Std::DequeRemove => lower(move |this, _, values, _| Ok(Value::Expr({

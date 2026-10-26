@@ -349,6 +349,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::OptionFrom
             | Std::OptionMap
             | Std::Method("pop" | "shift")
+            | Std::Heap(HeapOp::Pop)
             | Std::First
             | Std::SliceLast
             | Std::SliceGet
