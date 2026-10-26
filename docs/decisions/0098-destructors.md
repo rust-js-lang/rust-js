@@ -601,3 +601,35 @@ an iterator's `next`, which may run anything, so only an array written
 out reads only its items. Held by `unread_collected_chain.rs`'s loop and
 the mutation `spread-reads-only-vars`. `has_effects` reads a spread the
 same way, by what it spreads, and no case shows that matters yet.
+
+## Amendment: which type is inside itself is the drop query's (#304, #305)
+
+`drop_in` gave a type a drop function of its own when `drop_size` found
+it inside itself. But `drop_size` walked its own copy of what a type's
+parts are, which went through a `Vec`, a `Box` and an `Rc`, and not a
+map's entries nor an owned iterator's items. So a trie's node in a map of
+its children's counted `Rc`s, TheAlgorithms/rust's Aho-Corasick
+`BTreeMap<char, Rc<RefCell<ACNode>>>`, had its drop written in place
+without end, and rust-js overflowed its stack (#305). **Whether a type is
+inside itself is now `DropQuery::drops_itself`'s answer**, of the walk
+that says what a type drops, `drops_in`, so it goes wherever a drop goes;
+`drop_size` only counts how long a drop is. It asks with a set of the
+types walked, so each is walked once: an answer from the cache was found
+where another type was outermost, and says nothing of what it reaches.
+
+That walk had a wrong answer of its own (#304): a set's arm returned its
+items' answer early, skipping the end of its walk, which takes the type
+off the walk and gives back what its parent's earlier parts reached. A
+type around it that had reached a type further out, `back: Option<Box<T>>`
+beside a `HashSet<String>` in `T`'s field, was then cached as dropping
+nothing, and the destructor of the `T` it held never ran. **What a type's
+parts drop is now `parts_drop`'s, which `drops_in` alone wraps**, so no arm
+can leave the walk open.
+
+Held by the corpus cases `trie_of_counted_rcs` (a trie whose `Weak`
+parent links are upgraded, its labels dropped in Rust's order) and
+`set_field_drops_in_a_cycle`, and the mutations `drops-itself-unasked`,
+`drops-itself-cached`, `drops-itself-revisits` and `walk-reach-lost`.
+The trie's `insert` reads worse than a person's JS, its drop function
+declared in each `catch` and its `for` a `while (true)`, which grew
+`docs/readability.txt`'s `while (true)` share: filed as #306.

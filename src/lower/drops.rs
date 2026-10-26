@@ -123,7 +123,7 @@ struct SwappedDrops<'tcx> {
     used: HashSet<u32>,
     unsupported: HashMap<u32, (Ty<'tcx>, &'static str)>,
     cache: HashMap<Ty<'tcx>, Drops<'tcx>>,
-    sizes: HashMap<Ty<'tcx>, (usize, bool)>,
+    sizes: HashMap<Ty<'tcx>, usize>,
 }
 
 /// A drop `lend_drop_param` lent: under which index, of which associated
@@ -139,7 +139,7 @@ pub(super) struct LentDrop<'tcx> {
 pub(super) struct DropState<'tcx> {
     /// What a type drops depends on, beside its types (ADR 0098).
     types: TypeDrops<'tcx>,
-    sizes: RefCell<HashMap<Ty<'tcx>, (usize, bool)>>,
+    sizes: RefCell<HashMap<Ty<'tcx>, usize>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: HashMap<usize, Rc<Facts>>,
     /// The function being lowered's drop functions, by the index of the
@@ -190,6 +190,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.impl_drop_query().has_drops(self.impl_type(ty))
+    }
+
+    fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
+        self.impl_drop_query().drops_itself(self.impl_type(ty))
     }
 
     /// `drop_query`, in a copied default asked where its types in the
@@ -333,25 +337,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// How many drops writing a `ty`'s in place takes, and whether it's
-    /// inside itself, found once for each type.
-    fn drop_size(&self, ty: Ty<'tcx>, stack: &mut Vec<Ty<'tcx>>) -> (usize, bool) {
-        if !self.has_drops(ty) {
-            return (0, false);
-        }
-        // One inside a type that's inside it: both are inside themselves.
-        if stack.contains(&ty) {
-            return (0, true);
+    /// How many drops writing a `ty`'s in place takes, found once for each
+    /// type; of one inside itself, those outside where it's inside.
+    fn drop_size(&self, ty: Ty<'tcx>, stack: &mut Vec<Ty<'tcx>>) -> usize {
+        if !self.has_drops(ty) || stack.contains(&ty) {
+            return 0;
         }
         if let Some(&known) = self.drop_state.sizes.borrow().get(&ty) {
             return known;
         }
         stack.push(ty);
         let sum = |cx: &Self, tys: &mut dyn Iterator<Item = Ty<'tcx>>, stack: &mut Vec<Ty<'tcx>>| {
-            tys.map(|t| cx.drop_size(t, stack))
-                .fold((0, false), |(n, r), (m, q)| (n + m, r || q))
+            tys.map(|t| cx.drop_size(t, stack)).sum()
         };
-        let (size, recursive) = match ty.kind() {
+        let size = match ty.kind() {
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
                 self.drop_size(args.type_at(0), stack)
             }
@@ -361,12 +360,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // count (ADR 0320); a counted `Weak` drops only a count, an
             // uncounted one nothing (ADR 0843).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => self.drop_size(args.type_at(0), stack),
-            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
-                let (size, recursive) = self.drop_size(pointee, stack);
-                (size + 1, recursive)
-            }
-            ty::Adt(..) if self.counted_weak(ty).is_some() => (1, false),
-            ty::Adt(..) if self.uncounted_weak(ty).is_some() => (0, false),
+            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => self.drop_size(pointee, stack) + 1,
+            ty::Adt(..) if self.counted_weak(ty).is_some() => 1,
+            ty::Adt(..) if self.uncounted_weak(ty).is_some() => 0,
             ty::Tuple(items) => sum(self, &mut items.iter(), stack),
             ty::Adt(adt, args) => {
                 let own = usize::from(
@@ -374,14 +370,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .adt_destructor(adt.did())
                         .is_some_and(|d| self.runs_drop(d.did)),
                 );
-                let (parts, recursive) = sum(self, &mut adt.all_fields().map(|f| self.field_ty(f, args)), stack);
-                (own + parts, recursive)
+                own + sum(self, &mut adt.all_fields().map(|f| self.field_ty(f, args)), stack)
             }
-            _ => (1, false),
+            _ => 1,
         };
         stack.pop();
-        self.drop_state.sizes.borrow_mut().insert(ty, (size, recursive));
-        (size, recursive)
+        self.drop_state.sizes.borrow_mut().insert(ty, size);
+        size
     }
 
     /// A variable's of `ty`, refused where what it holds drops as JS can't
@@ -423,10 +418,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A type of the crate's own whose drop is long, or inside itself, as
         // a list is, gets a function of its own, which calls itself for the
         // ones inside: its drop is written once, not once for each path to it.
+        // Which is inside itself is the drop query's to say, through
+        // whatever drops it, a map's entries too.
         if let ty::Adt(adt, _) = ty.kind()
             && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))
-            && let (size, recursive) = self.drop_size(ty, &mut Vec::new())
-            && (recursive || size > 8)
+            && (self.drops_itself(ty) || self.drop_size(ty, &mut Vec::new()) > 8)
         {
             let type_name = self.tcx.item_name(adt.did()).to_string();
             let name = self.fresh(&format!("drop{type_name}"));

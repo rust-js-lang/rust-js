@@ -38,6 +38,28 @@ struct Walk<'tcx> {
     params_none: bool,
     /// Guards drop nothing: what's found is what else it drops (ADR 0328).
     guards_none: bool,
+    /// Where it's asked whether the outermost type is inside itself, each
+    /// type walked so far: one walked again reaches no more than it did,
+    /// and what's found of each is no answer to cache, a cached one no
+    /// answer of what it reaches.
+    visited: Option<HashSet<Ty<'tcx>>>,
+}
+
+impl Walk<'_> {
+    fn new() -> Self {
+        Walk {
+            seen: Vec::new(),
+            reached: usize::MAX,
+            params_none: false,
+            guards_none: false,
+            visited: None,
+        }
+    }
+
+    /// Whether what it finds of a type is that type's answer anywhere.
+    fn caches(&self) -> bool {
+        !self.params_none && !self.guards_none && self.visited.is_none()
+    }
 }
 
 /// What a type drops depends on, of the function being lowered, beside
@@ -195,15 +217,19 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
 
     /// What dropping a `ty` runs.
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.drops_in(
-            ty,
-            &mut Walk {
-                seen: Vec::new(),
-                reached: usize::MAX,
-                params_none: false,
-                guards_none: false,
-            },
-        )
+        self.drops_in(ty, &mut Walk::new())
+    }
+
+    /// Whether dropping a `ty` drops a `ty` again, inside what it holds: a
+    /// list's node in a `Box` of itself, a trie's in a map of its `Rc`s.
+    /// Its drop is then a function that calls itself.
+    pub(in crate::lower) fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
+        let mut walk = Walk {
+            visited: Some(HashSet::new()),
+            ..Walk::new()
+        };
+        self.drops_in(ty, &mut walk);
+        walk.reached == 0
     }
 
     /// What `ty` drops of its own, its type parameters, and what only their
@@ -212,10 +238,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         self.drops_in(
             ty,
             &mut Walk {
-                seen: Vec::new(),
-                reached: usize::MAX,
                 params_none: true,
-                guards_none: false,
+                ..Walk::new()
             },
         )
     }
@@ -223,16 +247,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// Whether dropping a `ty` runs more than a guard's, which only counts
     /// its cell borrowed once fewer (ADR 0328).
     pub(in crate::lower) fn drops_but_guards(&self, ty: Ty<'tcx>) -> bool {
-        let found = self.drops_in(
+        self.drops_in(
             ty,
             &mut Walk {
-                seen: Vec::new(),
-                reached: usize::MAX,
-                params_none: false,
                 guards_none: true,
+                ..Walk::new()
             },
-        );
-        found != Drops::Nothing
+        ) != Drops::Nothing
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
@@ -370,8 +391,12 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             walk.reached = walk.reached.min(at);
             return Drops::Nothing;
         }
-        if !walk.params_none
-            && !walk.guards_none
+        if let Some(visited) = &mut walk.visited
+            && !visited.insert(ty)
+        {
+            return Drops::Nothing;
+        }
+        if walk.caches()
             && let Some(&known) = self.state.cache.borrow().get(&ty)
         {
             return known;
@@ -379,6 +404,19 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         let depth = walk.seen.len();
         let outer = std::mem::replace(&mut walk.reached, usize::MAX);
         walk.seen.push(ty);
+        let found = self.parts_drop(ty, walk);
+        walk.seen.pop();
+        if walk.reached >= depth && walk.caches() {
+            self.state.cache.borrow_mut().insert(ty, found);
+        }
+        walk.reached = walk.reached.min(outer);
+        found
+    }
+
+    /// What `ty`'s drop runs, by what it is and what its parts run, `ty`
+    /// inside `walk` already: `drops_in` alone ends its walk.
+    fn parts_drop(&self, ty: Ty<'tcx>, walk: &mut Walk<'tcx>) -> Drops<'tcx> {
+        let tcx = self.recognition.tcx;
         let std = |item: StdItem| self.recognition.is_std_type(ty, item);
         let all = |cx: &Self, tys: &mut dyn Iterator<Item = Ty<'tcx>>, walk: &mut Walk<'tcx>| {
             let mut found = Drops::Nothing;
@@ -391,7 +429,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             }
             found
         };
-        let found = match ty.kind() {
+        match ty.kind() {
             ty::Tuple(items) => all(self, &mut items.iter(), walk),
             ty::Array(item, _) | ty::Slice(item) => self.drops_in(*item, walk),
             // What it holds, which it took whole: its drop drops that. Part of
@@ -456,13 +494,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     _ => Drops::Runs,
                 }
             }
-            // A map's keys and values, and a set's items (ADRs 0321, 0467).
+            // A set's items, and a map's keys and values (ADRs 0321, 0467).
+            ty::Adt(_, args) if self.recognition.is_set(ty) => self.drops_in(args.type_at(0), walk),
             ty::Adt(_, args) if self.recognition.is_map(ty) => {
-                let key = self.drops_in(args.type_at(0), walk);
-                if self.recognition.is_set(ty) {
-                    return key;
-                }
-                match (key, self.drops_in(args.type_at(1), walk)) {
+                match (
+                    self.drops_in(args.type_at(0), walk),
+                    self.drops_in(args.type_at(1), walk),
+                ) {
                     (Drops::Unsupported(t, what), _) | (_, Drops::Unsupported(t, what)) => Drops::Unsupported(t, what),
                     (Drops::Nothing, Drops::Nothing) => Drops::Nothing,
                     _ => Drops::Runs,
@@ -579,13 +617,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 }
             }
             _ => Drops::Nothing,
-        };
-        walk.seen.pop();
-        if walk.reached >= depth && !walk.params_none && !walk.guards_none {
-            self.state.cache.borrow_mut().insert(ty, found);
         }
-        walk.reached = walk.reached.min(outer);
-        found
     }
 }
 

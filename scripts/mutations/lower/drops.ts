@@ -27,12 +27,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
-    name: "rc-drop-size-unseen",
-    breaks: "a type inside itself through an `Rc` drops itself forever",
+    name: "drops-itself-unasked",
+    breaks: "a type inside itself, through an `Rc` or a map's entries, has its drop written in place forever, which overflows rust-js's stack (#305)",
     file: "src/lower/drops.rs",
-    find: "                let (size, recursive) = self.drop_size(pointee, stack);\n",
-    replace: "                let (size, recursive) = (1, false);\n",
-    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
+    find: "            && (self.drops_itself(ty) || self.drop_size(ty, &mut Vec::new()) > 8)\n",
+    replace: "            && self.drop_size(ty, &mut Vec::new()) > 8\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_counts|trie_of_counted_rcs).rs$"],
   },
   {
     name: "hoisted-drops-redeclared",
