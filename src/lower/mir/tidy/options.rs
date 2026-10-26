@@ -12,13 +12,19 @@ use super::*;
 /// is a variable nothing changes, so it's what `x` was wherever `x` is
 /// read, a closure's later too; `x` is read nowhere else, and neither is
 /// declared in what reads `x`, which would read another.
+/// Past what's only declared between, `let typeofNextType;` of what the
+/// test's branches set.
 pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        if let Some((tested, rest)) = tested_option(&stmts[i], &stmts[i + 1], &stmts[i + 2..], changing) {
-            stmts[i + 1].kind = tested;
+        let declared = |s: &Stmt| matches!(s.kind, StmtKind::Let(_, None));
+        let at = i + 1 + stmts[i + 1..].iter().take_while(|s| declared(s)).count();
+        if at < stmts.len()
+            && let Some((tested, rest)) = tested_option(&stmts[i], &stmts[at], &stmts[at + 1..], changing)
+        {
+            stmts[at].kind = tested;
             if let Some(rest) = rest {
-                stmts.splice(i + 2.., rest);
+                stmts.splice(at + 1.., rest);
             }
             stmts.remove(i);
         }

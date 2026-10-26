@@ -255,6 +255,14 @@ pub(super) const STAGES: &[Stage] = &[
             // `values-chain-branch-values-off`, `values-chain-declarations-off`,
             // `inlined-in-values-off`).
             pass("inlined", inlined_of),
+            // An `Option` made where it's tested, `if let Some(o) =
+            // kind.object()`: the test it's made by (ADR 0910); before its
+            // branches are one value, `o?.$$typeof` of `if (o) { t =
+            // o.$$typeof; } else { t = undefined; }`, which it's no test of.
+            pass("tested options", |b, _| {
+                let changing = changing(b);
+                js::statement_lists(b, &mut |s| tested_options(s, &changing))
+            }),
             pass("branch values", branch_values_of),
             pass("declarations", |b, _| declarations(b)),
             pass("inlined in values", inlined_of),
@@ -264,12 +272,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("implied tests", |b, _| {
                 let changing = changing(b);
                 js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))
-            }),
-            // An `Option` made where it's tested, `if let Some(o) =
-            // kind.object()`: the test it's made by (ADR 0910).
-            pass("tested options", |b, _| {
-                let changing = changing(b);
-                js::statement_lists(b, &mut |s| tested_options(s, &changing))
             }),
             // A chain `rev()` was given in a temporary, read in place now,
             // `$rev(c.filter(p))`: reversed inward, as `rev_items` makes one

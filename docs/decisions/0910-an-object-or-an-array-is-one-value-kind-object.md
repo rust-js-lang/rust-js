@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0677](0677-a-weak-key-is-what-kind-holds.md),
 whose `Kind::Object(_) | Kind::Array(_)` was no one key, and extends
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)'s
-test of them, `typeof value === "object" && value !== null`.
+test of them, `typeof value === "object" && value !== null`. Amended
+(2026-10-26): an `Option` made where it's tested is its test before its
+branches are one value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. It's the value
 itself where it's an object or an array, and `None` where it isn't, as
@@ -136,3 +138,32 @@ if (typeof value === "object" && value !== null) {
 - Mutations `kind-object-any-value`, `tested-option-undefined-value`,
   `tested-option-changed-value`, `tested-option-read-elsewhere`,
   `presence-of-a-made-option`, `negated-presence-untested`.
+
+## Amendment: an `Option` made where it's tested, before its branches are one value (2026-10-26)
+
+React's HotReloading reads what a type is in one conditional:
+
+```js
+const typeofNextType =
+  typeof nextType === 'object' && nextType !== null ? nextType.$$typeof : null;
+```
+
+Its port, `let typeof_next_type = if let Some(next_type) =
+js::classify(next_type).object() { js::get(next_type, "$$typeof") } else {
+None };`, read `nextType = typeof nextType === "object" && nextType !== null
+? nextType : undefined; const typeofNextType = nextType?.$$typeof;`: tidy's
+`tested options`, which reads an `Option` made where it's tested as its
+test, ran after `branch values` had made the `if`'s branches one value,
+`nextType$1?.$$typeof`, no test of it, and stopped at the `let` declared
+between, `let typeofNextType;` of what the branches set.
+
+**`tested options` runs before `branch values`, past what's only declared
+between**: `const typeofNextType = typeof nextType === "object" && nextType
+!== null ? nextType.$$typeof : undefined;`, one value of the test the
+`Option` was made by. Case N, as above: the same test, the property read
+where it holds.
+
+Held by `test/js-object.test.ts`, "an object's property read where its
+test holds is one conditional", run in JS, and the mutations
+`tested-option-before-a-declaration` (`lower/mir/tidy/options.ts`) and
+`tested-options-after-branch-values` (`lower/mir/tidy/stages.ts`).

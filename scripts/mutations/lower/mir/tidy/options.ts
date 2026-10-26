@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    if js::declares(reads, x) || js::declares(reads, v) {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
+  {
+    name: "tested-option-before-a-declaration",
+    breaks: "`const x = t ? v : undefined; let r; if (x) { r = x.p; } else { r = undefined; }` keeps the `Option`, as a `let` is between, so `if let Some(v) = js::classify(v).object() { js::get(v, \"$$typeof\") } else { None }` reads `v = t ? v : undefined; const r = v?.$$typeof;`",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "        let at = i + 1 + stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
+    replace: "        let at = i + 1 + 0 * stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
+    tests: ["test/js-object.test.ts", "-t", "an object.s property read where its test holds is one conditional"],
+  },
 ];

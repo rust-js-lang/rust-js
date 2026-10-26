@@ -1142,3 +1142,28 @@ pub fn objects(values: &[Option<&'static Unknown>]) -> Vec<bool> {
   expect([first === again, again.stack, array === arrayAgain, arrayAgain.stack, text === textAgain, textAgain.stack]).toEqual([true, "at A", true, "at C", false, "at F"]);
   expect(lib.objects([{}, [], null, undefined, "s", 1, () => 1, Symbol.iterator])).toEqual([true, true, false, false, false, false, false, false]);
 });
+
+// React's HotReloading reads `typeof nextType === 'object' && nextType !==
+// null ? nextType.$$typeof : null`; its port, `if let Some(next_type) =
+// js::classify(next_type).object() { js::get(next_type, "$$typeof") } else
+// { None }`, the `Option` `kind.object()` made where it's tested: that
+// test, one conditional, not `v = t ? v : undefined; const r = v?.$$typeof;`
+// (ADR 0910, amended).
+test("an object's property read where its test holds is one conditional", async () => {
+  const { js, lib } = await compiled("object-read-where-tested", `use js::Unknown;
+
+pub fn type_of_type(next_type: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    let typeof_next_type = if let Some(next_type) = js::classify(next_type).object() {
+        js::get(next_type, "\$\$typeof")
+    } else {
+        None
+    };
+    typeof_next_type
+}
+`);
+  expect(js).toContain(
+    'const typeofNextType =\n    typeof nextType === "object" && nextType !== null ? nextType.$$typeof : undefined;\n',
+  );
+  const tag = Symbol("tag");
+  expect([lib.typeOfType({ $$typeof: tag }), lib.typeOfType(null), lib.typeOfType(3), lib.typeOfType(undefined)]).toEqual([tag, undefined, undefined, undefined]);
+});
