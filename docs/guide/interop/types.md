@@ -1665,6 +1665,41 @@ export function sameSource(prev, next) {
   );
 }
 ```
+- **`function::bind(f, this_arg)` is `f.bind(thisArg)`**, a function of
+  `f`'s own type, which does what `f` does, its `this` any value as
+  `apply`'s is; `f` is a function of a type that's `Copy`, a `fn` pointer
+  or a `&dyn Fn`, as the bound one is another of it
+  ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md),
+  amended). React keeps each frame's so:
+
+```rust
+use js::function;
+
+pub type CallRender = fn(u32) -> u32;
+
+struct CallRenderFrame {
+    #[cfg_attr(rust_js, rust_js::name = "react_stack_bottom_frame")]
+    react_stack_bottom_frame: CallRender,
+}
+
+#[cfg_attr(rust_js, rust_js::name = "callRender")]
+const CALL_RENDER: CallRenderFrame = CallRenderFrame {
+    react_stack_bottom_frame: |lanes| lanes + 1,
+};
+
+thread_local! {
+    pub static CALL_RENDER_IN_DEV: CallRender =
+        function::bind(CALL_RENDER.react_stack_bottom_frame, Some(&CALL_RENDER));
+}
+```
+
+```js
+const callRender = {
+  react_stack_bottom_frame: (lanes) => (lanes + 1) >>> 0,
+};
+
+export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRender);
+```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
   the block it's written in; a closure is an arrow

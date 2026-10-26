@@ -600,7 +600,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0735 A comment in a macro, before the `fn` it writes, is the function's](0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](0718-a-typed-array-is-rest-arguments-spread.md)
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md)
-- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too)*
+- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too; amended: `bind`, a function of its type)*
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case)*
 - [0743 A part of a chain of tests an earlier test decides is left out](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)

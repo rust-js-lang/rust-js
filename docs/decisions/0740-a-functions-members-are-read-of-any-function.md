@@ -5,7 +5,8 @@ and [0700](0700-typescripts-function-gives-any-value.md): what a JS
 function value has besides its call.
 
 Extended by [0848](0848-apply-is-functions-and-its-this-may-be-null.md):
-`function::apply`, its `this` `null` too.
+`function::apply`, its `this` `null` too. Amended (2026-10-26):
+`function::bind`, a function of the one it binds' type.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
 property itself, read of the function JS has.
@@ -85,3 +86,50 @@ case "function": {
   of any function": each of a `Kind::Function`, a `dyn Fn(&str) -> u32`
   and a function item, run.
 - The guide's [JS values](../guide/interop/types.md#js-values-jsobject-and-unknown).
+
+## Amendment: `bind` is a function of the type it binds (2026-10-26)
+
+React's `ReactFiberCallUserSpace.js` keeps each frame's function bound
+to the object it's a member of, which keeps its name a minifier would
+drop:
+
+```js
+export const callComponentInDEV = __DEV__
+  ? callComponent.react_stack_bottom_frame.bind(callComponent)
+  : null;
+```
+
+The js crate had no `bind`, so the port kept the member itself, which
+is another function's value than upstream's.
+
+**`function::bind(f, this_arg)` is `f.bind(thisArg)`, of `F: AnyFunction<M>
++ Copy`, and gives an `F`**, as TypeScript's `CallableFunction.bind<T>(this:
+T, thisArg)` gives `OmitThisParameter<T>`: of a `fn` pointer, a `fn`
+pointer, of a `&dyn Fn(u32) -> u32`, one of it. Its `this_arg` is
+`apply`'s, any value, `None` of `undefined`, `Some(&Kind::Null)` of `null`.
+
+```rust
+thread_local! {
+    pub static CALL_ADD_IN_DEV: CallAdd =
+        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD));
+}
+```
+```js
+export const callAddInDev = callAdd.react_stack_bottom_frame.bind(callAdd);
+```
+
+- **`Copy`, as the bound function is another of it**: two values that call
+  the one function, which a closure that isn't `Copy`, one that owns what it
+  captures, can't be in Rust. A program's functions never read their
+  `this`, so the bound one does what `f` does; a JS function's sees
+  `this_arg`, as upstream's does.
+- **Its arguments after `thisArg` aren't bound**: `bind(thisArg, ...args)` is
+  a function of fewer parameters, a type Rust can't name of `F`'s. A closure
+  that captures them, `move |b| f(a, b)`, is Rust's own way.
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the binding is JS's
+  own call, and the function it gives calls `f`.
+
+Held by `test/js-object.test.ts`, "a function bound to a this is a
+function of its signature": a frame's member bound to its frame, its
+`name` `bound react_stack_bottom_frame`, and a `&dyn Fn` bound to `null`
+and to `undefined`, each `this` seen by the JS function, run.

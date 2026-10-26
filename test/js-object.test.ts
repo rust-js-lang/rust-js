@@ -845,6 +845,54 @@ pub fn has_a(object: &JsObject) -> bool {
   expect(lib.hasA({ b: 1 })).toBe(false);
 });
 
+// ADR 0740, amended: `Function.prototype.bind(thisArg)`, a function of the
+// same signature, as React's `ReactFiberCallUserSpace.js` keeps each frame's:
+// `callComponent.react_stack_bottom_frame.bind(callComponent)`. Its `this` is
+// any value, `null` too; called, it's the function it binds.
+test("a function bound to a this is a function of its signature", async () => {
+  const { js, lib, warnings } = await compiled("js-object-function-bind", `use js::{Kind, function};
+
+pub type CallAdd = fn(u32, u32) -> u32;
+
+struct CallAddFrame {
+    #[cfg_attr(rust_js, rust_js::name = "react_stack_bottom_frame")]
+    react_stack_bottom_frame: CallAdd,
+}
+
+#[cfg_attr(rust_js, rust_js::name = "callAdd")]
+const CALL_ADD: CallAddFrame = CallAddFrame {
+    react_stack_bottom_frame: |a, b| a + b,
+};
+
+thread_local! {
+    pub static CALL_ADD_IN_DEV: CallAdd =
+        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD));
+}
+
+pub fn added(a: u32) -> u32 {
+    CALL_ADD_IN_DEV.with(|call_add| call_add(a, 1))
+}
+
+pub fn bound(f: &dyn Fn(u32) -> u32) -> u32 {
+    let to_null = function::bind(f, Some(&Kind::Null));
+    to_null(1) + function::bind(f, None)(2)
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("export const callAddInDev = callAdd.react_stack_bottom_frame.bind(callAdd);");
+  expect(js).toContain("const toNull = f.bind(null);");
+  expect(js).toContain("(toNull(1) + f.bind()(2)) >>> 0");
+  expect(lib.added(2)).toBe(3);
+  expect(lib.callAddInDev.name).toBe("bound react_stack_bottom_frame");
+  // A module's function is strict: its `this` is what it's bound to.
+  const seen: unknown[] = [];
+  expect(lib.bound(function (this: unknown, n: number) {
+    seen.push(this);
+    return n * 10;
+  })).toBe(30);
+  expect(seen).toEqual([null, undefined]);
+});
+
 // ADRs 0695 to 0700: React's `shared/ReactComponentStackFrame.js` as a port writes
 // it, each shape upstream's: `Fake` a function declaration where it's
 // written, `new fn()`, `delete fn.prototype.props`, `fn()` for what it

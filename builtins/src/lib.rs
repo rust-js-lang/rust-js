@@ -404,6 +404,19 @@ pub mod function {
     ) -> Option<&'static super::Unknown> {
         unreachable!()
     }
+
+    /// [`f.bind(thisArg)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/bind):
+    /// a function of `f`'s signature that calls `f` with `this_arg` as its
+    /// `this`, any value, `None` of `undefined`, `Some(&Kind::Null)` of
+    /// `null`, as TypeScript's `bind(thisArg)` gives `OmitThisParameter<T>`:
+    /// `f` called through it does what `f` does. React keeps a frame's
+    /// function so, `callComponent.react_stack_bottom_frame.bind(callComponent)`
+    /// of `function::bind(CALL_COMPONENT.react_stack_bottom_frame,
+    /// Some(&CALL_COMPONENT))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "bind")]
+    pub fn bind<F: AnyFunction<M> + Copy, M>(this: F, this_arg: Option<&dyn super::IntoUnknown>) -> F {
+        unreachable!()
+    }
 }
 
 functions! {
