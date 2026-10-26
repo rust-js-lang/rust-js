@@ -3,8 +3,8 @@
 Status: Accepted. Amends [0117](0117-output-hooks.md) and
 [0207](0207-declarations-printed-by-typescript.md); delivers the layout
 rule of [0378](0378-one-file-at-a-time.md). Amended below: the app's
-build only, not a file compiled alone; and its config, for where the
-file goes, beside its Rust.
+build only, not a file compiled alone; its config, for where the file
+goes, beside its Rust; and `rust-js build` says why a layout wasn't taken.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): how the JS is laid
 out, not what it means.
@@ -114,3 +114,20 @@ source (ADRs 0041, 0273), asked, not made again.
   the file goes, beside its Rust" holds it: an override of `src/**/*.{js,ts}`
   lays out the JS and the `.d.ts`; the mutation
   `prettier-at-the-built-path` proves it.
+
+## Amendment: `rust-js build` says why a layout wasn't taken (2026-10-26)
+
+A layout of the app's Prettier that changes the program is refused, and
+the file written as rust-js lays it out, which a warning says (above),
+`warning: rust-js: the app's Prettier changed the program: ..`. rust-js
+prints it once rustc is done, no diagnostic of rustc's, and Cargo passes
+it on, on its stderr; `checkCargo` (`tooling/cargo.js`), which reads only
+Cargo's messages of a build that succeeds, dropped it, so `rust-js build`
+of React's reconciler wrote ReactFiberTreeContext as rust-js lays it out
+and said nothing of why. **What rust-js warns of past rustc's diagnostics,
+each `warning: rust-js:` line Cargo passes on, is `checkCargo`'s
+`warnings`, which `rust-js build` gives its log**, as it does what a
+crate's checks say (ADR 0117). Case N: what's printed.
+
+Held by `test/settings.test.ts`, "rust-js build says why the app's
+Prettier's layout wasn't taken", of a Prettier that adds a statement.

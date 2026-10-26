@@ -150,7 +150,9 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * `targetDir` is where Cargo builds, its own `target/` without one.
  * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
  * `manifests` is each crate's, validated, as the compiler wrote it.
- * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]> }>}
+ * `warnings` are what rust-js says of a build that succeeds, past rustc's
+ * diagnostics, each a line.
+ * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
  */
 export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
@@ -165,7 +167,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (offline) args.push("--offline");
   const build = await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline });
   const env = { ...cargoEnv(compiler, react, build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
-  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
+  const { stdout, stderr } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     // A package's crate is quiet: what it warns of is its author's, which
     // the app can't act on, as ReScript has a dependency's (ADR 0414).
@@ -210,19 +212,23 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     }
   }
   if (!compiled) throw new Error(`rust-js compiled no ${tests ? "tests" : "library"} of ${packageName ?? manifest}`);
-  if (tests) return { js, crates };
+  // What rust-js says of a build that succeeds, past rustc's diagnostics,
+  // which Cargo passes on as it is: the app's Prettier's layout not taken,
+  // and why (ADR 0381, amended).
+  const warnings = String(stderr ?? "").split("\n").filter((line) => line.startsWith("warning: rust-js:"));
+  if (tests) return { js, crates, warnings };
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
   const manifests = [...validated].map(([crate, manifest]) => ({ crate, ...manifest }));
   // Each crate's modules' JS, where it's served from.
   const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
-  if (!inSource) return { js, crates, manifests: validated, files: served((file) => file) };
+  if (!inSource) return { js, crates, manifests: validated, files: served((file) => file), warnings };
   // A crate of crates.io's JS is the app's, where its Cargo.toml is (ADR 0415).
   const vendored = build.dependencies.map((dependency) => ({ ...dependency, to: join(dirname(manifest), "rust-js", "crates", `${dependency.name}-${dependency.version}`) }));
   const moved = writeInSource(manifests, ledger, routes, { check, packages, vendored });
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
-  return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)) };
+  return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)), warnings };
 }
 
 /**

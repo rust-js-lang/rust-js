@@ -1,7 +1,8 @@
 # 0895. An `i32`'s `<<` and an operand of a bitwise operator need no wrap
 
 Status: Accepted. Extends [0011](0011-numbers.md), which keeps each
-integer's result in range with a wrap, `x | 0` or `x >>> 0`.
+integer's result in range with a wrap, `x | 0` or `x >>> 0`. Amended
+(2026-10-26): a signed remainder given to `+`, `-` or `*` needs no wrap.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: each wrap left out is one JS's operator makes itself, of the
@@ -82,3 +83,28 @@ expression it's given, its wrap there to see.
   `bitwise-operand-of-any-or-unwrapped`, `negation-unwrapped`
   (`lower/std_types/number/operators.ts`), `clz32-argument-kept-wrapped`
   (`lower/std_types/number.ts`).
+
+## Amendment: a signed remainder given to `+`, `-` or `*` needs no wrap (2026-10-26)
+
+React's ReactFiberTreeContext writes `baseLength - (baseLength % 5)`. Its port, of
+`i32`s, printed `(length - ((length % 5) | 0)) | 0`: a signed remainder's
+`| 0` makes JS's `-0`, `-10 % 5`, an integer's `0` (ADR 0064), and an
+operand is another's result, wrap and all. The parentheses it took were
+more than Prettier keeps, which the app's layout of the file refused.
+
+**A signed remainder, of a divisor that can't panic, given to a wrapped
+`+`, `-` or `*`, has no `| 0` of its own**, `(length - (length % 5)) | 0`:
+what's in range of in-range integers already, `%`'s is, and where it's
+`-0`, the operator gives what it gives of `0` but a zero's sign, `x -
+(-0)` is `x`, `-0 * b` is `±0`, which its wrap, `| 0`, `>>> 0`, a narrower
+type's shifts or `Math.imul`'s ToInt32, makes `0`. As a comparison reads
+one already (`without_zero_sign`). Not an operand of one whose range
+shows it exact (ADR 0576), unwrapped, where a `-0` would stay one; nor,
+as yet, of `/` or `%`, nor the remainder of a divisor that may panic,
+`$rem(a, d, ..) | 0`, the helper's, which this leaves as they were. Case
+N: every value computes as it did.
+
+Held by the corpus case `remainder_operands.rs`, against native Rust, at
+each type's `MIN` and `MAX` and of a remainder that's `-0`, `i8`'s too; and
+the mutation `remainder-operand-wrapped`
+(`lower/std_types/number/operators.ts`).

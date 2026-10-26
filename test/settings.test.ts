@@ -9,7 +9,8 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { decodeMappings, lookup } from "./sourcemap";
 import { check } from "./crates";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { createNativeBuilder } from "../tooling/build.js";
+import { buildCompiler, compiler, fixture, installRuntime, root } from "./support";
 
 beforeAll(buildCompiler);
 
@@ -255,3 +256,28 @@ test("Prettier as a transform is refused: rust-js runs the app's Prettier itself
   expect(out.stderr).toContain(".prettierrc");
 });
 
+
+// A layout the app's Prettier makes that changes the program is refused, and
+// rust-js's written, which a warning says, past rustc's diagnostics: `rust-js
+// build` gives it to its log, as it does a check's, not lost with the rest of
+// what Cargo printed (ADR 0381, amended).
+test("rust-js build says why the app's Prettier's layout wasn't taken", async () => {
+  const dir = fixture("settings-prettier-refused");
+  installRuntime(dir);
+  mkdirSync(join(dir, "src"));
+  writeFileSync(join(dir, "src", "lib.rs"), rust);
+  writeFileSync(join(dir, ".prettierrc"), "{}");
+  writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "set"\nversion = "0.0.0"\nedition = "2024"\n`);
+  // A Prettier that adds a statement to the JS it.s given.
+  mkdirSync(join(dir, "node_modules", "prettier"), { recursive: true });
+  writeFileSync(join(dir, "node_modules", "prettier", "package.json"), JSON.stringify({ name: "prettier", main: "index.js" }));
+  writeFileSync(
+    join(dir, "node_modules", "prettier", "index.js"),
+    `module.exports = { resolveConfigFile: async () => ${JSON.stringify(join(dir, ".prettierrc"))}, resolveConfig: async () => ({}), format: async (code, { filepath }) => (filepath.endsWith(".js") ? code + "\\nchanged();\\n" : code) };\n`,
+  );
+  const warnings: string[] = [];
+  const builder = createNativeBuilder({ root: dir, rustJs: compiler });
+  await builder.build({ manifestPath: join(dir, "Cargo.toml"), packageName: "set", offline: true, warn: (warning: string) => warnings.push(warning) });
+  expect(warnings.join("\n")).toContain("warning: rust-js: the app's Prettier changed the program: it added a ");
+  expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).not.toContain("changed();");
+}, 300_000);

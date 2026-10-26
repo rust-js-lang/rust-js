@@ -177,7 +177,9 @@ Where Prettier finds a config for a file, `.prettierrc` or a
 the config for where the file goes, beside its Rust, so an override by
 path, `{ files: "packages/*/src/**/*.js", options: { .. } }`, is the
 file's. Without one, rust-js lays it out its own way ([ADR 0381](../../decisions/0381-the-apps-prettier-lays-it-out.md)). There's no rust-js setting
-for layout.
+for layout. A layout of Prettier's that would change the program isn't
+taken: the file is rust-js's layout, and `rust-js build` prints a
+`warning: rust-js: the app's Prettier ..` that says why.
 
 Either way, an object is on lines of its own where its struct literal is
 written across lines, as rustfmt writes one too long for a line, and on

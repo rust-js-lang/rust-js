@@ -96,7 +96,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Expr::bin(js_op, l, r));
         }
-        // Integers: compute exactly in JS, then wrap back into range.
+        // Integers: compute exactly in JS, then wrap back into range. A
+        // signed remainder's operand without its `| 0`, `length - (length %
+        // 5)`: its `-0` gives what `0` does but a zero's sign, which the
+        // wrap makes `0` (ADR 0895, amended).
+        let (l, r) = match op {
+            BinOp::Add | BinOp::Sub | BinOp::Mul => (without_zero_sign(l), without_zero_sign(r)),
+            _ => (l, r),
+        };
         Ok(match op {
             BinOp::Add => num.wrap(Expr::bin(Op::Add, l, r)),
             BinOp::Sub => num.wrap(Expr::bin(Op::Sub, l, r)),

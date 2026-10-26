@@ -194,8 +194,8 @@ export function createNativeBuilder({ root, rustJs }) {
      * `rust-js build`'s Cargo build (ADR 0412): `checkCargo` of `options`,
      * each module's JS written beside its Rust, to be committed (ADR 0041),
      * or with `check`, compared with it; then each of the workspace's
-     * crates' checks of its JS, a build's (ADR 0117), what they say given
-     * to `warn`. What Cargo writes is out of what a bundler watches:
+     * crates' checks of its JS, a build's (ADR 0117), what they say, and
+     * what rust-js says of the build, given to `warn`. What Cargo writes is out of what a bundler watches:
      * Vite's Tailwind takes a file of `target/` for a new one to scan, and
      * Turbopack each for a change.
      * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react" | "inSource" | "targetDir"> & { warn?: (message: string) => void }} options
@@ -204,6 +204,7 @@ export function createNativeBuilder({ root, rustJs }) {
       const options = { ...given, inSource: true, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
       const { root: workspace } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
       const built = await builder.checkCargo(options);
+      for (const warning of built.warnings) warn?.(warning);
       for (const [crate, manifest] of built.manifests) {
         // The app's own crates' checks, not an npm package's (ADR 0414).
         if (manifest.input.startsWith(workspace + sep) && !packageOf(options.packages ?? [], manifest.input)) {

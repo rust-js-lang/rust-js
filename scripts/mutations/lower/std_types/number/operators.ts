@@ -157,4 +157,13 @@ export const mutations: Mutation[] = [
     replace: "                Ok(Expr::unary(UnaryOp::Neg, a))\n",
     tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
   },
+  {
+    name: "remainder-operand-wrapped",
+    breaks: "a signed remainder given to `+`, `-` or `*` keeps its `| 0`, `(length - ((length % 5) | 0)) | 0`, where the operator's wrap makes its `-0` `0` (ADR 0895, amended)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            BinOp::Add | BinOp::Sub | BinOp::Mul => (without_zero_sign(l), without_zero_sign(r)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^remainder_operands.rs$"],
+    snapshots: true,
+  },
 ];

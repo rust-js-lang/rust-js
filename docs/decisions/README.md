@@ -400,7 +400,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0378 A Next.js app moves to Rust one file at a time](0378-one-file-at-a-time.md)
 - [0379 A compiler that ran is no change to it](0379-a-compiler-that-ran-is-no-change.md)
 - [0380 The app's config compiles its Rust: `withRustJs(nextConfig)`](0380-with-rust-js.md) *(superseded by 0412)*
-- [0381 The app's Prettier lays out what rust-js writes](0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust)*
+- [0381 The app's Prettier lays out what rust-js writes](0381-the-apps-prettier-lays-it-out.md) *(amended: the app's build only; its config for where the file goes, beside its Rust; amended: `rust-js build` says why a layout wasn't taken)*
 - [0382 A module has a file for what it has, the root too](0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](0383-a-files-leading-comments-are-its-jss.md) *(amended: a blank line inside a block comment parts nothing)*
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](0384-a-ref-prop-is-reacts-ref.md)
@@ -680,7 +680,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0884 A `js::Map`'s value is any value, and `get` tells a `None` from a missing key](0884-a-maps-value-is-any-value.md)
 - [0888 `rust-js clippy` lints the app as rust-js reads it](0888-rust-js-clippy.md)
 - [0894 A bitwise operator's assignment is its compound](0894-a-bitwise-assignment-is-its-compound.md) *(amended: an item's, its index checked, and at a `const` index)*
-- [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md)
+- [0895 An `i32`'s `<<` and an operand of a bitwise operator need no wrap](0895-an-operand-of-a-bitwise-operator-needs-no-wrap.md) *(amended: a signed remainder given to `+`, `-` or `*` needs no wrap)*
 - [0896 A test of bits against `0` is their truth](0896-a-test-of-bits-against-zero-is-their-truth.md) *(amended: an integer's `!= 0` is its truth, not its `== 0` nor a remainder's or a `match` pattern's)*
 - [0897 An element a guard reaches is its place, and `vec![..]` borrows nothing](0897-an-element-a-guard-reaches-is-its-place.md)
 - [0898 A binding that runs only what it's given, given only numbers and text, borrows nothing](0898-a-binding-that-runs-only-what-its-given.md)
