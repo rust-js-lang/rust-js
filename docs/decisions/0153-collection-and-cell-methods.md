@@ -106,3 +106,19 @@ refused (ADR 0315's `k(a) === k(b)`); its keys are compared by their `==`,
 each named first where that reads it more than once: `const aKey = k(a)`.
 Held by `test/corpus/search_by_ord.rs` and the mutations
 `binary-search-by-lt` and `dedup-key-by-identity`.
+
+## Amendment: a `T: Clone`'s `to_owned()` is its `clone()` (#316)
+
+`to_owned()` was a `str`'s `String` and a slice's `to_vec()`; of anything
+else, std's blanket `impl<T: Clone> ToOwned for T`, it was refused:
+TheAlgorithms/rust's activation functions, `let mut _vector =
+vector.to_owned();` of a `&Vec<f64>`. That impl's body is `self.clone()`,
+so **a `to_owned()` std doesn't know otherwise is `Clone::clone` of the
+same `Self`**, `vector.slice()`, a struct's copy, `TClone.clone(x)` of a
+generic `T`; a `Path`'s and an `OsStr`'s too, a string as a `PathBuf` and
+an `OsString` are. A slice's stays its `to_vec()`: a clone of a `[T]` is
+the array it's given, so a change to the copy would change the original
+(`to_owned_of`, in recognition). Held by the corpus case
+`to_owned_is_clone`, which changes a plain slice's copy too, and the
+mutations `blanket-to-owned-shared` and `slice-to-owned-unknown`.
+

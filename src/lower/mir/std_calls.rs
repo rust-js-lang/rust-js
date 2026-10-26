@@ -1197,6 +1197,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.mir_swap_or_replace(state, (known, def_id), values, arg_tys, span, out)
                 })
             }
+            // `x.to_owned()` of a `T: Clone`: `x.clone()`'s copy.
+            Std::ToOwnedClone => lower(move |this, _, values, out| {
+                Ok(Value::Expr({
+                    let value = this.value_expr(values.next().expect("the value"), span)?;
+                    this.clone_value(value, arg_tys[0].peel_refs(), span, out)?
+                }))
+            }),
             // `dest.clone_from(&source)`: `mem::replace` of `dest` with a clone
             // of `source`, written as it writes, what it gives back dropped,
             // as `*dest = source.clone()` drops it.

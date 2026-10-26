@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "blanket-to-owned-shared",
+    breaks: "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
+    file: "src/lower/recognition/calls.rs",
+    find: "        _ => Std::ToOwnedClone,\n",
+    replace: "        _ => Std::Same,\n",
+    tests: ["test/corpus.test.ts", "-t", "^to_owned_is_clone.rs$"],
+  },
+  {
     name: "ptr-eq-unrecognized",
     breaks: "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
     file: "src/lower/recognition/calls.rs",
@@ -477,11 +485,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "slice-to-owned-unknown",
-    breaks: "a slice's `to_owned()`, percent-encoding's, is refused",
+    breaks: "a slice's `to_owned()` is taken for a `T: Clone`'s, whose clone of a `[T]` is the array it's given: a change to the copy changes the original",
     file: "src/lower/recognition/calls.rs",
-    find: "            .or((to_owned && ty.is_slice()).then_some(Std::ToVec))",
+    find: "        _ if ty.is_slice() => Std::ToVec,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^slice_to_owned.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|to_owned_is_clone).rs$"],
   },
   {
     name: "assert-unchecked-unknown",

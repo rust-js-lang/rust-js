@@ -828,11 +828,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::SliceToArray { into, owned });
         }
-        let to_owned = tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_);
-        // A slice's `to_owned()` is its `to_vec()`.
-        (to_owned && ty.is_str())
-            .then_some(Std::Same)
-            .or((to_owned && ty.is_slice()).then_some(Std::ToVec))
+        tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_)
+            .then(|| to_owned_of(ty))
     }
 
     /// A range's own iterator method: a range is an iterator already, and
@@ -1261,5 +1258,15 @@ fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> Option<Std>
         (ty::Uint(ty::UintTy::U32), ty::Char) => Some(Std::TryFromChar { to_char: true }),
         (ty::Char, ty::Uint(ty::UintTy::U8)) => Some(Std::TryFromChar { to_char: false }),
         _ => None,
+    }
+}
+
+/// `to_owned()` of a `ty`: a `str`'s is itself, a slice's its `to_vec()`,
+/// and any other's, std's blanket impl for a `T: Clone`'s, its `clone()`.
+fn to_owned_of(ty: Ty<'_>) -> Std {
+    match () {
+        _ if ty.is_str() => Std::Same,
+        _ if ty.is_slice() => Std::ToVec,
+        _ => Std::ToOwnedClone,
     }
 }

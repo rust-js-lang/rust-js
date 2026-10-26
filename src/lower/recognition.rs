@@ -328,6 +328,9 @@ pub(super) enum Std {
     /// `dest.clone_from(&source)`: `mem::replace(dest, source.clone())`'s
     /// write, of a clone of the source.
     CloneFrom,
+    /// `x.to_owned()` of a `T: Clone`, std's blanket impl, whose body is
+    /// `self.clone()`: its clone.
+    ToOwnedClone,
     /// `opt.take()`, `opt.replace(v)` and `mem::take(&mut x)`: `mem::replace`
     /// with `None`, `Some(v)` and `x`'s default (ADR 0136).
     OptionTake,
