@@ -340,4 +340,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
     snapshots: true,
   },
+  {
+    name: "range-of-arithmetic-uncounted",
+    breaks: "`for j in i + 1..m.len()` is a `$rangeNext` while loop, not `for (let j = i + 1; j < m.length; j++)` (#368)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul\n",
+    replace: "                || matches!(&start.kind, ExprKind::Binary(op, ..) if false && matches!(op, Op::Add | Op::Sub | Op::Mul\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "arithmetic is a counting"],
+  },
+  {
+    name: "held-end-of-computed-start-refused",
+    breaks: "`for j in i * 2..m.len()` of a body that changes `m` keeps `$rangeNext`, its end not held first (#368)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {\n",
+    replace: "            if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "arithmetic is a counting"],
+  },
 ];

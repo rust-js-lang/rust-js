@@ -530,3 +530,52 @@ pub fn blanks(words: &[&str]) -> usize {
   ]);
   expect([lib.blanks(["", "", "a"]), lib.blanks(["", ""]), lib.blanks([])]).toEqual([2, 2, 0]);
 });
+
+// A range from arithmetic, `for j in i + 1..m.len()`, counts as one from a
+// variable does (#368): `for (let j = i + 1; j < m.length; j++)`, as
+// upstream's pairwise loops are written. Its end held first where the body
+// changes what it reads, read before its start, of an end of no effects;
+// one of effects is read after its start, as Rust reads it.
+test("a range from arithmetic is a counting for", async () => {
+  const dir = fixture("arithmetic-start");
+  writeFileSync(join(dir, "lib.rs"), `pub fn pairs(m: &[u32]) -> u32 {
+    let mut s = 0;
+    for i in 0..m.len() {
+        for j in i + 1..m.len() {
+            s += m[i] * m[j];
+        }
+    }
+    s
+}
+
+pub fn swapped(m: &mut [u32]) {
+    for i in 0..m.len() {
+        for j in i * 2..m.len() {
+            m.swap(i, j);
+        }
+    }
+}
+
+fn bump(k: &mut usize) -> usize {
+    *k += 10;
+    *k
+}
+
+pub fn ordered(mut k: usize) -> usize {
+    let mut seen = 0;
+    for j in k + 1..bump(&mut k) {
+        seen += j;
+    }
+    seen
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    for (let j = i + 1; j < m.length; j++) {\n");
+  expect(js).toContain("    const end = m.length;\n    for (let j = i * 2; j < end; j++) {\n");
+  expect(js).not.toContain("$rangeNext");
+  const lib = await import(join(dir, "lib.js"));
+  const m = [1, 2, 3];
+  lib.swapped(m);
+  expect([lib.pairs([1, 2, 3]), m, lib.ordered(0)]).toEqual([11, [3, 2, 1], 45]);
+});

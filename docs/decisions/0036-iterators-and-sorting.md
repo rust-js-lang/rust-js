@@ -201,3 +201,18 @@ doesn't wrap, so the count passes `n`, even a type's largest, `255` or
 `lowering-loops.test.ts`, and the mutations
 `mir-tidy-for-inclusive-range-kept` and
 `mir-tidy-for-inclusive-range-exclusive`.
+
+## Amendment: a range from arithmetic counts (#368)
+
+`for j in i + 1..m.len()`, every pairwise algorithm's inner loop, stayed
+`const iter = { start: i + 1, end: m.length }; while ((j =
+$rangeNext(iter)) != null)`: tidy counted a range only from a literal or a
+numeric variable, lest `++` step a `char`'s range, which is text. A start
+of arithmetic is an integer's, as a `char` has none, so it counts: `for
+(let j = i + 1; j < m.length; j++)`. Where the end is held first, `const
+end = m.length`, read before a start Rust reads first, the start reads
+only variables and the end has no effects, which leaves them as they are
+(defensive: lowering already spills an end of effects, `bump(&mut k)`,
+before the loop). Held by `lowering-written-loops.test.ts`'s "a range
+from arithmetic is a counting for" and the mutations
+`range-of-arithmetic-uncounted` and `held-end-of-computed-start-refused`.

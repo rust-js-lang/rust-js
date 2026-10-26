@@ -290,9 +290,12 @@ pub(super) fn for_of(
                     if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
             // JS's `++` steps a number: a `char`'s range, text, steps by
             // its code point, past the surrogates, as `$rangeNext` does.
+            // Of arithmetic, `i + 1`, an integer's: a `char` has none.
             let counted = start.as_int().is_some()
                 || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
-                || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some());
+                || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
+                || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
+                    | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
             if start_key != "start" || end_key != "end" || mutable || !counted {
                 return None;
             }
@@ -312,7 +315,10 @@ pub(super) fn for_of(
                     .expect("a name");
                 (name, end.clone())
             });
-            if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {
+            // Its end held first, read before its start where Rust reads it
+            // after: of a start that reads only variables, which an end of
+            // no effects leaves as they are.
+            if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {
                 return None;
             }
             let test = match &held {
