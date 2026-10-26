@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "kind-object-any-value",
+    breaks: "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
+    file: "src/lower/binding_calls.rs",
+    find: "                Expr::cond(test, this.defined(), Expr::undefined())\n",
+    replace: "                {\n                    let _ = test;\n                    this.defined()\n                }\n",
+    tests: ["test/js-object.test.ts", "-t", "one weak key"],
+  },
+  {
     name: "instance-of-given-backwards",
     breaks: "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
     file: "src/lower/binding_calls.rs",

@@ -1078,3 +1078,67 @@ pub fn run() -> Vec<String> {
     expect(said).toContain("`js::any_of` is of a type parameter's value, not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`");
   }
 });
+
+// ADR 0910: what `typeof value === "object" && value !== null` takes, an
+// object or an array, is one value, `kind.object()`, a `&JsObject` that
+// keys a weak map, as React's ReactCapturedValue keys `CapturedStacks` by
+// any object it's given.
+test("an object or an array is one weak key, kind.object()", async () => {
+  const { js, lib } = await compiled("object-keys", `use std::rc::Rc;
+
+use js::{JsObject, Unknown, WeakMap};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "CapturedStacks")]
+    static CAPTURED_STACKS: &'static WeakMap<JsObject, Rc<CapturedValue>> = js::weak_map::new();
+}
+
+pub struct CapturedValue {
+    pub value: Option<&'static Unknown>,
+    pub stack: String,
+}
+
+pub fn create_captured_value_at_fiber(value: Option<&'static Unknown>, stack: &str) -> Rc<CapturedValue> {
+    // If the value is an error, call this function immediately after it is thrown
+    // so the stack is accurate.
+    if let Some(object) = js::classify(value).object() {
+        let existing = CAPTURED_STACKS.with(|captured_stacks| captured_stacks.get(object));
+        if let Some(existing) = existing {
+            return existing;
+        }
+        let captured = Rc::new(CapturedValue {
+            value,
+            stack: stack.to_string(),
+        });
+        CAPTURED_STACKS.with(|captured_stacks| captured_stacks.set(object, Rc::clone(&captured)));
+        captured
+    } else {
+        Rc::new(CapturedValue {
+            value,
+            stack: stack.to_string(),
+        })
+    }
+}
+
+pub fn objects(values: &[Option<&'static Unknown>]) -> Vec<bool> {
+    values.iter().map(|&value| js::classify(value).object().is_some()).collect()
+}
+`);
+  expect(js).toContain(`  // If the value is an error, call this function immediately after it is thrown
+  // so the stack is accurate.
+  if (typeof value === "object" && value !== null) {
+    const existing = CapturedStacks.get(value);`);
+  expect(js).toContain("CapturedStacks.set(value, captured);");
+  // Its presence read in place is its test.
+  expect(js).toContain('return values.map((value) => typeof value === "object" && value !== null);');
+  const error = new Error("boom");
+  const children = ["a"];
+  const first = lib.createCapturedValueAtFiber(error, "at A");
+  const again = lib.createCapturedValueAtFiber(error, "at B");
+  const array = lib.createCapturedValueAtFiber(children, "at C");
+  const arrayAgain = lib.createCapturedValueAtFiber(children, "at D");
+  const text = lib.createCapturedValueAtFiber("text", "at E");
+  const textAgain = lib.createCapturedValueAtFiber("text", "at F");
+  expect([first === again, again.stack, array === arrayAgain, arrayAgain.stack, text === textAgain, textAgain.stack]).toEqual([true, "at A", true, "at C", false, "at F"]);
+  expect(lib.objects([{}, [], null, undefined, "s", 1, () => 1, Symbol.iterator])).toEqual([true, true, false, false, false, false, false, false]);
+});

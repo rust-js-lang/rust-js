@@ -302,11 +302,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 value
             };
-            // Boxed where it looks like `None` (ADR 0051).
+            // Boxed where it looks like `None` (ADR 0051); else there (ADR 0910).
             let value = if self.boxed_payload(some) {
                 self.some(value)
             } else {
-                value
+                value.defined()
             };
             return Ok(Expr::cond(test, value, Expr::undefined()));
         }

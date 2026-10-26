@@ -5,6 +5,23 @@ const pieces = ["test/lowering-strings.test.ts", "-t", "a format string of a con
 
 export const mutations: Mutation[] = [
   {
+    name: "presence-of-a-made-option",
+    breaks: "`kind.object().is_some()` is `!!(t ? value : undefined)`, not the test it's made by (ADR 0910)",
+    file: "src/js/make.rs",
+    find: "            && value.facts.has(Known::Defined)\n        {\n            let test = (**test).clone();\n",
+    replace: "            && false\n        {\n            let test = (**test).clone();\n",
+    tests: ["test/js-object.test.ts", "-t", "one weak key"],
+  },
+  {
+    name: "negated-presence-untested",
+    breaks: "an `Option`'s presence negated, `!x`, is no presence test, so a `let .. else` of `then_some` keeps its `Option` (ADR 0910)",
+    file: "src/js/make.rs",
+    find: "                if self.facts.has(Known::Presence) && matches!(inner.kind, ExprKind::Unary(UnaryOp::Not, _)) =>\n",
+    replace: "                if false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "tested_options"],
+    snapshots: true,
+  },
+  {
     name: "template-piece-break-at-start",
     breaks: "a template's piece of `concat!`'s starts at its text's start, not where the one before ends",
     file: "src/js/make.rs",

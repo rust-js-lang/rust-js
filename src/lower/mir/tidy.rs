@@ -20,6 +20,7 @@ mod jumps;
 mod logicals;
 mod loops;
 mod moves;
+mod options;
 mod shadows;
 mod stages;
 mod switches;
@@ -30,7 +31,7 @@ pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_pa
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
-    bindings::*, branches::*, copied::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*,
+    bindings::*, branches::*, copied::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*, options::*,
     switches::switched, values::*,
 };
 use super::hints::{LabeledBlock, Switch};

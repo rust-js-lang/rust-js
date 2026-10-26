@@ -506,6 +506,49 @@ export function describe(value) {
 }
 ```
 
+What `typeof value === "object" && value !== null` takes, an object or an
+array, is one value, `kind.object()`: an `Option<&JsObject>`, the value
+itself, TypeScript's `object`, which keys a `WeakMap<JsObject, V>` as
+neither arm's payload alone does, `Kind::Array`'s being a slice. `if let
+Some(object) = js::classify(value).object()` is that `if`, its `object`
+the value, and `.is_some()` of it the test
+([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)).
+The guard above stays the way to read an arm's value in a `match` of
+several kinds:
+
+```rust
+use js::{JsObject, Unknown, WeakMap};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "CapturedStacks")]
+    static CAPTURED_STACKS: &'static WeakMap<JsObject, String> = js::weak_map::new();
+}
+
+pub fn captured(value: Option<&'static Unknown>, stack: &str) -> Option<String> {
+    if let Some(object) = js::classify(value).object() {
+        if let Some(existing) = CAPTURED_STACKS.with(|captured_stacks| captured_stacks.get(object)) {
+            return Some(existing);
+        }
+        CAPTURED_STACKS.with(|captured_stacks| captured_stacks.set(object, stack.to_string()));
+    }
+    None
+}
+```
+
+```js
+const CapturedStacks = new WeakMap();
+
+export function captured(value, stack) {
+  if (typeof value === "object" && value !== null) {
+    const existing = CapturedStacks.get(value);
+    if (existing != null) {
+      return existing;
+    }
+    CapturedStacks.set(value, stack);
+  }
+}
+```
+
 [JavaScript types](types.md#js-values-jsobject-and-unknown) lists each
 `Kind`.
 

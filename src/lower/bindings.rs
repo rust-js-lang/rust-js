@@ -364,6 +364,10 @@ pub(super) enum JsForm {
     /// `class`: the constructor function of the class its type argument
     /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
     Class,
+    /// `typeof object`: `this`, an untagged enum's value, where it's an
+    /// object or an array, `typeof this === "object" && this !== null`,
+    /// else `undefined`, `js::Kind::object`'s (ADR 0910).
+    TypeofObject,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -388,6 +392,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "for in" => return JsForm::KeysIn,
         "throw" => return JsForm::Throw,
         "class" => return JsForm::Class,
+        "typeof object" => return JsForm::TypeofObject,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

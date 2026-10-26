@@ -220,6 +220,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // The value where it's an object or an array, as one value:
+            // `typeof value === "object" && value !== null ? value :
+            // undefined`, which an `if let` of it tests (ADR 0910).
+            (JsForm::TypeofObject, Some(this)) if args.is_empty() => {
+                let sig = self
+                    .tcx
+                    .fn_sig(def_id)
+                    .instantiate(self.tcx, generic_args)
+                    .skip_normalization();
+                let kind = sig.skip_binder().inputs()[0];
+                let this = match this.reads_same() {
+                    true => this,
+                    false => self.spill("kind", this, out),
+                };
+                let test = self.object_test(kind, &this);
+                Expr::cond(test, this.defined(), Expr::undefined())
+            }
             (JsForm::Throw, Some(this)) if args.is_empty() => {
                 out.push(StmtKind::Throw(this).at(self.js_span(span)));
                 Expr::undefined()

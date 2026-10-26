@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md):
 a weak collection is typed as TypeScript types it. Amends
-[0225](0225-unknown-values.md): `Kind::Object` holds a `&JsObject`.
+[0225](0225-unknown-values.md): `Kind::Object` holds a `&JsObject`. Amended by
+[0910](0910-an-object-or-an-array-is-one-value-kind-object.md): an
+object or an array is one key, `kind.object()`'s `&JsObject`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each key is the
 value itself, and only an object or a symbol is one, as JS's weak
@@ -94,7 +96,8 @@ export const propsParents: WeakMap<object, unknown>;
 - An object or an array as one value, `Kind::Object(_) | Kind::Array(_)`,
   is no one key: `[T]`'s `WeakMap` is its own, `WeakMap<[T], V>`, as
   React's `jsxChildrenParents` is of arrays, and `dyn WeakKey` holds no
-  slice, which isn't sized.
+  slice, which isn't sized. (Amended by ADR 0910: `kind.object()` is
+  one, a `&JsObject`.)
 
 ## What holds it
 

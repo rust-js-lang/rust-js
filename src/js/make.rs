@@ -43,6 +43,15 @@ impl Expr {
     /// amended), which is `option != null`'s, or `== null`'s, answer, as
     /// `null_test` reads it (`Known::Presence`).
     pub fn presence(option: Expr, set: bool) -> Expr {
+        // Of one made where it's tested, `t ? v : undefined` of a `v`
+        // that's there, the test it's made by, `t` (ADR 0910).
+        if let ExprKind::Cond(test, value, none) = &option.kind
+            && matches!(none.kind, ExprKind::Undefined)
+            && value.facts.has(Known::Defined)
+        {
+            let test = (**test).clone();
+            return if set { test } else { test.negated_test() };
+        }
         let not = Expr::unary(UnaryOp::Not, option);
         let test = if set { Expr::unary(UnaryOp::Not, not) } else { not };
         // Of the option, not a constant's `true` it folded to.
@@ -593,6 +602,16 @@ impl Expr {
             ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {
                 let flipped = if op == Op::And { Op::Or } else { Op::And };
                 Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)
+            }
+            // An `Option`'s presence, `!!o`, negated, is its absence, `!o`,
+            // a test of it still (`Known::Presence`).
+            ExprKind::Unary(UnaryOp::Not, inner)
+                if self.facts.has(Known::Presence) && matches!(inner.kind, ExprKind::Unary(UnaryOp::Not, _)) =>
+            {
+                Expr {
+                    facts: Facts::of(Known::Presence),
+                    ..*inner
+                }
             }
             ExprKind::Unary(UnaryOp::Not, inner) => *inner,
             kind => Expr::unary(

@@ -388,6 +388,29 @@ pub fn stmts_alike(a: &[Stmt], b: &[Stmt]) -> bool {
     a.len() == b.len() && canonical(a) == canonical(b)
 }
 
+/// Whether `stmts` declare the name `name`, however deep, a closure's
+/// parameter or declaration in them too: where a read of it there may be
+/// of another than the one before them.
+pub fn declares(stmts: &[Stmt], name: &str) -> bool {
+    let mut copy = stmts.to_vec();
+    let mut found = false;
+    rename_binders(&mut copy, &mut |n| found |= n == name);
+    each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+            params
+                .iter_mut()
+                .for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
+            rename_binders(body, &mut |n| found |= n == name);
+        }
+        ExprKind::Function(function) => {
+            (function.params.iter_mut()).for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
+            rename_binders(&mut function.body, &mut |n| found |= n == name);
+        }
+        _ => {}
+    });
+    found
+}
+
 /// `stmts` with each declaration and read of the name `from`, a closure's
 /// in them too, of `to`, which none of them mentions: the same program,
 /// where `from` is one `stmts` declare at their top.

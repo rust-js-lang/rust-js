@@ -233,6 +233,18 @@ pub enum Kind<'a> {
     Object(&'a JsObject),
 }
 
+impl<'a> Kind<'a> {
+    /// The object it is, an `Object`'s or an `Array`'s: what `typeof value
+    /// === "object" && value !== null` takes, as one value, TypeScript's
+    /// `object` it narrows to, a weak collection's key. `None` of the
+    /// others. `if let Some(object) = js::classify(value).object()` is that
+    /// `if`, its `object` the value itself (ADR 0910).
+    #[cfg_attr(rust_js, rust_js::link_name = "typeof object")]
+    pub fn object(self) -> Option<&'a JsObject> {
+        unreachable!()
+    }
+}
+
 /// JS's [`Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)
 /// functions, for a value an API takes or gives.
 pub mod array {

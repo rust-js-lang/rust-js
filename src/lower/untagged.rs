@@ -616,6 +616,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition()
             .untagged_test(adt, args, variants, written, value, present, &|name| self.js_ref(name))
     }
+
+    /// The test that `value`, of the untagged enum `ty`, is an object or
+    /// an array, its variants of each, as an or-pattern of them tests it:
+    /// `js::Kind`'s `Object(_) | Array(_)`, `typeof value === "object" &&
+    /// value !== null`, what `kind.object()` asks (ADR 0910).
+    pub(super) fn object_test(&self, ty: Ty<'tcx>, value: &Expr) -> Expr {
+        let (adt, args) = self.untagged(ty).expect("an untagged enum");
+        let recognition = self.recognition();
+        let kind = |v: &VariantDef| match bindings::is_otherwise(self.tcx, v.def_id) {
+            true => recognition.otherwise_kind(adt, args),
+            false => recognition.untagged_variant_kind(v, args),
+        };
+        let objects: Vec<&VariantDef> = (adt.variants().iter())
+            .filter(|v| matches!(kind(v), Some(Kind::Object | Kind::Array)))
+            .collect();
+        self.untagged_variant_test(ty, &objects, &[], value, false)
+    }
 }
 
 /// Does something but a `match` tell `def_id`'s variants apart: its

@@ -256,6 +256,12 @@ pub(super) const STAGES: &[Stage] = &[
                 let changing = changing(b);
                 js::each_expr_mut(b, &mut |e| implied_tests(e, &changing))
             }),
+            // An `Option` made where it's tested, `if let Some(o) =
+            // kind.object()`: the test it's made by (ADR 0910).
+            pass("tested options", |b, _| {
+                let changing = changing(b);
+                js::statement_lists(b, &mut |s| tested_options(s, &changing))
+            }),
             // A chain `rev()` was given in a temporary, read in place now,
             // `$rev(c.filter(p))`: reversed inward, as `rev_items` makes one
             // it sees, of its source stepped from its back (#205).

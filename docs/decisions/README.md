@@ -554,7 +554,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0671 A nested body is lowered in one call](0671-a-nested-body-is-lowered-in-one-call.md)
 - [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice; amended by 0870: a chain's value reads its binding first)*
 - [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
-- [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md)
+- [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md) *(amended by 0910: an object or an array is one key, `kind.object()`)*
 - [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0684 A `continue` the program wrote is where it wrote it, with its comment](0684-a-continue-the-program-wrote-is-where-it-wrote-it.md) *(amended by 0730: an early `continue` only where the program wrote one)*
@@ -694,6 +694,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md)
 - [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md)
+- [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md)
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
