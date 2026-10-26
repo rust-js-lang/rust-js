@@ -8,7 +8,7 @@
   "library": {
     "version": 8,
     "name": "rust_js_std",
-    "crate_hash": "979a933740114db542b651b34bc69d2e",
+    "crate_hash": "e45f9c3992e32c9790fb43fde2d87491",
     "items": [
       {
         "key": "608f92abc48d28da30bea7a011c6feef",
@@ -1150,6 +1150,74 @@
         ]
       },
       {
+        "key": "608f92abc48d28dae8a14b40458761ae",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 7,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 8,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da7dd74034ffd186a9",
         "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -1399,6 +1467,71 @@
           },
           {
             "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da13aed849a92474a3",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
             "marks": [
               "drop"
             ]
@@ -5255,6 +5388,127 @@
         ]
       },
       {
+        "key": "608f92abc48d28da53c2e696f12cf54d",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator2_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da89e7180440b039dc",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator_tryFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da3c07d967c6895a59",
         "rust_path": "rust_js_std::core::iter::Iterator::chain",
         "module": [
@@ -5831,6 +6085,65 @@
         ]
       },
       {
+        "key": "608f92abc48d28dab2246c594d226c03",
+        "rust_path": "rust_js_std::core::iter::adapters::flatten::FlattenCompat::<I, U>::iter_try_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "FlattenCompat",
+        "member": "iterTryFold",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daa7c3aa8575dc65ac",
         "rust_path": "rust_js_std::core::iter::adapters::flatten::and_then_or_clear",
         "module": [
@@ -6063,11 +6376,13 @@
         "flattenIterator_next",
         "flattenIterator_sizeHint",
         "flattenIterator_fold",
+        "flattenIterator_tryFold",
         "flattenDoubleEndedIterator_nextBack",
         "flattenDoubleEndedIterator_rfold",
         "flatMapIterator_next",
         "flatMapIterator_sizeHint",
         "flatMapIterator_fold",
+        "flatMapIterator_tryFold",
         "flatMapDoubleEndedIterator_nextBack",
         "flatMapDoubleEndedIterator_rfold",
         "skipIterator_next",
@@ -6138,6 +6453,8 @@
         "flattenCompatIUIterator2_sizeHint",
         "flattenCompatIUIterator_fold",
         "flattenCompatIUIterator2_fold",
+        "flattenCompatIUIterator_tryFold",
+        "flattenCompatIUIterator2_tryFold",
         "flattenCompatIUDoubleEndedIterator_nextBack",
         "flattenCompatIUDoubleEndedIterator2_nextBack",
         "flattenCompatIUDoubleEndedIterator_rfold",
@@ -6181,7 +6498,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "6455fd3a29ed04bf"
+      "hash": "64409b9981a4d176"
     },
     {
       "file": "iter.js.map",

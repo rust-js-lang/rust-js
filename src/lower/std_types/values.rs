@@ -517,6 +517,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.print_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        // A map's or a set's method, a range's and an `Option`'s or a
+        // `Result`'s combinator, of their values: the subject one just made
+        // where it's a call's.
+        match known {
+            Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),
+            Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),
+            Std::Comb(comb) => {
+                let values: Vec<Expr> = values.collect();
+                let made = matches!(values[0].kind, crate::js::ExprKind::Call(..));
+                return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);
+            }
+            _ => {}
+        }
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(match known {
             Std::Swap | Std::Replace | Std::CloneFrom | Std::OptionTake | Std::OptionReplace | Std::MemTake => {
@@ -561,9 +574,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::VecMacro | Std::FmtNew | Std::AssertFailed => unreachable!("handled above"),
             Std::Map(_)
             | Std::Range(_)
+            | Std::Comb(_)
             | Std::Stream(_)
             | Std::TypeName { .. }
-            | Std::Comb(_)
             | Std::IterComb(_)
             | Std::Text(_)
             | Std::Number(_)

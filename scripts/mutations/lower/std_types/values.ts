@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "values-comb-subject-dropped",
+    breaks: "an `Option`'s combinator is given its argument where its subject goes",
+    file: "src/lower/std_types/values.rs",
+    find: "                return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);\n",
+    replace: "                return self.comb_values(comb, (values[1..].to_vec(), &tys[1..]), made, generic_args, call.span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "option_as_deref|combinators_owned_drops"],
+  },
+  {
+    name: "values-map-call-refused",
+    breaks: "a map's method is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),\n",
+    replace: "            Std::Map(_) => return Err(self.unsupported(call.span, \"a map's method\")),\n",
+    tests: ["test/corpus.test.ts", "-t", "map_index_missing"],
+  },
+  {
+    name: "values-range-call-refused",
+    breaks: "a range's method, `r.contains(&x)`, is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "            Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),\n",
+    replace: "            Std::Range(_) => return Err(self.unsupported(call.span, \"a range's method\")),\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
+  },
+  {
     name: "ok-or-else-refused",
     breaks: "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
     file: "src/lower/std_types/values.rs",

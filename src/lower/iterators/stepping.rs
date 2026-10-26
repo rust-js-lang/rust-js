@@ -345,6 +345,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(item) = self.option_of(ty) {
             return Ok(self.option_items(value, item, out));
         }
+        // A `Result`'s, its `Ok` value, as its `into_iter()` gives it (ADR
+        // 0923).
+        if self.recognition().is_std_type(ty, StdItem::Result) {
+            let none = ty::List::empty();
+            let comb = crate::lower::combinators::Comb::ResultIter;
+            return self.comb_values(comb, (vec![value], &[ty]), false, none, span, out);
+        }
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);
         }

@@ -548,7 +548,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// The traits `ty`, a type only a caller knows, is bound by, their
     /// supertraits too: a type parameter's where-clauses', and an associated
     /// type's, and its trait's declaration's, `type Iter: Iterator` (ADR
-    /// 0106). None of a type that's known.
+    /// 0106). And a type parameter's that the where-clauses make an
+    /// associated type, `U` of `I: Iterator<Item: IntoIterator<IntoIter =
+    /// U>>`, that type's declaration's, as std's `FlattenCompat` is bound
+    /// (ADR 0924). None of a type that's known.
     pub(in crate::lower) fn declared_bounds(&self, ty: ty::Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> Vec<DefId> {
         let declared = match ty.kind() {
             ty::Alias(
@@ -566,7 +569,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .as_trait_clause()
                 .is_some_and(|bound| bound.self_ty().skip_binder() == ty)
         });
-        let clauses = clauses.chain(declared.into_iter().flatten());
+        let equated = (param_env.caller_bounds().iter())
+            .filter_map(|clause| clause.as_projection_clause())
+            .filter(|equal| matches!(ty.kind(), ty::Param(_)) && equal.term().skip_binder().as_type() == Some(ty))
+            .flat_map(|equal| self.tcx.item_bounds(equal.item_def_id()).skip_binder());
+        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated);
         clauses
             .filter(|_| unknown)
             .filter_map(|clause| clause.as_trait_clause().map(|bound| bound.def_id()))

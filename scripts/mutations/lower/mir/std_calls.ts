@@ -11,22 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^wrapping_assigned_through_a_ref.rs$"],
   },
   {
-    name: "mir-comb-subject-dropped",
-    breaks: "an `Option`'s combinator from MIR is given its argument where its subject goes",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                this.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?\n",
-    replace: "                this.comb_values(comb, (exprs[1..].to_vec(), &arg_tys[1..]), made, generic_args, span, out)?\n",
-    tests: ["test/corpus.test.ts","-t","option_as_deref|combinators_owned_drops"],
-  },
-  {
-    name: "mir-map-call-refused",
-    breaks: "a map's method from MIR is refused",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                this.map_values(op, (exprs, arg_tys), generic_args, span, out)?\n",
-    replace: "                return Err(this.unsupported(span, \"a map's method\"));\n",
-    tests: ["test/corpus.test.ts","-t","map_index_missing"],
-  },
-  {
     name: "mir-radix-argument-unseen",
     breaks: "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
     file: "src/lower/mir/std_calls.rs",

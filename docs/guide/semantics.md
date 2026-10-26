@@ -482,12 +482,17 @@ What's refused is in [the limitations](limitations.md).
   [0913](../decisions/0913-std-s-generic-try-is-a-dictionary.md),
   [0915](../decisions/0915-what-s-held-to-be-cloned-is-std-s-struct.md),
   [0917](../decisions/0917-a-held-step-by-is-std-s.md),
-  [0920](../decisions/0920-a-held-chain-is-std-s.md)).
+  [0920](../decisions/0920-a-held-chain-is-std-s.md),
+  [0924](../decisions/0924-flatten-s-try-fold-is-std-s.md)).
 - **Generic code given items bound by `IntoIterator`,** `I::Item:
   IntoIterator`, is given their dictionary, which makes and steps each one's
   iterator, `$given(IItemIntoIterator.intoIter(item), ..)`: an `Option`'s
   item, `T | undefined`, is no JS iterator
   ([0899](../decisions/0899-a-flatten-held-is-stds.md)).
+- **An `Option` or a `Result` given where an `IntoIterator` goes,** to
+  `extend`, `chain`, `zip` or generic code, is its items, as its
+  `into_iter()` gives them: `x == null ? [] : [x]`, `r.TAG === "Ok" ?
+  [r._0] : []` ([0923](../decisions/0923-a-result-given-as-items-is-its-ok-value.md)).
 - **A clone of std's iterator over an array is what's left of the array,**
   its owned items copied where they need it
   ([0181](../decisions/0181-iterator-clones.md)).

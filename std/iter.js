@@ -96,6 +96,107 @@ export const FlattenCompat = {
     dropFold?.(fold);
     return result;
   },
+  iterTryFold(
+    flattenCompat,
+    _2,
+    fold,
+    IIterator,
+    IItemIntoIterator,
+    RTry,
+    IFused,
+    dropI,
+    dropU,
+    dropAcc,
+    dropFold,
+    dropR,
+    dropIItem,
+    dropIItemItem,
+  ) {
+    let result;
+    bb24: {
+      if (flattenCompat.frontiter != null) {
+        const iter = $someValue(flattenCompat.frontiter);
+        const value = RTry.branch(fold(_2, iter));
+        if (value.TAG === "Continue") {
+          _2 = value._0;
+        } else {
+          result = RTry.FromResidual().fromResidual(value._0);
+          break bb24;
+        }
+      }
+      if (flattenCompat.frontiter != null) {
+        dropU?.($someValue(flattenCompat.frontiter));
+      }
+      flattenCompat.frontiter = undefined;
+      const fuse = flattenCompat.iter;
+      const fold$1 = (acc, iter) => {
+        const value = IItemIntoIterator.intoIter(iter);
+        const value$1 = $some(value);
+        if (flattenCompat.frontiter != null) {
+          IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+        }
+        flattenCompat.frontiter = value$1;
+        const x = $someValue(flattenCompat.frontiter);
+        const option = $some(x);
+        const val = $someValue(option);
+        return fold(acc, val);
+      };
+      const value = RTry.branch(
+        IFused
+          ? fuseFuseImplIFusedIterator_tryFold(
+              fuse,
+              _2,
+              fold$1,
+              IIterator,
+              RTry,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            )
+          : fuseFuseImplI_tryFold(
+              fuse,
+              _2,
+              fold$1,
+              IIterator,
+              RTry,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            ),
+      );
+      if (value.TAG === "Continue") {
+        _2 = value._0;
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
+        }
+        flattenCompat.frontiter = undefined;
+        if (flattenCompat.backiter != null) {
+          const iter = $someValue(flattenCompat.backiter);
+          const value = RTry.branch(fold(_2, iter));
+          if (value.TAG === "Continue") {
+            _2 = value._0;
+          } else {
+            result = RTry.FromResidual().fromResidual(value._0);
+            break bb24;
+          }
+        }
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+        flattenCompat.backiter = undefined;
+        result = RTry.fromOutput(_2);
+        dropFold?.(fold);
+        return result;
+      }
+      result = RTry.FromResidual().fromResidual(value._0);
+    }
+    dropFold?.(fold);
+    return result;
+  },
   iterRfold(
     flattenCompat,
     acc,
@@ -1470,6 +1571,60 @@ export function flattenIterator_fold(
       );
 }
 
+export function flattenIterator_tryFold(
+  flatten,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  RTry,
+  IFused,
+  UOneShot,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_tryFold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IItemIntoIterator,
+        RTry,
+        IFused,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropR,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_tryFold(
+        flatten.inner,
+        init,
+        fold,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        RTry,
+        IFused,
+        dropI,
+        dropU,
+        dropAcc,
+        dropFold,
+        dropR,
+        dropIItem,
+        dropUItem,
+      );
+}
+
 export function flattenDoubleEndedIterator_nextBack(
   flatten,
   IDoubleEndedIterator,
@@ -1682,6 +1837,63 @@ export function flatMapIterator_fold(
         dropUIntoIter,
         dropAcc,
         dropFold,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_tryFold(
+  flatMap,
+  init,
+  fold,
+  UIntoIterator,
+  RTry,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_tryFold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        RTry,
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropR,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_tryFold(
+        flatMap.inner,
+        init,
+        fold,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        RTry,
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropAcc,
+        dropFold,
+        dropR,
         dropU,
         dropUItem,
       );
@@ -3222,6 +3434,25 @@ export function iterator_flatten(
           dropSelfItem,
           dropSelfItemItem,
         ),
+      tryFold: (iterator, init, f, broke) =>
+        flattenIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          $tryOf(broke),
+          SelfFused,
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+          dropSelfItemItem,
+        ),
       takes: ["fold"],
       close(iterator) {
         iterator.inner.iter.return();
@@ -3391,6 +3622,24 @@ export function iterator_flatMap(
           dropSelf,
           dropU,
           dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        flatMapIterator_tryFold(
+          iterator,
+          init,
+          f,
+          UIntoIterator,
+          $tryOf(broke),
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          undefined,
           undefined,
           undefined,
           dropSelfItem,
@@ -3999,6 +4248,108 @@ export function flattenCompatIUIterator2_fold(
     dropU?.($someValue(flattenCompat.backiter));
   }
   return result;
+}
+
+export function flattenCompatIUIterator_tryFold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  UIterator,
+  RTry,
+  IFused,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+  dropUItem,
+) {
+  return FlattenCompat.iterTryFold(
+    flattenCompat,
+    init,
+    $dropping(
+      (acc, iter) => $tryFoldInto($given(iter, UIterator, true), acc, (a, b) => fold(a, b), RTry),
+      () => {
+        dropFold?.(fold);
+      },
+    ),
+    IIterator,
+    IItemIntoIterator,
+    RTry,
+    IFused,
+    dropI,
+    dropU,
+    dropAcc,
+    $dispose,
+    dropR,
+    dropIItem,
+    dropUItem,
+  );
+}
+
+export function flattenCompatIUIterator2_tryFold(
+  flattenCompat,
+  init,
+  fold,
+  IIterator,
+  IItemIntoIterator,
+  RTry,
+  IFused,
+  dropI,
+  dropU,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+  dropUItem,
+) {
+  const fuse = flattenCompat.iter;
+  const fold$1 = $dropping(
+    (acc, inner) => {
+      const value = IItemIntoIterator.intoIter(inner);
+      const next = IItemIntoIterator.IntoIterIterator().next(value);
+      let result;
+      if (next != null) {
+        const item = $someValue(next);
+        result = fold(acc, item);
+      } else {
+        result = RTry.fromOutput(acc);
+      }
+      IItemIntoIterator.$dropIntoIter?.(value);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  return IFused
+    ? fuseFuseImplIFusedIterator_tryFold(
+        fuse,
+        init,
+        fold$1,
+        IIterator,
+        RTry,
+        dropI,
+        dropAcc,
+        $dispose,
+        dropR,
+        dropIItem,
+      )
+    : fuseFuseImplI_tryFold(
+        fuse,
+        init,
+        fold$1,
+        IIterator,
+        RTry,
+        dropI,
+        dropAcc,
+        $dispose,
+        dropR,
+        dropIItem,
+      );
 }
 
 export function flattenCompatIUDoubleEndedIterator_nextBack(

@@ -707,6 +707,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0918 A range given to generic code knows how many it has left, and std's struct's default `len` is its exact `size_hint`](0918-a-range-given-knows-how-many-it-has-left.md)
 - [0920 A held `Chain` is std's, stepped from its back by its own compiled methods](0920-a-held-chain-is-std-s.md)
 - [0921 A `&mut` to a generic iterator an `Option` holds is the iterator, whichever method gives it](0921-an-option-slot-gives-its-iterator.md)
+- [0924 A held `Flatten`'s `try_fold` is std's, a parameter an associated type equals is bound as it is, and a map's, a range's and a combinator's call is lowered of its values in one place](0924-flatten-s-try-fold-is-std-s.md)
+- [0923 A `Result` given as an `IntoIterator` is its `Ok` value, as its `into_iter()` is](0923-a-result-given-as-items-is-its-ok-value.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

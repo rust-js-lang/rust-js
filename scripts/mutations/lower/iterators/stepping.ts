@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "result-items-unstepped",
+    breaks: "a `Result` given to `chain` or `extend` is spread as the object it is: `TypeError: ... is not iterable` where Rust steps its `Ok` value (ADR 0923)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if self.recognition().is_std_type(ty, StdItem::Result) {\n",
+    replace: "        if false && self.recognition().is_std_type(ty, StdItem::Result) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^result_given_as_items.rs$"],
+  },
+  {
     name: "range-any-param-items",
     breaks: "a range given where any `T: Clone` goes is its items, not the range",
     file: "src/lower/iterators/stepping.rs",

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "equated-bounds-unseen",
+    breaks: "a type parameter the where-clauses make an iterator's associated type isn't bound as an iterator: its `&mut` a cell, `(x0) => $next(x0.value)`, where it's the iterator, and std's `Flatten::try_fold` refused (ADR 0924)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated);\n",
+    replace: "        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated.filter(|_| false));\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^equated_iterator_parameter.rs$"],
+  },
+  {
     name: "into-a-bound-target-unresolved",
     breaks: "`x.into()` of a type parameter's target, `U: From<T>`, is refused, its `From` no impl to resolve (#321)",
     file: "src/lower/recognition/traits.rs",

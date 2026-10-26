@@ -148,11 +148,8 @@ pub(super) fn lowered_from_values(known: Std) -> bool {
             | Std::VecMacro
             | Std::FmtNew
             | Std::AssertFailed
-            | Std::Map(_)
-            | Std::Range(_)
             | Std::Stream(_)
             | Std::TypeName { .. }
-            | Std::Comb(_)
             | Std::IterComb(_)
             | Std::Text(_)
             | Std::Number(_)

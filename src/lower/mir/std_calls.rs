@@ -627,11 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         call: StdCall<'c, 'tcx>,
     ) -> Option<StdLowering<'c, 'a, 'tcx>> {
         let StdCall {
-            known,
-            generic_args,
-            arg_tys,
-            span,
-            ..
+            known, arg_tys, span, ..
         } = call;
         Some(match known {
             // A B-tree's range of its keys (ADR 0325).
@@ -656,25 +652,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.map_extract_if_values((m, arg_tys[0]), range, f, span, out)?
                 }))
             }),
-            // A map's or a set's method, but an entry's value or a range, which
-            // is lowered from its places.
-            Std::Map(op)
-                if !matches!(
-                    op,
-                    MapOp::OrInsert
-                        | MapOp::OrInsertWith { .. }
-                        | MapOp::OrDefault
-                        | MapOp::TreeRange { .. }
-                        | MapOp::ExtractIf
-                ) =>
-            {
-                lower(move |this, _, values, out| {
-                    Ok(Value::Expr({
-                        let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                        this.map_values(op, (exprs, arg_tys), generic_args, span, out)?
-                    }))
-                })
-            }
             _ => return None,
         })
     }
@@ -912,21 +889,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }))
                 })
             }
-            Std::Range(op) => lower(move |this, _, values, out| {
-                Ok(Value::Expr({
-                    let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                    this.range_call(op, exprs, arg_tys, span, out)?
-                }))
-            }),
-            // An `Option`'s or a `Result`'s combinator: of its arguments' values,
-            // the subject one just made where it's a call's.
-            Std::Comb(comb) => lower(move |this, _, values, out| {
-                Ok(Value::Expr({
-                    let exprs = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                    let made = matches!(exprs[0].kind, js::ExprKind::Call(..));
-                    this.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?
-                }))
-            }),
             // An iterator's combinator, of a JS iterator, lazy as Rust's; one a
             // `&mut` lends, stepped through what can't close it.
             Std::IterComb(comb) => lower(move |this, state, values, out| {
