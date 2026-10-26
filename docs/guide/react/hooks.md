@@ -96,7 +96,7 @@ pub fn Ticker() -> JSX::Element {
     let (ticks, set_ticks) = use_state(|| 0);
     use_effect(
         move || {
-            let id = js::set_interval(Box::new(move || set_ticks.update(|n| n + 1)), 1000.0);
+            let id = js::set_interval(Box::new(move || set_ticks.update(|n| n + 1)), Some(1000.0));
             move || js::clear_interval(Some(id))
         },
         Some(&()),

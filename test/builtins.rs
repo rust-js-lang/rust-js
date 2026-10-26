@@ -167,18 +167,23 @@ pub fn random() -> f64 {
 
 /// `done` after `ms`.
 pub fn after(ms: f64, done: Box<dyn FnOnce()>) {
-    js::set_timeout(done, ms);
+    js::set_timeout(done, Some(ms));
+}
+
+/// `done` as soon as it can be, its delay left out, as JS leaves it.
+pub fn soon(done: Box<dyn FnOnce()>) {
+    js::set_timeout(done, None);
 }
 
 /// `never` after `ms`, cleared first: it doesn't run.
 pub fn cancelled(ms: f64, never: Box<dyn FnOnce()>) {
-    let id = js::set_timeout(never, ms);
+    let id = js::set_timeout(never, Some(ms));
     js::clear_timeout(Some(id));
 }
 
 /// `tick` every `ms`, until `stop` of what this gives.
 pub fn every(ms: f64, tick: Box<dyn FnMut()>) -> &'static js::IntervalId {
-    js::set_interval(tick, ms)
+    js::set_interval(tick, Some(ms))
 }
 
 pub fn stop(id: &js::IntervalId) {
@@ -188,7 +193,7 @@ pub fn stop(id: &js::IntervalId) {
 /// `done` at `at`: a delay is a JS number, as TypeScript's, the time
 /// until then as it is, as react.dev's clock waits for the next minute.
 pub fn at(at: f64, done: Box<dyn FnOnce()>) {
-    js::set_timeout(done, at - js::date::now());
+    js::set_timeout(done, Some(at - js::date::now()));
 }
 
 async fn doubled(n: u32) -> u32 {

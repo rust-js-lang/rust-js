@@ -235,7 +235,7 @@ use js::Promise;
 
 pub fn delay(ms: f64) -> Promise<()> {
     js::promise::new(move |resolve, _reject| {
-        js::set_timeout(Box::new(move || resolve(())), ms);
+        js::set_timeout(Box::new(move || resolve(())), Some(ms));
     })
 }
 

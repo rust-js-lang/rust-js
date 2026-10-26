@@ -55,9 +55,10 @@ spawn(Box::new(async move {                            // runs, unawaited
 - `object::from_entries(entries)` is a JS object of keys and values, as an API
   taking a dictionary wants, and `object::is(a, b)` is `Object.is`: whether two
   JS objects are one.
-- `set_timeout(f, ms)` and `set_interval(f, ms)` run a closure later, or every
-  so often, and `clear_timeout` and `clear_interval` of what they gave stop it:
-  every JS runtime has them, browsers', workers' and Node's.
+- `set_timeout(f, Some(ms))` and `set_interval(f, Some(ms))` run a closure
+  later, or every so often, and `clear_timeout` and `clear_interval` of what
+  they gave stop it: every JS runtime has them, browsers', workers' and
+  Node's. Their delay is optional, as JS's: `None` leaves it out.
 - `number::to_fixed(x, digits)` is `x.toFixed(digits)`, JS's rounding: a tie
   away from zero, `2.5` to `"3"`, where `format!("{:.0}", 2.5)` is `"2"`; and
   `number::to_string(x, Some(36))` is `x.toString(36)`.

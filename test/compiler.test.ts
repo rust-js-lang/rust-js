@@ -558,8 +558,11 @@ test("the builtins crate's timers run a closure, and clearing one stops it", asy
   expect(fired).toBe(false);
   expect(ticks).toBe(3);
   await new Promise<void>((resolve) => builtins.at(Date.now() + 5.5, resolve));
+  await new Promise<void>((resolve) => builtins.soon(resolve));
   const js = await Bun.file(join(target, "builtins.js")).text();
   expect(js).toContain("setTimeout(done, at - Date.now());");
+  // Its delay is optional, as JS's: left out where it's `None`.
+  expect(js).toContain("  setTimeout(done);\n");
 });
 
 // `toFixed` is JS's rounding: a tie away from zero, where `format!` rounds it

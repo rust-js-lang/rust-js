@@ -75,7 +75,7 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                             silent(Outcome::Silent);
                         }
                     }),
-                    3000.0,
+                    Some(3000.0),
                 );
             }
             move || controller.abort(None)

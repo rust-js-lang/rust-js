@@ -1160,9 +1160,10 @@ pub struct IntervalId(PhantomData<JsObject>);
 // Timers: not the language's own, but every JS runtime's, browsers', workers'
 // and Node's, as ReScript's standard library has them (ADR 0102).
 /// [`setTimeout(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
-/// `callback` once, after at least `ms` milliseconds.
+/// `callback` once, after at least `ms` milliseconds; of `None`, left
+/// out, as soon as it can be, as JS's `setTimeout(callback)`.
 #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
-pub fn set_timeout(callback: Box<dyn FnOnce()>, ms: f64) -> &'static TimeoutId {
+pub fn set_timeout(callback: Box<dyn FnOnce()>, ms: Option<f64>) -> &'static TimeoutId {
     unreachable!()
 }
 
@@ -1175,9 +1176,10 @@ pub fn clear_timeout(id: Option<&TimeoutId>) {
 }
 
 /// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
-/// `callback` every `ms` milliseconds, until it's cleared.
+/// `callback` every `ms` milliseconds, until it's cleared; of `None`, left
+/// out, as often as it can be, as JS's `setInterval(callback)`.
 #[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
-pub fn set_interval(callback: Box<dyn FnMut()>, ms: f64) -> &'static IntervalId {
+pub fn set_interval(callback: Box<dyn FnMut()>, ms: Option<f64>) -> &'static IntervalId {
     unreachable!()
 }
 

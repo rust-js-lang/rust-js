@@ -194,6 +194,11 @@ export function after(ms, done) {
   setTimeout(done, ms);
 }
 
+/** `done` as soon as it can be, its delay left out, as JS leaves it. */
+export function soon(done) {
+  setTimeout(done);
+}
+
 /** `never` after `ms`, cleared first: it doesn't run. */
 export function cancelled(ms, never) {
   const id = setTimeout(never, ms);

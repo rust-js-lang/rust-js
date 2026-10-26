@@ -184,3 +184,18 @@ never was). The array argument, which no binding reads, isn't given.
   `setMaxListeners(undefined, ...targets)`, which Node reads as left out.
   (Amended by ADR 0640: before a spread; before a rest of none written
   out, `()`, it's no argument, `console.timeLog()`.)
+
+## Amendment: a timer's delay is optional
+
+The js crate's `set_timeout(callback, ms: f64)` and `set_interval` made
+their delay a caller must give, where JS's and TypeScript's is optional,
+`setTimeout(handler, timeout?)`: React's ReactFiberErrorLogger writes
+`setTimeout(() => { throw e; })`, its port printed `setTimeout(() => {
+throw e; }, 0)`. **Each takes `ms: Option<f64>`**, this decision's rule, as
+webapi's `Window::set_timeout` already does: `None` is left out, `Some(ms)`
+given. Case N: a delay left out is `0`, as `0` is. Callers in this
+repository are migrated: the guide, `examples/countdown.rs`, the playground's
+`ResultFrame` and the scheduler's port, whose `localSetTimeout(.., 0)`
+stays as upstream writes it, `Some(0.0)`. Held by `test/compiler.test.ts`,
+"the builtins crate's timers run a closure", whose `soon` is
+`setTimeout(done);`, run.
