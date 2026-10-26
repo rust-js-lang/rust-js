@@ -938,6 +938,7 @@ export function parseURL(url: string): number | null | undefined;
 | `Box<T>`, an `Rc<T>` whose counts nothing reads | `T` |
 | its `Weak<T>` | `T \| null` ([ADR 0845](../../decisions/0845-an-rcs-declaration-is-what-it-points-at.md)) |
 | a type alias | `export type`, by its name |
+| another module's struct or enum, or a library crate's whose declarations export it | `import type { Context } from "../react/ReactContext.js"`, by its name ([ADR 0210](../../decisions/0210-declarations-import-module-types.md), amended) |
 | a function that never returns, `-> !` | `never` |
 | a `pub use` of a function | `export { firstWord } from "./text.js"` |
 | a doc comment | its JSDoc |

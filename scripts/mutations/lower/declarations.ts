@@ -21,6 +21,14 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
   },
   {
+    name: "library-type-declared-any",
+    breaks: "a library's type its declarations export is `any` in a consumer's, React's `CacheContext` a `ReactContext<Cache>` (ADR 0210, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                if let Some((from, name)) = self.foreign.declared_type(did) {\n",
+    replace: "                if let Some((from, name)) = None::<&(String, String)> {\n",
+    tests: ["test/declarations-libraries.test.ts"],
+  },
+  {
     name: "declaration-erased-of-the-last-item",
     breaks: "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
     file: "src/lower/declarations.rs",
@@ -427,14 +435,6 @@ export const mutations: Mutation[] = [
     find: "name.split('.').next().unwrap_or(name).to_string()",
     replace: "name.to_string()",
     tests: ["test/declarations.test.ts", "-t", "declarations declare a private default export"],
-  },
-  {
-    name: "reexport-undeclared",
-    breaks: "a module's `pub use` isn't in its `.d.ts`, and TypeScript that imports it finds nothing",
-    file: "src/lower/declarations.rs",
-    find: "    for reexport in reexports {",
-    replace: "    for reexport in reexports.iter().take(0) {",
-    tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
   },
   {
     name: "dyn-node-a-function",

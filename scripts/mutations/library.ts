@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-type-without-declarations-imported",
+    breaks: "a library's type is imported from a `.d.ts` its library was written without (ADR 0210, amended)",
+    file: "src/library.rs",
+    find: "m.module == declared.module && m.types.is_some()",
+    replace: "m.module == declared.module",
+    tests: ["test/declarations-libraries.test.ts"],
+  },
+  {
     name: "contract-counts-unread",
     breaks: "a library's contract read as counting every `Rc` whatever it says, so its consumer counts what it hands as a box (ADRs 0844, 0852)",
     file: "src/library.rs",

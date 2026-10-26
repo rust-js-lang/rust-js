@@ -25,6 +25,7 @@ use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
 mod comments;
+mod imports;
 mod written;
 
 use comments::documented;
@@ -34,10 +35,12 @@ use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
 
 /// What a module's `.d.ts` declares, but its header: `None` where it
-/// exports nothing.
+/// exports nothing. And the types it exports by name, which a library's
+/// contract says to its consumers' declarations (ADR 0210, amended).
 #[allow(clippy::too_many_arguments)]
 pub(super) fn module<'tcx>(
     tcx: TyCtxt<'tcx>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
     module: LocalModId,
     (default_export, default_declared): (Option<DefId>, bool),
     files: &HashMap<LocalModId, Vec<String>>,
@@ -49,9 +52,10 @@ pub(super) fn module<'tcx>(
         &[super::bindings::HeldBinding],
         &HashMap<DefId, bool>,
     ),
-) -> Option<Value> {
+) -> (Option<Value>, Vec<DefId>) {
     let mut out = Declarations {
         tcx,
+        foreign,
         module,
         fns,
         variables,
@@ -59,6 +63,7 @@ pub(super) fn module<'tcx>(
         ref_cells,
         counted,
         imports: BTreeSet::new(),
+        library_imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
         unexported: BTreeMap::new(),
         erased: HashMap::new(),
@@ -75,6 +80,7 @@ pub(super) fn module<'tcx>(
     // is its default alone too, declared below (ADR 0611, amended).
     let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
+    let mut types = Vec::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         let held = held_default == Some(def_id);
@@ -112,6 +118,9 @@ pub(super) fn module<'tcx>(
             }
             declared
         });
+        if declaration.is_some() && matches!(tcx.def_kind(def_id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
+            types.push(def_id);
+        }
         items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
         if tcx.def_kind(def_id) == DefKind::Enum {
             items.extend(out.variant_constants(def_id));
@@ -158,45 +167,9 @@ pub(super) fn module<'tcx>(
     // interface an exported function names.
     items.splice(0..0, out.unexported.into_values().flatten());
     if items.is_empty() && reexports.is_empty() {
-        return None;
+        return (None, types);
     }
-    // `import type { NamedExoticComponent, ReactNode } from "react";`, each module's.
-    let mut declarations = Vec::new();
-    let mut modules: Vec<&str> = out.imports.iter().map(|(from, _)| from.as_str()).collect();
-    modules.dedup();
-    for from in modules {
-        let names: Vec<&str> = (out.imports.iter())
-            .filter(|(f, _)| f == from)
-            .map(|(_, n)| n.as_str())
-            .collect();
-        declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
-    }
-    // `import type { RouteItem } from "./routes.js";`, of the crate's other
-    // modules, by their path, which the output makes their file's (ADR 0210).
-    // Its default too, `import type Complex, { Parts } from ..`.
-    let paths: BTreeSet<&Vec<String>> = out.module_imports.iter().map(|(path, ..)| path).collect();
-    for path in paths {
-        let of = |default: bool| (out.module_imports.iter()).filter(move |(p, _, d)| p == path && *d == default);
-        let names: Vec<&str> = of(false).map(|(_, n, _)| n.as_str()).collect();
-        let default = of(true).map(|(_, n, _)| n.as_str()).next();
-        declarations
-            .push(json!({ "kind": "import", "module": path, "names": names, "default": default, "typeOnly": true }));
-    }
-    // `export { Challenges } from "./Challenges.js";`, its `pub use` of another
-    // module's function, as its JS has it (ADR 0240).
-    // A JS module's by its specifier, which the output makes the file's too.
-    for reexport in reexports {
-        let from = match &reexport.from {
-            crate::js::ImportFrom::Module(path) => json!({ "module": path }),
-            crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
-        };
-        let mut declaration = json!({ "kind": "export", "names": reexport.named });
-        declaration
-            .as_object_mut()
-            .expect("an object")
-            .extend(from.as_object().expect("an object").clone());
-        declarations.push(declaration);
-    }
+    let mut declarations = imports::imports((&out.imports, &out.library_imports, &out.module_imports), reexports);
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
     // function by another name, after it, as its JS has it (ADR 0596).
@@ -204,7 +177,7 @@ pub(super) fn module<'tcx>(
         let names: Vec<&(String, String)> = aliases.iter().map(|(_, names)| names).collect();
         declarations.push(json!({ "kind": "export", "names": names }));
     }
-    Some(json!({ "declarations": declarations }))
+    (Some(json!({ "declarations": declarations })), types)
 }
 
 /// An item's type parameters bound by a trait that says what it is to
@@ -326,8 +299,13 @@ struct Declarations<'a, 'tcx> {
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
+    /// What a library's contract says its declarations export (ADR 0210,
+    /// amended).
+    foreign: &'a super::library::Foreign<'a, 'tcx>,
     /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
     imports: BTreeSet<(String, String)>,
+    /// The types of libraries' modules it names, by their file's specifier.
+    library_imports: BTreeSet<(String, String)>,
     /// The types of the crate's other modules it names, by their path.
     /// Each by its module's path, its name, and whether it's that module's
     /// default, a class (ADR 0761).
@@ -1391,6 +1369,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     }
                     let type_args = self.type_args(did, args);
                     return reference(&name, type_args);
+                }
+                // A library's its declarations export, imported from them
+                // (ADR 0210, amended).
+                if let Some((from, name)) = self.foreign.declared_type(did) {
+                    self.library_imports.insert((from.clone(), name.clone()));
+                    let type_args = self.type_args(did, args);
+                    return reference(name, type_args);
                 }
                 // One of the crate's, declared: this module's by its name,
                 // another's imported from it (ADR 0210). Any other is `any`.

@@ -17,7 +17,9 @@ use std::path::Path;
 /// facts a set too (ADRs 0863, amended, 0906). 8: a function takes the
 /// copies and drops its own crate's calls give it, each type parameter's
 /// copy a fact of it, `copy`, and a consumer compiles what more it needs
-/// of it from its MIR (ADR 0914).
+/// of it from its MIR (ADR 0914). Its declared `types` (ADR 0210,
+/// amended) are none of a library written before, whose types its
+/// consumers' declarations have as `any`, as they had.
 pub const VERSION: u32 = 8;
 
 /// A function, method or impl method another crate can reach.
@@ -232,6 +234,20 @@ pub struct Library {
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<Field>,
+    /// Each type its modules' declarations export by name (ADR 0210,
+    /// amended): a consumer's declarations import it from that module's.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub types: Vec<DeclaredType>,
+}
+
+/// A type a library's module declares and exports, by rustc's key for it,
+/// and its name there (ADR 0210, amended).
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct DeclaredType {
+    pub key: String,
+    /// The module whose `.d.ts` declares it.
+    pub module: Vec<String>,
+    pub name: String,
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -351,6 +367,11 @@ pub struct Exports {
     /// Each binding a module holds, by the module's key and the binding's
     /// name in it.
     pub held: HashMap<(String, String), HeldImport>,
+    /// Each type its declarations export, by key: the `.d.ts` that declares
+    /// it, by its JS file's specifier, relative to the consumer's output,
+    /// and its name there (ADR 0210, amended). Not of a library written
+    /// without declarations.
+    pub types: HashMap<String, (String, String)>,
 }
 
 #[derive(Default)]
@@ -432,6 +453,16 @@ impl Dependencies {
                 };
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());
+                }
+            }
+            // A type, where its module's declarations are written.
+            for declared in library.types {
+                let declared_here = (manifest.modules.iter()).any(|m| m.module == declared.module && m.types.is_some());
+                if declared_here {
+                    let imported = (specifier(&declared.module)?, declared.name);
+                    if exports.types.insert(declared.key, imported).is_some() {
+                        return Err("duplicate dependency export".into());
+                    }
                 }
             }
             for held in library.held {

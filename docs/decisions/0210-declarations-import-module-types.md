@@ -1,6 +1,6 @@
 # 0210. A module's declarations import another's types
 
-Status: Accepted. Amends [0196](0196-typescript-declarations.md).
+Status: Accepted. Amends [0196](0196-typescript-declarations.md). Amended: a library crate's type is imported from its declarations too.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -41,3 +41,41 @@ export interface BreadcrumbsProps {
 ## Costs
 
 - **A module of types only declares nothing**, as it has no file.
+
+## Amendment: a library's type
+
+A library crate's type was `any` in its consumer's declarations: React's
+reconciler reads `CacheContext`, a `ReactContext<Cache>` of the react
+crate's, and its `.d.ts` said `context: any`, while the same type of its
+own crate was `Context<number>`.
+
+**A library's type that its own declarations export is imported from its
+module's `.d.ts`, by the specifier its JS imports the library's
+functions by, and named:**
+
+```ts
+import type { Context } from "../../a/src/context.js";
+
+export function read(context: Context<number>): number;
+```
+
+- **The library says which**, in its contract (ADR 0100): each type its
+  modules' declarations export, by rustc's key for it, its module and its
+  name, `types`. Its declarations are what decides, as they decide what
+  they write; the consumer reads the answer, not the library's `.d.ts`.
+- **Only where its declarations are written**: a library compiled
+  without them has no `.d.ts` to import from, its manifest's module no
+  `types`, so its type is still `any`, as a library written by an older
+  compiler, whose contract says no types, has it.
+- **Its file's specifier is relative to the consumer's output**, as a
+  library's function's is, and a copy beside the source relinks it, as
+  its JS's import.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): a declaration only
+checks TypeScript that calls the JS; what runs is the same.
+
+Tested by `test/declarations-libraries.test.ts`: a consumer's
+declarations import a library's `Context<T>` and TypeScript finds a
+caller's wrong value; a library without declarations stays `any`. Its
+mutations are `library-type-declared-any` and
+`library-type-without-declarations-imported`.

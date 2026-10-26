@@ -68,6 +68,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) variables: &'a HashSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],
+    /// The types its modules' declarations export (ADR 0210, amended).
+    pub(super) declared_types: &'a [DefId],
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -171,6 +173,7 @@ pub(super) fn exports<'tcx>(
         lazy_locals: _,
         variables,
         identities,
+        declared_types,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -278,6 +281,17 @@ pub(super) fn exports<'tcx>(
                 .collect();
             keys.sort();
             keys
+        },
+        types: {
+            let mut types: Vec<crate::library::DeclaredType> = (declared_types.iter())
+                .map(|&id| crate::library::DeclaredType {
+                    key: key(tcx, id),
+                    module: module_path(tcx, tcx.parent_module_from_def_id(id.expect_local())),
+                    name: tcx.item_name(id).to_string(),
+                })
+                .collect();
+            types.sort();
+            types
         },
     }
 }
@@ -675,6 +689,17 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 .libraries
                 .get(self.tcx.crate_name(id.krate).as_str())
                 .is_some_and(|library| library.impls.contains(&key(self.tcx, id)))
+    }
+
+    /// What `id`, a library's type, is declared as: its module's `.d.ts`,
+    /// by its JS file's specifier, and its name there, where its library's
+    /// declarations export it (ADR 0210, amended).
+    pub(super) fn declared_type(&self, id: DefId) -> Option<&'a (String, String)> {
+        if id.is_local() {
+            return None;
+        }
+        let library = (self.dependencies.libraries).get(self.tcx.crate_name(id.krate).as_str())?;
+        library.types.get(&key(self.tcx, id))
     }
 
     /// Is `id`, a library's type, equal only to itself, as its contract

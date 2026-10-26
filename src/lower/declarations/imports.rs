@@ -1,0 +1,70 @@
+//! What a module's declarations import, each type it names of another
+//! module, and re-export, each as its JS has it (ADRs 0210, 0240).
+
+use std::collections::BTreeSet;
+
+use serde_json::{Value, json};
+
+/// The types a module's declarations import, each by where it's from and
+/// its name.
+type Imported<K> = BTreeSet<(K, String)>;
+
+/// The declarations that import and re-export, first in a `.d.ts`: the
+/// types of JS modules', `import type { ReactNode } from "react";`; of
+/// libraries' modules, by their file's specifier, `import type { Context }
+/// from "../react/ReactContext.js";`, as a library's functions are
+/// imported (ADR 0210, amended); of the crate's other modules, by their
+/// path, which the output makes their file's (ADR 0210); then its `pub
+/// use`s of another module's functions, `export { Challenges } from
+/// "./Challenges.js";` (ADR 0240), a JS module's by its specifier, which
+/// the output makes the file's too.
+pub(super) fn imports(
+    (packages, libraries, modules): (
+        &Imported<String>,
+        &Imported<String>,
+        &BTreeSet<(Vec<String>, String, bool)>,
+    ),
+    reexports: &[crate::program::Reexport],
+) -> Vec<Value> {
+    let mut declarations = Vec::new();
+    for (from, names) in grouped(packages) {
+        declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
+    }
+    for (from, names) in grouped(libraries) {
+        declarations.push(json!({ "kind": "import", "specifier": from, "names": names, "typeOnly": true }));
+    }
+    // Its default too, `import type Complex, { Parts } from ..`.
+    let paths: BTreeSet<&Vec<String>> = modules.iter().map(|(path, ..)| path).collect();
+    for path in paths {
+        let of = |default: bool| (modules.iter()).filter(move |(p, _, d)| p == path && *d == default);
+        let names: Vec<&str> = of(false).map(|(_, n, _)| n.as_str()).collect();
+        let default = of(true).map(|(_, n, _)| n.as_str()).next();
+        declarations
+            .push(json!({ "kind": "import", "module": path, "names": names, "default": default, "typeOnly": true }));
+    }
+    for reexport in reexports {
+        let from = match &reexport.from {
+            crate::js::ImportFrom::Module(path) => json!({ "module": path }),
+            crate::js::ImportFrom::Specifier(specifier) => json!({ "specifier": specifier }),
+        };
+        let mut declaration = json!({ "kind": "export", "names": reexport.named });
+        declaration
+            .as_object_mut()
+            .expect("an object")
+            .extend(from.as_object().expect("an object").clone());
+        declarations.push(declaration);
+    }
+    declarations
+}
+
+/// Each module of `imported`, in order, and the names imported from it.
+fn grouped<K: Ord>(imported: &Imported<K>) -> Vec<(&K, Vec<&str>)> {
+    let mut groups: Vec<(&K, Vec<&str>)> = Vec::new();
+    for (from, name) in imported {
+        match groups.last_mut() {
+            Some((last, names)) if *last == from => names.push(name),
+            _ => groups.push((from, vec![name])),
+        }
+    }
+    groups
+}

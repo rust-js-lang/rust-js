@@ -1015,6 +1015,8 @@ pub fn lower_crate<'tcx>(
     // The exported thread-locals and `static mut`s their modules made
     // their variables.
     let mut variables: HashSet<DefId> = HashSet::new();
+    // The types each module's declarations export (ADR 0210, amended).
+    let mut declared_types: Vec<DefId> = Vec::new();
     let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
         .map(|module| {
@@ -1296,8 +1298,9 @@ pub fn lower_crate<'tcx>(
                     &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.as_str())),
                 );
             }
-            lowered.declarations = super::declarations::module(
+            let (declarations, types) = super::declarations::module(
                 tcx,
+                &foreign,
                 module,
                 (default_export, default_declared),
                 &paths,
@@ -1306,6 +1309,8 @@ pub fn lower_crate<'tcx>(
                 (ref_cells, &counted),
                 (&fns, module_held, &module_variables),
             );
+            lowered.declarations = declarations;
+            declared_types.extend(types);
             // A `Drop` impl's `drop` of this module no other module calls,
             // which may be its body where its one drop is (ADR 0588).
             let drop_trait = tcx.lang_items().drop_trait();
@@ -1440,6 +1445,7 @@ pub fn lower_crate<'tcx>(
                         lazy_locals: &lazy_locals,
                         variables: &variables,
                         identities: &identities,
+                        declared_types: &declared_types,
                     },
                     (&trait_impls, &held.modules),
                     dependencies,
