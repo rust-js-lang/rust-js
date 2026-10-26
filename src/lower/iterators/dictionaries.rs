@@ -290,18 +290,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let passed: Vec<String> = ["next", "size_hint", "nth"]
             .map(|name| crate::lower::bindings::trait_method_name(self.tcx, iterator, name))
             .into();
-        match of.kind {
-            js::ExprKind::Object(props, _) => Expr::object(
-                (props.into_iter())
-                    .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))
-                    .collect(),
-            ),
-            _ => Expr::object(
-                (passed.into_iter())
-                    .map(|name| js::Prop::Field(name.clone(), Expr::member(of.clone(), &name)))
-                    .collect(),
-            ),
-        }
+        entries_passed_on(of, passed)
+    }
+
+    /// An extension's dictionary of a `&mut I`, of `I`'s, `of`: what std's
+    /// impl for it passes on to its `I`, `next_back`, `nth_back` and
+    /// `try_rfold` of a `DoubleEndedIterator`, `len` of an
+    /// `ExactSizeIterator`; not `rfold`, which it folds by `I`'s `try_rfold`
+    /// (ADRs 0928, 0937).
+    pub(in crate::lower) fn mut_ref_extension_dictionary(&self, trait_id: DefId, of: Expr) -> Expr {
+        // Its entry, `next_back` or `len`, keyed as the extension's own are,
+        // and the methods it passes on, by their names.
+        let others: &[&str] = match crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
+            true => &["nth_back", "try_rfold"],
+            false => &[],
+        };
+        let entry = crate::lower::recognition::extension_entry(self.tcx, trait_id).to_string();
+        let passed: Vec<String> = std::iter::once(entry)
+            .chain(
+                others
+                    .iter()
+                    .map(|name| crate::lower::bindings::trait_method_name(self.tcx, trait_id, name)),
+            )
+            .collect();
+        entries_passed_on(of, passed)
     }
 
     /// What an `IntoIterator` of type `ty` gives, its `Item`.
@@ -312,5 +324,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (self.tcx)
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
             .unwrap_or(projection)
+    }
+}
+
+/// The entries of a dictionary, `of`, a `&mut` to what it's of passes on,
+/// `passed`: of one made here, those; of one given, each read from it.
+fn entries_passed_on(of: Expr, passed: Vec<String>) -> Expr {
+    match of.kind {
+        js::ExprKind::Object(props, _) => Expr::object(
+            (props.into_iter())
+                .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))
+                .collect(),
+        ),
+        _ => Expr::object(
+            (passed.into_iter())
+                .map(|name| js::Prop::Field(name.clone(), Expr::member(of.clone(), &name)))
+                .collect(),
+        ),
     }
 }

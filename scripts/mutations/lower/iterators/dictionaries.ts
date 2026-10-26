@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "mut-ref-dictionary-whole",
     breaks: "a `&mut I` is given all of `I`'s dictionary, so `by_ref().fuse().count()` runs the crate's own `fold`, which std's `&mut I` never calls (ADR 0912)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                    .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))\n",
+    find: "                .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },

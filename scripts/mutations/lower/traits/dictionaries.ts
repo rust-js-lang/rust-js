@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "mut-ref-extension-of-evidence-unseen",
+    breaks: "a `&mut R`'s `DoubleEndedIterator`, of a type parameter given one, isn't of the dictionary `R` was given: `self.inner.by_ref().map(f).rfold(..)` is refused, `the DoubleEndedIterator of a R` (ADR 0937)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "                && self.is_unknown(*inner)\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
+    replace: "                && false\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^held_enumerate with"],
+  },
+  {
     name: "evidence-unnormalized",
     breaks: "`shown(&mut Words ..)` is given the dictionary of `<Words as Source>::Item: Debug`, not `String: Debug`, and it's refused",
     file: "src/lower/traits/dictionaries.rs",

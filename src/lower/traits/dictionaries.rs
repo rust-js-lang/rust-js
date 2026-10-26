@@ -113,8 +113,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )),
             };
         }
-        // An iterator's extension's, of one given as it is (ADR 0487).
+        // An iterator's extension's, of one given as it is (ADR 0487); a
+        // `&mut` to a type only its bounds know, of the dictionary it was
+        // given, as std's `&mut I` passes on to its `I` (ADR 0937).
         if crate::lower::recognition::is_iterator_extension(self.tcx, tr.def_id) {
+            if let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind()
+                && self.is_unknown(*inner)
+            {
+                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;
+                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));
+            }
             return self.iterator_extension_dictionary(tr.def_id, tr.self_ty(), span);
         }
         // `Any`'s: its type's key, `{ type_id: () => "i32" }` (ADR 0331).
