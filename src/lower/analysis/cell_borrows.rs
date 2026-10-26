@@ -448,6 +448,7 @@ fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | JsForm::Truthy
                 | JsForm::StrictEquals
                 | JsForm::Defined
+                | JsForm::Function
                 | JsForm::TypeofObject
         ) || runs_nothing(tcx, id))
 }

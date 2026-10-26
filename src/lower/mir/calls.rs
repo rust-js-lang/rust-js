@@ -347,11 +347,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
-    /// of the global its argument names (ADR 0597): a binding function's,
-    /// by its type, or a static's, `&webapi::performance`, by the static
-    /// it refers to, so no temporary between hides it. A global's own name,
-    /// its `js_path`: not a method's, an import's or a path's, which aren't
-    /// the host's to lack. `None` of another call.
+    /// of the global its argument names (ADR 0597), and `js::is_function`'s
+    /// `typeof setTimeout === "function"` of the same (ADR 0942): a binding
+    /// function's, by its type, or a static's, `webapi::performance`, by the
+    /// static it is, so no temporary between hides it. A global's own name,
+    /// its `js_path`: not an import's, which isn't the host's to lack.
+    /// `None` of another call.
     pub(super) fn mir_defined(
         &self,
         body: &mir::Body<'tcx>,
@@ -360,29 +361,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         let tcx = self.tcx;
-        if !bindings::is_binding(tcx, def_id) || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Defined) {
+        if !bindings::is_binding(tcx, def_id) {
             return Ok(None);
         }
+        let asked = match bindings::js_form(tcx, def_id) {
+            bindings::JsForm::Defined => Asked::Defined,
+            bindings::JsForm::Function => Asked::Function,
+            _ => return Ok(None),
+        };
         // A path of bindings, each read from the one before (ADR 0624).
         if let Some(arg) = args.first()
             && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()
             && !steps.is_empty()
         {
-            let path = self.defined_path(steps, span)?;
-            return self.mir_defined_parts(Some(path), span);
+            let path = self.defined_path(steps, asked, span)?;
+            return self.mir_defined_parts(Some(path), asked, span);
         }
         let Some(arg) = args.first() else {
-            return self.mir_defined_parts(None, span);
+            return self.mir_defined_parts(None, asked, span);
         };
         let given = arg.node.ty(&body.local_decls, tcx);
         // A std function that's `Math`'s, its function's, `typeof
-        // Math.clz32 !== "undefined"`: `Math` itself is ECMAScript's, which
-        // every host has (ADR 0887).
+        // Math.clz32 !== "undefined"` (ADR 0887).
         if let Some((f, f_args)) = crate::lower::fn_def(given)
             && let Some(function) = self.math_function(f, f_args)
+            && let js::ExprKind::Member(_, name) = function.kind
         {
-            let typeof_ = Expr::unary(js::UnaryOp::Typeof, function);
-            return Ok(Some(Expr::bin(Op::Ne, typeof_, Expr::str("undefined"))));
+            return self.mir_defined_parts(Some(format!("Math.{name}")), asked, span);
         }
         let global = match *given.kind() {
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => self.member_of_global(f),
@@ -392,21 +397,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `is_defined(js::symbol::to_string_tag)`; a reference to
                 // it is refused, naming the one way (ADR 0645).
                 Some(s) if refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {
+                    let function = asked.function();
                     return Err(self.tcx.dcx().span_err(
                         span,
-                        "`js::is_defined` of a static is given the static itself, \
-                         `js::is_defined(webapi::performance)`, not a reference to it",
+                        format!(
+                            "`{function}` of a static is given the static itself, \
+                             `{function}(webapi::performance)`, not a reference to it"
+                        ),
                     ));
                 }
                 Some(s) => bindings::js_path(tcx, s),
                 None => None,
             },
         };
-        self.mir_defined_parts(global, span)
+        self.mir_defined_parts(global, asked, span)
     }
 
-    /// `typeof` of each part of `global`'s path, joined by `&&`.
-    fn mir_defined_parts(&self, global: Option<String>, span: Span) -> R<Option<Expr>> {
+    /// `typeof` of each part of `global`'s path, joined by `&&`: each but
+    /// the last whether the host has it, and the last what `asked` asks.
+    fn mir_defined_parts(&self, global: Option<String>, asked: Asked, span: Span) -> R<Option<Expr>> {
         // Each part of its path, `typeof console !== "undefined" && typeof
         // console.log !== "undefined"`: a host may lack any of them.
         let parts: Vec<&str> = global
@@ -416,34 +425,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if parts.is_empty() || !parts.iter().all(|part| crate::names::is_identifier(part)) {
             return Err(self.unsupported(
                 span,
-                "`js::is_defined` of what isn't a JS global's binding, `webapi::message_channel::new`,",
+                &format!(
+                    "`{}` of what isn't a JS global's binding, `webapi::message_channel::new`,",
+                    asked.function()
+                ),
             ));
         }
         let mut read = self.js_ref(parts[0]);
-        let mut asked = Vec::new();
+        let mut tests = Vec::new();
         for (k, part) in parts.iter().enumerate() {
             if k > 0 {
                 read = Expr::member(read, part.to_string());
             }
-            asked.push(Expr::bin(
-                Op::Ne,
-                Expr::unary(js::UnaryOp::Typeof, read.clone()),
-                Expr::str("undefined"),
-            ));
+            let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
+            if k + 1 == parts.len() && asked == Asked::Function {
+                tests.push(Expr::bin(Op::Eq, typeof_, Expr::str("function")));
+            } else if k + 1 == parts.len() || !(k == 0 && every_host_has(part)) {
+                tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
+            }
         }
-        Ok(asked.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
+        Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
     }
 
     /// The path a tuple of bindings is, each step a method of what the one
     /// before gives, its first a global's binding (ADR 0624):
     /// `(Window::document, Document::create_element::<Div>)` is
     /// `window.document.createElement`.
-    fn defined_path(&self, steps: &[ty::Ty<'tcx>], span: Span) -> R<String> {
+    fn defined_path(&self, steps: &[ty::Ty<'tcx>], asked: Asked, span: Span) -> R<String> {
         let tcx = self.tcx;
         let refused = || {
             self.unsupported(
                 span,
-                "`js::is_defined` of a path of bindings where a step isn't a method of what the one before gives",
+                &format!(
+                    "`{}` of a path of bindings where a step isn't a method of what the one before gives",
+                    asked.function()
+                ),
             )
         };
         let mut path = String::new();
@@ -584,6 +600,36 @@ fn member_read(tcx: rustc_middle::ty::TyCtxt<'_>, method: rustc_span::def_id::De
         bindings::JsForm::Call(name) | bindings::JsForm::Get(name) | bindings::JsForm::New(name) => Some(name),
         _ => None,
     }
+}
+
+/// What `js::is_defined` asks of a binding's global, `typeof X !==
+/// "undefined"`, or `js::is_function`, `typeof X === "function"` (ADRs
+/// 0597, 0942).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Asked {
+    Defined,
+    Function,
+}
+
+impl Asked {
+    /// The function that asks it, as a program writes it.
+    fn function(self) -> &'static str {
+        match self {
+            Asked::Defined => "js::is_defined",
+            Asked::Function => "js::is_function",
+        }
+    }
+}
+
+/// Whether every JS host has `global`, one of ECMAScript's first edition's
+/// global objects, which a path through it isn't asked of: `typeof
+/// Object.preventExtensions === "function"`, as `Math.clz32` is (ADRs 0887,
+/// 0942). A later edition's, `Symbol`, `Reflect`, is asked of.
+fn every_host_has(global: &str) -> bool {
+    matches!(
+        global,
+        "Object" | "Function" | "Array" | "String" | "Boolean" | "Number" | "Math" | "Date"
+    )
 }
 
 /// How many references `ty` is of what it refers to: `&&Symbol`'s two.

@@ -37,7 +37,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return;
         };
         if !bindings::is_binding(self.tcx, def_id)
-            || !matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Defined)
+            || !matches!(
+                bindings::js_form(self.tcx, def_id),
+                bindings::JsForm::Defined | bindings::JsForm::Function
+            )
         {
             return;
         }

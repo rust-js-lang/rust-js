@@ -120,7 +120,9 @@ What it has:
   `unsafe impl PropertyDescriptorMap for Logs<'_> {}`
   ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md)).
 - **Whether the host has a global is `is_defined(binding)`,** `typeof X
-  !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
+  !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't;
+  whether it's a function, `is_function(binding)`, `typeof X ===
+  "function"`
   ([Access to the global scope](../interop/global-scope.md#a-global-some-hosts-lack)).
 - **A promise is a `Promise<T>`, to `.await`;** `settle(p).await` is a
   `Result` of what it fulfils or rejects with, `spawn` starts a future no

@@ -342,6 +342,8 @@ pub(super) enum JsForm {
     /// `typeof !== "undefined"`: whether the host has the global of the
     /// binding given, `typeof MessageChannel !== "undefined"` (ADR 0597).
     Defined,
+    /// `typeof === "function"`: whether that global is a function (ADR 0942).
+    Function,
     /// `"" +`: `"" + this`, any value as JS's `+` makes it text (ADRs 0310,
     /// 0639).
     Text,
@@ -384,6 +386,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "instanceof" => return JsForm::InstanceOfGiven,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,
+        "typeof === \"function\"" => return JsForm::Function,
         "\"\" +" => return JsForm::Text,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },

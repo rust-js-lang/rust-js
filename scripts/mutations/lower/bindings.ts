@@ -514,4 +514,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
   },
+  {
+    name: "is-function-form-called",
+    breaks: "`js::is_function(binding)` is a call of no JS function, not `typeof X === \"function\"` (ADR 0942)",
+    file: "src/lower/bindings.rs",
+    find: "        \"typeof === \\\"function\\\"\" => return JsForm::Function,\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "is_function is whether"],
+  },
 ];

@@ -10,6 +10,9 @@ Extended by [0887](0887-std-items-that-are-math-are-math.md): of a std function 
 `typeof Math.clz32 !== "undefined"`.
 Extended by [0891](0891-a-windows-constructor-is-the-windows.md): of a
 window's constructor, `typeof window.ErrorEvent !== "undefined"`.
+Extended by [0942](0942-whether-a-global-is-a-function-is-is-function.md):
+whether a global is a function is `js::is_function`'s, and a path through
+ECMAScript's first edition's globals asks nothing of them.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A global the host
 has is read as it was; asked of one it hasn't, the answer is `false`, where

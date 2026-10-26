@@ -726,6 +726,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0939 An iterator that's an iterable in JS is made the JS iterator it steps where its `IntoIterator` dictionary gives it](0939-an-iterable-s-into-iter-is-its-js-iterator.md)
 - [0940 `collect()` into a `Vec` asks the room its iterator's hint says, as std's `SpecFromIter` does](0940-collect-asks-room-of-its-hint.md)
 - [0941 A `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, steps the array's items it owns](0941-a-boxed-array-s-into-iter-is-its-items.md)
+- [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

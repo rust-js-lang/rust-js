@@ -598,6 +598,17 @@ pub fn is_defined<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
 
+/// [`typeof X === "function"`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
+/// whether `binding`'s global is a function the host can call, of what
+/// [`is_defined`] is given, a JS function's binding, a static, or a path of
+/// them, each part before the last asked whether it's there (ADR 0942).
+/// Rust is told nothing: the binding is still there to call.
+#[cfg_attr(rust_js, rust_js::link_name = "typeof === \"function\"")]
+#[allow(unused_variables)]
+pub fn is_function<B: Copy>(binding: B) -> bool {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.

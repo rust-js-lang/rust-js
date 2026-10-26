@@ -9,7 +9,9 @@ a binding taken as a `fn` being its function, to std's; and
 [0597](0597-whether-the-host-has-a-global-is-is-defined.md)'s
 `js::is_defined`, with [0624](0624-is-defined-of-a-path-of-bindings.md)'s
 and [0645](0645-is-defined-of-a-static-is-of-the-static.md)'s, to a std
-function that's `Math`'s.
+function that's `Math`'s. Extended by
+[0942](0942-whether-a-global-is-a-function-is-is-function.md): every
+global of ECMAScript's first edition, as `Math`, isn't asked of in a path.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each item in the table
 answers as the Rust does for every value of its type, so the function or

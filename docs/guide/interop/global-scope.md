@@ -209,16 +209,49 @@ export function later(task) {
   [a window's](#a-windows-classes): what it makes isn't read of it.
 - **A std function that's `Math`'s** is asked of as `Math`'s:
   `js::is_defined(u32::leading_zeros)` is `typeof Math.clz32 !==
-  "undefined"`, `Math` itself being ECMAScript's, which every host has, as
-  React's `clz32` polyfill asks
+  "undefined"`, as React's `clz32` polyfill asks
   ([ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md),
   [Numbers](types.md#numbers)).
+- **A global of ECMAScript's first edition, which every host has, isn't
+  asked of** in a path through it: `Object`, `Function`, `Array`,
+  `String`, `Boolean`, `Number`, `Math` and `Date`.
+  `js::is_defined(js::object::prevent_extensions::<js::Unknown>)` is
+  `typeof Object.preventExtensions !== "undefined"`; a later edition's,
+  `Symbol`, is asked
+  ([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md)).
 - **It's a global's**: a closure, a variable, the crate's own function or
   static, a std function that isn't `Math`'s, `f64::round`, or an import
   is refused.
 - **Rust is told nothing**: the binding is still there to call, and throws
   a `ReferenceError` where the host hasn't it, as JS does. Ask where the
   program may run without it.
+
+Whether it's a function is `js::is_function(binding)`, `typeof X ===
+"function"`, of what `js::is_defined` is given: a binding, a static or a
+path of them, each part before the last asked whether it's there
+([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md)).
+It's its own question, false of a global that's there but isn't a
+function, as React asks:
+
+```rust
+pub fn can_prevent_extensions() -> bool {
+    js::is_function(js::object::prevent_extensions::<js::Unknown>)
+}
+
+pub fn has_timers() -> bool {
+    js::is_function(js::set_timeout)
+}
+```
+
+```js
+export function canPreventExtensions() {
+  return typeof Object.preventExtensions === "function";
+}
+
+export function hasTimers() {
+  return typeof setTimeout === "function";
+}
+```
 
 A member no TypeScript lib declares, which some hosts have, is declared as
 an optional property: an `Option` of its value, `None` where the host
