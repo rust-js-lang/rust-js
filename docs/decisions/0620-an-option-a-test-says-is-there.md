@@ -177,3 +177,32 @@ wrote stays an if", `test/lowering-nullable.test.ts`, "a nullable result
 tested equal to a None given is null", and the mutations
 `tested-defined-still-nulled`, `tested-defined-if-still-nulled` and
 `tested-defined-where-it-isnt` (`tidy/values.ts`).
+
+## Amendment: what a nullable function gave is never `undefined`, held or not (2026-10-26)
+
+React's unsafe_markUpdateLaneFromFiberToRoot holds what it finds while more
+runs:
+
+```rust
+let root = get_root_for_updated_fiber(source_fiber);
+mark_update_lane_from_fiber_to_root(source_fiber, None, lane);
+root
+```
+
+`get_root_for_updated_fiber` is `#[rust_js::nullable]`, and so is the
+function returning `root`. A call of a nullable function written straight
+to its result, or to a nullable place, was as it is (ADRs 0638, 0841); held
+in a variable first, it was `return root ?? null;`, as a variable may be
+`undefined`.
+
+**What a call of a function that gives `null` for `None` gives is never
+`undefined`, wherever it's kept** (`Known::Defined`, `calls::given_by`):
+`const root = lookup(id);` is a `const` of what's never `undefined`, so
+`nulled_as_they_are` returns it, and a nullable field stores it, as it is:
+`return root;`, `holder.root = root;`. Not a trait method's, whose impl
+says nothing of it (ADR 0841, amended).
+
+- Case A: `null ?? null` is `null`, and a value is itself.
+- Held by `test/lowering-nullable.test.ts`, "a variable of what a nullable
+  function gave is returned and stored as it is", run in JS, and the
+  mutation `nullable-call-kept-undefined` (`lower/mir/structure.ts`).

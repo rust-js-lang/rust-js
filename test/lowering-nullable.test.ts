@@ -1429,3 +1429,50 @@ pub fn read(dependency: &ContextDependency<Option<u32>>) -> Option<u32> {
   lib.cleared(dependency);
   expect([dependency.memoizedValue, lib.read(dependency), lib.numbers().memoizedValue]).toEqual([null, null, 1]);
 });
+
+// React's unsafe_markUpdateLaneFromFiberToRoot ends `const root = ..; return
+// root;` of what a nullable function gave, a variable's, held while
+// more runs: `null` for `None` already, so returned and stored as it is,
+// not `root ?? null` (ADR 0620, amended).
+test("a variable of what a nullable function gave is returned and stored as it is", async () => {
+  const dir = fixture("nullable-call-kept");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Root {
+    pub tag: u32,
+}
+
+pub struct Holder {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root: RefCell<Option<Rc<Root>>>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn lookup(roots: &[Rc<Root>], tag: u32) -> Option<Rc<Root>> {
+    roots.iter().find(|r| r.tag == tag).cloned()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn found(roots: &[Rc<Root>], tag: u32, seen: &mut u32) -> Option<Rc<Root>> {
+    let root = lookup(roots, tag);
+    *seen += 1;
+    root
+}
+
+pub fn held(holder: &Holder, roots: &[Rc<Root>], tag: u32) {
+    let root = lookup(roots, tag);
+    holder.root.replace(root);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  seen.value = (seen.value + 1) >>> 0;\n  return root;\n");
+  expect(js).toContain("  const root = lookup(roots, tag);\n  holder.root = root;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const roots = [{ tag: 1 }, { tag: 2 }];
+  const seen = { value: 0 };
+  const holder = { root: roots[0] as unknown };
+  lib.held(holder, roots, 3);
+  expect([lib.found(roots, 2, seen), lib.found(roots, 5, seen), holder.root]).toEqual([roots[1], null, null]);
+});

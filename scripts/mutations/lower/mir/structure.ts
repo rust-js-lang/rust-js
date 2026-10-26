@@ -291,4 +291,12 @@ export const mutations: Mutation[] = [
     replace: "                        .filter(|_| false)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a function's last value in export_default! stays"],
   },
+  {
+    name: "nullable-call-kept-undefined",
+    breaks: "a variable of what a `#[rust_js::nullable]` function gave is returned `root ?? null`, as if it may be `undefined` (ADR 0620, amended)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),\n",
+    replace: "                            Value::Expr(e) => Value::Expr(e),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a variable of what a nullable function gave is returned and stored as it is"],
+  },
 ];

@@ -556,7 +556,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 match target {
                     Some(target) => {
-                        let made_by = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
+                        let func_ty = func.ty(&state.body.local_decls, self.tcx);
+                        let made_by = fn_def(func_ty).map(|(def_id, _)| def_id);
+                        // A nullable function's `None`, `null`: never
+                        // `undefined`, wherever it's kept (ADR 0620, amended).
+                        let value = match value {
+                            Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),
+                            value => value,
+                        };
                         let value = self.nullable_written(state, *destination, value, made_by, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns.
