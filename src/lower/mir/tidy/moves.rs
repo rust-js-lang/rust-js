@@ -458,6 +458,38 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
     test.substitute(&|v| (v == name).then(|| value.clone()))
 }
 
+/// `if (fiber != null && fiber._debugTask) { const debugTask =
+/// fiber._debugTask; return debugTask.run(..); }`: a let chain's binding,
+/// `stmts[at]`, of a place the chain's test read in its stead, which
+/// `bound_into` says reads the same again and no getter answers, read again
+/// where `stmts`, the `if`'s branch, reads it: once, in the statement right
+/// after it, where nothing JS evaluates before it there does anything
+/// (`leads`), so nothing can have changed the place since the test read
+/// it, which does nothing either (ADR 0866, amended). As upstream writes it,
+/// `return fiber._debugTask.run(..)`. Where something runs first, or it's
+/// read again, the binding stays: Rust's value is what the test read.
+/// Whether it was.
+pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
+    let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
+        return false;
+    };
+    if js::mentions_in(&stmts[at + 1..], name) != 1 {
+        return false;
+    }
+    let Some(read) = read_of(next, name) else {
+        return false;
+    };
+    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {
+        return false;
+    }
+    let Some(replaced) = read.of(next).substitute(&|v| (v == name).then(|| value.clone())) else {
+        return false;
+    };
+    *read.of_mut(&mut stmts[at + 1]) = replaced;
+    stmts.remove(at);
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

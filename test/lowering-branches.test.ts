@@ -1199,8 +1199,9 @@ pub fn message(kind: Kind) -> String {
 });
 
 // A binding a let chain makes in its condition, kept a `const` in its
-// `then`, is the `then`'s: the chain is still an `else if`, no label to
-// reach its `else` (ADR 0659).
+// `then`, read twice there, is the `then`'s: the chain is still an `else
+// if`, no label to reach its `else` (ADR 0659). Read once, first, it's the
+// place the test read (ADR 0866, amended).
 test("an if-let chain's binding kept in its arm keeps the chain an else if", async () => {
   const dir = fixture("if-let-chain-binding");
   writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
@@ -1216,7 +1217,7 @@ pub fn message(kind: Kind) -> String {
         && let Some(text) = child.first()
         && text.len() > 1
     {
-        message = text.clone();
+        message = text.clone() + text;
     } else {
         panic!("Expected a plain string.");
     }
@@ -1229,12 +1230,12 @@ pub fn message(kind: Kind) -> String {
     message = kind._0;
   } else if (kind.TAG === "Element" && kind._0[0] != null && $byteLen(kind._0[0]) > 1) {
     const text = kind._0[0];
-    message = text;
+    message = text + text;
   } else {
     throw new Error("Expected a plain string.");
   }`);
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: ["bc"] })]).toEqual(["a", "bc"]);
+  expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: ["bc"] })]).toEqual(["a", "bcbc"]);
   expect(() => lib.message({ TAG: "Element", _0: ["b"] })).toThrow("plain string");
   expect(() => lib.message({ TAG: "Other" })).toThrow("plain string");
 });

@@ -182,4 +182,28 @@ export const mutations: Mutation[] = [
     replace: "    if !place || tested == 0 || test.has_effects() {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
   },
+  {
+    name: "read-again-twice",
+    breaks: "a let chain's binding read twice in the body is the field read twice, the second after the first's call, which may change it (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if js::mentions_in(&stmts[at + 1..], name) != 1 {\n",
+    replace: "    if js::mentions_in(&stmts[at + 1..], name) == 0 {\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "binding of a field the test read is read again"],
+  },
+  {
+    name: "read-again-past-code",
+    breaks: "a let chain's binding read after code its statement runs first, `probe(f) + task.run(..)`, is the field read there, after `probe` changed it (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
+    replace: "    if leads(read.of(next), name, None, &|_| true) != Some(true) {\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "binding of a field the test read is read again"],
+  },
+  {
+    name: "read-again-of-a-later-statement",
+    breaks: "a let chain's binding read in a later statement, past one that changes the field, is the field read there (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
+    replace: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) == Some(false) {\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "binding of a field the test read is read again"],
+  },
 ];

@@ -261,4 +261,21 @@ export const mutations: Mutation[] = [
     replace: "        if read_twice_apart(test, bound, second, &again) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_binding_past_a_call.rs$"],
   },
+  {
+    name: "chain-binding-not-read-again",
+    breaks: "a let chain's binding of a field the test read stays a `const`, `const debugTask = fiber._debugTask; return debugTask.run(..)`, where upstream reads `fiber._debugTask.run(..)` (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            read_again(then, at);\n",
+    replace: "            let _ = (&then, at);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "binding of a field the test read is read again"],
+  },
+  {
+    name: "chain-binding-untested-read-again",
+    breaks: "a let chain's pattern's bindings no test read, `const a = value[0]; const b = value[1];`, are read again in their place, the program's names gone (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if tested.contains(name)) {\n",
+    replace: "            if matches!(&then[at].kind, StmtKind::Const(..)) {\n",
+    tests: ["test/snapshots.test.ts", "-t", "options"],
+    snapshots: true,
+  },
 ];

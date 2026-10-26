@@ -1876,6 +1876,14 @@ export function isAdult(p) {
   the test reads it and runs no code first: `if (dev && prev.types !=
   null && prev.types !== other)`
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md)).
+  So is a chain's binding of a field its test read, `if let Some(fiber) =
+  &fiber && let Some(task) = fiber.debug_task.get() { return
+  task.run(..); }`, where the body reads it first, before anything runs:
+  `if (fiber != null && fiber._debugTask) { return
+  fiber._debugTask.run(..); }`. Where code runs before it's read, or it's
+  read again, it's `const task = fiber._debugTask;`, the value the test
+  read
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

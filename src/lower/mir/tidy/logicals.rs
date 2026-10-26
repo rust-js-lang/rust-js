@@ -218,6 +218,15 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
         if read_twice_apart(test, bound, second, &again) || read_past_code(bound, second, &again) {
             continue;
         }
+        // The bindings the second test reads, in their place now: not one
+        // a pattern takes apart, `const a = value[0];`, the program's name
+        // of what no test read.
+        let tested: HashSet<String> = (bound.iter())
+            .filter_map(|s| match &s.kind {
+                StmtKind::Const(name, _) if second.mentions_var(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect();
         let second = second_joined;
         let bound = bound.len();
         let Some(Stmt {
@@ -229,8 +238,19 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
         };
         let first = std::mem::replace(test, Expr::undefined());
         *test = unimplied(Expr::bin(Op::And, first, second));
+        let made = then.len() + body.len();
         then.extend(body);
         unread_bound(then, bound);
+        // Each binding left that the test read, read in its place again
+        // where the body reads it first (`moves::read_again`): the test's
+        // code, a binding's read past which stays apart (`read_past_code`),
+        // ran before it.
+        let kept = bound - (made - then.len());
+        for at in (0..kept).rev() {
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if tested.contains(name)) {
+                read_again(then, at);
+            }
+        }
     }
     // Its name is its own in the function, as each MIR local's is, so in
     // this list too (`contracts::DECLARED_ONCE`).

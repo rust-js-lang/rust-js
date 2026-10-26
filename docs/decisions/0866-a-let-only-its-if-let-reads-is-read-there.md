@@ -1,6 +1,7 @@
 # 0866. A `let` only the `if let` that takes it apart reads is read there
 
-Status: Accepted. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+Status: Accepted; amended below: a let chain's binding of a field its
+test read is read again where the body reads it first. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -114,3 +115,45 @@ object === objectPrototype)` keeps its own.
 - Mutations `tested-read-of-any-let`, `tested-read-past-a-call`,
   `tested-read-body-unread` (`lower/mir/tidy/moves.ts`) and
   `let-taken-apart-unseen` (`lower/mir/patterns.ts`).
+
+## Amendment: a let chain's binding of a field its test read
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same value
+read: nothing runs between the test's read and the body's.
+
+React's runWithFiberInDEV writes `if (fiber !== null && fiber._debugTask)
+{ return fiber._debugTask.run(callback.bind(..)); }`. Its port, `if let
+Some(fiber) = &fiber && let Some(debug_task) = fiber.debug_task.get() {
+return debug_task.run(move || callback(..)); }`, printed `const debugTask
+= fiber._debugTask; return debugTask.run(..);` in the body: `and tests`
+joins the chain into one test that reads the field in the binding's place
+(`bound_into`), and keeps the binding's `const` for the body, a name Rust
+asks for, as a `Cell`'s `get` copies the value out, which JS needn't.
+
+**A let chain's binding that `and tests` read in the test is that place,
+read again where the body reads it first** (`moves::read_again`, asked by
+`and_tests` of each binding it keeps): the binding read once, in the
+statement right after it, where nothing JS evaluates before it there does
+anything (`leads`), so nothing can have changed the place since the test
+read it; `bound_into` says it reads the same again and no getter answers
+it. The test's own code ran before the binding's read either way: a
+binding read past a test that runs code isn't joined at all (ADR 0842,
+amended). Only of a binding the test read: a pattern's parts no test
+reads, `const a = value[0]; const b = value[1];`, keep the program's
+names. `test/lowering-branches.test.ts`'s else-if chain of a binding in
+its arm reads it twice now, to keep one there; read once, it's
+`message = kind._0[0];`.
+
+It stays a `const`, the value the test read, where the body runs code
+first, `fiber._debugTask = null; return task.run(..)`, or in the statement
+that reads it, `probe(fiber) + task.run(..)`, and where it's read twice,
+`task.run(..) + task.run(..)`, whose first call may change the field.
+
+Held by `test/lowering-written-branches.test.ts`, "a let chain's binding of
+a field the test read is read again where the body reads it first", run,
+with a task whose `run` clears the field; `let_chain_binding_read_again.rs`
+against native Rust; and the mutations
+`chain-binding-not-read-again`, `chain-binding-untested-read-again`
+(`tidy/logicals.ts`), `read-again-twice`,
+`read-again-past-code` and `read-again-of-a-later-statement`
+(`tidy/moves.ts`).

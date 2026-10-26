@@ -649,3 +649,103 @@ pub fn ref_kept(props: Option<&'static js::Unknown>, other: Option<&'static js::
   expect([lib.refOf({ ref: 3 } as never, "A" as never), lib.refOf({ ref: null } as never, "A" as never), lib.refOf({} as never, undefined as never)]).toEqual([3, null, null]);
   expect([lib.refKept({ ref: 3 } as never, 4 as never), lib.refKept({ ref: null } as never, 4 as never), lib.refKept({} as never, undefined as never)]).toEqual([3, null, null]);
 });
+
+// React's runWithFiberInDEV, ported: `if let Some(fiber) = &fiber && let
+// Some(debug_task) = fiber.debug_task.get() { return debug_task.run(move
+// || callback(arg0)); }`. The chain's test reads `fiber._debugTask` in the
+// binding's place, and the body reads it first, before anything runs that
+// may change it: there it's read again, upstream's `fiber._debugTask.run(
+// ..)`, no `const debugTask` (ADR 0866, amended). Where the body runs code
+// first, or reads it twice, the binding stays, as Rust's value is the one
+// the test read.
+test("a let chain's binding of a field the test read is read again where the body reads it first", async () => {
+  const dir = fixture("chain-binding-read-again");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use webapi::ConsoleTask;
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::name = "_debugTask")]
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub debug_task: Cell<Option<&'static ConsoleTask>>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(fiber))]
+pub fn run_in_task(fiber: Option<Rc<Fiber>>, callback: impl FnOnce(u32) -> u32, arg0: u32) -> u32 {
+    if let Some(fiber) = &fiber
+        && let Some(debug_task) = fiber.debug_task.get()
+    {
+        return debug_task.run(move || callback(arg0));
+    }
+    callback(arg0)
+}
+
+/// Code runs before the binding's read, which may change the field.
+pub fn cleared_first(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
+    if let Some(fiber) = fiber
+        && let Some(task) = fiber.debug_task.get()
+    {
+        fiber.debug_task.set(None);
+        return task.run(move || callback(1));
+    }
+    2
+}
+
+/// Read twice: the second read is after the first's code ran.
+pub fn twice(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
+    if let Some(fiber) = fiber
+        && let Some(task) = fiber.debug_task.get()
+    {
+        return task.run(|| callback(1)) + task.run(|| callback(2));
+    }
+    3
+}
+
+fn probe(fiber: &Fiber) -> bool {
+    fiber.debug_task.set(None);
+    true
+}
+
+/// Code runs before the binding's read, in the statement that reads it.
+pub fn probed_before(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
+    if let Some(fiber) = fiber
+        && let Some(task) = fiber.debug_task.get()
+    {
+        return u32::from(probe(fiber)) + task.run(|| callback(1));
+    }
+    5
+}
+
+/// The test runs code after it reads the field.
+pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
+    if let Some(fiber) = fiber
+        && let Some(task) = fiber.debug_task.get()
+        && probe(fiber)
+    {
+        return task.run(|| callback(1));
+    }
+    4
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (fiber != null && fiber._debugTask) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
+  expect(js.match(/const task = fiber\._debugTask;/g)).toHaveLength(4);
+  expect(js).not.toContain("const debugTask");
+  const lib = await import(join(dir, "lib.js"));
+  const task = { run: (f: () => number) => f() + 100 };
+  expect([lib.runInTask({ _debugTask: task } as never, (n: number) => n * 2, 4 as never), lib.runInTask(null as never, (n: number) => n * 2, 4 as never), lib.runInTask({} as never, (n: number) => n * 2, 5 as never)]).toEqual([108, 8, 10]);
+  const fiber: { _debugTask: unknown } = { _debugTask: task };
+  expect(lib.clearedFirst(fiber as never, (n: number) => n)).toBe(101);
+  expect(fiber._debugTask).toBe(null);
+  expect(lib.twice({ _debugTask: task } as never, (n: number) => n)).toBe(203);
+  // A task whose run clears the field: the field read again would be null.
+  const clearing: { _debugTask: unknown } = { _debugTask: null };
+  clearing._debugTask = { run: (f: () => number) => ((clearing._debugTask = null), f()) };
+  expect(lib.twice(clearing as never, (n: number) => n)).toBe(3);
+  clearing._debugTask = task;
+  expect(lib.probed(clearing as never, (n: number) => n)).toBe(101);
+  clearing._debugTask = task;
+  expect(lib.probedBefore(clearing as never, (n: number) => n)).toBe(102);
+});
