@@ -263,3 +263,59 @@ test("a binding of what take() gives names it", async () => {
   const hidden = [[1, 2], undefined];
   expect([lib.clear(hidden, 0), hidden, lib.clear(hidden, 1)]).toEqual([3, [undefined, undefined], 0]);
 });
+
+// React's enqueueCapturedUpdate: `if (newLast === null) { .. } else {
+// newLast.next = clone; newLast = clone; }`. Its port matches `&new_last`,
+// `Some(last) =>`, a binding of the variable the arm sets once it's done
+// with it: the variable, where each read of the binding is before it's set,
+// not `const last = newLast;`; but its own `const` where one is after.
+test("a binding of a variable set again past its reads is the variable", async () => {
+  const dir = fixture("binding-read-before-set");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Update {
+    pub lane: i32,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub next: RefCell<Option<Rc<Update>>>,
+}
+
+pub fn append(lanes: &[i32]) -> Option<Rc<Update>> {
+    let mut new_last: Option<Rc<Update>> = None;
+    for &lane in lanes {
+        let clone = Rc::new(Update { lane, next: RefCell::new(None) });
+        match &new_last {
+            None => new_last = Some(clone),
+            Some(last) => {
+                last.next.replace(Some(Rc::clone(&clone)));
+                new_last = Some(clone);
+            }
+        }
+    }
+    new_last
+}
+
+pub fn swapped(lanes: &[i32]) -> i32 {
+    let mut held: Option<Rc<Update>> = None;
+    let mut sum = 0;
+    for &lane in lanes {
+        match &held {
+            None => held = Some(Rc::new(Update { lane, next: RefCell::new(None) })),
+            Some(last) => {
+                let last = Rc::clone(last);
+                held = Some(Rc::new(Update { lane, next: RefCell::new(None) }));
+                sum += last.lane;
+            }
+        }
+    }
+    sum
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    if (newLast == null) {\n      newLast = clone;\n    } else {\n      newLast.next = clone;\n      newLast = clone;\n    }\n");
+  expect(js).toContain("      const last = held;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const last = lib.append([1, 2, 3]) as { lane: number };
+  expect([last.lane, lib.swapped([1, 2, 3])]).toEqual([3, 3]);
+});

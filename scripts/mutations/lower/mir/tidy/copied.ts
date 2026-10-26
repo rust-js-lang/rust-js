@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "    let _ = user;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a binding of what take.. gives names it"],
   },
+  {
+    name: "else-binding-copy-kept",
+    breaks: "`match &new_last { None => .., Some(last) => .. }`'s `else` keeps `const last = newLast;`, where the test says `newLast` is there",
+    file: "src/lower/mir/tidy/copied.rs",
+    find: "        let branches = [(Some(then), true), (otherwise.as_mut(), false)];\n",
+    replace: "        let branches = [(Some(then), true), (None, false)];\n        let _ = otherwise;\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a binding of a variable set again past its reads is the variable"],
+  },
+  {
+    name: "binding-copy-kept-where-set-after",
+    breaks: "a binding whose variable the block sets again past each of its reads stays `const last = newLast;`, as one set anywhere",
+    file: "src/lower/mir/tidy/copied.rs",
+    find: "            let set = rebinds(rest, &a) && (declares(rest, &a) || !read_before_set(rest, &b, &a, &mut false));\n",
+    replace: "            let set = rebinds(rest, &a);\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a binding of a variable set again past its reads is the variable"],
+  },
 ];

@@ -4,9 +4,13 @@ use super::*;
 
 /// `if (raw) { const error = raw; .. }`, a pattern's binding of a variable,
 /// `if let Some(error) = raw`, which MIR copies where `raw` is borrowed:
-/// `raw` where `error` is read, where the block sets
-/// neither again, declares neither, nor reads `error` in a closure, which
-/// may run after; a `let`-`else`'s too, after the test that leaves.
+/// `raw` where `error` is read, where the block sets `error` nowhere and
+/// `raw` only past each read of `error`, declares neither, nor reads
+/// `error` in a closure, which may run after; an `else`'s where the test
+/// says `raw` isn't there, `if (newLast == null) { .. } else { const last =
+/// newLast; .. }` of `match &new_last { None => .., Some(last) => .. }`
+/// (ADR 0434, amended); and a `let`-`else`'s too, after the test that
+/// leaves.
 ///
 /// Of a variable rust-js named, `old` of `take()`'s value, and a binding the
 /// program named, `if let Some(updates_for_lane) = hidden[i].take()`: the
@@ -16,38 +20,49 @@ use super::*;
 pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &HashSet<String>) {
     named_for_bindings(stmts, user);
     for stmt in stmts.iter_mut() {
-        let StmtKind::If(test, then, _) = &mut stmt.kind else {
+        let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
             continue;
         };
-        let Some(Stmt {
-            kind: StmtKind::Const(b, value),
-            ..
-        }) = then.first()
-        else {
-            continue;
-        };
-        let ExprKind::Var(a) = &value.kind else {
-            continue;
-        };
-        // What the test says is there, `raw` of `raw && ..`, `!!raw` or `raw
-        // != null`.
-        let present = tests_present(test, a);
-        let (a, b) = (a.clone(), b.clone());
-        if !present || is_temporary(&a) || is_temporary(&b) || a == b {
-            continue;
-        }
-        let rest = &then[1..];
-        if rebinds(rest, &a) || rebinds(rest, &b) || in_closure(rest, &b) {
-            continue;
-        }
-        then.remove(0);
-        js::each_expr_mut(then, &mut |e| {
-            if let ExprKind::Var(v) = &mut e.kind
-                && *v == b
-            {
-                *v = a.clone();
+        // Its block where the test says the variable is there, `raw` of
+        // `raw && ..`, `!!raw` or `raw != null`; or its `else` where it says
+        // it isn't, `match &new_last { None => .., Some(last) => .. }`'s.
+        let branches = [(Some(then), true), (otherwise.as_mut(), false)];
+        for (block, there) in branches {
+            let Some(block) = block else { continue };
+            let Some(Stmt {
+                kind: StmtKind::Const(b, value),
+                ..
+            }) = block.first()
+            else {
+                continue;
+            };
+            let ExprKind::Var(a) = &value.kind else {
+                continue;
+            };
+            let tested = match there {
+                true => tests_present(test, a),
+                false => absent(test, a),
+            };
+            let (a, b) = (a.clone(), b.clone());
+            if !tested || is_temporary(&a) || is_temporary(&b) || a == b {
+                continue;
             }
-        });
+            // The variable set again only past each read of the binding,
+            // `last.next = clone; newLast = clone;`.
+            let rest = &block[1..];
+            let set = rebinds(rest, &a) && (declares(rest, &a) || !read_before_set(rest, &b, &a, &mut false));
+            if set || rebinds(rest, &b) || in_closure(rest, &b) {
+                continue;
+            }
+            block.remove(0);
+            js::each_expr_mut(block, &mut |e| {
+                if let ExprKind::Var(v) = &mut e.kind
+                    && *v == b
+                {
+                    *v = a.clone();
+                }
+            });
+        }
     }
     let mut i = 0;
     while i + 1 < stmts.len() {

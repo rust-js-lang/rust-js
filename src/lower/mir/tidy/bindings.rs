@@ -161,18 +161,25 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
                 let last = (i + 1..stmts.len())
                     .rev()
                     .find(|&j| js::mentions_in(&stmts[j..=j], alias) > 0);
-                // What it's of set nowhere from it to its last read.
-                let kept = last.is_some_and(|last| js::Writes::of(&stmts[i + 1..=last]).may_replace(of));
+                // What it's of set nowhere from it to its last read, or
+                // set only past each read on every way, `const _15 =
+                // newLast; if (_15 == null) { .. } else { _15.next = clone;
+                // newLast = clone; }`.
+                let kept = last.is_some_and(|last| {
+                    let reads = &stmts[i + 1..=last];
+                    js::Writes::of(reads).may_replace(of)
+                        && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))
+                });
                 if !kept {
-                    let (alias, of) = (alias.clone(), Expr::var(of));
+                    // Each read where it's written, else where the
+                    // temporary was, which says which `if` the program
+                    // wrote a test is of (`jumps::written_at`).
+                    let (alias, of, at) = (alias.clone(), Expr::var(of), value.span);
                     stmts.remove(i);
                     if let Some(last) = last {
                         js::each_expr_mut(&mut stmts[i..last], &mut |e| {
                             if matches!(&e.kind, ExprKind::Var(v) if *v == alias) {
-                                *e = Expr {
-                                    span: e.span,
-                                    ..of.clone()
-                                };
+                                *e = of.clone().or_at(e.span).or_at(at);
                             }
                         });
                     }
@@ -182,6 +189,47 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
             i += 1;
         }
     });
+}
+
+/// Whether each read of `alias` in `stmts` is before `of` is set, on every
+/// way through them, `set` whether it is where they start: an `if`'s
+/// branches each their own way, its test before them; any other statement
+/// that reads `alias` and sets `of` too, in an order this doesn't follow, is
+/// not, but `of = e`, which reads `e` first. Not of a closure's read,
+/// which may run once `of` is set: no closure reads a temporary, and
+/// `copied_bindings` takes none whose binding one reads.
+pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> bool {
+    let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
+    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
+    for stmt in stmts {
+        let one = std::slice::from_ref(stmt);
+        match &stmt.kind {
+            StmtKind::If(test, then, otherwise) => {
+                let test = [StmtKind::Expr(test.clone()).at(stmt.span)];
+                if (*set && reads(&test)) || (reads(&test) && sets(&test)) {
+                    return false;
+                }
+                *set |= sets(&test);
+                let mut other = *set;
+                if !read_before_set(then, alias, of, set)
+                    || !read_before_set(otherwise.as_deref().unwrap_or_default(), alias, of, &mut other)
+                {
+                    return false;
+                }
+                *set |= other;
+            }
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v == of) => {
+                let value = [StmtKind::Expr(value.clone()).at(stmt.span)];
+                if *set && reads(&value) || reads(&value) && sets(&value) {
+                    return false;
+                }
+                *set = true;
+            }
+            _ if reads(one) && (*set || sets(one)) => return false,
+            _ => *set |= sets(one),
+        }
+    }
+    true
 }
 
 /// `let t; try { t = a; } catch { t = b; } x = t;`, a temporary each way
@@ -467,6 +515,16 @@ pub(super) fn cast_bindings(stmts: &mut Vec<Stmt>, casts: &HashSet<String>) {
 /// their own lists, then each closure's, each found once by `each_expr`,
 /// however deep.
 pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
+    binds(stmts, name, true)
+}
+
+/// Whether `stmts` declare `name` again, a closure's parameter too, as
+/// `rebinds` says, but for what assigns it.
+pub(super) fn declares(stmts: &[Stmt], name: &str) -> bool {
+    binds(stmts, name, false)
+}
+
+fn binds(stmts: &[Stmt], name: &str, assigned: bool) -> bool {
     let own = |stmts: &[Stmt]| {
         let mut found = false;
         js::each_list(stmts, &mut |list| {
@@ -477,7 +535,7 @@ pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
                         pattern.names().contains(&name)
                     }
                     StmtKind::For { name: n, .. } => n == name,
-                    StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(v) if v == name),
+                    StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v == name),
                     _ => false,
                 };
             }

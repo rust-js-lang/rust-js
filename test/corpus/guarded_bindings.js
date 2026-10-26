@@ -64,8 +64,7 @@ function main() {
     let current = value;
     let tmp;
     if (current != null) {
-      const n = current;
-      if (n > 5) {
+      if (current > 5) {
         const n = current;
         tmp = (n * 10) | 0;
       } else {
