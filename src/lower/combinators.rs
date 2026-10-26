@@ -492,8 +492,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(tag(true), mapped, fallback)
             }
             Comb::AndThen => {
-                let f = next();
-                let then = self.call_with(f, vec![value], "then", out);
+                let then = self.call_with(next(), vec![value], "then", out);
+                let then = super::calls::given_by(self.tcx, tys[1], then);
                 super::std_types::option::and_then_of(out, spilled_at.filter(|_| !boxed), some, then)
             }
             // A value with a destructor its test doesn't keep is dropped once

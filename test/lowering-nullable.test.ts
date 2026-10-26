@@ -990,6 +990,59 @@ pub fn peeked_queue(internals: &Internals, queue: &Queue) -> bool {
   expect(internals.T).toBe(null);
 });
 
+// React's logUncaughtError, ported: `COMPONENT_NAME.set(error_info.source
+// .as_deref().and_then(get_component_name_from_fiber))`. What a
+// `#[rust_js::nullable]` function gives is `null` for `None`, so its
+// `and_then` stores it as it is, as `map`'s `Some`: upstream's `componentName
+// = errorInfo.source ? getComponentNameFromFiber(errorInfo.source) : null`,
+// not `(.. : undefined) ?? null` (ADR 0841, amended). One that may give
+// `undefined` is still coalesced.
+test("an and_then of a nullable function is stored as it is", async () => {
+  const dir = fixture("nullable-and-then");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Fiber {
+    pub id: u32,
+}
+
+pub struct Info {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source: Option<Box<Fiber>>,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static NAME: RefCell<Option<String>> = const { RefCell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn name_of(fiber: &Fiber) -> Option<String> {
+    if fiber.id > 2 { Some(fiber.id.to_string()) } else { None }
+}
+
+fn maybe(fiber: &Fiber) -> Option<String> {
+    if fiber.id > 2 { Some(fiber.id.to_string()) } else { None }
+}
+
+pub fn logged(info: &Info) -> Option<String> {
+    NAME.set(info.source.as_deref().and_then(name_of));
+    NAME.with_borrow(Clone::clone)
+}
+
+pub fn maybe_logged(info: &Info) -> Option<String> {
+    NAME.set(info.source.as_deref().and_then(maybe));
+    NAME.with_borrow(Clone::clone)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  name = info.source != null ? nameOf(info.source) : null;");
+  expect(js).toContain("  name = (info.source != null ? maybe(info.source) : undefined) ?? null;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.logged({ source: { id: 3 } } as never), lib.logged({ source: { id: 1 } } as never), lib.logged({ source: null } as never)]).toEqual(["3", null, null]);
+  expect([lib.maybeLogged({ source: { id: 1 } } as never), lib.maybeLogged({ source: { id: 4 } } as never)]).toEqual([null, "4"]);
+});
+
 // ADR 0861: a function's own parameter it names `#[rust_js::nullable(..)]`
 // is `T | null`, a `None` given it or set in its body `null`, as React's
 // `mapIntoArray` sets `children = null` and calls the callback with it,

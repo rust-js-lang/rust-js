@@ -83,4 +83,20 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "playground"],
     snapshots: true,
   },
+  {
+    name: "and-then-of-nullable-coalesced",
+    breaks: "`o.and_then(nullable_fn)` stored in a nullable place is `(o != null ? f(o) : undefined) ?? null`, where it's `o != null ? f(o) : null` (ADR 0841, amended)",
+    file: "src/lower/calls.rs",
+    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => value.defined(),\n",
+    replace: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => value,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
+  {
+    name: "and-then-of-any-function-defined",
+    breaks: "`o.and_then(f)` of a function that may give `undefined` is stored as it is in a nullable place, its `None` `undefined` there",
+    file: "src/lower/calls.rs",
+    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => value.defined(),\n",
+    replace: "        ty::FnDef(..) => value.defined(),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
 ];

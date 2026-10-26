@@ -193,3 +193,29 @@ dropped (ADR 0589).
   `guard-field-set-again-known`, `one-field-guard-known-lost`
   (`lower/drops/inlined.ts`), `stored-again-unasked`,
   `stored-again-of-undefined` (`js/make.ts`).
+
+## Amendment: an `and_then` of a nullable function
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above.
+
+React's logUncaughtError writes `componentName = errorInfo.source ?
+getComponentNameFromFiber(errorInfo.source) : null;`; its port,
+`COMPONENT_NAME.set(error_info.source.as_deref().and_then(get_component_name_from_fiber))`,
+printed `componentName = (errorInfo.source != null ?
+getComponentNameFromFiber(errorInfo.source) : undefined) ?? null;`. `map`
+marks its `Some` `Known::Defined`; `and_then`'s value is the function's
+own `Option`, which may be `undefined`, so the whole was coalesced.
+
+**An `and_then` of a function that `calls::gives_null_for_none` marks
+what it gives `Known::Defined`** (`calls::given_by`), as a call of one
+kept in a variable is (`nulled`, above): its `None` is `null`, so the
+conditional's branches are each stored as they are, `c ? f(c) : null`. Only of a function item,
+`and_then(name_of)`, as clippy's `redundant_closure` asks it written; a
+closure's value isn't asked. One that may give `undefined`, a function
+without `#[rust_js::nullable]` or a trait's method, is still `(..) ??
+null`.
+
+Held by `test/lowering-nullable.test.ts`, "an and_then of a nullable
+function is stored as it is", run, `nullable_and_then.rs` against native
+Rust, and the mutations `and-then-of-nullable-coalesced` and
+`and-then-of-any-function-defined` (`lower/calls.ts`).

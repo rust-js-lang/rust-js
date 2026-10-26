@@ -821,7 +821,8 @@ export function ratio(a, b) {
   _context: context }`, and a `map`'s `None` is `null` where it's made,
   `createTask ? createTask("lazy()") : null`; so is a nullable
   function's result, a binding's too, kept in a variable or a `Drop`
-  guard's field, `ReactSharedInternals.T = prevTransition;`, but not a
+  guard's field, `ReactSharedInternals.T = prevTransition;`, or what an
+  `and_then` of one gives, `source != null ? nameOf(source) : null`, but not a
   trait's method's, whose impl may give `undefined`
   ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)).
   What's read of a nullable field is `null` or its value, so a variable
