@@ -182,3 +182,20 @@ Held by `test/corpus/rc_assigned_through_mut.rs`, against native Rust: a
 `&mut Rc` given to a function, a guard's write, `mem::swap` and
 `mem::replace` of two, each with a clone of the old one read after; and
 the mutation `rc-written-through-mut-changed-in-place`.
+
+## Amendment: a `Vec`'s item written whole is its place (#349)
+
+A slice's `v[i] = p` is the item's place written, `v[$at(v, i)] = p`; a
+`Vec`'s, through `IndexMut::index_mut`, a `&mut` to the object, was the
+object made `p`, `$assign($index(v, i), p)`. trekhleb/javascript-algorithms'
+fastFourierTransform, ported, read so where upstream writes `output[signalId]
+= upd1`. **A `Vec`'s `index_mut` written whole at once is the item's
+place, as a slice's is**: `v[$at(v, i)] = p` (`bounds::index_mut_place`),
+and `*r = p` of a `&mut` that's a place writes the place (`assign`).
+At once allows the old value's drop between, `names[0] = first` of a
+`Vec<Named>`, which can't change what the place is, borrowed as it is;
+and its write where the drop unwinds isn't counted a use. ADR 0262's case
+A: no other holder of the old object can see a difference, as Rust has
+none. Held by `test/corpus/vec_item_written_whole.rs` and the mutations
+`vec-item-written-in-place`, `vec-item-dropped-then-written-in-place`,
+`written-at-once-cleanup-counted` and `place-ref-written-in-place`.

@@ -3,6 +3,33 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "vec-item-written-in-place",
+    breaks: "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
+    file: "src/lower/mir/bounds.rs",
+    find: "                if self.is_cell_pointee(*item) || written_through_at_once(state.body, state.at))\n",
+    replace: "                if self.is_cell_pointee(*item))\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "vec-item-dropped-then-written-in-place",
+    breaks: "`names[0] = first` of a `Vec` whose items drop is `$assign`, as the old value's drop between was taken for something run",
+    file: "src/lower/mir/bounds.rs",
+    find: "        && uses.1 == 2 + usize::from(dropped.is_some())\n",
+    replace: "        && uses.1 == 2\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-at-once-cleanup-counted",
+    breaks: "the cleanup's write of `*r` where the drop unwinds is counted a use, so `names[0] = first` is `$assign`",
+    file: "src/lower/mir/bounds.rs",
+    find: "            if !data.is_cleanup {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
+    snapshots: true,
+  },
+  {
     name: "written-at-once-never",
     breaks: "`queue.borrow_mut()[i] = item` of a variable `i` spills it, `const index = i; queue[index] = item;`, though nothing runs before the write",
     file: "src/lower/mir/bounds.rs",

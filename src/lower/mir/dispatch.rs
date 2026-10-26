@@ -1154,7 +1154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An index's: unchecked where the body's ranges show it in bounds,
         // and through `index_mut`, of a value JS can't change in place, the
         // item's place.
-        if self.call_in_bounds(known, def_id, &values, span) || self.index_mut_place(known, def_id, output) {
+        if self.call_in_bounds(known, def_id, &values, span) || self.index_mut_place(state, known, def_id, output) {
             return self.index_call(state, known, (def_id, output, arg_tys[0]), values, span, out);
         }
         // `m.entry(k).or_insert(v)`: the value put in if the key's missing,

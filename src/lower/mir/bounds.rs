@@ -43,11 +43,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a call is `v[i]` through `index_mut`, of a value JS can't
-    /// change in place: the item's place, not its value (ADR 0099).
-    pub(super) fn index_mut_place(&self, known: Std, def_id: rustc_span::def_id::DefId, output: ty::Ty<'tcx>) -> bool {
+    /// change in place, or one written whole at once, `v[i] = p`, as a
+    /// slice's is: the item's place, not its value (ADR 0099, #349).
+    pub(super) fn index_mut_place(
+        &self,
+        state: &State<'_, 'tcx>,
+        known: Std,
+        def_id: rustc_span::def_id::DefId,
+        output: ty::Ty<'tcx>,
+    ) -> bool {
         known == Std::Index
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::IndexMut))
-            && matches!(output.kind(), ty::Ref(_, item, _) if self.is_cell_pointee(*item))
+            && matches!(output.kind(), ty::Ref(_, item, _)
+                if self.is_cell_pointee(*item) || written_through_at_once(state.body, state.at))
     }
 
     /// An index's call: unchecked where `call_in_bounds` knows it,
@@ -64,7 +72,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        if self.index_mut_place(known, def_id, output) {
+        if self.index_mut_place(state, known, def_id, output) {
             let checked = !self.indexes_in_bounds(def_id, span);
             let mut exprs = (values.into_iter())
                 .map(|v| self.value_expr(v, span))
@@ -131,7 +139,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// aside, of a value made
 /// before: `(*_9) = move _5;`, MIR's `queue.borrow_mut()[i] = callback`.
 /// Nothing runs between the call and the write, so what its items and its
-/// index are read as there is what they were (ADR 0881).
+/// index are read as there is what they were (ADR 0881); but the old
+/// value's drop, `drop((*_9))`, which can't change them, borrowed as they
+/// are, `names[0] = first` of a `Vec<Named>` (#349).
 fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool {
     let Some(mir::Terminator {
         kind:
@@ -146,15 +156,29 @@ fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool
         return false;
     };
     let r = destination.local;
-    let Some(mir::Statement {
-        kind: mir::StatementKind::Assign(assign),
-        ..
-    }) = (body.basic_blocks[*target].statements.iter()).find(|s| {
-        !matches!(
+    let quiet = |s: &mir::Statement<'_>| {
+        matches!(
             s.kind,
             mir::StatementKind::StorageLive(_) | mir::StatementKind::StorageDead(_) | mir::StatementKind::Nop
         )
-    })
+    };
+    // The old value's drop first, of a block of nothing else.
+    let dropped = match &body.basic_blocks[*target] {
+        data if data.statements.iter().all(quiet) => match &data.terminator().kind {
+            mir::TerminatorKind::Drop { place, target, .. }
+                if place.local == r && place.projection.as_slice() == [mir::ProjectionElem::Deref] =>
+            {
+                Some(*target)
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    let target = dropped.as_ref().unwrap_or(target);
+    let Some(mir::Statement {
+        kind: mir::StatementKind::Assign(assign),
+        ..
+    }) = (body.basic_blocks[*target].statements.iter()).find(|s| !quiet(s))
     else {
         return false;
     };
@@ -164,8 +188,15 @@ fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool
         mir::Rvalue::Use(mir::Operand::Constant(_), _) => true,
         _ => false,
     };
+    // Its uses but where it unwinds, whose cleanup writes it too, the
+    // drop's replacing it.
     struct Uses(Local, usize);
     impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_basic_block_data(&mut self, block: mir::BasicBlock, data: &mir::BasicBlockData<'tcx>) {
+            if !data.is_cleanup {
+                self.super_basic_block_data(block, data);
+            }
+        }
         fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
             if local == self.0 && context.is_use() {
                 self.1 += 1;
@@ -178,5 +209,5 @@ fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool
         && place.local == r
         && place.projection.as_slice() == [mir::ProjectionElem::Deref]
         && made_before
-        && uses.1 == 2
+        && uses.1 == 2 + usize::from(dropped.is_some())
 }
