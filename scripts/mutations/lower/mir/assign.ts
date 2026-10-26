@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-std-maker-callee-unseen",
+    breaks: "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^scan_object_state with"],
+  },
+  {
     name: "place-ref-written-in-place",
     breaks: "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
     file: "src/lower/mir/assign.rs",

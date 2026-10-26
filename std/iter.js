@@ -348,6 +348,16 @@ const $mapClone = new WeakMap();
 const $mapDebug = new WeakMap();
 const $filterClone = new WeakMap();
 const $filterDebug = new WeakMap();
+const $filterMapClone = new WeakMap();
+const $filterMapDebug = new WeakMap();
+const $takeWhileClone = new WeakMap();
+const $takeWhileDebug = new WeakMap();
+const $skipWhileClone = new WeakMap();
+const $skipWhileDebug = new WeakMap();
+const $mapWhileClone = new WeakMap();
+const $mapWhileDebug = new WeakMap();
+const $scanClone = new WeakMap();
+const $scanDebug = new WeakMap();
 const $inspectClone = new WeakMap();
 const $inspectDebug = new WeakMap();
 const $skipClone = new WeakMap();
@@ -1846,6 +1856,731 @@ export function filterDebug_fmt(filter, options, IDebug, dropI, dropP) {
   return options?.alternate
     ? $pretty("Filter {", [`iter: ${IDebug.fmt(filter.iter, options)}`], "}")
     : `Filter { iter: ${IDebug.fmt(filter.iter, options)} }`;
+}
+
+export function filterMapIterator_next(filterMap, IIterator, dropB, dropI, dropF, dropIItem) {
+  return $lent($given(filterMap.iter, IIterator, true))
+    .map(filterMap.f)
+    .find((item) => item != null);
+}
+
+export function filterMapIterator_sizeHint(filterMap, IIterator, dropB, dropI, dropF, dropIItem) {
+  const upper = $sizeHint(filterMap.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function filterMapIterator_fold(
+  filterMap,
+  init,
+  fold,
+  IIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const { iter, f } = filterMap;
+  const f$1 = $dropping(
+    (acc, item) => {
+      const value = f(item);
+      if (value != null) {
+        const x = $someValue(value);
+        return fold(acc, x);
+      }
+      return acc;
+    },
+    () => {
+      dropF?.(f);
+      dropFold?.(fold);
+    },
+  );
+  const value = $given(iter, IIterator, true).reduce(f$1, init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  $dispose(f$1);
+  return value;
+}
+
+export function filterMapIterator_tryFold(
+  filterMap,
+  init,
+  fold,
+  IIterator,
+  RTry,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const f = filterMap.f;
+  const f$1 = $dropping(
+    (acc, item) => {
+      const value = f(item);
+      if (value != null) {
+        const x = $someValue(value);
+        return fold(acc, x);
+      }
+      return RTry.fromOutput(acc);
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const value = $tryFoldInto(
+    $given(filterMap.iter, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+  );
+  $dispose(f$1);
+  return value;
+}
+
+export function filterMapDoubleEndedIterator_nextBack(
+  filterMap,
+  IIterator,
+  IDoubleEndedIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
+  const f = filterMap.f;
+  const controlFlow = $tryFoldInto(
+    $rev($given(filterMap.iter, IIterator, true, IDoubleEndedIterator)),
+    undefined,
+    (_, x) => {
+      const value = f(x);
+      if (value != null) {
+        const x = $someValue(value);
+        return { TAG: "Break", _0: x };
+      }
+      return { TAG: "Continue" };
+    },
+    $controlFlowTry,
+  );
+  let result;
+  if (controlFlow.TAG === "Continue") {
+    result = undefined;
+  } else {
+    const x = controlFlow._0;
+    result = $some(x);
+  }
+  if (controlFlow.TAG === "Break") {
+    return result;
+  }
+  return result;
+}
+
+export function filterMapDoubleEndedIterator_rfold(
+  filterMap,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  const { iter, f } = filterMap;
+  const f$1 = $dropping(
+    (acc, item) => {
+      const value = f(item);
+      if (value != null) {
+        const x = $someValue(value);
+        return fold(acc, x);
+      }
+      return acc;
+    },
+    () => {
+      dropF?.(f);
+      dropFold?.(fold);
+    },
+  );
+  const value = $foldBack($given(iter, IIterator, true, IDoubleEndedIterator), init, f$1);
+  $dispose(f$1);
+  return value;
+}
+
+export function filterMapDoubleEndedIterator_tryRfold(
+  filterMap,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  RTry,
+  dropB,
+  dropI,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const f = filterMap.f;
+  const f$1 = $dropping(
+    (acc, item) => {
+      const value = f(item);
+      if (value != null) {
+        const x = $someValue(value);
+        return fold(acc, x);
+      }
+      return RTry.fromOutput(acc);
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const value = $tryFoldInto(
+    $rev($given(filterMap.iter, IIterator, true, IDoubleEndedIterator)),
+    init,
+    (a, b) => f$1(a, b),
+    RTry,
+  );
+  $dispose(f$1);
+  return value;
+}
+
+export function filterMapClone_clone(filterMap, IClone, FClone) {
+  return $stdIterator(
+    { iter: IClone.clone(filterMap.iter), f: FClone.clone(filterMap.f) },
+    filterMap.$steps,
+  );
+}
+
+export function filterMapDebug_fmt(filterMap, options, IDebug, dropI, dropF) {
+  return options?.alternate
+    ? $pretty("FilterMap {", [`iter: ${IDebug.fmt(filterMap.iter, options)}`], "}")
+    : `FilterMap { iter: ${IDebug.fmt(filterMap.iter, options)} }`;
+}
+
+export function takeWhileIterator_next(takeWhile, IIterator, dropI, dropP, dropIItem) {
+  if (takeWhile.flag) {
+    return;
+  }
+  const option = IIterator.next(takeWhile.iter);
+  if (option != null) {
+    const v = $someValue(option);
+    const x = { TAG: "Continue", _0: v }._0;
+    if (takeWhile.predicate(x)) {
+      return $some(x);
+    }
+    takeWhile.flag = true;
+    const result = undefined;
+    dropIItem?.(x);
+    return result;
+  }
+}
+
+export function takeWhileIterator_sizeHint(takeWhile, IIterator, dropI, dropP, dropIItem) {
+  if (takeWhile.flag) {
+    return [0, 0];
+  }
+  const upper = $sizeHint(takeWhile.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function takeWhileIterator_tryFold(
+  takeWhile,
+  init,
+  fold,
+  IIterator,
+  RTry,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  if (takeWhile.flag) {
+    const v = RTry.fromOutput(init);
+    dropFold?.(fold);
+    return v;
+  }
+  const p = takeWhile.predicate;
+  const f = $dropping(
+    (acc, x) => {
+      if (p(x)) {
+        const r = fold(acc, x);
+        const value = RTry.branch(r);
+        if (value.TAG === "Continue") {
+          return { TAG: "Continue", _0: value._0 };
+        }
+        const v = value._0;
+        return { TAG: "Break", _0: RTry.FromResidual().fromResidual(v) };
+      }
+      takeWhile.flag = true;
+      const result = { TAG: "Break", _0: RTry.fromOutput(acc) };
+      dropIItem?.(x);
+      return result;
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const controlFlow = $tryFoldInto(
+    $given(takeWhile.iter, IIterator, true),
+    init,
+    (a, b) => f(a, b),
+    $controlFlowTry,
+  );
+  $dispose(f);
+  if (controlFlow.TAG === "Continue") {
+    return RTry.fromOutput(controlFlow._0);
+  }
+  return controlFlow._0;
+}
+
+export function takeWhileIterator_fold(
+  takeWhile,
+  init,
+  fold,
+  IIterator,
+  dropI,
+  dropP,
+  dropAAA,
+  dropFFF,
+  dropIItem,
+) {
+  const f = $dropping(
+    (a, b) => fold(a, b),
+    () => {
+      dropFFF?.(fold);
+    },
+  );
+  const result = $tryFoldInto(takeWhile, init, (a, b) => f(a, b), $neverShortCircuitTry);
+  $dispose(f);
+  takeWhile.return();
+  return result;
+}
+
+export function takeWhileClone_clone(takeWhile, IClone, PClone) {
+  return $stdIterator(
+    {
+      iter: IClone.clone(takeWhile.iter),
+      flag: takeWhile.flag,
+      predicate: PClone.clone(takeWhile.predicate),
+    },
+    takeWhile.$steps,
+  );
+}
+
+export function takeWhileDebug_fmt(takeWhile, options, IDebug, dropI, dropP) {
+  return options?.alternate
+    ? $pretty(
+        "TakeWhile {",
+        [`iter: ${IDebug.fmt(takeWhile.iter, options)}`, `flag: ${takeWhile.flag}`],
+        "}",
+      )
+    : `TakeWhile { iter: ${IDebug.fmt(takeWhile.iter, options)}, flag: ${takeWhile.flag} }`;
+}
+
+export function skipWhileIterator_next(skipWhile, IIterator, dropI, dropP, dropIItem) {
+  const pred = skipWhile.predicate;
+  return $findDropping(
+    $lent($given(skipWhile.iter, IIterator, true)),
+    (x) => {
+      if (!skipWhile.flag) {
+        if (pred(x)) {
+          return false;
+        }
+      }
+      skipWhile.flag = true;
+      return true;
+    },
+    dropIItem,
+    true,
+  );
+}
+
+export function skipWhileIterator_sizeHint(skipWhile, IIterator, dropI, dropP, dropIItem) {
+  const upper = $sizeHint(skipWhile.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function skipWhileIterator_fold(
+  skipWhile,
+  init,
+  fold,
+  IIterator,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  let result;
+  if (!skipWhile.flag) {
+    const pred = skipWhile.predicate;
+    const find = $findDropping(
+      $lent($given(skipWhile.iter, IIterator, true)),
+      (x) => {
+        if (!skipWhile.flag) {
+          if (pred(x)) {
+            return false;
+          }
+        }
+        skipWhile.flag = true;
+        return true;
+      },
+      dropIItem,
+      true,
+    );
+    if (find == null) {
+      result = init;
+      dropFold?.(fold);
+      skipWhile.return();
+      return result;
+    }
+    const v = $someValue(find);
+    init = fold(init, v);
+  }
+  const iter = skipWhile.iter;
+  const value = $given(iter, IIterator, true).reduce((a, b) => fold(a, b), init);
+  if (IIterator.fold === undefined) {
+    dropI?.(iter);
+  }
+  dropFold?.(fold);
+  result = value;
+  dropP?.(skipWhile.predicate);
+  return result;
+}
+
+export function skipWhileIterator_tryFold(
+  skipWhile,
+  _2,
+  fold,
+  IIterator,
+  RTry,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  bb11: {
+    if (!skipWhile.flag) {
+      const pred = skipWhile.predicate;
+      const find = $findDropping(
+        $lent($given(skipWhile.iter, IIterator, true)),
+        (x) => {
+          if (!skipWhile.flag) {
+            if (pred(x)) {
+              return false;
+            }
+          }
+          skipWhile.flag = true;
+          return true;
+        },
+        dropIItem,
+        true,
+      );
+      let result;
+      if (find != null) {
+        const v = $someValue(find);
+        const value = RTry.branch(fold(_2, v));
+        if (value.TAG === "Continue") {
+          _2 = value._0;
+          break bb11;
+        }
+        result = RTry.FromResidual().fromResidual(value._0);
+      } else {
+        result = RTry.fromOutput(_2);
+      }
+      dropFold?.(fold);
+      return result;
+    }
+  }
+  const value = $tryFoldInto(
+    $given(skipWhile.iter, IIterator, true),
+    _2,
+    (a, b) => fold(a, b),
+    RTry,
+  );
+  dropFold?.(fold);
+  return value;
+}
+
+export function skipWhileClone_clone(skipWhile, IClone, PClone) {
+  return $stdIterator(
+    {
+      iter: IClone.clone(skipWhile.iter),
+      flag: skipWhile.flag,
+      predicate: PClone.clone(skipWhile.predicate),
+    },
+    skipWhile.$steps,
+  );
+}
+
+export function skipWhileDebug_fmt(skipWhile, options, IDebug, dropI, dropP) {
+  return options?.alternate
+    ? $pretty(
+        "SkipWhile {",
+        [`iter: ${IDebug.fmt(skipWhile.iter, options)}`, `flag: ${skipWhile.flag}`],
+        "}",
+      )
+    : `SkipWhile { iter: ${IDebug.fmt(skipWhile.iter, options)}, flag: ${skipWhile.flag} }`;
+}
+
+export function mapWhileIterator_next(mapWhile, IIterator, dropB, dropI, dropP, dropIItem) {
+  const option = IIterator.next(mapWhile.iter);
+  if (option != null) {
+    const v = $someValue(option);
+    return mapWhile.predicate({ TAG: "Continue", _0: v }._0);
+  }
+}
+
+export function mapWhileIterator_sizeHint(mapWhile, IIterator, dropB, dropI, dropP, dropIItem) {
+  const upper = $sizeHint(mapWhile.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function mapWhileIterator_tryFold(
+  mapWhile,
+  init,
+  fold,
+  IIterator,
+  RTry,
+  dropB,
+  dropI,
+  dropP,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const { iter, predicate } = mapWhile;
+  const controlFlow = $tryFoldInto(
+    $given(iter, IIterator, true),
+    init,
+    (acc, x) => {
+      const value = predicate(x);
+      if (value != null) {
+        const item = $someValue(value);
+        const r = fold(acc, item);
+        const value$1 = RTry.branch(r);
+        if (value$1.TAG === "Continue") {
+          return { TAG: "Continue", _0: value$1._0 };
+        }
+        const v = value$1._0;
+        return { TAG: "Break", _0: RTry.FromResidual().fromResidual(v) };
+      }
+      return { TAG: "Break", _0: RTry.fromOutput(acc) };
+    },
+    $controlFlowTry,
+  );
+  const v = controlFlow.TAG === "Continue" ? RTry.fromOutput(controlFlow._0) : controlFlow._0;
+  dropFold?.(fold);
+  return v;
+}
+
+export function mapWhileIterator_fold(
+  mapWhile,
+  init,
+  fold,
+  IIterator,
+  dropB,
+  dropI,
+  dropP,
+  dropAAA,
+  dropFFF,
+  dropIItem,
+) {
+  const f = $dropping(
+    (a, b) => fold(a, b),
+    () => {
+      dropFFF?.(fold);
+    },
+  );
+  const result = $tryFoldInto(mapWhile, init, (a, b) => f(a, b), $neverShortCircuitTry);
+  $dispose(f);
+  mapWhile.return();
+  return result;
+}
+
+export function mapWhileClone_clone(mapWhile, IClone, PClone) {
+  return $stdIterator(
+    { iter: IClone.clone(mapWhile.iter), predicate: PClone.clone(mapWhile.predicate) },
+    mapWhile.$steps,
+  );
+}
+
+export function mapWhileDebug_fmt(mapWhile, options, IDebug, dropI, dropP) {
+  return options?.alternate
+    ? $pretty("MapWhile {", [`iter: ${IDebug.fmt(mapWhile.iter, options)}`], "}")
+    : `MapWhile { iter: ${IDebug.fmt(mapWhile.iter, options)} }`;
+}
+
+export function scanIterator_next(scan, IIterator, dropB, dropI, dropSt, dropF, dropIItem) {
+  const option = IIterator.next(scan.iter);
+  if (option != null) {
+    const v = $someValue(option);
+    return scan.f(
+      {
+        get value() {
+          return scan.state;
+        },
+        set value(value) {
+          scan.state = value;
+        },
+      },
+      { TAG: "Continue", _0: v }._0,
+    );
+  }
+}
+
+export function scanIterator_sizeHint(scan, IIterator, dropB, dropI, dropSt, dropF, dropIItem) {
+  const upper = $sizeHint(scan.iter, IIterator)[1];
+  return [0, upper];
+}
+
+export function scanIterator_tryFold(
+  scan,
+  init,
+  fold,
+  IIterator,
+  RTry,
+  dropB,
+  dropI,
+  dropSt,
+  dropF,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  const f = scan.f;
+  const f$1 = $dropping(
+    (acc, x) => {
+      const value = f(
+        {
+          get value() {
+            return scan.state;
+          },
+          set value(value) {
+            scan.state = value;
+          },
+        },
+        x,
+      );
+      if (value == null) {
+        return { TAG: "Break", _0: RTry.fromOutput(acc) };
+      }
+      x = $someValue(value);
+      const r = fold(acc, x);
+      const value$1 = RTry.branch(r);
+      if (value$1.TAG === "Continue") {
+        return { TAG: "Continue", _0: value$1._0 };
+      }
+      const v = value$1._0;
+      return { TAG: "Break", _0: RTry.FromResidual().fromResidual(v) };
+    },
+    () => {
+      dropFold?.(fold);
+    },
+  );
+  const controlFlow = $tryFoldInto(
+    $given(scan.iter, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    $controlFlowTry,
+  );
+  $dispose(f$1);
+  if (controlFlow.TAG === "Continue") {
+    return RTry.fromOutput(controlFlow._0);
+  }
+  return controlFlow._0;
+}
+
+export function scanIterator_fold(
+  scan,
+  init,
+  fold,
+  IIterator,
+  dropB,
+  dropI,
+  dropSt,
+  dropF,
+  dropAAA,
+  dropFFF,
+  dropIItem,
+) {
+  const fold$1 = $dropping(
+    (a, b) => fold(a, b),
+    () => {
+      dropFFF?.(fold);
+    },
+  );
+  const f = scan.f;
+  const f$1 = $dropping(
+    (acc, x) => {
+      const value = f(
+        {
+          get value() {
+            return scan.state;
+          },
+          set value(value) {
+            scan.state = value;
+          },
+        },
+        x,
+      );
+      if (value == null) {
+        return { TAG: "Break", _0: $neverShortCircuitTry.fromOutput(acc) };
+      }
+      x = $someValue(value);
+      const r = fold$1(acc, x);
+      const value$1 = $neverShortCircuitTry.branch(r);
+      if (value$1.TAG === "Continue") {
+        return { TAG: "Continue", _0: value$1._0 };
+      }
+      const v = value$1._0;
+      return { TAG: "Break", _0: $neverShortCircuitTry.fromResidual(v) };
+    },
+    () => {
+      $dispose(fold$1);
+    },
+  );
+  const controlFlow = $tryFoldInto(
+    $given(scan.iter, IIterator, true),
+    init,
+    (a, b) => f$1(a, b),
+    $controlFlowTry,
+  );
+  $dispose(f$1);
+  const result = controlFlow.TAG === "Continue" ? controlFlow._0 : controlFlow._0;
+  dropI?.(scan.iter);
+  dropF?.(scan.f);
+  dropSt?.(scan.state);
+  return result;
+}
+
+export function scanClone_clone(scan, IClone, StClone, FClone) {
+  return $stdIterator(
+    { iter: IClone.clone(scan.iter), f: FClone.clone(scan.f), state: StClone.clone(scan.state) },
+    scan.$steps,
+  );
+}
+
+export function scanDebug_fmt(scan, options, IDebug, StDebug, dropI, dropSt, dropF) {
+  return options?.alternate
+    ? $pretty(
+        "Scan {",
+        [`iter: ${IDebug.fmt(scan.iter, options)}`, `state: ${StDebug.fmt(scan.state, options)}`],
+        "}",
+      )
+    : `Scan { iter: ${IDebug.fmt(scan.iter, options)}, state: ${StDebug.fmt(scan.state, options)} }`;
 }
 
 export function inspectIterator_next(inspect, IIterator, dropI, dropF, dropIItem) {
@@ -4552,6 +5287,243 @@ export function iterator_filter(self, predicate, SelfIterator, dropSelf, dropP, 
   );
 }
 
+export function iterator_filterMap(self, f, SelfIterator, dropSelf, dropB, dropF, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, f },
+    {
+      next: (iterator) =>
+        filterMapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      hint: (iterator) =>
+        filterMapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
+      fold: (iterator, init, f) =>
+        filterMapIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        filterMapIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropB,
+          dropSelf,
+          dropF,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropF?.(iterator.f);
+      },
+    },
+  );
+}
+
+export function iterator_takeWhile(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, flag: false, predicate },
+    {
+      next: (iterator) =>
+        takeWhileIterator_next(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      hint: (iterator) =>
+        takeWhileIterator_sizeHint(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      fold: (iterator, init, f) =>
+        takeWhileIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        takeWhileIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropP?.(iterator.predicate);
+      },
+    },
+  );
+}
+
+export function iterator_skipWhile(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+  return $stdIterator(
+    { iter: self, flag: false, predicate },
+    {
+      next: (iterator) =>
+        skipWhileIterator_next(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      hint: (iterator) =>
+        skipWhileIterator_sizeHint(iterator, SelfIterator, dropSelf, dropP, dropSelfItem),
+      fold: (iterator, init, f) =>
+        skipWhileIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        skipWhileIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropP?.(iterator.predicate);
+      },
+    },
+  );
+}
+
+export function iterator_mapWhile(
+  self,
+  predicate,
+  SelfIterator,
+  dropSelf,
+  dropB,
+  dropP,
+  dropSelfItem,
+) {
+  return $stdIterator(
+    { iter: self, predicate },
+    {
+      next: (iterator) =>
+        mapWhileIterator_next(iterator, SelfIterator, dropB, dropSelf, dropP, dropSelfItem),
+      hint: (iterator) =>
+        mapWhileIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropP, dropSelfItem),
+      fold: (iterator, init, f) =>
+        mapWhileIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        mapWhileIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropB,
+          dropSelf,
+          dropP,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
+      close(iterator) {
+        dropSelf?.(iterator.iter);
+        dropP?.(iterator.predicate);
+      },
+    },
+  );
+}
+
+export function iterator_scan(
+  self,
+  initialState,
+  f,
+  SelfIterator,
+  dropSelf,
+  dropSt,
+  dropB,
+  dropF,
+  dropSelfItem,
+) {
+  return $stdIterator(
+    { iter: self, f, state: initialState },
+    {
+      next: (iterator) =>
+        scanIterator_next(iterator, SelfIterator, dropB, dropSelf, dropSt, dropF, dropSelfItem),
+      hint: (iterator) =>
+        scanIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropSt, dropF, dropSelfItem),
+      fold: (iterator, init, f) =>
+        scanIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropSt,
+          dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      tryFold: (iterator, init, f, broke) =>
+        scanIterator_tryFold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          $tryOf(broke),
+          dropB,
+          dropSelf,
+          dropSt,
+          dropF,
+          undefined,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
+    },
+  );
+}
+
 export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSelfItem) {
   return $stdIterator(
     { iter: self, f },
@@ -6359,6 +7331,83 @@ export function filterDebug(IDebug, dropI, dropP) {
     fmt: (arg0, arg1) => filterDebug_fmt(arg0, arg1, IDebug, dropI, dropP),
     $drop(filter) {
       filter.return();
+    },
+  }));
+}
+
+export function filterMapClone(IClone, FClone) {
+  return $traitImpl($filterMapClone, [IClone, FClone], () => ({
+    clone: (arg0) => filterMapClone_clone(arg0, IClone, FClone),
+  }));
+}
+
+export function filterMapDebug(IDebug, dropI, dropF) {
+  return $traitImpl($filterMapDebug, [IDebug, dropI, dropF], () => ({
+    fmt: (arg0, arg1) => filterMapDebug_fmt(arg0, arg1, IDebug, dropI, dropF),
+    $drop(filterMap) {
+      filterMap.return();
+    },
+  }));
+}
+
+export function takeWhileClone(IClone, PClone) {
+  return $traitImpl($takeWhileClone, [IClone, PClone], () => ({
+    clone: (arg0) => takeWhileClone_clone(arg0, IClone, PClone),
+  }));
+}
+
+export function takeWhileDebug(IDebug, dropI, dropP) {
+  return $traitImpl($takeWhileDebug, [IDebug, dropI, dropP], () => ({
+    fmt: (arg0, arg1) => takeWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP),
+    $drop(takeWhile) {
+      takeWhile.return();
+    },
+  }));
+}
+
+export function skipWhileClone(IClone, PClone) {
+  return $traitImpl($skipWhileClone, [IClone, PClone], () => ({
+    clone: (arg0) => skipWhileClone_clone(arg0, IClone, PClone),
+  }));
+}
+
+export function skipWhileDebug(IDebug, dropI, dropP) {
+  return $traitImpl($skipWhileDebug, [IDebug, dropI, dropP], () => ({
+    fmt: (arg0, arg1) => skipWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP),
+    $drop(skipWhile) {
+      skipWhile.return();
+    },
+  }));
+}
+
+export function mapWhileClone(IClone, PClone) {
+  return $traitImpl($mapWhileClone, [IClone, PClone], () => ({
+    clone: (arg0) => mapWhileClone_clone(arg0, IClone, PClone),
+  }));
+}
+
+export function mapWhileDebug(IDebug, dropI, dropP) {
+  return $traitImpl($mapWhileDebug, [IDebug, dropI, dropP], () => ({
+    fmt: (arg0, arg1) => mapWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP),
+    $drop(mapWhile) {
+      mapWhile.return();
+    },
+  }));
+}
+
+export function scanClone(IClone, StClone, FClone) {
+  return $traitImpl($scanClone, [IClone, StClone, FClone], () => ({
+    clone: (arg0) => scanClone_clone(arg0, IClone, StClone, FClone),
+  }));
+}
+
+export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
+  return $traitImpl($scanDebug, [IDebug, StDebug, dropI, dropSt, dropF], () => ({
+    fmt: (arg0, arg1) => scanDebug_fmt(arg0, arg1, IDebug, StDebug, dropI, dropSt, dropF),
+    $drop(scan) {
+      dropI?.(scan.iter);
+      dropF?.(scan.f);
+      dropSt?.(scan.state);
     },
   }));
 }

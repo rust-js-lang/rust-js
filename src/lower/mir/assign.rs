@@ -745,9 +745,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // hasher is a `&mut H` of its own (ADR 0463), and `Extend`'s, whose
         // `&mut Self` its dictionary takes in a box, an `I::Item`'s that's an
         // `IntoIterator` too (ADR 0478); not a `dyn`'s, whose pair is its
-        // `&mut`, nor std's.
+        // `&mut`, nor std's, but a provided method std's body is compiled
+        // of, `scan`'s, whose function it gives its state's box (ADR 0933).
         let callee = match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
+            Some(_) if crate::lower::recognition::is_compiled_std(self.tcx, def_id) => Some((def_id, generic_args)),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
                 Some(method) => Some(method),
                 None if (self.is_rust_trait(trait_id)

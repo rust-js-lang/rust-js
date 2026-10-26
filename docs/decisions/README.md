@@ -717,6 +717,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0930 std's structs fold from their back by their own compiled `try_rfold`, given where they're given and where they're held](0930-std-s-structs-fold-from-their-back-by-their-try-rfold.md)
 - [0931 Values of any shape are ordered as JS's `<` and `>` order them](0931-values-of-any-shape-are-ordered-as-js-orders-them.md)
 - [0932 An adapter may be compiled as its meaning alone: std's struct in the build of std's structs, the recognizers' wherever the normal build makes it](0932-an-adapter-compiled-as-its-meaning-alone.md)
+- [0933 `FilterMap`, `TakeWhile`, `SkipWhile`, `MapWhile` and `Scan` are compiled as their meaning, and a function given to std's compiled maker is given its state's box](0933-closure-adapters-compiled-as-their-meaning.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

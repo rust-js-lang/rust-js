@@ -46,6 +46,7 @@ const few = [
   "rev_own_back_methods.rs",
   "held_back_folds_by_try_rfold.rs",
   "skip_try_fold.rs",
+  "scan_object_state.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -62,9 +63,11 @@ const differs: Record<string, string> = {
   "escape_iterators.rs": "throws: std's struct steps a value that isn't a JS iterator",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
   "flat_map_drops.rs": "refused: a std type holding a value with a destructor, Flatten<std::vec::IntoIter<std::option::Option<Loud>>>,",
+  "held_iterator_dropped_by_its_owner.rs": "refused: a std type holding a value with a destructor, Scan<vec::IntoIter<D>, i32, ..>",
   "flatten_of_iterators_from_back.rs": "throws: a recognizer's JS iterator stepped from its back by std's struct",
   "held_enumerate.rs": "refused: the DoubleEndedIterator of a R",
   "result_given_as_items.rs": "refused: a std type holding a value with a destructor, Chain<array::IntoIter<Loud, 1>, result::IntoIter<Loud>>",
+  "scan_lazy_drops.rs": "refused: a std type holding a value with a destructor, Scan<vec::IntoIter<Loud>, u32, ..>",
   "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",
 };
 
