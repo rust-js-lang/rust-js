@@ -448,6 +448,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(x) = made(&option) {
             return x;
         }
+        // A map's value it holds, `$someGet(map, key)`'s, flattened: the
+        // map's own `get`, `map.get(key)`, its `undefined` where the key
+        // isn't there, and what's there, `None`'s `null` too, as it is
+        // (ADR 0950).
+        if let js::ExprKind::Call(callee, args) = &option.kind
+            && callee.helper_name() == Some("$someGet")
+            && let [map, key] = args.as_slice()
+        {
+            return Expr::call(Expr::member(map.clone(), "get"), vec![key.clone()]);
+        }
         if let js::ExprKind::Cond(test, then, none) = &option.kind
             && matches!(none.kind, js::ExprKind::Undefined)
             && let Some(x) = made(then)

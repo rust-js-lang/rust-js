@@ -202,7 +202,8 @@ pub fn counted(n: i32) -> i32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
-  expect(js).toContain("total = n > 0 ? total + n : (total - n) | 0;");
+  // Each branch's step, as written (ADR 0657, amended).
+  expect(js).toContain("  if (n > 0) {\n    total += n;\n  } else {\n    total = (total - n) | 0;\n  }\n");
   expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
   const lib = await import(join(dir, "lib.js"));
   const log = console.log;

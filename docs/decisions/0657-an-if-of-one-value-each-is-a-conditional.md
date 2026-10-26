@@ -7,7 +7,8 @@ which took no function as a branch. Amended by
 [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md):
 a branch with a comment is a conditional too, its comment before its value;
 and by [0870](0870-a-let-chains-value-reads-its-binding-first.md): a let
-chain's value too, its binding read first.
+chain's value too, its binding read first. Amended: a branch that adds to
+the variable it assigns keeps the `if`, as written.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the same value,
 written as a person writes it.
@@ -64,6 +65,10 @@ What keeps an `if`, as before:
 - **A chain of more branches**, `else if`, which reads best as it's
   written, and an element of more than two levels.
 - **A branch with a comment**, which this rule has no place for yet.
+- **A branch that adds to the variable it assigns**, `className +=
+  " " + m`, as written: React's `if (className == null) { className =
+  match; } else { className += ' ' + match; }`. (Amended: it kept an `if`
+  only where both branches added to it.)
 
 ## Why
 

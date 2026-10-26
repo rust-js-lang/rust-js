@@ -734,6 +734,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0947 A `return` of a logical the program wrote is that `return`, wherever its tests' `false` goes on](0947-a-returned-logical-is-returned-as-written.md)
 - [0948 A value read and then stepped by one is `x++` where it's read, `const id = counter++`](0948-a-value-read-then-stepped-is-plus-plus.md)
 - [0949 A nullable place's read, a field's or a thread-local's, is returned as it is from a nullable function](0949-a-nullable-places-read-is-returned-as-it-is.md)
+- [0950 A JS map's `get` flattened is its `get`, not `$someValue($someGet(..))`](0950-a-maps-get-flattened-is-its-get.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

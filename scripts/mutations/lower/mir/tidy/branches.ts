@@ -296,8 +296,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-updates-folded",
     breaks: "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        && !(updates(x, yes) && updates(x, no))\n",
-    replace: "        && !(updates(x, yes) && updates(x, no) && false)\n",
+    find: "        && !(updates(x, yes) || updates(x, no))\n",
+    replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
     tests: ["test/lowering-branches.test.ts", "-t", "branches that each add"],
   },
   {
@@ -591,5 +591,13 @@ export const mutations: Mutation[] = [
     find: "                if value.span.is_none() && at_condition {\n",
     replace: "                if value.span.is_none() {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands is before its right one"],
+  },
+  {
+    name: "branch-adding-made-conditional",
+    breaks: "React's `if (className == null) { className = m; } else { className += .. }` is `className = className == null ? m : className + ..` (ADR 0657, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        && !(updates(x, yes) || updates(x, no))\n",
+    replace: "        && !(updates(x, yes) && updates(x, no))\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "adds to its variable"],
   },
 ];

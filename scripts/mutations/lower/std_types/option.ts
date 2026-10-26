@@ -401,4 +401,12 @@ export const mutations: Mutation[] = [
     replace: "        [option, message] => (option, message.clone()),",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
+  {
+    name: "map-get-flatten-boxed",
+    breaks: "React's `cache.data.get(resourceType)` flattened is `$someValue($someGet(data, key))` (ADR 0950)",
+    file: "src/lower/std_types/option.rs",
+    find: "            && callee.helper_name() == Some(\"$someGet\")\n",
+    replace: "            && callee.helper_name() == Some(\"$someGot\")\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "get flattened"],
+  },
 ];

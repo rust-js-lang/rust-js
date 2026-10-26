@@ -942,3 +942,36 @@ pub fn each(width: usize, height: usize) -> f64 {
     expect(changed).toThrow();
   }
 });
+
+// ADR 0950: React's getCacheForType, `cache.data.get(resourceType)`: a JS
+// map's value of an `Option`, flattened, is the map's own `get`, its
+// `undefined` where the key isn't there, what's there as it is.
+test("a JS map's get flattened is its get", async () => {
+  const dir = fixture("map-get-flatten");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::{Map, Unknown};
+
+pub fn cached(data: &Map<str, Option<&'static Unknown>>, key: &str) -> Option<&'static Unknown> {
+    data.get(key).flatten()
+}
+
+pub fn has_value(data: &Map<str, Option<&'static Unknown>>, key: &str) -> bool {
+    data.get(key).flatten().is_some()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function cached(data, key) {\n  return data.get(key);\n}");
+  expect(js).not.toContain("$someGet");
+  const lib = await import(join(dir, "lib.js"));
+  const one = {};
+  const data = new Map<string, unknown>([
+    ["one", one],
+    ["null", null],
+    ["undefined", undefined],
+  ]);
+  expect([lib.cached(data, "one"), lib.cached(data, "null") ?? null, lib.cached(data, "undefined") ?? null, lib.cached(data, "none") ?? null]).toEqual([one, null, null, null]);
+  expect(["one", "null", "undefined", "none"].map((key) => lib.hasValue(data, key))).toEqual([true, false, false, false]);
+});

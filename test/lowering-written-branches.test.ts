@@ -1020,3 +1020,26 @@ pub fn either(dev: bool, a: bool, b: bool) -> bool {
     }
   }
 });
+
+// ADR 0657, amended: React's getClassNameByType, `if (className == null) {
+// className = match; } else { className += ' ' + match; }`: an `if` one
+// branch of which adds to what it assigns is as written, not `className =
+// className == null ? m : className + (" " + m)`.
+test("an if a branch of which adds to its variable is as written", async () => {
+  const { js, lib } = await compiled(
+    "if-adding-branch",
+    `pub fn joined(matches: &[String]) -> Option<String> {
+    let mut class_name: Option<String> = None;
+    for m in matches {
+        match &mut class_name {
+            None => class_name = Some(m.clone()),
+            Some(class_name) => *class_name += &(" ".to_string() + m),
+        }
+    }
+    class_name
+}
+`,
+  );
+  expect(js).toContain('    if (className == null) {\n      className = m;\n    } else {\n      className += " " + m;\n    }\n');
+  expect([lib.joined([] as never), lib.joined(["a"] as never), lib.joined(["a", "b", "c"] as never)]).toEqual([undefined, "a", "a b c"]);
+});

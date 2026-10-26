@@ -415,8 +415,8 @@ pub(super) struct OneAssignment {
 /// and how: both assign one variable alone; not of more branches, which
 /// read best as they are, but where it's a temporary's, an `if` the
 /// program wrote as a value; the function's result only where it folds
-/// into its `return` (`returned_values`); not each adding to it, `out +=
-/// a`, as written; nor a `switch`'s arms (ADR 0629). The value the program
+/// into its `return` (`returned_values`); not one adding to it, `out +=
+/// a`, as written (ADR 0657, amended); nor a `switch`'s arms (ADR 0629). The value the program
 /// wrote first comes first: `a || b ? x : y` of `if a || b { x } else { y }`
 /// MIR tests `!a && !b` of, and a chain's next test in the `else`
 /// whichever comes first, as a match's arms are written.
@@ -431,7 +431,7 @@ pub(super) fn one_assignment(
     let one = x == y
         && ((small(yes) && small(no)) || is_temporary(x))
         && (x != result || folds_into_return(yes, no))
-        && !(updates(x, yes) && updates(x, no))
+        && !(updates(x, yes) || updates(x, no))
         && !switched(test, span, switches);
     if !one {
         return None;
