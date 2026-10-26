@@ -150,6 +150,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::SortBy => {
                 let (v, compare) = (arg(), arg());
                 match tys[0].peel_refs().kind() {
+                    // By UTF-16 units, JS's own order of strings (ADR 0945).
+                    ty::Slice(elem) | ty::Array(elem, _) if self.sorts_as_js_strings(tys[1], *elem) => {
+                        Expr::call(Expr::member(v, "sort"), vec![])
+                    }
                     ty::Slice(elem) | ty::Array(elem, _) => self.sort_by_compare(v, compare, *elem),
                     _ => Expr::call(Expr::member(v, "sort"), vec![compare]),
                 }

@@ -160,6 +160,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether a closure of type `compare_ty` sorting strings, `elem`s, is
+    /// JS's own order of strings, by their UTF-16 units, `|a, b|
+    /// a.encode_utf16().cmp(b.encode_utf16())`: its `sort()`, given no
+    /// function (ADR 0945).
+    pub(in crate::lower) fn sorts_as_js_strings(&self, compare_ty: ty::Ty<'tcx>, elem: ty::Ty<'tcx>) -> bool {
+        let ty::Closure(id, _) = *compare_ty.kind() else {
+            return false;
+        };
+        self.is_string_like(elem)
+            && !elem.peel_refs().is_char()
+            && (self.krate.closures.get(&id))
+                .is_some_and(|body| crate::lower::body_queries::orders_by_utf16_units(self.tcx, &body.thir, body.expr))
+    }
+
     /// `items` sorted in place by `compare`, stably: JS's `sort`, or
     /// `$sort` of items that can be `undefined`, a `None`, which JS's
     /// `sort` puts last without asking `compare`.

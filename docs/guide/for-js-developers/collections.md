@@ -425,6 +425,27 @@ export function dedup(v) {
 - `std::cmp::Reverse` sorts high to low.
 - A sort is stable, as JS's is.
 
+JS's own `sort()` orders strings by their UTF-16 units, which differs
+from Rust's code points where two strings first differ at a character past
+U+FFFF and one from U+E000 to U+FFFF. Rust says that order by comparing
+their `encode_utf16()`s, which is JS's `sort()` itself, its unstable sort
+too, whose ties are the same string
+([ADR 0945](../../decisions/0945-utf16-order-is-js-sort.md)):
+
+```rust
+pub fn sorted(mut names: Vec<&str>) -> String {
+    names.sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()));
+    names.join(", ")
+}
+```
+
+```js
+export function sorted(names) {
+  names.sort();
+  return names.join(", ");
+}
+```
+
 ## Iterators
 
 A Rust iterator is lazy: nothing runs until something takes its items.

@@ -364,4 +364,20 @@ export const mutations: Mutation[] = [
     replace: "            let signed = matches!(*thir[source].ty.kind(), ty::Int(_)) || pointer_bits == 0;\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a repeat's count of a signed integer is the integer"],
   },
+  {
+    name: "utf16-order-of-either-parameter",
+    breaks: "`sort_by(|a, b| b.encode_utf16().cmp(a.encode_utf16()))`, descending, is JS's `sort()`, ascending (ADR 0945)",
+    file: "src/lower/body_queries.rs",
+    find: "        && units_of(first) == Some(params[0])\n        && units_of(second) == Some(params[1])\n",
+    replace: "        && units_of(first).is_some()\n        && units_of(second).is_some()\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "only a sort by the first"],
+  },
+  {
+    name: "utf16-order-of-any-cmp",
+    breaks: "a comparator calling what isn't `Iterator::cmp` of two strings' UTF-16 units is JS's `sort()` (ADR 0945)",
+    file: "src/lower/body_queries.rs",
+    find: "    super::fn_def(thir[fun].ty).is_some_and(|(cmp, _)| compares_utf16_units(tcx, cmp, thir[strip(thir, first)].ty))\n",
+    replace: "    super::fn_def(thir[fun].ty).is_some()\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "only a sort by the first"],
+  },
 ];

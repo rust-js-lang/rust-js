@@ -202,7 +202,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0180 Generic code that writes to any writer is given a `fmt::Write` dictionary](0180-generic-writers.md)
 - [0181 A clone of std's iterator over an array is what's left of the array](0181-iterator-clones.md)
 - [0182 Boundary matrices: each operation on the values where implementations go wrong](0182-boundary-matrices.md)
-- [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](0183-code-point-order-and-trim.md)
+- [0183 Strings and `char`s order by code point, and `trim` removes Unicode's White_Space](0183-code-point-order-and-trim.md) *(extended by 0945: a sort by their `encode_utf16()`s is JS's `sort()`)*
 - [0184 `ok_or_else` keeps its value, a branch's operand is dropped in its branch, and `by_ref()` of the crate's iterator](0184-bitflags-gaps.md)
 - [0185 A library's trait's defaults are its functions over `Self`](0185-library-trait-defaults.md) *(amended by 0914: a consumer compiles a library's trait's default its impl calls)*
 - [0186 What another crate's derive writes is the crate's own code](0186-other-crates-derives.md)
@@ -729,6 +729,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md)
 - [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md)
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
+- [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -1246,3 +1246,44 @@ pub fn wide(n: i64) -> String {
   expect([lib.indentation(1), lib.ofText("", -1), lib.wide(2n ** 32n + 1n)]).toEqual(["    ", "", "ab"]);
   expect(() => lib.indentation(-1)).toThrow(RangeError);
 });
+
+// ADR 0945: a sort by UTF-16 units, `a.encode_utf16().cmp(b.encode_utf16())`,
+// is JS's `sort()` (test/corpus/utf16_sort.rs runs it against native
+// Rust); a comparator of the two the other way, or of something else of
+// their units, stays a comparator.
+test("only a sort by the first's units then the second's is JS's sort()", async () => {
+  const dir = fixture("utf16-sort-others");
+  writeFileSync(join(dir, "lib.rs"), `use std::cmp::Ordering;
+use std::str::EncodeUtf16;
+
+pub fn ascending(mut words: Vec<&str>) -> Vec<&str> {
+    words.sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()));
+    words
+}
+
+pub fn descending(mut words: Vec<&str>) -> Vec<&str> {
+    words.sort_by(|a, b| b.encode_utf16().cmp(a.encode_utf16()));
+    words
+}
+
+pub fn by_last(mut words: Vec<&str>) -> Vec<&str> {
+    words.sort_by(|a, b| last_unit(a.encode_utf16(), b.encode_utf16()));
+    words
+}
+
+fn last_unit(a: EncodeUtf16, b: EncodeUtf16) -> Ordering {
+    a.last().cmp(&b.last())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  words.sort();\n");
+  expect(js.match(/words\.sort\(\);/g)).toHaveLength(1);
+  installRuntime(dir);
+  const lib = await import(join(dir, "lib.js"));
+  const words = ["b\u{1F600}", "b\u{FF61}", "a", "b\u{E000}", "", "b\u{10000}", "ab", "B", "ca"];
+  const ascending = ["", "B", "a", "ab", "b\u{10000}", "b\u{1F600}", "b\u{E000}", "b\u{FF61}", "ca"];
+  expect(lib.ascending([...words])).toEqual(ascending);
+  expect(lib.descending([...words])).toEqual([...ascending].reverse());
+  expect(lib.byLast([...words])).toEqual(["", "B", "a", "ca", "ab", "b\u{10000}", "b\u{1F600}", "b\u{E000}", "b\u{FF61}"]);
+});

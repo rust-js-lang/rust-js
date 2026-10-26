@@ -394,6 +394,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut next = || values.next().expect("rustc checked the arguments");
         let items = next();
         let index = matches!(op, SliceOp::SelectNth { .. }).then(&mut next);
+        // By UTF-16 units, JS's own order of strings, whose ties are the
+        // same string, which no order of them tells apart (ADR 0945).
+        if matches!(op, SliceOp::SortUnstable { .. })
+            && with == SortWith::By
+            && self.sorts_as_js_strings(generic_args.type_at(1), item)
+        {
+            return Ok(Expr::call(Expr::member(items, "sort"), vec![]));
+        }
         let mut body = Vec::new();
         let (a, b) = (Expr::var("a"), Expr::var("b"));
         let less = match with {

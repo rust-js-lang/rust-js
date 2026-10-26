@@ -404,4 +404,13 @@ export const mutations: Mutation[] = [
     replace: "                let size = Expr::int(0);\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
+  {
+    name: "utf16-sort-unstable-kept",
+    breaks: "`sort_unstable_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is `$sortUnstable`, where JS's `sort()` is that order, its ties the same string (ADR 0945)",
+    file: "src/lower/std_types/slice.rs",
+    find: "        if matches!(op, SliceOp::SortUnstable { .. })\n",
+    replace: "        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^utf16_sort.rs$"],
+    snapshots: true,
+  },
 ];

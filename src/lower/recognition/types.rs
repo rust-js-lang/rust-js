@@ -1004,6 +1004,17 @@ pub(in crate::lower) fn counts_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefI
         && is_str_utf16(tcx, iter_ty)
 }
 
+/// Whether `def_id`, of an iterator of type `iter_ty`, compares a string's
+/// UTF-16 units with another's: `Iterator::cmp` of `str::EncodeUtf16`, what
+/// `a.encode_utf16().cmp(b.encode_utf16())` calls, JS's own order of
+/// strings, its `sort()`'s (ADR 0945).
+pub(in crate::lower) fn compares_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, iter_ty: Ty<'tcx>) -> bool {
+    tcx.trait_of_assoc(def_id)
+        .is_some_and(|trait_| tcx.is_diagnostic_item(sym::Iterator, trait_))
+        && tcx.item_name(def_id).as_str() == "cmp"
+        && is_str_utf16(tcx, iter_ty)
+}
+
 /// Whether a call of `def_id` that gives a `made` makes a string's
 /// `encode_utf16()`, std's, which reads the string and changes nothing.
 pub(in crate::lower) fn makes_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, made: Ty<'tcx>) -> bool {

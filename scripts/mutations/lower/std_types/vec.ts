@@ -174,4 +174,13 @@ export const mutations: Mutation[] = [
     replace: "        if value.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
+  {
+    name: "utf16-sort-by-kept",
+    breaks: "`sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is a comparator of `$iterCmp`, where JS's `sort()` is that order (ADR 0945)",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    ty::Slice(elem) | ty::Array(elem, _) if self.sorts_as_js_strings(tys[1], *elem) => {\n",
+    replace: "                    ty::Slice(elem) | ty::Array(elem, _) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^utf16_sort.rs$"],
+    snapshots: true,
+  },
 ];

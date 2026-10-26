@@ -92,7 +92,7 @@ fn main() {
         );
         for &b in STRINGS {
             println!(
-                "{a:?} {b:?}: {} {} {} {:?} {} {} {} {} {:?} {:?} {:?} {}",
+                "{a:?} {b:?}: {} {} {} {:?} {} {} {} {} {:?} {:?} {:?} {} units {:?}",
                 a.starts_with(b),
                 a.ends_with(b),
                 a.contains(b),
@@ -105,6 +105,12 @@ fn main() {
                 a.strip_prefix(b),
                 a.strip_suffix(b),
                 format!("{a}{b}").len(),
+                {
+                    // JS's `sort()`, by UTF-16 units (ADR 0945).
+                    let mut pair = [a, b];
+                    pair.sort_by(|x, y| x.encode_utf16().cmp(y.encode_utf16()));
+                    pair
+                },
             );
         }
     }

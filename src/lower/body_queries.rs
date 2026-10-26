@@ -370,6 +370,56 @@ pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::Generic
     (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()
 }
 
+/// Whether `thir`, a closure's body, orders its two parameters by their
+/// UTF-16 units, first then second: `|a, b|
+/// a.encode_utf16().cmp(b.encode_utf16())`, JS's own order of strings,
+/// which its `sort()` sorts by (ADR 0945). Each parameter a string or what
+/// derefs to one, `&&str` or `&String`.
+pub(super) fn orders_by_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, root: ExprId) -> bool {
+    use super::recognition::{compares_utf16_units, is_string_deref, makes_utf16_units};
+    // The parameter a string's `encode_utf16()` is given, through its
+    // borrows and derefs, a `String`'s, std's, too.
+    let units_of = |e: ExprId| -> Option<LocalVarId> {
+        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, e)].kind else {
+            return None;
+        };
+        let (called, _) = super::fn_def(thir[fun].ty)?;
+        if !makes_utf16_units(tcx, called, thir[strip(thir, e)].ty) {
+            return None;
+        }
+        let mut a = *args.first()?;
+        loop {
+            a = strip(thir, a);
+            match thir[a].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => a = arg,
+                ExprKind::Call { fun, ref args, .. }
+                    if args.len() == 1
+                        && super::fn_def(thir[fun].ty).is_some_and(|(f, args)| is_string_deref(tcx, f, args)) =>
+                {
+                    a = args[0]
+                }
+                ExprKind::VarRef { id } => return Some(id),
+                _ => return None,
+            }
+        }
+    };
+    let params: Vec<LocalVarId> = (thir.params.iter())
+        .filter_map(|p| match p.pat.as_deref().map(|pat| &pat.kind) {
+            Some(PatKind::Binding { var, .. }) => Some(*var),
+            _ => None,
+        })
+        .collect();
+    let e = tail(thir, root);
+    let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
+        return false;
+    };
+    let [first, second] = args[..] else { return false };
+    super::fn_def(thir[fun].ty).is_some_and(|(cmp, _)| compares_utf16_units(tcx, cmp, thir[strip(thir, first)].ty))
+        && params.len() == 2
+        && units_of(first) == Some(params[0])
+        && units_of(second) == Some(params[1])
+}
+
 /// Is `thir`, a constant's initializer, written of other constants that
 /// are read by their names (`by_name`), `A | B` or `EventPriority(NO_LANE)`,
 /// and of no call of a function `by_name` says is compiled, whose body would
