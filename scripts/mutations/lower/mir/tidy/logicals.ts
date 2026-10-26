@@ -3,6 +3,30 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unwritten-negation-kept",
+    breaks: "`!matches!(status, Some(\"fulfilled\" | \"rejected\"))` is `!(status === \"fulfilled\" || status === \"rejected\")`, not each alternative's negated test (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if !exact(chain) || written_negation(&parts, op == Op::And, negations, logicals) {\n",
+    replace: "        if true {\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a negated matches! of alternatives"],
+  },
+  {
+    name: "written-negation-de-morganed-in-a-value",
+    breaks: "a value the program wrote `!(a == 1 || b == 0)` is `a !== 1 && b !== 0`, not as written (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if !exact(chain) || written_negation(&parts, op == Op::And, negations, logicals) {\n",
+    replace: "        if !exact(chain) {\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a negated matches! of alternatives"],
+  },
+  {
+    name: "unwritten-negation-of-inexact-tests",
+    breaks: "`!(a < b || c)` of a float or a truthy value is De Morgan'd, `a >= b`, wrong of `NaN`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                true\n            }\n            _ => false,\n        }\n    }\n",
+    replace: "                true\n            }\n            _ => true,\n        }\n    }\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "a negated matches! of alternatives"],
+  },
+  {
     name: "written-negation-de-morganed",
     breaks: "`if (.. && !(DISABLE && root.tag === 0))` is MIR's `(!DISABLE || root.tag !== 0)` (ADR 0879, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
@@ -14,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "written-negation-of-the-same-chain",
     breaks: "a written `!(a || b)` is taken for MIR's `a !== 1 && b !== 0` only where that's an `||` too, so it's never restored",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "                .is_some_and(|&inner| negations.contains(&(inner, op == Op::Or)))\n",
-    replace: "                .is_some_and(|&inner| negations.contains(&(inner, op == Op::And)))\n",
+    find: "    let written = |parts: &[Expr]| written_negation(parts, op == Op::Or, negations, logicals);\n",
+    replace: "    let written = |parts: &[Expr]| written_negation(parts, op == Op::And, negations, logicals);\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "a written negation of an && or an || stays one"],
   },
   {

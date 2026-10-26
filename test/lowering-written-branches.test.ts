@@ -869,3 +869,38 @@ pub fn described(value: Option<&Unknown>, on: bool) -> String {
   expect(lib.described({ ab: 1, abcd: 2 } as never, true as never)).toBe('{ab"abcd"}');
   expect([lib.described(undefined as never, true as never), lib.described({ ab: 1 } as never, false as never)]).toEqual(["other", ""]);
 });
+
+// React's ReactFiberThenable checks `thenable.status !== 'fulfilled' &&
+// thenable.status !== 'rejected'`; its port's `!matches!(status,
+// Some("fulfilled" | "rejected"))` was `!(status === "fulfilled" || status
+// === "rejected")`. The program wrote no `!( .. )` of an `&&` or an `||`,
+// which stays as written (ADR 0879, amended): a `!` of a chain MIR made of
+// a pattern's alternatives is each one's negated test, De Morgan's, as a
+// person writes it. One written `!(a == 1 || b == 0)` stays, in a value too.
+test("a negated matches! of alternatives is each one's negated test", async () => {
+  const { js, lib } = await compiled("negated-matches", `pub fn pending(status: Option<&str>) -> bool {
+    !matches!(status, Some("fulfilled" | "rejected"))
+}
+
+pub fn neither(a: u32, b: u32) -> bool {
+    !(a == 1 || b == 0)
+}
+
+pub fn small(n: u32) -> bool {
+    !matches!(n, 1 | 2 | 3)
+}
+
+pub fn outside(x: f64) -> bool {
+    !matches!(x, 1.0..=3.0)
+}
+`);
+  expect(js).toContain('  return status !== "fulfilled" && status !== "rejected";\n');
+  expect(js).toContain("  return !(a === 1 || b === 0);\n");
+  expect(js).toContain("  return n !== 1 && n !== 2 && n !== 3;\n");
+  expect([lib.pending("fulfilled" as never), lib.pending("rejected" as never), lib.pending("pending" as never), lib.pending(undefined as never)]).toEqual([false, false, true, true]);
+  expect([lib.neither(2 as never, 3 as never), lib.neither(1 as never, 3 as never)]).toEqual([true, false]);
+  expect([lib.small(2 as never), lib.small(4 as never)]).toEqual([false, true]);
+  // A range's tests stay negated as one, as a float's `NaN` is neither.
+  expect(js).toContain("  return !(x >= 1 && x <= 3);\n");
+  expect([lib.outside(2 as never), lib.outside(4 as never), lib.outside(NaN as never)]).toEqual([false, true, true]);
+});

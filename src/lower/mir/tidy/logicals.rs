@@ -642,16 +642,7 @@ fn negated_as_written(test: &mut Expr, negations: &[(js::Span, bool)], logicals:
     let ExprKind::Binary(op @ (Op::And | Op::Or), ..) = test.kind else {
         return;
     };
-    // Whether `parts`, joined with `op`, are a negation the program wrote.
-    let written = |parts: &[Expr]| {
-        let mut spans = Vec::new();
-        let within = |outer: js::Span, s: &js::Span| outer.lo <= s.lo && s.hi <= outer.hi;
-        parts.iter().all(|part| tests_of(part, &mut spans))
-            && (logicals.iter())
-                .filter(|&&l| spans.iter().all(|s| within(l, s)))
-                .min_by_key(|l| l.hi - l.lo)
-                .is_some_and(|&inner| negations.contains(&(inner, op == Op::Or)))
-    };
+    let written = |parts: &[Expr]| written_negation(parts, op == Op::Or, negations, logicals);
     let joined = |parts: Vec<Expr>| {
         parts
             .into_iter()
@@ -680,6 +671,60 @@ fn negated_as_written(test: &mut Expr, negations: &[(js::Span, bool)], logicals:
         }
     }
     *test = joined(kept);
+}
+
+/// Whether `parts`, joined with `&&` where `and`, else `||`, are of a
+/// negation the program wrote of the other operator, `!(a || b)` of `!a
+/// && !b`: each written inside the operand of a `!` the program wrote, the
+/// innermost `&&` or `||` written around them (`Written::negations`).
+fn written_negation(parts: &[Expr], and: bool, negations: &[(js::Span, bool)], logicals: &[js::Span]) -> bool {
+    let mut spans = Vec::new();
+    let within = |outer: js::Span, s: &js::Span| outer.lo <= s.lo && s.hi <= outer.hi;
+    parts.iter().all(|part| tests_of(part, &mut spans))
+        && (logicals.iter())
+            .filter(|&&l| spans.iter().all(|s| within(l, s)))
+            .min_by_key(|l| l.hi - l.lo)
+            .is_some_and(|&inner| negations.contains(&(inner, and)))
+}
+
+/// `!(status === "a" || status === "b")`, a `!` of a chain the program
+/// didn't write as one, `!matches!(status, Some("a" | "b"))`'s of its
+/// pattern's alternatives: each part's negated test, De Morgan's, `status
+/// !== "a" && status !== "b"`, as a person writes it, where each part is
+/// an equality's test or a `!`'s, which negates exactly, in a value too,
+/// as `!` and each part are `bool`s alike. A `!( .. )` the program wrote
+/// of an `&&` or an `||` stays (`written_negation`, ADR 0879, amended).
+pub(super) fn unwritten_negations(body: &mut [Stmt], negations: &[(js::Span, bool)], logicals: &[js::Span]) {
+    // Whether each test of the chain `e` negates exactly.
+    fn exact(e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Binary(Op::And | Op::Or, a, b) => exact(a) && exact(b),
+            ExprKind::Binary(Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe, ..) | ExprKind::Unary(UnaryOp::Not, _) => {
+                true
+            }
+            _ => false,
+        }
+    }
+    js::each_expr_mut(body, &mut |e| {
+        let ExprKind::Unary(UnaryOp::Not, chain) = &e.kind else {
+            return;
+        };
+        let ExprKind::Binary(op @ (Op::And | Op::Or), ..) = chain.kind else {
+            return;
+        };
+        let mut parts = Vec::new();
+        operands((**chain).clone(), op, &mut parts);
+        if !exact(chain) || written_negation(&parts, op == Op::And, negations, logicals) {
+            return;
+        }
+        let ExprKind::Unary(_, chain) = std::mem::replace(&mut e.kind, ExprKind::Undefined) else {
+            unreachable!("a `!` of a chain");
+        };
+        *e = Expr {
+            span: e.span,
+            ..chain.negated_test()
+        };
+    });
 }
 
 /// The parts of a chain of `op`, `a && b && c`'s `a`, `b` and `c`, in order.

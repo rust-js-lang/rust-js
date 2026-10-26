@@ -1056,7 +1056,9 @@ An `if` statement is the one you wrote: its test as written and its
 branches in their order, `if !queue.is_empty() { .. } else { .. }`'s
 `queue.length !== 0` first; an `else { break }` after a branch that goes
 on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
-`!(DISABLE && tag == 0)`; and so is an `if`'s value, `if a == 0 || a > b
+`!(DISABLE && tag == 0)`, but a `!matches!(status, Some("fulfilled" |
+"rejected"))` is each alternative's negated test, `status !== "fulfilled"
+&& status !== "rejected"`; and so is an `if`'s value, `if a == 0 || a > b
 { a } else { b }` being `a === 0 || a > b ? a : b`
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 A branch that returns needs no `else` after it,

@@ -247,3 +247,36 @@ is a guard first", run in JS, `let_else_guard_returns.rs` against native
 Rust, and the mutations `let-else-joined-return-not-guard`,
 `let-else-joined-return-of-any-exit` (`tidy/jumps/tried.ts`) and
 `shared-tails-take-a-let-elses-exit` (`tidy/branches.ts`).
+
+## Amendment: a `!` of a chain the program didn't write is De Morgan's
+
+React's ReactFiberThenable checks `thenable.status !== 'fulfilled' &&
+thenable.status !== 'rejected'`. Its port's `!matches!(status,
+Some("fulfilled" | "rejected"))` was `return !(status === "fulfilled" ||
+status === "rejected");`: MIR's value of the `matches!`, a chain of its
+pattern's alternatives, read in place under the `!` the program wrote of
+the macro.
+
+The rule above keeps a `!( .. )` the program wrote of an `&&` or an `||`.
+`!matches!(..)` is no such `!`: the chain is MIR's of an or-pattern, which
+the program wrote as alternatives, `"fulfilled" | "rejected"`, not as a
+`||`. **A `!` of a chain the program didn't write as one is each part's
+negated test, joined by the other operator, De Morgan's**:
+
+```js
+return status !== "fulfilled" && status !== "rejected";
+```
+
+- **Only where each part negates exactly**: an equality's test, `===`
+  as `!==`, or a `!`'s, its operand. A range's, `!matches!(x, 1.0..=3.0)`,
+  stays `!(x >= 1 && x <= 3)`, as `x < 1` isn't `!(x >= 1)` of `NaN`.
+- **Of a value too**, not only a test, as `!` and each part are `bool`s
+  alike: what `&&` and `||` give of `bool`s is a `bool`.
+- **A written one stays**, `return !(a === 1 || b === 0);` of `!(a == 1
+  || b == 0)`, by the same `Written::negations` (`written_negation`).
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): De Morgan's laws make
+the two the same value. Tested by `test/lowering-written-branches.test.ts`'s
+"a negated matches! of alternatives", run; its mutations are
+`unwritten-negation-kept`, `written-negation-de-morganed-in-a-value` and
+`unwritten-negation-of-inexact-tests` (`tidy/logicals.ts`).

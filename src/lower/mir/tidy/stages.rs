@@ -575,6 +575,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written negations", |b, h| {
                 logicals::written_negations(b, &h.written.negations, &h.written.logicals)
             }),
+            // A `!` of a chain the program didn't write, `!matches!(s,
+            // Some("a" | "b"))`'s: `s !== "a" && s !== "b"` (ADR 0879, amended).
+            pass("unwritten negations", |b, h| {
+                logicals::unwritten_negations(b, &h.written.negations, &h.written.logicals)
+            }),
             // An `if` of `false`, a check that can't fail once what it reads
             // is in place: its `else`, if any; and an `if` of nothing either
             // way: its test, where that does anything.
