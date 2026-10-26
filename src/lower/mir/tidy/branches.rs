@@ -824,11 +824,12 @@ pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
 const BOOLEAN_METHODS: &[&str] = &["some", "every", "includes", "has", "startsWith", "endsWith"];
 
 /// Whether `e` is a `bool` whatever it reads: a comparison, a `!`, one of
-/// `booleans`, one of JS's methods whose answer is one, or `&&` and `||`
-/// of them.
+/// `booleans`, one lowering knows is (`Known::Boolean`), one of JS's
+/// methods whose answer is one, or `&&` and `||` of them.
 pub(super) fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
+        _ if e.facts.has(js::Known::Boolean) => true,
         ExprKind::Var(name) => booleans.contains(name),
         ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
         ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,

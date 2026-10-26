@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bool-const-unknown",
+    breaks: "a `bool` constant read by its name isn't known a boolean, `!!ENABLED && count > 0` (ADR 0031, amended)",
+    file: "src/lower.rs",
+    find: "            if ty.is_bool() {\n                place.facts = place.facts.with(js::Known::Boolean);\n",
+    replace: "            if false {\n                place.facts = place.facts.with(js::Known::Boolean);\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "bool constant"],
+  },
+  {
     name: "library-trait-method-value-unlisted",
     breaks: "a library trait's method given as a value, `all(Zero::is_zero)`, is refused as one its manifest doesn't list, not taken for its impl's",
     file: "src/lower.rs",
@@ -382,8 +390,8 @@ export const mutations: Mutation[] = [
     name: "named-const-unplaced",
     breaks: "a `const` read by its name is placed nowhere, so a comment before it as a call's argument, `// This render ..` before `NO_LANES`, is above the call, which is one line",
     file: "src/lower.rs",
-    find: "            let place = place.or_at(self.js_span(span));\n",
-    replace: "",
+    find: "            let mut place = place.or_at(self.js_span(span));\n",
+    replace: "            let mut place = place;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
   },
 ];

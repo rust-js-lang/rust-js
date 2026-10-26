@@ -588,6 +588,10 @@ pub enum Known {
     /// a function each call of which does, one of the crate's that never
     /// unwinds, `loudDrop_drop` (ADR 0902).
     NeverThrows,
+    /// A `bool`, as Rust's types tell, where JS's form doesn't show one: a
+    /// `bool` constant read by its name, `ENABLED` (ADR 0031, amended),
+    /// `true` or `false` alone, which `&&` and `||` give as it is.
+    Boolean,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

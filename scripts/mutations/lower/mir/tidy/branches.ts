@@ -12,6 +12,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "known-boolean-unread",
+    breaks: "what lowering knows is a `bool`, a `bool` constant's read, is coerced, `!!(LOGGED && !quiet) || TRACED` (ADR 0031, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        _ if e.facts.has(js::Known::Boolean) => true,\n",
+    replace: "",
+    tests: ["test/lowering-constants.test.ts", "-t", "bool constant"],
+  },
+  {
     name: "same-test-strict-null-undefined",
     breaks: "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
     file: "src/lower/mir/tidy/branches.rs",

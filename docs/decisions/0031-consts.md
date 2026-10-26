@@ -12,6 +12,7 @@ Amended (2026-10-26): a `#[repr(transparent)]` struct's constructor of a
 constant is its field, by its name. Amended (2026-10-26): an import cycle
 through a JS file of the program's own is one (below). Amended
 (2026-10-26): one written in a function's body is the function's (below).
+Amended (2026-10-26): a `bool`'s read by its name is a boolean (below).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -389,3 +390,23 @@ artifacts, which Cargo tracks through the dependency itself, and that
 read's error names the file. `cargo-workspace`'s "a Cargo build of
 rust-js's crates is done when their JS is" holds it again, and
 `bound-of-dependencies-too` is caught.
+
+## Amendment: a `bool`'s read by its name is a boolean
+
+React's ReactFiberCacheComponent tests `enableCache`, a `bool` constant:
+`ENABLED && COUNT.get() > 0.0` was `return !!ENABLED && count > 0;`, as a
+read of a name, `ENABLED`, might be any JS value, which `&&` would give as
+it is where it's falsy.
+
+**A `bool` constant read by its name is known a boolean**, of the crate's
+module, another's or a library's: lowering marks its read
+`Known::Boolean`, which tidy's `is_boolean` reads as it reads a `bool`
+variable's name, so `&&` and `||` give it as it is: `return ENABLED &&
+count > 0;`, `return (LOGGED && !quiet) || TRACED;`.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): its value is `true`
+or `false` alone, so `!!` of it is itself.
+
+Tested by `test/lowering-constants.test.ts`'s "a bool constant read by its
+name", run; its mutations are `bool-const-unknown` and
+`known-boolean-unread`.

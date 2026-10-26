@@ -707,8 +707,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span)
                     .is_some_and(|value| value.is_constant());
             // Where it's written, a call's argument a comment is before
-            // (ADR 0708, amended).
-            let place = place.or_at(self.js_span(span));
+            // (ADR 0708, amended). A `bool`'s is one, which JS's name of it
+            // doesn't show (ADR 0031, amended).
+            let mut place = place.or_at(self.js_span(span));
+            if ty.is_bool() {
+                place.facts = place.facts.with(js::Known::Boolean);
+            }
             return match copied {
                 true => self.const_copy(place, ty, span),
                 false => Ok(place),

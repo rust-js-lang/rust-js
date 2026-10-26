@@ -279,3 +279,48 @@ pub mod tags {
   expect(readFileSync(join(effects, "priorities.js"), "utf8")).toContain("export const NoEventPriority = 0;\n");
   await import(join(effects, "lane.js"));
 });
+
+// React's ReactFiberCacheComponent's DEV checks read `enableCache`, a `bool`
+// constant: `ENABLED && COUNT.get() > 0.0` was `!!ENABLED && count > 0`,
+// as if a constant read by its name might be any value. It's a `bool`, as
+// Rust's types say, of the crate's module, another's, or a library's.
+test("a bool constant read by its name is a boolean in && and ||", async () => {
+  const dir = fixture("bool-consts");
+  mkdirSync(join(dir, "dep"), { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), "pub const TRACED: bool = false;\n\npub fn traced() -> bool {\n    TRACED\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub mod flags {
+    pub const LOGGED: bool = true;
+}
+
+pub const ENABLED: bool = true;
+
+thread_local! {
+    static COUNT: Cell<f64> = const { Cell::new(0.0) };
+}
+
+pub fn bump() {
+    COUNT.set(COUNT.get() + 1.0);
+}
+
+pub fn has_warnings() -> bool {
+    ENABLED && COUNT.get() > 0.0
+}
+
+pub fn logged(quiet: bool) -> bool {
+    flags::LOGGED && !quiet || dep::TRACED
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return ENABLED && count > 0;\n");
+  expect(js).toContain("  return (LOGGED && !quiet) || TRACED;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hasWarnings(), lib.logged(false), lib.logged(true)]).toEqual([false, true, false]);
+  lib.bump();
+  expect(lib.hasWarnings()).toBe(true);
+});

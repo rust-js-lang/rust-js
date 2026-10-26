@@ -111,7 +111,8 @@ export function banner(count) {
 - A `const` of literals is the value rustc computed, `4 * 1024` is
   `4096`. One written of other constants, the crate's or a library's, is
   as it's written, each read by its name, after what it reads; one that
-  calls the crate's functions is rustc's value still
+  calls the crate's functions is rustc's value still. A `bool` one's read
+  is a boolean, `ENABLED && count > 0`, with no `!!`
   ([ADR 0031](../../decisions/0031-consts.md), amended):
 
 ```rust
