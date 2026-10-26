@@ -166,7 +166,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0144 A lock on one thread is a `RefCell`, and an `Arc` is an `Rc`](0144-locks.md) *(amended: a static lock or atomic is one cell)*
 - [0145 A generic function is given the size and name of a type parameter it asks for](0145-type-facts.md) *(extended by 0899: an array's constant size and `OneShot`, carried by std traits' dictionaries)*
 - [0146 A generic associated type of lifetimes is an associated type](0146-generic-associated-types.md)
-- [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](0147-replacing-through-mut.md) *(amended: std's enums with a fieldless variant are by their place too)*
+- [0147 Replacing a value whole through a `&mut`: an object in place, an enum by its place](0147-replacing-through-mut.md) *(amended: std's enums with a fieldless variant are by their place too; an `Rc` written through a `&mut` is by its place)*
 - [0148 `write!` into a `String` adds to it, and a `fmt::Result` is always `Ok`](0148-write-to-string.md)
 - [0149 A `String` changed in place is given a new string, by its byte offsets](0149-string-editing.md)
 - [0150 Splitting and searching by a pattern, as Rust searches](0150-string-patterns.md)

@@ -147,4 +147,12 @@ export const mutations: Mutation[] = [
     replace: "    id.is_local()\n",
     tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
   },
+  {
+    name: "rc-written-through-mut-changed-in-place",
+    breaks: "an `Rc` written through a `&mut` is taken for one changed in place, so its clone, React's `pending.next.borrow().clone()`, is refused",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        ty::Adt(..)\n            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n        {\n            false\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_assigned_through_mut.rs$"],
+  },
 ];

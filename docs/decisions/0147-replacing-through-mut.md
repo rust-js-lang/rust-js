@@ -1,6 +1,6 @@
 # 0147. Replacing a value whole through a `&mut`: an object in place, an enum by its place
 
-Status: Accepted; amended (std's enums too, below). Extends [0025](0025-vec-loops-refcell-mut.md),
+Status: Accepted; amended (std's enums too, and an `Rc`'s place, below). Extends [0025](0025-vec-loops-refcell-mut.md),
 [0033](0033-enums-with-fields.md) and [0099](0099-mut-references.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)).
@@ -158,3 +158,27 @@ against native Rust; the mutation `mixed-enum-object` holds both. Its JS
 is the place's box, `const bound$1 = { value: bound }`, as the crate's is,
 which the readability counts' renamed names and `return;`s grow by: the
 price of the right answer (ADR 0262's case C).
+
+## Amended: an `Rc` written through a `&mut` is by its place
+
+React's update queue clones the next update and links it,
+`let next = pending.next.borrow().clone(); *update.next.borrow_mut() =
+next;`, of a `RefCell<Rc<Update>>`. The write through the guard's `&mut`
+made `Rc<Update>` a type changed in place (`mutation::mutated_types`), so
+its clone, which must then be a copy, was refused: "cloning
+`Rc<Update>`".
+
+**An `Rc` or a `Weak`, counted or not, is never changed in place by `*r =
+v`**: its owners share what it points at, so a `&mut` to one is a cell,
+a handle on its place (`is_boxable`, ADR 0523), whose write gives the
+place another, `update.next = next`, `r.value = v`, and leaves what the
+old one points at as it was. `object_like` says so, and a clone of one is
+the one object, as any `Rc`'s is.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): the place's write is
+Rust's.
+
+Held by `test/corpus/rc_assigned_through_mut.rs`, against native Rust: a
+`&mut Rc` given to a function, a guard's write, `mem::swap` and
+`mem::replace` of two, each with a clone of the old one read after; and
+the mutation `rc-written-through-mut-changed-in-place`.

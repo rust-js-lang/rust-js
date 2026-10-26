@@ -243,7 +243,9 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
   `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a
   fieldless variant, whose `Off` is a string, is reached through its place
-  instead, as a number is ([0147](../decisions/0147-replacing-through-mut.md)).
+  instead, as a number is; so is an `Rc`, whose owners share what it
+  points at: `*update.next.borrow_mut() = next` is `update.next = next`
+  ([0147](../decisions/0147-replacing-through-mut.md), amended).
 - **`Rc::clone` shares the one object,** as Rust's does. Where the crate
   reads an `Rc`'s counts, `Rc::strong_count` is `rc.strong`, counted where
   it's made, cloned and dropped, and the last drop runs what it points at's

@@ -130,9 +130,17 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
 
 /// May `ty` be a JS object, which a `&mut` replaces in place (ADR 0147)? A
 /// number, a string, an `Option` and a `Box` aren't: a `&mut` to one is its
-/// place's, and a string can't change.
+/// place's, and a string can't change. Nor an `Rc` or a `Weak`, which its
+/// owners share: a `&mut` to one is a cell, whose `*r = v` gives the place
+/// another (ADR 0147, amended).
 fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     match ty.kind() {
+        ty::Adt(..)
+            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()
+                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>
+        {
+            false
+        }
         ty::Adt(adt, _) => {
             !adt.is_box()
                 && ![LangItem::String, LangItem::Option]
