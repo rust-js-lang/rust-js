@@ -6,6 +6,14 @@ const extensions = ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$
 
 export const mutations: Mutation[] = [
   {
+    name: "std-body-callee-steps-unpassed",
+    breaks: "std's `Skip::rfold`, compiled, calls `self.try_rfold(..)`, which steps `I` from its back, but isn't given `I`'s `DoubleEndedIterator`: std's bodies don't compile (ADR 0927)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                                if fns.contains_key(&instance.def_id()) {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
+    replace: "                                if false {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "stepped-param-unseen",
     breaks: "an adapter's `next`, which steps its `I`, is given no dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",

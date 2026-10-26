@@ -282,12 +282,18 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         // A compiled std iterator's, `Peekable<I>`'s (ADR
                         // 0561): its compiled impl's, by what its manifest
                         // says it steps; a rewrite's, `len()`'s, nothing.
+                        // Of std's own bodies being compiled, one of them,
+                        // `Skip::rfold`'s `self.try_rfold(..)`: what it's given
+                        // passed on, as it steps it (ADR 0927).
                         if crate::lower::recognition::is_compiled_std_iterator(tcx, self_ty) {
                             if let Ok(Some(instance)) =
                                 crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
-                                && foreign.item(instance.def_id()).is_some()
                             {
-                                steps_through(&mut stepped, instance.def_id(), instance.args);
+                                if fns.contains_key(&instance.def_id()) {
+                                    pass_on(&mut passed, instance.def_id(), instance.args);
+                                } else if foreign.item(instance.def_id()).is_some() {
+                                    steps_through(&mut stepped, instance.def_id(), instance.args);
+                                }
                             }
                             // And, where it's asked of it, `rev()`'s, what its
                             // compiled methods a use site gives `$knowing`

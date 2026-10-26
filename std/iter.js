@@ -26,6 +26,7 @@ import {
   $peekableHint,
   $pretty,
   $rem,
+  $rev,
   $revAdvanceBy,
   $sizeHint,
   $some,
@@ -2384,6 +2385,121 @@ export function skipDoubleEndedIterator_nthBack(
   );
 }
 
+export function skipDoubleEndedIterator_tryRfold(
+  skip,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  RTry,
+  dropI,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  let [lower, upper$1] = $sizeHint(skip.iter, IIterator);
+  lower = Math.max(lower - skip.n, 0);
+  let option;
+  let other;
+  bb6: {
+    let upper$2;
+    let upper;
+    let n;
+    if (upper$1 == null) {
+      upper$2 = undefined;
+      n = lower;
+      upper = upper$2;
+      option = upper;
+      other = lower;
+      break bb6;
+    }
+    upper$2 = Math.max(upper$1 - skip.n, 0);
+    n = lower;
+    upper = upper$2;
+    option = upper;
+    other = lower;
+    if (upper$2 !== lower) {
+      break bb6;
+    }
+    if (lower === 0) {
+      const v = RTry.fromOutput(init);
+      dropFold?.(fold);
+      return v;
+    }
+    let lower$1 = lower;
+    const f = $dropping(
+      (acc, x) => {
+        lower$1 = (lower$1 - 1) >>> 0;
+        const r = fold(acc, x);
+        if (lower$1 === 0) {
+          return { TAG: "Break", _0: r };
+        }
+        const value = RTry.branch(r);
+        if (value.TAG === "Continue") {
+          return { TAG: "Continue", _0: value._0 };
+        }
+        const v = value._0;
+        return { TAG: "Break", _0: RTry.FromResidual().fromResidual(v) };
+      },
+      () => {
+        dropFold?.(fold);
+      },
+    );
+    const controlFlow = $tryFoldInto(
+      $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
+      init,
+      (a, b) => f(a, b),
+      $controlFlowTry,
+    );
+    $dispose(f);
+    if (controlFlow.TAG === "Continue") {
+      return RTry.fromOutput(controlFlow._0);
+    }
+    return controlFlow._0;
+  }
+  $assertFailed(
+    "Eq",
+    option == null ? "None" : `Some(${option})`,
+    other == null ? "None" : `Some(${other})`,
+  );
+}
+
+export function skipDoubleEndedIterator_rfold(
+  skip,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  dropI,
+  dropAAA,
+  dropFFF,
+  dropIItem,
+) {
+  const result = skipDoubleEndedIterator_tryRfold(
+    skip,
+    init,
+    $dropping(
+      (a, b) => fold(a, b),
+      () => {
+        dropFFF?.(fold);
+      },
+    ),
+    IIterator,
+    IDoubleEndedIterator,
+    $neverShortCircuitTry,
+    dropI,
+    dropAAA,
+    $dispose,
+    (neverShortCircuit) => {
+      dropAAA?.(neverShortCircuit);
+    },
+    dropIItem,
+  );
+  skip.return();
+  return result;
+}
+
 export function skipClone_clone(skip, IClone) {
   return $stdIterator({ iter: IClone.clone(skip.iter), n: skip.n }, skip.$steps);
 }
@@ -2589,6 +2705,131 @@ export function takeIDoubleEndedIterator_nthBack(
 
 export function takeRepeatTDoubleEndedIterator_nthBack(take, n, TClone, dropT) {
   return $nthDropping($lent(take), n, dropT, true);
+}
+
+export function takeIDoubleEndedIterator_tryRfold(
+  take,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  RTry,
+  dropI,
+  dropAcc,
+  dropFold,
+  dropR,
+  dropIItem,
+) {
+  let result;
+  bb14: {
+    if (take.n !== 0) {
+      const len = IExactSizeIterator.len(take.iter);
+      if (len > take.n) {
+        const nthBack = $nthBack(
+          $given(take.iter, IIterator, true, IDoubleEndedIterator),
+          (((len - take.n) >>> 0) - 1) >>> 0,
+          $some,
+          dropIItem,
+        );
+        if (nthBack == null) {
+          result = RTry.fromOutput(init);
+          break bb14;
+        }
+        dropIItem?.($someValue(nthBack));
+      }
+      const value = $tryFoldInto(
+        $rev($given(take.iter, IIterator, true, IDoubleEndedIterator)),
+        init,
+        (a, b) => fold(a, b),
+        RTry,
+      );
+      dropFold?.(fold);
+      return value;
+    }
+    result = RTry.fromOutput(init);
+  }
+  dropFold?.(fold);
+  return result;
+}
+
+export function takeRepeatTDoubleEndedIterator_tryRfold(
+  take,
+  init,
+  fold,
+  TClone,
+  RTry,
+  dropT,
+  dropAcc,
+  dropFold,
+  dropR,
+) {
+  const value = $tryFoldInto(take, init, (a, b) => fold(a, b), RTry);
+  dropFold?.(fold);
+  return value;
+}
+
+export function takeIDoubleEndedIterator_rfold(
+  take,
+  init,
+  fold,
+  IIterator,
+  IDoubleEndedIterator,
+  IExactSizeIterator,
+  dropI,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
+  let result;
+  bb14: {
+    if (take.n !== 0) {
+      const len = IExactSizeIterator.len(take.iter);
+      if (len > take.n) {
+        const nthBack = $nthBack(
+          $given(take.iter, IIterator, true, IDoubleEndedIterator),
+          (((len - take.n) >>> 0) - 1) >>> 0,
+          $some,
+          dropIItem,
+        );
+        if (nthBack == null) {
+          result = init;
+          break bb14;
+        }
+        dropIItem?.($someValue(nthBack));
+      }
+      const value = $foldBack($given(take.iter, IIterator, true, IDoubleEndedIterator), init, fold);
+      dropFold?.(fold);
+      return value;
+    }
+    result = init;
+  }
+  dropFold?.(fold);
+  dropI?.(take.iter);
+  return result;
+}
+
+export function takeRepeatTDoubleEndedIterator_rfold(
+  take,
+  init,
+  fold,
+  TClone,
+  dropT,
+  dropAcc,
+  dropFold,
+) {
+  return takeSpecTake_specFold(
+    take,
+    init,
+    fold,
+    { next: $nextSome },
+    (repeat) => {
+      repeat.return();
+    },
+    dropAcc,
+    dropFold,
+    dropT,
+  );
 }
 
 export function takeRepeatTExactSizeIterator_len(take, TClone, dropT) {

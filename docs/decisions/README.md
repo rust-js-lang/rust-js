@@ -711,6 +711,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0923 A `Result` given as an `IntoIterator` is its `Ok` value, as its `into_iter()` is](0923-a-result-given-as-items-is-its-ok-value.md)
 - [0925 A chain's `nth` drops what `b` passes over, and a compiled struct drops what it holds itself, never closed again](0925-a-compiled-struct-drops-itself.md)
 - [0926 What a call takes as an `IntoIterator` gives the `&mut`s its items are, so `zip(b)` of a `&mut [T]` steps a handle on each](0926-zip-of-a-mut-slice.md)
+- [0927 A held `Skip` and `Take` fold from their back by std's own `rfold`, and a std body is given what the std body it calls steps](0927-skip-and-take-fold-from-their-back-as-std-s.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

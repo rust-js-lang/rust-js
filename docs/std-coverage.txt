@@ -1008,7 +1008,7 @@
 + Rev::size_hint	safe
 - Rev::try_fold	safe
 - Rev::try_rfold	safe
-# Skip 9 of 11; bodies: 5 safe, 1 spec, 0 opaque, 5 memory, 0 none
+# Skip 11 of 11; bodies: 5 safe, 1 spec, 0 opaque, 5 memory, 0 none
 + Skip::count	safe
 + Skip::fold	safe
 + Skip::last	safe
@@ -1016,11 +1016,11 @@
 + Skip::next_back	memory
 + Skip::nth	safe
 + Skip::nth_back	memory
-- Skip::rfold	memory
++ Skip::rfold	memory
 + Skip::size_hint	memory
 + Skip::try_fold	spec
-- Skip::try_rfold	memory
-# Take 10 of 12; bodies: 5 safe, 4 spec, 0 opaque, 3 memory, 0 none
++ Skip::try_rfold	memory
+# Take 12 of 12; bodies: 5 safe, 4 spec, 0 opaque, 3 memory, 0 none
 + Take::count	memory
 + Take::fold	spec
 + Take::for_each	safe
@@ -1029,10 +1029,10 @@
 + Take::next_back	memory
 + Take::nth	safe
 + Take::nth_back	memory
-- Take::rfold	spec
++ Take::rfold	spec
 + Take::size_hint	safe
 + Take::try_fold	spec
-- Take::try_rfold	spec
++ Take::try_rfold	spec
 # SkipWhile 3 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + SkipWhile::fold	safe
 + SkipWhile::next	safe
