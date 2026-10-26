@@ -537,6 +537,17 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // hasn't given yet, each dropped in order, as a loop that leaves
             // early drops them (ADR 0098). MIR drops it as one value.
             ty::Adt(..) if let Some(item) = self.recognition.owned_items(ty) => self.drops_in(item, walk),
+            // std's struct compiled for this build, a `Scan`'s with std's
+            // structs alone, or a private one it holds, `FlattenCompat`:
+            // what its fields drop, which its own `close`, compiled, drops in
+            // their order (ADR 0934).
+            ty::Adt(adt, args)
+                if crate::lower::recognition::is_compiled_std_iterator(tcx, ty)
+                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>
+            {
+                let mut fields = adt.all_fields().map(|f| self.recognition.field_ty(f, args));
+                all(self, &mut fields, walk)
+            }
             // An adapter that holds a function, `map(f)`'s: its source closed,
             // then its function dropped (ADR 0485). A source it can't close
             // that has something to drop, as before.

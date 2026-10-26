@@ -454,6 +454,17 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
         .any(|&(name, method, _)| meaning_only(name) && compiled_provided_method(tcx, "Iterator", method) == Some(id))
 }
 
+/// Whether std's type `adt` has bodies `@rust-js/std` compiles for this
+/// build: a compiled iterator's, or a private struct one holds,
+/// `FlattenCompat` of a `Flatten`, a struct as the crate's are.
+pub(crate) fn has_compiled_bodies(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    !adt.is_local()
+        && compiled_std(tcx).iter().any(|&id| {
+            (tcx.impl_of_assoc(id))
+                .is_some_and(|imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
+        })
+}
+
 /// Whether `id` is the `Iterator` method that makes one of `HELD_COMPILED`'s
 /// adapters, `rev`: the one answer, of what's made in place.
 pub(crate) fn makes_held_compiled(tcx: TyCtxt<'_>, id: DefId) -> bool {

@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-bodies-part-drops-refused",
+    breaks: "a private struct std's compiled struct holds, `FlattenCompat` of a `Flatten`, holding what has a destructor, is refused where its fields are what drops (ADR 0934)",
+    file: "src/lower/drops/types.rs",
+    find: "                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
+    replace: "                    || false && crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^flat_map_drops with"],
+  },
+  {
+    name: "compiled-struct-drops-refused",
+    breaks: "std's struct compiled for this build, a `Scan` with std's structs alone, holding what has a destructor, is refused, `a std type holding a value with a destructor`, where its own `close` drops its fields (ADR 0934)",
+    file: "src/lower/drops/types.rs",
+    find: "                if crate::lower::recognition::is_compiled_std_iterator(tcx, ty)\n                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did()) =>\n",
+    replace: "                if false && (crate::lower::recognition::is_compiled_std_iterator(tcx, ty)\n                    || crate::lower::recognition::has_compiled_bodies(tcx, adt.did())) =>\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^scan_lazy_drops with"],
+  },
+  {
     name: "uncounted-weak-drops",
     breaks: "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",
     file: "src/lower/drops/types.rs",
