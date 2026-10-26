@@ -865,10 +865,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || matches!(ty.kind(), ty::Adt(adt, _)
                 if (super::representation::is_string_enum(self.tcx, *adt) || super::bindings::numbered(self.tcx, *adt))
                     && !self.has_user_impl(self.partial_eq_trait(), ty));
-        primitive.then(|| match Num::of(ty).is_some_and(Num::float) || any {
-            true => JsEq::Strict,
-            false => JsEq::SameValue,
-        })
+        if primitive {
+            return Some(match Num::of(ty).is_some_and(Num::float) || any {
+                true => JsEq::Strict,
+                false => JsEq::SameValue,
+            });
+        }
+        self.untagged_js_eq(ty)
+    }
+
+    /// Of an untagged enum whose `==` is derived, how JS's own comparison
+    /// agrees with it, if it does (ADR 0214, amended): its value is its
+    /// variant's payload, or a unit variant's literal, `null` or
+    /// `undefined`, each of a kind no other variant's is, as its
+    /// declaration's check holds of one a `==` tells apart; so two are one
+    /// variant where JS's comparison says they're alike, and equal where
+    /// their payloads are, where each payload's own comparison agrees with
+    /// its `==`. `Strict` where one's does only so, a float's.
+    fn untagged_js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {
+        let (adt, args) = self.untagged(ty)?;
+        if self.has_user_impl(self.partial_eq_trait(), ty) {
+            return None;
+        }
+        let mut eq = JsEq::SameValue;
+        for variant in adt.variants() {
+            match variant.fields.raw.as_slice() {
+                [] => {}
+                [field] => {
+                    let payload = self.field_ty(field, args);
+                    // One of its own type, through a reference: compared as
+                    // its fields are.
+                    if payload.peel_refs() == ty {
+                        return None;
+                    }
+                    if self.js_eq(payload)? == JsEq::Strict {
+                        eq = JsEq::Strict;
+                    }
+                }
+                _ => return None,
+            }
+        }
+        Some(eq)
     }
 
     /// Whether `ty` is equal only to itself (ADR 0864), as
@@ -1126,7 +1163,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // two `None`s are equal, whichever of `null` and `undefined`
                 // each is, and two `Some`s by `===`, as `==` can't, which
                 // makes `"1"` of `1` (ADR 0612, amended).
-                return Ok(match self.any_shape(inner) {
+                // Of an untagged enum's, too, whose `==` would make `"7"` of
+                // a number's `7` (ADR 0214, amended).
+                return Ok(match self.any_shape(inner) || self.untagged(inner).is_some() {
                     true => js::nullish_equal(a, b),
                     false => Expr::bin(Op::LooseEq, a, b),
                 });

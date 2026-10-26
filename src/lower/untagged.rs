@@ -240,6 +240,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if ty.is_bool() {
             return Some(Kind::Boolean);
         }
+        // The registry's symbol, `js::SymbolFor`, is a symbol, though Rust
+        // holds its key, a tuple struct's field (ADR 0634).
+        if self.is_symbol_for(ty) {
+            return Some(Kind::Symbol);
+        }
         if self.is_map(ty) {
             return Some(Kind::Class("Map".into(), None));
         }

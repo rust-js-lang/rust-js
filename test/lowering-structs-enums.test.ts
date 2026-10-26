@@ -230,6 +230,64 @@ pub fn told(query: Option<Query>) -> String {
   expect([lib.told("a=1"), lib.told({ a: 2 }), lib.told(undefined)]).toEqual(["text a=1", "parsed 2", "none"]);
 });
 
+// ADR 0214, amended: shared/ReactTypes' `ReactKey`, a string or the
+// optimistic key's symbol. A `js::SymbolFor` payload is a symbol, told by
+// `typeof`, not an array, though Rust's is a tuple struct of its key; and
+// an untagged enum of primitives no two of one kind, its `==` derived, is
+// compared by JS's `===`, an `Option` of one by `===` of its `?? null`s,
+// a nullable field's alone, as React's `child.key === key` is.
+test("an untagged enum's symbol is told by typeof, and its == is JS's ===", async () => {
+  const dir = fixture("untagged-symbol");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+use js::SymbolFor;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, PartialEq)]
+pub enum ReactKey {
+    Optimistic(SymbolFor<'static>),
+    Text(String),
+    Index(f64),
+}
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub key: RefCell<Option<ReactKey>>,
+}
+
+pub fn told(key: &ReactKey) -> String {
+    match key {
+        ReactKey::Optimistic(symbol) => format!("symbol {}", symbol.0),
+        ReactKey::Text(text) => format!("text {text}"),
+        ReactKey::Index(n) => format!("index {n}"),
+    }
+}
+
+pub fn same(a: &ReactKey, b: &ReactKey) -> bool {
+    a == b
+}
+
+pub fn same_key(a: &Fiber, b: &Fiber) -> bool {
+    *a.key.borrow() == *b.key.borrow()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  switch (typeof key) {\n    case "symbol":\n');
+  expect(js).toContain("  return a === b;\n");
+  // A nullable field's `None` is `null` (ADR 0586).
+  expect(js).toContain("  return a.key === b.key;\n");
+  expect(js).not.toContain("$eq");
+  const lib = await import(join(dir, "lib.js"));
+  const symbol = Symbol.for("react.optimistic_key");
+  expect([lib.told(symbol), lib.told("a"), lib.told(7)]).toEqual(["symbol react.optimistic_key", "text a", "index 7"]);
+  expect([lib.same(symbol, Symbol.for("react.optimistic_key")), lib.same("7", 7), lib.same(NaN, NaN), lib.same("a", "a")])
+    .toEqual([true, false, false, true]);
+  const fiber = (key: unknown) => ({ key });
+  expect([lib.sameKey(fiber(null), fiber(null)), lib.sameKey(fiber("7"), fiber(7)), lib.sameKey(fiber(null), fiber("a"))])
+    .toEqual([true, false, false]);
+});
+
 // ADR 0284: a tag may be `true` or `false`, react-dom's `FormStatus`
 // `{ pending: true, data, .. } | { pending: false, .. }`, as ReScript's
 // `@as(true)` is.

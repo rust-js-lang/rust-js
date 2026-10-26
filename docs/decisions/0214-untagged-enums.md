@@ -10,7 +10,9 @@ by [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): an
 Amended by [0676](0676-kind-tells-undefined-and-null.md): a variant
 without fields may be `undefined`, `#[rust_js::undefined]`, or `null`,
 `#[rust_js::null]`. Amended: a variant of a `RefCell` of an object is
-the object, of an `Rc` what it points at, below.
+the object, of an `Rc` what it points at, below. Amended (2026-10-26):
+a `js::SymbolFor` payload is a symbol, and a derived `==` of payloads
+JS's `===` compares is `===`.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -206,3 +208,42 @@ the diagnostics test's "variant of a RefCell the crate boxes" and "an Rc
 the crate counts"; its mutations are `untagged-ref-cell-refused`,
 `untagged-rc-refused`, `untagged-boxed-ref-cell-unrefused` and
 `untagged-counted-rc-unrefused`.
+
+## Amendment: a symbol is a symbol, and `==` of primitives is `===` (2026-10-26)
+
+shared/ReactTypes' `ReactKey`, `string | ReactOptimisticKey`, ported as
+an untagged enum of `Text(String)` and `Optimistic(SymbolFor)`, showed two
+gaps:
+
+- **A wrong answer**: a `js::SymbolFor` payload was told by
+  `Array.isArray`, as the tuple struct Rust holds its key in, where JS's
+  value is the registry's symbol (ADR 0634). A `match` whose first arm was
+  that variant read every symbol as the next variant's. It's a symbol now,
+  `typeof value === "symbol"`, which a `switch (typeof value)` tells too.
+- **`==` was `$eq(a.key, b.key)`**, a structural comparison, where React
+  writes `child.key === key`.
+
+**A derived `==` of an untagged enum whose every payload JS's own
+comparison compares as Rust's `==` does is that comparison**
+(`std_impls.rs`'s `js_eq`, of `untagged_js_eq`): its value is its
+variant's payload, or a unit variant's literal, `null` or `undefined`,
+each of a kind no other variant's is, which the enum's declaration's
+check holds of one a `==` tells apart, so two values are one variant
+where JS finds them alike, and equal where their payloads are. `===`,
+SameValueZero of `includes` and a `Map`'s keys too, but of a float's
+payload, whose `NaN` only `===` finds unequal. Of an `Option` of one,
+`(a ?? null) === (b ?? null)`, as of a value of any shape (ADR 0612,
+amended): `==` would make a string's `"7"` of a number's `7`. A nullable
+field's `None` is `null` already, so React's is `a.key === b.key`. An
+enum of a payload compared otherwise, a `Vec`'s, or of a hand-written
+`==`, is compared as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same answer;
+the symbol's kind, C, Rust's, where the JS was wrong.
+
+Held by the corpus's `untagged_eq_by_value.rs`, against native Rust,
+`test/lowering-structs-enums.test.ts`, "an untagged enum's symbol is told
+by typeof, and its == is JS's ===", run as JS, and mutations
+`untagged-eq-structural`, `untagged-eq-of-a-float-same-value`,
+`untagged-option-eq-loose`, `untagged-eq-of-a-payload-compared-otherwise`
+(`std_impls.rs`) and `untagged-symbol-for-an-array` (`untagged.rs`).

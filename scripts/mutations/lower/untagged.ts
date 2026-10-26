@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) if false => test,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
   },
+  {
+    name: "untagged-symbol-for-an-array",
+    breaks: "an untagged enum's `js::SymbolFor` payload is told by `Array.isArray`, as a tuple struct, so a symbol is read as another variant",
+    file: "src/lower/untagged.rs",
+    find: "        if self.is_symbol_for(ty) {\n            return Some(Kind::Symbol);\n",
+    replace: "        if false {\n            return Some(Kind::Symbol);\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "symbol is told by typeof"],
+  },
 ];

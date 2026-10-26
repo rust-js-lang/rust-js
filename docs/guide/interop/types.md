@@ -703,6 +703,13 @@ export function size(input) {
   A `&mut` to one is a place, as a `&mut f64` is: `*r = v` writes where
   the value is, as no payload can become another's in place
   ([ADR 0214](../../decisions/0214-untagged-enums.md)).
+  A `js::SymbolFor` payload is a symbol, `typeof value === "symbol"`. A
+  derived `==` of one whose every payload JS's `===` compares as Rust
+  does, a string, a number or a symbol, is `a === b`, as React's `child.key
+  === key` of its `ReactKey`; an `Option` of one, `(a ?? null) === (b ??
+  null)`, a nullable field's `a.key === b.key`; one holding a `Vec`
+  compares its items, `$eq(a, b)`
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended).
 
 ## Option and Result
 
