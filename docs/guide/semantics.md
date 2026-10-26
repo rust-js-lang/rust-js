@@ -396,7 +396,8 @@ in what `js::on_load!` runs, `if (enableGestureTransition) {
 ReactSharedInternals.G = null; }`; and as what a statement evaluates
 first, an `if`'s test, a `let`'s value or what's returned, its body
 before the statement and its value in the call's place, `if
-(didWarn[key])`. A shadow of `x`, `let held = held.as_ref().unwrap();`,
+(didWarn[key])`; one whose body only throws at its end is that throw,
+`throw exception;`, as nothing of the statement runs after it. A shadow of `x`, `let held = held.as_ref().unwrap();`,
 is a name of its own from there on, `const held$1 = $unwrap(held);`, so
 the thread-local is never set. One that returns before its end stays a closure called
 where it's made, whose `return` is its own, and so does one in what a

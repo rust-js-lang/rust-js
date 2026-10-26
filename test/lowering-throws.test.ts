@@ -139,3 +139,61 @@ for (const reason of [thenable, "text", 5, error]) {
   expect(ran.stderr).toBe("");
   expect(ran.stdout).toBe("true undefined\ntrue\n".repeat(4));
 });
+
+// React's ReactFiberThenable throws `SuspenseException`, a thread-local's
+// `Error`, as a match arm's value: `EXCEPTION.with(|exception|
+// js::throw(..))` was `return ((exception) => { throw exception; })(exception);`.
+// A closure called where it's made whose body only throws, what a
+// statement evaluates first, is its body: the statement never runs on
+// (ADR 0840, amended).
+test("a with whose closure throws, a match arm's value, is its throw", () => {
+  const { js, dir } = compiled("throw-with-tail", `use js::Error;
+
+thread_local! {
+    pub static EXCEPTION: &'static Error = js::error::new("suspended");
+}
+
+pub fn status(done: bool) -> f64 {
+    match done {
+        true => 1.0,
+        false => EXCEPTION.with(|exception| js::throw(exception.as_unknown())),
+    }
+}
+
+pub fn twice(done: bool) -> f64 {
+    let value = if done {
+        2.0
+    } else {
+        EXCEPTION.with(|exception| js::throw(exception.as_unknown()))
+    };
+    value * 2.0
+}
+
+pub fn found(items: &[f64]) -> f64 {
+    let value = EXCEPTION.with(|exception| {
+        for &item in items {
+            if item > 1.0 {
+                return item;
+            }
+        }
+        js::throw(exception.as_unknown())
+    });
+    value * 2.0
+}
+`);
+  expect(js).toContain(`export function status(done) {
+  if (done) {
+    return 1;
+  }
+  throw exception;
+}`);
+  writeFileSync(join(dir, "run.mjs"), `import { exception, found, status, twice } from "./lib.js";
+console.log(status(true), twice(true), found([3]));
+for (const f of [status, twice, found]) {
+  try { f(f === found ? [] : false); } catch (x) { console.log(x === exception); }
+}
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe("1 4 6\ntrue\ntrue\ntrue\n");
+});

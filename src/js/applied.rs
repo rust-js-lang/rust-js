@@ -110,7 +110,12 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         return None;
     };
     let (last, before) = body.split_last()?;
-    if !matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0 {
+    // One that only throws at its end, returning nowhere, `throw exception;`
+    // of a thread-local's `with(|e| js::throw(e))`: its body is the
+    // statement, as nothing of the statement runs after the call (ADR 0840,
+    // amended).
+    let throws = matches!(last.kind, StmtKind::Throw(_)) && !returns(body).0;
+    if !throws && (!matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0) {
         return None;
     }
     // What else the statement reads or declares, which what the body
@@ -120,6 +125,9 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         *call = Expr::undefined();
     }
     let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone(), true)?;
+    if throws {
+        return Some(inlined);
+    }
     let Some(Stmt {
         kind: StmtKind::Return(Some(value)),
         ..

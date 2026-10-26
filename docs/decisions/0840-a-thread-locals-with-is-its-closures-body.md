@@ -1,6 +1,6 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
-Status: Accepted; amended (in a closure's body too). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+Status: Accepted; amended (in a closure's body too; one that only throws). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -231,3 +231,23 @@ had been put in place setting that variable; it's renamed alike.
   again, `items += bump(4)`, a `let`.
 - Mutations `applied-shadow-kept`, `applied-shadow-set-again-const` and
   `applied-shadow-not-apart` (`js/applied.ts`).
+
+## Amendment: one that only throws is its throw
+
+React's ReactFiberThenable throws its `SuspenseException`, a
+thread-local's `Error`, as a match arm's value: `false =>
+EXCEPTION.with(|exception| js::throw(exception.as_unknown()))` was
+`return ((exception) => { throw exception; })(exception);`, as only a
+closure that returns its value at its end was its body.
+
+**A closure called where it's made, as what a statement evaluates first,
+whose body ends with a `throw` and returns nowhere, is its body in the
+statement's place**: `throw exception;`. The call throws before anything
+else of the statement runs, so nothing of the statement is left. One that
+returns a value before it throws, from a loop say, stays a closure called
+where it's made, as one that returns before its end does.
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)): what runs is the
+same. Tested by `test/lowering-throws.test.ts`'s "a with whose closure
+throws", run in Node; its mutations are `applied-throw-kept-called` and
+`applied-throw-after-return`.
