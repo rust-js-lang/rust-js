@@ -515,7 +515,7 @@ export const mutations: Mutation[] = [
     name: "written-returns-made-a-conditional",
     breaks: "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(one.target == result && written_returns((then, otherwise), returns)) =>\n",
+    find: "                    && !(one.target == result && written_returns((then, otherwise), returns, span)) =>\n",
     replace: "                    && true =>\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
@@ -526,5 +526,13 @@ export const mutations: Mutation[] = [
     find: "                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined\n",
     replace: "                    ExprKind::Null | ExprKind::Undefined\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable result tested equal to a None given is null"],
+  },
+  {
+    name: "written-returns-of-a-returned-if",
+    breaks: "`if __DEV__ { ..; return if c { a } else { None }; } None`, whose branches MIR assigns the function's value, stays `if (c) { return a; }` and the tail's `return null;`, not the conditional returned (ADR 0657, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, span));\n",
+    replace: "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, js::Span::NONE));\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
 ];

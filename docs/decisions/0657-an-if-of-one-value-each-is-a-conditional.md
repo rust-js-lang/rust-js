@@ -148,3 +148,16 @@ stays an `if`, as above. Case N: the same branch's value is returned.
 Held by `test/lowering-written-branches.test.ts`, "an if of returns the
 program wrote stays an if", run in JS, and the mutation
 `returned-if-a-statement` (`tidy/jumps/tails.ts`).
+
+The port's own shape, the `return if` in `if __DEV__ { .. }` after a
+warning given once and the function's tail `None` after it, still printed
+`if (refProp !== undefined) { return refProp; }` and the tail's `return
+null;`: there MIR doesn't return from each branch but assigns the
+function's value in each, and `branch_values`' rule above, that an `if`
+whose each branch's value is a written `return`'s stays an `if`, took
+the `return` of the whole `if` for one in each branch. **A branch's
+`return` is the program's only where the `if` isn't inside it**
+(`written_returns`, given the `if`'s span): `return refProp !== undefined
+? refProp : null;`. Held by the same test, its `ref_of` the port's shape,
+run in JS with `__DEV__` set, and the mutation
+`written-returns-of-a-returned-if` (`tidy/branches.ts`).

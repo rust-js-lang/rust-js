@@ -288,7 +288,7 @@ pub(super) fn branch_values(
                     // `return` the program wrote, `if c { return a; }
                     // return b;`, MIR's one `return`: an `if` of `return`s
                     // (ADR 0657, amended).
-                    && !(one.target == result && written_returns((then, otherwise), returns)) =>
+                    && !(one.target == result && written_returns((then, otherwise), returns, span)) =>
             {
                 // A value the program wrote with an `if`, not `&&` or `||`.
                 let written_if = written_branches(span, then, otherwise, elses);
@@ -444,13 +444,15 @@ pub(super) fn one_assignment(
     })
 }
 
-/// Whether each branch's statements are of a `return` the program wrote,
-/// of `returns`: `if c { return a; } return b;`'s, whose returns MIR joins
-/// into one, each branch setting the function's value.
-fn written_returns((then, otherwise): (&[Stmt], &[Stmt]), returns: &[js::Span]) -> bool {
-    [then, otherwise]
-        .iter()
-        .all(|b| b.iter().all(|s| written(returns, s.span)))
+/// Whether each branch's statements are of a `return` the program wrote
+/// in the branch, of `returns`: `if c { return a; } return b;`'s, whose
+/// returns MIR joins into one, each branch setting the function's value.
+/// Not of a `return` of the `if` at `span`, `return if c { a } else { b
+/// };`, a value the program wrote, its conditional returned.
+fn written_returns((then, otherwise): (&[Stmt], &[Stmt]), returns: &[js::Span], span: js::Span) -> bool {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, span));
+    [then, otherwise].iter().all(|b| b.iter().all(in_branch))
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.

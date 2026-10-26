@@ -559,6 +559,7 @@ pub fn footer(href: Option<&str>) -> String {
 // f(parent) : null;` (ADR 0657, amended). A value the program wrote with an
 // `if` is still a conditional.
 test("an if of returns the program wrote stays an if", async () => {
+  (globalThis as { __DEV__?: boolean }).__DEV__ = true;
   const { js, lib } = await compiled("written-if-of-returns", `use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -588,13 +589,34 @@ pub fn depth_or(fiber: &Fiber) -> u32 {
     if let Some(parent) = &*fiber.parent.borrow() { parent.depth } else { 0 }
 }
 
-pub const DEV: bool = true;
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
 
-// React's elementRefGetterWithDeprecationWarning: a \`return\` of an \`if\`,
-// the value the program wrote, is the conditional returned.
+thread_local! {
+    static DID_WARN_ABOUT_ELEMENT_REF: &'static js::Dict<bool> = js::dict::new();
+}
+
+// React's elementRefGetterWithDeprecationWarning, as its port writes it: a
+// \`return\` of an \`if\` in \`if __DEV__ { .. }\`, after a warning given once,
+// the function's tail \`None\`. The value the program wrote is the
+// conditional returned.
 #[cfg_attr(rust_js, rust_js::nullable)]
-pub fn ref_of(props: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
-    if DEV {
+pub fn ref_of(props: Option<&'static js::Unknown>, name: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if __DEV__ {
+        let component_name: Option<String> = unsafe { js::cast(name) };
+        let key = component_name.as_deref().unwrap_or("null");
+        if !DID_WARN_ABOUT_ELEMENT_REF.with(|did_warn_about_element_ref| {
+            js::dict::get(did_warn_about_element_ref, key).is_some_and(|&warned| warned)
+        }) {
+            DID_WARN_ABOUT_ELEMENT_REF.with(|did_warn_about_element_ref| {
+                js::dict::set(did_warn_about_element_ref, key, true);
+            });
+            println!("Accessing element.ref was removed in React 19.");
+        }
+
+        // An undefined \`element.ref\` is coerced to \`null\` for
+        // backwards compatibility.
         let ref_prop = js::get(props, "ref");
         return if !js::strict_equals(ref_prop, None::<&js::Unknown>) {
             ref_prop
@@ -619,11 +641,11 @@ pub fn ref_kept(props: Option<&'static js::Unknown>, other: Option<&'static js::
   expect(js).toContain("  return parent != null ? parent.depth : 0;\n");
   // The \`?? null\` a nullable function's result has, gone where the test
   // shows the value isn't \`undefined\` (ADR 0620, amended).
-  expect(js).toContain("    return refProp !== undefined ? refProp : null;\n");
+  expect(js).toContain("    const refProp = props.ref;\n    return refProp !== undefined ? refProp : null;\n  }\n  return null;\n");
   expect(js).toContain("  if (refProp !== undefined) {\n    return refProp;\n  }\n  return other ?? null;\n");
   const root = { depth: 0, parent: null };
   const leaf = { depth: 1, parent: root };
   expect([lib.rootName(leaf as never), lib.rootName({ depth: 1, parent: null } as never), lib.rootName({ depth: 2, parent: root } as never), lib.depthOr(leaf as never), lib.depthOr(root as never)]).toEqual(["root", null, "two", 0, 0]);
-  expect([lib.refOf({ ref: 3 } as never), lib.refOf({ ref: null } as never), lib.refOf({} as never)]).toEqual([3, null, null]);
+  expect([lib.refOf({ ref: 3 } as never, "A" as never), lib.refOf({ ref: null } as never, "A" as never), lib.refOf({} as never, undefined as never)]).toEqual([3, null, null]);
   expect([lib.refKept({ ref: 3 } as never, 4 as never), lib.refKept({ ref: null } as never, 4 as never), lib.refKept({} as never, undefined as never)]).toEqual([3, null, null]);
 });
