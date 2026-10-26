@@ -276,7 +276,9 @@ pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(i32)) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  saved = button.onclick;\n");
-  expect(js).toContain("    return saved === now;\n");
+  // A copy of the module's variable, as reading the binding's property
+  // may run a getter, which may set it (ADR 0277, amended).
+  expect(js).toContain("    return saved$1 === now;\n");
   expect(js).toContain("button.onclick = (event) => {\n    seen(event.clientX);\n  };");
   const { click, keep, replace, same } = await import(join(dir, "lib.js"));
   const button: any = {};

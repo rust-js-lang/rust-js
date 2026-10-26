@@ -85,8 +85,9 @@ export function show(view, state) {
  * made with, so this runs after `show` too.
  */
 export function setTheme(view, dark) {
+  const theme$1 = theme;
   view.dispatch({
-    effects: theme.reconfigure(themeFor(dark)),
+    effects: theme$1.reconfigure(themeFor(dark)),
   });
 }
 //# sourceMappingURL=codemirror.js.map

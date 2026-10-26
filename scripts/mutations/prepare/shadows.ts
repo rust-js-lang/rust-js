@@ -1,0 +1,71 @@
+// Mutations of src/prepare/shadows.rs (ADR 0093).
+import type { Mutation } from "../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "outer-shadow-read-past-a-call",
+    breaks: "a copy of a module's variable read after a call in its statement, `bump() < count$1`, is the variable, which the call changed (ADR 0277, amended)",
+    file: "src/prepare/shadows.rs",
+    find: "            let ok = read_first(callee, alias, ran) && args.iter().all(|arg| read_first(arg, alias, ran));\n            *ran = true;\n",
+    replace: "            let ok = read_first(callee, alias, ran) && args.iter().all(|arg| read_first(arg, alias, ran));\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable.rs$"],
+  },
+  {
+    name: "outer-shadow-read-before-a-call-copied",
+    breaks: "a copy of a module's variable read only before anything runs, `if (holder$1 != null) { bump(holder$1); }`, stays copied, not the variable",
+    file: "src/prepare/shadows.rs",
+    find: "        return !read || !*ran;\n",
+    replace: "        return !read;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_field_derive_meets|let_else_guard_returns).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "shadow-of-outer-variable-aliased",
+    breaks: "a local copy of a module's variable, `const count$1 = count;`, is taken for the variable, which a call then changes, so `let count = COUNT.get(); bump(); count` gives the new count (ADR 0277, amended)",
+    file: "src/prepare/shadows.rs",
+    find: "        let seen =\n            own.contains(&of) || after(body, &alias).is_some_and(|rest| read_before_code(rest, &alias, &mut false));\n",
+    replace: "        let seen = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable.rs$"],
+  },
+  {
+    name: "alias-of-another-name",
+    breaks: "`let kept = text` is `text`, not the name written",
+    file: "src/prepare/shadows.rs",
+    find: "                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)",
+    replace: "                        && !alias.is_empty()",
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+  },
+  {
+    name: "shadow-in-loop-aliased",
+    breaks: "a shadow a loop sets again is the variable, a closure of each turn reading the last",
+    file: "src/prepare/shadows.rs",
+    find: "(sets.is_empty() || !looped && sets.iter().all(|&set| set < at))",
+    replace: "(sets.is_empty() || sets.iter().all(|&set| set < at))",
+    tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
+  },
+  {
+    name: "closure-shadow-kept",
+    breaks: "a closure's parameter shadowed by its own value is `const item$1 = item`",
+    file: "src/prepare/shadows.rs",
+    find: "            shadows(body, &own);\n",
+    replace: "",
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
+  },
+  {
+    name: "shadow-kept",
+    breaks: "`let text = text.clone()` is `const text$1 = text`, not `text`",
+    file: "src/prepare/shadows.rs",
+    find: "    shadows(&mut function.body, &own);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "closure-declared-shadow-kept",
+    breaks: "a closure's loop variable shadowed by its cast, `let arg: &JsObject = unsafe { js::cast(arg) };`, is `const arg$1 = arg;`, not `arg`",
+    file: "src/prepare/shadows.rs",
+    find: "                    own.extend(pattern.names().into_iter().map(str::to_string));\n",
+    replace: "",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a closure's loop variable shadowed by its own value"],
+  },
+];

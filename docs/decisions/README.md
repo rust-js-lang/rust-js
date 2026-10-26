@@ -296,7 +296,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](0274-next-data-fetching.md)
 - [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0861: a function's own parameter)*
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
-- [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md)
+- [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md) *(amended: another's variable only where nothing runs before it's read)*
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
 - [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md)
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md)

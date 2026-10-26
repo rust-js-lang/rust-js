@@ -11,6 +11,7 @@ use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp}
 mod catches;
 mod initializers;
 mod reclaim;
+mod shadows;
 mod truths;
 mod undefined_keys;
 
@@ -496,26 +497,7 @@ fn checked_item(checked: &Expr, other: &Expr) -> bool {
 /// A function made readable.
 fn prepared(function: &mut js::Function) {
     function_body(&mut function.params, &mut function.body);
-    shadows(&mut function.body, None);
-    // A closure's own parameter, shadowed in it, or a variable it declares,
-    // `for (const arg of args)`'s: nothing outside it sets one (ADR 0853).
-    js::each_expr_mut(&mut function.body, &mut |e| {
-        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
-            let mut own: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
-            js::each_block_mut(body, &mut |stmts| {
-                for stmt in stmts.iter() {
-                    match &stmt.kind {
-                        StmtKind::Const(name, _) | StmtKind::Let(name, _) => _ = own.insert(name.clone()),
-                        StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                            own.extend(pattern.names().into_iter().map(str::to_string));
-                        }
-                        _ => {}
-                    }
-                }
-            });
-            shadows(body, Some(&own));
-        }
-    });
+    shadows::function(function);
     tested_constants(&mut function.body);
     unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
@@ -1032,113 +1014,6 @@ fn unread(body: &mut Vec<Stmt>) {
                 if !read.contains(name) && value.reads_only_vars())
         });
     });
-}
-
-/// `const n$1 = n;`, Rust's `let n = n;`, a variable shadowed by its own
-/// value, is `n` itself: `<Type />` for `let Type = from_unknown(Type)`,
-/// `content` for `let content = content.clone()`. Only where `n` holds
-/// that value wherever `n$1` is read: nothing sets `n` after it, nor in a
-/// closure, nor where a loop runs it again. In a closure, `own` are its
-/// parameters, the only ones aliased: what's outside it, it doesn't see set.
-fn shadows(body: &mut Vec<Stmt>, own: Option<&HashSet<String>>) {
-    while let Some((alias, of)) = shadow(body, own) {
-        js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
-                e.kind = ExprKind::Var(of.clone());
-            }
-        });
-        js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| {
-                !matches!(&s.kind, StmtKind::Const(name, value)
-                if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
-            });
-        });
-    }
-}
-
-/// A `const n$1 = n;` that `shadows` makes `n`, and `n`.
-fn shadow(body: &[Stmt], own: Option<&HashSet<String>>) -> Option<(String, String)> {
-    // What closures set, and what their parameters are named, which a
-    // name read in them would mean instead.
-    let mut in_closures = js::Writes::of(body).replaced_in_closures;
-    js::each_expr(body, &mut |e| {
-        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
-            in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-        }
-    });
-    let mut walk = Walk::default();
-    walk.stmts(body, false);
-    walk.shadows.into_iter().find_map(|(at, looped, alias, of)| {
-        let sets: Vec<usize> = walk
-            .sets
-            .iter()
-            .filter(|(_, name)| *name == of)
-            .map(|&(set, _)| set)
-            .collect();
-        let kept = !in_closures.contains(&of) && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at));
-        let owned = own.is_none_or(|own| own.contains(&of));
-        (kept && owned).then_some((alias, of))
-    })
-}
-
-/// The function's statements in order, outside its closures: each
-/// `const n$1 = n;`, where, and whether in a loop, and each variable set.
-#[derive(Default)]
-struct Walk {
-    at: usize,
-    shadows: Vec<(usize, bool, String, String)>,
-    sets: Vec<(usize, String)>,
-}
-
-impl Walk {
-    fn stmts(&mut self, stmts: &[Stmt], looped: bool) {
-        for stmt in stmts {
-            self.at += 1;
-            match &stmt.kind {
-                StmtKind::Const(alias, value) => {
-                    if let ExprKind::Var(of) = &value.kind
-                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
-                    {
-                        self.shadows.push((self.at, looped, alias.clone(), of.clone()));
-                    }
-                }
-                StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => {
-                    if let ExprKind::Var(name) = &target.kind {
-                        self.sets.push((self.at, name.clone()));
-                    }
-                }
-                StmtKind::If(_, a, b) => {
-                    self.stmts(a, looped);
-                    if let Some(b) = b {
-                        self.stmts(b, looped);
-                    }
-                }
-                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } => self.stmts(body, true),
-                StmtKind::For { name, body, .. } => {
-                    self.sets.push((self.at, name.clone()));
-                    self.stmts(body, true);
-                }
-                StmtKind::Labeled(_, body) => self.stmts(body, looped),
-                StmtKind::Switch { cases, default, .. } => {
-                    js::case_lists(cases, default).for_each(|body| self.stmts(body, looped));
-                }
-                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                    self.stmts(a, looped);
-                    self.stmts(b, looped);
-                }
-                StmtKind::Let(..)
-                | StmtKind::Destructure { .. }
-                | StmtKind::Expr(_)
-                | StmtKind::Break(_)
-                | StmtKind::Continue(_)
-                | StmtKind::Directive(_)
-                | StmtKind::Comments
-                | StmtKind::Return(_)
-                | StmtKind::Throw(_)
-                | StmtKind::Function(_) => {}
-            }
-        }
-    }
 }
 
 /// `Object.fromEntries([["/index.html", code], ..])`, each key a string
