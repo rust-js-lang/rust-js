@@ -56,7 +56,9 @@ without them, std's struct stepped by `next` where Rust asks a `Skip`'s
   into a local (`captured_place`); a trait std keeps private,
   `SpecTake`, has its impls' methods compiled.
 - **Std's struct is dropped the one way, by closing it**
-  (`dropped_by_closing`), once, so a `Peekable` its compiled `fold` took
+  (`dropped_by_closing`), once: one that's std's wherever it's made, a
+  `Peekable` or a `Fuse`, as an adapter held as std's and made in place
+  as the recognizers' chain is already, so a `Peekable` its compiled `fold` took
   isn't dropped again by its fields. **One given whole to `extend` is
   dropped after**, as `extend` drops what it's given. `$closing` passes
   on its iterator's own `count`. **`count()` of a type parameter, or of

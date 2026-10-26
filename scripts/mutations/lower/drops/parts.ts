@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "std-struct-dropped-by-parts",
     breaks: "a `Peekable` std's compiled `fold` took is dropped again by its fields after, `drop e` twice (ADR 0913)",
     file: "src/lower/drops/parts.rs",
-    find: "            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n",
+    find: "            || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n                && !crate::lower::recognition::is_held_compiled(self.tcx, self.reveal(ty)))",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },

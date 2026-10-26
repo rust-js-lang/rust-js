@@ -12,9 +12,7 @@ function pointDebug_fmt(point) {
 
 function main() {
   const names = ["a", "b"];
-  const owned = Iterator.from(names)
-    .map((s) => s + "!")
-    .toArray();
+  const owned = Array.from(names).map((s) => s + "!");
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
 
   const counts = [1, 2, 3];
