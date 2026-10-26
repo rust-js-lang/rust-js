@@ -170,7 +170,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0149 A `String` changed in place is given a new string, by its byte offsets](0149-string-editing.md)
 - [0150 Splitting and searching by a pattern, as Rust searches](0150-string-patterns.md)
 - [0151 Any function taken as a value is the arrow that calls it](0151-called-function-values.md)
-- [0152 A `&mut` std hands out to a number or a string is a handle on it](0152-std-item-handles.md)
+- [0152 A `&mut` std hands out to a number or a string is a handle on it](0152-std-item-handles.md) *(amended: `as_mut()` through a handle a call gave)*
 - [0153 Collection and cell methods, and `to_vec()` cloning what it copies](0153-collection-and-cell-methods.md) *(amended: a `T: Clone`'s `to_owned()` is its `clone()`)*
 - [0154 Number methods, and parsing that stops where Rust's stops](0154-number-methods.md)
 - [0155 An integer's checked, wrapping, overflowing and saturating families](0155-integer-families.md)

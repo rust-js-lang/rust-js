@@ -65,3 +65,16 @@ whatever it's given to works unchanged.
 - A handle is an object per item: `iter_mut()` as a value allocates, where
   an index loop doesn't.
 - The `&mut m` loop of numbers, which threw, writes the map.
+
+## Amendment: `as_mut()` through a handle a call gave (#323)
+
+`o.as_mut()` of an `Option` of a `Box`, a number or a cell is a handle on
+its place where it's `Some`. Of one a call gave a `&mut` to,
+`self.child_mut(side).as_mut()`, the call's value is itself a handle, `{
+get value(), set value(v) }`, and it was refused: TheAlgorithms/rust's AVL
+tree's `rebalance`. **That handle's `value` is the place**, the handle held
+once, `const handle = Node.childMut(node, left)`, and the `Some`'s handle
+reads and writes `handle.value`. Held by the corpus case
+`as_mut_through_a_handle`, which changes a child's box in place and
+replaces it, and the mutation `as-mut-through-a-handle-refused`.
+

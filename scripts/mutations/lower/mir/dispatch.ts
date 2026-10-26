@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "as-mut-through-a-handle-refused",
+    breaks: "`as_mut()` of an `Option` a call gave a `&mut` to, a handle, is refused, its `value` not taken for the place (#323)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            [handle] if self.is_cell(given) => {\n",
+    replace: "            [handle] if self.is_cell(given) && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^as_mut_through_a_handle.rs$"],
+  },
+  {
     name: "defined-unread",
     breaks: "`js::is_defined(set_immediate)` is a call of `setImmediate`'s binding, not a `typeof`",
     file: "src/lower/mir/dispatch.rs",
@@ -246,8 +254,8 @@ export const mutations: Mutation[] = [
     name: "mir-option-as-mut-refused",
     breaks: "MIR's `o.as_mut()` of an `Option<Box<T>>` or of a number is refused",
     file: "src/lower/mir/dispatch.rs",
-    find: "            if known == Std::Pointee\n                && let Some(item) = self.option_of(receiver)\n",
-    replace: "            if false\n                && let Some(item) = self.option_of(receiver)\n",
+    find: "        let Some(item) = self.option_of(receiver) else {\n            return Ok(None);\n        };\n",
+    replace: "        let Some(item) = self.option_of(receiver).filter(|_| false) else {\n            return Ok(None);\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
@@ -335,8 +343,8 @@ export const mutations: Mutation[] = [
     name: "option-as-mut-generic-unboxed",
     breaks: "`o.as_mut()` of an `Option` of a generic `T` is a handle on the `Option`, not on what its `Some` holds, so a `T` that looks like `None` is read boxed",
     file: "src/lower/mir/dispatch.rs",
-    find: "                let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));\n",
-    replace: "                let held = (false && self.boxed_payload(item)).then(|| self.some_value(place.clone()));\n",
+    find: "        let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));\n",
+    replace: "        let held = (false && self.boxed_payload(item)).then(|| self.some_value(place.clone()));\n",
     tests: ["test/corpus.test.ts", "-t", "^option_as_mut_generic.rs$"],
   },
   {

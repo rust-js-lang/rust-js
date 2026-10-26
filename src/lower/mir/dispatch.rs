@@ -1061,6 +1061,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// `o.as_mut()` of an `Option`, `receiver`, of what a `&mut` to is a
+    /// cell, a number or a `Box`: a handle on its place where it's `Some`; of
+    /// a generic `T`'s, on what its `Some` holds (ADR 0051). Its place the
+    /// `Option`'s, or through a handle a call gave on it, `child_mut(side)`'s,
+    /// of type `given`, that handle's `value`, the handle held (#323). None
+    /// of another receiver.
+    fn option_as_mut(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (receiver, given): (Ty<'tcx>, Ty<'tcx>),
+        values: &[Value<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let Some(item) = self.option_of(receiver) else {
+            return Ok(None);
+        };
+        let place = match values {
+            [Value::Ref(place)] if fixed_place(place) => place.clone(),
+            [handle] if self.is_cell(given) => {
+                let handle = self.value_expr(handle.clone(), span)?;
+                let handle = match handle.reads_same() {
+                    true => handle,
+                    false => {
+                        self.flush(state, out)?;
+                        self.spill("handle", handle, out)
+                    }
+                };
+                Expr::held(handle)
+            }
+            _ => return Ok(None),
+        };
+        let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
+        let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
+        let some = self.value_expr(Value::Ref(held.unwrap_or(place)), span)?;
+        Ok(Some(Expr::cond(none, Expr::undefined(), some)))
+    }
+
     /// A std function rust-js knows, given what MIR made of its arguments.
     #[allow(clippy::too_many_arguments)]
     fn mir_std_call(
@@ -1142,18 +1180,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => handles,
                 }));
             }
-            // `o.as_mut()` of an `Option` of what a `&mut` to is a cell, a
-            // number or a `Box`: a handle on its place where it's `Some`; of
-            // a generic `T`'s, on what its `Some` holds (ADR 0051).
             if known == Std::Pointee
-                && let Some(item) = self.option_of(receiver)
-                && let [Value::Ref(place)] = values.as_slice()
-                && fixed_place(place)
+                && let Some(handle) = self.option_as_mut(state, (receiver, arg_tys[0]), &values, span, out)?
             {
-                let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
-                let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
-                let some = self.value_expr(Value::Ref(held.unwrap_or_else(|| place.clone())), span)?;
-                return Ok(Value::Expr(Expr::cond(none, Expr::undefined(), some)));
+                return Ok(Value::Expr(handle));
             }
             if !known.gives_its_cell() {
                 let path = tcx.def_path_str(def_id);
