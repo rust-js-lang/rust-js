@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-counted-rc-unrefused",
+    breaks: "an untagged enum's variant of an `Rc` the crate counts, `{ value, strong, weak }`, is tested `Array.isArray`, which it never is (ADR 0214, amended)",
+    file: "src/lower/analysis.rs",
+    find: "        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)\n            && counted.counts(tcx, pointee)\n",
+    replace: "        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)\n            && counted.counts(tcx, pointee) && false\n",
+    tests: ["test/diagnostics.test.ts", "-t", "variant of an Rc the crate counts"],
+  },
+  {
     name: "initializer-imports-unnamed",
     breaks: "a static of a module's binding, `static NOTIFY: fn() -> f64 = toast`, names no import, and lowering it panics",
     file: "src/lower/analysis.rs",

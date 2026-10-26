@@ -816,6 +816,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         ));
         return None;
     }
+    // An untagged enum's variant of an `Rc` it counts, `{ value, strong,
+    // weak }`, which JS can't tell by what it points at (ADR 0214).
+    let mut told = true;
+    for (span, held) in super::untagged::held_payloads(tcx) {
+        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)
+            && counted.counts(tcx, pointee)
+        {
+            let why = "counted, `{ value, strong, weak }`, as its counts are read or its last owner runs a destructor";
+            tcx.dcx().span_err(span, super::untagged::boxed_payload(held, why));
+            told = false;
+        }
+    }
+    if !told {
+        return None;
+    }
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {

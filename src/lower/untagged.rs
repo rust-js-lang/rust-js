@@ -218,6 +218,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
         let ty = ty.peel_refs();
         let ty = ty.boxed_ty().unwrap_or(ty);
+        // An `Rc` is what it points at, and a `RefCell` of an object the
+        // object, the array a `RefCell<Vec<T>>` is (ADRs 0844, 0863): of
+        // one that's a box where the crate's code has it, `{ value }` or
+        // counted, refused once that's known (`held_payloads`).
+        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {
+            return self.untagged_kind(pointee);
+        }
+        if let ty::Adt(cell, args) = ty.kind()
+            && super::recognition::is_std_def(self.tcx, cell.did(), StdItem::RefCell)
+            && super::drops::holds_itself(self.tcx, args.type_at(0))
+        {
+            return self.untagged_kind(args.type_at(0));
+        }
         if self.is_string_like(ty) || ty.is_char() {
             return Some(Kind::String);
         }
@@ -669,6 +682,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .find(|other| other.def_id != variant.def_id && kind_of(other).is_some_and(|k| k.overlaps(&own)))
             .map(|other| other.name.to_string())
     }
+}
+
+/// Each `Rc` and `RefCell` a variant of one of the crate's untagged enums
+/// holds, its payload or what's in it, which `untagged_kind` takes as the
+/// value it is, the object an `Rc` points at and a `RefCell` of an object
+/// holds (ADRs 0844, 0863), by the variant: where the crate has one as a
+/// box, a counted `Rc`, `{ value, strong, weak }`, or a `RefCell` that's
+/// `{ value }`, JS can't tell its variant by its kind, refused once that's
+/// known.
+pub(super) fn held_payloads<'tcx>(tcx: TyCtxt<'tcx>) -> Vec<(rustc_span::Span, Ty<'tcx>)> {
+    let mut held = Vec::new();
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        if tcx.def_kind(def_id) != DefKind::Enum || !bindings::is_untagged(tcx, def_id.to_def_id()) {
+            continue;
+        }
+        let args = ty::GenericArgs::identity_for_item(tcx, def_id);
+        for variant in tcx.adt_def(def_id).variants() {
+            let [field] = &variant.fields.raw[..] else { continue };
+            let mut ty = field.ty(tcx, args).skip_normalization().peel_refs();
+            loop {
+                ty = ty.boxed_ty().unwrap_or(ty);
+                if let Some(pointee) = super::recognition::rc_pointee(tcx, ty) {
+                    held.push((tcx.def_span(variant.def_id), ty));
+                    ty = pointee;
+                    continue;
+                }
+                if let ty::Adt(cell, cell_args) = ty.kind()
+                    && super::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell)
+                    && super::drops::holds_itself(tcx, cell_args.type_at(0))
+                {
+                    held.push((tcx.def_span(variant.def_id), ty));
+                }
+                break;
+            }
+        }
+    }
+    held
+}
+
+/// The error of a variant whose payload's `held`, an `Rc` or a `RefCell`
+/// (`held_payloads`), is a box where the crate has it.
+pub(super) fn boxed_payload(held: Ty<'_>, why: &str) -> String {
+    format!(
+        "rust-js: JS can't tell this variant's `{held}` from another variant's value: in this crate it's {why}, not the value it holds, which an untagged enum's variant is told apart by (ADR 0214)"
+    )
 }
 
 /// Report each untagged enum JS couldn't tell the variants of apart, and

@@ -440,6 +440,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..RefCells::default()
         };
         found.agrees(tcx, &seen, &unseen);
+        // An untagged enum's variant of one that's `{ value }`, which JS
+        // can't tell by the object it holds (ADR 0214).
+        for (span, held) in crate::lower::untagged::held_payloads(tcx) {
+            if self.is_std_type(held, StdItem::RefCell) && !found.is_value_cell(tcx, held) {
+                let why =
+                    "`{ value }`, as its generic code has a `RefCell<T>` of any `T`, or it made a `RefCell<dyn T>`";
+                tcx.dcx()
+                    .span_err(span, crate::lower::untagged::boxed_payload(held, why));
+            }
+        }
         // A derive's read borrows it for a moment, while what it holds runs
         // its own impl, as `RefCell`'s does: of a type no borrow of which
         // can meet another, one more such borrow; else one that may meet

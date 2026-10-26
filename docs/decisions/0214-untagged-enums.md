@@ -9,7 +9,8 @@ by [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md): an
 `"object"`, is tested as that kind; a `js::Symbol` is a kind, `"symbol"`.
 Amended by [0676](0676-kind-tells-undefined-and-null.md): a variant
 without fields may be `undefined`, `#[rust_js::undefined]`, or `null`,
-`#[rust_js::null]`.
+`#[rust_js::null]`. Amended: a variant of a `RefCell` of an object is
+the object, of an `Rc` what it points at, below.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -170,3 +171,38 @@ instance would keep its prototype, so `instanceof` told the old variant.
 ADR 0262's case: results change, so Rust's. Held by
 `test/corpus/untagged_written_through_mut.rs` and the mutation
 `untagged-written-in-place`.
+
+## Amendment: a `RefCell` of an object is the object, an `Rc` what it points at
+
+React's `ThenableState` is an array in production and `{
+didWarnAboutUncachedPromise, thenables }` in DEV, its port an untagged
+`enum State { Prod(RefCell<Vec<T>>), #[otherwise] Dev(StateDev) }`, which
+was refused: "JS can't tell a `RefCell<Vec<f64>>` from another variant's
+value".
+
+**A payload's `RefCell` of what holds itself, an array, a map, a set, a
+struct's object, is that object, and an `Rc` what it points at**, as each
+is in JS (ADRs 0844, 0863): `Prod(RefCell<Vec<f64>>)` and
+`Many(Rc<RefCell<Vec<f64>>>)` are arrays, told by `Array.isArray`:
+
+```js
+function items(state) {
+  return !Array.isArray(state) ? state.items : state;
+}
+```
+
+- **Where the crate has one as a box it's refused**: a `RefCell` its
+  generic code has of any `T`, `{ value }`, or an `Rc` it counts, `{
+  value, strong, weak }`, which no test of its kind tells. Each is known
+  only once the crate's bodies are seen, so it's refused then, by the
+  owners of each, `drops/ref_cells.rs` and `analysis.rs`'s counts, of
+  what `untagged::held_payloads` says each variant holds.
+
+Case D ([0262](0262-when-rust-and-js-disagree.md)): a variant is told
+from the value it is; where it can't be, a compile error.
+
+Tested by `test/corpus/untagged_ref_cells.rs` against native Rust, and
+the diagnostics test's "variant of a RefCell the crate boxes" and "an Rc
+the crate counts"; its mutations are `untagged-ref-cell-refused`,
+`untagged-rc-refused`, `untagged-boxed-ref-cell-unrefused` and
+`untagged-counted-rc-unrefused`.

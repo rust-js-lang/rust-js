@@ -186,6 +186,10 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's otherwise variant before another", '#[rust_js::untagged] pub enum E { #[rust_js::otherwise] A(String), B(u32) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 0, E::B(n) => n } }', "is its last"],
   // One of no value is its name's string (ADR 0214); one of two isn't one.
   ["an untagged enum's variant of two values", '#[rust_js::untagged] pub enum E { A(u32), B(u32, u32) }\npub fn f(e: E) -> u32 { match e { E::A(n) => n, E::B(a, _) => a } }', "holds one value"],
+  // One of a `RefCell` of an array is the array, an `Rc` what it points at
+  // (ADR 0214, amended): not where the crate has it as a box.
+  ["an untagged enum's variant of a RefCell the crate boxes", '#[rust_js::untagged] pub enum E { A(std::cell::RefCell<Vec<f64>>), B(f64) }\npub fn boxed<T>(v: T) -> std::cell::RefCell<T> { std::cell::RefCell::new(v) }\npub fn f() -> E { E::A(boxed(vec![1.0])) }\npub fn g(e: &E) -> usize { match e { E::A(a) => a.borrow().len(), E::B(_) => 0 } }', "in this crate it's `{ value }`"],
+  ["an untagged enum's variant of an Rc the crate counts", '#[rust_js::untagged] pub enum E { A(std::rc::Rc<Vec<f64>>), B(f64) }\npub fn f(e: &E) -> usize { match e { E::A(a) => std::rc::Rc::strong_count(a), E::B(_) => 0 } }', "in this crate it's counted"],
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],

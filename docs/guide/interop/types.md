@@ -686,7 +686,10 @@ export function size(input) {
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
-  two of one kind. One without fields is its name's string, or `undefined`,
+  two of one kind. A `RefCell` of an array or an object is that, and an
+  `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
+  an array, except where the crate has one as a box, `{ value }` or
+  counted, an error. One without fields is its name's string, or `undefined`,
   `#[rust_js::undefined]`, or `null`, `#[rust_js::null]`, as `js::Kind`'s
   are, each tested by `===`
   ([ADR 0676](../../decisions/0676-kind-tells-undefined-and-null.md)).

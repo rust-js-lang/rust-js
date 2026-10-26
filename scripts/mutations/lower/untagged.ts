@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-ref-cell-refused",
+    breaks: "an untagged enum's variant of a `RefCell<Vec<f64>>`, the array, is refused, React's `ThenableState` (ADR 0214, amended)",
+    file: "src/lower/untagged.rs",
+    find: "            && super::drops::holds_itself(self.tcx, args.type_at(0))\n        {\n            return self.untagged_kind(args.type_at(0));\n",
+    replace: "            && false\n        {\n            return self.untagged_kind(args.type_at(0));\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_ref_cells.rs$"],
+  },
+  {
+    name: "untagged-rc-refused",
+    breaks: "an untagged enum's variant of an `Rc<RefCell<Vec<f64>>>`, the array it points at, is refused (ADR 0214, amended)",
+    file: "src/lower/untagged.rs",
+    find: "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {\n            return self.untagged_kind(pointee);\n",
+    replace: "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty).filter(|_| false) {\n            return self.untagged_kind(pointee);\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_ref_cells.rs$"],
+  },
+  {
     name: "numbered-payload-untold",
     breaks: "an untagged enum's numbered payload has no kind JS tells, so its enum is refused",
     file: "src/lower/untagged.rs",

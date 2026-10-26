@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-boxed-ref-cell-unrefused",
+    breaks: "an untagged enum's variant of a `RefCell<Vec<f64>>` the crate has as `{ value }` is tested `Array.isArray`, which it never is (ADR 0214, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            if self.is_std_type(held, StdItem::RefCell) && !found.is_value_cell(tcx, held) {\n",
+    replace: "            if self.is_std_type(held, StdItem::RefCell) && !found.is_value_cell(tcx, held) && false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "variant of a RefCell the crate boxes"],
+  },
+  {
     name: "plain-refcell-never",
     breaks: "a struct's `RefCell` field is `{ value }`, `root.times.value[..]` of the array JS made, where its declaration says it holds its value (ADR 0863, amended)",
     file: "src/lower/drops/ref_cells.rs",
