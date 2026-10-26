@@ -494,7 +494,7 @@ pub struct Expr {
 /// What the lowering knows of an expression, each of `Known`'s: a set, so
 /// one fact never hides another (the review's P2, ADR 0889).
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
-pub struct Facts(u16);
+pub struct Facts(u32);
 
 impl Facts {
     /// Nothing known.
@@ -502,7 +502,7 @@ impl Facts {
 
     /// `known` alone.
     pub const fn of(known: Known) -> Facts {
-        Facts(1 << known as u16)
+        Facts(1 << known as u32)
     }
 
     pub fn has(self, known: Known) -> bool {
@@ -602,6 +602,9 @@ pub enum Known {
     /// `bool` constant read by its name, `ENABLED` (ADR 0031, amended),
     /// `true` or `false` alone, which `&&` and `||` give as it is.
     Boolean,
+    /// A call that never returns, MIR's of a `-> !` function's, a panic's:
+    /// what's after it is never run (`js::ends`, ADR 0954).
+    Diverges,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

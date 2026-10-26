@@ -586,6 +586,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let value = self.value_expr(value, span)?;
                         self.flush(state, &mut called)?;
                         if !matches!(value.kind, js::ExprKind::Undefined) {
+                            let value = js::Expr {
+                                facts: value.facts.with(js::Known::Diverges),
+                                ..value
+                            };
                             called.push(StmtKind::Expr(value).at(self.js_span(span)));
                         }
                         self.unwinding_to(state, unwind, called, &mut out)?;

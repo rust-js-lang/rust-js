@@ -318,6 +318,8 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
 pub fn ends(stmt: &Stmt) -> bool {
     match &stmt.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        // A call that never returns (ADR 0954).
+        StmtKind::Expr(e) => e.facts.has(Known::Diverges),
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
         // A `switch` with a `default`, each of whose cases leaves (ADR
         // 0660), or falls to the next case (ADR 0905).

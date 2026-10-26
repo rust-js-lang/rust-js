@@ -1043,3 +1043,30 @@ test("an if a branch of which adds to its variable is as written", async () => {
   expect(js).toContain('    if (className == null) {\n      className = m;\n    } else {\n      className += " " + m;\n    }\n');
   expect([lib.joined([] as never), lib.joined(["a"] as never), lib.joined(["a", "b", "c"] as never)]).toEqual([undefined, "a", "a b c"]);
 });
+
+// ADR 0954: React's tryToClaimNextHydratableFormMarkerInstance ends with a
+// call that never returns, a `-> !` function's: nothing after it, not `let
+// result; return result;` of a value no path makes.
+test("a call that never returns ends its function", async () => {
+  const { js, lib } = await compiled(
+    "diverging-call-ends",
+    `fn mismatch(id: u32) -> ! {
+    panic!("mismatch {id}")
+}
+
+pub fn claim(hydrating: bool, id: u32) -> bool {
+    if !hydrating {
+        return false;
+    }
+    if id > 10 {
+        return id % 2 == 0;
+    }
+    mismatch(id);
+}
+`,
+  );
+  expect(js).toContain("    return id % 2 === 0;\n  }\n  mismatch(id);\n}\n");
+  expect(js).not.toContain("let result");
+  expect([lib.claim(false as never, 1 as never), lib.claim(true as never, 12 as never), lib.claim(true as never, 13 as never)]).toEqual([false, true, false]);
+  expect(() => lib.claim(true as never, 3 as never)).toThrow("mismatch 3");
+});

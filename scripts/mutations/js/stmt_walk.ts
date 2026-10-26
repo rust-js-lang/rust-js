@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     replace: "(Pattern::Rest(name), ExprKind::Spread(spread)) if false && matches!(",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
+  {
+    name: "diverging-call-goes-on",
+    breaks: "a call that never returns is taken to go on, `let result; return result;` after it (ADR 0954)",
+    file: "src/js/stmt_walk.rs",
+    find: "        StmtKind::Expr(e) => e.facts.has(Known::Diverges),\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "never returns"],
+  },
 ];
