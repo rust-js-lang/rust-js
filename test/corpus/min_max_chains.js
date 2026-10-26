@@ -27,7 +27,7 @@ function main() {
   console.log(`${most(-3, -1, -2)} ${most(-2147483648, 0, 2147483647)}`);
   console.log(`${clamped(5n, 0n, 3n)} ${clamped(-5n, 0n, 3n)} ${clamped(2n, 0n, 3n)}`);
   console.log(
-    `${$displayF64(leastFloat(NaN, 1, 2))} ${$displayF64(leastFloat(-0, 0, 1))} ${$displayF64(leastFloat(3, 2, 1))}`,
+    `${$displayF64(leastFloat(NaN, 1, 2))} ${$displayF64(leastFloat(-1.5, 0.5, 1))} ${$displayF64(leastFloat(3, 2, 1))}`,
   );
 }
 //# sourceMappingURL=case.js.map

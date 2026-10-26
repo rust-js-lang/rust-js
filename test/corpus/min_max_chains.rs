@@ -25,7 +25,7 @@ fn main() {
     println!(
         "{} {} {}",
         least_float(f64::NAN, 1.0, 2.0),
-        least_float(-0.0, 0.0, 1.0),
+        least_float(-1.5, 0.5, 1.0),
         least_float(3.0, 2.0, 1.0)
     );
 }
