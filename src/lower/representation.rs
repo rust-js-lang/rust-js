@@ -1339,6 +1339,17 @@ fn const_js_by<'tcx>(
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
         ty::Adt(adt, _) if adt.is_struct() => {
             let variant = adt.non_enum_variant();
+            // A `RefCell` field may be the value it holds, by its declaration
+            // and what the crate does with it, which only a body lowering it
+            // knows: its initializer's, as a `RefCell` of an object is (ADR
+            // 0863, amended).
+            let ref_cell = |field: &ty::FieldDef| {
+                let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                matches!(declared.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::RefCell))
+            };
+            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) {
+                return None;
+            }
             let values = match variant.ctor_kind() {
                 None => fields_of(&children()?)?,
                 _ => all(&children()?)?,

@@ -671,3 +671,19 @@ listener adding another while they run, and
 `test/corpus/refcell_generic_borrow_meets_held.rs`, the generic body's
 panic; the mutations `impls-ask-of-what-it-hasnt` and
 `impls-had-of-a-parameter-unknown` (`analysis/cell_borrows.ts`).
+
+## Amendment: a `const` of a struct with a `RefCell` field is its initializer's
+
+A `const` of a struct whose `RefCell<Option<u8>>` field is the value it
+holds, by its declaration, was written from rustc's value of it as the
+cell's `{ value }`, `{ items: {} }`: a read of the field, `slot.items !=
+null`, took its `None` for `Some`, a wrong answer.
+
+**A struct's `RefCell` field may be the value it holds only as the
+crate's bodies decide, so a constant of a struct with one is its
+initializer's**, lowered as a body is, as a `RefCell` of an object's
+already was: `const EMPTY = { count: 0 };`, its `None` the field left out.
+
+Case "results change" ([0262](0262-when-rust-and-js-disagree.md)):
+Rust's answer, preserved. Tested by `test/corpus/ref_cell_field_const.rs`
+against native Rust; its mutation is `ref-cell-field-const-boxed`.

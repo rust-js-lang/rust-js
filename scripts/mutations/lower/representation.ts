@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^untagged_written_through_mut.rs$"],
   },
   {
+    name: "ref-cell-field-const-boxed",
+    breaks: "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
+    file: "src/lower/representation.rs",
+    find: "            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) {\n",
+    replace: "            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_field_const.rs$"],
+  },
+  {
     name: "uncounted-weak-never-nullish",
     breaks: "`Some(Weak::new())` is `null`, the same as `None` (ADR 0843)",
     file: "src/lower/representation.rs",
