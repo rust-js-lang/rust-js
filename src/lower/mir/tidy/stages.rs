@@ -682,6 +682,13 @@ const JUMPS: &[Pass] = &[
             unreachable_after(s);
         })
     }),
+    // A `return` of an `if` the program wrote, `return if c { a } else { b
+    // };`: its value, `return c ? a : b;`, before a shared tail takes its
+    // `else`'s out (ADR 0657, amended).
+    pass("returned ifs", |b, h| {
+        let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
+        js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
+    }),
     // An arm MIR made the block's fall-through, written first: first.
     pass("written first", |b, h| {
         js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))

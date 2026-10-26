@@ -173,4 +173,28 @@ export const mutations: Mutation[] = [
     replace: "            let _ = (made, span);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
   },
+  {
+    name: "tested-defined-still-nulled",
+    breaks: "`x !== undefined ? x ?? null : null` keeps its `?? null`, of a value the test shows defined (ADR 0620, amended)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        Op::Ne => matches!(other.kind, ExprKind::Undefined | ExprKind::GivenUndefined),\n",
+    replace: "        Op::Ne => false,\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+  },
+  {
+    name: "tested-defined-where-it-isnt",
+    breaks: "`x === undefined` is taken to show `x` defined, its `?? null` dropped where it's `undefined`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    defined.then(|| var.clone())\n",
+    replace: "    Some(var.clone()).filter(|_| defined || matches!(op, Op::Eq))\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable result tested equal to a None given is null"],
+  },
+  {
+    name: "tested-defined-if-still-nulled",
+    breaks: "`if (x !== undefined) { return x ?? null; }` keeps its `?? null`, of a value its test shows defined (ADR 0620, amended)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                js::each_expr_mut(then, &mut |e| unnulled(e, &x));\n",
+    replace: "                let _ = (&then, &x);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+  },
 ];

@@ -362,7 +362,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
 /// (`Expr::may_be_undefined`), a nullable field's read: `x`, as `null ??
 /// null` is `null` and a value is itself. What a variable holds of a
 /// nullable field, stored in another, as it is (ADR 0620, amended).
-pub(super) fn nulled_as_they_are(body: &mut [Stmt]) {
+pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
     let mut declared: HashMap<String, usize> = HashMap::new();
     for name in js::declared_names(body) {
         *declared.entry(name).or_default() += 1;
@@ -378,6 +378,25 @@ pub(super) fn nulled_as_they_are(body: &mut [Stmt]) {
             }
         }
     });
+    // Where a test shows a `const` defined, `x !== undefined ? x ?? null :
+    // ..`'s branch, `if (x != null) { return x ?? null; }`'s: `x` there too.
+    let once = |x: &str| declared.get(x) == Some(&1);
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Cond(test, yes, _) = &mut e.kind
+            && let Some(x) = shown_defined(test).filter(|x| once(x))
+        {
+            yes.each_mut(&mut |e| unnulled(e, &x));
+        }
+    });
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::If(test, then, _) = &mut stmt.kind
+                && let Some(x) = shown_defined(test).filter(|x| once(x))
+            {
+                js::each_expr_mut(then, &mut |e| unnulled(e, &x));
+            }
+        }
+    });
     if defined.is_empty() {
         return;
     }
@@ -390,6 +409,40 @@ pub(super) fn nulled_as_they_are(body: &mut [Stmt]) {
             *e = (**made).clone().or_at(span);
         }
     });
+}
+
+/// The variable `test` shows isn't `undefined` where it holds: `x !==
+/// undefined`, or `x != null`.
+fn shown_defined(test: &Expr) -> Option<String> {
+    let ExprKind::Binary(op, a, b) = &test.kind else {
+        return None;
+    };
+    let (var, other) = match (&a.kind, &b.kind) {
+        (ExprKind::Var(x), _) => (x, b),
+        (_, ExprKind::Var(x)) => (x, a),
+        _ => return None,
+    };
+    let defined = match op {
+        Op::Ne => matches!(other.kind, ExprKind::Undefined | ExprKind::GivenUndefined),
+        Op::LooseNe => matches!(
+            other.kind,
+            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null
+        ),
+        _ => false,
+    };
+    defined.then(|| var.clone())
+}
+
+/// `e`, `x ?? null`: `x`, which isn't `undefined` there
+/// (`nulled_as_they_are`).
+fn unnulled(e: &mut Expr, x: &str) {
+    if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
+        && matches!(null.kind, ExprKind::Null)
+        && matches!(&made.kind, ExprKind::Var(v) if v == x)
+    {
+        let span = e.span;
+        *e = (**made).clone().or_at(span);
+    }
 }
 
 /// A handle made only to read or write its value there, `Cell::set` of

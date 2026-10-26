@@ -161,3 +161,19 @@ given says nothing of its being there** (`branches.rs`'s `implies`): its
 `test/lowering-nullable.test.ts`, "a nullable result tested equal to a
 None given is null", run in JS, and the mutation
 `implies-given-none-a-literal` (`tidy/branches.ts`).
+
+## Amendment: a `?? null` of a value its test shows defined is the value
+
+Its port's `return if !js::strict_equals(ref_prop, None) { ref_prop } else
+{ None };` was `refProp !== undefined ? refProp ?? null : null`, where
+React writes `refProp !== undefined ? refProp : null`: a nullable result's
+`x ?? null` (`Storage::written`) of a `const` the body declares once, in
+a conditional's branch or an `if`'s where its test is `x !== undefined` or
+`x != null`, is `x`, which isn't `undefined` there
+(`values.rs`'s `nulled_as_they_are`, `shown_defined`). Case N: `x ?? null`
+is `x` where `x` isn't `undefined`. Held by
+`test/lowering-written-branches.test.ts`, "an if of returns the program
+wrote stays an if", `test/lowering-nullable.test.ts`, "a nullable result
+tested equal to a None given is null", and the mutations
+`tested-defined-still-nulled`, `tested-defined-if-still-nulled` and
+`tested-defined-where-it-isnt` (`tidy/values.ts`).

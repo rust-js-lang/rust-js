@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     name: "written-returns-folded",
     breaks: "a `return` the program wrote in each branch of an `if`/`else` is folded into one conditional",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "if small(value) && !written(returns, *span) =>",
+    find: "if small(value) && (!written(returns, *span) || of_if(*span)) =>",
     replace: "if small(value) =>",
     tests: ["test/lowering-iterators.test.ts", "-t", "a string's parts from MIR are an array"],
   },
@@ -356,5 +356,13 @@ export const mutations: Mutation[] = [
     find: "        stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);\n        stmts.extend(exit);\n",
     replace: "        stmts[at].kind = StmtKind::If(test, exit, None);\n        stmts.extend(rest);\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "keeps its body inside"],
+  },
+  {
+    name: "returned-if-a-statement",
+    breaks: "`return if c { a } else { b };` is `if (c) { return a; }` and a shared `return b`, not the conditional returned the program wrote (ADR 0657, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        ] if small(value) && (!written(returns, *span) || of_if(*span)) => Some(spanned(value, *span)),\n",
+    replace: "        ] if small(value) && !written(returns, *span) => Some(spanned(value, *span)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
 ];

@@ -587,10 +587,43 @@ pub fn root_name(fiber: &Fiber) -> Option<String> {
 pub fn depth_or(fiber: &Fiber) -> u32 {
     if let Some(parent) = &*fiber.parent.borrow() { parent.depth } else { 0 }
 }
+
+pub const DEV: bool = true;
+
+// React's elementRefGetterWithDeprecationWarning: a \`return\` of an \`if\`,
+// the value the program wrote, is the conditional returned.
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn ref_of(props: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if DEV {
+        let ref_prop = js::get(props, "ref");
+        return if !js::strict_equals(ref_prop, None::<&js::Unknown>) {
+            ref_prop
+        } else {
+            None
+        };
+    }
+    None
+}
+
+// And an \`if\` that returns where its test shows its value defined.
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn ref_kept(props: Option<&'static js::Unknown>, other: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    let ref_prop = js::get(props, "ref");
+    if !js::strict_equals(ref_prop, None::<&js::Unknown>) {
+        return ref_prop;
+    }
+    other
+}
 `);
   expect(js).toContain("      const parent = fiber.parent;\n      if (parent != null) {\n        return rootName(parent);\n      }\n      return null;\n");
   expect(js).toContain("  return parent != null ? parent.depth : 0;\n");
+  // The \`?? null\` a nullable function's result has, gone where the test
+  // shows the value isn't \`undefined\` (ADR 0620, amended).
+  expect(js).toContain("    return refProp !== undefined ? refProp : null;\n");
+  expect(js).toContain("  if (refProp !== undefined) {\n    return refProp;\n  }\n  return other ?? null;\n");
   const root = { depth: 0, parent: null };
   const leaf = { depth: 1, parent: root };
   expect([lib.rootName(leaf as never), lib.rootName({ depth: 1, parent: null } as never), lib.rootName({ depth: 2, parent: root } as never), lib.depthOr(leaf as never), lib.depthOr(root as never)]).toEqual(["root", null, "two", 0, 0]);
+  expect([lib.refOf({ ref: 3 } as never), lib.refOf({ ref: null } as never), lib.refOf({} as never)]).toEqual([3, null, null]);
+  expect([lib.refKept({ ref: 3 } as never, 4 as never), lib.refKept({ ref: null } as never, 4 as never), lib.refKept({} as never, undefined as never)]).toEqual([3, null, null]);
 });

@@ -714,21 +714,23 @@ pub(in crate::lower::mir::tidy) fn returned_values(
     booleans: &HashSet<String>,
 ) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let Some(at) = stmts.len().checked_sub(2) else {
+        return;
+    };
+    let (if_stmt, last) = (&stmts[at], &stmts[at + 1..]);
     // A branch's value, where its statement was, of a `return` the program
-    // didn't write.
+    // didn't write in it: none, or the one it wrote of the `if`, `return if
+    // c { a } else { b };`, whose value the `if` is.
+    let of_if = |span: js::Span| returns.iter().any(|r| within(r, span) && within(r, if_stmt.span));
     let returned = |stmts: &[Stmt]| match stmts {
         [
             Stmt {
                 kind: StmtKind::Return(Some(value)),
                 span,
             },
-        ] if small(value) && !written(returns, *span) => Some(spanned(value, *span)),
+        ] if small(value) && (!written(returns, *span) || of_if(*span)) => Some(spanned(value, *span)),
         _ => None,
     };
-    let Some(at) = stmts.len().checked_sub(2) else {
-        return;
-    };
-    let (if_stmt, last) = (&stmts[at], &stmts[at + 1..]);
     let StmtKind::If(test, then, None) = &if_stmt.kind else {
         return;
     };

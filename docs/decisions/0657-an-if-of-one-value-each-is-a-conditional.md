@@ -128,3 +128,23 @@ is a property.
 Held by `test/lowering-written-branches.test.ts`, "an if of returns the
 program wrote stays an if", run in JS, and the mutation
 `written-returns-made-a-conditional` (`tidy/branches.ts`).
+
+## Amendment: a `return` of an `if` is its conditional returned
+
+React's elementRefGetterWithDeprecationWarning writes `return refProp !==
+undefined ? refProp : null;`; its port, `return if !js::strict_equals(ref_prop,
+None) { ref_prop } else { None };`, printed `if (refProp !== undefined) {
+return refProp ?? null; }` and the `else`'s `null` the function's last
+`return null;`. MIR returns from each branch, as of `if c { return a; }
+return b;`, and `values`' shared tails took the `else`'s `return null;` out
+to the one after the `if` before `returned_values` made a conditional of
+it, which it also left alone as `return`s the program wrote. **A `return`
+the program wrote of an `if`, its value, is the conditional returned**:
+`returned_values` takes a branch's `return` that's the program's `return`
+of the `if` itself, as one it didn't write in the branch, and runs in the
+`jumps` stage too, `jumps/returned ifs`, before a shared tail takes the
+`else` apart. An `if` whose branches the program wrote as `return`s
+stays an `if`, as above. Case N: the same branch's value is returned.
+Held by `test/lowering-written-branches.test.ts`, "an if of returns the
+program wrote stays an if", run in JS, and the mutation
+`returned-if-a-statement` (`tidy/jumps/tails.ts`).
