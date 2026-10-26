@@ -276,6 +276,20 @@ pub fn unknown_of<T: AnyShape<M> + 'static, M>(this: T) -> &'static Unknown {
     unreachable!()
 }
 
+/// `value`, a type parameter's, given by value, as any JS value, which it
+/// is: TypeScript's `any`, `None` where it's `undefined` or `null`, as an
+/// `Option`'s `None` is. What keeps values of types a program erases, as
+/// React's value stack keeps each cursor's, `const valueStack: Array<any>`,
+/// `valueStack[index] = js::any_of(previous)`; [`cast`] gives it back as
+/// what it was. The value itself, kept as long as JS has it (ADR 0909). Of
+/// a value of a type that's known, a compile error: [`unknown_of`] gives
+/// one that's always there, and `value.map(js::unknown_of)` an `Option`.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+#[allow(unused_variables)]
+pub fn any_of<T: 'static>(this: T) -> Option<&'static Unknown> {
+    unreachable!()
+}
+
 /// What [`unknown`] takes, a JS value of any shape, never `undefined` nor
 /// `null`: a [`Defined`] value, or a function, of whatever it takes, a
 /// function item, a closure, a `fn` pointer or a `dyn Fn`, each a JS

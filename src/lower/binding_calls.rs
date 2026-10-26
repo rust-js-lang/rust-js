@@ -27,6 +27,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
             return Err(self.tcx.dcx().span_err(span, refused));
         }
+        // A type parameter's value as any value is `js::any_of`'s; of a
+        // type that's known, its own conversion's, the one way (ADR 0909).
+        if super::recognition::is_any_of(self.tcx, def_id) && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))
+        {
+            return Err(self.tcx.dcx().span_err(
+                span,
+                "`js::any_of` is of a type parameter's value, not of a value of a type that's known: \
+                 `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`",
+            ));
+        }
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,

@@ -1099,6 +1099,14 @@ pub(in crate::lower) fn is_symbol_for_def(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "SymbolFor"
 }
 
+/// Whether `did` is `js::any_of`, a type parameter's value as any value
+/// (ADR 0909): the builtins crate's.
+pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "any_of"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
 /// Whether `did` is `js::SymbolFor::from_value`, a value of any shape read
 /// as the registry's symbol (ADR 0634).
 pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool {

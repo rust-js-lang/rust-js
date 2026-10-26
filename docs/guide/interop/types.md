@@ -1559,6 +1559,52 @@ export function isMarked(log) {
   return log.__reactDisabledLog != null;
 }
 ```
+- **A type parameter's value is any value, `js::any_of(value)`**, an
+  `Option<&Unknown>`, TypeScript's `any`: what keeps values of the types a
+  program erases in one place, as React's value stack keeps each cursor's,
+  `Array<any>`, and `js::cast` gives each back as what it was. It's the
+  value itself, so a generic function is given no more than its
+  arguments, as `Box<dyn Any>`'s `TypeId` would be
+  ([ADR 0909](../../decisions/0909-a-type-parameters-value-is-any-value.md)).
+  Of a type that's known, it's refused: `js::unknown_of(value)` is one
+  that's always there, and `value.map(js::unknown_of)` an `Option`'s:
+
+```rust
+use std::cell::RefCell;
+
+use js::Unknown;
+
+thread_local! {
+    static VALUE_STACK: RefCell<Vec<Option<&'static Unknown>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn push<T: 'static>(value: T) {
+    let value = js::any_of(value);
+    VALUE_STACK.with_borrow_mut(|value_stack| value_stack.push(value));
+}
+
+pub fn pop<T>() -> T {
+    let value = VALUE_STACK.with_borrow_mut(|value_stack| value_stack.pop().expect("a value pushed"));
+    // Safety: each is what `push` was given of a `T`.
+    unsafe { js::cast(value) }
+}
+```
+
+```js
+import { $pop, $someValue, $unwrap } from "@rust-js/runtime";
+
+const valueStack = [];
+
+export function push(value) {
+  valueStack.push(value);
+}
+
+export function pop() {
+  const value = $someValue($unwrap($pop(valueStack), "a value pushed"));
+  // Safety: each is what `push` was given of a `T`.
+  return value;
+}
+```
 - **What every function has, `Function.prototype`'s, is `js::function`'s**,
   of a function of any signature, `js::AnyFunction`, as TypeScript types
   each: `function::name(f)` is `f.name`, a `String`, `function::length(f)`

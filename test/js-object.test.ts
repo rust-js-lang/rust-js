@@ -964,3 +964,117 @@ pub fn cached(r#fn: &dyn Fn() -> Option<&'static Unknown>, frame: String) -> Opt
   expect(unhandled).toBe(0);
   expect([lib.cached(FunctionComponent, "a"), lib.cached(FunctionComponent, "b")]).toEqual([undefined, "a"]);
 });
+
+// ADR 0909: a type parameter's value kept with others of other types, as
+// React's ReactFiberStack keeps each cursor's in one `Array<any>`, is
+// `js::any_of`'s, and `js::cast` gives it back: the value itself, so
+// `push(cursor, value, fiber)` is upstream's, no `TypeId` given beside it.
+test("a type parameter's value is any value, kept and given back as itself", async () => {
+  const { js, lib } = await compiled("value-stack", `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub tag: u32,
+}
+
+pub struct StackCursor<T> {
+    pub current: RefCell<T>,
+}
+
+thread_local! {
+    static VALUE_STACK: RefCell<Vec<Option<&'static Unknown>>> = const { RefCell::new(Vec::new()) };
+    static INDEX: Cell<i32> = const { Cell::new(-1) };
+}
+
+pub fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+    StackCursor {
+        current: RefCell::new(default_value),
+    }
+}
+
+pub fn pop<T>(cursor: &StackCursor<T>, fiber: &Fiber) {
+    if INDEX.get() < 0 {
+        return;
+    }
+    let index = INDEX.get() as usize;
+    // Safety: what's at \`index\` is what \`push\` kept of this cursor's \`T\`.
+    cursor.current.replace(unsafe { js::cast(VALUE_STACK.with_borrow(|value_stack| value_stack[index])) });
+    VALUE_STACK.with_borrow_mut(|value_stack| value_stack[index] = None);
+    INDEX.set(INDEX.get() - 1);
+}
+
+pub fn push<T: 'static>(cursor: &StackCursor<T>, value: T, fiber: &Fiber) {
+    INDEX.set(INDEX.get() + 1);
+    let index = INDEX.get() as usize;
+    let previous = js::any_of(cursor.current.replace(value));
+    VALUE_STACK.with_borrow_mut(|value_stack| {
+        if index < value_stack.len() {
+            value_stack[index] = previous;
+        } else {
+            value_stack.push(previous);
+        }
+    });
+}
+
+pub struct HiddenContext {
+    pub base_lanes: u32,
+}
+
+thread_local! {
+    static HIDDEN: StackCursor<Option<Rc<HiddenContext>>> = create_cursor(None);
+    static LANES: StackCursor<u32> = create_cursor(0);
+    static NESTED: StackCursor<Option<Option<u32>>> = create_cursor(None);
+}
+
+fn seen() -> String {
+    let hidden = HIDDEN.with(|cursor| cursor.current.borrow().as_ref().map(|context| context.base_lanes));
+    let lanes = LANES.with(|cursor| *cursor.current.borrow());
+    let nested = NESTED.with(|cursor| format!("{:?}", cursor.current.borrow()));
+    format!("{hidden:?} {lanes} {nested}")
+}
+
+pub fn run() -> Vec<String> {
+    let fiber = Fiber { tag: 1 };
+    let mut seen_each = vec![seen()];
+    LANES.with(|cursor| push(cursor, 4, &fiber));
+    HIDDEN.with(|cursor| push(cursor, Some(Rc::new(HiddenContext { base_lanes: 8 })), &fiber));
+    NESTED.with(|cursor| push(cursor, Some(None), &fiber));
+    NESTED.with(|cursor| push(cursor, Some(Some(2)), &fiber));
+    seen_each.push(seen());
+    NESTED.with(|cursor| pop(cursor, &fiber));
+    seen_each.push(seen());
+    NESTED.with(|cursor| pop(cursor, &fiber));
+    HIDDEN.with(|cursor| pop(cursor, &fiber));
+    seen_each.push(seen());
+    LANES.with(|cursor| push(cursor, 16, &fiber));
+    seen_each.push(seen());
+    LANES.with(|cursor| pop(cursor, &fiber));
+    LANES.with(|cursor| pop(cursor, &fiber));
+    LANES.with(|cursor| pop(cursor, &fiber));
+    seen_each.push(seen());
+    seen_each
+}
+`);
+  expect(js).toContain(`export function pop(cursor, fiber) {
+  if (index < 0) {
+    return;
+  }
+  const index$1 = index >>> 0;
+  // Safety: what's at \`index\` is what \`push\` kept of this cursor's \`T\`.
+  cursor.current = $index(valueStack, index$1);`);
+  expect(js).toContain(`export function push(cursor, value, fiber) {
+  index = (index + 1) | 0;
+  const index$1 = index >>> 0;
+  const previous = cursor.current;
+  cursor.current = value;`);
+  expect(js).not.toContain("TId");
+  expect(js).not.toContain("impl:");
+  expect(lib.run()).toEqual(["None 0 None", "Some(8) 4 Some(Some(2))", "Some(8) 4 Some(None)", "None 4 None", "None 16 None", "None 0 None"]);
+  // Of a value of a type that's known, what it is: its own conversion.
+  for (const [name, value] of [["number", "5u32"], ["option", "Some(\"a\")"]]) {
+    const said = refused(`any-of-${name}`, `pub fn any() -> Option<&'static js::Unknown> {\n    js::any_of(${value})\n}\n`);
+    expect(said).toContain("`js::any_of` is of a type parameter's value, not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`");
+  }
+});

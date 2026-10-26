@@ -27,6 +27,14 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
   {
+    name: "any-of-of-a-known-type",
+    breaks: "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (ADR 0909)",
+    file: "src/lower/binding_calls.rs",
+    find: "        if super::recognition::is_any_of(self.tcx, def_id) && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))\n",
+    replace: "        if super::recognition::is_any_of(self.tcx, def_id) && false\n",
+    tests: ["test/js-object.test.ts", "-t", "a type parameter's value is any value"],
+  },
+  {
     name: "binding-class-refused",
     breaks: "`js::class::<AbortController>()` of a binding's class is refused, as before, so React's `AbortControllerLocal` can't keep the host's class (ADR 0911)",
     file: "src/lower/binding_calls.rs",

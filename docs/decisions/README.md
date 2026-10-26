@@ -243,7 +243,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0222 An editor checks the app through rust-js](0222-editor-check.md) *(amended by 0888: one Cargo check with `rust-js clippy`'s)*
 - [0223 The webapi crate knows each event's type and each tag's element](0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(extended by 0909: `js::any_of`, a type parameter's value; amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key)*
 - [0226 A component looks inside its children as React's `Children` does](0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](0228-per-tag-attributes.md)
@@ -693,6 +693,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)
 - [0908 One meaning per iterator, checked by a build of std's structs alone](0908-one-meaning-per-iterator.md)
+- [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md)
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*

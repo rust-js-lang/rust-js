@@ -1,7 +1,9 @@
 # 0225. A JS value of unknown shape is a `js::Unknown`
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md), [0214](0214-untagged-enums.md)
-and [0024](0024-web-crate.md). Amended by
+and [0024](0024-web-crate.md). Extended by
+[0909](0909-a-type-parameters-value-is-any-value.md): `js::any_of`, a type
+parameter's value as any value. Amended by
 [0775](0775-a-unit-given-to-js-is-undefined.md): a `()` given to JS of any
 type is `undefined`, not of a structured clone's alone. Amended by
 [0776](0776-get-has-set-take-any-value.md): `js::get`, `js::has` and
