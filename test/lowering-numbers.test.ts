@@ -537,6 +537,10 @@ pub fn code(c: Color) -> i32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
+  // The discriminant itself, not a test of each variant's.
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return $cmp(a, b);");
+  expect(js).toContain("return { Red: 0, Green: 5, Blue: 6 }[c];");
 });
 
 // A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and

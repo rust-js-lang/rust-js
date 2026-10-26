@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-enum-cast-refused",
-    "breaks": "`ordering as i32` from MIR is refused, its discriminant read as a value",
+    "breaks": "`ordering as i32` from MIR, and an enum's `as`, is a test of each variant, `cmp === -1 ? -1 : ..`, not its discriminant",
     "file": "src/lower/mir/rvalues.rs",
     "find": "                    Value::Discriminant(value, enum_ty, _) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
     "replace": "",
