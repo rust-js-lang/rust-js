@@ -7,6 +7,15 @@ const refusals = ["test/classes.test.ts", "-t", "what a class is refused"];
 
 export const mutations: Mutation[] = [
   {
+    name: "receiver-booleans-unrenamed",
+    breaks: "a class's method's `this.below(x) || ..` is `!!this.below(x) || ..`, its `bool` paths left of the receiver's name",
+    file: "src/lower/classes.rs",
+    find: "            Some(rest) => format!(\"this.{rest}\"),\n",
+    replace: "            Some(_) => path,\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
+    snapshots: true,
+  },
+  {
     name: "class-receiver-left-to-tidy",
     breaks: "a class's method's `self` stays a parameter through tidy, so it's no `this`, its `let point` read as another variable",
     file,

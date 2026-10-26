@@ -256,12 +256,15 @@ pub(super) fn as_member(member: Member, function: &mut js::Function) -> Result<(
 /// body, `params` left without it. Before tidy, which would take a `let`
 /// of its name, read no more after, for it (ADR 0650): `let complex_number
 /// = ..` of a `ComplexNumber`'s method, whose `self` is named
-/// `complexNumber` too, would be `this = ..`.
+/// `complexNumber` too, would be `this = ..`. And the paths of `booleans`
+/// through it, `comparator.lessThan()`'s `this.lessThan()`, which tidy
+/// reads `this`'s by.
 pub(super) fn receiver_as_this(
     tcx: TyCtxt<'_>,
     function: DefId,
     params: &mut Vec<Pattern>,
     body: &mut [Stmt],
+    booleans: &mut std::collections::HashSet<String>,
 ) -> Result<(), &'static str> {
     if member(tcx, function) != Some(Member::Method) {
         return Ok(());
@@ -276,6 +279,14 @@ pub(super) fn receiver_as_this(
             e.kind = ExprKind::This;
         }
     });
+    let through = format!("{receiver}.");
+    *booleans = std::mem::take(booleans)
+        .into_iter()
+        .map(|path| match path.strip_prefix(&through) {
+            Some(rest) => format!("this.{rest}"),
+            None => path,
+        })
+        .collect();
     Ok(())
 }
 

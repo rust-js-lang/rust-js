@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "field-path-not-of-this",
+    breaks: "no path is read through `this`, so a class's method's `this.below(x)` isn't known a `bool`: `!!this.below(x)`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                ExprKind::This => \"this\".to_string(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
+    snapshots: true,
+  },
+  {
     name: "mir-tidy-plain-cell-escapes",
     breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",

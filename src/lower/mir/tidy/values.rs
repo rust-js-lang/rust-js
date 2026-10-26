@@ -124,12 +124,14 @@ pub(in crate::lower::mir) fn call_path(e: &Expr) -> Option<String> {
     Some(format!("{callee}()"))
 }
 
-/// `element.editable`, a field's path of a variable, as a key.
+/// `element.editable`, a field's path of a variable, or of `this`, a
+/// class's method's `self` (`classes::receiver_as_this`), as a key.
 pub(in crate::lower::mir) fn field_path(e: &Expr) -> Option<String> {
     match &e.kind {
         ExprKind::Member(of, field) => {
             let of = match &of.kind {
                 ExprKind::Var(name) => name.clone(),
+                ExprKind::This => "this".to_string(),
                 _ => field_path(of)?,
             };
             Some(format!("{of}.{field}"))

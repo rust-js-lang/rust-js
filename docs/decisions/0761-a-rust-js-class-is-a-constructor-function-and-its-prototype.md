@@ -250,3 +250,15 @@ other struct is a type, no value to export. Held by `classes.test.ts`'s
 `default-class-refused`, `default-class-exported-by-name`,
 `default-class-imported-by-name`, `default-class-declared-const` and
 `default-class-type-imported-by-name`.
+
+## Amendment: its `bool` methods' calls stay `bool`s (#355)
+
+With a method's `self` `this` before tidy (#344), a call of its own
+`bool` method, `self.less_than(a, b) || self.equal(a, b)` of
+trekhleb/javascript-algorithms' Comparator, read `!!this.lessThan(a, b) ||
+..`: the `bool` paths lowering records are of the receiver's name,
+`comparator.lessThan()`, and tidy read no path through `this`.
+`receiver_as_this` renames them `this.lessThan()`, and `field_path` reads
+`this` as a variable's name. Held by `test/corpus/class_bool_methods.rs`
+and the mutations `receiver-booleans-unrenamed` and
+`field-path-not-of-this`.
