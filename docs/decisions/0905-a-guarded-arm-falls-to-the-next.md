@@ -306,3 +306,17 @@ guard fails it goes on to `E` and `R` either way. Held by
 `test/lowering-switch-fallthrough.test.ts`, "four guarded arms of
 symbols, each falling to the next, are one switch", run as JS, and
 mutation `guard-else-falling-unread`.
+
+## Amendment: a comment before the `_` arm fallen to is before its `default` (2026-10-27)
+
+React's getTag writes `// Fall through` before `default: {`, and its port
+before `_ => {`. The comment's next JS was the `default`'s first test,
+past the arm's `_ => {`, which no rule let a comment pass, so it was
+printed before the `switch`, and the `default` a synthetic `//
+Fallthrough`. **A comment before a `_` arm whose `default` a case falls
+to is before that `default`**, `// Fall through\n default: {`: the arm's
+opening, `_ => {`, is passed as a closure's is, where what follows is the
+`default`'s start (`to_oxc`'s comments). Held by
+`test/lowering-labels.test.ts`, "guarded arms that return calls fall
+through in one labeled switch", and mutation
+`default-arm-comment-before-switch`.

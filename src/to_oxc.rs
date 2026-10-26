@@ -657,13 +657,15 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                         // And a `match`'s, `match &new_last {`, right before
                         // its first arm, whose pattern the `if` MIR makes of
                         // it starts at (ADR 0444, amended).
+                        // And a `_` arm's whose `default` is fallen to.
+                        let default = cases::opens_default(rest) && case_starts.binary_search(&at).is_ok();
                         let opens = (rest.match_indices('{')).all(|(i, _)| {
                             let head = rest[..i].trim_end();
                             head.ends_with('|')
                                 || macro_opening(&rest[..=i])
                                 || unsafe_opening(head)
                                 || match_opening(head) && rest[i + 1..].trim().is_empty()
-                        });
+                        }) || default;
                         lets.iter().all(|s| s.starts_with("let ")) && !rest.contains([';', '}']) && opens
                     });
                 only_starts.then_some((*c, at))

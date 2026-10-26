@@ -693,4 +693,12 @@ export const mutations: Mutation[] = [
     replace: "                    functions.push(f.body.clone());\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "where it's written"],
   },
+  {
+    name: "default-arm-comment-before-switch",
+    breaks: "React's `// Fall through` before getTag's `_` arm is printed before the `switch`, a synthetic `// Fallthrough` before `default:` (ADR 0905, amended)",
+    file: "src/to_oxc.rs",
+    find: "                        }) || default;\n",
+    replace: "                        });\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "return calls"],
+  },
 ];

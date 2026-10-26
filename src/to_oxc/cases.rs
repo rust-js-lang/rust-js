@@ -29,6 +29,16 @@ pub(super) fn fallthroughs(
     }
 }
 
+/// Whether `between`, the code between a comment and the start it's
+/// before, is a `_` arm's opening, `_ => {`, and its first `if`'s: then
+/// the start is its `default`'s, which the comment is before where a case
+/// falls through to it (ADR 0905, amended).
+pub(super) fn opens_default(between: &str) -> bool {
+    let head = between.trim();
+    let head = head.strip_suffix("if").map_or(head, str::trim_end);
+    head.strip_suffix('{').map(str::trim_end) == Some("_ =>")
+}
+
 /// Whether a comment the program wrote says a case falls through, as
 /// ESLint's `no-fallthrough` reads one, `/falls?\s?through/i`: `// falls
 /// through`, `// Fall through`; then it's said, and `FALLTHROUGH` isn't

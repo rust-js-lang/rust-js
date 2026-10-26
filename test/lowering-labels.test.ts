@@ -771,6 +771,10 @@ pub fn create(r#type: Option<&Unknown>, mut mode: u32) -> String {
     '      case REACT_SCOPE_TYPE:\n        if (ENABLE_SCOPE_API) {\n          return made("scope", mode);\n        }\n      // falls through\n',
   );
   expect(js).toContain("              fiberTag = 16;\n              resolvedType = null;\n              break getTag;\n");
+  // The program's `// Fall through` before its `_` arm is before the
+  // `default` it's of, as React's is, no other said (ADR 0905, amended).
+  expect(js).toContain('        }\n      // Fall through\n      default: {\n');
+  expect(js).not.toContain("// Fallthrough");
   const lib = await import(join(dir, "lib.js"));
   const of = (key: string) => Symbol.for(key);
   expect([
