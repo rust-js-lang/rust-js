@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-for-each-nothing-kept",
+    breaks: "a `map(g)` collected into `()` reads `.map(g).forEach(() => {})`, not `.forEach(g)`",
+    file: "src/lower/iterators/eager.rs",
+    find: "                    && map == \"map\"\n",
+    replace: "                    && map == \"none\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_unit.rs$"],
+    snapshots: true,
+  },
+  {
     name: "set-for-each-listed",
     breaks: "a `HashSet`'s `iter().for_each(..)` is `Array.from(set).forEach(..)`, not the set's own `set.forEach(..)` (ADR 0877)",
     file: "src/lower/iterators/eager.rs",

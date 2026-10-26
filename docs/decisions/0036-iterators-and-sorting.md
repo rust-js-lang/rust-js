@@ -172,3 +172,15 @@ refused. Held by `test/corpus/iter_compare.rs`.
 array's as it is, a B-tree's in order, a range's stepped, an `Option`'s
 `[]` or `[x]`. Of items with a destructor, which `zip` drops where one side
 runs out, it's refused. Held by `test/corpus/zip_function.rs`.
+
+## Amendment: `collect()` into `()` (#322)
+
+`collect()` into `()` was refused: TheAlgorithms/rust's autocomplete trie,
+`.map(|s| sub_result.push(c.to_string() + s)).collect()` in a branch of
+`()`. std's `impl FromIterator<()> for ()` is `iter.for_each(|()| {})`, so
+**it steps each item, `it.forEach(() => {})`**, and of a `map(g)`, whose
+items it does nothing with, tidy writes `forEach(g)`: `rest.forEach((s) =>
+{ out.push(prefix + s); })`. Held by the corpus case `collect_into_unit`
+and the mutations `collect-into-unit-refused` and
+`map-for-each-nothing-kept`.
+

@@ -238,6 +238,18 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             return;
         };
         let eager = match (name.as_str(), &args[..]) {
+            // A `map(g)` whose items `forEach` does nothing with,
+            // `collect::<()>()`'s: `forEach(g)`, each `g`'s value dropped as
+            // the items were.
+            ("forEach", [f])
+                if matches!(&f.kind, js::ExprKind::Arrow(params, body) if params.is_empty() && body.is_empty())
+                    && let js::ExprKind::Call(stage, given) = &chain.kind
+                    && let js::ExprKind::Member(source, map) = &stage.kind
+                    && map == "map"
+                    && let [g] = &given[..] =>
+            {
+                Some(Expr::call(Expr::member((**source).clone(), "forEach"), vec![g.clone()]))
+            }
             ("toArray", []) if let Some(parts) = chained(chain) => {
                 Some(Expr::array(parts.into_iter().map(Expr::spread).collect()))
             }

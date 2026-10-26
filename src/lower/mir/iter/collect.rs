@@ -203,6 +203,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.made_of(set, self.tcx.mk_args(&[output.into()]), it, span)?
         } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
             made
+        // Into `()`: each item stepped and dropped, as std's body,
+        // `iter.for_each(|()| {})`, steps them.
+        } else if output.is_unit() {
+            method("forEach", it, vec![Expr::arrow(Vec::new(), Vec::new())])
         } else {
             return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
         })

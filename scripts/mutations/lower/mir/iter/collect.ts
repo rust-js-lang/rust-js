@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "collect-into-unit-refused",
+    breaks: "`collect()` into `()` is refused where it steps each item (#322)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        } else if output.is_unit() {\n",
+    replace: "        } else if output.is_unit() && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_unit.rs$"],
+  },
+  {
     name: "mir-sum-from-one",
     breaks: "`sum` of an iterator starts from one",
     file: "src/lower/mir/iter/collect.rs",

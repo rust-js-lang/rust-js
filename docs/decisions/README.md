@@ -75,7 +75,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md) *(extended by 0891: `new X` of a method)*
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md)
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
-- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items)*
+- [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`)*
 - [0037 `thread_local!` is a variable of its module](0037-thread-locals.md)
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
