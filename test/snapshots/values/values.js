@@ -66,7 +66,7 @@ export const Value = {
           out.value += pad;
           out.value += "  ";
           Value.pretty(x, (indent + 2) >>> 0, out);
-          if ((i + 1) >>> 0 < value._0.length) {
+          if (i + 1 < value._0.length) {
             out.value += ",";
           }
           out.value += "\n";

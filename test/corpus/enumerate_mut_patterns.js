@@ -16,7 +16,7 @@ function main() {
     [1, 3],
   ];
   for (const [i, item] of pairs.entries()) {
-    item[0] = (item[0] + (i | 0)) | 0;
+    item[0] = (item[0] + i) | 0;
   }
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
@@ -25,7 +25,7 @@ function main() {
     { x: 3, y: 4 },
   ];
   for (const [i, item] of ps.entries()) {
-    item.x = (item.x + (i | 0)) | 0;
+    item.x = (item.x + i) | 0;
     item.y = (item.y * 2) | 0;
   }
   console.log(`[${ps.map((item) => pDebug_fmt(item)).join(", ")}]`);

@@ -28,7 +28,7 @@ function rainWater(terraces) {
   }
   let water = 0;
   for (const [i, terrace] of terraces.entries()) {
-    const boundary = $f64Min($index(leftMaxLevels, i), $index(rightMaxLevels, i));
+    const boundary = $f64Min(leftMaxLevels[i], rightMaxLevels[i]);
     if (boundary > terrace) {
       water += boundary - terrace;
     }

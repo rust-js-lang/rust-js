@@ -10,7 +10,8 @@
 use super::*;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{
-    VecView, counts_utf16_units, is_iterator_rev, is_vec_from_elem, once_method, vec_view,
+    VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_slice_items, is_vec_from_elem, once_method,
+    vec_view,
 };
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
@@ -1097,15 +1098,22 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             let mut here = head.clone();
             if let Some((pat, value)) = &each {
                 self.forget_bound(pat, &mut here);
-                if let PatKind::Binding {
+                // Its item, or an `enumerate()`'s index, `(i, x)`'s `i` (#363).
+                let index = match &pat.kind {
+                    PatKind::Leaf { subpatterns } => (subpatterns.iter())
+                        .find(|field| field.field.index() == 0)
+                        .map(|field| &field.pattern),
+                    _ => Some(*pat),
+                };
+                if let Some(PatKind::Binding {
                     var,
                     mode: BindingMode(ByRef::No, _),
                     subpattern: None,
                     ..
-                } = pat.kind
+                }) = index.map(|index| &index.kind)
                     && let (Some(value), Some(k)) = (value, here.as_mut())
                 {
-                    k.vars.insert(var, value.clone());
+                    k.vars.insert(*var, value.clone());
                 }
             }
             self.expr(body, &mut here);
@@ -1190,6 +1198,26 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         {
             head = strip(thir, range);
         }
+        // A slice's items' `enumerate()`, its index below the slice's
+        // length, which the slice's `iter()` holds borrowed (#363).
+        let enumerated = match thir[head].kind {
+            ExprKind::Call { fun, ref args, .. }
+                if let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
+                    && is_iterator_enumerate(self.tcx, def_id)
+                    && let [items] = args[..]
+                    && let ExprKind::Call {
+                        fun: items_fun,
+                        args: ref of,
+                        ..
+                    } = thir[strip(thir, items)].kind
+                    && let Some((items_def, _)) = fn_def(thir[strip(thir, items_fun)].ty)
+                    && is_slice_items(self.tcx, items_def)
+                    && let [slice] = of[..] =>
+            {
+                self.slice(slice).map(|slice| (slice, self.length_most_of(items_fun)))
+            }
+            _ => None,
+        };
         // Its start and end, and how far below its end its last item is:
         // `a..b`'s 1, `a..=b`'s, `RangeInclusive::new(a, b)`, 0.
         let bounds = match thir[head].kind {
@@ -1208,25 +1236,27 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }
             _ => None,
         };
+        let body = thir[for_loop.body].span.source_callsite();
         let each = match bounds {
             Some((start_at, end_at, past)) => {
                 let start = self.expr(start_at, known);
                 let end = self.expr(end_at, known);
-                let body = thir[for_loop.body].span.source_callsite();
-                let unchanged = |(path, var): Slice| {
-                    let changed = (self.changes.get(&var)).is_some_and(|at| at.iter().any(|at| body.contains(*at)));
-                    (!changed).then_some((path, var))
-                };
                 let end = end.map(|r| self.bounded_by_itself(r, end_at));
                 start.zip(end).map(|(start, end)| Range {
                     lo: start.lo,
                     hi: end.hi - past,
-                    below: (end.below).and_then(|(slice, b)| Some((unchanged(slice)?, b.offset(-past)))),
+                    below: (end.below).and_then(|(slice, b)| Some((self.unchanged_in(body, slice)?, b.offset(-past)))),
                 })
             }
             None => {
                 self.expr(for_loop.head, known);
-                None
+                enumerated.map(|(slice, most)| Range {
+                    lo: 0,
+                    hi: most - 1,
+                    below: self
+                        .unchanged_in(body, slice)
+                        .map(|slice| (slice, Below::LENGTH.offset(-1))),
+                })
             }
         };
         self.targets.push(Target {
@@ -1237,6 +1267,13 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         self.walk_loop(for_loop.body, Some((for_loop.pat, each)), known);
         let target = self.targets.pop().expect("pushed");
         *known = either(known.take(), target.breaks);
+    }
+
+    /// `slice`, where nothing in `body`, a loop's, changes it: what a bound
+    /// by its length holds of each time round.
+    fn unchanged_in(&self, body: rustc_span::Span, slice: Slice) -> Option<Slice> {
+        let changed = (self.changes.get(&slice.1)).is_some_and(|at| at.iter().any(|at| body.contains(*at)));
+        (!changed).then_some(slice)
     }
 
     /// `l op r` of integers in `(lo, hi)`, at `site`: its range, and whether

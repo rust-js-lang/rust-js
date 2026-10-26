@@ -942,6 +942,26 @@ pub(crate) fn is_double_ended(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "DoubleEndedIterator"
 }
 
+/// Is `method` `Iterator::enumerate`, whose items are its iterator's, each
+/// with its index, from 0 (#363)?
+pub(in crate::lower) fn is_iterator_enumerate(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    tcx.trait_of_assoc(method)
+        .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
+        && tcx.item_name(method).as_str() == "enumerate"
+}
+
+/// Is `method` a slice's `iter()` or `iter_mut()`, an iterator of each of
+/// its items, no more (#363)?
+pub(in crate::lower) fn is_slice_items(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    matches!(tcx.item_name(method).as_str(), "iter" | "iter_mut")
+        && tcx.inherent_impl_of_assoc(method).is_some_and(|imp| {
+            matches!(
+                tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                ty::Slice(_)
+            )
+        })
+}
+
 /// Is `method` `Iterator::rev`, whose items are its iterator's own, from
 /// its end (#356)?
 pub(in crate::lower) fn is_iterator_rev(tcx: TyCtxt<'_>, method: DefId) -> bool {

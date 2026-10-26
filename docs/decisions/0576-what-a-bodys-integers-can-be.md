@@ -238,3 +238,20 @@ is", `test/corpus/same_length_tables.rs`, and the mutations
 `same-length-of-count-unknown`, `same-length-joined-either`,
 `same-length-kept-grown`, `same-length-kept-celled` and
 `same-length-kept-changed`.
+
+## Amendment: an `enumerate()`'s index (#363)
+
+clippy's `needless_range_loop` steers idiomatic Rust from `for i in
+0..xs.len()` to `for (i, x) in xs.iter().enumerate()`, whose index the walk
+knew nothing of: `$index(leftMaxLevels, i)` where the range loop read
+`leftMaxLevels[i]`. **A `for` over a slice's `iter()` or `iter_mut()`'s
+`enumerate()`, `.rev()` too, gives the tuple's index `0 ≤ i < xs.len()`**,
+as a range below the length does: the `iter()` holds the slice borrowed,
+so it can't change length while the loop runs; a slice variable the body
+points elsewhere gives no bound (`unchanged_in`, which the range loop's
+end uses too), nor does any other function of a slice, whose items may
+outnumber it. Case A ([0262](0262-when-rust-and-js-disagree.md)). Held by
+`lowering-collections.test.ts`'s "an enumerate's index is below its
+slice's length", `test/corpus/enumerate_bounds.rs`, and the mutations
+`enumerate-index-unranged`, `enumerate-of-any-slice-fn`,
+`enumerate-slice-rebound-kept` and `enumerate-index-field-missed`.

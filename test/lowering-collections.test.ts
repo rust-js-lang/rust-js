@@ -716,3 +716,76 @@ pub fn recounted(mut count: usize) -> u32 {
     expect(outside).toThrow();
   }
 });
+
+// An `enumerate()` of a slice's items gives its index below the slice's
+// length, which the `iter()` holds borrowed (#363): `levels[i]` of `for (i,
+// &t) in terraces.iter().enumerate()`, as `for i in 0..terraces.len()`
+// gives. Another slice's index, or an adapter's between, keeps its check.
+test("an enumerate's index is below its slice's length", async () => {
+  const dir = fixture("enumerate-bounds");
+  writeFileSync(join(dir, "lib.rs"), `pub fn water(terraces: &[f64]) -> f64 {
+    let levels = vec![1.0; terraces.len()];
+    let mut sum = 0.0;
+    for (i, &terrace) in terraces.iter().enumerate() {
+        sum += levels[i] - terrace + terraces[i];
+    }
+    sum
+}
+
+pub fn backwards(items: &mut [u32]) {
+    for (i, item) in items.iter_mut().enumerate().rev() {
+        *item += i as u32;
+    }
+}
+
+pub fn other(xs: &[u32], ys: &[u32]) -> u32 {
+    let mut sum = 0;
+    for (i, _) in ys.iter().enumerate() {
+        sum += xs[i];
+    }
+    sum
+}
+
+pub fn rebound(a: &[u32], b: &[u32]) -> u32 {
+    let mut xs = a;
+    let mut sum = 0;
+    for (i, _) in xs.iter().enumerate() {
+        sum += xs[i];
+        xs = b;
+    }
+    sum
+}
+
+fn doubled(xs: &[u32]) -> impl Iterator<Item = u32> + '_ {
+    xs.iter().chain(xs.iter()).copied()
+}
+
+pub fn twice(xs: &[u32]) -> u32 {
+    let mut sum = 0;
+    for (i, _) in doubled(xs).enumerate() {
+        sum += xs[i];
+    }
+    sum
+}
+
+pub fn skipped(xs: &[u32]) -> u32 {
+    let mut sum = 0;
+    for (i, _) in xs.iter().skip(1).enumerate() {
+        sum += xs[i + 1];
+    }
+    sum
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("sum += levels[i] - terrace + terraces[i];");
+  expect(js).toContain("$index(xs, i)");
+  expect(js.match(/\$index\(/g)?.length).toBe(4);
+  const lib = await import(join(dir, "lib.js"));
+  const items = [5, 5, 5];
+  lib.backwards(items);
+  expect([lib.water([1, 2]), items, lib.skipped([1, 2, 3])]).toEqual([2, [5, 6, 7], 5]);
+  for (const outside of [() => lib.other([1], [1, 2]), () => lib.rebound([1, 2], [3]), () => lib.twice([1])]) {
+    expect(outside).toThrow();
+  }
+});

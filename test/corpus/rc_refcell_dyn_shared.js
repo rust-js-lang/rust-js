@@ -234,7 +234,7 @@ function main() {
             const sink = value[1];
             const value$1 = $borrowMut(sink.value, true);
             try {
-              value$1.impl.take(value$1, (i + 1) >>> 0);
+              value$1.impl.take(value$1, i + 1);
             } finally {
               $unborrow(value$1);
             }

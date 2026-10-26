@@ -37,7 +37,7 @@ function main() {
       s.value = (s.value + 1) | 0;
     });
   for (const [i, s] of $mutItems(scores).entries()) {
-    s.value = (s.value + (i | 0)) | 0;
+    s.value = (s.value + i) | 0;
   }
   console.log(`[${scores.join(", ")}]`);
   const names = ["ann", "bo"];
