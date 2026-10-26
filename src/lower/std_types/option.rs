@@ -822,14 +822,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `&mut` to what an `Option`'s place, `place`, holds, an `item`: a
     /// handle on a number's or text's place (ADR 0030), an object itself,
     /// and of what's boxed where it may look like `None`, a handle that
-    /// reads and writes through its box, `$someMut` (ADRs 0051, 0486).
+    /// reads and writes through its box, `$someMut` (ADRs 0051, 0486). What
+    /// a `&mut` to is no cell, a generic iterator, the JS iterator it steps
+    /// (ADR 0071), is that, read through its box, `$someValue`, as a
+    /// pattern binds it (ADR 0921).
     fn option_place_through(&mut self, place: Expr, item: Ty<'tcx>) -> Expr {
-        if self.boxed_payload(item) {
-            return Expr::call_helper("$someMut", vec![Expr::handle(place)]);
-        }
-        match self.is_boxable(item) {
-            true => Expr::handle(place),
-            false => place,
+        match (self.boxed_payload(item), self.is_cell_pointee(item)) {
+            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),
+            (true, false) => self.some_value(place),
+            (false, true) => Expr::handle(place),
+            (false, false) => place,
         }
     }
 }

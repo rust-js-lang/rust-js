@@ -1,6 +1,6 @@
 # 0486. An `Option` of what could look like `None` is changed in place
 
-Status: Accepted. Extends [0051](0051-generic-options.md) and
+Status: Accepted. (Amended by [0921](0921-an-option-slot-gives-its-iterator.md): what a `&mut` to is no cell, a generic iterator, is given as itself.) Extends [0051](0051-generic-options.md) and
 [0326](0326-option-and-result-methods.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's held, and what

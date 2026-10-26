@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "option-slot-iterator-a-handle",
+    breaks: "`slot.get_or_insert_with(f).next()` of a generic iterator steps a handle, `$someMut(..)`, not the iterator: `None` where Rust gives `Some(4)`",
+    file: "src/lower/std_types/option.rs",
+    find: "            (true, false) => self.some_value(place),",
+    replace: "            (true, false) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
+  },
+  {
+    name: "option-slot-number-not-a-handle",
+    breaks: "`*slot.get_or_insert_with(T::default) += by` of a generic `T` writes a copy, not the `Option`'s place",
+    file: "src/lower/std_types/option.rs",
+    find: "            (true, true) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    replace: "            (true, true) => self.some_value(place),",
+    tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
+  },
+  {
     name: "flatten-unboxed",
     breaks: "`Some(None).flatten()` is the box `Some(None)` is, not `None`",
     file: "src/lower/std_types/option.rs",
@@ -184,8 +200,8 @@ export const mutations: Mutation[] = [
     name: "option-place-no-handle",
     breaks: "`*o.get_or_insert(0) += 1` writes a number's field",
     file: "src/lower/std_types/option.rs",
-    find: "            true => Expr::handle(place),\n            false => place,\n",
-    replace: "            true => place,\n            false => place,\n",
+    find: "            (false, true) => Expr::handle(place),",
+    replace: "            (false, true) => place,",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -307,8 +323,8 @@ export const mutations: Mutation[] = [
     name: "option-place-through-box",
     breaks: "`*o.get_or_insert(..) = None` of an `Option<Option<T>>` writes the outer `Option` `None`",
     file: "src/lower/std_types/option.rs",
-    find: "        if self.boxed_payload(item) {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
-    replace: "        if false {\n            return Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]);\n",
+    find: "            (true, true) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    replace: "            (true, true) => Expr::handle(place),",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
   {

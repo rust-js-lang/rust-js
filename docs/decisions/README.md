@@ -705,6 +705,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0917 A held `StepBy` is std's, a precondition check never runs, and a std struct is the JS iterator it is where it's first one](0917-a-held-step-by-is-std-s.md)
 - [0918 A range given to generic code knows how many it has left, and std's struct's default `len` is its exact `size_hint`](0918-a-range-given-knows-how-many-it-has-left.md)
 - [0920 A held `Chain` is std's, stepped from its back by its own compiled methods](0920-a-held-chain-is-std-s.md)
+- [0921 A `&mut` to a generic iterator an `Option` holds is the iterator, whichever method gives it](0921-an-option-slot-gives-its-iterator.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -768,7 +769,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0483 `BorrowMut` is given a dictionary](0483-borrow-mut-is-given-a-dictionary.md)
 - [0484 A closure its maker gives back carries its drop](0484-a-returned-closure-carries-its-drop.md)
 - [0485 An adapter that holds a function is closed to drop it](0485-an-adapter-holding-a-function-is-closed-to-drop-it.md)
-- [0486 An `Option` of what could look like `None` is changed in place](0486-an-option-of-a-boxed-payload-is-changed-in-place.md)
+- [0486 An `Option` of what could look like `None` is changed in place](0486-an-option-of-a-boxed-payload-is-changed-in-place.md) *(amended by 0921: what's no cell, a generic iterator, is given as itself by `insert` and `get_or_insert`)*
 - [0487 An iterator given as it is has its extensions' dictionaries](0487-an-iterator-given-as-it-is-has-its-extensions-dictionaries.md)
 - [0488 An iterator bound by an extension alone is bound by `Iterator`](0488-an-extension-bound-iterator-is-an-iterator.md)
 - [0489 A std associated type is given its drop by its own type](0489-a-yielded-item-is-given-its-drop-by-its-own-type.md)
