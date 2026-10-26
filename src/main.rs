@@ -280,8 +280,11 @@ impl Callbacks for RustJs {
         // 3. Only a program rustc accepts becomes JavaScript. A library's
         // function its calls give more than it takes is compiled here, from
         // the MIR its library's metadata keeps, and the crate lowered again
-        // with it (ADR 0914).
+        // with it (ADR 0914); and so is one with a thread-local made as its
+        // module loads by a function of a module that may load after it,
+        // made where it's first used then (ADR 0037, amended).
         let mut instances = lower::Instances::default();
+        let mut made_where_used = std::collections::HashSet::new();
         let lowered = loop {
             if tcx.dcx().has_errors().is_some() {
                 break None;
@@ -297,7 +300,7 @@ impl Callbacks for RustJs {
                 tcx,
                 (&bodies, &initializers),
                 &serde_attrs,
-                (&self.dependencies, &instances),
+                (&self.dependencies, &instances, &made_where_used),
                 built,
             ) {
                 lower::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
@@ -305,6 +308,7 @@ impl Callbacks for RustJs {
                     bodies.extend(lower::instance_bodies(tcx, &more));
                     instances.extend(more);
                 }
+                lower::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }
         };
         if let Some(unlinked) = lowered

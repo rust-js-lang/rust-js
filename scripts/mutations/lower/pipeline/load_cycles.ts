@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "                .any(|&(from, read)| from == own && made_where_loaded(read) && false)\n",
     tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
   },
+  {
+    name: "maker-cycle-unseen",
+    breaks: "a thread-local whose maker reads a `const` of a module that imports its own back is made as its module loads, before that module made it: a `ReferenceError`",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "                module != own && imports.reaches(module, own)\n",
+    replace: "                false && module != own && imports.reaches(module, own)\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_by_constructor.rs$"],
+  },
+  {
+    name: "effects-import-nothing",
+    breaks: "a module's `js::import!(\"./setup.js\")` imports none of the crate's modules that file does, so a cycle through it is unseen and the module loaded first reads a constant before it's made",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "    let bound = used.chain(users).chain(effects);\n",
+    replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
+  },
 ];

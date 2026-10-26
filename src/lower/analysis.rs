@@ -555,6 +555,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// their initializer runs the crate's code or may panic (ADR 0037,
     /// amended): each `$local(() => init)`, read by calling it.
     pub lazy_locals: HashSet<LocalDefId>,
+    /// Of the others, made as their modules load, the crate's functions
+    /// that make each one's value, by its key (ADR 0037, amended).
+    pub local_makers: HashMap<LocalDefId, Vec<DefId>>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub named_expressions: HashSet<DefId>,
@@ -576,7 +579,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     initializers: &[Body<'tcx>],
     dependencies: &crate::library::Dependencies,
     (library, std_bodies): (bool, bool),
-    instances: &super::Instances,
+    (instances, made_where_used): (&super::Instances, &HashSet<LocalDefId>),
 ) -> Option<AnalyzedCrate<'a, 'tcx>> {
     let foreign = super::library::Foreign::new(tcx, dependencies, instances);
     if !bindings::validate(tcx)
@@ -877,7 +880,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     // Those made where they're first used, which aren't plain: a variable
     // can't be made as it's read (ADR 0037, amended).
-    let lazy_locals = lazy_locals::lazy_locals(tcx, all_bodies, &thread_local_inits, cell_borrows.pointers());
+    let lazy_locals::LazyLocals {
+        lazy: lazy_locals,
+        made_by: local_makers,
+    } = lazy_locals::lazy_locals(
+        tcx,
+        all_bodies,
+        (&thread_local_inits, made_where_used),
+        cell_borrows.pointers(),
+    );
     let quiet_locals = plain_locals::plain_thread_locals(
         tcx,
         all_bodies,
@@ -1073,6 +1084,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         debug_hex,
         quiet_locals,
         lazy_locals,
+        local_makers,
         named_expressions,
         local_functions,
         local_consts,

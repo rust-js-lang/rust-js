@@ -1,15 +1,19 @@
-//! What a module's load reads of another that may load after it, in an
-//! import cycle: a `const` read by its name, which its body reads as its
-//! value instead (ADR 0031, amended), and a dictionary that's its module's
-//! `const`, refused there (ADR 0592).
+//! What the crate's modules import of each other, of what their bodies
+//! import (`module_imports`), and what a module's load reads of another
+//! that may load after it, in an import cycle: a `const` read by its name,
+//! which its body reads as its value instead (ADR 0031, amended); a
+//! thread-local's maker, which then makes it where it's first used (ADR
+//! 0037, amended); and a dictionary that's its module's `const`, refused
+//! there (ADR 0592).
 
 use super::Pass;
 use crate::js;
 use crate::lower::FnInfo;
+use crate::lower::bindings::Export;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Each body run where its module loads, of `loads`, that reads another of
 /// the crate's modules' `const` or numbered enum's variant by its name,
@@ -41,6 +45,32 @@ pub(super) fn load_cycles(
         })
         .map(|&(id, _)| id)
         .collect()
+}
+
+/// Each thread-local, of `makers`, made as its module loads by functions of
+/// the crate's that only make a value (ADR 0037, amended), one of which is
+/// of a module that may load after its own: of another module that reaches
+/// its own by what the crate's modules import of each other, `imports`, an
+/// import cycle. Its maker may read what that module hasn't made yet, a
+/// `const`, so it's made where it's first used.
+pub(super) fn made_in_cycles(
+    tcx: TyCtxt<'_>,
+    makers: &HashMap<rustc_span::def_id::LocalDefId, Vec<DefId>>,
+    fns: &HashMap<DefId, FnInfo>,
+    imports: &crate::lower::load_order::ModuleImports,
+) -> Vec<rustc_span::def_id::LocalDefId> {
+    let mut cyclic: Vec<_> = (makers.iter())
+        .filter(|&(&key, makers)| {
+            let own = fns[&key.to_def_id()].module;
+            (makers.iter()).any(|maker| {
+                let module = fns[maker].module;
+                module != own && imports.reaches(module, own)
+            })
+        })
+        .map(|(&key, _)| key)
+        .collect();
+    cyclic.sort_by_key(|&key| tcx.def_span(key));
+    cyclic
 }
 
 /// A dictionary that's its module's `const` (ADR 0592) is made when its
@@ -82,4 +112,44 @@ pub(super) fn refuse_dictionaries_in_load_cycles(
             );
         }
     }
+}
+
+/// A module's JS: where it's laid out, its module path, its Rust file and
+/// whether a `#[path]` placed it (ADR 0273), and what it imports for its
+/// effects alone, `js::import!("./setup.js")` (ADR 0110).
+pub(super) struct ModuleJs {
+    pub(super) module: LocalModId,
+    pub(super) path: Vec<String>,
+    pub(super) file: Option<std::path::PathBuf>,
+    pub(super) located: bool,
+    pub(super) effects: Vec<String>,
+}
+
+/// What the crate's modules import of each other (`load_order`), of what
+/// their bodies import: another module's items each reads, the bindings it
+/// reads through another that holds them (ADR 0633), and the JS modules it
+/// imports, a binding's, as `imported` says of each too, and those it
+/// imports for their effects.
+pub(super) fn module_imports<'d>(
+    places: &[ModuleJs],
+    fns: &HashMap<DefId, FnInfo>,
+    (references, held, package_uses): (
+        impl Iterator<Item = &'d (LocalModId, DefId)>,
+        impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
+        impl Iterator<Item = &'d (LocalModId, Export)>,
+    ),
+    imported: &BTreeMap<Export, HashSet<LocalModId>>,
+    js_modules: &dyn crate::program::JsModules,
+) -> crate::lower::load_order::ModuleImports {
+    let laid_out: Vec<_> = (places.iter())
+        .map(|js| (js.module, (js.path.as_slice(), js.file.as_deref(), js.located)))
+        .collect();
+    let referenced = references.map(|&(from, id)| (from, fns[&id].module));
+    let held = held.map(|&(from, holder, ..)| (from, holder));
+    let used = package_uses.map(|(from, (module, _))| (*from, module.as_str()));
+    let users =
+        (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
+    let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
+    let bound = used.chain(users).chain(effects);
+    crate::lower::load_order::ModuleImports::new(&laid_out, referenced.chain(held), bound, js_modules)
 }

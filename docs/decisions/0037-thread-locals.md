@@ -223,3 +223,60 @@ what `Date.now` does, at the module's load.
   first line, against native Rust; `test/port-scheduler.test.ts`'s
   snapshot holds the scheduler's `let getCurrentTime;`.
 - Mutations `lazy-local-pointer-unseen`, `lazy-local-pointer-any`.
+
+## Amendment: a function of the crate's that only makes a value
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): nothing a program
+prints, throws or reads can tell when such a thread-local is made.
+
+React's `ReactFiberHiddenContext` makes its cursors by `ReactFiberStack`'s
+`createCursor`, as upstream does, `export const
+currentTreeHiddenStackCursor = createCursor(null);`:
+
+```rust
+pub fn create_cursor<T>(default_value: T) -> StackCursor<T> {
+    StackCursor { current: RefCell::new(default_value) }
+}
+
+thread_local! {
+    static CURRENT_TREE_HIDDEN_STACK_CURSOR: StackCursor<Option<Rc<HiddenContext>>> = create_cursor(None);
+}
+```
+
+`create_cursor` is the crate's, so the amendment above made it where it's
+first used, `$local(() => createCursor(null))`, read by its call, though
+it runs nothing that could tell when: it makes a value of what it's given.
+
+**A call of a function of the crate's that only makes a value is one
+that runs nothing of the crate's** (`lazy_locals`' `Makers::makes_only`):
+a free function that reads no `static` or thread-local, may not panic,
+drops nothing of the crate's with a destructor, and calls only others
+that do, not itself, and std's that only make a value
+(`std_makes_only`): a `const fn` of no trait, asking nothing of its type
+parameters but their size, `RefCell::new`, not `Iterator`'s methods, of a
+`const` trait, nor `Option::map`, given a closure. No binding's, closure's,
+`dyn`'s or fn pointer's call. So the cursor is `const
+currentTreeHiddenStackCursor = createCursor(null);`, read by its name.
+
+- **Not of a module that may load after its own**: one whose maker, or a
+  maker that one calls, is of a module that imports the thread-local's
+  back, in an import cycle, may run before that module made its `const`s,
+  a `ReferenceError` in JS. The modules' imports are known once the crate
+  is lowered (`load_order`): `load_cycles::made_in_cycles` finds each, the
+  pipeline returns them, `Lowered::MadeWhereUsed`, and the driver lowers
+  the crate again with them made where they're first used.
+- What a maker of one that only makes a value reads by its name, a
+  `const`, is read where its module has made it, as the cycle above can't
+  be.
+
+Held by `test/corpus/thread_local_made_by_constructor.rs`, against native
+Rust and its snapshot: a maker's cursor and one of a maker of a maker
+made as the module loads; one whose maker reads a `static` or a
+thread-local, prints, or gives std's `Option::map` a closure that prints,
+made where it's first used; and one in a module whose maker's module
+imports it back, made where it's first used, which a `ReferenceError`
+says otherwise. `fn_pointer_borrows_nothing`'s `const clz32 =
+chosen(true);` and `nullable_generic_fields`' `const hidden =
+createCursor(null);` read by their names now. The mutations
+`lazy-local-maker-unseen`, `maker-reads-unseen`, `maker-std-calls-any`,
+`std-maker-bounds-unseen` and `maker-cycle-unseen`.

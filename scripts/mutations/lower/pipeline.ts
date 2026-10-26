@@ -570,14 +570,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
   },
   {
-    name: "effects-import-nothing",
-    breaks: "a module's `js::import!(\"./setup.js\")` imports none of the crate's modules that file does, so a cycle through it is unseen and the module loaded first reads a constant before it's made",
-    file: "src/lower/pipeline.rs",
-    find: "    let bound = used.chain(users).chain(effects);\n",
-    replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
-  },
-  {
     name: "static-mut-exported-boxed",
     breaks: "a `pub static mut` isn't one of its module's variables to `plain_statics`, so it stays its `{ value }` and is refused (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",

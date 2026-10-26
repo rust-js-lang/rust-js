@@ -4,6 +4,7 @@ mod holes;
 mod load_cycles;
 
 use self::holes::{Holes, fill_hole, fill_holes};
+use self::load_cycles::{ModuleJs, module_imports};
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
@@ -61,20 +62,29 @@ pub struct Built<'a> {
 
 /// What lowering the crate gave: its JS, none where it failed; or the
 /// library functions it must compile itself first, which the crate's calls
-/// give more than they take (ADR 0914), each with the module it's placed in.
+/// give more than they take (ADR 0914), each with the module it's placed in;
+/// or the thread-locals it must make where they're first used, whose maker
+/// is of a module that may load after theirs (ADR 0037, amended).
 pub enum Lowered {
     Crate(Option<Box<Unlinked>>),
     Instances(Vec<(DefId, LocalModId)>),
+    MadeWhereUsed(Vec<rustc_span::def_id::LocalDefId>),
 }
 
 /// Lower every function, grouped by module. Reports all unsupported
 /// features as rustc errors. `instances` are the library functions the
-/// crate compiles itself, whose bodies `all_bodies` has (ADR 0914).
+/// crate compiles itself, whose bodies `all_bodies` has (ADR 0914);
+/// `made_where_used`, the thread-locals an earlier lowering found must be
+/// made where they're first used (ADR 0037, amended).
 pub fn lower_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
     (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]),
     serde_attrs: &super::SerdeAttributes,
-    (dependencies, instances): (&crate::library::Dependencies, &super::Instances),
+    (dependencies, instances, made_where_used): (
+        &crate::library::Dependencies,
+        &super::Instances,
+        &HashSet<rustc_span::def_id::LocalDefId>,
+    ),
     built: Built<'_>,
 ) -> Lowered {
     let Built {
@@ -127,6 +137,7 @@ pub fn lower_crate<'tcx>(
         debug_hex,
         quiet_locals,
         lazy_locals,
+        local_makers,
         named_expressions,
         local_functions,
         local_consts,
@@ -137,7 +148,7 @@ pub fn lower_crate<'tcx>(
         initializers,
         dependencies,
         (export_library, std_bodies),
-        instances,
+        (instances, made_where_used),
     ) {
         Some(analyzed) => analyzed,
         None => return Lowered::Crate(None),
@@ -468,6 +479,13 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.package_uses),
                 );
                 let imports = module_imports(&places, &fns, edges, &imported, js_modules);
+                // A thread-local made as its module loads, of a function of a
+                // module that may load after it: made where it's first used,
+                // the crate lowered again so (ADR 0037, amended).
+                let cyclic = load_cycles::made_in_cycles(tcx, &local_makers, &fns, &imports);
+                if !cyclic.is_empty() {
+                    return Lowered::MadeWhereUsed(cyclic);
+                }
                 let again = load_cycles::load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
                 if again.is_empty() {
                     break;
@@ -1468,44 +1486,4 @@ fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
         }
         at = tcx.parent_module_from_def_id(at.to_local_def_id());
     }
-}
-
-/// A module's JS: where it's laid out, its module path, its Rust file and
-/// whether a `#[path]` placed it (ADR 0273), and what it imports for its
-/// effects alone, `js::import!("./setup.js")` (ADR 0110).
-struct ModuleJs {
-    module: LocalModId,
-    path: Vec<String>,
-    file: Option<std::path::PathBuf>,
-    located: bool,
-    effects: Vec<String>,
-}
-
-/// What the crate's modules import of each other (`load_order`), of what
-/// their bodies import: another module's items each reads, the bindings it
-/// reads through another that holds them (ADR 0633), and the JS modules it
-/// imports, a binding's, as `imported` says of each too, and those it
-/// imports for their effects.
-fn module_imports<'d>(
-    places: &[ModuleJs],
-    fns: &HashMap<DefId, FnInfo>,
-    (references, held, package_uses): (
-        impl Iterator<Item = &'d (LocalModId, DefId)>,
-        impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
-        impl Iterator<Item = &'d (LocalModId, Export)>,
-    ),
-    imported: &BTreeMap<Export, HashSet<LocalModId>>,
-    js_modules: &dyn crate::program::JsModules,
-) -> super::load_order::ModuleImports {
-    let laid_out: Vec<_> = (places.iter())
-        .map(|js| (js.module, (js.path.as_slice(), js.file.as_deref(), js.located)))
-        .collect();
-    let referenced = references.map(|&(from, id)| (from, fns[&id].module));
-    let held = held.map(|&(from, holder, ..)| (from, holder));
-    let used = package_uses.map(|(from, (module, _))| (*from, module.as_str()));
-    let users =
-        (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
-    let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
-    let bound = used.chain(users).chain(effects);
-    super::load_order::ModuleImports::new(&laid_out, referenced.chain(held), bound, js_modules)
 }
