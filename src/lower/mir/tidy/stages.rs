@@ -199,6 +199,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("destructured declared", |b, h| {
                 js::statement_lists(b, &mut |s| destructured(s, (&HashSet::new(), &h.lets.named)))
             }),
+            pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
             pass("copied bindings", |b, h| {
                 js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))

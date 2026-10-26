@@ -128,3 +128,17 @@ f } = map;`, `math_values.rs`'s `const { atan2, hypot } = Math;` and
 cells, each by its name, are one destructuring", run in JS,
 `test/lowering-parts.test.ts`, and the mutations `body-reads-apart` and
 `body-reads-renamed-together` (`prepare.ts`).
+
+## Amendment: a tuple assigned to variables is a destructuring assignment (#331)
+
+`(a, b) = if a > b { (a - b, b) } else { (a, b - a) };` read `const [_18,
+_19] = a > b ? [a - b, b] : [a, b - a]; a = _18; b = _19;`, MIR's
+temporaries by their names. **A pattern of temporaries each assigned, in
+its order, to a variable the program has, and read nowhere else, is one
+destructuring assignment**, `[a, b] = a > b ? [a - b, b] : [a, b - a];`,
+as trekhleb/javascript-algorithms' `euclideanAlgorithmIterative` writes it:
+JS makes the right side whole before it sets any, as the temporaries did.
+After "destructured declared", which makes the pattern ("assigned parts").
+Held by the corpus case `tuple_assigned_to_variables` and the mutation
+`assigned-parts-left-apart`.
+

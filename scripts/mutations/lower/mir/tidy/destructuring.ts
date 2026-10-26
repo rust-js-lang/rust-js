@@ -2,6 +2,15 @@
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "assigned-parts-left-apart",
+    breaks: "a tuple assigned to variables, `(a, b) = e`, reads `const [_18, _19] = e; a = _18; b = _19;`, not `[a, b] = e;` (#331)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        if !distinct || parts.iter().any(|part| js::mentions_in(&stmts[after..], part) > 0) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_assigned_to_variables.rs$"],
+    snapshots: true,
+  },
 
   {
     name: "named-let-part-of-a-pattern",

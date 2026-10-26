@@ -126,6 +126,65 @@ fn constants_first(stmts: &mut Vec<Stmt>, at: usize, first: usize, name: &str) -
     count
 }
 
+/// `const [_18, _19] = e; a = _18; b = _19;`, a tuple assigned to the
+/// variables the program has, `(a, b) = e`, its temporaries read nowhere
+/// else: `[a, b] = e;`, a destructuring assignment, as JS writes one, which
+/// makes `e` whole before it sets any of them, as the temporaries did.
+pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Destructure {
+            pattern: js::Pattern::Array(items),
+            mutable: false,
+            ..
+        } = &stmts[i].kind
+        else {
+            i += 1;
+            continue;
+        };
+        let parts: Option<Vec<String>> = (items.iter())
+            .map(|item| match item {
+                Some(js::Pattern::Name(name)) if is_temporary(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect();
+        // Each part assigned in the statements after it, in its order.
+        let targets: Option<Vec<String>> = parts.as_ref().and_then(|parts| {
+            (parts.iter().enumerate())
+                .map(|(k, part)| match stmts.get(i + 1 + k).map(|s| &s.kind) {
+                    Some(StmtKind::Assign(
+                        Expr {
+                            kind: ExprKind::Var(target),
+                            ..
+                        },
+                        Expr {
+                            kind: ExprKind::Var(read),
+                            ..
+                        },
+                    )) if read == part => Some(target.clone()),
+                    _ => None,
+                })
+                .collect()
+        });
+        let (Some(parts), Some(targets)) = (parts, targets) else {
+            i += 1;
+            continue;
+        };
+        let distinct = (targets.iter()).all(|t| targets.iter().filter(|u| *u == t).count() == 1);
+        let after = i + 1 + parts.len();
+        if !distinct || parts.iter().any(|part| js::mentions_in(&stmts[after..], part) > 0) {
+            i += 1;
+            continue;
+        }
+        let StmtKind::Destructure { value, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
+            unreachable!("matched")
+        };
+        stmts[i].kind = StmtKind::Assign(Expr::array(targets.iter().map(|t| Expr::var(t)).collect()), value);
+        stmts.drain(i + 1..after);
+        i += 1;
+    }
+}
+
 /// A `let`'s pattern's rest, which MIR's lowering takes apart with each
 /// other field named apart, `const { href: _href, ...rest } = p;`, beside
 /// what the pattern binds of the same, `const { href } = p;`: one pattern,
