@@ -17,6 +17,7 @@ import {
   $exactLen,
   $filterEnds,
   $foldBack,
+  $foldOf,
   $folded,
   $fuseRfold,
   $iterator,
@@ -757,12 +758,12 @@ function main() {
           next: countIterator_next,
           sizeHint: countIterator_sizeHint,
         }),
-        { next: $next },
+        { next: $next, fold: $foldOf },
         false,
       ),
       0,
       (a, x) => (a + x) | 0,
-      { next: $next },
+      { next: $next, fold: $foldOf },
       {
         next_back: (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {

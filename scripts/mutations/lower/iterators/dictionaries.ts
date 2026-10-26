@@ -196,4 +196,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
+  {
+    name: "std-struct-fold-undictionaried",
+    breaks: "a `Map` std's `FlatMap` makes has no `fold` in its dictionary, so std's `FlattenCompat::fold` steps it by `next`, not the crate's own `fold` (ADR 0912)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n                        && self.compiled_fold_of(ty, (iterator, \"fold\"))?.is_some());\n",
+    replace: ";\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "mut-ref-dictionary-whole",
+    breaks: "a `&mut I` is given all of `I`'s dictionary, so `by_ref().fuse().count()` runs the crate's own `fold`, which std's `&mut I` never calls (ADR 0912)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

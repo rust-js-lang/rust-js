@@ -8,6 +8,7 @@ import {
 import {
   $dropEach,
   $exactLen,
+  $foldOf,
   $iter,
   $next,
   $nextBack,
@@ -147,7 +148,7 @@ function main() {
         undefined,
         loudDrop_drop,
       ),
-      { next: $next },
+      { next: $next, fold: $foldOf },
       undefined,
       loudDrop_drop,
     );

@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+  {
+    name: "std-iterator-takes-unmarked",
+    breaks: "std's struct its compiled `fold` took isn't marked closed, so its close drops what it held again (ADR 0912)",
+    file: "src/runtime/std_iterator.js",
+    find: "    if (steps.takes?.includes(method)) it.$closed = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
 ];

@@ -25,7 +25,8 @@ beforeAll(() => {
 });
 
 // Of the suite's own run, these: each held and made-in-place adapters std
-// compiles, stepped from either end, sized and dropped.
+// compiles, stepped from either end, sized and dropped; folded through
+// the crate's own, and taken by a `&mut` (ADR 0912).
 const few = [
   "std_rev.rs",
   "std_inspect.rs",
@@ -33,6 +34,8 @@ const few = [
   "std_flat_map.rs",
   "held_adapters_by_ref.rs",
   "adapter_drops.rs",
+  "own_fold_and_nth.rs",
+  "by_ref_steps.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -61,7 +64,6 @@ const differs: Record<string, string> = {
   "held_enumerate.rs": "refused: the DoubleEndedIterator of a R",
   "lazy_iterator_clone.rs": "throws: std's struct clones a function the recognizers made",
   "own_back_through_adapters.rs": "refused: the DoubleEndedIterator of a Take<Count>",
-  "own_fold_and_nth.rs": "prints otherwise than native Rust",
   "own_iterator_dropped_from_back.rs": "prints otherwise than native Rust",
   "own_iterator_dropped_through_adapters.rs": "refused: the DoubleEndedIterator of a Skip<Fuse<Count>>",
   "own_nth_through_adapters.rs": "prints otherwise than native Rust",

@@ -8,7 +8,7 @@
   "library": {
     "version": 7,
     "name": "rust_js_std",
-    "crate_hash": "2ed5bb45b5a6bd8da4638cbbffe8cdb6",
+    "crate_hash": "0c85ac2ebd9408ec7d2fa0951b5b9fbc",
     "items": [
       {
         "key": "608f92abc48d28da832aed8d16346cb9",
@@ -1004,6 +1004,44 @@
           },
           {
             "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da6a5f5c723dcfefa5",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
             "marks": [
               "drop"
             ]
@@ -3452,6 +3490,7 @@
         "peekableDebug_fmt",
         "fuseIterator_next",
         "fuseIterator_sizeHint",
+        "fuseIterator_fold",
         "fuseDoubleEndedIterator_nextBack",
         "fuseDoubleEndedIterator_rfold",
         "fuseDoubleEndedIterator_nthBack",
@@ -3557,7 +3596,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "252b8e87986c395a"
+      "hash": "b1d1e5adbc120aaf"
     },
     {
       "file": "iter.js.map",

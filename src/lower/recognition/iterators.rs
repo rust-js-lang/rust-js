@@ -63,21 +63,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Fuse")
     }
 
-    /// Whether `ty` is std's `iter::Map` or `iter::Inspect`, whose fold is its
-    /// source's, each item given its `f` (#264): `"Map"`, `"Inspect"`.
-    pub(in crate::lower) fn mapping_adapter(&self, ty: Ty<'tcx>) -> Option<&'static str> {
-        let ty::Adt(adt, _) = ty.peel_refs().kind() else {
-            return None;
-        };
-        match std_path(self.tcx, adt.did()).as_str() {
-            "std::iter::Map" => Some("Map"),
-            "std::iter::Inspect" => Some("Inspect"),
-            // And a `FlatMap`'s, each item given its `f`, then folded (#297).
-            "std::iter::FlatMap" => Some("FlatMap"),
-            _ => None,
-        }
-    }
-
     /// Whether stepping `ty` by its `next` first asks a `Skip`'s `nth` of
     /// one that drops what it passes as one slice, a reversed `Vec`'s: a
     /// `Skip` of such, or an adapter whose `next` is its source's of one,

@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "given-field-name-ignored",
     breaks: "a field's `#[rust_js::name = \"react-dom\"]` is ignored: its key is its Rust name, `react_dom`",
     file: "src/lower/bindings.rs",
-    find: "    name_in_js(tcx, field.did)\n",
-    replace: "    default_name(tcx, field.did)\n",
+    find: "    let key = name_in_js(tcx, field.did);\n",
+    replace: "    let key = default_name(tcx, field.did);\n",
     tests: ["test/js-builtins.test.ts", "-t", "a struct whose JS is its JSON is stringified as it is"],
   },
   {
@@ -489,5 +489,13 @@ export const mutations: Mutation[] = [
     find: "                    ty::Param(_) => true,\n",
     replace: "                    ty::Param(_) => false,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
+  },
+  {
+    name: "std-field-key-shared",
+    breaks: "`Enumerate`'s field `count` shares its key with the `count` method `$stdIterator` gives it, which overwrites it (ADR 0912)",
+    file: "src/lower/bindings.rs",
+    find: "        true => format!(\"{key}$\"),\n",
+    replace: "        true => key,\n",
+    tests: ["test/std-package.test.ts"],
   },
 ];

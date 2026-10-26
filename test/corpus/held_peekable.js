@@ -11,6 +11,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $debugStr,
+  $foldOf,
   $iter,
   $iterator,
   $next,
@@ -41,7 +42,7 @@ function withPositionClone_clone(withPosition, IClone, IItemClone) {
     peekable: peekableClone_clone(
       withPosition.peekable,
       fuseClone(IClone),
-      { next: $nextSome },
+      { next: $nextSome, fold: $foldOf },
       IItemClone,
     ),
   };
@@ -50,7 +51,10 @@ function withPositionClone_clone(withPosition, IClone, IItemClone) {
 function withPosition(iter, IIterator, IFused) {
   return {
     handledFirst: false,
-    peekable: iterator_peekable(iterator_fuse(iter, IIterator, IFused), { next: $nextSome }),
+    peekable: iterator_peekable(iterator_fuse(iter, IIterator, IFused), {
+      next: $nextSome,
+      fold: $foldOf,
+    }),
   };
 }
 

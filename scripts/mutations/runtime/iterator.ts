@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_steps_anywhere.rs$"],
   },
+  {
+    name: "own-steps-not-the-value",
+    breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
+    file: "src/runtime/iterator.js",
+    find: "  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined\n",
+    replace: "  if (own(iterator, { next: $next }) && len === undefined\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
 ];

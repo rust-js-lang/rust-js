@@ -100,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // passes it on as std's does, `$foldBack`.
         // Of std's struct, a held `Map`'s, its compiled ones (ADR 0871).
         if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
-            let rfold = self.compiled_rfold(ty, trait_id, span)?;
+            let rfold = self.compiled_fold(ty, (trait_id, "rfold"), span)?;
             let nth_back = match self.compiled_step(ty, trait_id, "nth_back") {
                 true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),
                 false => None,
@@ -233,7 +233,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => {
                 let recognition = self.recognition();
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
-                let folds = recognition.folds_its_own(ty) || recognition.folds_by_its_own_nth(ty);
+                // Std's struct whose `fold` std compiles folds by that, its
+                // meaning, whatever its sources are (ADR 0912).
+                let folds = recognition.folds_its_own(ty)
+                    || recognition.folds_by_its_own_nth(ty)
+                    || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+                        && self.compiled_fold_of(ty, (iterator, "fold"))?.is_some());
                 (
                     folds.then(|| Expr::helper("$foldOf")),
                     recognition
@@ -254,6 +259,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(Expr::object(props))
+    }
+
+    /// The `Iterator` dictionary of a `&mut I`, of `I`'s, `of`: what std's
+    /// impl for it passes on to its `I`, its `next`, `size_hint` and `nth`;
+    /// not its `fold`, which is `I`'s `try_fold`, nor its `last`, std's of
+    /// `next`, as a JS iterator lent is (`$lent`, ADR 0912).
+    pub(in crate::lower) fn mut_ref_iterator_dictionary(&self, of: Expr) -> Expr {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let passed: Vec<String> = ["next", "size_hint", "nth"]
+            .map(|name| crate::lower::bindings::trait_method_name(self.tcx, iterator, name))
+            .into();
+        match of.kind {
+            js::ExprKind::Object(props, _) => Expr::object(
+                (props.into_iter())
+                    .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))
+                    .collect(),
+            ),
+            _ => Expr::object(
+                (passed.into_iter())
+                    .map(|name| js::Prop::Field(name.clone(), Expr::member(of.clone(), &name)))
+                    .collect(),
+            ),
+        }
     }
 
     /// What an `IntoIterator` of type `ty` gives, its `Item`.

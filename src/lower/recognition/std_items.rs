@@ -171,6 +171,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("Debug"), "fmt"),
     ("Fuse", Some("Iterator"), "next"),
     ("Fuse", Some("Iterator"), "size_hint"),
+    ("Fuse", Some("Iterator"), "fold"),
     ("Fuse", Some("DoubleEndedIterator"), "next_back"),
     ("Fuse", Some("DoubleEndedIterator"), "rfold"),
     ("Fuse", Some("DoubleEndedIterator"), "nth_back"),

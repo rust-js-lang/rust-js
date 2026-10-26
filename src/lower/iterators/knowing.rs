@@ -644,38 +644,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (last, _) = self.user_next(ty, iterator, "last", span)?;
             props.push(crate::js::Prop::Field("last".into(), last));
         }
-        // Its fold, std's: a peekable's what it peeked at then its source's,
-        // a fuse's its source's while it has one, by the source's
-        // dictionary, which has that impl's own `fold` (#162); a fuse's
-        // source, which it lets go of, dropped by its drop after, as its
-        // `next` drops it at its end; a map's and an inspect's their
-        // source's, each item given its `f` (#264).
+        // Its fold, std's own compiled one where it has one, `mapIterator_fold`
+        // of a map, whatever its source's own fold is among what it does
+        // (#264, #297, ADR 0912).
+        // What of these std's compiled ones take whole, as Rust's move it.
+        let mut takes = Vec::new();
+        let compiled_fold = self.compiled_fold(ty, (iterator, "fold"), span)?;
+        let folds_compiled = compiled_fold.is_some();
+        if let Some(fold) = compiled_fold {
+            props.push(crate::js::Prop::Field("fold".into(), fold));
+            takes.push("fold");
+        }
+        // Else a peekable's what it peeked at then its source's, a fuse's
+        // its source's while it has one, by the source's dictionary, which
+        // has that impl's own `fold` (#162); a fuse's source, which it lets
+        // go of, dropped by its drop after, as its `next` drops it at its end.
         let fold = match ty.peel_refs().kind() {
             ty::Adt(_, args) if self.is_peekable(ty) => Some(("$peekableFold", args.type_at(0))),
             ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseFold", args.type_at(0))),
-            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("Map") => {
-                Some(("$mapFold", args.type_at(0)))
-            }
-            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("Inspect") => {
-                Some(("$inspectFold", args.type_at(0)))
-            }
-            // A flat map's of what each item makes, `U`, by its
-            // `IntoIterator` dictionary (#297).
-            ty::Adt(_, args) if self.recognition().mapping_adapter(ty) == Some("FlatMap") => {
-                Some(("$flatMapFold", args.type_at(1)))
-            }
             _ => None,
         };
         if let Some((helper, source)) = fold {
             let mut args = vec![Expr::var("it"), Expr::var("init"), Expr::var("f")];
-            let dictionary = match helper {
-                "$flatMapFold" => self.evidence_for(ty::TraitRef::new(
-                    self.tcx,
-                    std_item(self.tcx, StdItem::IntoIterator),
-                    [source],
-                )),
-                _ => self.iterator_evidence(source, iterator),
-            };
+            let dictionary = self.iterator_evidence(source, iterator);
             let drop = match helper {
                 "$fuseFold" => self.drop_function(source, span)?,
                 _ => None,
@@ -700,7 +691,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec!["it".into(), "init".into(), "f".into()],
                 vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
             );
-            props.push(crate::js::Prop::Field("fold".into(), fold));
+            if !folds_compiled {
+                props.push(crate::js::Prop::Field("fold".into(), fold));
+            }
             let try_helper = match helper {
                 "$fuseFold" => Some("$fuseTryFold"),
                 "$peekableFold" => Some("$peekableTryFold"),
@@ -722,6 +715,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if self.recognition().is_fuse(ty) => Some(("$fuseCount", args.type_at(0))),
             _ => None,
         };
+        // The compiled impl's first, an `Enumerate`'s, its source's own
+        // (ADR 0912).
+        let counted = match self.compiled_step(ty, iterator, "count") {
+            true => {
+                let (count, _) = self.user_next(ty, iterator, "count", span)?;
+                props.push(crate::js::Prop::Field("count".into(), count));
+                takes.push("count");
+                None
+            }
+            false => counted,
+        };
+        if !takes.is_empty() {
+            let takes = takes.into_iter().map(Expr::str).collect();
+            props.push(crate::js::Prop::Field("takes".into(), Expr::array(takes)));
+        }
         if let Some((helper, source)) = counted {
             let mut args = vec![Expr::var("it"), Expr::var("drop")];
             args.extend(self.iterator_evidence(source, iterator));
@@ -875,17 +883,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((next.called_alone(), boxed))
     }
 
-    /// The compiled `rfold` of std's struct `ty`, a held `Map`'s (ADR 0871),
-    /// as a dictionary's entry, `(iterator, init, f) => ..`: given no drops
-    /// of what it folds into and by, as the crate's own is (#162), the
-    /// caller's fold dropping them, so its own `B` and `F` are `()` and a
-    /// function of it, which nothing drops. `None` where it isn't compiled.
-    pub(in crate::lower) fn compiled_rfold(
+    /// The compiled `fold` or `rfold`, `method`, of std's struct `ty`, a
+    /// held `Map`'s (ADRs 0871, 0912), as a dictionary's entry,
+    /// `(iterator, init, f) => ..`. `None` where it isn't compiled.
+    pub(in crate::lower) fn compiled_fold(
         &mut self,
         ty: ty::Ty<'tcx>,
-        trait_id: DefId,
+        (trait_id, method): (DefId, &str),
         span: Span,
     ) -> R<Option<Expr>> {
+        let Some((fold, args)) = self.compiled_fold_of(ty, (trait_id, method))? else {
+            return Ok(None);
+        };
+        let params = ["iterator", "init", "f"];
+        let call = self.impl_call(fold, args, params.map(Expr::var).to_vec(), span)?;
+        Ok(Some(Expr::arrow(
+            params.map(Into::into).to_vec(),
+            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+        )))
+    }
+
+    /// Std's compiled `fold` or `rfold`, `method`, of std's struct `ty` and
+    /// what it's called with: given no drops of what it folds into and by,
+    /// as the crate's own is (#162), the caller's fold dropping them, so its
+    /// own `B` and `F` are `()` and a function of it, which nothing drops.
+    /// `None` where std's isn't compiled.
+    pub(in crate::lower) fn compiled_fold_of(
+        &self,
+        ty: ty::Ty<'tcx>,
+        (trait_id, method): (DefId, &str),
+    ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
         let tcx = self.tcx;
         let Some(item) = self.iterator_item(ty) else {
             return Ok(None);
@@ -899,20 +926,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::FnSigKind::default().set_safety(rustc_hir::Safety::Safe),
             )),
         );
-        let rfold = trait_method(tcx, trait_id, "rfold");
+        let fold = trait_method(tcx, trait_id, method);
         let args = tcx.mk_args(&[ty.into(), unit.into(), by.into()]);
         let compiled = self
-            .resolve_instance(rfold, args)?
+            .resolve_instance(fold, args)?
             .is_some_and(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()));
-        if !compiled {
-            return Ok(None);
-        }
-        let params = ["iterator", "init", "f"];
-        let call = self.impl_call(rfold, args, params.map(Expr::var).to_vec(), span)?;
-        Ok(Some(Expr::arrow(
-            params.map(Into::into).to_vec(),
-            vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
-        )))
+        Ok(compiled.then_some((fold, args)))
     }
 
     /// The dictionary this function was given for `ty`, a type parameter

@@ -5,6 +5,7 @@ import {
   $closing,
   $count,
   $dropEach,
+  $foldOf,
   $held,
   $iter,
   $lastDropping,
@@ -355,7 +356,7 @@ function main() {
         $dropEach(loudDrop_drop),
         loudDrop_drop,
       ),
-      { next: $next },
+      { next: $next, fold: $foldOf },
       true,
       (rev) => {
         rev.return();

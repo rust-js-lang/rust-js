@@ -17,6 +17,7 @@ import {
   $filterEnds,
   $findBack,
   $foldBack,
+  $foldOf,
   $fuseRfold,
   $iter,
   $iterator,
@@ -40,7 +41,7 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
   const doubled = iterator_map($iter(v), (x) => (x * 2) | 0, { next: $next });
-  const odd = iterator_map(doubled, (x) => (x + 1) | 0, { next: $next });
+  const odd = iterator_map(doubled, (x) => (x + 1) | 0, { next: $next, fold: $foldOf });
   let last = mapDoubleEndedIterator_nextBack(odd, {
     next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
     rfold: (iterator, init, f) =>

@@ -611,11 +611,13 @@ export function $knowing(it, back, len, rfold, nthBack) {
 // `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
 // `rfold` and `nth_back` where the crate's impl writes them (#224).
 export function $given(value, iterator, boxed = false, back, len) {
-  // A JS iterator stepped as it is, its dictionary JS's own: itself, whose
-  // own `last`, `nth` and `fold` are std's for its kind, a chain's sides'
-  // (#276).
-  if (iterator.next === $next && Object.keys(iterator).length === 1 && len === undefined
-    && (back === undefined || (back.next_back === $nextBack && Object.keys(back).length === 1))) {
+  // A JS iterator stepped as it is, its dictionary its own steps, each one
+  // that calls the value's, `$next` and `$foldOf` of std's struct (ADR
+  // 0912): itself, whose own `last`, `nth`, `fold` and `advanceBy` are std's
+  // for its kind, a chain's sides' (#276).
+  const own = (dictionary, steps) => Object.entries(dictionary).every(([name, step]) => steps[name] === step);
+  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined
+    && (back === undefined || own(back, { next_back: $nextBack }))) {
     return value;
   }
   return $iterator(
@@ -1836,11 +1838,12 @@ export function $findDropping(it, test, drop, boxed) {
 // once, as Rust drops it with the adapter (ADRs 0422, 0465, 0570); its back
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
-// fold takes it and drops it itself (#162).
+// fold takes it and drops it itself (#162), as std's compiled fold does,
+// which marks it `$closed` (ADR 0912).
 export function $closing(it, drop, slices = true) {
   let closed = false;
   const close = () => {
-    if (!closed) {
+    if (!closed && !it.$closed) {
       closed = true;
       drop?.(it);
     }
@@ -9861,8 +9864,15 @@ export function $stdIterator(struct, steps) {
     }
     return { done: true, value: undefined };
   };
+  // What std's own compiled methods take whole, `fold` and `count`, as
+  // Rust's move it, dropping what it held there: closing it after drops
+  // nothing again (ADR 0912).
+  const taking = (method, made) => {
+    if (steps.takes?.includes(method)) it.$closed = true;
+    return made;
+  };
   if (steps.fold !== undefined) {
-    it.fold = (init, f) => steps.fold(it, init, f);
+    it.fold = (init, f) => taking("fold", steps.fold(it, init, f));
   }
   // Its `try_fold`, std's, where it passes it on to its source's (#214).
   if (steps.tryFold !== undefined) {
@@ -9873,7 +9883,7 @@ export function $stdIterator(struct, steps) {
   }
   // Its `count`, std's, its source's own (#293).
   if (steps.count !== undefined) {
-    it.count = (drop) => steps.count(it, drop);
+    it.count = (drop) => taking("count", steps.count(it, drop));
   }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
@@ -12053,55 +12063,6 @@ export function $peekableFold(peekable, init, f, iterator) {
     folded = f(folded, $someValue(peeked));
   }
   return $foldBy(peekable.iter, folded, f, iterator);
-}
-
-// A `Map`'s fold, std's: its source's, each item given its `f`, by the
-// source's dictionary, which has that impl's own `fold` (#264).
-export function $mapFold(map, init, g, iterator) {
-  const f = map.f;
-  const folded = $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);
-  // The crate's own `fold` took its source and dropped it: closing the map
-  // after drops it no more (#297).
-  if (iterator?.fold !== undefined) map.$closed = true;
-  return folded;
-}
-
-// A `FlatMap`'s fold, std's, its `FlattenCompat`'s: its front iterator's,
-// then its source's, each item made an iterator by `intoIter`, its
-// `IntoIterator` dictionary, and folded, then its back iterator's; the
-// crate's own `fold` where its source reaches it (#297).
-export function $flatMapFold(flatMap, init, g, intoIter) {
-  const inner = flatMap.inner;
-  const each = intoIter?.IntoIterIterator?.();
-  const folded = (it, acc) => $foldBy(it, acc, g, each);
-  let acc = init;
-  if (inner.frontiter != null) {
-    const front = inner.frontiter;
-    inner.frontiter = undefined;
-    acc = folded(front, acc);
-  }
-  acc = $foldBy(inner.iter, acc, (a, u) => folded(intoIter === undefined ? u : intoIter.intoIter(u), a));
-  if (inner.backiter != null) {
-    const back = inner.backiter;
-    inner.backiter = undefined;
-    acc = folded(back, acc);
-  }
-  return acc;
-}
-
-// An `Inspect`'s fold, std's: its source's, `f` given each item first.
-export function $inspectFold(inspect, init, g, iterator) {
-  const f = inspect.f;
-  if (iterator?.fold !== undefined) inspect.$closed = true;
-  return $foldBy(
-    inspect.iter,
-    init,
-    (acc, x) => {
-      f(x);
-      return g(acc, x);
-    },
-    iterator,
-  );
 }
 
 // `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which

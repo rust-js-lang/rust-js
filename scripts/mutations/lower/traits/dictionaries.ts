@@ -398,4 +398,12 @@ export const mutations: Mutation[] = [
       "^std_flatten.rs$"
     ]
   },
+  {
+    name: "mut-ref-dictionary-unpeeled",
+    breaks: "a `&mut` of a range or of the crate's iterator is given a JS iterator's dictionary, so std's `Map` or `Fuse` holding it steps it by `it.next`, which neither has (ADR 0912)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            if let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
+    replace: "            if false && let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_of_by_ref.rs$"],
+  },
 ];

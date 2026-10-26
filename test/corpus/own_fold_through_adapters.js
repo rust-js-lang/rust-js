@@ -344,7 +344,7 @@ function main() {
   );
   const iter$1 = iterator_peekable(
     iterator_map(["v", 0], (x) => (x + 1) >>> 0, { next: plainIterator_next }, plainDrop_drop),
-    { next: $next },
+    { next: $next, fold: $foldOf },
     (map) => {
       map.return();
     },

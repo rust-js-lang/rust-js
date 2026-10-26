@@ -16,6 +16,7 @@ import {
   $cloning,
   $cycleOf,
   $exactLen,
+  $foldOf,
   $iter,
   $iterator,
   $knowing,
@@ -197,14 +198,14 @@ function main() {
       (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
       (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
     ),
-    { next: $next },
+    { next: $next, fold: $foldOf },
     {
       next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
       rfold: (iterator, init, f) =>
         mapDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, { next_back: $nextBack }),
     },
   );
-  const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next });
+  const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next, fold: $foldOf });
   const value$5 = $next(back);
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,

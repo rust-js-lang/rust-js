@@ -5,17 +5,14 @@ import {
   $dropping,
   $findBack,
   $findDropping,
-  $flatMapFold,
   $foldBack,
+  $foldOf,
   $fuseAdvanceBy,
   $fuseCount,
-  $fuseFold,
   $fuseTryFold,
   $given,
-  $inspectFold,
   $lastDropping,
   $lent,
-  $mapFold,
   $nextBackSome,
   $nextSome,
   $nthBack,
@@ -303,6 +300,22 @@ export function fuseIterator_sizeHint(fuse, IIterator, dropI, dropIItem) {
     return $sizeHint(iter, IIterator);
   }
   return [0, 0];
+}
+
+export function fuseIterator_fold(fuse, acc, fold, IIterator, dropI, dropAcc, dropFold, dropIItem) {
+  if (fuse.iter != null) {
+    const iter = $someValue(fuse.iter);
+    const value = $given(iter, IIterator, true).reduce((a, b) => fold(a, b), acc);
+    if (IIterator.fold === undefined) {
+      dropI?.(iter);
+    }
+    dropFold?.(fold);
+    acc = value;
+    return acc;
+  }
+  const result = acc;
+  dropFold?.(fold);
+  return result;
 }
 
 export function fuseDoubleEndedIterator_nextBack(
@@ -605,8 +618,8 @@ export function enumerateIterator_next(enumerate, IIterator, dropI, dropIItem) {
   if (option != null) {
     const v = $someValue(option);
     const _0 = { TAG: "Continue", _0: v }._0;
-    const i = enumerate.count;
-    enumerate.count = (enumerate.count + 1) >>> 0;
+    const i = enumerate.count$;
+    enumerate.count$ = (enumerate.count$ + 1) >>> 0;
     return [i, _0];
   }
 }
@@ -620,8 +633,8 @@ export function enumerateIterator_nth(enumerate, n, IIterator, dropI, dropIItem)
   if (option != null) {
     const v = $someValue(option);
     const _0 = { TAG: "Continue", _0: v }._0;
-    const i = (enumerate.count + n) >>> 0;
-    enumerate.count = (i + 1) >>> 0;
+    const i = (enumerate.count$ + n) >>> 0;
+    enumerate.count$ = (i + 1) >>> 0;
     return [i, _0];
   }
 }
@@ -648,7 +661,7 @@ export function enumerateIterator_fold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, count } = enumerate;
+  const { iter, count$: count } = enumerate;
   let count$1 = count;
   const f = $dropping(
     (acc$1, item) => {
@@ -680,7 +693,7 @@ export function enumerateDoubleEndedIterator_nextBack(
     const v = $someValue(option);
     const _0 = { TAG: "Continue", _0: v }._0;
     const len = IExactSizeIterator.len(enumerate.iter);
-    return [(enumerate.count + len) >>> 0, _0];
+    return [(enumerate.count$ + len) >>> 0, _0];
   }
 }
 
@@ -703,7 +716,7 @@ export function enumerateDoubleEndedIterator_nthBack(
     const v = $someValue(option);
     const _0 = { TAG: "Continue", _0: v }._0;
     const len = IExactSizeIterator.len(enumerate.iter);
-    return [(enumerate.count + len) >>> 0, _0];
+    return [(enumerate.count$ + len) >>> 0, _0];
   }
 }
 
@@ -719,7 +732,7 @@ export function enumerateDoubleEndedIterator_rfold(
   dropFold,
   dropIItem,
 ) {
-  const count = (enumerate.count + IExactSizeIterator.len(enumerate.iter)) >>> 0;
+  const count = (enumerate.count$ + IExactSizeIterator.len(enumerate.iter)) >>> 0;
   const iter = enumerate.iter;
   let count$1 = count;
   const f = $dropping(
@@ -742,14 +755,14 @@ export function enumerateExactSizeIterator_len(enumerate, IExactSizeIterator, dr
 
 export function enumerateClone_clone(enumerate, IClone) {
   return $stdIterator(
-    { iter: IClone.clone(enumerate.iter), count: enumerate.count },
+    { iter: IClone.clone(enumerate.iter), count$: enumerate.count$ },
     enumerate.$steps,
   );
 }
 
 export function enumerateDebug_fmt(enumerate, options, IDebug) {
   const shown = IDebug.fmt(enumerate.iter, options);
-  const shown$1 = String(enumerate.count);
+  const shown$1 = String(enumerate.count$);
   return options?.alternate
     ? $pretty("Enumerate {", [`iter: ${shown}`, `count: ${shown$1}`], "}")
     : `Enumerate { iter: ${shown}, count: ${shown$1} }`;
@@ -1177,7 +1190,7 @@ export function flatMapIterator_next(
   return UIntoIterOneShot
     ? flattenCompatIUIterator2_next(
         flatMap.inner,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         false,
@@ -1190,7 +1203,7 @@ export function flatMapIterator_next(
       )
     : flattenCompatIUIterator_next(
         flatMap.inner,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         false,
@@ -1218,7 +1231,7 @@ export function flatMapIterator_sizeHint(
   return UIntoIterOneShot
     ? flattenCompatIUIterator2_sizeHint(
         flatMap.inner,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UConstSize,
         (map) => {
@@ -1230,7 +1243,7 @@ export function flatMapIterator_sizeHint(
       )
     : flattenCompatIUIterator_sizeHint(
         flatMap.inner,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         UConstSize,
@@ -1263,7 +1276,7 @@ export function flatMapIterator_fold(
         flatMap.inner,
         init,
         fold,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         (map) => {
           map.return();
@@ -1278,7 +1291,7 @@ export function flatMapIterator_fold(
         flatMap.inner,
         init,
         fold,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         (map) => {
@@ -1404,7 +1417,7 @@ export function flatMapDoubleEndedIterator_rfold(
         flatMap.inner,
         init,
         fold,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         {
           next_back: (iterator) =>
             mapDoubleEndedIterator_nextBack(
@@ -1444,7 +1457,7 @@ export function flatMapDoubleEndedIterator_rfold(
         flatMap.inner,
         init,
         fold,
-        { next: $nextSome },
+        { next: $nextSome, fold: $foldOf },
         {
           next_back: (iterator) =>
             mapDoubleEndedIterator_nextBack(
@@ -1509,9 +1522,20 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
       nth: (iterator, n) =>
         fuseIterator_nth(iterator, n, SelfIterator, SelfFused, dropSelf, dropSelfItem),
       last: (iterator) => fuseIterator_last(iterator, SelfIterator, dropSelf, dropSelfItem),
-      fold: (it, init, f) => $fuseFold(it, init, f, SelfIterator, dropSelf),
+      fold: (iterator, init, f) =>
+        fuseIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
       tryFold: (it, init, f, broke) =>
         $fuseTryFold(it, init, f, broke, SelfIterator, dropSelf, SelfFused),
+      takes: ["fold"],
       count: (it, drop) => $fuseCount(it, drop, SelfIterator),
       advanceBy: (it, m, drop) => $fuseAdvanceBy(it, m, drop, SelfIterator, dropSelf, SelfFused),
     },
@@ -1527,6 +1551,19 @@ export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSe
       hint: (iterator) => revIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
       nth: (iterator, n) =>
         revIterator_nth(iterator, n, SelfIterator, SelfDoubleEndedIterator, dropSelf, dropSelfItem),
+      fold: (iterator, init, f) =>
+        revIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          SelfDoubleEndedIterator,
+          dropSelf,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
       advanceBy: (it, m, drop) => $revAdvanceBy(it, m, drop, SelfIterator, SelfDoubleEndedIterator),
       close(iterator) {
         dropSelf?.(iterator.iter);
@@ -1537,13 +1574,26 @@ export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSe
 
 export function iterator_enumerate(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
-    { iter: self, count: 0 },
+    { iter: self, count$: 0 },
     {
       next: (iterator) => enumerateIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem),
       hint: (iterator) =>
         enumerateIterator_sizeHint(iterator, SelfIterator, dropSelf, dropSelfItem),
       nth: (iterator, n) =>
         enumerateIterator_nth(iterator, n, SelfIterator, dropSelf, dropSelfItem),
+      fold: (iterator, init, f) =>
+        enumerateIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      count: (iterator) => enumerateIterator_count(iterator, SelfIterator, dropSelf, dropSelfItem),
+      takes: ["fold", "count"],
       close(iterator) {
         dropSelf?.(iterator.iter);
       },
@@ -1559,7 +1609,20 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
         mapIterator_next(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         mapIterator_sizeHint(iterator, SelfIterator, dropB, dropSelf, dropF, dropSelfItem),
-      fold: (it, init, f) => $mapFold(it, init, f, SelfIterator),
+      fold: (iterator, init, f) =>
+        mapIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropB,
+          dropSelf,
+          dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
       close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);
@@ -1576,7 +1639,19 @@ export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSel
         inspectIterator_next(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
       hint: (iterator) =>
         inspectIterator_sizeHint(iterator, SelfIterator, dropSelf, dropF, dropSelfItem),
-      fold: (it, init, f) => $inspectFold(it, init, f, SelfIterator),
+      fold: (iterator, init, f) =>
+        inspectIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          dropSelf,
+          dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+        ),
+      takes: ["fold"],
       close(iterator) {
         dropSelf?.(iterator.iter);
         dropF?.(iterator.f);
@@ -1626,6 +1701,23 @@ export function iterator_flatten(
           dropSelfItem,
           dropSelfItemItem,
         ),
+      fold: (iterator, init, f) =>
+        flattenIterator_fold(
+          iterator,
+          init,
+          f,
+          SelfIterator,
+          SelfItemIntoIterator,
+          SelfItemIntoIterator.IntoIterIterator(),
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          undefined,
+          undefined,
+          dropSelfItem,
+          dropSelfItemItem,
+        ),
+      takes: ["fold"],
       close(iterator) {
         if (iterator.inner.iter.iter != null) {
           dropSelf?.($someValue(iterator.inner.iter.iter));
@@ -1665,7 +1757,7 @@ export function iterator_flatMap(
             next: (iterator) =>
               fuseIterator_next(
                 iterator,
-                { next: $nextSome },
+                { next: $nextSome, fold: $foldOf },
                 false,
                 (map) => {
                   map.return();
@@ -1675,7 +1767,7 @@ export function iterator_flatMap(
             hint: (iterator) =>
               fuseIterator_sizeHint(
                 iterator,
-                { next: $nextSome },
+                { next: $nextSome, fold: $foldOf },
                 (map) => {
                   map.return();
                 },
@@ -1685,7 +1777,7 @@ export function iterator_flatMap(
               fuseIterator_nth(
                 iterator,
                 n,
-                { next: $nextSome },
+                { next: $nextSome, fold: $foldOf },
                 false,
                 (map) => {
                   map.return();
@@ -1695,20 +1787,30 @@ export function iterator_flatMap(
             last: (iterator) =>
               fuseIterator_last(
                 iterator,
-                { next: $nextSome },
+                { next: $nextSome, fold: $foldOf },
                 (map) => {
                   map.return();
                 },
                 dropU,
               ),
-            fold: (it, init, f) =>
-              $fuseFold(it, init, f, undefined, (map) => {
-                map.return();
-              }),
+            fold: (iterator, init, f) =>
+              fuseIterator_fold(
+                iterator,
+                init,
+                f,
+                { next: $nextSome, fold: $foldOf },
+                (map) => {
+                  map.return();
+                },
+                undefined,
+                undefined,
+                dropU,
+              ),
             tryFold: (it, init, f, broke) =>
               $fuseTryFold(it, init, f, broke, undefined, (map) => {
                 map.return();
               }),
+            takes: ["fold"],
             count: (it, drop) => $fuseCount(it, drop),
             advanceBy: (it, m, drop) =>
               $fuseAdvanceBy(it, m, drop, undefined, (map) => {
@@ -1744,7 +1846,23 @@ export function iterator_flatMap(
           dropUItem,
           dropUIntoIter,
         ),
-      fold: (it, init, f) => $flatMapFold(it, init, f, UIntoIterator),
+      fold: (iterator, init, f) =>
+        flatMapIterator_fold(
+          iterator,
+          init,
+          f,
+          UIntoIterator,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          undefined,
+          undefined,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        ),
+      takes: ["fold"],
       close(iterator) {
         if (iterator.inner.iter.iter != null) {
           iterator.inner.iter.iter.return();

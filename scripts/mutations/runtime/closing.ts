@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "closing-twice",
     breaks: "what's closed is dropped again, as the crate's own fold dropped it before it's closed",
     file: "src/runtime/closing.js",
-    find: "    if (!closed) {\n",
+    find: "    if (!closed && !it.$closed) {\n",
     replace: "    if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|own_fold_through_adapters).rs$"],
   },
@@ -145,5 +145,13 @@ export const mutations: Mutation[] = [
     find: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n    closing.ownNth = true;\n",
     replace: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "closing-closed-again",
+    breaks: "an iterator std's compiled `fold` took is dropped again when what holds it closes (ADR 0912)",
+    file: "src/runtime/closing.js",
+    find: "    if (!closed && !it.$closed) {\n",
+    replace: "    if (!closed) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
 ];

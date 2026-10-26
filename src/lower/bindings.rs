@@ -1397,10 +1397,39 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
     fn_name(tcx, super::recognition::trait_method(tcx, trait_id, name))
 }
 
-/// A struct's or a variant's field, as a JS property.
+/// A struct's or a variant's field, as a JS property. Of std's iterator
+/// struct, which is the JS iterator `$stdIterator` makes too, one named as
+/// a method that iterator has, `Enumerate`'s `count`, is `count$`, as the
+/// method's `count` is the iterator's (ADR 0912).
 pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
-    name_in_js(tcx, field.did)
+    let key = name_in_js(tcx, field.did);
+    match STEPS_METHODS.contains(&key.as_str()) && super::recognition::is_compiled_std_type(tcx, tcx.parent(field.did))
+    {
+        true => format!("{key}$"),
+        false => key,
+    }
 }
+
+/// What `$stdIterator` (`src/runtime/std_iterator.js`) gives std's struct
+/// as a JS iterator's own methods.
+const STEPS_METHODS: &[&str] = &[
+    "next",
+    "return",
+    "nth",
+    "last",
+    "fold",
+    "tryFold",
+    "count",
+    "advanceBy",
+    "back",
+    "nthBack",
+    "rfold",
+    "len",
+    "hint",
+    "knowing",
+    "ownNth",
+    "ownLast",
+];
 
 /// What a JS module exports under a name, `("node:path", "join")`, or
 /// `"default"` or `"*"` for its default export or the module itself.

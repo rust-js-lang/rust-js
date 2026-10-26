@@ -7,6 +7,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $filterEnds,
+  $foldOf,
   $iterator,
   $next,
   $nextBack,
@@ -103,7 +104,7 @@ function main() {
     true,
   ).toArray();
   const both = evensOrTens(true);
-  const next = twoIterator_next(both, { next: $next }, { next: $next });
+  const next = twoIterator_next(both, { next: $next }, { next: $next, fold: $foldOf });
   const arg = twoDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },

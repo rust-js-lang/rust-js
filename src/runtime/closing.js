@@ -3,11 +3,12 @@
 // once, as Rust drops it with the adapter (ADRs 0422, 0465, 0570); its back
 // still its own, where it has one (ADR 0514). It's a `$Steps` (ADR 0669):
 // its fold is its iterator's, after which it's done with; the crate's own
-// fold takes it and drops it itself (#162).
+// fold takes it and drops it itself (#162), as std's compiled fold does,
+// which marks it `$closed` (ADR 0912).
 function $closing(it, drop, slices = true) {
   let closed = false;
   const close = () => {
-    if (!closed) {
+    if (!closed && !it.$closed) {
       closed = true;
       drop?.(it);
     }

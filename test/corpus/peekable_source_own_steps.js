@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable, iterator_rev } from "@rust-js/std/ite
 import {
   $closing,
   $dropEach,
+  $foldOf,
   $held,
   $iter,
   $lastDropping,
@@ -80,7 +81,7 @@ function main() {
         loudDrop_drop,
       ),
     ),
-    { next: $next },
+    { next: $next, fold: $foldOf },
     (rev) => {
       rev.return();
     },
@@ -129,14 +130,14 @@ function main() {
           loudDrop_drop,
         ),
       ),
-      { next: $next },
+      { next: $next, fold: $foldOf },
       true,
       (rev) => {
         rev.return();
       },
       loudDrop_drop,
     ),
-    { next: $next },
+    { next: $next, fold: $foldOf },
     (fuse) => {
       if (fuse.iter != null) {
         fuse.iter.return();

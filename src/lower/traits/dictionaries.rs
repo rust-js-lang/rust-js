@@ -83,6 +83,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0411). One given as it is, which a JS iterator's `next` can't step,
         // that the analysis found nothing here steps: rust-js's own error.
         if is_std_def(self.tcx, tr.def_id, StdItem::Iterator) {
+            // A `&mut I`'s, of what a `&mut` of an iterator is, the iterator:
+            // `it.by_ref().take(2)` of a range, or of a type parameter's, by
+            // the dictionary it was given (ADR 0912).
+            if let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {
+                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;
+                return Ok(self.mut_ref_iterator_dictionary(of));
+            }
             if let ty::Param(param) = tr.self_ty().kind()
                 && crate::lower::iterators::given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), *param)
             {

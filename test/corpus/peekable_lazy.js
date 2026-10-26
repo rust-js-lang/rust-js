@@ -3,6 +3,7 @@
 import { iterator_map, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $debugStr,
+  $foldOf,
   $iter,
   $next,
   $nextIf,
@@ -56,7 +57,7 @@ function main() {
       },
       { next: $rangeNext },
     ),
-    { next: $next },
+    { next: $next, fold: $foldOf },
   );
   const p = $peek(it);
   const q = $peek(it);
@@ -75,14 +76,14 @@ function main() {
   );
   const empty = iterator_peekable(
     iterator_map($iter([]), (x) => (x + 1) & 255, { next: $next }),
-    { next: $next },
+    { next: $next, fold: $foldOf },
   );
   // Of items that look like `None`: `Some(None)`, not `None`.
   const maybes = iterator_peekable(
     iterator_map($iter([1, undefined]), (x) => (x != null ? (x + 1) | 0 : undefined), {
       next: $nextSome,
     }),
-    { next: $nextSome },
+    { next: $nextSome, fold: $foldOf },
   );
   const a = $nextSome(maybes);
   const b = $peekSome(maybes);

@@ -5,36 +5,12 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "map-fold-source-dropped-again",
-    breaks: "a held map whose source's own fold took it and dropped it drops it again when it's closed (#297)",
-    file: "src/runtime/fold_by.js",
-    find: "  if (iterator?.fold !== undefined) map.$closed = true;\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
-  },
-  {
-    name: "flat-map-fold-items-unmade",
-    breaks: "a flat map's fold gives each item to its fold as it is, not the iterator its `IntoIterator` makes, so an array item is summed whole (#297)",
-    file: "src/runtime/fold_by.js",
-    find: "  acc = $foldBy(inner.iter, acc, (a, u) => folded(intoIter === undefined ? u : intoIter.intoIter(u), a));\n",
-    replace: "  acc = $foldBy(inner.iter, acc, (a, u) => g(a, u));\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
-  },
-  {
     name: "rev-advance-by-stepped",
     breaks: "a compiled `Rev`'s `advance_by` of a `Vec`'s items steps each from the back, not its `advance_back_by`'s one slice, front to back (#286)",
     file: "src/runtime/fold_by.js",
     find: "  if (it.items !== undefined && drop !== undefined) return $advanceSlice(it, m, drop, true);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
-  },
-  {
-    name: "map-fold-unmapped",
-    breaks: "a held map's fold gives its source's items unmapped, so `map(|x| x * 2).peekable().sum()` sums the source's (#264)",
-    file: "src/runtime/fold_by.js",
-    find: "  const folded = $foldBy(map.iter, init, (acc, x) => g(acc, f(x)), iterator);\n",
-    replace: "  const folded = $foldBy(map.iter, init, (acc, x) => g(acc, x), iterator);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
     name: "fuse-fused-try-fold-clears",

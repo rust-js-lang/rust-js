@@ -25,8 +25,15 @@ function $stdIterator(struct, steps) {
     }
     return { done: true, value: undefined };
   };
+  // What std's own compiled methods take whole, `fold` and `count`, as
+  // Rust's move it, dropping what it held there: closing it after drops
+  // nothing again (ADR 0912).
+  const taking = (method, made) => {
+    if (steps.takes?.includes(method)) it.$closed = true;
+    return made;
+  };
   if (steps.fold !== undefined) {
-    it.fold = (init, f) => steps.fold(it, init, f);
+    it.fold = (init, f) => taking("fold", steps.fold(it, init, f));
   }
   // Its `try_fold`, std's, where it passes it on to its source's (#214).
   if (steps.tryFold !== undefined) {
@@ -37,7 +44,7 @@ function $stdIterator(struct, steps) {
   }
   // Its `count`, std's, its source's own (#293).
   if (steps.count !== undefined) {
-    it.count = (drop) => steps.count(it, drop);
+    it.count = (drop) => taking("count", steps.count(it, drop));
   }
   // Its `advance_by`, std's, its source's, which drops what it passes as
   // its source does, a `Vec`'s as one slice (#286).
