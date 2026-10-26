@@ -11,6 +11,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^untagged_written_through_mut.rs$"],
   },
   {
+    name: "nullable-const-field-undefined",
+    breaks: "a constant's `#[rust_js::nullable]` field's `None` is left out, `{ count: 0 }`, React's `CacheContext` without its `_currentValue: null` (ADR 0586, amended)",
+    file: "src/lower/representation.rs",
+    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
+    replace: "                            let nullable = false && bindings::null_where_made(tcx, f)\n",
+    tests: ["test/lowering-nullable-constants.test.ts"],
+  },
+  {
+    name: "optional-const-field-null",
+    breaks: "a constant's `#[rust_js::optional]` nullable field's `None` is `null`, not left out until it's set (ADR 0810)",
+    file: "src/lower/representation.rs",
+    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
+    replace: "                            let nullable = bindings::is_nullable(tcx, f)\n",
+    tests: ["test/lowering-nullable-constants.test.ts"],
+  },
+  {
     name: "ref-cell-field-const-boxed",
     breaks: "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
     file: "src/lower/representation.rs",

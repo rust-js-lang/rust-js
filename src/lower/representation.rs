@@ -1337,7 +1337,7 @@ fn const_js_by<'tcx>(
             Some(Expr::object(vec![Prop::Field("end".into(), end)]))
         }
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
-        ty::Adt(adt, _) if adt.is_struct() => {
+        ty::Adt(adt, args) if adt.is_struct() => {
             let variant = adt.non_enum_variant();
             // A `RefCell` field may be the value it holds, by its declaration
             // and what the crate does with it, which only a body lowering it
@@ -1357,12 +1357,21 @@ fn const_js_by<'tcx>(
             match variant.ctor_kind() {
                 Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),
                 Some(CtorKind::Fn) => Some(Expr::array(values)),
+                // A `#[rust_js::nullable]` field's `None` is `null`, its
+                // `Cell`'s too, a generic one's where it's of an `Option`,
+                // as where its struct is made at run time; an optional
+                // one's left out (ADRs 0275, 0586, 0810, amended).
                 None => Some(Expr::object(
-                    variant
-                        .fields
-                        .iter()
-                        .zip(values)
-                        .map(|(f, v)| Prop::Field(field_key(tcx, f), v))
+                    (variant.fields.iter().zip(values))
+                        .map(|(f, v)| {
+                            let nullable = bindings::null_where_made(tcx, f)
+                                && bindings::nullable_option(tcx, f.ty(tcx, args).skip_normalization()).is_some();
+                            let v = match nullable {
+                                true => js::Storage::NullForNone.written(v, false),
+                                false => v,
+                            };
+                            Prop::Field(field_key(tcx, f), v)
+                        })
                         .collect(),
                 )),
             }

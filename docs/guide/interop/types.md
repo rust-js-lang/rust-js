@@ -865,7 +865,9 @@ export function ratio(a, b) {
   `current: RefCell<T>` or `memoized_value: Cell<T>`, it's where `T` is an
   `Option`: `StackCursor { current: RefCell::new(None) }` is `{ current:
   null }`, and `cursor.current.replace(None)` writes `null`; generic code
-  stores what it's given as it is. On anything else it's an error
+  stores what it's given as it is. A constant's, a `const`'s or a `const {
+  .. }` thread-local's, is `null` too, React's `CacheContext`, `{
+  _currentValue: null, .. }`. On anything else it's an error
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md)):
 
   ```

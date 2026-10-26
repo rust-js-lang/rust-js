@@ -7,7 +7,7 @@ a `Vec` of them, each item's `None` `null`; and of a thread-local, and a
 binding's type parameter; and of a generic struct's field of a type
 parameter's value, and a thread-local a generic constructor makes, below;
 and of a thread-local of an `Option` itself, and what one gives, and of a
-`const`, below.
+`const`, below; and a constant's struct's field, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
 accepts that rust-js can't give its meaning is refused.
@@ -315,3 +315,29 @@ either, a thread-local's by its `LocalKey`, a `const`'s otherwise.
   `nullable-const-made-undefined` (`pipeline.rs`), and
   `nullable-option-local-declared-undefined` (`declarations.rs`), which a
   thread-local of an `Option` shares.
+
+## Amendment: a constant's struct's field
+
+React's reconciler's `CacheContext` is a `ReactContext<Option<Rc<Cache>>>`
+whose `_currentValue: Cell<T>` upstream makes `null`. Made in a `const {
+.. }` thread-local, `Context { value: Cell::new(None), count:
+Cell::new(0.0) }` was `{ count: 0 }`: a constant is written from rustc's
+value of it (ADR 0031), which left a nullable field's `None` out as any
+`None`, the field's own type's or a generic one's of `T = Option<..>`, the
+crate's struct's or a library's alike.
+
+**A constant's `#[rust_js::nullable]` field's `None` is `null`, as where
+its struct is made at run time**: of an `Option`, a `Cell` of one, and a
+field of a type parameter's value where its constant's type makes it an
+`Option`, by the field's instantiated type; an optional one's left out
+(ADR 0810). `export const cacheContext = { value: null, count: 0 };`. A
+struct with a `RefCell` field is its initializer's (ADR 0863, amended),
+whose struct literal says so already.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): a read in Rust is the
+`Option` either way; a JS reader testing `!== null` sees `null`, as it
+does of a struct made at run time.
+
+Tested by `test/lowering-nullable-constants.test.ts`, of the crate's
+struct and a library's; its mutations are
+`nullable-const-field-undefined` and `optional-const-field-null`.
