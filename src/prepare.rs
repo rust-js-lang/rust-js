@@ -1424,4 +1424,26 @@ fn expr(e: &mut Expr) {
         | ExprKind::Import(_)
         | ExprKind::Regex(_) => {}
     }
+    // `!!a && !!b`, each a value's truth: `!!(a && b)`, as React's
+    // shouldConstruct writes it (ADR 0953).
+    if let ExprKind::Binary(op @ (js::Op::And | js::Op::Or), a, b) = &e.kind
+        && let (Some(a), Some(b)) = (truth_of(a), truth_of(b))
+    {
+        let joined = Expr::bin(*op, a.clone(), b.clone());
+        *e = Expr {
+            span: e.span,
+            ..Expr::unary(js::UnaryOp::Not, Expr::unary(js::UnaryOp::Not, joined))
+        };
+    }
+}
+
+/// What `!!x` is the truth of: `x`.
+fn truth_of(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        ExprKind::Unary(js::UnaryOp::Not, a) => match &a.kind {
+            ExprKind::Unary(js::UnaryOp::Not, x) => Some(x),
+            _ => None,
+        },
+        _ => None,
+    }
 }

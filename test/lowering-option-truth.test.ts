@@ -365,3 +365,33 @@ pub fn masked(r#type: &Unknown) -> u32 {
   const masked = [{ contextTypes: { a: 1, b: 2 } }, { contextTypes: 0 }, { contextTypes: "" }, { contextTypes: null }, {}].map(lib.masked);
   expect(masked).toEqual([2, 0, 0, 0, 0]);
 });
+
+// ADR 0953: React's shouldConstruct, `return !!(prototype &&
+// prototype.isReactComponent);`: the truths of two values joined are the
+// truth of the two joined, `||` too.
+test("two values' truths joined are the truth of the two", async () => {
+  const dir = fixture("truths-joined");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+
+pub fn should_construct(component: Option<&Unknown>) -> bool {
+    let prototype = js::get(component, "prototype");
+    js::truthy(prototype) && js::truthy(js::get(prototype, "isReactComponent"))
+}
+
+pub fn either(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
+    js::truthy(a) || js::truthy(b)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return !!(prototype && prototype.isReactComponent);\n");
+  expect(js).toContain("  return !!(a || b);\n");
+  const lib = await import(join(dir, "lib.js"));
+  class C {}
+  (C.prototype as Record<string, unknown>).isReactComponent = {};
+  expect([lib.shouldConstruct(C), lib.shouldConstruct(() => 1), lib.shouldConstruct({ prototype: {} })]).toEqual([true, false, false]);
+  expect([lib.either(0, ""), lib.either(0, "x"), lib.either(1, undefined)]).toEqual([false, true, true]);
+});

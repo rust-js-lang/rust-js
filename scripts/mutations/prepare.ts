@@ -722,4 +722,20 @@ export const mutations: Mutation[] = [
     replace: "            is_async: false,\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
   },
+  {
+    name: "truths-joined-apart",
+    breaks: "React's `!!(prototype && prototype.isReactComponent)` is `!!prototype && !!prototype.isReactComponent` (ADR 0953)",
+    file: "src/prepare.rs",
+    find: "        && let (Some(a), Some(b)) = (truth_of(a), truth_of(b))\n",
+    replace: "        && let (Some(a), Some(b), false) = (truth_of(a), truth_of(b), true)\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "truths joined"],
+  },
+  {
+    name: "truths-joined-by-and",
+    breaks: "`!!a || !!b` is `!!(a && b)` (ADR 0953)",
+    file: "src/prepare.rs",
+    find: "        let joined = Expr::bin(*op, a.clone(), b.clone());\n",
+    replace: "        let joined = Expr::bin(js::Op::And, a.clone(), b.clone());\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "truths joined"],
+  },
 ];
