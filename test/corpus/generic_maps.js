@@ -47,15 +47,23 @@ function tCounting(TIterator) {
         });
       return counts;
     },
-    counts: (self, SelfItemHash, SelfItemPartialEq, SelfItemMap) =>
-      tCounting(TIterator).countsBy(self, (x) => x, SelfItemHash, SelfItemPartialEq, SelfItemMap),
-    tallyBy: (self, f, KHash, KPartialEq, KMap) =>
-      tCounting({ next: $nextSome }).counts(
+    counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {
+      return tCounting(TIterator).countsBy(
+        self,
+        (x) => x,
+        SelfItemHash,
+        SelfItemPartialEq,
+        SelfItemMap,
+      );
+    },
+    tallyBy(self, f, KHash, KPartialEq, KMap) {
+      return tCounting({ next: $nextSome }).counts(
         iterator_map(self, f, TIterator),
         KHash,
         KPartialEq,
         KMap,
-      ),
+      );
+    },
   }));
 }
 

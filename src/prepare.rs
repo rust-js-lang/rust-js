@@ -1109,8 +1109,12 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
 /// writes its thenable (ADR 0882). An arrow and a method differ only in
 /// their `this` (and `arguments`, which no Rust reads), so not one that
 /// reads `this`, a class's. One named `__proto__` is a property as any
-/// method is: only `__proto__: value` sets the prototype.
-fn method(prop: &Prop) -> Option<Prop> {
+/// method is: only `__proto__: value` sets the prototype. One of a value
+/// alone too where `beside`, another field of its object is a method, as
+/// an object of methods is written, React's DEV dispatchers'
+/// `readContext(context) { return readContext(context); }` (ADR 0882,
+/// amended).
+fn method(prop: &Prop, beside: bool) -> Option<Prop> {
     let Prop::Field(name, value) = prop else {
         return None;
     };
@@ -1124,13 +1128,15 @@ fn method(prop: &Prop) -> Option<Prop> {
     }
     // One of a value alone, `double: (x) => x * 2`, reads as it is, as a
     // person writes a WebAssembly import's.
-    if matches!(
-        body.as_slice(),
-        [Stmt {
-            kind: StmtKind::Return(Some(_)),
-            ..
-        }]
-    ) {
+    if !beside
+        && matches!(
+            body.as_slice(),
+            [Stmt {
+                kind: StmtKind::Return(Some(_)),
+                ..
+            }]
+        )
+    {
         return None;
     }
     Some(Prop::Method(name.clone(), value.clone()))
@@ -1385,7 +1391,11 @@ fn expr(e: &mut Expr) {
                 | Prop::Method(_, value)
                 | Prop::Spread(value)) = prop;
                 expr(value);
-                if let Some(method) = method(prop) {
+            }
+            // Where one field is a method, each is (ADR 0882, amended).
+            let beside = props.iter().any(|prop| method(prop, false).is_some());
+            for prop in props.iter_mut() {
+                if let Some(method) = method(prop, beside) {
                     *prop = method;
                 }
             }

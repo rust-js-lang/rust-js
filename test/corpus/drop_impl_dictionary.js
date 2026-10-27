@@ -10,7 +10,9 @@ const $wrapConsume = new WeakMap();
 
 function wrapConsume(TClone, dropT) {
   return $traitImpl($wrapConsume, [TClone, dropT], () => ({
-    consume: (arg0) => wrapConsume_consume(arg0, TClone, dropT),
+    consume(arg0) {
+      return wrapConsume_consume(arg0, TClone, dropT);
+    },
     $drop(wrap) {
       dropT?.(wrap[0]);
     },
@@ -29,7 +31,9 @@ const $wrapTake = new WeakMap();
 
 function wrapTake(dropT) {
   return $traitImpl($wrapTake, [dropT], () => ({
-    take: (arg0) => wrapTake_take(arg0, dropT),
+    take(arg0) {
+      return wrapTake_take(arg0, dropT);
+    },
     $drop(wrap) {
       dropT?.(wrap[0]);
     },
@@ -48,7 +52,9 @@ const $wrapReset = new WeakMap();
 
 function wrapReset(TDefault, dropT) {
   return $traitImpl($wrapReset, [TDefault, dropT], () => ({
-    reset: (arg0) => wrapReset_reset(arg0.value, TDefault, dropT),
+    reset(arg0) {
+      return wrapReset_reset(arg0.value, TDefault, dropT);
+    },
     $drop(wrap) {
       dropT?.(wrap[0]);
     },

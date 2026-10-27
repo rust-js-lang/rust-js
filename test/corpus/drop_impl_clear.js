@@ -10,7 +10,9 @@ const $wrapEmpty = new WeakMap();
 
 function wrapEmpty(dropT) {
   return $traitImpl($wrapEmpty, [dropT], () => ({
-    empty: (arg0) => wrapEmpty_empty(arg0.value, dropT),
+    empty(arg0) {
+      return wrapEmpty_empty(arg0.value, dropT);
+    },
     $drop(wrap) {
       for (const item of wrap[0]) {
         dropT?.(item);

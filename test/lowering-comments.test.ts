@@ -152,7 +152,7 @@ pub static UPDATER: Updater = Updater {
 };
 `);
   expect(js).toContain(`  // Checks whether or not this composite component is mounted.
-  isMounted: () => false,
+  isMounted() {\n    return false;\n  },
 
   // Forces an update.
   //

@@ -157,3 +157,44 @@ test("a comment in a let's function declared is where it's written", async () =>
   const lib = await import(join(dir, "lib.js"));
   expect(lib.run([1, 2])).toBe(3 + 2 + 2 + 3 + 4 + 4);
 });
+
+// ADR 0882, amended (the user's decision, 2026-10-27): in an object that
+// has a method, each field that's an arrow is one too, of a value alone
+// as well, React's DEV dispatchers' `readContext(context) { return
+// readContext(context); }` beside their methods of statements. A lone
+// arrow of a value, `{ double: (x) => x * 2 }`, stays one.
+test("an object with a method has each function field a method", async () => {
+  const dir = fixture("object-of-methods");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct Dispatcher {
+    pub read_context: fn(u32) -> u32,
+    pub use_memo: fn(u32) -> u32,
+}
+
+pub struct Import {
+    pub double: fn(u32) -> u32,
+}
+
+fn read_context(context: u32) -> u32 {
+    context + 1
+}
+
+pub static DISPATCHER: Dispatcher = Dispatcher {
+    read_context: |context| read_context(context),
+    use_memo: |n| {
+        let m = n * 2;
+        read_context(m)
+    },
+};
+
+pub static IMPORT: Import = Import { double: |x| x * 2 };
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  readContext(context) {\n    return readContext(context);\n  },\n  useMemo(n) {\n");
+  expect(js).toContain("export const IMPORT = { double: (x) => (x * 2) >>> 0 };");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.DISPATCHER.readContext(1), lib.DISPATCHER.useMemo(2), lib.IMPORT.double(3)]).toEqual([2, 5, 6]);
+});

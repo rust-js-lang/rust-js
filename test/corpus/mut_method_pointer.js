@@ -8,7 +8,9 @@ export function entry() {
 
 const tallyCounter = {
   get: tallyCounter_get,
-  set: (arg0, arg1) => tallyCounter_set(arg0.value, arg1),
+  set(arg0, arg1) {
+    return tallyCounter_set(arg0.value, arg1);
+  },
   bump(self, by) {
     const next = (tallyCounter_get(self.value) + by) | 0;
     tallyCounter_set(self.value, next);

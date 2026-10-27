@@ -17,8 +17,12 @@ export function entry() {
 function main() {
   const bits = { int: 0x3f800000 };
   const asFloat = $unionField(bits, "float", [], {
-    int: (value) => $floatFromBits(value, 4),
-    bytes: (value) => $floatFromBits($fromBytes(value, 4, true, false), 4),
+    int(value) {
+      return $floatFromBits(value, 4);
+    },
+    bytes(value) {
+      return $floatFromBits($fromBytes(value, 4, true, false), 4);
+    },
     halves(value) {
       const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
       return $floatFromBits($fromBytes(bytes, 4, true, false), 4);
@@ -44,18 +48,24 @@ function main() {
         $fromBytes(bytes.slice(2, 4), 2, true, false),
       ];
     },
-    bytes: (value) => [
-      $fromBytes(value.slice(0, 2), 2, true, false),
-      $fromBytes(value.slice(2, 4), 2, true, false),
-    ],
+    bytes(value) {
+      return [
+        $fromBytes(value.slice(0, 2), 2, true, false),
+        $fromBytes(value.slice(2, 4), 2, true, false),
+      ];
+    },
   });
   console.log(`${$displayF32(asFloat)} [${asBytes.join(", ")}] (${asHalves[0]}, ${asHalves[1]})`);
 
   $unionSet(bits, "float", -2.5);
   console.log(
     `0x${$unionField(bits, "int", [], {
-      float: (value) => $floatToBits(value, 4),
-      bytes: (value) => $fromBytes(value, 4, true, false),
+      float(value) {
+        return $floatToBits(value, 4);
+      },
+      bytes(value) {
+        return $fromBytes(value, 4, true, false);
+      },
       halves(value) {
         const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
         return $fromBytes(bytes, 4, true, false);
@@ -69,8 +79,12 @@ function main() {
   $unionSet(bits, "bytes", [1, 2, 3, 4]);
   console.log(
     `0x${$unionField(bits, "int", [], {
-      float: (value) => $floatToBits(value, 4),
-      bytes: (value) => $fromBytes(value, 4, true, false),
+      float(value) {
+        return $floatToBits(value, 4);
+      },
+      bytes(value) {
+        return $fromBytes(value, 4, true, false);
+      },
       halves(value) {
         const bytes = [...$toBytes(value[0], 2, true), ...$toBytes(value[1], 2, true)];
         return $fromBytes(bytes, 4, true, false);
@@ -91,10 +105,12 @@ function main() {
             $fromBytes(bytes.slice(2, 4), 2, true, false),
           ];
         },
-        bytes: (value) => [
-          $fromBytes(value.slice(0, 2), 2, true, false),
-          $fromBytes(value.slice(2, 4), 2, true, false),
-        ],
+        bytes(value) {
+          return [
+            $fromBytes(value.slice(0, 2), 2, true, false),
+            $fromBytes(value.slice(2, 4), 2, true, false),
+          ];
+        },
       }),
     )}`,
   );

@@ -170,8 +170,8 @@ function groupsFirstOfNext(
     $groupsFirstOfNext,
     [IIterator, IItemIntoIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
     () => ({
-      firstOfNext: (arg0) =>
-        groupsFirstOfNext_firstOfNext(
+      firstOfNext(arg0) {
+        return groupsFirstOfNext_firstOfNext(
           arg0.value,
           IIterator,
           IItemIntoIterator,
@@ -179,7 +179,8 @@ function groupsFirstOfNext(
           dropIItem,
           dropIItemItem,
           dropIItemIntoIter,
-        ),
+        );
+      },
       $drop(groups) {
         dropI?.(groups[0]);
       },

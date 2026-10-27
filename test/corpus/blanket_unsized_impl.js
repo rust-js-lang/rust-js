@@ -14,7 +14,9 @@ function tExt(TIterator) {
       TIterator.next(self);
       return TIterator.next(self);
     },
-    skipOne: (self) => TIterator.next(self),
+    skipOne(self) {
+      return TIterator.next(self);
+    },
   }));
 }
 

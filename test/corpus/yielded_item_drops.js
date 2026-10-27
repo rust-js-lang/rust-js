@@ -47,7 +47,9 @@ const $skipperSkip = new WeakMap();
 
 function skipperSkip(IIterator, dropI, dropIItem) {
   return $traitImpl($skipperSkip, [IIterator, dropI, dropIItem], () => ({
-    skip: (arg0) => skipperSkip_skip(arg0.value, IIterator, dropI, dropIItem),
+    skip(arg0) {
+      return skipperSkip_skip(arg0.value, IIterator, dropI, dropIItem);
+    },
     $drop(skipper) {
       dropI?.(skipper.inner);
     },

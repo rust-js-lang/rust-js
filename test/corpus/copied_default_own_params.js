@@ -19,7 +19,9 @@ const $iCollectSlice = new WeakMap();
 
 function iCollectSlice(IIterator) {
   return $traitImpl($iCollectSlice, [IIterator], () => ({
-    innerArray: (arg0, N) => iCollectSlice_innerArray(arg0, N, IIterator),
+    innerArray(arg0, N) {
+      return iCollectSlice_innerArray(arg0, N, IIterator);
+    },
     collectArray(self, N) {
       const result = iCollectSlice(IIterator).innerArray(self, N);
       if (IIterator.next(self) != null) {

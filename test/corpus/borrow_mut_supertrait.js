@@ -7,8 +7,12 @@ export function entry() {
 }
 
 export const vecPoolIndex = {
-  BorrowMut: () => ({ borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) }),
-  len: (self) => ({ borrow: (value) => value }).borrow(self).length,
+  BorrowMut() {
+    return { borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) };
+  },
+  len(self) {
+    return { borrow: (value) => value }.borrow(self).length;
+  },
   first(self) {
     const value = {
       borrowMut: (value) => value,
@@ -23,11 +27,12 @@ const $_usize__K_PoolIndex = new Map();
 
 export function _usize__K_PoolIndex(K) {
   return $traitImpl($_usize__K_PoolIndex, [K], () => ({
-    BorrowMut: () => ({
-      borrowMut: (value) => value,
-      Borrow: () => ({ borrow: (value) => value }),
-    }),
-    len: (self) => ({ borrow: (value) => value }).borrow(self).length,
+    BorrowMut() {
+      return { borrowMut: (value) => value, Borrow: () => ({ borrow: (value) => value }) };
+    },
+    len(self) {
+      return { borrow: (value) => value }.borrow(self).length;
+    },
     first(self) {
       const value = {
         borrowMut: (value) => value,

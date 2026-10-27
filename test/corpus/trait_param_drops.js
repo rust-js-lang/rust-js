@@ -31,8 +31,12 @@ const $relayTakeA = new WeakMap();
 
 function relayTakeA(STakeA, dropA, dropS) {
   return $traitImpl($relayTakeA, [STakeA, dropA, dropS], () => ({
-    take: (arg0, arg1) => relayTakeA_take(arg0, arg1, STakeA, dropA, dropS),
-    make: (arg0) => relayTakeA_make(arg0, STakeA, dropA, dropS),
+    take(arg0, arg1) {
+      return relayTakeA_take(arg0, arg1, STakeA, dropA, dropS);
+    },
+    make(arg0) {
+      return relayTakeA_make(arg0, STakeA, dropA, dropS);
+    },
     $drop(relay) {
       dropS?.(relay[0]);
     },
@@ -55,7 +59,9 @@ function wrapTakeNoisy(TDefault, dropT) {
       noisyDrop_drop?.(a);
       return 0;
     },
-    make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
+    make(arg0) {
+      return wrapTakeNoisy_make(arg0, TDefault, dropT);
+    },
     $drop(wrap) {
       dropT?.(wrap[0]);
     },

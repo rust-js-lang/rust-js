@@ -24,7 +24,9 @@ const $wrapShape = new WeakMap();
 
 function wrapShape(TDebug, dropT) {
   return $traitImpl($wrapShape, [TDebug, dropT], () => ({
-    name: (arg0) => wrapShape_name(arg0, TDebug, dropT),
+    name(arg0) {
+      return wrapShape_name(arg0, TDebug, dropT);
+    },
     $drop(wrap) {
       dropT?.(wrap[0]);
     },

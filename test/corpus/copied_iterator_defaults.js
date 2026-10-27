@@ -100,7 +100,9 @@ function tTotals(TIterator, dropT) {
       }
       return n;
     },
-    firstTwo: (self) => $lent($given(self, TIterator)).take(2).toArray(),
+    firstTwo(self) {
+      return $lent($given(self, TIterator)).take(2).toArray();
+    },
     $drop: dropT,
   }));
 }
@@ -133,7 +135,9 @@ const $holderNamed = new WeakMap();
 
 function holderNamed(dropI, dropIItem) {
   return $traitImpl($holderNamed, [dropI, dropIItem], () => ({
-    name: (self) => "holder",
+    name(self) {
+      return "holder";
+    },
     $drop(holder) {
       dropI?.(holder[0]);
     },

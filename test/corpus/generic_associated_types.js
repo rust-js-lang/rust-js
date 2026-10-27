@@ -18,7 +18,9 @@ export function entry() {
 }
 
 const shelfContainer = {
-  ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
+  ItemDebug() {
+    return { fmt: (value) => $debugStr(value) };
+  },
   items: shelfContainer_items,
   last(self) {
     const items = shelfContainer_items(self).toArray();
@@ -30,7 +32,9 @@ function shelfContainer_items(shelf) {
 }
 
 const countsContainer = {
-  ItemDebug: () => ({ fmt: (value) => String(value) }),
+  ItemDebug() {
+    return { fmt: (value) => String(value) };
+  },
   items: countsContainer_items,
   last(self) {
     const items = countsContainer_items(self).toArray();
@@ -42,7 +46,9 @@ function countsContainer_items(counts) {
 }
 
 const countdownContainer = {
-  ItemDebug: () => ({ fmt: (value) => String(value) }),
+  ItemDebug() {
+    return { fmt: (value) => String(value) };
+  },
   items: countdownContainer_items,
   last(self) {
     const items = countdownContainer_items(self).toArray();

@@ -70,9 +70,9 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   expect(js).toContain("$next(p)");
   expect(js).not.toContain("peekableIterator_next");
   const std = readFileSync(join(root, "std", "iter.js"), "utf8");
-  expect(std).toContain("return $stdIterator(\n    { iter: self },\n    {\n      next: (iterator) =>");
+  expect(std).toContain("return $stdIterator(\n    { iter: self },\n    {\n      next(iterator) {");
   // Its hint asks what it steps by the dictionary it's given (ADR 0561).
-  expect(std).toContain("hint: (peekable) => $peekableHint(peekable, SelfIterator),");
+  expect(std).toContain("hint(peekable) {\n        return $peekableHint(peekable, SelfIterator);\n      },");
 });
 
 // ADR 0564: a std body's JS is tidied as the app's is, though its optimized

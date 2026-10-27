@@ -11,7 +11,9 @@ function cDebug_fmt(c) {
 }
 
 const cCounter = {
-  bump: (arg0) => cCounter_bump(arg0.value),
+  bump(arg0) {
+    return cCounter_bump(arg0.value);
+  },
   get: cCounter_get,
   twice(self) {
     cCounter_bump(self.value);

@@ -15,7 +15,9 @@ function counterSource_next(counter) {
 }
 
 const namesSource = {
-  next: (arg0) => namesSource_next(arg0.value),
+  next(arg0) {
+    return namesSource_next(arg0.value);
+  },
   firstCloned(self, SelfItemDeref, SelfItemTargetClone) {
     const x = namesSource_next(self);
     return x != null ? $some(SelfItemDeref.deref($someValue(x))) : undefined;

@@ -22,7 +22,9 @@ export function bufWrite(CAP) {
     const write = (arg0, arg1) => bufWrite_write(arg0.value, arg1, CAP);
     return {
       write,
-      flush: (arg0) => bufWrite_flush(arg0.value, CAP),
+      flush(arg0) {
+        return bufWrite_flush(arg0.value, CAP);
+      },
       writeAll: $ioWriteAll(write),
       writeFmt: $ioWriteFmt(write),
       $drop(buf) {

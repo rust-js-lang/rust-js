@@ -274,7 +274,7 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
   useLog: throwInvalidHookError,
 };`);
   expect(js).toContain("useCallback: first,");
-  expect(js).toContain("useState: (a) => (first(a) + 1) >>> 0,");
+  expect(js).toContain("  useState(a) {\n    return (first(a) + 1) >>> 0;\n  },");
   expect(js).toContain("useState: (a) => first(a),");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.call(lib.RUNNING)).toEqual([4, 3, 7]);

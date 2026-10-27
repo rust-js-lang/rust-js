@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
 to one an object's field holds. Amended below (the user's decision,
 2026-10-26): a closure of statements a `let` binds is a function declared,
-`function deleteChild(..) { .. }`.
+`function deleteChild(..) { .. }`. Amended again (the user's decision,
+2026-10-27): in an object that has a method, each function field is one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a method and an arrow differ in their `this` and their
@@ -150,3 +151,41 @@ and the snapshots' re-blessed; held by `test/lowering-arrows.test.ts`, "a
 let's closure of statements is a function declared", and the mutations
 `let-closure-stays-arrow`, `let-closure-of-this-declared`,
 `let-closure-of-a-value-declared` and `let-closure-async-unmarked`.
+
+## Amendment: in an object with a method, each function field is one
+
+The user's decision (2026-10-27). React's DEV dispatchers are objects of
+methods, each written so, one of a value alone too:
+
+```js
+HooksDispatcherOnMountInDEV = {
+  readContext<T>(context: ReactContext<T>): T {
+    return readContext(context);
+  },
+  use,
+  useCallback<T>(callback: T, deps: Array<mixed> | void | null): T {
+    currentHookNameInDev = 'useCallback';
+    ..
+  },
+  ..
+};
+```
+
+Its port's `read_context: |context| read_context(context)` printed
+`readContext: (context) => readContext(context)` beside methods of
+statements: one object written in two forms.
+
+**In an object that has a method, each field that's an arrow is a
+method, of a value alone too**, `readContext(context) { return
+readContext(context); }` (`prepare.rs`'s `method`, asked first whether
+any field of the object is one of statements). An object of no method
+keeps its arrows of a value, `{ double: (x) => x * 2 }`, the WebAssembly
+import's; one that reads `this` stays an arrow wherever it is. Case N, as
+before.
+
+- **Alternatives**: every arrow in a field a method, which the decision
+  rejected for the import's arrows; or an arrow of a value always, which
+  leaves the dispatchers in two forms.
+- Held by `test/lowering-arrows.test.ts`, "an object with a method has
+  each function field a method", and the guide's `thenable`/`doubler`;
+  mutations `field-method-beside-unseen` and `field-method-beside-any`.
