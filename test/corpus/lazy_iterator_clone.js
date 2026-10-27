@@ -103,7 +103,9 @@ function main() {
   const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
   const rest = mapClone_clone(tripled, rangeClone, clone$1);
   mapIterator_next(rest, { next: $rangeNext });
-  console.log(`[${rest.toArray().join(", ")}] [${tripled.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(rest, 4, true).toArray().join(", ")}] [${$roomForHint(tripled, 4, true).toArray().join(", ")}]`,
+  );
 
   const even = evensOf({ start: 1, end: 7 }, { next: $rangeNext }, rangeClone);
   const later = $clone(even);
@@ -118,7 +120,9 @@ function main() {
   );
   const after = chainClone_clone(bothRanges, rangeClone, rangeClone);
   chainIterator_next(after, { next: $rangeNext }, { next: $rangeNext });
-  console.log(`[${after.toArray().join(", ")}] [${bothRanges.toArray().join(", ")}]`);
+  console.log(
+    `[${$roomForHint(after, 4, true).toArray().join(", ")}] [${$roomForHint(bothRanges, 4, true).toArray().join(", ")}]`,
+  );
 
   const holder = {
     it: iterator_map({ start: 0, end: 3 }, (x) => (x + 100) | 0, { next: $rangeNext }),

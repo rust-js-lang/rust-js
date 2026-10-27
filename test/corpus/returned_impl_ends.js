@@ -19,7 +19,6 @@ import {
   $knowing,
   $next,
   $nextBack,
-  $rangeNext,
   $rangeNextBack,
   $rest,
   $rev,
@@ -147,7 +146,7 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
-    `[${$rev($iterator(Bag.ranged(b), $rangeNext, false, $rangeNextBack))
+    `[${$iterator(Bag.ranged(b), $rangeNextBack)
       .filter((_, i) => i % 2 === 0)
       .toArray()
       .join(", ")}]`,

@@ -717,7 +717,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 583],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 28],
-  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 273], // `advance_by` in std's bodies, `advanced_by` (ADR 0913).
+  ["src/lower/mir/iter.rs", "    fn mir_iter_method(", 275], // Its receiver's type revealed, an `impl Iterator`'s (ADR 0985). `advance_by` in std's bodies, `advanced_by` (ADR 0913).
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {

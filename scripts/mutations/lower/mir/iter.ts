@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "iter-method-type-unrevealed",
+    breaks: "a method of an `impl Iterator` a function gives is asked of the `impl`, not of what it is: `len()` of an `impl ExactSizeIterator` of a slice's `copied()` is refused (ADR 0985)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let iter_ty = self.reveal(receiver_ty.peel_refs());\n        if let Some(stepped) = self.given_iterator_call(",
+    replace: "        let iter_ty = receiver_ty.peel_refs();\n        if let Some(stepped) = self.given_iterator_call(",
+    tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
+  },
+  {
     name: "cloned-apart-filter-unknowing",
     breaks: "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
     file: "src/lower/mir/iter.rs",

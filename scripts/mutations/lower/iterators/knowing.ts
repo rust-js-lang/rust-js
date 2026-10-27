@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            ty::Alias(..) => true,\n            _ => false,\n        };\n",
     replace: "            _ => false,\n        };\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(associated_double_ended|backs_given_behind_impls).rs$"],
   },
   {
     name: "default-evidence-trait-terms",

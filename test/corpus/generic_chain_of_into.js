@@ -16,6 +16,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $sizeHint,
   $tryOf,
 } from "@rust-js/runtime";
@@ -52,14 +53,18 @@ function main() {
     console.log(`drop ${value._tag[0]}`);
     throw error;
   }
-  const counted = chain(
-    value,
-    tmp,
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-    (countdown) => {
-      console.log(`drop ${countdown._tag[0]}`);
-    },
+  const counted = $roomForHint(
+    chain(
+      value,
+      tmp,
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      (countdown) => {
+        console.log(`drop ${countdown._tag[0]}`);
+      },
+    ),
+    4,
+    false,
   ).toArray();
   console.log(`[${counted.join(", ")}]`);
   const held = iterator_chain(

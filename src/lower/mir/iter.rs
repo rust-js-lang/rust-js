@@ -399,7 +399,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = name.as_str();
         let std_method = self.recognition().iterator_method(def_id);
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
-        let iter_ty = receiver_ty.peel_refs();
+        // What it is, of an `impl Iterator` a function gives too, as each of
+        // its methods asks it (ADR 0985).
+        let iter_ty = self.reveal(receiver_ty.peel_refs());
         if let Some(stepped) = self.given_iterator_call(std_method, iter_ty, &values) {
             return Ok(Some(stepped));
         }
