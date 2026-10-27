@@ -1101,10 +1101,12 @@ export function same(a, b) {
 An `Rc<dyn Fn>` is the function, and `Rc::ptr_eq` of two is `===` of the
 functions where each `Rc` of that type is made of a closure written in its
 `Rc::new`, a function made there, as React's test selectors keep their
-commit hooks. Where one may be made of a function item, a closure's
-variable or a type parameter's function, which two `Rc`s may be made of,
-they're counted, compared by their boxes
-([ADR 0959](../../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md)):
+commit hooks, or of a closure's variable it moves, one neither `Copy` nor
+cloned. Where one may be made of a function item, a `Copy` or cloned
+closure's variable or a type parameter's function, which two `Rc`s may be
+made of, they're counted, compared by their boxes
+([ADR 0959](../../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md),
+amended):
 
 ```rust
 use std::rc::Rc;

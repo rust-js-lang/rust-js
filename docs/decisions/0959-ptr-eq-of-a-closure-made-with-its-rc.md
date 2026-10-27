@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0582](0582-ptr-eq-of-an-object-is-its-identity.md),
 `Rc::ptr_eq` of an object is its identity, to a `dyn Fn`'s function, and
 [0852](0852-each-types-rcs-are-counted-apart.md), which types' `Rc`s are
-counted.
+counted. Amended: a closure neither `Copy` nor cloned is its own function wherever it's made (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where every `Rc` that
 may be the one compared is made of a closure written in its `Rc::new`: each
@@ -84,3 +84,31 @@ crate's, or by `Rc::new_cyclic`.
   (`scripts/mutations/lower/recognition/wrappers.ts`), `fn-identity-of-fn-items`,
   `fn-identity-of-copied-closure`, `fn-identity-variable-made-where-given`,
   `fn-identity-through-dyn-counted` (`scripts/mutations/lower/analysis/rc_counts.ts`).
+
+## Amendment: a closure neither `Copy` nor cloned is its own function wherever it's made (ts7, 2026-10-27)
+
+ReactTestSelectors' `observeVisibleRects` compares its commit hooks by
+`Rc::ptr_eq`. With it in the crate, ReactFiberHooks' `subscribe(Rc::new(
+handle_store_change))`, the closure made in a block a `let` holds, was
+"made apart" from its `Rc`, so every `Rc<dyn Fn()>` was counted, and with
+it each `Rc` of what those hold, `UpdateQueue`, `Effect`, ..: 27 refusals
+of a counted `Rc` given to JS.
+
+What the rule guards is one JS function given `Rc::new` twice, two `Rc`s
+Rust tells apart and JS doesn't. A closure value can be given twice only
+where it's `Copy`, or cloned, a clone sharing its function. **A closure
+neither `Copy` nor cloned is given `Rc::new` once, moved, so it's made
+with its `Rc` wherever it was made** (`rc_counts.rs`, `made_with_it`):
+`Copy` read where it's made an `Rc<dyn Fn>`, a clone from any body's
+`Clone::clone` of its type.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N, each `Rc` its
+  own function.
+- Held by the corpus cases `rc_fn_ptr_eq_of_moved.rs` (uncounted,
+  compared by `===`), `rc_fn_ptr_eq_of_cloned.rs` (counted, `ptr_eq`
+  `false` as natively) and `rc_fn_ptr_eq_of_copy.rs`; and the mutations
+  `rc-fn-moved-made-apart`, `rc-fn-cloned-uncounted`,
+  `rc-fn-copied-coerced-uncounted` and the amended
+  `fn-identity-of-copied-closure`.
+- ReactTestSelectors' held draft builds with Hooks in the crate; React's
+  TestSelectors tests pass (37).

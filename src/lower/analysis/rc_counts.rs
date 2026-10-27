@@ -164,6 +164,9 @@ pub(super) fn counted_rcs<'tcx>(
     // copy or a variable (ADR 0959).
     let mut asked: HashSet<Ty<'tcx>> = HashSet::new();
     let (mut made_with, mut made_apart) = (HashSet::new(), HashSet::new());
+    // The closures made an `Rc<dyn Fn>` that are `Copy`, and those a body
+    // clones: what else may be one JS function given it twice.
+    let (mut copied, mut cloned): (HashSet<Ty<'tcx>>, HashSet<Ty<'tcx>>) = (HashSet::new(), HashSet::new());
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
@@ -185,11 +188,19 @@ pub(super) fn counted_rcs<'tcx>(
             if let ExprKind::PointerCoercion { source, .. } = expr.kind
                 && let (Some(from), Some(to)) = (rc_pointee(tcx, body.thir[source].ty), rc_pointee(tcx, expr.ty))
             {
+                if tcx.type_is_copy_modulo_regions(env, from) {
+                    copied.insert(erased(from));
+                }
                 made_others.insert((erased(from), erased(to)));
             }
             // A count read by a call, or by the function given as a value,
             // `.map(Rc::strong_count)`: either is an expression of its type.
             if let Some((def_id, args)) = fn_def(expr.ty) {
+                if tcx.is_lang_item(def_id, rustc_hir::attrs::lang_items::LangItem::CloneFn)
+                    && let Some(of) = args.types().next()
+                {
+                    cloned.insert(erased(of));
+                }
                 if reads_rc_count(tcx, def_id, args.types().next()) {
                     counted.insert(erased(args.type_at(0)));
                 } else if compares_fn_identity(tcx, def_id, args.types().next()) {
@@ -228,8 +239,15 @@ pub(super) fn counted_rcs<'tcx>(
     // may be it may be made of a function made apart from it (ADR 0959).
     // One made of another `dyn Fn`'s, its lifetime's, is that one, which
     // its own making answers for.
+    // One neither `Copy` nor cloned is given `Rc::new` once, moved, a JS
+    // function of its own wherever it was made: React's
+    // `subscribe(Rc::new(handle_store_change))` (ADR 0959, amended).
     let made_with_it = |from: Ty<'tcx>| match *from.kind() {
-        ty::Closure(id, _) => id.is_local() && made_with.contains(&from) && !made_apart.contains(&from),
+        ty::Closure(id, _) => {
+            id.is_local()
+                && (made_with.contains(&from) && !made_apart.contains(&from)
+                    || !copied.contains(&from) && !cloned.contains(&from))
+        }
         ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
         _ => false,
     };
