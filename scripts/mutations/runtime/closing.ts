@@ -12,11 +12,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closing-own-nth-unsaid",
-    breaks: "a closed compiled `Peekable` doesn't say its `nth` is its own, so a `step_by` over it steps each item, dropping a reversed `Vec`'s back to front, not as one slice (#261)",
+    breaks: "a closed source of the crate's with its own `nth`, a `take`'s or an `enumerate`'s, doesn't say that `nth` is its own, so a `step_by` over it steps each item, not by the `nth` Rust asks (#261)",
     file: "src/runtime/closing.js",
     find: "  if (it.ownNth) closing.ownNth = true;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "step_by_compiled_source_nth"],
+    tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources).rs$"],
   },
   {
     name: "closing-drops-none",
@@ -145,13 +145,5 @@ export const mutations: Mutation[] = [
     find: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n    closing.ownNth = true;\n",
     replace: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
-  },
-  {
-    name: "closing-count-unforwarded",
-    breaks: "a held `take` a chain closes counts by folding, not its own `count`, so a reversed `Vec`'s items are dropped back to front (ADR 0913)",
-    file: "src/runtime/closing.js",
-    find: "  if (Object.hasOwn(it, \"count\")) {\n",
-    replace: "  if (false) {\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^chain_sides_own_steps with std's iterator structs$"],
   },
 ];

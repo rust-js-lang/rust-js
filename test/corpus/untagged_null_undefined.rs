@@ -27,6 +27,23 @@ fn nothing(field: Field) -> bool {
     matches!(field, Field::Missing | Field::Cleared)
 }
 
+// One whose payload JS can't compare, a `Vec`, compares by its derived
+// `==`; a unit variant, a constant, by `===` still: `undefined` isn't
+// `null` (ADR 0676).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Debug, PartialEq)]
+enum Slot {
+    Items(Vec<i32>),
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Missing,
+    #[cfg_attr(rust_js, rust_js::null)]
+    Cleared,
+}
+
+fn is_missing(slot: &Slot) -> bool {
+    *slot == Slot::Missing
+}
+
 fn main() {
     let fields = [Field::Text("a"), Field::Count(2.0), Field::Missing, Field::Cleared];
     for field in fields {
@@ -43,5 +60,9 @@ fn main() {
     let found = [None, Some(Field::Missing), Some(Field::Cleared), Some(Field::Count(1.0))];
     for field in found {
         println!("{field:?} {} {}", field.is_some(), field.map(describe).unwrap_or_default());
+    }
+    let slots = [Slot::Items(vec![1]), Slot::Missing, Slot::Cleared];
+    for slot in &slots {
+        println!("{slot:?} {} {}", is_missing(slot), *slot == Slot::Cleared);
     }
 }

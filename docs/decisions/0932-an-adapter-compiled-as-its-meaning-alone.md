@@ -66,3 +66,12 @@ answers didn't change: its held filters were right.
   `filter-meaning-unmade`, `std-bodies-not-the-meaning`,
   `assume-count-specialized`, `find-dropping-by-next`; `instance-imported`
   follows its line; `skip_try_fold.rs` joins the suite's few.
+
+## Amendment: `$findDropping` is its `tryFold`'s alone
+
+`$findDropping` stepped an iterator with no `tryFold` by `next`. What it's
+given is always the `&mut` `find` takes, `$lent`'s, a `$Steps`, which has
+one; no case reached the other way, and `find-dropping-keeps-rejected`,
+which took its drop away, survived every run. It went, with
+`find-dropping-by-next`, which made every iterator take it; the drop of
+what `tryFold` rejects is `find-dropping-keeps-rejected`'s now.

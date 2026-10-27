@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/logicals.rs",
     "find": "        && within(last_if.span)\n",
     "replace": "        && false\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a value written with && is returned as one"]
+    "tests": ["test/lowering-branches.test.ts", "test/lowering-written-branches.test.ts", "-t", "a value written with && is returned as one|a returned && chain in an if is returned as written"]
   },
   {
     name: "bound-rust-data-a-getter",

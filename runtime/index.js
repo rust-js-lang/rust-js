@@ -1814,33 +1814,26 @@ export function $instantCheckedSince(a, b) {
 // `it.find(test)` of items with a destructor: the first that `test` holds
 // of, each before it dropped by `drop` as it's passed, as std's `find` drops
 // each it rejects (ADR 0098); boxed where it may look like `None` (ADR 0051).
-// By its `tryFold`, as std's `find` is its `try_fold`, where it has one, a
-// `$Steps`'s or std's struct's: a `skip` asks its source `nth(n - 1)` (ADR
-// 0932).
+// By its `tryFold`, as std's `find` is its `try_fold`: `it` is the `&mut`
+// `find` takes, `$lent`'s, a `$Steps`, which has one; a `skip` asks its
+// source `nth(n - 1)` (ADR 0932).
 export function $findDropping(it, test, drop, boxed) {
-  if (it.tryFold !== undefined) {
-    let item;
-    const hit = it.tryFold(
-      false,
-      (_, x) => {
-        if (test(x)) {
-          item = x;
-          return true;
-        }
-        drop?.(x);
-        return false;
-      },
-      (hit) => hit,
-    );
-    if (!hit) return undefined;
-    it.return?.();
-    return boxed ? $some(item) : item;
-  }
-  for (const item of it) {
-    if (test(item)) return boxed ? $some(item) : item;
-    drop?.(item);
-  }
-  return undefined;
+  let item;
+  const hit = it.tryFold(
+    false,
+    (_, x) => {
+      if (test(x)) {
+        item = x;
+        return true;
+      }
+      drop?.(x);
+      return false;
+    },
+    (hit) => hit,
+  );
+  if (!hit) return undefined;
+  it.return?.();
+  return boxed ? $some(item) : item;
 }
 
 // An iterator an adapter holds, closed when the adapter ends early, is
@@ -1905,15 +1898,6 @@ export function $closing(it, drop, slices = true) {
   // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
   if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
     closing.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  }
-  // Its `count`, its iterator's own, a compiled `Take`'s, which advances
-  // its source, then done with (ADR 0913).
-  if (Object.hasOwn(it, "count")) {
-    closing.count = (drop) => {
-      const counted = it.count(drop);
-      close();
-      return counted;
-    };
   }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as

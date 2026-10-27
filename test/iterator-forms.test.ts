@@ -12,7 +12,7 @@
 //   ITERATOR_FORMS=corpus RUST_JS_CASES=1/6 bun test test/iterator-forms.test.ts   # the corpus, a sixth of it
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
@@ -100,3 +100,22 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
     else expect(problem).toBe("");
   }, 300_000);
 }
+
+// The build of std's structs is that build: of a chain the recognizers make
+// in place, `v.iter().map(..).filter(..)`, std's own `Map` and `Filter`,
+// not JS's array methods, or the cases above check those again.
+test("a build of std's iterator structs makes no adapter in place", () => {
+  const dir = fixture("forms-in-place");
+  const file = join(dir, "main.rs");
+  writeFileSync(file, `fn main() {
+    let v = [1, 2, 3];
+    let doubled: Vec<i32> = v.iter().map(|x| x * 2).filter(|x| *x > 2).collect();
+    println!("{doubled:?}");
+}
+`);
+  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const js = readFileSync(compiled.js, "utf8");
+  expect(js).toContain('from "@rust-js/std/iter.js"');
+  expect(js).not.toContain(".map(");
+});

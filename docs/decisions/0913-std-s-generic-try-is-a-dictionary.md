@@ -93,3 +93,14 @@ without them, std's struct stepped by `next` where Rust asks a `Skip`'s
   `control-flow-try-never-short-circuits`, `given-evidence-ignored`,
   `extended-std-struct-undropped`, `std-struct-dropped-by-parts`,
   `closing-count-unforwarded`, `take-not-held`.
+
+## Amendment: `$closing` passes on no `count`
+
+`$closing` passed on its iterator's own `count`, a compiled `Take`'s.
+Since ADR 0925 a compiled struct drops what it holds itself and is never
+wrapped in `$closing` (`closing_drop`), and what is wrapped, the crate's
+own iterator, a collection's `IntoIter` or a type parameter's, has no
+`count` of its own: an adapter given to a generic function whose drop it
+doesn't take is refused. No case of the corpus, either build, reached it,
+and `closing-count-unforwarded` survived every run, so the code went, and
+its mutation with it.

@@ -37,6 +37,23 @@ function nothing(field) {
   return field === undefined || field === null;
 }
 
+// One whose payload JS can't compare, a `Vec`, compares by its derived
+// `==`; a unit variant, a constant, by `===` still: `undefined` isn't
+// `null` (ADR 0676).
+function slotDebug_fmt(slot) {
+  if (Array.isArray(slot)) {
+    return `Items([${slot.join(", ")}])`;
+  }
+  if (slot === undefined) {
+    return "Missing";
+  }
+  return "Cleared";
+}
+
+function isMissing(slot) {
+  return slot === undefined;
+}
+
 function main() {
   const fields = ["a", 2, undefined, null];
   for (const field of fields) {
@@ -53,6 +70,11 @@ function main() {
     console.log(
       `${field == null ? "None" : `Some(${fieldDebug_fmt($someValue(field))})`} ${field != null} ${arg}`,
     );
+  }
+  const slots = [[1], undefined, null];
+  for (const slot of slots) {
+    const arg = isMissing(slot);
+    console.log(`${slotDebug_fmt(slot)} ${arg} ${slot === null}`);
   }
 }
 //# sourceMappingURL=case.js.map
