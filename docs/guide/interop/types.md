@@ -899,6 +899,11 @@ export function ratio(a, b) {
   rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, or of a type parameter's value, whose `None` is `null`; this one isn't
   ```
 
+- **`#[rust_js::optional]` on a `OnceCell` field makes it absent until
+  it's set**, React's lazy payload's `_ioInfo?: ..`: made empty, `{
+  _status: -1 }`, then `payload._ioInfo = ..` where it's set; one that
+  isn't optional keeps its key, `undefined`
+  ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 - **`#[rust_js::optional]` on a nullable field makes it absent until
   it's set**, Flow's and TypeScript's `banner?: string | null`: made with
   `None`, it's left out, `{ name, avatar: null }`, as a plain `Option`

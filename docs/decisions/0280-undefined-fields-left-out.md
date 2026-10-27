@@ -1,6 +1,6 @@
 # 0280. A field that's `undefined` is no key
 
-Status: Accepted. Amended: a `None` field a comment is written after on
+Status: Accepted. Amended: an optional `OnceCell` field is left out where it's made empty; a `None` field a comment is written after on
 its line keeps its key, `undefined`, the comment's place; a comment before a
 field changes no key, but where no key follows it; a field that holds a
 cell keeps its key where it's made `None` (the user's decision, 2026-10-27).
@@ -211,3 +211,22 @@ Case A, as before: what reads the field reads `undefined` either way.
 - Held by `test/lowering-field-cells.test.ts`'s "a cell field made None
   keeps its key"; mutations `kept-none-left-out` and
   `cell-fields-unknown`.
+
+## Amendment: an optional `OnceCell` field is left out where it's made empty (lz1, 2026-10-27)
+
+React's lazy payload is `{ _status: Uninitialized, _result: ctor }`, its
+`_ioInfo` set only in DEV. The port's `io_info: OnceCell<Rc<IoInfo>>`, a
+cell that keeps its key (above), printed `_ioInfo: undefined`, and
+`#[rust_js::optional]`, which leaves a cell's key out till it's set, was
+refused on what isn't nullable. **A `OnceCell` field may be
+`#[rust_js::optional]`**: made empty, it's left out, `{ _status: -1 }`, set
+later as any cell field is; its declaration was optional already, absent
+until it's set (ADR 0847). A `OnceCell` has no `None` to write but the
+empty one, so it needs no `nullable`.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N for Rust, whose
+  `get()` reads `undefined` either way; the key's absence is what JS
+  sees, as the attribute asks.
+- Held by `test/lowering-optional-fields.test.ts`, "an optional OnceCell
+  field is left out where it's made empty", and the mutation
+  `optional-once-cell-refused`.

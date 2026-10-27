@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     name: "optional-unnullable-unrefused",
     breaks: "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
     file: "src/lower/bindings.rs",
-    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) {\n",
+    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "an optional field that isn't nullable"],
   },
@@ -521,5 +521,13 @@ export const mutations: Mutation[] = [
     find: "        \"typeof === \\\"function\\\"\" => return JsForm::Function,\n",
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "is_function is whether"],
+  },
+  {
+    name: "optional-once-cell-refused",
+    breaks: "a `#[rust_js::optional]` `OnceCell` field is refused, so React's lazy payload keeps `_ioInfo: undefined` (ADR 0280, amended)",
+    file: "src/lower/bindings.rs",
+    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
+    replace: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) {\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional OnceCell field"],
   },
 ];

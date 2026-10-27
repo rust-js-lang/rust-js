@@ -128,3 +128,39 @@ pub fn cloned(fiber: &Fiber) -> Rc<Fiber> {
   const copy = lib.cloned({ tag: 2, debugTask: null, task: null });
   expect([copy.debugTask, copy.task]).toEqual([null, null]);
 });
+
+// A `#[rust_js::optional]` `OnceCell` field is left out where it's made
+// empty, React's lazy payload, `{ _status: -1 }`, its `_ioInfo` set only in
+// DEV (ADR 0280, amended, lz1); one that isn't keeps its key, `undefined`.
+test("an optional OnceCell field is left out where it's made empty", async () => {
+  const dir = fixture("optional-once-cell");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, OnceCell};
+
+pub struct Payload {
+    #[cfg_attr(rust_js, rust_js::name = "_status")]
+    pub status: Cell<i32>,
+    #[cfg_attr(rust_js, rust_js::name = "_ioInfo", rust_js::optional)]
+    pub io_info: OnceCell<u32>,
+    pub kept: OnceCell<u32>,
+}
+
+pub fn lazy(dev: bool) -> Payload {
+    let payload = Payload { status: Cell::new(-1), io_info: OnceCell::new(), kept: OnceCell::new() };
+    if dev {
+        let _ = payload.io_info.set(7);
+    }
+    payload
+}
+
+pub fn info(payload: &Payload) -> Option<u32> {
+    payload.io_info.get().copied()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("_ioInfo: undefined");
+  expect(js).toContain("kept: undefined");
+  const lib = await import(join(dir, "lib.js"));
+  const [prod, dev] = [lib.lazy(false), lib.lazy(true)];
+  expect(["_ioInfo" in prod, "kept" in prod, lib.info(prod), lib.info(dev)]).toEqual([false, true, undefined, 7]);
+});
