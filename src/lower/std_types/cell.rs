@@ -511,8 +511,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// mut`'s name, `imported_variables`'s to
 /// make its name (ADR 0270, amended): the names of those it exports so, the
 /// module's variables. One `quiet`, whose borrows ask nothing of borrows,
-/// gives the closure of each what it holds, an object's, which it shares
-/// (ADR 0328). And of `held_values`, its thread-locals of a value
+/// gave the closure of each what it holds, an object's, which it shares
+/// (ADR 0328), where its borrow was lowered (`Std::LocalBorrow`). And of `held_values`, its thread-locals of a value
 /// and `static mut`s (`holds_a_value`), those it exports still their `{
 /// value }`, which the caller refuses (ADR 0270, amended).
 pub(in crate::lower) fn plain_statics(
@@ -520,32 +520,6 @@ pub(in crate::lower) fn plain_statics(
     quiet: &HashSet<&str>,
     held_values: &HashSet<&str>,
 ) -> (Vec<(String, bool)>, Vec<String>) {
-    // Each quiet borrow's closure, called with what its third argument says
-    // it's given: the cell itself, a `RefCell` of an object's, the object
-    // (ADR 0863), and a `with_borrow_mut`'s of a number, text or `Option`,
-    // its `{ value }`, the box its `&mut` is (ADR 0074), which its body
-    // reads and sets by `value` in place, as the variable it then is; or
-    // what it holds. One that hands its `&mut` on reads the box whole, and
-    // keeps it (ADR 0270, amended).
-    js::each_item_expr_mut(items, &mut |e| {
-        if let js::ExprKind::Call(callee, args) = &mut e.kind
-            && matches!(callee.helper_name(), Some("$withBorrow" | "$withBorrowMut"))
-            && let [key, _, rest @ ..] = args.as_slice()
-            && let js::ExprKind::Var(name) = &key.kind
-            && quiet.contains(name.as_str())
-        {
-            let itself = matches!(rest, [flag] if matches!(flag.kind, js::ExprKind::Bool(true)));
-            let (key, f) = (args.remove(0), args.remove(0));
-            let given = match itself {
-                true => key,
-                false => Expr::held(key),
-            };
-            *e = Expr {
-                span: e.span,
-                ..apply(f, vec![given])
-            };
-        }
-    });
     // A closure called where it's made: its body (ADRs 0581, 0840), in a
     // function or in what the module runs when it's loaded, which no
     // `return` ends.

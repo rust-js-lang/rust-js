@@ -325,3 +325,16 @@ Held by `test/corpus/thread_local_set_in_const_closure.rs`, against
 native Rust; the mutations `item-blocks-skip-constants`,
 `item-exprs-skip-namespace-constants` and
 `item-blocks-skip-namespace-constants` (`js/stmt_walk.ts`).
+
+## Amendment: a quiet borrow is applied where it's lowered, once
+
+A quiet thread-local's borrow, `with_borrow(|x| ..)` of the module's
+variable, was applied to what it's given twice over: where it's lowered
+(`Std::LocalBorrow`, ADR 0866, amended) and again in `plain_statics`,
+which rewrote the `$withBorrow(..)` calls left. Lowering leaves none: a
+probe panicking in `plain_statics`' rewrite reached no corpus case,
+lowering, module, port, JSX, snapshot, crate, std or guide test, and its
+four mutations survived every run. The rewrite went; the mutations
+`mir-quiet-box-kept`, `mir-quiet-local-borrow-not-inlined` and
+`value-static-given-value` take the lowering's place now, and
+`mir-quiet-local-borrowed` went, being `quiet-with-borrow-called-late`.
