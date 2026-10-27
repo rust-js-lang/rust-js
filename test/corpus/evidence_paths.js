@@ -5,7 +5,9 @@ import {
   $debugStr,
   $displayF64,
   $extend,
+  $given,
   $iter,
+  $next,
   $someValue,
   $traitImpl,
   $unwrap,
@@ -67,10 +69,15 @@ function optionGetterT_get(option, TClone) {
   return TClone.clone($someValue($unwrap(option)));
 }
 
-const iDigits = {
-  digitIter: iDigits_digitIter,
-  digitSum: (self) => iDigits_digitIter(self).reduce((s, d) => (s + d) >>> 0, 0),
-};
+const $iDigits = new WeakMap();
+
+function iDigits(IIterator) {
+  return $traitImpl($iDigits, [IIterator], () => ({
+    digitIter: iDigits_digitIter,
+    digitSum: (self) =>
+      $given(iDigits_digitIter(self), IIterator).reduce((s, d) => (s + d) >>> 0, 0),
+  }));
+}
 function iDigits_digitIter(self) {
   return self;
 }
@@ -125,7 +132,7 @@ function main() {
   const twice = optionGetterT({ clone: (value) => value }).twice(4);
   const value = optionGetterT({ clone: (value) => value }).twice("hi");
   console.log(`(${twice[0]}, ${twice[1]}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`);
-  console.log(`${iDigits.digitSum($iter([1, 2, 3]))}`);
+  console.log(`${iDigits({ next: $next }).digitSum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
   let before = pointMovableS({ clone: (value) => value }, { add: (a, b) => (a + b) | 0 }).translate(

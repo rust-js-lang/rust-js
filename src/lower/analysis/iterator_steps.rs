@@ -127,6 +127,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     let next = trait_method(tcx, iterator, "next");
     let size_hint = trait_method(tcx, iterator, "size_hint");
     let mut stepped: HashSet<(DefId, u32, DefId)> = HashSet::new();
+    // What a trait's default steps of an associated type of its `Self`.
+    let mut stepped_assoc: Vec<(DefId, DefId, DefId)> = Vec::new();
     // A caller's parameter given on as a callee's, which steps it if that does.
     let mut passed: Vec<(Param, Param)> = Vec::new();
     for body in all_bodies {
@@ -279,6 +281,21 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     stepped.extend(by.iter().map(|&by| (caller, param.index, by)));
                     continue;
                 }
+                // Of a trait's default, an associated type of its `Self`,
+                // `Self::Iter`: stepped of what each impl keeping it says it
+                // is, below (ADR 0977).
+                if let ty::Alias(_, alias) = self_ty.kind()
+                    && let ty::Projection { def_id: assoc } = alias.kind
+                    && alias
+                        .args
+                        .types()
+                        .next()
+                        .is_some_and(|of| matches!(of.kind(), ty::Param(p) if p.index == 0))
+                    && tcx.trait_of_assoc(caller).is_some()
+                {
+                    stepped_assoc.extend(by.iter().map(|&by| (caller, assoc, by)));
+                    continue;
+                }
                 if let ty::Adt(adt, adapted) = self_ty.kind()
                     && is_std_crate(tcx, adt.did())
                 {
@@ -402,6 +419,16 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 item.is_fn() && item.defaultness(tcx).has_value() && !overridden.contains_key(&item.def_id)
             });
             for item in kept {
+                // An associated type of its `Self` it steps, of what this
+                // impl says it is, a type parameter of the impl's, `I` of
+                // `type Iter = I` (ADR 0977).
+                for &(_, assoc, by) in stepped_assoc.iter().filter(|&&(default, ..)| default == item.def_id) {
+                    if let Some(&own) = overridden.get(&assoc)
+                        && let ty::Param(param) = tcx.type_of(own).instantiate_identity().skip_normalization().kind()
+                    {
+                        stepped.insert((imp, param.index, by));
+                    }
+                }
                 for (index, arg) in trait_ref.args.iter().enumerate() {
                     let Some(ty) = arg.as_type() else { continue };
                     let default = (item.def_id, index as u32);

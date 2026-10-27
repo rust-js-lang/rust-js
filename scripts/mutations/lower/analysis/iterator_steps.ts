@@ -6,6 +6,14 @@ const extensions = ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$
 
 export const mutations: Mutation[] = [
   {
+    name: "kept-default-assoc-unstepped",
+    breaks: "a trait's default that steps `Self::Iter`, kept by `impl<I: Iterator> Trait for I` with `type Iter = I`, isn't seen to step `I`: a range given to it is `.reduce`d as if a JS iterator, `TypeError` (ADR 0977)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        stepped.insert((imp, param.index, by));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^kept_default_steps_assoc.rs$"],
+  },
+  {
     name: "std-body-callee-steps-unpassed",
     breaks: "std's `Skip::rfold`, compiled, calls `self.try_rfold(..)`, which steps `I` from its back, but isn't given `I`'s `DoubleEndedIterator`: std's bodies don't compile (ADR 0927)",
     file: "src/lower/analysis/iterator_steps.rs",

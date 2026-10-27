@@ -69,7 +69,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * does is taken off. */
 const differs: Record<string, string> = {
   "cloned_chains_and_cycles.rs": "throws: a zip cloned apart clones its part, std's `Chain` here, as its maker made it, `$clone`",
-  "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
 };
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
