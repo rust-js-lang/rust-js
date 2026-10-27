@@ -90,7 +90,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)\n",
     replace: "            false && !breaks(body, label.as_deref()) && stays(s)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a loop after a loop is after it"],
+    tests: ["test/corpus.test.ts", "-t", "^(loop_drops|range_values).rs$"],
+    snapshots: true,
   },
   {
     name: "leaving-loop-jumps-inside",

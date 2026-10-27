@@ -17,8 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/js/walk.rs",
     find: "                        $cases(cases, default).for_each(|body| $slotted(body, Slot::Block, f));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
-    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
   },
   {
     name: "else-slot-unsaid",

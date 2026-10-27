@@ -389,7 +389,8 @@ pub fn describe(props: &CodeProps) -> String {
 });
 
 // ADR 0364: an `on_load!` body from MIR, which ends a loop by its end, is
-// its module's top all the same, where JS has no `return`.
+// its module's top all the same, where JS has no `return`: its `return` a
+// `break` of a labeled block of it (ADR 0267).
 test("an on_load body's loop ends at the module's top", async () => {
   const dir = fixture("on-load-loop");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadLooped")] #[allow(unused_variables)] fn seen(n: u32) { unreachable!() }
@@ -397,10 +398,11 @@ js::on_load! {
     let mut it = [1u32, 2, 3].iter();
     while let Some(&n) = it.next() {
         if n == 3 {
-            break;
+            return;
         }
         seen(n);
     }
+    seen(4);
 }
 pub fn ready() -> u32 {
     1
