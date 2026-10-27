@@ -450,7 +450,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 previous
             }
             Std::LocalWith => {
-                let (key, f) = (arg(), arg());
+                let (mut key, f) = (arg(), arg());
+                // What a `bool`'s lends, which JS's name of it doesn't show,
+                // as a `bool` constant's read (ADR 0031, amended):
+                // `enableProfilerTimer && ..`.
+                if generic_args.type_at(0).is_bool() {
+                    key.facts = key.facts.with(js::Known::Boolean);
+                }
                 crate::lower::calls::apply(f, vec![key])
             }
             Std::LocalBorrow { mutable } => {

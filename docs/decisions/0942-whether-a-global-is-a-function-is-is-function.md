@@ -5,6 +5,8 @@ with [0624](0624-is-defined-of-a-path-of-bindings.md)'s paths and
 [0645](0645-is-defined-of-a-static-is-of-the-static.md)'s statics, to a
 second question; and [0887](0887-std-items-that-are-math-are-math.md)'s
 `Math`, which every host has, to ECMAScript's first edition's globals.
+Amended: a chain of its tests reads as written, a comment before it kept
+(below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -105,3 +107,36 @@ and `mir_defined_parts` is the one place their tests are made.
 - Mutations: `is-function-asks-defined`, `is-function-form-called`,
   `is-function-refusal-named-defined`, `every-host-has-asked`,
   `every-host-has-unasked-whole`.
+
+## Amendment: a chain of its tests reads as written, a comment before it kept
+
+React's ReactFiberPerformanceTrack writes
+
+```js
+const supportsUserTiming =
+  enableProfilerTimer &&
+  typeof console !== 'undefined' &&
+  typeof console.timeStamp === 'function' &&
+  (!__DEV__ ||
+    // In DEV we also rely on performance.measure
+    (typeof performance !== 'undefined' && ..));
+```
+
+Its port's `ENABLE_PROFILER_TIMER.with(|&enabled| enabled) &&
+js::is_defined(console) // ..comment.. && js::is_function(console::time_stamp)`
+printed `!!(enableProfilerTimer && typeof console !== "undefined") &&
+typeof console !== "undefined" && typeof console.timeStamp === "function"`:
+
+- **A `bool` thread-local's value a `with` lends is a `bool`**
+  (`Known::Boolean`, as a `bool` constant's read is, ADR 0031): the
+  value tidy makes of the initializer's branches needs no `!!`, which had
+  split the chain so ADR 0964's `typeof console` already asked stayed.
+- **The tests `is_defined` and `is_function` make are where the call is
+  written**, each of its span, so a comment written before the call is
+  before its first test; it had no place, and was lost.
+
+Case N for both: the same values. Held by
+`test/lowering-is-function.test.ts`'s "a thread-local bool of another and
+is_function's chain read as written"; mutations `local-with-bool-unknown`
+and `defined-test-unplaced`.
+

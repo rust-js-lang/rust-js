@@ -726,7 +726,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0939 An iterator that's an iterable in JS is made the JS iterator it steps where its `IntoIterator` dictionary gives it](0939-an-iterable-s-into-iter-is-its-js-iterator.md)
 - [0940 `collect()` into a `Vec` asks the room its iterator's hint says, as std's `SpecFromIter` does](0940-collect-asks-room-of-its-hint.md)
 - [0941 A `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, steps the array's items it owns](0941-a-boxed-array-s-into-iter-is-its-items.md)
-- [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md)
+- [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md) *(amended: a chain of its tests reads as written, a comment before it kept)*
 - [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md)
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)

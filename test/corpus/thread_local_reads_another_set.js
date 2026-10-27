@@ -56,7 +56,7 @@ const FIRST = $local(() => {
   return $index(items, BASE);
 });
 
-const USES_FLAG = !!ON && BASE > 1;
+const USES_FLAG = ON && BASE > 1;
 
 function main() {
   console.log("main");

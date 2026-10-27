@@ -154,3 +154,43 @@ pub fn defines_symbol_for() -> bool {
   expect(js).toContain('export function definesSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for !== "undefined";\n}');
   expect([lib.hasSymbolFor(), lib.definesSymbolFor()]).toEqual([true, true]);
 });
+
+// React's ReactFiberPerformanceTrack: `const supportsUserTiming =
+// enableProfilerTimer && typeof console !== 'undefined' && // ..
+// typeof console.timeStamp === 'function'`. A thread-local `bool`'s value
+// a `with` lends is a `bool`, as a `bool` constant's read is, so the chain
+// is its `&&`s, no `!!(..)` that kept ADR 0964's later `typeof console`;
+// and a comment before `js::is_function(..)` is before its test.
+test("a thread-local bool of another and is_function's chain read as written", async () => {
+  const dir = fixture("is-function-chain");
+  writeFileSync(join(dir, "lib.rs"), `thread_local! {
+    pub static ENABLE_PROFILER_TIMER: bool = true;
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "console.timeStamp")]
+pub fn time_stamp(_label: &str) {
+    unreachable!()
+}
+
+thread_local! {
+    static SUPPORTS_USER_TIMING: bool = ENABLE_PROFILER_TIMER.with(|&enabled| enabled)
+        && js::is_defined(time_stamp)
+        // In DEV we also rely on performance.measure
+        && js::is_function(time_stamp);
+}
+
+pub fn supports() -> bool {
+    SUPPORTS_USER_TIMING.with(|&supports| supports)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`const SUPPORTS_USER_TIMING =
+  ENABLE_PROFILER_TIMER &&
+  typeof console !== "undefined" &&
+  typeof console.timeStamp !== "undefined" &&
+  // In DEV we also rely on performance.measure
+  typeof console.timeStamp === "function";`);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.supports()).toBe(true);
+});

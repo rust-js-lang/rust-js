@@ -527,4 +527,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
   },
+  {
+    name: "local-with-bool-unknown",
+    breaks: "a `bool` thread-local's value a `with` lends isn't known a `bool`, so React's `supportsUserTiming` is `!!(enableProfilerTimer && typeof console !== \"undefined\") && ..`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if generic_args.type_at(0).is_bool() {\n                    key.facts = key.facts.with(js::Known::Boolean);\n",
+    replace: "                if false {\n                    key.facts = key.facts.with(js::Known::Boolean);\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a thread-local bool of another"],
+  },
 ];

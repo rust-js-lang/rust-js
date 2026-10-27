@@ -480,7 +480,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
             }
         }
-        Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))
+        // Where the call's written, a comment before it is before it
+        // (ADR 0444).
+        let at = self.js_span(span);
+        Ok((tests.into_iter())
+            .map(|test| test.or_at(at))
+            .reduce(|a, b| Expr::bin(Op::And, a, b).or_at(at)))
     }
 
     /// The path a tuple of bindings is, each step a method of what the one

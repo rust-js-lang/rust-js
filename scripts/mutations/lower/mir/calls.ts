@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "defined-path-last-only",
     breaks: "`js::is_defined(tool_hook)` is `typeof rustJsTools.hook`, which throws where the host lacks `rustJsTools`",
     file: "src/lower/mir/calls.rs",
-    find: "        Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)))\n",
-    replace: "        Ok(tests.pop())\n",
+    find: "            .reduce(|a, b| Expr::bin(Op::And, a, b).or_at(at)))\n",
+    replace: "            .last())\n",
     tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
@@ -403,5 +403,13 @@ export const mutations: Mutation[] = [
     find: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding())\n",
     replace: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding()).filter(|_| false)\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "crate's FnOnce"],
+  },
+  {
+    name: "defined-test-unplaced",
+    breaks: "`js::is_function(..)`'s test has no place of its own, so a comment written before it is lost, React's `// In DEV we also rely on performance.measure`",
+    file: "src/lower/mir/calls.rs",
+    find: "            .map(|test| test.or_at(at))\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a thread-local bool of another"],
   },
 ];
