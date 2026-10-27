@@ -372,4 +372,20 @@ export const mutations: Mutation[] = [
     replace: "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
     tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
   },
+  {
+    name: "symbol-for-not-a-global",
+    breaks: "`js::is_function(js::SymbolFor)` is refused, as of no global's binding, so React's `typeof Symbol === 'function' && Symbol.for` can't be written (ADR 0964)",
+    file: "src/lower/mir/calls.rs",
+    find: "            ty::FnDef(f, _) if crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {\n",
+    replace: "            ty::FnDef(f, _) if false && crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+  },
+  {
+    name: "symbol-for-held-not-called",
+    breaks: "`js::SymbolFor` a variable holds is called as `Symbol.for(..)`, not as the variable, React's `symbolFor('selector.component')` (ADR 0964)",
+    file: "src/lower/mir/calls.rs",
+    find: "        if crate::lower::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+  },
 ];

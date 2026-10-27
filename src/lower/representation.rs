@@ -1397,7 +1397,14 @@ pub(super) use super::recognition::ordering_value;
 /// (ADR 0634): the one way one is made, a constant's, a value's, a
 /// constructor's.
 pub(super) fn symbol_for(key: Expr) -> Expr {
-    Expr::call(Expr::member(Expr::var("Symbol"), "for"), vec![key])
+    Expr::call(symbol_for_function(), vec![key])
+}
+
+/// `js::SymbolFor` itself, its constructor as a value: `Symbol.for`, the
+/// registry's function, which reads no `this` and only its first argument
+/// (ADR 0964).
+pub(super) fn symbol_for_function() -> Expr {
+    Expr::member(Expr::var("Symbol"), "for")
 }
 
 /// A `js::SymbolFor`'s key, its `.0`: `Symbol.keyFor(symbol)` (ADR 0634).

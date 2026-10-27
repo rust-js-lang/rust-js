@@ -253,6 +253,33 @@ export function hasTimers() {
 }
 ```
 
+`js::SymbolFor` itself is `Symbol.for`, asked so and called as it is where
+a variable holds it; a `typeof` an earlier test of an `&&` says isn't
+asked again, as React makes its selector types
+([ADR 0964](../../decisions/0964-symbol-for-is-a-function-of-its-own.md)):
+
+```rust
+use js::SymbolFor;
+
+pub fn selector_type() -> Option<SymbolFor<'static>> {
+    if js::is_function(js::symbol::new) && js::is_function(SymbolFor) {
+        let symbol_for = SymbolFor;
+        Some(symbol_for("selector.component"))
+    } else {
+        None
+    }
+}
+```
+
+```js
+export function selectorType() {
+  if (typeof Symbol === "function" && typeof Symbol.for === "function") {
+    const symbolFor = Symbol.for;
+    return symbolFor("selector.component");
+  }
+}
+```
+
 A member no TypeScript lib declares, which some hosts have, is declared as
 an optional property: an `Option` of its value, `None` where the host
 hasn't it, as reading a missing property gives `undefined` and throws

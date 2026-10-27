@@ -1160,6 +1160,12 @@ pub(in crate::lower) fn is_symbol_for_def(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "SymbolFor"
 }
 
+/// Whether `did` is `js::SymbolFor`'s constructor, which is `Symbol.for`
+/// as a value, and called as it is where a variable holds it (ADR 0964).
+pub(in crate::lower) fn is_symbol_for_constructor(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    matches!(tcx.def_kind(did), rustc_hir::def::DefKind::Ctor(..)) && is_symbol_for_def(tcx, did)
+}
+
 /// Whether `did` is `js::any_of`, a type parameter's value as any value
 /// (ADR 0909): the builtins crate's.
 pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {

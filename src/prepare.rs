@@ -13,6 +13,7 @@ mod initializers;
 mod reclaim;
 mod shadows;
 mod truths;
+mod typeofs;
 
 /// A closure's parameter given its name back, preparation's, which a body
 /// lowered from its MIR asks before it's linked, as an import's alias is
@@ -1160,6 +1161,8 @@ fn method(prop: &Prop) -> Option<Prop> {
 }
 
 fn expr(e: &mut Expr) {
+    // A global's `typeof` an earlier test of one `&&` says (ADR 0964).
+    typeofs::implied(e);
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
     // value(value) { n = value; } }`, its parameter a name the place

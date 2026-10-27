@@ -109,3 +109,48 @@ test("js::is_function of what isn't a global's binding is refused", () => {
     expect.stringContaining("given the static itself, `js::is_function(webapi::performance)`"),
   ]);
 });
+
+// ADR 0964: React's test selectors make their selector types symbols where
+// the host has `Symbol.for`, `if (typeof Symbol === 'function' &&
+// Symbol.for) { const symbolFor = Symbol.for; .. symbolFor('selector.component') }`.
+// `js::SymbolFor` itself is `Symbol.for`, asked as a binding is, held and
+// called as it is; a `typeof` an earlier test of the `&&` says isn't asked
+// again.
+test("js::SymbolFor is Symbol.for, asked whether it's a function and called where it's held", async () => {
+  const dir = fixture("is-function-symbol-for");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::{SymbolFor, Unknown};
+
+thread_local! {
+    static COMPONENT_TYPE: Cell<&'static Unknown> = Cell::new(js::unknown_of(0b000));
+}
+
+js::on_load! {
+    if js::is_function(js::symbol::new) && js::is_function(SymbolFor) {
+        let symbol_for = SymbolFor;
+        COMPONENT_TYPE.set(js::unknown_of(symbol_for("selector.component")));
+    }
+}
+
+pub fn component_type() -> &'static Unknown {
+    COMPONENT_TYPE.get()
+}
+
+pub fn has_symbol_for() -> bool {
+    js::is_function(SymbolFor)
+}
+
+pub fn defines_symbol_for() -> bool {
+    js::is_defined(SymbolFor)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof Symbol === "function" && typeof Symbol.for === "function") {\n  const symbolFor = Symbol.for;\n  COMPONENT_TYPE = symbolFor("selector.component");\n}');
+  expect(js).toContain('export function hasSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for === "function";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.componentType()).toBe(Symbol.for("selector.component"));
+  expect(js).toContain('export function definesSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for !== "undefined";\n}');
+  expect([lib.hasSymbolFor(), lib.definesSymbolFor()]).toEqual([true, true]);
+});

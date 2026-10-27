@@ -302,8 +302,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a variable holding the crate's function `def_id`, of `count`
     /// parameters, is called as that variable: one given no dictionaries,
-    /// boxes or rest arguments (ADR 0664).
+    /// boxes or rest arguments (ADR 0664). And `js::SymbolFor`, which is
+    /// `Symbol.for` (ADR 0964).
     pub(super) fn called_as_held(&self, def_id: rustc_span::def_id::DefId, count: usize) -> bool {
+        if crate::lower::recognition::is_symbol_for_constructor(self.tcx, def_id) {
+            return true;
+        }
         self.krate.fns.contains_key(&def_id)
             && !self.takes_rest(def_id)
             && self.tcx.generics_of(def_id).count() == 0
@@ -399,6 +403,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.mir_defined_parts(Some(format!("Math.{name}")), asked, span);
         }
         let global = match *given.kind() {
+            // `js::SymbolFor`, `Symbol.for`, which a host may lack (ADR 0964).
+            ty::FnDef(f, _) if crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {
+                Some("Symbol.for".to_string())
+            }
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => self.member_of_global(f),
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
             _ => match self.static_given(body, &arg.node).filter(|&s| tcx.is_foreign_item(s)) {

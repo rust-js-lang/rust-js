@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "registered-symbol-constructor-its-struct",
     breaks: "`.map(SymbolFor)` makes its key's array, `[value]`, not `Symbol.for(value)`",
     file: "src/lower/aggregates.rs",
-    find: "            super::representation::symbol_for(key)\n",
-    replace: "            Expr::array(vec![key])\n",
+    find: "            return Ok(super::representation::symbol_for_function());\n",
+    replace: "            return Ok(Expr::array(Vec::new()));\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
   },
   {
@@ -249,5 +249,13 @@ export const mutations: Mutation[] = [
     find: "            for method in super::classes::own_methods(self.tcx, adt_def.did()) {\n",
     replace: "            for method in super::classes::own_methods(self.tcx, adt_def.did()).into_iter().skip(1) {\n",
     tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
+  {
+    name: "symbol-for-value-an-arrow",
+    breaks: "`js::SymbolFor` as a value is an arrow, `(value) => Symbol.for(value)`, not `Symbol.for`, React's `const symbolFor = Symbol.for` (ADR 0964)",
+    file: "src/lower/aggregates.rs",
+    find: "        if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
   },
 ];

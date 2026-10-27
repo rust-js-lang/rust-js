@@ -465,6 +465,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A constructor as a value, `.map(Some)` or `.map(Shape::Circle)`: an
     /// arrow of its fields, making what a call of it makes (ADR 0125).
     pub(super) fn constructor_value(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, span: Span) -> R<Expr> {
+        // `js::SymbolFor` is `Symbol.for`, which `symbolFor(key)` calls as
+        // it is (ADR 0964).
+        if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {
+            return Ok(super::representation::symbol_for_function());
+        }
         let sig = self
             .tcx
             .fn_sig(def_id)
@@ -494,10 +499,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && at < items.len()
         {
             items[at].clone()
-        } else if self.recognition().is_symbol_for(ty) {
-            // The registry's symbol of its key, `Symbol.for(value)` (ADR 0634).
-            let [key] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;
-            super::representation::symbol_for(key)
         } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
             // An untagged enum's variant is its payload (ADR 0214), and a
             // discriminated union's `otherwise` the object it holds (ADR 0284).
