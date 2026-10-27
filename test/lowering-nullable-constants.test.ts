@@ -224,7 +224,8 @@ pub fn current_state() -> Option<&'static Unknown> {
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   expect(out).toContain("const current = null;\n");
   expect(out).toContain("  fiber.memoizedState = state;\n");
-  expect(out).toContain("  fiber.debugHookTypes = fiber.memoizedState = null;\n");
+  expect(out).toContain("  fiber.memoizedState = null;\n");
+  expect(out).toContain("  fiber.debugHookTypes = null;\n");
   expect(out).toContain("  workInProgress.debugStack = current.debugStack;\n");
   expect(out).toContain("  workInProgress.debugHookTypes = current.debugHookTypes;\n");
   expect(out).not.toContain("?? null;\n");

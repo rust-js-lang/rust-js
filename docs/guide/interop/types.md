@@ -2129,7 +2129,8 @@ pub fn log_phase(task: &ConsoleTask, label: &str, start: f64, end: f64) {
 
 ```js
 function dispatchSetState(fiber, queue, action) {
-  queue.pending = fiber.pending = action;
+  fiber.pending = action;
+  queue.pending = action;
 }
 
 export function mountState(fiber, queue) {

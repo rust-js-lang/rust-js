@@ -1,11 +1,8 @@
-// Two places set the same variable or constant one after the other are
-// one statement, `a = b = v`, as React's hooks write `hook.memoizedState =
-// hook.baseState = initialState;` and `workInProgressHook =
-// workInProgressHook.next = hook;` (ADR 0968): where each is a variable or a
-// plain field, and the second's object reads nothing the first sets. Not
-// `holder.current = node; holder.current.next = node;`, whose second is of
-// what the first set, nor of a value that's more than a name, `n + 1`, nor
-// three or more in a row.
+// Two places set the same variable or constant one after the other are two
+// statements, as written: ADR 0968 made them one, `a = b = v`, and the user
+// reverted it (2026-10-27), as upstream React writes both. Each still sets
+// what Rust sets, in Rust's order, `holder.current = node;
+// holder.current.next = node;` too.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

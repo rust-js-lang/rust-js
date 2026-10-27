@@ -407,7 +407,7 @@ pub fn reset_later(context: &Context) -> impl Fn() + '_ {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    context.previous = context.renderer = null;\n    context.plain = undefined;\n");
+  expect(js).toContain("    context.renderer = null;\n    context.previous = null;\n    context.plain = undefined;\n");
   const lib = await import(join(dir, "lib.js"));
   const context = lib.make();
   lib.swap(context, "dom");

@@ -23,7 +23,8 @@ function lazy(dev) {
     const ioInfo = {
       name: "lazy",
     };
-    lazy.debug = payload.ioInfo = ioInfo;
+    payload.ioInfo = ioInfo;
+    lazy.debug = ioInfo;
   }
   return lazy;
 }

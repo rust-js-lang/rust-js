@@ -276,7 +276,8 @@ test("a binding of what take() gives names it", async () => {
 // `Some(last) =>`, a binding of the variable the arm sets once it's done
 // with it: the variable, where each read of the binding is before it's set,
 // not `const last = newLast;`; but its own `const` where one is after.
-// The two sets of `clone` are one, `newLast = newLast.next = clone` (ADR 0968).
+// The two sets of `clone` are two statements, as upstream writes them (ADR
+// 0968, superseded).
 test("a binding of a variable set again past its reads is the variable", async () => {
   const dir = fixture("binding-read-before-set");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
@@ -321,7 +322,7 @@ pub fn swapped(lanes: &[i32]) -> i32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    if (newLast == null) {\n      newLast = clone;\n    } else {\n      newLast = newLast.next = clone;\n    }\n");
+  expect(js).toContain("    if (newLast == null) {\n      newLast = clone;\n    } else {\n      newLast.next = clone;\n      newLast = clone;\n    }\n");
   expect(js).toContain("      const last = held;\n");
   const lib = await import(join(dir, "lib.js"));
   const last = lib.append([1, 2, 3]) as { lane: number };

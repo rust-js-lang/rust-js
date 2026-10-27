@@ -196,32 +196,6 @@ export function counted(start) {
 }
 ```
 
-Two places set the same variable or constant one after the other are one
-statement, `a = b = v`, as JS chains them: each a variable or a plain
-field, the second's object reading nothing the first sets. Set first,
-the place on the right is set first, as in Rust
-([ADR 0968](../../decisions/0968-two-places-set-the-same-value-are-one-assignment.md)):
-
-```rust
-use std::cell::Cell;
-
-pub struct Hook {
-    pub memoized_state: Cell<u32>,
-    pub base_state: Cell<u32>,
-}
-
-pub fn mount_state(hook: &Hook, initial_state: u32) {
-    hook.base_state.set(initial_state);
-    hook.memoized_state.set(initial_state);
-}
-```
-
-```js
-export function mountState(hook, initialState) {
-  hook.memoizedState = hook.baseState = initialState;
-}
-```
-
 ## Numbers
 
 JS has one number type. Rust has one per size, and you pick: `f64` for a

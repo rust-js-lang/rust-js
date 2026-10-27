@@ -17,11 +17,13 @@ function hook(state) {
 }
 
 function mountState(hook, initialState) {
-  hook.memoizedState = hook.baseState = initialState;
+  hook.baseState = initialState;
+  hook.memoizedState = initialState;
 }
 
 function reset(hook) {
-  hook.memoizedState = hook.baseState = 0;
+  hook.baseState = 0;
+  hook.memoizedState = 0;
 }
 
 function setBoth(hook, base, memoized) {

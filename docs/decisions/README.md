@@ -752,7 +752,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0965 A shared function, an `Rc<dyn Fn>`, is of any shape, the function itself](0965-a-shared-function-is-of-any-shape.md)
 - [0966 A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`](0966-a-floats-order-is-its-comparison.md)
 - [0967 An object spread, a splice and a set by any key](0967-an-object-spread-a-splice-and-a-set-by-any-key.md) *(amended: `js::array::join` of any values)*
-- [0968 Two places set the same value are one assignment, `a = b = v`](0968-two-places-set-the-same-value-are-one-assignment.md)
+- [0968 Two places set the same value are one assignment, `a = b = v`](0968-two-places-set-the-same-value-are-one-assignment.md) *(superseded: reverted, two statements as written)*
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
 - [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
 - [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)

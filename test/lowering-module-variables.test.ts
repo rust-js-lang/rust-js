@@ -301,7 +301,7 @@ pub fn current_tag() -> Option<u8> {
   // A nullable parameter is `Fiber | null` as declared, stored as it is
   // (ADR 0861, amended, the user's decision, 2026-10-27).
   expect(js).toContain("  current = fiber;\n");
-  expect(js).toContain("  owner = current = null;\n");
+  expect(js).toContain("  current = null;\n  owner = null;\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(types).toContain("export let current: Fiber | null;\n");
   expect(types).toContain("export let owner: string | null;\n");
@@ -564,7 +564,7 @@ pub fn clear() {
   const libJs = readFileSync(join(dir, "lib.js"), "utf8");
   expect(libJs).toContain("export let entangled = null;\nexport let shared = null;\nexport let depth = null;\n");
   expect(libJs).toContain("  entangled ??= [];\n  const queued = entangled;\n");
-  expect(libJs).toContain("  depth = entangled = null;\n");
+  expect(libJs).toContain("  entangled = null;\n  depth = null;\n");
   expect(libJs).not.toContain(".value");
   expect(libJs).not.toContain("$withBorrowMut");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export let entangled: string[] | null;\n");

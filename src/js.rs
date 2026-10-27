@@ -849,7 +849,7 @@ pub enum ExprKind {
     /// `(target = value)`, an assignment's value, of a variable or a plain
     /// field: what preparation makes of a loop's first `const` that the test
     /// leaving it reads, `while (!(step = iterator.next()).done) { .. }` (ADR
-    /// 0860), and of two places set the same value, `a = b = v` (ADR 0968).
+    /// 0860).
     /// Nothing before preparation makes one, so lowering and tidy never see
     /// it.
     Assigned(Box<Expr>, Box<Expr>),

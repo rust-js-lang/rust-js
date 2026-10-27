@@ -489,7 +489,7 @@ impl Expr {
         Expr::new(ExprKind::Stepped(op, Box::new(target)))
     }
 
-    /// `(target = value)`, its value the assignment's (ADRs 0860, 0968).
+    /// `(target = value)`, its value the assignment's (ADR 0860).
     pub fn assigned(target: Expr, value: Expr) -> Expr {
         Expr::new(ExprKind::Assigned(Box::new(target), Box::new(value)))
     }

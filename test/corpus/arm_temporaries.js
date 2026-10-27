@@ -54,7 +54,8 @@ const Mapped = {
         }
         throw error;
       }
-      value$0$0$live = tmp$1$0$live = true;
+      tmp$1$0$live = true;
+      value$0$0$live = true;
       if (value != null && tmp != null) {
         value$0$0$live = false;
         const min = $someValue(value);
@@ -74,7 +75,8 @@ const Mapped = {
           dropU?.($someValue(tmp));
         }
       }
-      value$0$0$live = tmp$1$0$live = false;
+      tmp$1$0$live = false;
+      value$0$0$live = false;
     }
     return result;
   },

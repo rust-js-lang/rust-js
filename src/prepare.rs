@@ -9,7 +9,6 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod catches;
-mod chains;
 mod initializers;
 mod reclaim;
 mod shadows;
@@ -42,7 +41,6 @@ pub fn module(module: &mut js::Module) {
     compound(module);
     js::each_item_block_mut(&mut module.items, &mut stepped_whiles::stepped_whiles);
     stepped(module);
-    js::each_item_block_mut(&mut module.items, &mut chains::chained);
     read_together(module);
     js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
 }
