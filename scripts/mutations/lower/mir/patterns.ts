@@ -3,22 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "thread-local-binding-not-taken-apart",
-    breaks: "an `if let`'s binding of a thread-local only its test reads stays a copy, `const lastFiber$1 = lastFiber; if (lastFiber$1 != null && ..)` (ADR 0866, amended)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                && reads_a_thread_local(*expr)\n",
-    replace: "                && reads_a_thread_local(*expr) && false\n",
-    tests: ["test/lowering-shadows.test.ts", "-t", "thread-local only its test"],
-  },
-  {
-    name: "field-binding-taken-apart",
-    breaks: "a let chain's binding of a field, `if debug && let Some(count) = counts.count.get() && count > 3`, is read in place twice, not once (ADR 0842)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                && reads_a_thread_local(*expr)\n",
-    replace: "",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "a let chain after a test of its own reads its place once"],
-  },
-  {
     name: "null-none-copy-ungiven",
     breaks: "`let owner = None;` given to a nullable field is `undefined` where it's made, and `owner ?? null` where it's given (ADR 0781)",
     file: "src/lower/mir/patterns.rs",

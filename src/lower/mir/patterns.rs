@@ -811,33 +811,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let mut taken_apart: Vec<Span> = (lets.iter())
+        let taken_apart: Vec<Span> = (lets.iter())
             .filter(|(var, _)| scrutinees.contains(var) && !typed.contains(var))
             .map(|&(_, span)| span)
             .collect();
-        // And what an `if let`'s pattern binds of a thread-local's value,
-        // `Some(last_fiber)` of `if let Some(last_fiber) =
-        // LAST_FIBER.with_borrow(Clone::clone)`, its module's variable,
-        // read in place as a variable's copy is (ADR 0866, amended); not
-        // of a field, which a let chain reads once (ADR 0842).
-        let reads_a_thread_local = |e: thir::ExprId| match thir[crate::lower::body_queries::strip(thir, e)].kind {
-            thir::ExprKind::Call { fun, .. } => fn_def(thir[fun].ty)
-                .is_some_and(|(id, _)| crate::lower::recognition::local_key_access(self.tcx, id) == Some(false)),
-            _ => false,
-        };
-        for e in thir.exprs.iter() {
-            if let thir::ExprKind::Let { pat, expr } = &e.kind
-                && reads_a_thread_local(*expr)
-            {
-                pat.walk_always(|p| {
-                    if let thir::PatKind::Binding { subpattern: None, .. } = p.kind
-                        && p.span != pat.span
-                    {
-                        taken_apart.push(p.span);
-                    }
-                });
-            }
-        }
         let names = |spans: &[Span]| {
             (body.var_debug_info.iter())
                 .filter_map(|info| match info.value {
