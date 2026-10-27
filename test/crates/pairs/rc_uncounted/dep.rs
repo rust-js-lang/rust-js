@@ -40,6 +40,19 @@ pub fn shared_cell<T: Copy>(value: T) -> Rc<Cell<T>> {
     Rc::new(Cell::new(value))
 }
 
+/// A unit whose value can't have a destructor, `Copy`.
+pub trait Unit {
+    type Value: Copy;
+
+    fn value(&self) -> Self::Value;
+}
+
+/// And of such an associated type's value, of a unit that can't have one
+/// either: the value itself too.
+pub fn shared_value<U: Unit + Copy>(unit: U) -> Rc<Cell<U::Value>> {
+    Rc::new(Cell::new(unit.value()))
+}
+
 /// Generic code given a consumer's value by a type parameter, which it
 /// clones by what it's given, whatever that counts.
 pub fn pair<T: Clone>(t: T) -> (T, T) {

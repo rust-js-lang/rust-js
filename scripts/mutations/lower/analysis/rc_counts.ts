@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copy-param-dropping",
-    breaks: "an `Rc` of a `T: Copy`'s value is taken to drop it, so a library holding one counts it (ADR 0844)",
+    breaks: "an `Rc` of a `Copy` associated type's value, `U::Value`'s, is taken to drop it, so a library holding one counts it (ADR 0844)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                Some(t) if known_by_bounds(t) && t.needs_drop(tcx, env) => return true,\n",
     replace: "                Some(t) if known_by_bounds(t) => return true,\n",

@@ -483,7 +483,8 @@ pub const FLAGGED: i32 = if ENABLE_CREATE_EVENT_HANDLE_API {
 // holds an `Rc<RefCell<Vec<&dyn Fn(..)>>>`. The closure is the crate's: what
 // it holds the crate made and sees, not a `dyn Fn` the library hands it,
 // so no `dyn Fn` drops, and no `Rc` is counted, the listeners an array
-// (ADR 0626, amended).
+// (ADR 0626, amended); even where the library makes a `dyn Fn` that drops,
+// `later`'s, and is given a closure of the crate's holding a `&dyn Fn`.
 test("a crate's closure given to a library's binding hands the crate nothing", async () => {
   const dir = fixture("cross-crate-closure-given");
   const { app } = compiled(dir, `use std::marker::PhantomData;
@@ -504,6 +505,23 @@ impl Thenable {
 
 pub fn settled(thenable: &Thenable) {
     thenable.then(|_| {});
+}
+
+pub struct Guard;
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        println!("guard dropped");
+    }
+}
+
+pub fn later(f: impl FnOnce() + 'static) {
+    let guard = Guard;
+    let held: Box<dyn Fn()> = Box::new(move || {
+        let _ = &guard;
+    });
+    held();
+    f();
 }
 `, `use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -543,6 +561,11 @@ pub fn controller() -> (Rc<Signal>, Box<dyn Fn()>) {
 pub fn count_later(thenable: &Thenable) {
     let waiters: Rc<RefCell<Vec<&'static dyn Fn(Option<&'static js::Unknown>)>>> = Rc::new(RefCell::new(Vec::new()));
     thenable.then(move |_| println!("{}", waiters.borrow().len()));
+}
+
+pub fn count_soon() {
+    let waiters: Rc<RefCell<Vec<&'static dyn Fn()>>> = Rc::new(RefCell::new(Vec::new()));
+    dep::later(move || println!("{}", waiters.borrow().len()));
 }
 `);
   expect(app).not.toContain("strong");
