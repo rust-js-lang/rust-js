@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "index-reader-array-first",
+    breaks: "a compiled `copied()` of a slice is read by index as the array's `$iter` its recognizers make, not by std's compiled reader: `$getUnchecked` reads `start` of the struct, `NaN` (ADR 0975)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n            return Ok(match self.compiled_step(ty, iterator, \"__iterator_get_unchecked\") {\n",
+    replace: "        if !(self.range_kind(ty).is_some() || self.steps_an_array(ty))\n            && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n        {\n            return Ok(match self.compiled_step(ty, iterator, \"__iterator_get_unchecked\") {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^lazy_chains with"],
+  },
+  {
     name: "dictionary-try-rfold-ungiven",
     breaks: "std's struct's `DoubleEndedIterator` dictionary has no `try_rfold`, so std's `Skip::try_rfold` steps its `Take` by `next_back`: `nth_back(4)`, `nth_back(0)` where Rust asks `nth_back(3)` (ADR 0930)",
     file: "src/lower/iterators/dictionaries.rs",

@@ -46,17 +46,14 @@ function $trustedZip(a, b) {
   return zipped;
 }
 
-// Std's zip by index of std's compiled `Zip` reads its sides' items as
-// `__iterator_get_unchecked(i)` does (ADR 0975): an array's `$iter`'s,
-// the item `i` past where it is, unstepped.
-function $getUnchecked(it, i) {
-  return it.items[it.at + i];
-}
-
-// A range's, of numbers std reads by index: its start plus `i`, of a
-// 64-bit one a BigInt's.
-function $rangeAt(range, i) {
-  return typeof range.start === "bigint" ? range.start + BigInt(i) : range.start + i;
+// `__iterator_get_unchecked(i)` of `it`, which std's compiled `Zip` reads
+// its sides by (ADR 0975): std's compiled adapter's own reader, its
+// dictionary's; an array's `$iter`'s item `i` past where it is, unstepped;
+// a range's start plus `i`, of a 64-bit one a BigInt's.
+function $getUnchecked(it, i, dictionary) {
+  if (dictionary?.getUnchecked !== undefined) return dictionary.getUnchecked(it, i);
+  if (it.items !== undefined) return it.items[it.at + i];
+  return typeof it.start === "bigint" ? it.start + BigInt(i) : it.start + i;
 }
 
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,

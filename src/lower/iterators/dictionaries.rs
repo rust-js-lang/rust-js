@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::recognition::TypeFact::RandomAccessNoCoerce,
             )
             .is_some_and(|random_access| self.recognition().implements_trait(ty, random_access))
-            && let Some(reader) = self.index_reader(ty, span)?
+            && let Some(Some(reader)) = self.index_reader(ty, span)?
         {
             props.push(js::Prop::Field("getUnchecked".into(), reader));
         }
@@ -294,26 +294,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What reads the item `i` past where it is of `ty`, an iterator std
-    /// reads by index, `__iterator_get_unchecked`'s (ADR 0975): an array's
-    /// `$iter`'s, `$getUnchecked`; a range's, `$rangeAt`; std's compiled
-    /// adapter's, its own compiled reader. `None` of another, which std's
-    /// zip of can't be read as std reads it.
-    pub(in crate::lower) fn index_reader(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    /// reads by index, `__iterator_get_unchecked`'s (ADR 0975): std's
+    /// compiled adapter's own reader, its dictionary's `getUnchecked`;
+    /// `Some(None)` of an array's `$iter` or a range, which `$getUnchecked`
+    /// reads as it is; `None` of another, which std's zip of can't be read
+    /// as std reads it.
+    pub(in crate::lower) fn index_reader(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Option<Expr>>> {
         let ty = self.reveal(ty);
-        if self.range_kind(ty).is_some() {
-            return Ok(Some(Expr::helper("$rangeAt")));
-        }
+        // Std's struct first, a `copied()` of a slice's too, which is no
+        // array's `$iter` where it's compiled.
         let iterator = std_item(self.tcx, StdItem::Iterator);
         if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
             return Ok(match self.compiled_step(ty, iterator, "__iterator_get_unchecked") {
-                true => Some(
+                true => Some(Some(
                     self.user_method(ty, iterator, "__iterator_get_unchecked", &["i"], span)?
                         .0,
-                ),
+                )),
                 false => None,
             });
         }
-        Ok(self.steps_an_array(ty).then(|| Expr::helper("$getUnchecked")))
+        Ok((self.range_kind(ty).is_some() || self.steps_an_array(ty)).then_some(None))
     }
 
     /// The `Iterator` dictionary of a `&mut I`, of `I`'s, `of`: what std's

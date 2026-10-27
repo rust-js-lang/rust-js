@@ -60,6 +60,7 @@ const few = [
   "result_given_as_items.rs",
   "range_steps_anywhere.rs",
   "cloned_chains_and_cycles.rs",
+  "lazy_chains.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);

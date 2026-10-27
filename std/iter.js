@@ -14,6 +14,7 @@ import {
   $foldBack,
   $foldOf,
   $fromFn,
+  $getUnchecked,
   $given,
   $lastDropping,
   $lent,
@@ -6979,7 +6980,7 @@ export function iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchec
   dropI,
   dropIItem,
 ) {
-  return IIterator.getUnchecked(self, index);
+  return $getUnchecked(self, index, IIterator);
 }
 
 export function fuseFuseImplI_tryRfold(
@@ -8161,7 +8162,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
   if (zip.index < zip.len$) {
     const i = zip.index;
     zip.index = (zip.index + 1) >>> 0;
-    return [AIterator.getUnchecked(zip.a, i), BIterator.getUnchecked(zip.b, i)];
+    return [$getUnchecked(zip.a, i, AIterator), $getUnchecked(zip.b, i, BIterator)];
   }
 }
 
@@ -8314,9 +8315,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
     }
     const i = zip.index;
     zip.index = (zip.index + 1) >>> 0;
-    const value = AIterator.getUnchecked(zip.a, i);
+    const value = $getUnchecked(zip.a, i, AIterator);
     dropAItem?.(value);
-    const value$1 = BIterator.getUnchecked(zip.b, i);
+    const value$1 = $getUnchecked(zip.b, i, BIterator);
     dropBItem?.(value$1);
   }
 }
@@ -8435,7 +8436,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
     iter.start = (old + 1) >>> 0;
     const i = old;
     const idx = (zip.index + i) >>> 0;
-    init = f(init, [AIterator.getUnchecked(zip.a, idx), BIterator.getUnchecked(zip.b, idx)]);
+    init = f(init, [$getUnchecked(zip.a, idx, AIterator), $getUnchecked(zip.b, idx, BIterator)]);
   }
 }
 
@@ -8547,7 +8548,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
       }
     }
     const i = zip.len$;
-    return [AIterator.getUnchecked(zip.a, i), BIterator.getUnchecked(zip.b, i)];
+    return [$getUnchecked(zip.a, i, AIterator), $getUnchecked(zip.b, i, BIterator)];
   }
 }
 
@@ -8621,7 +8622,7 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   dropBItem,
 ) {
   idx = (zip.index + idx) >>> 0;
-  return [AIterator.getUnchecked(zip.a, idx), BIterator.getUnchecked(zip.b, idx)];
+  return [$getUnchecked(zip.a, idx, AIterator), $getUnchecked(zip.b, idx, BIterator)];
 }
 
 export function zipZipImplAB_new(

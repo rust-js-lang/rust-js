@@ -57,11 +57,17 @@ std's `zip`, and `TrustedRandomAccessNoCoerce::size`.
   constructor asks only of its parameters is theirs (`held_facts`):
   `TrustedLen` of a `&mut I` is `I`'s. The specialization, the fact's
   value and the analysis all read this.
-- **Reads by index.** `__iterator_get_unchecked` is `IterMethod::GetUnchecked`,
-  a parameter's dictionary's `getUnchecked`. It is `$getUnchecked` of an
-  array's `$iter`, `$rangeAt` of a range, and the compiled reader of
-  `Map`, `Enumerate`, `Copied`, `Skip`, `Take`, `Fuse` and `Zip`. It is
-  given only where `Zip` is compiled. A random-access fact of a type
+- **Reads by index.** `__iterator_get_unchecked` is
+  `IterMethod::GetUnchecked`, `$getUnchecked(it, i, dictionary)`. It reads
+  std's compiled adapter by the reader its dictionary carries,
+  `getUnchecked`, the compiled reader of `Map`, `Enumerate`, `Copied`,
+  `Skip`, `Take`, `Fuse` or `Zip`. An array's `$iter` and a range need no
+  entry: it reads them as they are. Only compiled adapters' dictionaries
+  carry the reader, and only where `Zip` is compiled (a first form gave
+  every slice's dictionary an entry, 1,500 lines of the corpus with std's
+  structs). A compiled adapter is read by its own reader before its
+  recognizers' form: a `copied()` of a slice, an array's `$iter` in the
+  normal build, is std's struct here. A random-access fact of a type
   rust-js can't read by index is refused, never given. `$given` sets the
   reader aside, as it steps nothing.
 - **`MAY_HAVE_SIDE_EFFECT`.** It is rustc's value; where rustc can't
@@ -109,3 +115,4 @@ both builds. The mutations are:
 - `given-reader-a-step`
 - `struct-steps-own-params-unfilled`
 - `zip-clone-uncompiled`
+- `index-reader-array-first`
