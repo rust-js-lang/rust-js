@@ -139,6 +139,82 @@ fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
     });
 }
 
+/// `l: { ..; while (..) { ..; break l; } ..; } return;`, a block MIR made
+/// of the returns it joined, the program's early `return`s, which a loop
+/// inside it leaves by: each such `break l` the `return;` it goes to, as
+/// written, `while (..) { if (node.return === null) { return; } .. }`,
+/// which no `break` of no label can say, its other `break`s too, and the
+/// block, which nothing names then, its statements in its place, where they
+/// fit (ADR 0742, amended). Only a loop with a `return` the program wrote
+/// in it (`returns`), not a loop's own end; not a block the program labeled
+/// (`written`), whose `break`s it wrote; nor one no such loop leaves, whose
+/// `break`s other passes make an `if`'s branch, `&&`, `||` or a guard of.
+/// The same jump either way: the block's end goes on to that `return;`
+/// alone.
+pub(in crate::lower::mir::tidy) fn returns_past_blocks(
+    stmts: &mut Vec<Stmt>,
+    written: &[LabeledBlock],
+    returns: &[js::Span],
+) {
+    // Whether a `break label` is in a loop of `stmts` a written `return` is
+    // in.
+    fn left_by_a_return(stmts: &[Stmt], label: &str, returns: &[js::Span], in_loop: bool) -> bool {
+        stmts.iter().any(|stmt| match &stmt.kind {
+            StmtKind::Break(Some(l)) => in_loop && l == label,
+            StmtKind::If(_, a, b) => {
+                left_by_a_return(a, label, returns, in_loop)
+                    || b.as_deref()
+                        .is_some_and(|b| left_by_a_return(b, label, returns, in_loop))
+            }
+            StmtKind::Labeled(_, body) => left_by_a_return(body, label, returns, in_loop),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                left_by_a_return(a, label, returns, in_loop) || left_by_a_return(b, label, returns, in_loop)
+            }
+            StmtKind::Switch { cases, default, .. } => {
+                js::case_lists(cases, default).any(|body| left_by_a_return(body, label, returns, in_loop))
+            }
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                let returning =
+                    !stmt.span.is_none() && (returns.iter()).any(|r| stmt.span.lo <= r.lo && r.hi <= stmt.span.hi);
+                left_by_a_return(body, label, returns, in_loop || returning)
+            }
+            _ => false,
+        })
+    }
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let returned = stmts[i + 1].kind.clone();
+        let StmtKind::Labeled(label, body) = &mut stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        if !matches!(returned, StmtKind::Return(None))
+            || written.iter().any(|block| block.label == *label)
+            || !left_by_a_return(body, label, returns, false)
+        {
+            i += 1;
+            continue;
+        }
+        let label = label.clone();
+        js::statement_lists(body, &mut |list| {
+            for stmt in list.iter_mut() {
+                if matches!(&stmt.kind, StmtKind::Break(Some(l)) if *l == label) {
+                    stmt.kind = returned.clone();
+                }
+            }
+        });
+        let fits = matches!(&stmts[i].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, i, body));
+        if fits {
+            let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            stmts.splice(i..i, body);
+            continue;
+        }
+        i += 1;
+    }
+}
+
 /// Where the first of `stmts` that says is written, inside a loop's or a
 /// `try`'s too.
 pub(in crate::lower::mir::tidy) fn first_written(stmts: &[Stmt]) -> Option<u32> {

@@ -62,3 +62,33 @@ out.
 - The labeled blocks corpus case's `bb23` and `bb62` are `search` and
   `sum`, and a comment before `let total = 'sum: {` is kept, now that the
   block it's before has a place.
+
+## Amendment: a loop's `return` MIR joined past a block is a `return` (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jump: the
+block's end goes on to that `return;` alone.
+
+React's appendAllChildren (cw1 of the port's gaps) walks a tree with early
+`return`s, one inside its inner loop: `while (node.sibling === null) { if
+(node.return === null || node.return === workInProgress) { return; } ..
+}`. MIR joins the `return`s into one after a block, which the inner loop
+leaves by a `break` of the block, and its port printed `bb6: while (..) {
+.. if (current !== workInProgress) { while (true) { .. break; } continue
+bb6; } return; }`, a label where upstream has none.
+
+**A block MIR made, followed by `return;`, that a loop inside it leaves by
+a `break` of it, where a `return` the program wrote is in that loop
+(`Hints::returns`), is that `return;` at each of its `break`s**
+(`tails::returns_past_blocks`, tidy's `jumps` stage), the block then
+spliced in its place: `if (current === workInProgress) { return; } while
+(current.sibling == null) { .. return; }`. Not a block the program
+labeled, whose `break`s it wrote (this ADR); not a loop's own end, a `for`'s
+whose steps run out, which no `return` is in; nor a block no loop leaves,
+whose `break`s other passes read as an `if`'s branch, `&&`, `||` or a
+guard.
+
+Held by `test/lowering-early-exits.test.ts`, "a loop's early return MIR
+joined past a block is a return", run; the mutations
+`loop-returns-past-block-kept` and `loop-end-returns-past-block`
+(`mir/tidy/jumps/tails.ts`, the latter caught by React's
+addValueToProperties, `test/port-performance-track.test.ts`).

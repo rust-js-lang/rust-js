@@ -602,7 +602,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md)
 - [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too; amended: `bind`, a function of its type; amended by 0907: `bind` of first arguments too)*
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
-- [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case)*
+- [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case; amended: a loop's `return` MIR joined past a block is a `return`)*
 - [0743 A part of a chain of tests an earlier test decides is left out](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](0744-a-value-or-its-fallback-is-or.md)
 - [0745 A `continue` in a chain of `if`s is where it's written](0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays; extended by 0754: a `return` some arms go on to is in each; 0755: a `return` after a block is each of its `break`s)*

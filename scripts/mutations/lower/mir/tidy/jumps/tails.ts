@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "loop-returns-past-block-kept",
+    breaks: "a loop's `return` MIR joined past a block stays the block's `break`, `bb6: while (..) { .. continue bb6; } return;`, a label upstream hasn't (ADR 0742, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                left_by_a_return(body, label, returns, in_loop || returning)\n",
+    replace: "                left_by_a_return(body, label, returns, in_loop)\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a loop's early return MIR joined past a block"],
+  },
+  {
+    name: "loop-end-returns-past-block",
+    breaks: "a loop's own end, which no `return` the program wrote is in, is taken for one, so React's addValueToProperties' entries loop ends its case otherwise than upstream (ADR 0742, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                left_by_a_return(body, label, returns, in_loop || returning)\n",
+    replace: "                left_by_a_return(body, label, returns, true || returning)\n",
+    tests: ["test/port-performance-track.test.ts"],
+  },
+  {
     name: "if-jumps-chained-past-the-first",
     breaks: "of `if`s written without an `else` whose `break`s MIR joined, only the first ends with its own, the rest an `else if` chain (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",

@@ -776,6 +776,12 @@ const JUMPS: &[Pass] = &[
             unreachable_after(s);
         })
     }),
+    // A block MIR made whose end is a `return;`, which a loop inside it
+    // leaves by: each such `break` that `return;`, an early return as
+    // written (ADR 0742, amended).
+    pass("returns past blocks", |b, h| {
+        js::statement_lists(b, &mut |s| returns_past_blocks(s, &h.written.blocks, h.returns))
+    }),
     // A `return` of an `if` the program wrote, `return if c { a } else { b
     // };`: its value, `return c ? a : b;`, before a shared tail takes its
     // `else`'s out (ADR 0657, amended).

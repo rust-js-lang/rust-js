@@ -597,3 +597,67 @@ pub fn chained(first: Option<Rc<Node>>, a: &Rc<Node>, b: &Rc<Node>) -> u8 {
   const lone = lib.list(1 as never);
   expect([lib.which(nodes as never, second as never, nodes as never), lib.which(nodes as never, lone as never, second as never), lib.which(nodes as never, lone as never, lone as never), lib.chained(nodes as never, second as never, nodes as never)]).toEqual([2, 2, 0, 2]);
 });
+
+// React's appendAllChildren walks a tree, `while (node !== null) { .. if
+// (node === workInProgress) { return; } while (node.sibling === null) { if
+// (node.return === null || node.return === workInProgress) { return; } node
+// = node.return; } .. }`. MIR joins its `return`s into one past a block the
+// inner loop leaves, `bb6: while (..) { .. while (true) { .. break; }
+// continue bb6; } return;`: each is the `return` written, no label (ADR
+// 0742, amended).
+test("a loop's early return MIR joined past a block is a return", async () => {
+  const { js, lib } = await compiled("loop-returns-past-block", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Node {
+    pub id: u32,
+    pub child: RefCell<Option<Rc<Node>>>,
+    pub sibling: RefCell<Option<Rc<Node>>>,
+    pub r#return: RefCell<Option<Rc<Node>>>,
+}
+
+pub fn node(id: u32) -> Rc<Node> {
+    Rc::new(Node { id, child: RefCell::new(None), sibling: RefCell::new(None), r#return: RefCell::new(None) })
+}
+
+pub fn adopt(parent: &Rc<Node>, children: Vec<Rc<Node>>) {
+    let mut last: Option<Rc<Node>> = None;
+    for child in children {
+        child.r#return.replace(Some(Rc::clone(parent)));
+        match &last {
+            Some(last) => _ = last.sibling.replace(Some(Rc::clone(&child))),
+            None => _ = parent.child.replace(Some(Rc::clone(&child))),
+        }
+        last = Some(child);
+    }
+}
+
+pub fn walk(work_in_progress: &Rc<Node>, log: &mut Vec<u32>) {
+    let mut node = work_in_progress.child.borrow().clone();
+    while let Some(mut current) = node {
+        log.push(current.id);
+        if Rc::ptr_eq(&current, work_in_progress) {
+            return;
+        }
+        while current.sibling.borrow().is_none() {
+            let return_fiber = current.r#return.borrow().clone();
+            match return_fiber {
+                Some(return_fiber) if !Rc::ptr_eq(&return_fiber, work_in_progress) => current = return_fiber,
+                _ => return,
+            }
+        }
+        let sibling = current.sibling.borrow().clone();
+        node = sibling;
+    }
+}
+`);
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain("    if (current === workInProgress) {\n      return;\n    }\n    while (current.sibling == null) {\n");
+  const root = lib.node(0 as never);
+  const [a, b, c] = [1, 2, 3].map((id) => lib.node(id as never));
+  lib.adopt(root as never, [a, b] as never);
+  lib.adopt(b as never, [c] as never);
+  const log: number[] = [];
+  lib.walk(root as never, log as never);
+  expect(log).toEqual([1, 2]);
+});
