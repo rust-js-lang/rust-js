@@ -251,7 +251,9 @@ test("a library's Copy bound takes a copy only where one is given, and JS calls 
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("\nfunction createContext(defaultValue, TCopy) {\n");
   expect(app).not.toMatch(/import \{[^}]*createContext/);
-  expect(app).toContain("createContext({ x: 1 }, { copy: (value) => ({ ...value }) })");
+  // The copy it gives twice is one const at its top (ADR 0979).
+  expect(app).toContain("  const pointCopy = { copy: (value) => ({ ...value }) };\n");
+  expect(app).toContain("createContext({ x: 1 }, pointCopy)");
   expect(app).toContain("createContext(7)");
   expect(app).toContain("twice(8)");
   const lib = JSON.stringify(join(out, "dep", "lib.js"));
@@ -297,7 +299,8 @@ test("a library's generic function is its program's, alone or a dependency, and 
   expect(app).toContain("$writeTry(() => written([8], [7], loudDrop_drop))");
   expect(app).toContain("text += hourDisplay.fmt(hour);");
   expect(app).toContain("digitDoubled.doubled([4])");
-  expect(app).toContain("twice({ x: 3 }, { copy: (value) => ({ ...value }) })");
+  expect(app).toContain("  const pointCopy = { copy: (value) => ({ ...value }) };\n");
+  expect(app).toContain("twice({ x: 3 }, pointCopy)");
   // The impls the library's own code never asks for, which its JS hasn't,
   // the consumer compiles where it gives them to the library's generic
   // code (ADR 0914, amended); one its program exports, `digitPartialEq`, it
