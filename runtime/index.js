@@ -12245,20 +12245,6 @@ export function $revAdvanceBy(rev, m, drop, iterator, back) {
   return m;
 }
 
-// A `Fuse`'s `rfold`, std's: its source's, while it has one, by its
-// dictionaries, `iterator` and `back`: the crate's own `rfold` where its impl
-// writes one, which takes the source and drops it, else each `next_back`,
-// the source dropped by `drop` after (#224).
-export function $fuseRfold(fuse, init, f, iterator, back, drop) {
-  if (fuse.iter == null) return init;
-  const iter = $someValue(fuse.iter);
-  fuse.iter = undefined;
-  if (back?.rfold !== undefined) return back.rfold(iter, init, f);
-  const folded = $foldBack($given(iter, iterator, true, back), init, f);
-  drop?.(iter);
-  return folded;
-}
-
 // A `str`'s splits and searches of a predicate of a `char`, a closure, a
 // function or a set of `char`s (ADR 0157): each match is one `char`, where
 // it starts in UTF-16 units, `unit`, and in UTF-8 bytes, `byte` (#118).

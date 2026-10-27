@@ -5,6 +5,7 @@ import {
   iterator_take,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
@@ -161,7 +162,14 @@ function main() {
           takeDoubleEndedIterator,
         ),
       (iterator) => $exactLen($sizeHint(iterator)),
-      undefined,
+      (iterator, init, f) =>
+        skipDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next, fold: $foldOf },
+          takeDoubleEndedIterator,
+        ),
       (iterator, k) =>
         skipDoubleEndedIterator_nthBack(
           iterator,

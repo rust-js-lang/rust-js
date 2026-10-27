@@ -1,0 +1,61 @@
+delayed bug: missing value for assoc item in impl
+   0: <std::backtrace::Backtrace>::create
+   1: <std::backtrace::Backtrace>::capture
+   2: <rustc_errors::DiagCtxtInner>::emit_diagnostic
+   3: <rustc_errors::DiagCtxtHandle>::emit_diagnostic
+   4: <rustc_span::ErrorGuaranteed as rustc_errors::diagnostic::EmissionGuarantee>::emit_producing_guarantee
+   5: <rustc_errors::DiagCtxtHandle>::span_delayed_bug::<rustc_span::span_encoding::Span, &str>
+   6: rustc_ty_utils::instance::resolve_instance_raw
+   7: rustc_query_impl::query_vtables::resolve_instance_raw::invoke_provider_fn::__rust_begin_short_backtrace
+   8: rustc_query_impl::execution::try_execute_query::<rustc_middle::query::caches::DefaultCache<rustc_middle::ty::PseudoCanonicalInput<(rustc_span::def_id::DefId, &rustc_middle::ty::list::RawList<(), rustc_middle::ty::generic_args::GenericArg>)>, rustc_middle::query::erase::ErasedData<[u8; 32]>>, false>
+   9: rustc_query_impl::query_vtables::resolve_instance_raw::execute_query_non_incr::__rust_end_short_backtrace
+  10: <rustc_middle::ty::instance::Instance>::try_resolve
+  11: rust_js::lower::items::resolve_instance_in
+  12: <rust_js::lower::FnCx>::resolve_instance
+  13: <rust_js::lower::FnCx>::user_method
+  14: <rust_js::lower::FnCx>::knowing_held
+  15: <rust_js::lower::FnCx>::as_double_ended
+  16: <rust_js::lower::FnCx>::rev_items
+  17: <rust_js::lower::FnCx>::mir_iter_method
+  18: <rust_js::lower::FnCx>::holding_function
+  19: <rust_js::lower::FnCx>::cloned_apart_call
+  20: <rust_js::lower::FnCx>::mir_iter_call
+  21: <rust_js::lower::FnCx>::mir_call_values_of
+  22: <rust_js::lower::FnCx>::mir_call_values_given
+  23: <rust_js::lower::FnCx>::mir_call_values
+  24: <rust_js::lower::FnCx>::mir_call_operands
+  25: <rust_js::lower::FnCx>::mir_call
+  26: <rust_js::lower::FnCx>::mir_terminator
+  27: <rust_js::lower::FnCx>::mir_within
+  28: <rust_js::lower::FnCx>::mir_tree
+  29: <rust_js::lower::FnCx>::mir_branch
+  30: <rust_js::lower::FnCx>::mir_terminator
+  31: <rust_js::lower::FnCx>::mir_within
+  32: <rust_js::lower::FnCx>::mir_tree
+  33: <rust_js::lower::FnCx>::mir_branch
+  34: <rust_js::lower::FnCx>::mir_terminator
+  35: <rust_js::lower::FnCx>::mir_within
+  36: <rust_js::lower::FnCx>::mir_tree
+  37: <rust_js::lower::FnCx>::mir_branch
+  38: <rust_js::lower::FnCx>::mir_terminator
+  39: <rust_js::lower::FnCx>::mir_within
+  40: <rust_js::lower::FnCx>::mir_tree
+  41: <rust_js::lower::FnCx>::mir_branch
+  42: <rust_js::lower::FnCx>::mir_terminator
+  43: <rust_js::lower::FnCx>::mir_within
+  44: <rust_js::lower::FnCx>::mir_tree
+  45: <rust_js::lower::FnCx>::mir_function::{closure#17}
+  46: <rust_js::lower::FnCx>::with_given::<core::result::Result<alloc::vec::Vec<rust_js::js::Stmt>, rustc_span::ErrorGuaranteed>, <rust_js::lower::FnCx>::mir_function::{closure#17}>
+  47: <rust_js::lower::FnCx>::mir_function
+  48: <rust_js::lower::FnCx>::lowered_from_mir
+  49: <rust_js::lower::FnCx>::mir_signature
+  50: <rust_js::lower::FnCx>::lower_fn_mir
+  51: rust_js::lower::pipeline::lower_crate
+  52: <rust_js::RustJs as rustc_driver_impl::Callbacks>::after_expansion
+  53: rustc_interface::passes::create_and_enter_global_ctxt::<core::option::Option<rustc_interface::queries::Linker>, rustc_driver_impl::run_compiler::{closure#0}::{closure#1}>
+  54: rustc_interface::interface::run_compiler::<(), rustc_driver_impl::run_compiler::{closure#0}>::{closure#2}
+  55: std::sys::backtrace::__rust_begin_short_backtrace::<rustc_interface::util::run_in_thread_with_globals<rustc_interface::util::run_in_thread_pool_with_globals<rustc_interface::interface::run_compiler<(), rustc_driver_impl::run_compiler::{closure#0}>::{closure#2}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>
+  56: <std::thread::lifecycle::spawn_unchecked<rustc_interface::util::run_in_thread_with_globals<rustc_interface::util::run_in_thread_pool_with_globals<rustc_interface::interface::run_compiler<(), rustc_driver_impl::run_compiler::{closure#0}>::{closure#2}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  57: <std::sys::thread::unix::Thread>::new::thread_start
+  58: __pthread_cond_wait
+

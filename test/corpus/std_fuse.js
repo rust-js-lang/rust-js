@@ -13,7 +13,6 @@ import {
 import {
   $debugStr,
   $exactLen,
-  $fuseRfold,
   $iter,
   $knowing,
   $next,
@@ -92,7 +91,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
       copy,
       (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
       (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
-      (it, init, f) => $fuseRfold(it, init, f, IIterator, IDoubleEndedIterator),
+      undefined,
       (iterator, k) =>
         fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
       (iterator, init, f, broke) =>

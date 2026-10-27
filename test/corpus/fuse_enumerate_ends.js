@@ -15,7 +15,6 @@ import {
   $debugStr,
   $enumerate,
   $extend,
-  $fuseRfold,
   $iter,
   $iterator,
   $knowing,
@@ -61,7 +60,7 @@ function fusedBack(it, IFused) {
       f,
       (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, IFused),
       undefined,
-      (it, init, f) => $fuseRfold(it, init, f, { next: $next }, { next_back: $nextBack }),
+      undefined,
       (iterator, k) =>
         fuseDoubleEndedIterator_nthBack(
           iterator,

@@ -20,7 +20,6 @@ import {
   $findBack,
   $foldBack,
   $foldOf,
-  $fuseRfold,
   $iter,
   $iterator,
   $knowing,
@@ -115,7 +114,7 @@ function main() {
         iterator_fuse($iter(v), { next: $next }, true),
         (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, true),
         (iterator) => fuseExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
-        (it, init, f) => $fuseRfold(it, init, f, { next: $next }, { next_back: $nextBack }),
+        undefined,
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
             iterator,

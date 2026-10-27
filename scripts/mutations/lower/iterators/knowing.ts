@@ -339,11 +339,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
   },
   {
-    name: "knowing-fuse-rfold-unasked",
-    breaks: "a compiled `fuse()` stepped from its back isn't given `$fuseRfold`, so `rev()` of it folds the crate's iterator by `next_back` (#224)",
+    name: "knowing-rfold-unasked",
+    breaks: "a compiled struct stepped from its back isn't given std's compiled `rfold`, so `rev()` of a `fuse()` folds the crate's iterator by `next_back`, not by its own `rfold` (#224, ADR 0981)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                (Some(back), ty::Adt(_, args)) if self.recognition().is_fuse(ty) => {\n",
-    replace: "                (Some(back), ty::Adt(_, args)) if false && self.recognition().is_fuse(ty) => {\n",
+    find: "                Some(back) if self.recognition().rfolds_its_own(ty) => self.compiled_fold(",
+    replace: "                Some(back) if false && self.recognition().rfolds_its_own(ty) => self.compiled_fold(",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {

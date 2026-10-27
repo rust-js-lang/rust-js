@@ -3,6 +3,7 @@
 import {
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
+  fuseDoubleEndedIterator_rfold,
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
@@ -13,7 +14,6 @@ import {
   $enumerate,
   $exactLen,
   $filterEnds,
-  $fuseRfold,
   $held,
   $iter,
   $iterator,
@@ -118,9 +118,9 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (it, init, f) =>
-            $fuseRfold(
-              it,
+          (iterator, init, f) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
               init,
               f,
               {
@@ -198,9 +198,9 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (it, init, f) =>
-            $fuseRfold(
-              it,
+          (iterator, init, f) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
               init,
               f,
               {
@@ -358,9 +358,9 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (it, init, f) =>
-          $fuseRfold(
-            it,
+        (iterator, init, f) =>
+          fuseDoubleEndedIterator_rfold(
+            iterator,
             init,
             f,
             { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
@@ -534,9 +534,9 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (it, init, f) =>
-          $fuseRfold(
-            it,
+        (iterator, init, f) =>
+          fuseDoubleEndedIterator_rfold(
+            iterator,
             init,
             f,
             { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },

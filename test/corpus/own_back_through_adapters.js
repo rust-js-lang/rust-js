@@ -21,7 +21,6 @@ import {
   $foldBack,
   $foldOf,
   $folded,
-  $fuseRfold,
   $iterator,
   $knowing,
   $lent,
@@ -539,9 +538,9 @@ function main() {
             loudDrop_drop,
           ),
         undefined,
-        (it, init, f) =>
-          $fuseRfold(
-            it,
+        (iterator, init, f) =>
+          fuseDoubleEndedIterator_rfold(
+            iterator,
             init,
             f,
             { next: loudIterator_next },
@@ -661,9 +660,9 @@ function main() {
             false,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-        (it, init, f) =>
-          $fuseRfold(
-            it,
+        (iterator, init, f) =>
+          fuseDoubleEndedIterator_rfold(
+            iterator,
             init,
             f,
             { next: countIterator_next, sizeHint: countIterator_sizeHint },
@@ -733,9 +732,9 @@ function main() {
               false,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-          (it, init, f) =>
-            $fuseRfold(
-              it,
+          (iterator, init, f) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
               init,
               f,
               { next: countIterator_next, sizeHint: countIterator_sizeHint },
@@ -849,9 +848,9 @@ function main() {
               false,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
-          (it, init, f) =>
-            $fuseRfold(
-              it,
+          (iterator, init, f) =>
+            fuseDoubleEndedIterator_rfold(
+              iterator,
               init,
               f,
               { next: countIterator_next, sizeHint: countIterator_sizeHint },

@@ -57,12 +57,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             )
     }
 
-    /// std's `Fuse`, which std's own body steps (ADR 0561).
-    pub(in crate::lower) fn is_fuse(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
-            && self.tcx.item_name(adt.did()).as_str() == "Fuse")
-    }
-
     /// Whether stepping `ty` by its `next` first asks a `Skip`'s `nth` of
     /// one that drops what it passes as one slice, a reversed `Vec`'s: a
     /// `Skip` of such, or an adapter whose `next` is its source's of one,

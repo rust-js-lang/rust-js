@@ -771,11 +771,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx
             .codegen_select_candidate(self.typing_env.as_query_input(tr))
             .is_ok()
-            && self
-                .resolve_instance(trait_method(self.tcx, trait_id, method), self.args_of(trait_id, ty))
-                .is_ok_and(|instance| {
+            && {
+                // The trait's arguments, and a method's own parameters,
+                // `rfold`'s `B` and `F`, themselves: they pick no impl.
+                let method = trait_method(self.tcx, trait_id, method);
+                let of = self.args_of(trait_id, ty);
+                let args = ty::GenericArgs::for_item(self.tcx, method, |param, _| match of.get(param.index as usize) {
+                    Some(&arg) => arg,
+                    None => self.tcx.mk_param_from_def(param),
+                });
+                self.resolve_instance(method, args).is_ok_and(|instance| {
                     instance.is_some_and(|i| crate::lower::recognition::is_compiled_std(self.tcx, i.def_id()))
                 })
+            }
     }
 
     /// The function that steps the crate's iterator of type `ty`, its impl's
@@ -997,32 +1005,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if back.is_none() && len.is_none() {
                 return Ok(None);
             }
-            // And its `rfold` and `nth_back`, which pass the crate's own on,
-            // as std's `Fuse` does (#224): a fuse's `rfold`, `$fuseRfold` by
-            // its source's dictionaries, as its fold is `$fuseFold`, since
-            // the compiled one is generic over what it folds; its compiled
-            // `nth_back`.
+            // And its `rfold` and `nth_back`, std's compiled ones: its `rfold`
+            // where it reaches the `rfold` of the crate's own, which std passes
+            // on, as a `Fuse` does (#224, `rfolds_its_own`); of another, the
+            // same as by `next_back`.
             let double_ended = self.recognition().double_ended_iterator();
-            let rfold = match (double_ended, ty.kind()) {
-                (Some(back), ty::Adt(_, args)) if self.recognition().is_fuse(ty) => {
-                    // Its source's dictionaries, a type parameter's given,
-                    // another's made here.
-                    let source = args.type_at(0);
-                    let iterator = match self.iterator_evidence(source, std_item(self.tcx, StdItem::Iterator)) {
-                        Some(given) => given,
-                        None => self.iterator_dictionary(source, span)?,
-                    };
-                    let back = match self.iterator_evidence(source, back) {
-                        Some(given) => given,
-                        None => self.iterator_extension_dictionary(back, source, span)?,
-                    };
-                    let mut given = vec![Expr::var("it"), Expr::var("init"), Expr::var("f"), iterator, back];
-                    given.extend(self.drop_function(source, span)?);
-                    Some(Expr::arrow(
-                        vec!["it".into(), "init".into(), "f".into()],
-                        vec![StmtKind::Return(Some(Expr::call_helper("$fuseRfold", given))).at(js::Span::NONE)],
-                    ))
-                }
+            let rfold = match double_ended {
+                Some(back) if self.recognition().rfolds_its_own(ty) => self.compiled_fold(ty, (back, "rfold"), span)?,
                 _ => None,
             };
             let nth_back = match double_ended {
