@@ -580,4 +580,12 @@ export const mutations: Mutation[] = [
     replace: "                            && false\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
   },
+  {
+    name: "optional-cell-get-unknown",
+    breaks: "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet)\n",
+    replace: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet) && false\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
+  },
 ];

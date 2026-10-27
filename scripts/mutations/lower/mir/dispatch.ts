@@ -489,8 +489,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-nulled-unasked",
     breaks: "what a binding with a nullable parameter is given isn't asked whether it's `null` or a value already: `Object.create(Object.prototype ?? null)`",
     file: "src/lower/mir/dispatch.rs",
-    find: "            true => operands.iter().map(|o| self.nulled(state, o)).collect(),\n",
-    replace: "            true => Vec::new(),\n",
+    find: "            true => (operands.iter())\n",
+    replace: "            true => Vec::new().into_iter()\n",
     tests: ["test/js-object.test.ts", "-t", "Object's statics are JS's"],
   },
   {
@@ -639,5 +639,21 @@ export const mutations: Mutation[] = [
     find: "                .all(|&(f, _)| f.is_local() && !bindings::is_binding(self.tcx, f))\n",
     replace: "                .all(|&(f, _)| f.is_local() || bindings::is_binding(self.tcx, f))\n",
     tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+  },
+  {
+    name: "optional-cell-set-coalesced",
+    breaks: "an optional nullable cell field set to another's `get()` is `created.debugTask = returnFiber.debugTask ?? null`, `null` where upstream copies `undefined` (ADR 0810, amended)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                    crate::lower::aggregates::Given::Optional => optional,\n",
+    replace: "                    crate::lower::aggregates::Given::Optional => false,\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
+  },
+  {
+    name: "optional-cell-set-any-target",
+    breaks: "a nullable cell field that isn't optional, set to an optional one's `get()`, stores `undefined` where it holds `null` or a value (ADR 0810, amended)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                .is_some_and(|field| bindings::is_optional(self.tcx, field));\n",
+    replace: "                .is_some();\n",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
   },
 ];

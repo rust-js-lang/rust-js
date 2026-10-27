@@ -84,3 +84,47 @@ pub fn named(deletion: &Deletion) -> bool {
   lib.rename(deletion, aborts[0]);
   expect([deletion.name, deletion.label, lib.named(deletion)]).toEqual([undefined, undefined, false]);
 });
+
+// React's createFiberFromTypeAndProps copies `created._debugTask =
+// returnFiber._debugTask;`, and cloneDependencies `_debugThenableState:
+// d._debugThenableState`, each a `Cell` field of the port's: a cell's
+// `get()` of an optional nullable field, given to another, is as it is, as
+// a plain field's read is (ADR 0810, amended). One given to a nullable
+// cell that isn't optional is `?? null`.
+test("an optional nullable cell field given another's get stores it as it is", async () => {
+  const dir = fixture("optional-cell-copied");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: Cell<u32>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub debug_task: Cell<Option<&'static str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub task: Cell<Option<&'static str>>,
+}
+
+pub fn copy_task(created: &Fiber, return_fiber: &Fiber) {
+    created.debug_task.set(return_fiber.debug_task.get());
+    created.task.set(return_fiber.debug_task.get());
+}
+
+pub fn cloned(fiber: &Fiber) -> Rc<Fiber> {
+    Rc::new(Fiber {
+        tag: Cell::new(fiber.tag.get()),
+        debug_task: Cell::new(fiber.debug_task.get()),
+        task: Cell::new(fiber.debug_task.get()),
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  created.debugTask = returnFiber.debugTask;\n  created.task = returnFiber.debugTask ?? null;\n");
+  expect(js).toContain("    debugTask: fiber.debugTask,\n    task: fiber.debugTask ?? null,\n");
+  const lib = await import(join(dir, "lib.js"));
+  const created: Record<string, unknown> = { tag: 0, debugTask: "x", task: "y" };
+  lib.copyTask(created, { tag: 1 });
+  expect([created.debugTask, created.task]).toEqual([undefined, null]);
+  const copy = lib.cloned({ tag: 2, debugTask: null, task: null });
+  expect([copy.debugTask, copy.task]).toEqual([null, null]);
+});

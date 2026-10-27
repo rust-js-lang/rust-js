@@ -451,9 +451,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.recognition().classify(callee.0, callee.1),
             Some(Std::CellSet | Std::CellReplace)
         );
+        // An optional nullable cell field's, given what another such holds,
+        // stores it as it is, `undefined` where it's absent (ADR 0810,
+        // amended).
+        let optional = writes_a_cell
+            && (operands.first())
+                .and_then(|cell| self.borrowed(state, cell))
+                .and_then(|cell| self.place_field(state, cell))
+                .is_some_and(|field| bindings::is_optional(self.tcx, field));
         let nulled: Vec<bool> = match writes_a_cell || !bindings::nullable_params(self.tcx, callee.0).is_empty() {
             false => Vec::new(),
-            true => operands.iter().map(|o| self.nulled(state, o)).collect(),
+            true => (operands.iter())
+                .map(|o| match self.stored_given(state, o) {
+                    crate::lower::aggregates::Given::Nulled => true,
+                    crate::lower::aggregates::Given::Optional => optional,
+                    _ => false,
+                })
+                .collect(),
         };
         // A binding's method looked up on a JS value of any shape before its
         // other arguments run, where Rust runs them first: what they take

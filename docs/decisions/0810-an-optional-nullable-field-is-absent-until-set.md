@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0275](0275-nullable-writes-null.md) and
 [0772](0772-a-nullable-cell-field-writes-null.md), whose nullable field's
 `None` was `null` where its struct is made too. Amended: given another
-optional field's value, it's that value as it is, below.
+optional field's value, it's that value as it is, below; a cell field's
+`get()` too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: an absent key,
 `undefined` and `null` are each `None` to the program, which reads any of
@@ -283,3 +284,31 @@ value. Its `.d.ts`, `name?: string | null | undefined`, says so already.
   `optional-assigned-coalesced` (`mir/assign.rs`),
   `optional-given-optional-coalesced` and `optional-given-any-nullable`
   (`aggregates.rs`).
+
+## Amendment: a cell field's `get()` is what it holds too
+
+React copies its fibers' DEV fields as JS objects do, `created._debugTask
+= returnFiber._debugTask;`, `_debugThenableState: d._debugThenableState`.
+The port's are `Cell<Option<&Unknown>>` fields, `nullable` and `optional`,
+and `created.debug_task.set(return_fiber.debug_task.get())` printed
+`created._debugTask = returnFiber._debugTask ?? null;`, about twenty lines
+of the port (h07d): `stored_given` said `Optional` of a plain field's read
+alone, not of a cell's `get()`, and a cell's `set` asked only whether its
+value was `Nulled`.
+
+**A `Cell` field's `get()` of an optional nullable field is what that
+field holds, `Given::Optional`**, as its read is a plain one's (`borrowed`
+finds the field the `get` is lent, the `clone()` case's search, shared);
+and **a cell's `set` or `replace` of an optional nullable field stores
+such as it is**, as an assignment of a plain one does, where its struct is
+made too, `Cell::new(d.debug_thenable_state.get())` (`Given` of a
+`Cell::new` is what it's made of, ADR 0841). A nullable cell that isn't
+optional is still given it `?? null`. Case A, as above: absent stays
+absent, as upstream's copy keeps it.
+
+Held by `test/lowering-optional-fields.test.ts`'s "an optional nullable
+cell field given another's get stores it as it is", run, an absent key
+copied as `undefined` and given `null` to a nullable cell that isn't
+optional; mutations `optional-cell-set-coalesced`,
+`optional-cell-set-any-target` (`mir/dispatch.ts`) and
+`optional-cell-get-unknown` (`mir/rvalues.ts`).

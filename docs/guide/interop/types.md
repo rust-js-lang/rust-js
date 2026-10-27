@@ -905,8 +905,9 @@ export function ratio(a, b) {
   field is; made with what may be `None`, a variable or a call, and set to
   `None`, it's `null`, as a nullable field is, `{ banner: banner ?? null
   }`: absent, `null` or a value, never `undefined` and there. Given
-  another optional nullable field's value, `name: abort.name.clone()`, it
-  holds what that one does, `{ name: abort.name }`, `undefined` where
+  another optional nullable field's value, `name: abort.name.clone()`, a
+  cell field's `get()` too, `created.debug_task.set(fiber.debug_task.get())`,
+  it holds what that one does, `{ name: abort.name }`, `undefined` where
   that one's absent, as a JS object's copy is; a nullable field that
   isn't optional is given it `?? null`. The two
   marks are the two attributes: `nullable` the `| null`, `optional` the

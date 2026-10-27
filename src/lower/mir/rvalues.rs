@@ -1079,6 +1079,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.stored_given(state, operand) == Given::Nulled
     }
 
+    /// The place `operand`, a reference made once, borrows: `(*d).field` of
+    /// `_4 = &((*d).field)`.
+    pub(super) fn borrowed(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Option<Place<'tcx>> {
+        let reference = operand.place()?;
+        if !reference.projection.is_empty() || state.locals.writes[reference.local] != 1 {
+            return None;
+        }
+        match (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+            mir::StatementKind::Assign(assign) if assign.0 == reference.local.into() => Some(&assign.1),
+            _ => None,
+        }) {
+            Some(Rvalue::Ref(_, _, borrowed)) => Some(*borrowed),
+            _ => None,
+        }
+    }
+
     /// What `operand`, an `Option`, is to a `#[rust_js::nullable]` place
     /// it's stored in: `null` or a value already (`nulled`), what an
     /// optional nullable field holds, read, which another such takes as it
@@ -1156,16 +1172,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
             && let [arg] = &args[..]
-            && let Some(reference) = arg.node.place()
-            && reference.projection.is_empty()
-            && state.locals.writes[reference.local] == 1
-            && let Some(Rvalue::Ref(_, _, borrowed)) = (state.body.basic_blocks.iter().flat_map(|b| &b.statements))
-                .find_map(|s| match &s.kind {
-                    mir::StatementKind::Assign(assign) if assign.0 == reference.local.into() => Some(&assign.1),
-                    _ => None,
-                })
+            && let Some(borrowed) = self.borrowed(state, &arg.node)
         {
-            return self.stored_given(state, &Operand::Copy(*borrowed));
+            return self.stored_given(state, &Operand::Copy(borrowed));
+        }
+        // A `Cell` field's `get()`, `return_fiber.debug_task.get()`: what the
+        // field holds, as a read of a plain one (ADR 0810, amended).
+        if let Some((func, args)) = call
+            && let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx))
+            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet)
+            && let [arg] = &args[..]
+            && let Some(borrowed) = self.borrowed(state, &arg.node)
+            && let Some(field) = self.place_field(state, borrowed)
+        {
+            return match bindings::is_optional(self.tcx, field) {
+                true => Given::Optional,
+                false => Given::Unknown,
+            };
         }
         match assigned {
             Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),
