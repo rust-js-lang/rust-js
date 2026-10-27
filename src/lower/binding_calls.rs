@@ -37,6 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                  `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`",
             ));
         }
+        self.functions_themselves(def_id, generic_args, &mut args, span)?;
         let this = is_method(self.tcx, def_id).then(|| args.remove(0));
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
@@ -355,4 +356,58 @@ pub(in crate::lower) fn method_may_be_a_getters(tcx: TyCtxt<'_>, def_id: DefId) 
         && receiver().is_some_and(
             |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),
         )
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Each of `args` that's a binding's function given as the value it
+    /// is, to a parameter of a function of any shape, `F: js::AnyFunction<M>`
+    /// or `js::AnyShape<M>`, which JS calls with what Rust gives it alone, or
+    /// not at all: its JS function itself, as a `fn` of it is (ADR 0602),
+    /// where its arrow only passes its parameters on.
+    /// `function::bind(console::time_stamp, ..)` binds `console.timeStamp`,
+    /// and `function::name(&console::time_stamp)` is its name (ADR 0907,
+    /// amended). A closure the program writes stays the function it is.
+    fn functions_themselves(
+        &mut self,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        args: &mut [Expr],
+        span: Span,
+    ) -> R<()> {
+        let tcx = self.tcx;
+        let sig = tcx.fn_sig(def_id);
+        let declared = sig
+            .instantiate_identity()
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .to_vec();
+        let given = sig
+            .instantiate(tcx, generic_args)
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .to_vec();
+        let of_any_shape = |param: ty::Ty<'tcx>| {
+            (tcx.clauses_of(def_id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
+                matches!(clause.skip_normalization().kind().skip_binder(), ty::ClauseKind::Trait(predicate)
+                    if predicate.self_ty() == param
+                        && super::recognition::is_function_value_trait(tcx, predicate.def_id()))
+            })
+        };
+        for ((arg, declared), given) in args.iter_mut().zip(declared).zip(given) {
+            let binding_fn = match *given.peel_refs().kind() {
+                ty::FnDef(f, f_args) if super::bindings::is_binding(tcx, f) => Some((f, f_args)),
+                _ => None,
+            };
+            if let Some((f, f_args)) = binding_fn
+                && matches!(declared.peel_refs().kind(), ty::Param(_))
+                && of_any_shape(declared.peel_refs())
+            {
+                let itself = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;
+                *arg = itself;
+            }
+        }
+        Ok(())
+    }
 }

@@ -412,9 +412,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 /// What an `Rc` or an `Arc`, `to`, a conversion makes of `from` points at,
-/// where it's `Rc::new`'s of it: of the value, of a `str` its text, a
-/// `&str`, a `String` or a `Box<str>`, of a `[T]` a `Vec<T>`'s or a
-/// `Box<[T]>`'s items, moved.
+/// where it's `Rc::new`'s of it: of the value, or a `Box`'s, which is its
+/// value (ADR 0023), a bound function's `Box<dyn Fn(..)>` (ADR 0907,
+/// amended), of a `str` its text, a `&str`, a `String` or a `Box<str>`, of
+/// a `[T]` a `Vec<T>`'s or a `Box<[T]>`'s items, moved.
 pub(crate) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let pointee = rc_pointee(tcx, to)?;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
@@ -431,6 +432,7 @@ pub(crate) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) 
     };
     let made = match pointee.kind() {
         _ if erased(pointee) == erased(from) => true,
+        _ if from.boxed_ty().is_some_and(|inner| erased(inner) == erased(pointee)) => true,
         ty::Str => text(from) && !matches!(from.kind(), ty::Ref(_, _, Mutability::Mut)),
         ty::Slice(item) => items(*item),
         _ => false,

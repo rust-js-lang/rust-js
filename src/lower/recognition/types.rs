@@ -1174,6 +1174,14 @@ pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
 
+/// Whether `did` is `js::AnyShape` or `js::AnyFunction`, what a function
+/// given as the value it is, its JS function, has (ADRs 0673, 0740).
+pub(in crate::lower) fn is_function_value_trait(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && matches!(tcx.item_name(did).as_str(), "AnyShape" | "AnyFunction")
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
 /// Whether `did` is `js::SymbolFor::from_value`, a value of any shape read
 /// as the registry's symbol (ADR 0634).
 pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool {

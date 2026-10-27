@@ -600,7 +600,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0735 A comment in a macro, before the `fn` it writes, is the function's](0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](0718-a-typed-array-is-rest-arguments-spread.md)
 - [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md)
-- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too; amended: `bind`, a function of its type)*
+- [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too; amended: `bind`, a function of its type; amended by 0907: `bind` of first arguments too)*
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case)*
 - [0743 A part of a chain of tests an earlier test decides is left out](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
@@ -693,7 +693,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`; amended: a guard that falls to nothing beside one that falls to the next is a case too; amended: a fall-through the program's comment says gets no `// Fallthrough`; a guard whose next arm's test is in its `else` falls through)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
-- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are)*
+- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are; amended: `bind` binds a function's first arguments, a binding's function itself)*
 - [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md)
 - [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md) *(amended: an `Option` made where it's tested is its test before its branches are one value)*
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)

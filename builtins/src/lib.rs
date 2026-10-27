@@ -421,17 +421,100 @@ pub mod function {
         unreachable!()
     }
 
-    /// [`f.bind(thisArg)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/bind):
-    /// a function of `f`'s signature that calls `f` with `this_arg` as its
-    /// `this`, any value, `None` of `undefined`, `Some(&Kind::Null)` of
-    /// `null`, as TypeScript's `bind(thisArg)` gives `OmitThisParameter<T>`:
-    /// `f` called through it does what `f` does. React keeps a frame's
-    /// function so, `callComponent.react_stack_bottom_frame.bind(callComponent)`
-    /// of `function::bind(CALL_COMPONENT.react_stack_bottom_frame,
-    /// Some(&CALL_COMPONENT))`.
+    /// [`f.bind(thisArg, ...args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/bind):
+    /// a function that calls `f` with `this_arg` as its `this`, any value,
+    /// `None` of `undefined`, `Some(&Kind::Null)` of `null`, and `args`, a
+    /// tuple of `f`'s first arguments, before what it's given, as
+    /// TypeScript types it (ADR 0907, amended). Of none, `()`, a function
+    /// of `f`'s own type, `OmitThisParameter<T>`, `f` one that's `Copy`, a
+    /// `fn` pointer or a `&dyn Fn`: React keeps a frame's function so,
+    /// `function::bind(CALL_COMPONENT.react_stack_bottom_frame,
+    /// Some(&CALL_COMPONENT), ())`. Of some, a `Box<dyn Fn(..) -> R>` of the
+    /// parameters `f` has left, which lives as long as what it keeps: each
+    /// argument a value of a `Copy` type, or what a parameter borrows, lent
+    /// to each call ([`Keeps`]), as a closure `move |action|
+    /// dispatch(&fiber, action)` lends what it keeps. React's
+    /// `dispatchSetState.bind(null, fiber, queue)` of
+    /// `function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue))`.
     #[cfg_attr(rust_js, rust_js::link_name = "bind")]
-    pub fn bind<F: AnyFunction<M> + Copy, M>(this: F, this_arg: Option<&dyn super::IntoUnknown>) -> F {
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn bind<'l, F, M, L>(this: F, this_arg: Option<&dyn super::IntoUnknown>, args: L) -> <(F, M) as Bound<'l, L>>::Rest
+    where
+        F: AnyFunction<M> + 'l,
+        (F, M): Bound<'l, L>,
+        L: super::Rest<dyn super::IntoUnknown>,
+    {
         unreachable!()
+    }
+
+    /// What a function `F`, of the signature `M`, a `fn` pointer's, is with
+    /// its first arguments `L` bound, [`bind`]'s: of none, `F` itself, and
+    /// of some, a function of the parameters it has left, which lives as
+    /// long as what it keeps, `'l`. Of each signature of up to 12
+    /// parameters and each count of them bound. No program names it.
+    #[diagnostic::on_unimplemented(
+        message = "`{L}` aren't the first arguments a function `{Self}` takes",
+        note = "a function's first arguments are bound as a tuple, `(a, b)`, `(a,)` of one and `()` of none, each of a `Copy` type or what its parameter borrows; bound of none, the function is `Copy`"
+    )]
+    pub trait Bound<'l, L> {
+        /// The function bound.
+        type Rest;
+    }
+
+    impl<F: Copy, M> Bound<'_, ()> for (F, M) {
+        type Rest = F;
+    }
+
+    /// What a bound function keeps of an argument it's given first for a
+    /// parameter of `P`: a value of a `Copy` type, which each call is given
+    /// as it is, or what a parameter borrows, `Rc<Fiber>` of a
+    /// `&Rc<Fiber>`, which each call is lent, as a closure lends what it
+    /// keeps. In JS each is the value itself.
+    #[diagnostic::on_unimplemented(
+        message = "a bound function can't keep a `{Self}` for a parameter of `{P}`",
+        note = "it keeps a value of a `Copy` type, or what a parameter borrows: `fiber` of a `&Rc<Fiber>`"
+    )]
+    pub trait Keeps<P> {}
+
+    impl<T: Copy> Keeps<T> for T {}
+    impl<T> Keeps<&T> for T {}
+
+    /// `Bound` of one signature, each count of its first parameters bound
+    /// but none: `$k`, each kept as an `$x`, and `$r` left.
+    macro_rules! bound {
+        (@split [$($k:ident $x:ident),+] [$($r:ident),*]) => {
+            impl<'l, F, $($k, $x: Keeps<$k> + 'l,)* $($r,)* Ret> Bound<'l, ($($x,)*)> for (F, fn($($k,)* $($r),*) -> Ret) {
+                type Rest = Box<dyn Fn($($r),*) -> Ret + 'l>;
+            }
+        };
+        (@walk [$($k:ident $x:ident),*] [] []) => {
+            bound!(@split [$($k $x),*] []);
+        };
+        (@walk [] [$r:ident $($rs:ident)*] [$y:ident $($ys:ident)*]) => {
+            bound!(@walk [$r $y] [$($rs)*] [$($ys)*]);
+        };
+        (@walk [$($k:ident $x:ident),+] [$r:ident $($rs:ident)*] [$y:ident $($ys:ident)*]) => {
+            bound!(@split [$($k $x),+] [$r $(, $rs)*]);
+            bound!(@walk [$($k $x,)+ $r $y] [$($rs)*] [$($ys)*]);
+        };
+        ($([$($p:ident)*] [$($q:ident)*])*) => {
+            $(bound!(@walk [] [$($p)*] [$($q)*]);)*
+        };
+    }
+
+    bound! {
+        [A] [XA]
+        [A B] [XA XB]
+        [A B C] [XA XB XC]
+        [A B C D] [XA XB XC XD]
+        [A B C D E] [XA XB XC XD XE]
+        [A B C D E F1] [XA XB XC XD XE XF]
+        [A B C D E F1 G] [XA XB XC XD XE XF XG]
+        [A B C D E F1 G H] [XA XB XC XD XE XF XG XH]
+        [A B C D E F1 G H I] [XA XB XC XD XE XF XG XH XI]
+        [A B C D E F1 G H I J] [XA XB XC XD XE XF XG XH XI XJ]
+        [A B C D E F1 G H I J K] [XA XB XC XD XE XF XG XH XI XJ XK]
+        [A B C D E F1 G H I J K L] [XA XB XC XD XE XF XG XH XI XJ XK XL]
     }
 }
 

@@ -972,7 +972,7 @@ thread_local! {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub static CALL_DESTROY_IN_DEV: Option<CallDestroy> = if __DEV__ {
         // We use this technique to trick minifiers to preserve the function name.
-        Some(function::bind(CALL_DESTROY.react_stack_bottom_frame, Some(&CALL_DESTROY)))
+        Some(function::bind(CALL_DESTROY.react_stack_bottom_frame, Some(&CALL_DESTROY), ()))
     } else {
         None
     };

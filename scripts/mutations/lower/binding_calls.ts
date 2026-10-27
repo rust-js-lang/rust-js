@@ -387,4 +387,28 @@ export const mutations: Mutation[] = [
     replace: "            (JsForm::Null, None) if args.is_empty() => Expr::undefined(),\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::null\\(\\) is null where it's written"],
   },
+  {
+    name: "binding-function-value-an-arrow",
+    breaks: "a binding's function given to `function::bind` or `function::name` is an arrow of it, `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose name is \"\" (ADR 0907, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "                *arg = itself;\n",
+    replace: "                let _ = itself;\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
+  {
+    name: "any-function-value-itself",
+    breaks: "a function of the crate's given to `function::name` is taken for a binding's, its arrow made of its call, `add.name` lost (ADR 0907, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "                ty::FnDef(f, f_args) if super::bindings::is_binding(tcx, f) => Some((f, f_args)),\n",
+    replace: "                ty::FnDef(f, f_args) => Some((f, f_args)),\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
+  {
+    name: "callback-binding-function-itself",
+    breaks: "a binding's function given as a binding's callback is the function itself, `then(parseFloat)`, which JS may give more than Rust does (ADR 0907, amended)",
+    file: "src/lower/binding_calls.rs",
+    find: "                && of_any_shape(declared.peel_refs())\n",
+    replace: "",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
 ];

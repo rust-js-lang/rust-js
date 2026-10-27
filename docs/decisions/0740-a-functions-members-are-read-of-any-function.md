@@ -6,7 +6,10 @@ function value has besides its call.
 
 Extended by [0848](0848-apply-is-functions-and-its-this-may-be-null.md):
 `function::apply`, its `this` `null` too. Amended (2026-10-26):
-`function::bind`, a function of the one it binds' type.
+`function::bind`, a function of the one it binds' type. Amended by
+[0907](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) (2026-10-27):
+`bind` binds the function's first arguments too, `function::bind(f,
+this_arg, args)`, of none `()`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
 property itself, read of the function JS has.

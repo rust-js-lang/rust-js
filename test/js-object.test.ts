@@ -848,7 +848,9 @@ pub fn has_a(object: &JsObject) -> bool {
 // ADR 0740, amended: `Function.prototype.bind(thisArg)`, a function of the
 // same signature, as React's `ReactFiberCallUserSpace.js` keeps each frame's:
 // `callComponent.react_stack_bottom_frame.bind(callComponent)`. Its `this` is
-// any value, `null` too; called, it's the function it binds.
+// any value, `null` too; called, it's the function it binds. Bound of no
+// first arguments, `()`, it's of the function's own type (ADR 0907,
+// amended).
 test("a function bound to a this is a function of its signature", async () => {
   const { js, lib, warnings } = await compiled("js-object-function-bind", `use js::{Kind, function};
 
@@ -866,7 +868,7 @@ const CALL_ADD: CallAddFrame = CallAddFrame {
 
 thread_local! {
     pub static CALL_ADD_IN_DEV: CallAdd =
-        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD));
+        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD), ());
 }
 
 pub fn added(a: u32) -> u32 {
@@ -874,8 +876,8 @@ pub fn added(a: u32) -> u32 {
 }
 
 pub fn bound(f: &dyn Fn(u32) -> u32) -> u32 {
-    let to_null = function::bind(f, Some(&Kind::Null));
-    to_null(1) + function::bind(f, None)(2)
+    let to_null = function::bind(f, Some(&Kind::Null), ());
+    to_null(1) + function::bind(f, None, ())(2)
 }
 `);
   expect(warnings).toEqual([]);
@@ -1302,4 +1304,102 @@ pub fn run() -> (f64, bool, bool) {
 `);
   expect(js).toContain("hook.memoizedState = start;\n  return start;");
   expect(lib.run()).toEqual([3, true, true]);
+});
+
+// The user's decision (2026-10-27): `function::bind` takes a rest of `f`'s
+// first arguments, upstream's `.bind(thisArg, ...args)`: React's
+// `dispatchSetState.bind(null, fiber, queue)`, the `Rc`s it keeps lent to
+// each call's `&Rc` parameters, and its performance track's
+// `console.timeStamp.bind(console, label, start, end, track, group,
+// color)`, the binding's function itself, not an arrow of it, as
+// `function::name` reads it too. The bound function is a `Box<dyn Fn>` of
+// the parameters left (ADR 0907, amended).
+test("a function bound to its first arguments is a function of the parameters left", async () => {
+  const { js, lib, warnings } = await compiled("js-object-bind-arguments", `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{Kind, function};
+use webapi::IntoStrOrNumber;
+
+pub struct Queue {
+    pub n: Cell<u32>,
+}
+
+fn dispatch_set_state(fiber: &Rc<Queue>, queue: &Rc<Queue>, action: u32) {
+    fiber.n.set(fiber.n.get() + action);
+    queue.n.set(queue.n.get() * action);
+}
+
+pub fn mount_state(fiber: Rc<Queue>, queue: Rc<Queue>) -> Rc<dyn Fn(u32)> {
+    let dispatch: Rc<dyn Fn(u32)> = Rc::from(function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue)));
+    dispatch
+}
+
+pub fn dispatched() -> (u32, u32) {
+    let fiber = Rc::new(Queue { n: Cell::new(1) });
+    let queue = Rc::new(Queue { n: Cell::new(2) });
+    let dispatch = mount_state(Rc::clone(&fiber), Rc::clone(&queue));
+    dispatch(3);
+    dispatch(4);
+    (fiber.n.get(), queue.n.get())
+}
+
+fn add(a: f64, b: f64) -> f64 {
+    a + b
+}
+
+pub fn added(n: f64) -> f64 {
+    let plus_n = function::bind(add, None, (n,));
+    let both = function::bind(add, None, (n, 1.0));
+    plus_n(1.0) + both()
+}
+
+pub fn stamp(label: &str, start: f64, end: f64) {
+    let start: &dyn IntoStrOrNumber = &start;
+    let end: &dyn IntoStrOrNumber = &end;
+    let log = function::bind(
+        webapi::console::time_stamp,
+        Some(&webapi::console),
+        (label, Some(start), Some(end), Some("Components"), None, Some("primary")),
+    );
+    log();
+}
+
+pub fn stamp_name() -> String {
+    function::name(&webapi::console::time_stamp)
+}
+
+// A closure the program writes is the function it is, its own name "";
+// a function of the crate's is its own.
+pub fn closure_name() -> (String, String) {
+    (function::name(&|a: f64, b: f64| add(a, b)), function::name(&add))
+}
+
+// What JS calls with what it gives: an arrow of what Rust gives.
+pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
+    text.then_resolve(js::parse_float)
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("  const dispatch = dispatchSetState.bind(null, fiber, queue);\n  return dispatch;\n");
+  expect(js).toContain("const plusN = add.bind(undefined, n);");
+  expect(js).toContain('const log = console.timeStamp.bind(\n    console,\n    label,\n    start,\n    end,\n    "Components",\n    undefined,\n    "primary",\n  );');
+  expect(js).toContain("return console.timeStamp.name;");
+  expect(js).toContain("return [((a, b) => add(a, b)).name, add.name];");
+  expect(js).toContain("return text.then((text) => parseFloat(text));");
+  expect(lib.closureName()).toEqual(["", "add"]);
+  expect(lib.dispatched()).toEqual([8, 24]);
+  expect(lib.added(2)).toBe(6);
+  const timeStamp = console.timeStamp;
+  const seen: unknown[] = [];
+  try {
+    console.timeStamp = function timeStamp(this: unknown, ...args: unknown[]) {
+      seen.push([this === console, ...args]);
+    } as typeof console.timeStamp;
+    lib.stamp("render", 1, 2);
+    expect(lib.stampName()).toBe("timeStamp");
+  } finally {
+    console.timeStamp = timeStamp;
+  }
+  expect(seen).toEqual([[true, "render", 1, 2, "Components", undefined, "primary"]]);
 });

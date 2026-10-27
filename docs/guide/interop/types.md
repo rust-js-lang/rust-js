@@ -1979,10 +1979,10 @@ export function sameSource(prev, next) {
   );
 }
 ```
-- **`function::bind(f, this_arg)` is `f.bind(thisArg)`**, a function of
-  `f`'s own type, which does what `f` does, its `this` any value as
-  `apply`'s is; `f` is a function of a type that's `Copy`, a `fn` pointer
-  or a `&dyn Fn`, as the bound one is another of it
+- **`function::bind(f, this_arg, args)` is `f.bind(thisArg, ...args)`**,
+  its `this` any value as `apply`'s is, and `args` a tuple of `f`'s first
+  arguments. Of none, `()`, it's a function of `f`'s own type, which does
+  what `f` does, `f` one that's `Copy`, a `fn` pointer or a `&dyn Fn`
   ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md),
   amended). React keeps each frame's so:
 
@@ -2003,7 +2003,7 @@ const CALL_RENDER: CallRenderFrame = CallRenderFrame {
 
 thread_local! {
     pub static CALL_RENDER_IN_DEV: CallRender =
-        function::bind(CALL_RENDER.react_stack_bottom_frame, Some(&CALL_RENDER));
+        function::bind(CALL_RENDER.react_stack_bottom_frame, Some(&CALL_RENDER), ());
 }
 ```
 
@@ -2013,6 +2013,58 @@ const callRender = {
 };
 
 export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRender);
+```
+- **Of some, it's a `Box<dyn Fn(..)>` of the parameters `f` has left**,
+  as long-lived as what it keeps: each argument a value of a `Copy` type,
+  or what a parameter borrows, an `Rc` of a `&Rc`, lent to each call as a
+  closure lends what it keeps. `Rc::from` shares it, and a binding's
+  function bound is its JS function itself
+  ([ADR 0907](../../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md),
+  amended):
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{Kind, function};
+use webapi::{ConsoleTask, IntoStrOrNumber, console};
+
+pub struct Queue {
+    pub pending: Cell<u32>,
+}
+
+fn dispatch_set_state(fiber: &Rc<Queue>, queue: &Rc<Queue>, action: u32) {
+    fiber.pending.set(action);
+    queue.pending.set(action);
+}
+
+pub fn mount_state(fiber: Rc<Queue>, queue: Rc<Queue>) -> Rc<dyn Fn(u32)> {
+    Rc::from(function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue)))
+}
+
+pub fn log_phase(task: &ConsoleTask, label: &str, start: f64, end: f64) {
+    let (start, end): (&dyn IntoStrOrNumber, &dyn IntoStrOrNumber) = (&start, &end);
+    task.run(function::bind(
+        console::time_stamp,
+        Some(&console),
+        (label, Some(start), Some(end), Some("Components"), None, Some("primary")),
+    ));
+}
+```
+
+```js
+function dispatchSetState(fiber, queue, action) {
+  fiber.pending = action;
+  queue.pending = action;
+}
+
+export function mountState(fiber, queue) {
+  return dispatchSetState.bind(null, fiber, queue);
+}
+
+export function logPhase(task, label, start, end) {
+  task.run(console.timeStamp.bind(console, label, start, end, "Components", undefined, "primary"));
+}
 ```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in

@@ -213,7 +213,7 @@ const CALL_ADD: CallFrame = CallFrame {
 
 thread_local! {
     pub static CALL_ADD_IN_DEV: CallAdd =
-        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD));
+        function::bind(CALL_ADD.react_stack_bottom_frame, Some(&CALL_ADD), ());
 }
 
 pub fn call_add(root: &Root) -> u32 {

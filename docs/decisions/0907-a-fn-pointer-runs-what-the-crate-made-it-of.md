@@ -3,7 +3,9 @@
 Status: Accepted. Extends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 (what a call may borrow) to a call of a fn pointer, which ran "what
 rust-js can't see". Amended: a fn pointer type of a `dyn` from outside
-leaves the other types as they are, below.
+leaves the other types as they are, below; and (2026-10-27, the user's
+decision) `function::bind` binds a function's first arguments too, its
+`this` a binding's function itself, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet: a fn pointer only
@@ -209,3 +211,121 @@ What still makes every type anything is a type rustc can't normalize.
   call counted, and a fn pointer a JS function returns counted, which
   throws `already borrowed` where it borrows the cell.
 - Mutation `fn-pointer-of-a-dyn-opens-all`.
+
+## Amendment (2026-10-27): `bind` binds a function's first arguments
+
+The user's decision: `js::function::bind` gains a rest of leading
+arguments, so a port writes upstream's `.bind(thisArg, ...args)`.
+React's hooks bind each dispatch to its fiber and queue,
+
+```js
+const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue);
+```
+
+and its performance track logs each phase so, about 23 times:
+
+```js
+debugTask.run(console.timeStamp.bind(console, label, start, end, track, group, color));
+```
+
+ADR 0740's amendment left the arguments after `thisArg` out: a function
+of fewer parameters is a type Rust can't name of `F`'s, and a closure,
+`move |action| dispatch_set_state(&fiber, &queue, action)`, was the way.
+Its JS is an arrow, where upstream's is the bound function.
+
+**`function::bind(f, this_arg, args)` is `f.bind(thisArg, ...args)`**:
+`args`, the tuple of `f`'s first arguments, is a `#[rust_js::variadic]`
+binding's rest (ADR 0640), `()` of none, spread. What it gives is typed
+as TypeScript types it:
+
+- **Of none, `()`, a function of `f`'s own type**, `F: Copy`, as ADR
+  0740 amended had it: `OmitThisParameter<T>`. A `fn` pointer stays one,
+  each of its parameters' lifetimes its own (`for<'a> fn(&'a Fiber)`), so
+  React's frames are `fn`s as before.
+- **Of some, a `Box<dyn Fn(..) -> R + 'l>` of the parameters `f` has
+  left**, which lives as long as what it keeps, `'l`. The trait
+  `function::Bound<'l, L>`, of `(F, M)`, `M` the `fn` pointer of `f`'s
+  signature (`AnyFunction`'s marker), names it: one impl for each
+  signature of up to 12 parameters and each count bound. rustc checks
+  each argument against its parameter, and how long the bound function
+  may live.
+- **Each argument is kept** (`function::Keeps<P>`): a value of a `Copy`
+  type, given to each call as it is, or what a parameter borrows, `Rc<Fiber>`
+  of a `&Rc<Fiber>`, lent to each call, as a closure `move |action|
+  f(&fiber, action)` lends what it keeps. A value moved into a parameter
+  by value isn't kept: each call would move it again, where JS gives each
+  the one value. In JS each is the value itself; a counted `Rc` given to
+  a binding stays refused (ADR 0850).
+- **A shared one is `Rc::from(boxed)`**, the box's value (ADR 0023's
+  `Box`, `rc_made_of`), React's `queue.dispatch` and the hook's result
+  one function.
+- **A binding's function given as the value it is**, to a parameter of
+  `F: AnyFunction<M>` or `AnyShape<M>`, `bind`'s, `name`'s, `unknown`'s,
+  **is its JS function itself** where its arrow only passes its
+  parameters on, as a `fn` of it is (ADR 0602): `console.timeStamp.bind(..)`,
+  not `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose
+  `name` was `""` where `console.timeStamp`'s is `"timeStamp"`, a wrong
+  answer of `function::name(&console::time_stamp)` before. A closure the
+  program writes stays the function it is; a callback JS calls,
+  `then(parseFloat)`'s, stays the arrow of what Rust gives
+  (`binding_calls.rs`'s `functions_themselves`).
+- **What the bound function runs**: a binding's result, from outside, so
+  a call of it may run anything, as before; a `Box<dyn Fn>` is called as
+  a `dyn` is.
+
+```rust
+pub fn mount_state(fiber: Rc<Fiber>, queue: Rc<UpdateQueue>) -> Rc<Dispatch> {
+    Rc::from(function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue)))
+}
+
+// What's given an `Option<&dyn IntoStrOrNumber>` parameter is one: no
+// coercion reaches into a tuple a generic function takes.
+let (start, end): (&dyn IntoStrOrNumber, &dyn IntoStrOrNumber) = (&start, &end);
+debug_task.run(function::bind(
+    console::time_stamp,
+    Some(&console),
+    (label, Some(start), Some(end), Some(COMPONENTS_TRACK), None, Some(color)),
+));
+```
+
+```js
+export function mountState(fiber, queue) {
+  return dispatchSetState.bind(null, fiber, queue);
+}
+
+debugTask.run(console.timeStamp.bind(console, label, start, end, COMPONENTS_TRACK, undefined, color));
+```
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the binding is JS's
+own `bind`, and what each call is given is what Rust gives it.
+
+### Alternatives
+
+- **Every bound function a `Box<dyn Fn>`**, of none bound too: a
+  remaining parameter that borrows has one lifetime, not `for<'a>`, so a
+  frame's `fn(&Fiber, u32)` bound couldn't be the `fn` it's stored as, and
+  a `Box` isn't `Copy`, `.with(|call| *call)`. Of none bound, `F` itself
+  is TypeScript's answer too.
+- **A `fn` pointer of the parameters left**: it would outlive what it
+  borrows, `Some(&start)`, which rustc must check; and keep a borrow only
+  where it's `'static`.
+- **The caller names the bound function's type**, `bind::<.., fn(u32)>`:
+  rustc couldn't check it against `f`'s.
+- **`Rc<dyn Fn>`**: shared without `Rc::from`, but `run(&*..)` where a
+  callback is an `impl FnOnce`.
+
+### Limits
+
+- A parameter left that borrows, `fn(&str)` of `f(fiber, label: &str)`
+  with `fiber` bound, has the one lifetime rustc infers, not `for<'a>`; a
+  closure is the way where it must be any.
+- Up to 12 parameters, as `AnyFunction`'s.
+
+Held by `test/js-object.test.ts`, "a function bound to its first
+arguments is a function of the parameters left" (dispatch's `Rc`s lent,
+numbers kept, `console.timeStamp` bound to `console` and its `name`, a
+closure's `name`, `then`'s callback an arrow, run) and "a function bound
+to a this is a function of its signature"; mutations
+`binding-function-value-an-arrow`, `any-function-value-itself`,
+`callback-binding-function-itself` (`binding_calls.ts`) and
+`rc-from-box-unsupported` (`recognition/wrappers.ts`).
