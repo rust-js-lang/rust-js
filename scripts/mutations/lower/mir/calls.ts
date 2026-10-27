@@ -396,4 +396,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
   },
+  {
+    name: "crate-once-callback-kept",
+    breaks: "React's runWithFiberInDEV(fiber, commitCallbacks, ..) is given `(queue, instance) => commitCallbacks(queue, instance)`, a closure of the crate's own function's `FnOnce` kept",
+    file: "src/lower/mir/calls.rs",
+    find: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding())\n",
+    replace: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding()).filter(|_| false)\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "crate's FnOnce"],
+  },
 ];

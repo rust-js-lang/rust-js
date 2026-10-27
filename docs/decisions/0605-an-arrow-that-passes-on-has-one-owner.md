@@ -123,3 +123,29 @@ Held by `test/cross-crate-items.test.ts`, "a once-callback that passes
 its call on to a library's function is the function", which runs what it
 wrote, and `scripts/mutations/lower/passed_on.ts`'s
 `library-callee-not-rust` and `library-rest-callee-passed-on`.
+
+## Amendment: the crate's own function's `FnOnce` callback
+
+React passes a function to runWithFiberInDEV, which calls it with the
+arguments after it: `runWithFiberInDEV(finishedWork, commitCallbacks,
+updateQueue, instance)`. Its port's `run_with_fiber_in_dev`, the crate's
+own function of an `impl FnOnce(A0, A1, A2, A3, A4) -> T`, is given a
+closure, `|queue, instance, _: (), _: (), _: ()| commit_callbacks(queue,
+instance)`, which printed `(queue, instance) => commitCallbacks(queue,
+instance)`: `Taker::parameter` was asked only of a binding's arguments.
+
+**A closure given to the crate's own function's parameter whose only
+`Fn` bound is `FnOnce`, that only passes its call on to a function of the
+crate's or a closure, is that function** (`mir_crate_call`), as a
+binding's is (ADR 0262's exception): the function calls it at most once,
+can't compare it, and gives it what its type says, of which the function
+passed on reads its own parameters alone; the `()`s the closure leaves
+out are `undefined` either way. An `impl Fn`'s, which the function may
+call again or keep, keeps its arrow. Case N
+([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/lowering-passed-on.test.ts`'s "a closure given to the
+crate's FnOnce callback that only passes its call on is the function",
+run in JS, and `closures_of_their_value.rs` against native Rust; and the
+mutation `crate-once-callback-kept` (`mir/calls.ts`).
+

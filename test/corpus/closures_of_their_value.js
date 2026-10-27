@@ -67,7 +67,7 @@ function main() {
     ),
   );
   const inner = () => record(log, "inner");
-  given.push(later(() => inner(), { fmt: (value) => "()" }));
+  given.push(later(inner, { fmt: (value) => "()" }));
   given.push(later(() => twice(() => record(log, "twice")), { fmt: (value) => "()" }));
   const pushed = [];
   given.push(

@@ -262,6 +262,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
+        // A callback it calls once, `impl FnOnce(A0, A1) -> T`, an arrow that
+        // only passes on what it's given: the function it passes on to,
+        // React's `runWithFiberInDEV(fiber, commitCallbacks, queue, instance)`,
+        // as a binding's (ADR 0605, amended).
+        if exprs.len() == arg_tys.len() {
+            for (i, expr) in exprs.iter_mut().enumerate() {
+                if let Some(taker) = crate::lower::passed_on::Taker::parameter(self.tcx, def_id, i)
+                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding())
+                {
+                    *expr = callee;
+                }
+            }
+        }
         self.given_iterators(def_id, &mut exprs, arg_tys, span, out)?;
         // Its rest arguments, the slice spread (ADR 0664), which nothing
         // comes after.

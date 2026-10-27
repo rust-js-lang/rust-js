@@ -349,6 +349,11 @@ and an event's handler, `onClick={onClear}` of `move |_| on_clear()`
 ([events](../react/components.md#events), [ADR 0198](../../decisions/0198-optional-handlers.md)):
 each where it's given decides
 ([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md)).
+So is one the crate's own function takes as an `impl FnOnce(..)`, which
+it calls once, `run_with_fiber_in_dev(fiber, |queue, instance, _, _, _|
+commit_callbacks(queue, instance), queue, instance, (), (), ())`'s
+`runWithFiberInDEV(fiber, commitCallbacks, queue, instance)` (ADR 0605,
+amended).
 
 ## Many promises at once
 
