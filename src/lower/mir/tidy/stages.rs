@@ -640,7 +640,13 @@ pub(super) const STAGES: &[Stage] = &[
             // A block one case alone reaches, after its `switch`: that
             // case's (ADR 0905).
             pass("blocks one case reaches", |b, _| {
-                js::statement_lists(b, &mut |s| switches::blocks_one_case_reaches(s))
+                js::statement_lists(b, &mut |s| case_rests::blocks_one_case_reaches(s))
+            }),
+            // The rest a block a `switch` ends reaches from one case alone:
+            // that case's, at the body's end too (ADR 0905, amended).
+            pass("rest one case reaches", |b, _| {
+                case_rests::rest_one_case_reaches(b, true);
+                js::statement_lists(b, &mut |s| case_rests::rest_one_case_reaches(s, false))
             }),
             // A block's `break` in a `switch` it ends with: the case's own.
             pass("breaks past switches", |b, _| {

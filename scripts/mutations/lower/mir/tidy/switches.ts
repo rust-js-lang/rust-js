@@ -269,14 +269,6 @@ export const mutations: Mutation[] = [
     tests: fallthrough,
   },
   {
-    name: "switch-block-one-case-reaches-kept",
-    breaks: "the statements of the arm a case falls to stay after the `switch`, in labeled blocks, `break bb9`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        let [only] = reaching[..] else {\n",
-    replace: "        let [.., only, _] = reaching[..] else {\n",
-    tests: fallthrough,
-  },
-  {
     name: "switch-negated-guard-unplaced",
     breaks: "a guard's `!owned`, a negation MIR made of no span, isn't where the guard's written, so `tag === C && !owned` is no case and the `match` an `if` chain",
     file: "src/lower/mir/tidy/switches.rs",

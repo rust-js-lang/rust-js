@@ -11,6 +11,7 @@ use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
 mod bindings;
 mod branches;
+mod case_rests;
 mod comparisons;
 mod contracts;
 mod copied;

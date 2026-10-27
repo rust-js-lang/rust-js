@@ -322,7 +322,9 @@ pub fn ends(stmt: &Stmt) -> bool {
         StmtKind::Expr(e) => e.facts.has(Known::Diverges),
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
         // A `switch` with a `default`, each of whose cases leaves (ADR
-        // 0660), or falls to the next case (ADR 0905).
+        // 0660), or falls to the next case (ADR 0905); not by a `break` of no
+        // label, which leaves the `switch` for what follows it, `if
+        // (legacyOff) { break; }` (ADR 0905, amended).
         StmtKind::Switch {
             cases,
             default: Some(default),
@@ -332,6 +334,7 @@ pub fn ends(stmt: &Stmt) -> bool {
                 .iter()
                 .all(|case| case.falls || case.body.last().is_some_and(ends))
                 && default.last().is_some_and(ends)
+                && !(cases.iter().map(|case| &case.body).chain([default])).any(|body| breaks(body, None))
         }
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())

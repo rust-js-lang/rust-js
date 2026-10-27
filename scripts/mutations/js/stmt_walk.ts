@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "switch-of-a-case-break-ends",
+    breaks: "a `switch` a case's `break` of no label leaves is taken to never go on, so what follows it is moved into its `default`, and a guarded arm that does nothing returns where Rust panics (a wrong answer, cw2)",
+    file: "src/js/stmt_walk.rs",
+    find: "                && !(cases.iter().map(|case| &case.body).chain([default])).any(|body| breaks(body, None))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
+  },
+  {
     name: "optional-member-not-a-path",
     breaks: "`value?.constructor` isn't one path, so `and_then` of it is `value?.constructor != null ? value?.constructor.name : undefined`, not `value?.constructor?.name`",
     file: "src/js/stmt_walk.rs",

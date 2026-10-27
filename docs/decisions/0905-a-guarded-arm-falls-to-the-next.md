@@ -320,3 +320,38 @@ opening, `_ => {`, is passed as a closure's is, where what follows is the
 `test/lowering-labels.test.ts`, "guarded arms that return calls fall
 through in one labeled switch", and mutation
 `default-arm-comment-before-switch`.
+
+## Amendment: a guard's `break` reaches what's after the `switch` too (2026-10-27, a wrong answer)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed; Rust's
+behavior preserved.
+
+React's completeWork writes `case IncompleteFunctionComponent: { if
+(disableLegacyMode) { break; } // Fallthrough }`; its port, `A if
+legacy_off => {}` before `A | B | C => { ..; return None; }`, with a
+`panic!` after the `match` (cw2 of the port's gaps). `js::ends` took a
+`switch` each of whose cases leaves for one that never goes on, a case
+that leaves by a `break` of no label too, which goes on to what follows
+the `switch`. So `blocks_one_case_reaches` (this ADR's) moved the panic
+into the `default`, the one case whose `break inner` reached it, and the
+guarded case's own `break` then ran what was after the `switch`, the next
+arm's body. `complete(A, true)` panics in Rust; its JS called `work(1)`
+and returned. Introduced by c7ae01742, this ADR's first commit, which
+began moving what follows into a case.
+
+- **A `switch` a case's `break` of no label leaves goes on** (`js::ends`).
+- **What follows a block a `switch` is in, which only one case's `break
+  l` reaches, is that case's** (`case_rests::rest_one_case_reaches`), where
+  nothing falls out of the block and what follows leaves, or ends the
+  body, given its `return;`: the arm's body after `// Fallthrough`, as
+  upstream writes it, `case B: case C: work(1); return;`, the block's
+  label gone. Before, the `switch` was in `bb4: { .. break bb4; .. } work(1);`.
+  It and `blocks_one_case_reaches` are `mir/tidy/case_rests.rs`, out of
+  `switches.rs`, which reached the file cap.
+
+Held by the corpus's `switch_guard_does_nothing.rs`, against native Rust,
+each tag with its guard holding and not, a panic after the `match` and
+code; the mutations `switch-of-a-case-break-ends` (`js/stmt_walk.ts`) and
+`rest-one-case-reaches-kept-after` (`mir/tidy/case_rests.ts`, beside the moved `switch-block-one-case-reaches-kept`). The new
+corpus case raises `docs/readability.txt`'s `return;` share, 10.5 to 10.8
+in 10,000 lines: its arms' `return None;`, as upstream's `return null;`.
