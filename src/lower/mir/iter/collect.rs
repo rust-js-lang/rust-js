@@ -184,13 +184,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
             // Of std's struct, the room its hint asks first, as std's
             // `SpecFromIter` does, and of one whose type has no end, the
-            // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940).
+            // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940). Not
+            // of a `LinkedList`, whose `from_iter` extends a new one, asking
+            // none.
             let endless = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
                 && self.recognition().endless_by_type(iter_ty);
+            let asks_room = !self.is_std_type(output, StdItem::LinkedList);
             let it = match item {
                 Some(item)
-                    if endless
-                        || self.compiled_struct_at(iter_ty, span) && !self.recognition().bounded_by_items(iter_ty) =>
+                    if asks_room
+                        && (endless
+                            || self.compiled_struct_at(iter_ty, span)
+                                && !self.recognition().bounded_by_items(iter_ty)) =>
                 {
                     let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
                     let size = self.room_item_size(item);

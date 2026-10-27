@@ -445,19 +445,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if crate::lower::recognition::is_from_utf16_error(self.tcx, ty) {
             return Ok(Expr::str("invalid utf-16: lone surrogate found"));
         }
-        // A `char`'s case mapping, the `char`s it hasn't given: their text,
-        // all of an array's, the rest of one stepped (ADR 0070).
-        if crate::lower::recognition::is_case_mapping(self.tcx, ty) {
+        // A `char`'s case mapping, or a `char`'s or a `str`'s escape, the
+        // `char`s it hasn't given: their text, all of an array's, the rest of
+        // one stepped (ADRs 0070, 0971).
+        if crate::lower::recognition::is_case_mapping(self.tcx, ty)
+            || crate::lower::recognition::is_text_escape(self.tcx, ty)
+        {
             return Ok(match crate::lower::iterators::made_array(&value) {
                 true => Expr::call(Expr::member(value, "join"), vec![Expr::str("")]),
                 false => Expr::call(Expr::helper("$restStr"), vec![value]),
             });
         }
-        // An escape is its text, and `decode_utf16`'s error its code (ADR 0327).
-        if crate::lower::recognition::is_text_escape(self.tcx, ty) {
-            return Ok(value);
-        }
-        // A byte's escape, the bytes it has left (ADR 0558).
+        // A byte's or a byte slice's escape, the bytes it has left (ADRs
+        // 0558, 0971).
         if crate::lower::recognition::is_byte_escape(self.tcx, ty) {
             return Ok(Expr::call(Expr::helper("$restBytes"), vec![value]));
         }

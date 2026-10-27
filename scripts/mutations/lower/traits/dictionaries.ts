@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "iterable-into-iter-itself",
-    breaks: "the `IntoIterator` of an iterator that's an iterable in JS, a char's `escape_unicode()`'s text, gives it as it is, which std's compiled `FlatMap` steps by `$next`: `it.next is not a function` (ADR 0939)",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "                let into_iter = match crate::lower::recognition::is_text_escape(self.tcx, ty) {\n",
-    replace: "                let into_iter = match false && crate::lower::recognition::is_text_escape(self.tcx, ty) {\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^escape_iterators with"],
-  },
-  {
     name: "identity-copy-param-refused",
     breaks: "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
     file: "src/lower/traits/dictionaries.rs",

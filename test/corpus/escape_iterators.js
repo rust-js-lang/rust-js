@@ -7,20 +7,18 @@ export function entry() {
 }
 
 function main() {
-  const shown = Iterator.from($escapeDefault("é")).toArray().join("");
-  const parts = Iterator.from($escapeDebug("\n", false)).toArray();
-  const length = Iterator.from($escapeUnicode("é")).reduce((n) => n + 1, 0);
+  const shown = $escapeDefault("é");
+  const parts = Array.from($escapeDebug("\n", false));
+  const length = Array.from($escapeUnicode("é")).length;
   console.log(`${shown} [${parts.map((item) => $debugStr(item, "'")).join(", ")}] ${length}`);
-  for (const c of $escapeUnicode("x")) {
+  for (const c of Array.from($escapeUnicode("x"))) {
     $print(c);
   }
   console.log("");
-  const quoted = Iterator.from($escapeDebug('a\n"é', true)).toArray().join("");
-  const tabs = Iterator.from($escapeDefault("tab	")).reduce((n) => n + 1, 0);
+  const quoted = $escapeDebug('a\n"é', true);
+  const tabs = Array.from($escapeDefault("tab	")).length;
   const marks = Array.from("x́")
-    .values()
-    .flatMap((c) => Iterator.from($escapeUnicode(c)))
-    .toArray()
+    .flatMap((c) => Array.from($escapeUnicode(c)))
     .join("");
   console.log(`${quoted} ${tabs} ${marks}`);
 }

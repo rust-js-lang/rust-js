@@ -3,7 +3,7 @@
 import {
   $at,
   $debugUtf8Error,
-  $escapeByte,
+  $escapeAscii,
   $fromUtf8,
   $iter,
   $next,
@@ -24,7 +24,7 @@ function debugByteDebug_fmt(debugByte) {
   }
   const bytes = new Array(10).fill(0);
   let len = 0;
-  const iter = $escapeByte(debugByte[0]).entries();
+  const iter = $escapeAscii([debugByte[0]]).entries();
   let value;
   while ((value = $next(iter))) {
     const i = value[0];
@@ -40,15 +40,14 @@ function debugByteDebug_fmt(debugByte) {
 
 function main() {
   for (const b of [97, 32, 10, 39, 0x7f, 0xfe, 92]) {
-    const escaped = $escapeByte(b).slice();
+    const escaped = $escapeAscii([b]).slice();
     const debugByte = [b];
-    const escapeAscii = $iter($escapeByte(b));
-    const length = $escapeByte(b).length;
+    const escapeAscii = $iter($escapeAscii([b]));
     console.log(
-      `${debugByteDebug_fmt(debugByte)} ${$restBytes(escapeAscii)} ${length} [${escaped.join(", ")}]`,
+      `${debugByteDebug_fmt(debugByte)} ${$restBytes(escapeAscii)} ${$escapeAscii([b]).length} [${escaped.join(", ")}]`,
     );
   }
-  const rest = $iter($escapeByte(9));
+  const rest = $iter($escapeAscii([9]));
   $next(rest);
   const back = $nextBack($iter(rest.items.slice(rest.at, rest.end)));
   console.log(`${$restBytes(rest)} ${back == null ? "None" : `Some(${back})`}`);

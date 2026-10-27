@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0327](0327-cell-deque-char-methods.md) and
 [0172](0172-utf8-decoding.md); counted by [0314](0314-std-data-structures.md).
+Amended by [0971](0971-an-escape-is-the-array-of-what-it-gives.md): its
+escape is the array of its bytes.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

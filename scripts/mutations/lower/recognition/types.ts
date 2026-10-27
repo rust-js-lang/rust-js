@@ -101,11 +101,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
-    name: "escape-ascii-not-text",
-    breaks: "`{}` of `escape_ascii()` is refused",
+    name: "escape-ascii-not-bytes",
+    breaks: "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
     file: "src/lower/recognition/types.rs",
-    find: "            || std_path(tcx, adt.did()) == \"std::slice::EscapeAscii\"))",
-    replace: "            || false))",
+    find: "        if matches!(std_path(tcx, adt.did()).as_str(), \"std::ascii::EscapeDefault\" | \"std::slice::EscapeAscii\"))",
+    replace: "        if matches!(std_path(tcx, adt.did()).as_str(), \"std::ascii::EscapeDefault\"))",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
   },
   {

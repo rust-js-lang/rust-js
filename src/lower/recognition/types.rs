@@ -610,20 +610,19 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
-/// `escape_unicode()`, and a byte slice's `escape_ascii()`, its text (ADR
-/// 0327).
+/// `escape_unicode()`: the array of its `char`s, as a case mapping is (ADRs
+/// 0327, 0971).
 pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
-        && (matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
-            && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::"))
-            // A byte slice's `escape_ascii()` (ADR 0341).
-            || std_path(tcx, adt.did()) == "std::slice::EscapeAscii"))
+        && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
+        && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
 }
 
-/// A byte's `escape_ascii()`, `ascii::escape_default(b)`: a `$iter` of its
-/// escape's bytes (ADR 0558).
+/// A byte's `escape_ascii()`, `ascii::escape_default(b)`, and a byte slice's
+/// `escape_ascii()`: the array of its escape's bytes (ADRs 0558, 0971).
 pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::ascii::EscapeDefault")
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))
 }
 
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {

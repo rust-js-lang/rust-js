@@ -40,16 +40,14 @@ pub(super) fn array_values(e: &mut Expr) {
         };
     }
     // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
-    // a `char`'s capital collected: the string.
+    // a `char`'s capital collected: the string (`Known::Chars`).
     if let ExprKind::Call(callee, args) = &e.kind
         && let ExprKind::Member(chars, join) = &callee.kind
         && join == "join"
         && matches!(&args[..], [Expr { kind: ExprKind::Str(sep), .. }] if sep.is_empty())
-        && let ExprKind::Call(from, of) = &chars.kind
-        && matches!(&from.kind, ExprKind::Member(array, f) if f == "from" && matches!(&array.kind, ExprKind::Var(a) if a == "Array"))
+        && chars.facts.has(crate::js::Known::Chars)
+        && let ExprKind::Call(_, of) = &chars.kind
         && let [text] = &of[..]
-        && matches!(&text.kind, ExprKind::Call(case, _)
-            if matches!(&case.kind, ExprKind::Member(_, m) if m == "toUpperCase" || m == "toLowerCase"))
     {
         *e = Expr {
             span: e.span,

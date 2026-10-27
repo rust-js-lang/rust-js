@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
     name: "case-mapping-not-shown",
     breaks: "`{}` of `c.to_uppercase()` is refused",
     file: "src/lower/display/written.rs",
-    find: "        if crate::lower::recognition::is_case_mapping(self.tcx, ty) {\n            return Ok(match",
-    replace: "        if false {\n            return Ok(match",
+    find: "        if crate::lower::recognition::is_case_mapping(self.tcx, ty)\n            || crate::lower::recognition::is_text_escape(self.tcx, ty)\n        {\n",
+    replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {

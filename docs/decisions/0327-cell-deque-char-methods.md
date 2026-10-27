@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md),
 [0144](0144-locks.md) and [0152](0152-std-item-handles.md); counted by
-[0314](0314-std-data-structures.md).
+[0314](0314-std-data-structures.md). Amended by
+[0971](0971-an-escape-is-the-array-of-what-it-gives.md): an escape is the
+array of its `char`s.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)), but for what a ring
 buffer's layout or a borrow's state says, D: refused.

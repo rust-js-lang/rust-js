@@ -754,6 +754,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0967 An object spread, a splice and a set by any key](0967-an-object-spread-a-splice-and-a-set-by-any-key.md) *(amended: `js::array::join` of any values)*
 - [0968 Two places set the same value are one assignment, `a = b = v`](0968-two-places-set-the-same-value-are-one-assignment.md)
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
+- [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
+- [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -436,14 +436,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "function_values"],
   },
   {
-    name: "mir-escape-iterator-wrapped",
-    breaks: "`escape_ascii()`'s text is made a JS iterator, and shown as one",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                    && !crate::lower::recognition::is_text_escape(self.tcx, output) =>\n",
-    replace: "                    && (true || !crate::lower::recognition::is_text_escape(self.tcx, output)) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
-  },
-  {
     name: "mir-cmp-max-refused",
     breaks: "`cmp::max(a, b)` of what isn't a number is refused from MIR, not `Ord::max(a, b)`'s",
     file: "src/lower/mir/dispatch.rs",

@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "text-escape-not-chars",
+    breaks: "a held text escape isn't std's iterator of its `char`s' array: `e.next()` of `'\u00e9'.escape_default()` is `$next` of an array, `it.next is not a function` (#379, ADR 0971)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            || is_text_escape(self.tcx, ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^escapes_stepped.rs$"],
+  },
+  {
+    name: "linked-list-into-iter-not-owning",
+    breaks: "a `LinkedList`'s `into_iter()` isn't the array's items it owns: its drop reads std's field, `value.list`, of JS's iterator, `TypeError` (#377, ADR 0970)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::collections::linked_list::IntoIter\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^linked_list_into_iter.rs$"],
+  },
+  {
     name: "boxed-array-into-iter-unknown",
     breaks: "a `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, isn't its array's items: with std's structs alone a `rev()` of one is refused, and `Array.from(names).map(f)` copies what `names.map(f)` reads (ADR 0941)",
     file: "src/lower/recognition/iterators.rs",

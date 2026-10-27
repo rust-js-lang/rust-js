@@ -547,6 +547,10 @@ pub enum Known {
     /// `set.forEach((x) => ..)`, which steps the same items in the same
     /// order, the set unchanged while Rust borrows it (ADR 0877).
     SetItems,
+    /// A string's `char`s, an array made here, `Array.from(text)`: a case
+    /// mapping's or a text escape's (ADRs 0070, 0971), which joined is the
+    /// text itself.
+    Chars,
     /// Never `undefined`, as Rust's types tell, though maybe `null`: a
     /// `Some`'s value, `map`'s, or what's set through a variable holding a
     /// cell's handle that MIR shows is `null` or a value already,

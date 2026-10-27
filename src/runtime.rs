@@ -419,6 +419,11 @@ const PURE: &[&str] = &[
     "$debugStr",
     "$debugF64",
     "$displayF64",
+    // A text's escapes, and a byte slice's (ADR 0971).
+    "$escapeDefault",
+    "$escapeDebug",
+    "$escapeUnicode",
+    "$escapeAscii",
 ];
 
 /// The helpers that change what they're given but never throw: a range's

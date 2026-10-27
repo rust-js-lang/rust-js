@@ -985,8 +985,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !matches!(output.kind(), ty::Param(_))
                     && !output.is_box()
                     && self.range_kind(output).is_none()
-                    && !self.is_user_iterator(output)
-                    && !crate::lower::recognition::is_text_escape(self.tcx, output) =>
+                    && !self.is_user_iterator(output) =>
             {
                 Value::Expr(self.std_iterator(e, output))
             }

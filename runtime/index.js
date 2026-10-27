@@ -10515,8 +10515,9 @@ export function $debugUtf8Error(error, owned = false, options) {
   return `Utf8Error { valid_up_to: ${n(error.validUpTo)}, error_len: ${length} }`;
 }
 
-// A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`
-// escapes it, `\t`, `\'` and `\x7f`, or itself where it's printable.
+// A byte slice's `escape_ascii()` (ADR 0341), and a byte's, of `[byte]`
+// (ADR 0558): the bytes of each byte's escape, `\t`, `\'` and `\x7f`, or
+// itself where it's printable (ADR 0971).
 export function $escapeAscii(bytes) {
   const named = { 9: "\\t", 10: "\\n", 13: "\\r", 34: '\\"', 39: "\\'", 92: "\\\\" };
   let text = "";
@@ -10525,13 +10526,7 @@ export function $escapeAscii(bytes) {
     else if (byte >= 0x20 && byte < 0x7f) text += String.fromCharCode(byte);
     else text += `\\x${byte.toString(16).padStart(2, "0")}`;
   }
-  return text;
-}
-
-// A byte's `escape_ascii()`, `ascii::escape_default(b)` (ADR 0558): the
-// bytes of its escape, as `$escapeAscii` writes it.
-export function $escapeByte(byte) {
-  return Array.from($escapeAscii([byte]), (c) => c.charCodeAt(0));
+  return Array.from(text, (c) => c.charCodeAt(0));
 }
 
 // `{}` of a byte's escape, stepped or not: the bytes it has left, as text.

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "escape-ascii-text",
+    breaks: "a byte slice's `escape_ascii()` is its escape's text, not its bytes: stepped it gives `char`s, its `sum()` 0 (ADR 0971)",
+    file: "src/runtime/utf8.js",
+    find: "  return Array.from(text, (c) => c.charCodeAt(0));\n",
+    replace: "  return text;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(slice_bytes_text|byte_escape).rs$"],
+  },
+  {
     name: "utf8-surrogates-accepted",
     breaks: "`ED A0 80`, a surrogate's bytes, is taken for UTF-8",
     file: "src/runtime/utf8.js",

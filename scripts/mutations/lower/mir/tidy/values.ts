@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     "name": "mir-capital-chars-joined",
     "breaks": "`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join(\"\")`",
     "file": "src/lower/mir/tidy/values.rs",
-    "find": "if m == \"toUpperCase\" || m == \"toLowerCase\"))",
-    "replace": "if m == \"none\"))",
+    "find": "        && chars.facts.has(crate::js::Known::Chars)\n",
+    "replace": "        && false\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {

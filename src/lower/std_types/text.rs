@@ -435,10 +435,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method(words, "filter", vec![word])
             }
-            TextOp::CharCase(upper) => {
-                let mapped = method(arg(), if upper { "toUpperCase" } else { "toLowerCase" }, Vec::new());
-                Expr::call(Expr::member(Expr::var("Array"), "from"), vec![mapped])
-            }
+            TextOp::CharCase(upper) => chars(method(
+                arg(),
+                if upper { "toUpperCase" } else { "toLowerCase" },
+                Vec::new(),
+            )),
             TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
             TextOp::RsplitBy(limited) => {
                 let s = arg();
@@ -511,9 +512,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::Rmatches => call("$rmatches", vec![arg(), arg()]),
             TextOp::StrSplitAtChecked => call("$splitAtChecked", vec![arg(), arg()]),
             TextOp::EncodeUtf16 => call("$encodeUtf16", vec![arg()]),
-            TextOp::Escape { kind: "default", .. } => call("$escapeDefault", vec![arg()]),
-            TextOp::Escape { kind: "unicode", .. } => call("$escapeUnicode", vec![arg()]),
-            TextOp::Escape { str, .. } => call("$escapeDebug", vec![arg(), Expr::bool(str)]),
+            // Its `char`s, as a case mapping's (ADR 0971).
+            TextOp::Escape { kind: "default", .. } => chars(call("$escapeDefault", vec![arg()])),
+            TextOp::Escape { kind: "unicode", .. } => chars(call("$escapeUnicode", vec![arg()])),
+            TextOp::Escape { str, .. } => chars(call("$escapeDebug", vec![arg(), Expr::bool(str)])),
             // Its `&mut str`, read and written through `buf`'s bytes, as
             // `from_utf8_mut`'s (ADR 0334).
             TextOp::EncodeUtf8 => call("$encodeUtf8", vec![arg(), arg()]),
@@ -586,7 +588,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::Utf8Lossy => call("$utf8Lossy", vec![arg()]),
             TextOp::EscapeAscii => call("$escapeAscii", vec![arg()]),
-            TextOp::EscapeByte => call("$escapeByte", vec![arg()]),
+            TextOp::EscapeByte => call("$escapeAscii", vec![Expr::array(vec![arg()])]),
             TextOp::Utf8Chunks => call("$utf8Chunks", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
             TextOp::ParseErrorKind => call("$parseErrorKind", vec![arg()]),
@@ -1128,4 +1130,13 @@ fn append_of<'s>(stmt: &'s Stmt, text: &HashSet<String>) -> Option<(&'s str, &'s
         return None;
     };
     (text.contains(s) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s.as_str(), &**appended))
+}
+
+/// The `char`s of `text`, an array made here, `Array.from(text)`: a case
+/// mapping's or a text escape's (`Known::Chars`, ADR 0971).
+fn chars(text: Expr) -> Expr {
+    Expr {
+        facts: crate::js::Facts::of(crate::js::Known::Chars),
+        ..Expr::call(Expr::member(Expr::var("Array"), "from"), vec![text])
+    }
 }

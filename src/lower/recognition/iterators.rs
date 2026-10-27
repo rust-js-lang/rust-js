@@ -207,6 +207,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     // (ADR 0068), as a `Vec`'s is (#203).
                     | "std::collections::vec_deque::IntoIter"
                     | "std::collections::binary_heap::IntoIter"
+                    // A list's, which is an array as a deque is (ADR 0316).
+                    | "std::collections::linked_list::IntoIter"
                     | "std::collections::hash_map::Drain"
                     | "std::collections::hash_set::Drain"
                     // A map's or a set's `into_iter()`, the array of its
@@ -822,8 +824,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::slice::ChunksExact" | "std::slice::ChunksExactMut"
             | "std::slice::RChunks" | "std::slice::RChunksMut"
             | "std::slice::RChunksExact" | "std::slice::RChunksExactMut"))
-            // A byte's escape, its bytes (ADR 0558).
+            // A byte's escape, its bytes (ADR 0558), and a case mapping's or
+            // a text escape's `char`s (ADRs 0070, 0971).
             || is_byte_escape(self.tcx, ty)
+            || is_case_mapping(self.tcx, ty)
+            || is_text_escape(self.tcx, ty)
     }
 
     pub(in crate::lower) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
@@ -884,7 +889,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 ]
                 .contains(&path.as_str())
                 || self.is_str_split(ty)
-                || is_case_mapping(self.tcx, ty))
+                || self.iterates_items(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
             || ((krate == sym::alloc || krate == sym::std)
                 && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]

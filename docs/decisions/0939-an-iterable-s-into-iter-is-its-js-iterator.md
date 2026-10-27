@@ -4,6 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26 ("keep going until
 all done, the choice is your recommendation"). The plan "rust-js: one
 representation per iterator", its second phase. Extends
 [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md).
+Amended by [0971](0971-an-escape-is-the-array-of-what-it-gives.md): an
+escape is the array of its `char`s, so the dictionary gives it as it is.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change.
 With std's structs alone, `s.chars().flat_map(char::escape_unicode)` threw

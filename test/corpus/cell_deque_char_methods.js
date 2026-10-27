@@ -12,6 +12,7 @@ import {
   $escapeDebug,
   $escapeDefault,
   $escapeUnicode,
+  $iter,
   $mutAt,
   $mutItems,
   $partitionPoint,
@@ -19,6 +20,7 @@ import {
   $popIfCell,
   $range,
   $refCellSwap,
+  $restStr,
   $retainMut,
   $slice,
   $unborrow,
@@ -92,7 +94,9 @@ function main() {
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`} [${deque.join(", ")}]`);
 
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
-    console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
+    const escapeDefault = $iter(Array.from($escapeDefault(c)));
+    const escapeDebug = $iter(Array.from($escapeDebug(c, false)));
+    console.log(`${$restStr(escapeDefault)} ${$restStr(escapeDebug)} ${$escapeUnicode(c)}`);
   }
   console.log(`${$escapeDefault("a	b\"'é")} ${$escapeDebug("a	b\"'é́", true)}`);
   console.log(`${$escapeUnicode("hé")}`);
