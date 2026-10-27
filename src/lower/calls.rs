@@ -258,10 +258,15 @@ pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Exp
 /// `value`, what a call of `f` gave, marked never `undefined` where `f` is
 /// a function item that `gives_null_for_none`: `and_then(name_of)`'s, which
 /// a nullable place stores as it is, as `map`'s `Some` (ADR 0841, amended).
-/// A closure's value isn't asked.
+/// A binding getter's read too, React's `ReactSharedInternals.T`, which its
+/// declaration says is `null` for `None` (ADR 0638, amended), whatever
+/// else is known of it. A closure's value isn't asked.
 pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
     match f.kind() {
-        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => value.defined(),
+        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr {
+            facts: value.facts.with(crate::js::Known::Defined),
+            ..value
+        },
         _ => value,
     }
 }

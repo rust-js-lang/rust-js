@@ -1,7 +1,8 @@
 # 0638. A nullable function's call is `null` already
 
 Status: Accepted. Amends [0578](0578-a-nullable-result-where-its-written.md),
-whose nullable result was `?? null` of every call.
+whose nullable result was `?? null` of every call. Amended: a nullable
+binding getter's read too (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: a `#[rust_js::nullable]` function's result is `null` for
@@ -92,3 +93,20 @@ either alone wrote the same JS: `nullable-call-coalesced` and
 mark is the one kept, as a fact the value carries to every place it's
 stored; `made_by` and its two mutations went, and
 `nullable-call-of-any-function` mutates `given_by` now.
+
+## Amendment: a nullable binding getter's read too
+
+React's `requestCurrentTransition` returns `ReactSharedInternals.T`, a
+`get T` binding whose result is `#[rust_js::nullable]`. Since 29dd85051
+the call's value says it's `null` for `None` by `calls::given_by`'s mark
+alone, `Known::Defined`, and that mark was given only to a value nothing
+else was known of: a getter's read, `Known::Getter`, kept no mark, and the
+port's JS was `return ReactSharedInternals.T ?? null;`.
+
+**What a nullable function gives, a getter's read too, is marked
+`Defined` beside whatever else is known of it**: its declaration says it,
+as it says of a call. `return ReactSharedInternals.T;` again. Held by
+`test/lowering-options.test.ts`'s "a nullable result of a nullable
+function's call is the call", `globalThis.current`; mutation
+`nullable-getter-coalesced`.
+

@@ -488,7 +488,7 @@ pub fn replaced_any(items: &mut Vec<u32>, i: usize, x: u32) -> u32 {
 });
 
 // ADR 0638: a call of a `#[rust_js::nullable]` function, itself or
-// another, a binding too, is `null` where it's `None` already, so a nullable
+// another, a binding's too, a getter's read, is `null` where it's `None` already, so a nullable
 // result of it is the call, `return getComponentNameFromType(resolved);`,
 // with no `?? null`; a call of any other function's `Option` keeps it.
 test("a nullable result of a nullable function's call is the call", async () => {
@@ -521,6 +521,17 @@ pub fn looked(key: &str) -> Option<String> {
     lookup(key)
 }
 
+#[cfg_attr(rust_js, rust_js::nullable)]
+#[cfg_attr(rust_js, rust_js::link_name = "get globalThis.current")]
+fn current() -> Option<String> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn transition() -> Option<String> {
+    current()
+}
+
 fn plain(n: u32) -> Option<u32> {
     if n > 1 { Some(n) } else { None }
 }
@@ -535,6 +546,8 @@ pub fn unnamed(n: u32) -> Option<u32> {
   expect(js).toContain("    return named(n - 1);\n");
   expect(js).toContain("export function other(n) {\n  return named((n * 2) >>> 0);\n}");
   expect(js).toContain("export function looked(key) {\n  return globalThis.lookup(key);\n}");
+  // A nullable getter's read too, React's `return ReactSharedInternals.T;`.
+  expect(js).toContain("export function transition() {\n  return globalThis.current;\n}");
   // Of a function whose `None` is `undefined`, `null` for it.
   expect(js).toContain("export function unnamed(n) {\n  return plain(n) ?? null;\n}");
   const lib = await import(join(dir, "lib.js"));
