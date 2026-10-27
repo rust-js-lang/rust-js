@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "                    || (is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n                        && self.is_unknown(generic_args.type_at(0)))\n",
     replace: "                    || is_std_def(self.tcx, trait_id, StdItem::Hash)\n                        || crate::lower::recognition::is_extend(self.tcx, trait_id))\n",
-    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(hash_values|vec_edits).rs$"],
     snapshots: true,
   },
   {

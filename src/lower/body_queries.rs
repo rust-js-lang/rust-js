@@ -1246,10 +1246,11 @@ fn in_place_adapters<'tcx>(
 /// its argument (`given_present`'s) says of a `None`, `undefined`, only a
 /// variant that's `undefined` or `null` (ADR 0676), so where one of the
 /// arm's matched, `value` is a `Some`, and the guard holds: it tests
-/// nothing, and the arm is as one without it. Of a `value` the body never
-/// changes, so what the guard binds is `value` itself wherever it's read.
+/// nothing, and the arm is as one without it. What the guard binds is
+/// `value`, read where it's bound: of a `value` the arm then sets, a copy
+/// of it there, `const value$1 = value;`, as any variable set again is
+/// read where it is (ADR 0853).
 fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
-    let changed = changes(thir);
     // The variable a call of a binding that's its argument, giving an
     // untagged enum, reads: `classify(value)`'s `value`, an `Option` of a
     // reference, whose `None` is `undefined`.
@@ -1272,7 +1273,7 @@ fn held_guards<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
         // Of an enum with a variant of each of `undefined` and `null`: no
         // other is either, not one that's what the others aren't.
         let nullish = super::untagged::holds_undefined_and_null(tcx, adt);
-        (identity && of_ref && nullish && !changed.contains_key(&id)).then_some((adt, id))
+        (identity && of_ref && nullish).then_some((adt, id))
     };
     // Whether `pattern` is variants of `adt`, none `undefined` nor `null`.
     fn present<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>, pattern: &Pat<'tcx>) -> bool {

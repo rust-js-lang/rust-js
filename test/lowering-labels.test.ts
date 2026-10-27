@@ -500,9 +500,15 @@ pub fn reset<'a>(mut value: Option<&'a Unknown>, other: Option<&'a Unknown>) -> 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  // What the guard binds of a value the arm then sets is what it was, a
+  // copy where it's bound (ADR 0853).
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain(
+    "    const value$1 = value;\n    value = other;\n    return (Object.keys(value$1).length + (value != null ? 1 : 0)) >>> 0;\n",
+  );
   const lib = await import(join(dir, "lib.js"));
   expect([undefined, null, {}, { a: 1 }, [1, 2, 3], () => 1, "s"].map((v) => lib.kind(v))).toEqual([3, 2, 0, 1, 3, 1, 3]);
   expect(lib.reset({ a: 1, b: 2 }, undefined)).toBe(2);
+  expect(lib.reset({ a: 1, b: 2 }, { c: 1 })).toBe(3);
   expect(lib.reset({ a: 1 }, { b: 1 })).toBe(2);
   expect(lib.reset(undefined, undefined)).toBe(3);
 });

@@ -158,3 +158,15 @@ if (log.length === 1) { break inner; } .. }`, as written, not the negated
   is there is tested where it may fail", and
   `test/port-performance-track.test.ts`'s "addValueToProperties is a switch
   whose case breaks where it's written", and mutations of each rule.
+
+## Amendment: a held guard of a value the arm sets
+
+A guard `if let Some(v) = value` that a `match js::classify(value)` arm
+holds tested nothing only of a `value` the body never changes: of one the
+arm then sets, `value = other;`, the guard stayed, and `v` its own
+variable, so its read wasn't `value`'s new value. Every variable set again
+is read where it is now (ADR 0853): `v` is `const value$1 = value;` where
+it's bound, then `value = other;`, the same answer with no test that
+can't fail. The check went, and its mutation, `held-guard-of-a-changed-value`,
+which survived every run; `test/lowering-labels.test.ts` holds the copy
+and the answers.
