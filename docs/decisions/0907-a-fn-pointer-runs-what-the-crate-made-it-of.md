@@ -329,3 +329,33 @@ to a this is a function of its signature"; mutations
 `binding-function-value-an-arrow`, `any-function-value-itself`,
 `callback-binding-function-itself` (`binding_calls.ts`) and
 `rc-from-box-unsupported` (`recognition/wrappers.ts`).
+
+## Amendment: a binding's method bound is the method, its trailing `None` left out where each parameter is
+
+React's ReactFiberPerformanceTrack writes
+`debugTask.run(performance.measure.bind(performance, measureName,
+options))`. Its port's `function::bind(Performance::measure,
+Some(&performance), (performance, name, Some(options), None))` printed an
+arrow of the method bound, `((self, measureName, ..) =>
+self.measure(..)).bind(performance, performance, measureName, options,
+undefined)`: a binding's method as a value is its arrow of its receiver,
+and the bound `None` was given to JS.
+
+**`function::bind` of a binding's method, its receiver the first argument
+bound and its `this` the same path, is the method of that receiver
+bound**, `performance.measure.bind(performance, name, options)`: what the
+arrow does, as `this` is the receiver. **And where each of the bound
+function's parameters is bound, a trailing `None` of an optional one,
+TypeScript's `x?`, is left out**, as its call leaves it (ADR 0443). Where
+parameters are left to the call, a bound `None` stays, `undefined`: left
+out, what the call gives next would be taken for it. Case N: the same
+calls with the same values (a WebIDL operation takes `undefined` as
+missing).
+
+Held by `test/js-object.test.ts`'s "a function bound to its first
+arguments is a function of the parameters left": `performance.measure`
+bound and run, and `console.timeStamp.bind(console, label, undefined)` of
+one bound in part; the guide's `log_measure`; mutations
+`bound-method-an-arrow`, `bound-none-left-out-of-a-part` and
+`bound-none-kept`.
+

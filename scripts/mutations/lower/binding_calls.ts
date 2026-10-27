@@ -411,4 +411,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
   },
+  {
+    name: "bound-method-an-arrow",
+    breaks: "`function::bind` of a binding's method, its receiver bound first and its `this` the same, is an arrow of it bound, `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not React's `performance.measure.bind(performance, ..)`",
+    file: "src/lower/binding_calls.rs",
+    find: "                && js::same_path(this_arg, receiver)\n",
+    replace: "                && false\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
+  {
+    name: "bound-none-left-out-of-a-part",
+    breaks: "a trailing `None` bound where parameters are left to the call is left out, so what the call gives next is taken for it, `console.timeStamp.bind(console, label)`",
+    file: "src/lower/binding_calls.rs",
+    find: "            if first + args.len() - 1 == params {\n",
+    replace: "            if true {\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
+  {
+    name: "bound-none-kept",
+    breaks: "a trailing `None` bound where each parameter is bound stays, `performance.measure.bind(performance, name, options, undefined)`, not as its call leaves it out",
+    file: "src/lower/binding_calls.rs",
+    find: "                    && is_optional_param(self.tcx, f, first + args.len() - 2)\n",
+    replace: "                    && false\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+  },
 ];

@@ -2122,6 +2122,41 @@ export function logPhase(task, label, start, end) {
   task.run(console.timeStamp.bind(console, label, start, end, "Components", undefined, "primary"));
 }
 ```
+- **A binding's method bound, its receiver bound first and its `this`
+  the same, is the method itself**, `performance.measure.bind(performance,
+  ..)`; and where each of its parameters is bound, a trailing `None` of
+  an optional one is left out, as its call leaves it
+  ([ADR 0907](../../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md),
+  amended):
+
+```rust
+use js::function;
+use webapi::{ConsoleTask, IntoStrOrPerformanceMeasureOptions, Performance, PerformanceMeasureOptions, performance};
+
+pub fn log_measure(task: &ConsoleTask, name: &str, start: f64, end: f64) {
+    let options = PerformanceMeasureOptions {
+        start: Some(start.into()),
+        end: Some(end.into()),
+        ..Default::default()
+    };
+    let options: &dyn IntoStrOrPerformanceMeasureOptions = &options;
+    task.run(function::bind(
+        Performance::measure,
+        Some(&performance),
+        (performance, name, Some(options), None),
+    ));
+}
+```
+
+```js
+export function logMeasure(task, name, start, end) {
+  const options = {
+    start,
+    end,
+  };
+  task.run(performance.measure.bind(performance, name, options));
+}
+```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
   the block it's written in; a closure is an arrow

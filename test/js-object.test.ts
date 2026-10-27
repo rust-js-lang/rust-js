@@ -1363,6 +1363,19 @@ pub fn stamp(label: &str, start: f64, end: f64) {
         (label, Some(start), Some(end), Some("Components"), None, Some("primary")),
     );
     log();
+    let partly = function::bind(webapi::console::time_stamp, Some(&webapi::console), (label, None));
+    partly(None, None, None, None);
+}
+
+// A method's, its receiver bound first and its \`this\` the same, the method
+// itself, its trailing \`None\` left out where each parameter is bound:
+// React's \`performance.measure.bind(performance, measureName, options)\`.
+pub fn measure(name: &'static str) {
+    let options = webapi::PerformanceMeasureOptions::default();
+    let options: &dyn webapi::IntoStrOrPerformanceMeasureOptions = &options;
+    let performance = webapi::performance;
+    let measured = function::bind(webapi::Performance::measure, Some(&performance), (performance, name, Some(options), None));
+    measured();
 }
 
 pub fn stamp_name() -> String {
@@ -1384,6 +1397,8 @@ pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
   expect(js).toContain("  const dispatch = dispatchSetState.bind(null, fiber, queue);\n  return dispatch;\n");
   expect(js).toContain("const plusN = add.bind(undefined, n);");
   expect(js).toContain('const log = console.timeStamp.bind(\n    console,\n    label,\n    start,\n    end,\n    "Components",\n    undefined,\n    "primary",\n  );');
+  expect(js).toContain("const partly = console.timeStamp.bind(console, label, undefined);");
+  expect(js).toContain("const measured = performance.measure.bind(performance, name, options);");
   expect(js).toContain("return console.timeStamp.name;");
   expect(js).toContain("return [((a, b) => add(a, b)).name, add.name];");
   expect(js).toContain("return text.then((text) => parseFloat(text));");
@@ -1398,10 +1413,12 @@ pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
     } as typeof console.timeStamp;
     lib.stamp("render", 1, 2);
     expect(lib.stampName()).toBe("timeStamp");
+    lib.measure("measured");
+    expect(performance.getEntriesByName("measured").length).toBe(1);
   } finally {
     console.timeStamp = timeStamp;
   }
-  expect(seen).toEqual([[true, "render", 1, 2, "Components", undefined, "primary"]]);
+  expect(seen).toEqual([[true, "render", 1, 2, "Components", undefined, "primary"], [true, "render", undefined, undefined, undefined, undefined, undefined]]);
 });
 
 // ADR 0967: React's DEV copyWithDelete (ReactFiberReconciler.js), `const

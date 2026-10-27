@@ -1174,6 +1174,18 @@ pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
 
+/// Whether `did` is `js::function::bind`, `f.bind(thisArg, ...args)` (ADR
+/// 0907, amended).
+pub(in crate::lower) fn is_function_bind(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "bind"
+        && tcx.opt_parent(did).is_some_and(|parent| {
+            tcx.opt_item_name(parent)
+                .is_some_and(|name| name.as_str() == "function")
+                && tcx.opt_parent(parent).is_some_and(|root| root.is_crate_root())
+        })
+}
+
 /// Whether `did` is `js::AnyShape` or `js::AnyFunction`, what a function
 /// given as the value it is, its JS function, has (ADRs 0673, 0740).
 pub(in crate::lower) fn is_function_value_trait(tcx: TyCtxt<'_>, did: DefId) -> bool {

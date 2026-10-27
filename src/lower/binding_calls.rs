@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         self.functions_themselves(def_id, generic_args, &mut args, span)?;
-        let this = is_method(self.tcx, def_id).then(|| args.remove(0));
+        let mut this = is_method(self.tcx, def_id).then(|| args.remove(0));
         // Its last argument is JS's rest arguments (ADRs 0221, 0640): a
         // tuple, `impl js::Rest<T>`'s or an emitter's event's, its items,
         // `()` none; a slice, a `Vec` or a typed array of them, spread, or
@@ -89,6 +89,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
             spread_rest(&mut args);
+        }
+        // `function::bind` of a binding's function, its first arguments
+        // bound: of its method, its receiver bound first and its `this` the
+        // same, the method itself, `performance.measure.bind(performance,
+        // name, options)`; and where each of its parameters is bound, a
+        // trailing `None` of an optional one left out, as its call leaves it
+        // (ADRs 0907, 0443, amended).
+        if super::recognition::is_function_bind(self.tcx, def_id)
+            && let Some(&ty::FnDef(f, _)) = generic_args.types().next().map(|ty| ty.kind())
+            && is_binding(self.tcx, f)
+        {
+            let mut first = 0;
+            if is_method(self.tcx, f)
+                && let JsForm::Call(name) = js_form(self.tcx, f)
+                && !name.contains('#')
+                && let [this_arg, receiver, ..] = args.as_slice()
+                && js::same_path(this_arg, receiver)
+                && receiver.reads_same()
+            {
+                let receiver = args.remove(1);
+                this = Some(Expr::member(receiver, name).binding());
+                first = 1;
+            }
+            let params = self.tcx.fn_sig(f).skip_binder().skip_binder().inputs().len();
+            if first + args.len() - 1 == params {
+                while args.len() > 1
+                    && args
+                        .last()
+                        .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
+                    && is_optional_param(self.tcx, f, first + args.len() - 2)
+                {
+                    args.pop();
+                }
+            }
         }
         // What skips what's falsy is given `test && value` for `test ?
         // value : undefined`: `false` is skipped as `undefined` is, and
