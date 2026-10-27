@@ -46,8 +46,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// arguments, `WeakMap<K, Rc<T>>::get` (ADR 0850): JS's value is the
     /// counted box, which what JS gives back a Rust owner of, `get`'s
     /// `Rc`, would drop without the clone that counted it. An uncounted one
-    /// is the value it points at, which JS holds as Rust shares it.
-    pub(in crate::lower) fn check_counted_given_to_js(
+    /// is the value it points at, which JS holds as Rust shares it. And of a
+    /// `RefCell` that's its `{ value }` box, not the object it holds, as
+    /// `ref_cells` says (ADR 0962).
+    pub(in crate::lower) fn check_given_to_js(
         &self,
         def_id: DefId,
         generic_args: GenericArgsRef<'tcx>,
@@ -56,21 +58,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !crate::lower::bindings::is_binding(self.tcx, def_id) {
             return Ok(());
         }
+        let refused = |what: String, why: &str| {
+            Err(crate::lower::refusal::refuse(
+                self.tcx,
+                span,
+                crate::lower::refusal::Refused::Because(&format!("{what} given to JS or taken from it"), why),
+            ))
+        };
         let counted = (generic_args.types())
             .flat_map(|ty| ty.walk())
             .filter_map(|part| part.as_type())
             .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());
-        match counted {
-            Some(rc) => Err(crate::lower::refusal::refuse(
-                self.tcx,
-                span,
-                crate::lower::refusal::Refused::Because(
-                    &format!("a counted `{rc}` given to JS or taken from it"),
-                    "JS holds the box that counts it, which counts no clone JS makes; an `Rc` is the value it points at where the crate reads no count and drops nothing it points at (ADR 0844)",
-                ),
-            )),
-            None => Ok(()),
+        if let Some(rc) = counted {
+            return refused(
+                format!("a counted `{rc}`"),
+                "JS holds the box that counts it, which counts no clone JS makes; an `Rc` is the value it points at where the crate reads no count and drops nothing it points at (ADR 0844)",
+            );
         }
+        // A `RefCell` JS holds that's its `{ value }` box, not the object it
+        // holds; not one a function JS is given captures, which JS holds
+        // only the function of (ADR 0962).
+        let boxed = generic_args.types().find_map(|ty| {
+            let mut walk = ty.walk();
+            while let Some(part) = walk.next() {
+                let Some(part) = part.as_type() else { continue };
+                match part.kind() {
+                    ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {
+                        walk.skip_current_subtree()
+                    }
+                    ty::Adt(adt, _)
+                        if crate::lower::recognition::is_std_def(
+                            self.tcx,
+                            adt.did(),
+                            crate::lower::recognition::StdItem::RefCell,
+                        ) && !self.is_value_cell(part) =>
+                    {
+                        return Some(part);
+                    }
+                    _ => {}
+                }
+            }
+            None
+        });
+        if let Some(cell) = boxed {
+            return refused(
+                format!("a `{cell}`"),
+                "JS would hold its `{ value }` box, not what it holds; a `RefCell` is the object it holds where that's an array, a map, a set or a struct's object no generic code or `dyn` boxes (ADR 0863)",
+            );
+        }
+        Ok(())
     }
 
     /// What an uncounted `Weak` points at, if `ty` is one (ADR 0843).

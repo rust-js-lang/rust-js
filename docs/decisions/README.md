@@ -746,6 +746,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0959 `Rc::ptr_eq` of an `Rc<dyn Fn>` made of a closure made with it is `===`, uncounted](0959-ptr-eq-of-a-closure-made-with-its-rc.md)
 - [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md)
 - [0961 A loop that ends a branch of the body it ends leaves with no label](0961-a-loop-ending-a-branch-leaves-without-a-label.md)
+- [0962 A `RefCell` of an object given to JS is the object, and a boxed one is refused](0962-a-refcell-of-an-object-given-to-js-is-the-object.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
@@ -753,7 +754,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0851 A closure of rest arguments as a value is JS's rest parameter](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)
 - [0848 `function::apply` is `Function.prototype.apply`, and its `this` may be `null`](0848-apply-is-functions-and-its-this-may-be-null.md)
 - [0849 A `js::Map` takes any key, as TypeScript's does](0849-a-map-takes-any-key.md) *(extended by 0875: a `js::Set` of any value; `map::new` takes its entries; amended by 0884: its value is any value, and `get` of an `Option` tells a `None` from a missing key)*
-- [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md) *(amended by 0884: a `WeakMap`'s value needn't be `Defined`)*
+- [0850 An `Rc` is `Defined` as what it points at, and a counted one given to JS is refused](0850-an-rc-is-defined-as-what-it-points-at.md) *(amended by 0884: a `WeakMap`'s value needn't be `Defined`; extended by 0962: a `RefCell` of an object too)*
 - [0852 Each type's `Rc`s are counted apart](0852-each-types-rcs-are-counted-apart.md)
 - [0842 A let chain after a test of its own reads its place once](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md) *(amended: a binding read before a test that runs code stays before it)*
 - [0720 A labeled block's `break` and a named constant, in a body's ranges](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md)

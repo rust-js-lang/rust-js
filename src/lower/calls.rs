@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Refused, a call each owner says JS can't make as Rust does: of a
     /// string's bytes' pointer (`pointers.rs`), rest arguments as a value
     /// given as a type parameter's (`check_rest_unspread`), and a counted
-    /// `Rc` given to a binding (`std_types/rc.rs`).
+    /// `Rc` or a boxed `RefCell` given to a binding (`std_types/rc.rs`).
     pub(super) fn check_call(
         &self,
         body: &rustc_middle::mir::Body<'tcx>,
@@ -106,7 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         self.check_text_pointer(body, (def_id, generic_args), destination, span)?;
         self.check_rest_unspread(def_id, generic_args, span)?;
-        self.check_counted_given_to_js(def_id, generic_args, span)
+        self.check_given_to_js(def_id, generic_args, span)
     }
 
     /// Refused, a call giving rest arguments as a value, `&dyn js::Rest<T>`,

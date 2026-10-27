@@ -929,6 +929,10 @@ unsafe impl<T: Defined + ?Sized> Defined for Box<T> {}
 // rust-js refuses one counted where a binding is given it.
 unsafe impl<T: Defined + ?Sized> Defined for std::rc::Rc<T> {}
 unsafe impl<T: Defined + ?Sized> Defined for std::sync::Arc<T> {}
+// A `RefCell` of an object is the object (ADR 0863); rust-js refuses one
+// that's a `{ value }` box, of a number, where a binding is given it (ADR
+// 0962).
+unsafe impl<T: Defined + ?Sized> Defined for std::cell::RefCell<T> {}
 unsafe impl<T: StructuredClone> StructuredClone for [T] {}
 unsafe impl<T> Defined for [T] {}
 unsafe impl<T: StructuredClone, const N: usize> StructuredClone for [T; N] {}

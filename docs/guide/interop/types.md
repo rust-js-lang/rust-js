@@ -1407,6 +1407,46 @@ export function shared() {
 - **A local `Cell` whose cell no one else sees is a plain variable.**
 - **A `Mutex` and an `RwLock` are cells too**, `{ value }`.
 
+A `RefCell` of an object is `js::Defined`, as the object it is, so JS may
+hold one, an `Rc<RefCell<Vec<T>>>` stored where JS reads it and filled
+after, as React's view transitions store the array they fill. One that's
+a `{ value }` box, of a number say, is refused where a binding is given it
+or gives it: JS would hold the box
+([ADR 0962](../../decisions/0962-a-refcell-of-an-object-given-to-js-is-the-object.md)):
+
+```rust
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub memoized_state: Cell<Option<&'static js::Unknown>>,
+}
+
+fn collect(into: &RefCell<Vec<u32>>) {
+    into.borrow_mut().push(1);
+}
+
+pub fn before_update(current: &Fiber) {
+    let measurements = Rc::new(RefCell::new(Vec::new()));
+    current
+        .memoized_state
+        .set(Some(js::unknown_of(Rc::clone(&measurements))));
+    collect(&measurements);
+}
+```
+
+```js
+function collect(into) {
+  into.push(1);
+}
+
+export function beforeUpdate(current) {
+  const measurements = [];
+  current.memoizedState = measurements;
+  collect(measurements);
+}
+```
+
 A `thread_local!` of a cell is a module variable: see
 [Access to the JavaScript global scope](global-scope.md#module-variables).
 

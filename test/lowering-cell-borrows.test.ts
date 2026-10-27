@@ -305,3 +305,59 @@ pub fn first(parent: &Node) -> String {
   lib.observe(() => lib.observe(() => {}));
   expect(() => lib.onCommitRoot()).toThrow("already borrowed");
 });
+
+// ADR 0962: React's view transitions store the array they then fill,
+// `(current.memoizedState = [])`, given to the call that fills it. A
+// `RefCell` of an array is the array (ADR 0863), so it's `js::Defined` and
+// given to JS as it; one that's a `{ value }` box, of a number, isn't
+// what JS should see, and is refused where a binding is given it.
+test("a RefCell of an array given to JS is the array, and a boxed one is refused", async () => {
+  const dir = fixture("refcell-given-to-js");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+}
+
+pub fn fiber() -> Fiber {
+    Fiber {
+        memoized_state: Cell::new(None),
+    }
+}
+
+fn collect(into: &RefCell<Vec<u32>>, n: u32) {
+    into.borrow_mut().push(n);
+    into.borrow_mut().push(n + 1);
+}
+
+pub fn before_update(current: &Fiber) {
+    let measurements = Rc::new(RefCell::new(Vec::new()));
+    current
+        .memoized_state
+        .set(Some(js::unknown_of(Rc::clone(&measurements))));
+    collect(&measurements, 1);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function beforeUpdate(current) {\n  const measurements = [];\n  current.memoizedState = measurements;\n  collect(measurements, 1);\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const f = lib.fiber();
+  lib.beforeUpdate(f);
+  expect(f.memoizedState).toEqual([1, 2]);
+  writeFileSync(join(dir, "boxed.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub fn count() -> &'static js::Unknown {
+    let n = Rc::new(RefCell::new(1u32));
+    let given = js::unknown_of(Rc::clone(&n));
+    *n.borrow_mut() += 1;
+    given
+}
+`);
+  expect(() => run([compiler, join(dir, "boxed.rs"), "-o", join(dir, "boxed.js"), ...withBindings]))
+    .toThrow("a `std::cell::RefCell<u32>` given to JS or taken from it");
+});
