@@ -125,6 +125,7 @@ impl<'tcx> Mir<'tcx> {
         // tests, which drop elaboration leaves of a flag it settled, is the
         // way it goes; the discriminant it read and nothing else does, nothing.
         if !body.source.def_id().is_local() {
+            boxes_read_as_values(tcx, &mut body);
             // A block that assumes `UbChecks`, which rust-js reads as off,
             // never runs (ADR 0917).
             for data in body.basic_blocks.as_mut() {
@@ -178,6 +179,104 @@ impl<'tcx> Mir<'tcx> {
             false => Default::default(),
         };
         Mir { body, promoted, awaits }
+    }
+}
+
+/// Of an optimized body, another crate's, each `Box` read through the
+/// pointer rustc's `ElaborateBoxDerefs` makes of it, `_t = copy (_b.0:
+/// Unique<T>) as *const T (BoxDerefTransmute); (*_t).x = ..`, read as the
+/// crate's own body reads it, `(*_b).x`: a box is the value it holds (ADR
+/// 0914, amended). The pointer is made just before the one place that reads
+/// through it, past the others made for that statement, so nothing changes
+/// the box between; one read otherwise is left as it is.
+fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) {
+    use rustc_middle::mir::visit::MutVisitor;
+    struct Uses(Local, Vec<(mir::Location, bool)>);
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_place(&mut self, place: &Place<'tcx>, _: PlaceContext, location: mir::Location) {
+            if place.local == self.0 {
+                self.1
+                    .push((location, place.projection.first() == Some(&PlaceElem::Deref)));
+            }
+            for elem in place.projection {
+                if elem == PlaceElem::Index(self.0) {
+                    self.1.push((location, false));
+                }
+            }
+        }
+        fn visit_local(&mut self, local: Local, _: PlaceContext, location: mir::Location) {
+            if local == self.0 {
+                self.1.push((location, false));
+            }
+        }
+    }
+    struct Through<'tcx>(Local, Local, ty::TyCtxt<'tcx>);
+    impl<'tcx> MutVisitor<'tcx> for Through<'tcx> {
+        fn tcx(&self) -> ty::TyCtxt<'tcx> {
+            self.2
+        }
+        fn visit_place(&mut self, place: &mut Place<'tcx>, _: PlaceContext, _: mir::Location) {
+            if place.local == self.0 {
+                place.local = self.1;
+            }
+        }
+    }
+    let pointer_of = |statement: &mir::Statement<'_>| match &statement.kind {
+        StatementKind::Assign(assign) => match (&assign.0, &assign.1) {
+            (pointer, Rvalue::Cast(mir::CastKind::BoxDerefTransmute, Operand::Copy(unique), _))
+                if let Some(pointer) = pointer.as_local()
+                    && let [PlaceElem::Field(field, _)] = unique.projection[..]
+                    && field == FieldIdx::ZERO =>
+            {
+                Some((pointer, unique.local))
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    let blocks: Vec<BasicBlock> = body.basic_blocks.indices().collect();
+    for block in blocks {
+        let mut at = 0;
+        while at < body.basic_blocks[block].statements.len() {
+            let data = &body.basic_blocks[block];
+            let Some((pointer, boxed)) = pointer_of(&data.statements[at]) else {
+                at += 1;
+                continue;
+            };
+            if !body.local_decls[boxed].ty.is_box() {
+                at += 1;
+                continue;
+            }
+            // The statement that reads through it: the next but the other
+            // pointers made for it, or the block's terminator.
+            let read = (at + 1..data.statements.len())
+                .find(|&i| pointer_of(&data.statements[i]).is_none())
+                .unwrap_or(data.statements.len());
+            let made = mir::Location {
+                block,
+                statement_index: at,
+            };
+            let read_at = mir::Location {
+                block,
+                statement_index: read,
+            };
+            let mut uses = Uses(pointer, Vec::new());
+            uses.visit_body(body);
+            let only_there =
+                (uses.1.iter()).all(|&(location, deref)| location == made || (location == read_at && deref));
+            if !only_there || !uses.1.iter().any(|&(location, _)| location == read_at) {
+                at += 1;
+                continue;
+            }
+            let mut through = Through(pointer, boxed, tcx);
+            let data = &mut body.basic_blocks.as_mut_preserves_cfg()[block];
+            match data.statements.get_mut(read) {
+                Some(statement) => through.visit_statement(statement, read_at),
+                None => through.visit_terminator(data.terminator_mut(), read_at),
+            }
+            data.statements[at].make_nop(true);
+            at += 1;
+        }
     }
 }
 

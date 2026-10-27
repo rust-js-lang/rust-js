@@ -589,6 +589,38 @@ pub fn main() {
   expect(printed(join(dir, "app.js"))).toBe("second\ndropped 2\n3\ndropped 3\nafter\n");
 }, 300_000);
 
+// #378: a consumer compiling a library's generic code from its optimized
+// MIR, where a box is read through the pointer rustc makes of it, compiled
+// `vec![t]`'s (`generic_boxed_drop`) and refuses what it can't yet, a
+// generic method given a destructor or a value moved out of its box, as an
+// error: it never panics.
+test("a consumer refuses a library's generic code it can't compile yet, and never crashes", () => {
+  const out = chain(pairs, "generic_boxed_drop", ["dep", "app"]);
+  const dir = fixture("library-boxed-refused");
+  writeFileSync(join(dir, "dep.rs"), "pub fn unboxed<T>(t: T) -> T {\n    let boxed = Box::new(t);\n    *boxed\n}\n");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  const loud = "struct Loud(u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"dropped {}\", self.0);\n    }\n}\n";
+  const refused = (app: string, against: string, why: string) => {
+    writeFileSync(join(dir, "app.rs"), `${loud}pub fn main() {\n${app}}\n`);
+    const compile = [compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(against, "lib.manifest.json"),
+      "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(against, "libdep.rmeta")}`];
+    let error = "";
+    try {
+      run(compile);
+    } catch (e) {
+      error = String(e);
+    }
+    expect(error).toContain(why);
+    expect(error).not.toContain("panicked");
+  };
+  refused("    let mut bag = dep::Bag { items: vec![Loud(1)] };\n    bag.clear();\n", join(out, "dep"),
+    "giving `dep::Bag::<T>::clear`'s `T` a type with a destructor, where it takes none");
+  refused("    println!(\"{}\", dep::unboxed(Loud(1)).0);\n", lib, "rust-js does not support");
+}, 300_000);
+
 // A library's generic trait method is given a drop for its own type
 // parameters, as its trait declares them (ADR 0163): a consumer's value with
 // a destructor is dropped where Rust drops it, at the end of `put`, called on

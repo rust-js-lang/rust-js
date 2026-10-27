@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "optimized-boxes-read-through-pointer",
+    breaks: "a library's generic body, from its optimized MIR, reads a box through the pointer rustc makes of it, which its consumer refuses (#378)",
+    file: "src/lower/mir.rs",
+    find: "            boxes_read_as_values(tcx, &mut body);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: generic_boxed_drop"],
+  },
+  {
     name: "mir-drop-uses-unnoted",
     breaks: "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
     file: "src/lower/mir.rs",

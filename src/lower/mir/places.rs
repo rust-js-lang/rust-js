@@ -310,6 +310,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A union's, what it holds there (ADR 0406).
             (ty::Adt(adt, _), _) if adt.is_union() => self.union_read(base, ty.ty, field, span),
+            // A box is the value it holds, which has no `Unique` to read: an
+            // optimized body's pointer to it is read as the box where it's
+            // made just before its one read (`boxes_read_as_values`); another
+            // is refused (#378).
+            (ty::Adt(adt, _), _) if adt.is_box() => {
+                Err(self.unsupported(span, "a box's pointer, from its optimized MIR"))
+            }
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }

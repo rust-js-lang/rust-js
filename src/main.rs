@@ -222,6 +222,11 @@ impl Callbacks for RustJs {
         // Integers wrap, as the release profile has them: MIR read for what
         // runs says so, where it would check each operation (ADR 0364).
         config.opts.cg.overflow_checks = Some(false);
+        // A pointer's address checked, and a transmute's enum, as a debug
+        // build's MIR does before it's dereferenced: of addresses JS hasn't,
+        // as `UbChecks` is read off (ADR 0917), so a library's MIR, which a
+        // consumer compiles (ADR 0914), has no `assert` of them.
+        config.opts.unstable_opts.ub_checks = Some(false);
         // Panics unwind, as a JS exception does, what's held dropped in its
         // `catch`: wasm32's abort would lay out a future, and answer
         // `cfg(panic)`, for another program (ADR 0090). One that asked to

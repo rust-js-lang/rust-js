@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ub-checks-in-library-mir",
+    breaks: "a library's MIR keeps a debug build's checks of a pointer's address before it's read, so a consumer compiling its `vec![t]` refuses it (#378)",
+    file: "src/main.rs",
+    find: "        config.opts.unstable_opts.ub_checks = Some(false);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: generic_boxed_drop"],
+  },
+  {
     name: "std-bodies-not-the-meaning",
     breaks: "std's own bodies' build isn't one of std's structs as their meaning: `@rust-js/std` compiles no `Filter` (ADR 0932)",
     file: "src/main.rs",

@@ -565,3 +565,38 @@ Held by `test/cross-crate-items.test.ts`'s "a library's function of a
 binding's Vec is imported, not compiled again"; mutation
 `binding-result-copies`.
 
+
+## Amendment: a box its optimized MIR reads through a pointer is the value it holds (#378)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a consumer given a
+library's `vec![t]` with a destructor prints and drops what native Rust
+does; before, the compiler panicked.
+
+A consumer that gives a library's generic function more than its crate
+does compiles its own copy from the MIR in the library's metadata, the
+optimized MIR, not the MIR the crate's own bodies are read from. Two of
+rustc's passes there read a box as no body of the crate does:
+`ElaborateBoxDerefs` makes each `(*b).x` `_t = copy (b.0: Unique<T>) as
+*const T (BoxDerefTransmute); (*_t).x`, and a debug build's UB checks
+(`CheckAlignment`, `CheckNull`, `CheckEnums`) test the pointer's address
+before it's read. Lowering `b.0`, a field of a box, which is the value it
+holds, panicked: `fields of a type without fields`.
+
+- **A box read through that pointer is read as the box**,
+  `boxes_read_as_values` in `Mir::new`, of each body not the crate's: the
+  pointer is made just before the one statement that reads through it,
+  past the others made for that statement, so `(*_t)` is `(*b)` and
+  nothing changed `b` between. A pointer used otherwise is left, and a
+  box's field read in MIR is refused, never a panic.
+- **UB checks are off in rust-js's builds**, as `UbChecks` is read off
+  (ADR 0917): they test addresses JS hasn't, and fire only where a
+  program's behavior is undefined. A crate's own bodies, read before those
+  passes, never had them; a library's MIR now has none either.
+- **Not yet**: a value moved out of its box, `*boxed`, whose optimized
+  MIR then calls `<Box<T> as Drop>::drop`, and a generic method given a
+  destructor where its library's takes none (ADR 0190): each a refusal.
+
+Held by `test/crates/pairs/generic_boxed_drop/`, run as native Rust, and
+`test/crates.test.ts`'s "a consumer refuses a library's generic code it
+can't compile yet, and never crashes", with the mutations
+`optimized-boxes-read-through-pointer` and `ub-checks-in-library-mir`.
