@@ -1,6 +1,6 @@
 # 0866. A `let` only the `if let` that takes it apart reads is read there
 
-Status: Accepted; amended below: a `let` of a cast is no `let` that ends a
+Status: Accepted; amended below: named as its field by their Rust names; a `let` of a cast is no `let` that ends a
 borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first; and an `if let`'s
 binding of a thread-local's value only its test reads; and a `let` that
@@ -333,3 +333,23 @@ is the program's name, as upstream's `pendingFirst` is.
 - Held by the corpus case's `swap_children`, `const pendingFirst =
   pending.child;`, and the mutation `ended-borrow-of-another-name`
   (`tidy/moves.ts`).
+
+## Amendment: named as its field by their Rust names (lt1, 2026-10-27)
+
+A `let` that ends a borrow is read in place only where it's named as the
+field it reads. That was asked of their JS names in tidy, `child` of
+`current.child`, so two upstream stores stayed apart: `let r#return =
+node.r#return.borrow().clone();`, whose JS name is `return$`, and `let
+debug_hook_types = current.debug_hook_types.borrow().clone();` of a field
+`#[rust_js::name = "_debugHookTypes"]`, whose names differ in JS only.
+
+**The `let`'s name and the field's are their Rust names**, the binding's
+and the field's own, asked where the `let` is found (`mir/patterns.rs`,
+`LetNames::ends_borrow`, which holds only those so named), not of the JS
+tidy reads: `sibling.return = node.return;`,
+`workInProgress._debugHookTypes = current._debugHookTypes;`.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+- Held by the corpus case `refcell_let_named_as_its_field.rs` and the
+  mutations `ended-borrow-by-js-names` and the moved and amended
+  `ended-borrow-of-another-name`, `ended-borrow-of-any-let`.

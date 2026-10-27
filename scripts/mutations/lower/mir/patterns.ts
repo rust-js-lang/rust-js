@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "ended-borrow-of-any-let",
     breaks: "a `let` of a `Cell`'s value, `let index = current.index.get();`, is taken for one that ends a borrow, its name lost to its place's read",
     file: "src/lower/mir/patterns.rs",
-    find: "                if initializer.is_some_and(borrow_cloned) {\n",
+    find: "                if initializer.and_then(borrow_cloned) == Some(binding) {\n",
     replace: "                if initializer.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
     snapshots: true,
@@ -308,5 +308,14 @@ export const mutations: Mutation[] = [
     find: "                made.entry(copy).or_default().0 += 1;\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
+  {
+    name: "ended-borrow-of-another-name",
+    breaks: "a `let` that ends a borrow named otherwise than the field it reads, React's `const pendingFirst = pendingQueue.next; baseQueue.next = pendingFirst;`, loses the program's name to the place's read (ADR 0866, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                if initializer.and_then(borrow_cloned) == Some(binding) {\n",
+    replace: "                if initializer.and_then(borrow_cloned).is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
+    snapshots: true,
   },
 ];

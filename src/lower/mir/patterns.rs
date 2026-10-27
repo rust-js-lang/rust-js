@@ -696,17 +696,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This))
             .then(|| matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. })))
         };
-        // A `RefCell`'s value cloned, `current.child.borrow().clone()`: the
-        // value read, the borrow ended (ADR 0866, amended).
-        let borrow_cloned = |e: thir::ExprId| {
+        // The field a borrow's receiver is, `&current.child`, by its Rust name.
+        let field_named = |receiver: Option<thir::ExprId>| {
+            let mut e = through(receiver?);
+            while let thir::ExprKind::Borrow { arg, .. } | thir::ExprKind::Deref { arg } = thir[e].kind {
+                e = through(arg);
+            }
+            let thir::ExprKind::Field {
+                lhs,
+                variant_index,
+                name,
+            } = thir[e].kind
+            else {
+                return None;
+            };
+            let ty::Adt(adt, _) = thir[lhs].ty.peel_refs().kind() else {
+                return None;
+            };
+            Some(adt.variant(variant_index).fields[name].name)
+        };
+        // A `RefCell`'s field's value cloned, `current.child.borrow().clone()`:
+        // the value read, the borrow ended, and the field's name (ADR 0866,
+        // amended).
+        let borrow_cloned = |e: thir::ExprId| -> Option<rustc_span::Symbol> {
             let thir::ExprKind::Call { fun, ref args, .. } = thir[through(e)].kind else {
-                return false;
+                return None;
             };
             let [cloned] = args[..] else {
-                return false;
+                return None;
             };
             if !fn_def(thir[fun].ty).is_some_and(|(id, _)| self.tcx.is_lang_item(id, LangItem::CloneFn)) {
-                return false;
+                return None;
             }
             // Through `&*`, and a `Ref`'s `Deref::deref` of it.
             let mut e = through(cloned);
@@ -714,22 +734,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 e = match thir[e].kind {
                     thir::ExprKind::Borrow { arg, .. } | thir::ExprKind::Deref { arg } => through(arg),
                     thir::ExprKind::Call { fun, ref args, .. } => {
-                        let Some((id, generic_args)) = fn_def(thir[fun].ty) else {
-                            return false;
-                        };
+                        let (id, generic_args) = fn_def(thir[fun].ty)?;
                         let borrow = Std::Borrow {
                             lock: false,
                             mutable: false,
                         };
                         if self.recognition().classify(id, generic_args) == Some(borrow) {
-                            return true;
+                            return field_named(args.first().copied());
                         }
                         match args[..] {
                             [arg] if self.tcx.trait_of_assoc(id) == self.tcx.lang_items().deref_trait() => through(arg),
-                            _ => return false,
+                            _ => return None,
                         }
                     }
-                    _ => return false,
+                    _ => return None,
                 };
             }
         };
@@ -747,12 +765,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 pattern, initializer, ..
             } = &stmt.kind
                 && let thir::PatKind::Binding {
-                    subpattern: None, var, ..
+                    subpattern: None,
+                    var,
+                    name: binding,
+                    ..
                 } = pattern.kind
             {
                 named.push(pattern.span);
                 lets.push((var, pattern.span));
-                if initializer.is_some_and(borrow_cloned) {
+                // Named as the field it reads, by their Rust names, whatever
+                // the JS ones: `r#return`'s `return$` of `.return`, and a
+                // field's `#[rust_js::name]`, `_debugHookTypes`.
+                if initializer.and_then(borrow_cloned) == Some(binding) {
                     ends_borrow.push(pattern.span);
                 }
                 match initializer.and_then(cast_of) {

@@ -489,13 +489,15 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
 /// holds what the `let` read. Only of a name the field's own, `child` of
 /// `current.child`, which says nothing the field doesn't: one named
 /// otherwise, `const pendingFirst = pendingQueue.next;`, is the program's,
-/// as upstream's is (ADR 0866, amended again).
+/// as upstream's is (ADR 0866, amended again). The names are Rust's, as
+/// `LetNames::ends_borrow` has them: `r#return` of `.return`, its JS name
+/// `return$`, and one of a field of a `#[rust_js::name]`, `_debugHookTypes`.
 pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && ends_borrow.contains(name)
-            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)
+            && matches!(&value.kind, ExprKind::Member(..))
             && place_read(value, name)
             && stored_whole(&stmts[i + 1], name)
             && read_again(stmts, i)

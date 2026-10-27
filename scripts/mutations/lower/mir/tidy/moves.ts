@@ -4,12 +4,12 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "ended-borrow-of-another-name",
-    breaks: "a `let` that ends a borrow named otherwise than the field it reads, React's `const pendingFirst = pendingQueue.next; baseQueue.next = pendingFirst;`, loses the program's name to the place's read (ADR 0866, amended)",
+    name: "ended-borrow-by-js-names",
+    breaks: "a `let` that ends a borrow is read in place only where its JS name is the property's, so `const return$ = node.return;` and `const debugHookTypes = current._debugHookTypes;` stay, though each is named as its field in Rust (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
+    find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name)\n",
+    replace: "            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)\n            && place_read(value, name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_let_named_as_its_field.rs$"],
     snapshots: true,
   },
   {
