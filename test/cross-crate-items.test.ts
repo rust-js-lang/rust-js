@@ -938,3 +938,31 @@ pub fn last_read() -> Option<&'static Unknown> {
   fill(4);
   expect([cacheSize(), readCount(), lastRead() === cacheContext]).toEqual([4, 2, true]);
 });
+
+// ADR 0914, amended: a library's function whose binding call gives a value
+// of what the crate changes in place, `js::object::keys(props)`'s
+// `Vec<String>`, which the crate pushes to, copies nothing of the crate's:
+// a binding's result is JS's own, the same however it's compiled. The
+// crate imports it, as React's reconciler does shared's
+// `addObjectToProperties`.
+test("a library's function of a binding's Vec is imported, not compiled again", async () => {
+  const dir = fixture("cross-crate-binding-vec");
+  const { app } = compiled(dir, `use js::Unknown;
+
+pub fn key_count(props: &Unknown) -> usize {
+    let keys = js::object::keys(props);
+    keys.len()
+}
+`, `use js::Unknown;
+
+pub fn names(props: &Unknown) -> Vec<String> {
+    let mut names = Vec::new();
+    names.push(dep::key_count(props).to_string());
+    names
+}
+`);
+  expect(app).toContain('import { keyCount } from "../dep/lib.js";\n');
+  expect(app).not.toContain("function keyCount");
+  const { names } = await import(join(dir, "app", "lib.js"));
+  expect(names({ a: 1, b: 2 })).toEqual(["2"]);
+});

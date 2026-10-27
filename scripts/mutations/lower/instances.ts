@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "compiles its own of the function"],
   },
+  {
+    name: "binding-result-copies",
+    breaks: "a library's function whose binding call gives a `Vec<String>` the crate pushes to, `js::object::keys(props)`, is taken to copy it, and compiled again in the crate, React's PerformanceTrack's own `addObjectToProperties`",
+    file: "src/lower/instances.rs",
+    find: "                        Some(callee) if super::bindings::is_binding(tcx, callee) => false,\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "binding's Vec is imported"],
+  },
 ];

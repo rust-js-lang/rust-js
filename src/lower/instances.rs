@@ -230,6 +230,10 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                             self.ask(callee);
                             false
                         }
+                        // A binding's, whose result is JS's own, the same
+                        // however its caller is compiled, `js::object::keys`'s
+                        // `Vec<String>`.
+                        Some(callee) if super::bindings::is_binding(tcx, callee) => false,
                         // Another's, std's: one that makes what it's given a
                         // reference to, `Cell::get`, `clone`, `to_vec`.
                         Some(_) => {

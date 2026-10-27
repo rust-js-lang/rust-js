@@ -8,7 +8,8 @@ Amended (below): a library's trait impls and copies are its program's too,
 and amends [0100](0100-separate-crates.md) and
 [0185](0185-library-trait-defaults.md); and a consumer gives an export the
 copy functions its contract says it takes; and a `Clone` bound, and a
-program's `Rc` of a type parameter's value, are what its callers give.
+program's `Rc` of a type parameter's value, are what its callers give;
+and a binding's result copies nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for
 JS callers, so Rust's behavior holds for Rust callers, and JS's call is
@@ -544,3 +545,23 @@ its crate's calls: without that seeding the committed package, the
 corpus, the crates' and the workspace's JS were the same, and its
 mutation, `library-generic-drops-nothing`, survived every run. The
 seeding and its mutation went.
+
+## Amendment: a binding's result copies nothing
+
+React's reconciler is the first crate to call `shared`'s
+`addObjectToProperties` and its kin, and compiled about 600 lines of its
+own copy of them instead of importing them: they call
+`js::object::keys(props)`, whose `Vec<String>` is a type the reconciler
+pushes to, and `Copying` took a call of what the library doesn't compile
+that's given a reference and gives a value of such a type for one that
+may copy it, as `Cell::get` and `clone` do.
+
+**A binding's call copies nothing** (`Copying::body_copies`): its result
+is JS's own value, whatever JS made it of, and no copy of it is the
+crate's to make, so the library's JS of it is what its consumer's would
+be. Std's calls are asked as before.
+
+Held by `test/cross-crate-items.test.ts`'s "a library's function of a
+binding's Vec is imported, not compiled again"; mutation
+`binding-result-copies`.
+
