@@ -548,7 +548,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](0667-console-is-a-value-and-rest-arguments-are-one.md) *(amended by 0851: a closure of them is JS's rest parameter, a `dyn Fn` of them called spread)*
 - [0668 A `match` of what a value is is a `switch` of its `typeof`](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
-- [0673 A function is a JS value of any shape, whose property `js::set` writes](0673-a-function-is-a-value-of-any-shape.md)
+- [0673 A function is a JS value of any shape, whose property `js::set` writes](0673-a-function-is-a-value-of-any-shape.md) *(extended by 0965: an `Rc` of one)*
 - [0674 A struct literal's object lists its fields in the order written](0674-a-struct-literals-fields-are-in-the-order-written.md)
 - [0623 A copy std makes of a `Copy` value is a copy](0623-a-copy-std-makes-is-a-copy.md)
 - [0669 An adapter steps its source as std's does](0669-an-adapter-steps-its-source-as-stds-does.md) *(amended by 0687: and gives the crate's own `fold` and `nth` on)*
@@ -749,6 +749,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0962 A `RefCell` of an object given to JS is the object, and a boxed one is refused](0962-a-refcell-of-an-object-given-to-js-is-the-object.md)
 - [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md)
 - [0964 `js::SymbolFor` itself is `Symbol.for`, a function a host may lack](0964-symbol-for-is-a-function-of-its-own.md)
+- [0965 A shared function, an `Rc<dyn Fn>`, is of any shape, the function itself](0965-a-shared-function-is-of-any-shape.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -330,7 +330,8 @@ pub fn any_of<T: 'static>(this: T) -> Option<&'static Unknown> {
 /// What [`unknown`] takes, a JS value of any shape, never `undefined` nor
 /// `null`: a [`Defined`] value, or a function, of whatever it takes, a
 /// function item, a closure, a `fn` pointer or a `dyn Fn`, each a JS
-/// function, which is an object (ADR 0673). `M` is which one, rustc's to
+/// function, which is an object (ADR 0673), or an `Rc` of one, a shared
+/// function, the function itself (ADR 0965). `M` is which one, rustc's to
 /// infer: no program names it. A function isn't `Defined` only because
 /// Rust can't say each is: a function item's type has no name, and an
 /// impl for each `Fn` would be one for `&T` too.
@@ -351,6 +352,10 @@ macro_rules! functions {
     ($(($($a:ident),*))*) => {
         $(
             impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyShape<fn($($a),*) -> R> for F {}
+            impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyShape<std::rc::Rc<fn($($a),*) -> R>>
+                for std::rc::Rc<F>
+            {
+            }
             impl<F: FnOnce($($a),*) -> R + ?Sized, R, $($a),*> AnyFunction<fn($($a),*) -> R> for F {}
         )*
     };

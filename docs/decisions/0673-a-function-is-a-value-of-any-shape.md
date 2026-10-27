@@ -3,6 +3,8 @@
 Status: Accepted. Amends [0225](0225-unknown-values.md), whose
 `js::unknown` took a `Defined` value only, and extends
 [0267](0267-on-load.md), whose module's statements run when it's loaded.
+Extended by [0965](0965-a-shared-function-is-of-any-shape.md): an `Rc`
+of a function is of any shape too, the function itself.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): a function is JS's
 own object, and its property is written where the program writes it.

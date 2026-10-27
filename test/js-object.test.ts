@@ -1261,3 +1261,45 @@ pub fn type_of_type(next_type: Option<&'static Unknown>) -> Option<&'static Unkn
   const tag = Symbol("tag");
   expect([lib.typeOfType({ $$typeof: tag }), lib.typeOfType(null), lib.typeOfType(3), lib.typeOfType(undefined)]).toEqual([tag, undefined, undefined, undefined]);
 });
+
+// React's mountTransition stores the function it returns in its hook,
+// `hook.memoizedState = start; return [false, start];`, and
+// updateTransition reads it back: an `Rc<dyn Fn>` is of any shape as the
+// function it points at is, `js::unknown_of(Rc::clone(&start))` the
+// function itself, which `js::cast` gives back as the `Rc` (ADR 0965).
+test("a shared function is of any shape, the function itself", async () => {
+  const { js, lib } = await compiled("js-object-shared-function", `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Hook {
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+}
+
+pub fn mount_transition(hook: &Hook, n: Rc<Cell<f64>>) -> Rc<dyn Fn(f64)> {
+    let start: Rc<dyn Fn(f64)> = Rc::new(move |x| n.set(x));
+    hook.memoized_state.set(Some(js::unknown_of(Rc::clone(&start))));
+    start
+}
+
+pub fn update_transition(hook: &Hook) -> Rc<dyn Fn(f64)> {
+    // SAFETY: mount_transition stored an \`Rc<dyn Fn(f64)>\` there.
+    unsafe { js::cast(hook.memoized_state.get()) }
+}
+
+pub fn run() -> (f64, bool, bool) {
+    let n = Rc::new(Cell::new(0.0));
+    let hook = Hook { memoized_state: Cell::new(None) };
+    let start = mount_transition(&hook, Rc::clone(&n));
+    let read = update_transition(&hook);
+    read(2.0);
+    start(n.get() + 1.0);
+    let stored = js::strict_equals(hook.memoized_state.get(), js::unknown(&*start));
+    let read_back = js::strict_equals(js::unknown(&*read), js::unknown(&*start));
+    (n.get(), stored, read_back)
+}
+`);
+  expect(js).toContain("hook.memoizedState = start;\n  return start;");
+  expect(lib.run()).toEqual([3, true, true]);
+});

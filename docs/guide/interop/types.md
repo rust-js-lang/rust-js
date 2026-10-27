@@ -1832,6 +1832,49 @@ export function isMarked(log) {
   return log.__reactDisabledLog != null;
 }
 ```
+- **A shared function, an `Rc<dyn Fn>`, is the function it points at**:
+  `js::unknown_of(Rc::clone(&start))` stores it, as React's
+  `mountTransition` stores the function it returns in its hook, and
+  `js::cast` gives it back. One whose count the crate reads is refused, as
+  any counted `Rc` given to JS is
+  ([ADR 0965](../../decisions/0965-a-shared-function-is-of-any-shape.md)):
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Hook {
+    pub memoized_state: Cell<Option<&'static Unknown>>,
+}
+
+pub fn mount_transition(hook: &Hook, pending: Rc<Cell<bool>>) -> Rc<dyn Fn(bool)> {
+    let start: Rc<dyn Fn(bool)> = Rc::new(move |value| pending.set(value));
+    hook.memoized_state.set(Some(js::unknown_of(Rc::clone(&start))));
+    start
+}
+
+pub fn update_transition(hook: &Hook) -> Rc<dyn Fn(bool)> {
+    // SAFETY: `mount_transition` stored an `Rc<dyn Fn(bool)>` there.
+    unsafe { js::cast(hook.memoized_state.get()) }
+}
+```
+
+```js
+export function mountTransition(hook, pending) {
+  function start(value) {
+    pending.value = value;
+  }
+  hook.memoizedState = start;
+  return start;
+}
+
+export function updateTransition(hook) {
+  // SAFETY: `mount_transition` stored an `Rc<dyn Fn(bool)>` there.
+  return hook.memoizedState;
+}
+```
 - **A type parameter's value is any value, `js::any_of(value)`**, an
   `Option<&Unknown>`, TypeScript's `any`: what keeps values of the types a
   program erases in one place, as React's value stack keeps each cursor's,
