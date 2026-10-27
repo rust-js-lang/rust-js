@@ -7,7 +7,7 @@ export function entry() {
 }
 
 let ticks = 1;
-const queue = [];
+let queue = [];
 const log = [];
 let count = 0;
 let name = "first";
@@ -19,7 +19,8 @@ function push(x) {
 }
 
 function finish() {
-  const queue$1 = $take(queue, []);
+  const queue$1 = queue;
+  queue = [];
   return queue$1.reduce((a, b) => (a + b) >>> 0, 0);
 }
 
@@ -31,7 +32,8 @@ function main() {
   // Taken while another is borrowed, which it can't be.
   $extend(log, $take(queue, []));
   push(3);
-  const old = $take(queue, [7, 8]);
+  const old = queue;
+  queue = [7, 8];
   const arg = queue.slice();
   console.log(`[${old.join(", ")}] [${arg.join(", ")}]`);
   const old$1 = count;

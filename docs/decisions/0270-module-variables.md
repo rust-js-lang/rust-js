@@ -7,7 +7,7 @@ array or an object its module sets whole is given the new one there; a
 place, leave it its variable, and an exported one its module needs the
 cell of is refused; and a `static mut` is its module's variable by the same
 rule (ADR 0096, amended); and one set in a closure a `const` is made of,
-an impl's too, is set there.
+an impl's too, is set there; and a `take()` or `replace(v)` of its array that's its statement's first is the variable given the new one.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -338,3 +338,28 @@ four mutations survived every run. The rewrite went; the mutations
 `mir-quiet-box-kept`, `mir-quiet-local-borrow-not-inlined` and
 `value-static-given-value` take the lowering's place now, and
 `mir-quiet-local-borrowed` went, being `quiet-with-borrow-called-late`.
+
+## Amendment: a `take()` or `replace(v)` of its array is the variable given the new one (c16, 2026-10-27)
+
+React's flushPendingUnsafeLifecycleWarnings walks what's pending and sets
+`pending = []`. The port takes the thread-local first, `for id in
+PENDING.take()`, as walking it borrowed while calling JS would check every
+use of it; that printed `for (const id of $take(pending, []))`, the array
+emptied into a copy in place.
+
+**Where the module's variable is an array or an object it sets whole (the
+amendment above), a `take()` or `replace(v)` of it that's the first its
+statement does is the variable given the new one** (`std_types/cell.rs`,
+`taken_whole`): `const old = pending; pending = []; for (const id of
+old)`; of a `let`, `const before = pending; pending = [7, 8];`; one whose
+value is unread, `pending = [];`. As with `set`, nothing else holds the
+old one, its borrows ending where they're made, so what's walked is the
+old one and what's pushed meanwhile goes in the new one, as in Rust. One
+that isn't its statement's first, `$extend(log, $take(queue, []))`, after
+`log` is read, stays in place, as another module's does.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+- Held by the corpus case `thread_local_vec_taken.rs` (a push while the
+  taken array is walked, a `replace`, a take unread) and the mutations
+  `taken-whole-in-place`, `taken-unread-read` and `taken-let-of-old`
+  (`scripts/mutations/lower/std_types/cell.ts`).

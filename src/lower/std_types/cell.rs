@@ -632,6 +632,7 @@ pub(in crate::lower) fn plain_statics(
                     sets += 1;
                 }
             }
+            sets += taken_whole(stmts, &name);
         });
         if sets == 0 {
             continue;
@@ -659,6 +660,73 @@ pub(in crate::lower) fn plain_statics(
         })
         .collect();
     (exported, boxed)
+}
+
+/// Each `$take(name, v)` of `stmts`, a `take()` or `replace(v)` of the
+/// module's variable `name`, an object, that's the first its statement
+/// does: the variable given the new value, `const old = name; name = v;`,
+/// the statement of `old`, as React's flushPendingUnsafeLifecycleWarnings
+/// sets `pending = []` (ADR 0270, amended). In place, the old array was
+/// emptied into a copy; nothing else holds it, as `$assign`'s `set` above
+/// takes. A `const` of it is that `const`. How many there were.
+fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
+    let taken = |e: &Expr| {
+        matches!(&e.kind, js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$take")
+                && matches!(args.as_slice(), [target, _] if matches!(&target.kind, js::ExprKind::Var(v) if v == name)))
+    };
+    let mut count = 0;
+    let mut i = 0;
+    while i < stmts.len() {
+        let span = stmts[i].span;
+        let slot = match &mut stmts[i].kind {
+            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Expr(e) => {
+                Some(e)
+            }
+            StmtKind::ForOf { iterable, .. } => Some(iterable),
+            StmtKind::Assign(target, e) if matches!(target.kind, js::ExprKind::Var(_)) => Some(e),
+            _ => None,
+        };
+        let Some(slot) = slot.filter(|e| taken(e)) else {
+            i += 1;
+            continue;
+        };
+        let js::ExprKind::Call(_, mut args) = std::mem::replace(&mut slot.kind, js::ExprKind::Undefined) else {
+            unreachable!("taken")
+        };
+        let value = args.pop().expect("its new value");
+        let variable = args.pop().expect("the variable");
+        let set = StmtKind::Assign(variable.clone(), value).at(span);
+        count += 1;
+        // What it gave unread: the variable given the new value alone.
+        if let StmtKind::Expr(_) = &stmts[i].kind {
+            stmts[i] = set;
+            i += 1;
+            continue;
+        }
+        // `const names = $take(..)`: `const names = pending; pending = [];`.
+        if let StmtKind::Const(..) | StmtKind::Let(..) = &stmts[i].kind {
+            let (StmtKind::Const(_, e) | StmtKind::Let(_, Some(e))) = &mut stmts[i].kind else {
+                unreachable!("a declaration")
+            };
+            *e = variable;
+            stmts.insert(i + 1, set);
+            i += 2;
+            continue;
+        }
+        let mut names = HashSet::new();
+        js::names_in(stmts, &mut names);
+        let old = crate::lower::fresh_in(&mut names, "old");
+        let slot = match &mut stmts[i].kind {
+            StmtKind::Return(Some(e)) | StmtKind::Expr(e) | StmtKind::Assign(_, e) => e,
+            StmtKind::ForOf { iterable, .. } => iterable,
+            _ => unreachable!("a slot"),
+        };
+        *slot = Expr::var(&old);
+        stmts.splice(i..i, [StmtKind::Const(old, variable).at(span), set]);
+        i += 3;
+    }
+    count
 }
 
 /// Whether `made` is a thread-local's cell as its `{ value }`.

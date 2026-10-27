@@ -2,7 +2,7 @@
 
 import { ON } from "./flags.js";
 import { used } from "./marks.js";
-import { $catchUnwind, $debugStr, $index, $local, $take } from "@rust-js/runtime";
+import { $catchUnwind, $debugStr, $index, $local } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -17,14 +17,19 @@ function double(n) {
 }
 
 let tries = 0;
-const names = [];
+let names = [];
 const made = $local(() => {
   if (tries === 0) {
     return 1;
   }
 });
 
-const taken = $local(() => $take(names, []));
+const taken = $local(() => {
+  const old = names;
+  names = [];
+  return old;
+});
+
 const LIMITED = $local(() => (LIMIT * 10) >>> 0);
 const COUNTED = $local(() => (HITS + 1) >>> 0);
 const BASED = (BASE * 2) >>> 0;
