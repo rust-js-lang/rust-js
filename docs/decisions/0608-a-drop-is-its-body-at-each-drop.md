@@ -2,7 +2,7 @@
 
 Status: Accepted; amended (a name its body shares with the caller is
 named apart; a closure a `const` is made of is a function a drop is its
-body in). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
+body in; either value a conditional `const` chooses too). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: each drop runs the
 same code where it ran.
@@ -214,3 +214,41 @@ that's a const fn is its drop's body there", run, and
 `test/corpus/drop_in_const_closure.rs` against native Rust; the
 mutations `const-closure-drop-kept`, `const-field-closure-drop-kept` and
 `associated-const-closure-drop-kept` (`drops/inlined.ts`).
+
+## Amended (2026-10-27): either value a conditional `const` chooses
+
+React's DEV dispatchers are made only in a development build, `let
+HooksDispatcherOnMountInDEV = null; if (__DEV__) { .. = { useMemo(..) {
+.. try { .. } finally { ReactSharedInternals.H = prevDispatcher; } } } }`.
+Ported, each is a thread-local of `if __DEV__ { Some(Dispatcher { .. })
+} else { None }`, whose JS is a `const` of a conditional, `__DEV__ ? {
+useMemo(..) { .. } } : null`. Its closures' guard kept its drop a
+function, `restoreDispatcherDrop_drop(_restore)`, as a closure in a
+`const` was before this decision's amendment above: a conditional was
+not looked into, so its calls of the drop were counted and never
+written.
+
+**Either value a conditional in a `const` chooses is looked into as the
+`const`'s value is** (`each_function`'s `arrow`): its arrows, and its
+objects' and arrays' arrows, are functions a drop is its body in; its
+test is no function. Case A: the same code runs, in the same order.
+
+```js
+const onMountInDev = __DEV__
+  ? {
+      useMemo(create) {
+        const prevDispatcher = h();
+        setH(7);
+        try {
+          return create();
+        } finally {
+          setH(prevDispatcher);
+        }
+      },
+    }
+  : null;
+```
+
+Held by `test/lowering-drop-guards.test.ts`, "a guard in a closure of a
+conditional thread-local is its drop's body there", run, a throw too; the
+mutation `conditional-closure-drop-kept`.

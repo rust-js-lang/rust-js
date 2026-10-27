@@ -399,3 +399,84 @@ pub fn rendering() -> bool {
   ).toThrow("thrown");
   expect(lib.rendering()).toBe(false);
 });
+
+// React's DEV dispatchers, `if (__DEV__) { HooksDispatcherOnMountInDEV = {
+// useMemo(create, deps) { const prevDispatcher = ReactSharedInternals.H;
+// try { .. } finally { ReactSharedInternals.H = prevDispatcher; } } } }`,
+// ported: a thread-local of `if __DEV__ { Some(Dispatcher { .. }) } else {
+// None }`. A guard in a closure of either branch is its drop's body there,
+// as in a `const`'s (ADR 0608, amended).
+test("a guard in a closure of a conditional thread-local is its drop's body there", async () => {
+  const { js, dir } = compiled(
+    "drop-in-conditional-thread-local",
+    `use std::cell::Cell;
+
+unsafe extern "Rust" {
+    safe static __DEV__: bool;
+}
+
+thread_local! {
+    static H: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn set_h(h: u32) {
+    H.set(h);
+}
+
+pub fn h() -> u32 {
+    H.get()
+}
+
+struct Restore(u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        set_h(self.0);
+    }
+}
+
+pub struct Dispatcher {
+    pub use_memo: fn(&dyn Fn() -> u32) -> u32,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static ON_MOUNT_IN_DEV: Option<Dispatcher> = if __DEV__ {
+        Some(Dispatcher {
+            use_memo: |create| {
+                let prev_dispatcher = h();
+                set_h(7);
+                let _restore = Restore(prev_dispatcher);
+                create()
+            },
+        })
+    } else {
+        None
+    };
+}
+
+pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
+    ON_MOUNT_IN_DEV.with(|d| d.as_ref().map(|d| (d.use_memo)(create)))
+}
+`,
+  );
+  expect(js).toContain(`      useMemo(create) {
+        const prevDispatcher = h();
+        setH(7);
+        try {
+          return create();
+        } finally {
+          setH(prevDispatcher);
+        }
+      },`);
+  expect(js).not.toContain("_drop");
+  (globalThis as any).__DEV__ = true;
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.memo(() => lib.h()), lib.h()]).toEqual([7, 0]);
+  expect(() =>
+    lib.memo(() => {
+      throw new Error("thrown");
+    }),
+  ).toThrow("thrown");
+  expect(lib.h()).toBe(0);
+});

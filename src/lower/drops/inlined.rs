@@ -329,7 +329,8 @@ type EachFunction<'f> = dyn FnMut(&[Pattern], &mut Vec<Stmt>) + 'f;
 /// methods, and each arrow a `const` is or is made of, a closure coerced
 /// to a `fn`, `const CALL: fn(..) = |f| { .. }`, or a field of a struct
 /// or a tuple of them, React's `callComponent = { react_stack_bottom_frame:
-/// |..| { .. } }`, as a function is.
+/// |..| { .. } }`, or of either value a conditional chooses, as a
+/// function is.
 fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
     fn arrow(value: &mut Expr, f: &mut EachFunction<'_>) {
         match &mut value.kind {
@@ -342,6 +343,12 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
                 }
             }
             ExprKind::Array(items) => items.iter_mut().for_each(|item| arrow(item, f)),
+            // Either value a test chooses, React's DEV dispatchers', `__DEV__
+            // ? { useMemo(..) { .. } } : null`.
+            ExprKind::Cond(_, then, otherwise) => {
+                arrow(then, f);
+                arrow(otherwise, f);
+            }
             _ => {}
         }
     }

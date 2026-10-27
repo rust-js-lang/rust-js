@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_in_const_closure.rs$"],
     snapshots: true,
   },
+  {
+    name: "conditional-closure-drop-kept",
+    breaks: "a guard in a closure of a conditional thread-local, React's DEV dispatchers', keeps its drop a function, `restoreDrop_drop(_restore)` (ADR 0608, amended)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            ExprKind::Cond(_, then, otherwise) => {\n                arrow(then, f);\n",
+    replace: "            ExprKind::Cond(_, then, otherwise) => {\n                let _ = then;\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard in a closure of a conditional thread-local"],
+  },
 ];
