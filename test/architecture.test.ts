@@ -5,8 +5,11 @@ import { join } from "node:path";
 import { root } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
-const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true }).flatMap(entry =>
-  entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
+// In name order, as macOS lists them and Linux, CI's, doesn't: a test that
+// names the files it finds names them in one order everywhere.
+const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
+  .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
 
 // Every source module is in a layer, so a module added later is checked
 // by the rules of its layer, not left out of a list (found in review).
