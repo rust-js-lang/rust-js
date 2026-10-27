@@ -173,7 +173,7 @@ impl<'tcx> CellBorrows<'tcx> {
     fn anything_asks(&self, tcx: TyCtxt<'tcx>, held: Borrow<'tcx>) -> bool {
         match held.cell {
             Cell::Key(key) if self.closed.contains(&key) => {
-                (self.later.iter()).any(|&theirs| matches!(theirs.cell, Cell::Key(_)) && asks(tcx, theirs, held))
+                (self.later.iter()).any(|&theirs| asks(tcx, &self.closed, theirs, held))
             }
             _ => true,
         }
@@ -199,7 +199,7 @@ impl<'tcx> CellBorrows<'tcx> {
     /// Whether running `body`, a closure's, may ask of `held`, a borrow.
     pub(in crate::lower) fn body_asks(&self, tcx: TyCtxt<'tcx>, body: DefId, held: Borrow<'tcx>) -> bool {
         match self.of.get(&body) {
-            Some(Some(summary)) => summary.asks(tcx, held),
+            Some(Some(summary)) => summary.asks(tcx, &self.closed, held),
             _ => self.anything_asks(tcx, held),
         }
     }
@@ -220,12 +220,12 @@ impl<'tcx> CellBorrows<'tcx> {
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         match called(recognition, def_id, args, receiver, &itself) {
             Called::Nothing => false,
-            Called::Cell(theirs) => asks(tcx, theirs, held),
+            Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held),
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
                 (given.any && self.anything_asks(tcx, held))
-                    || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
+                    || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
                     || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
             }
             Called::Any => self.anything_asks(tcx, held),
@@ -289,7 +289,7 @@ impl<'tcx> CellBorrows<'tcx> {
             mutable: false,
         };
         given.any
-            || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
+            || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
             || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
     }
 
@@ -376,7 +376,7 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         match self.of.get(&body) {
             Some(Some(theirs)) => match instantiated(tcx, theirs, args, drops) {
-                Some(theirs) => theirs.asks(tcx, held),
+                Some(theirs) => theirs.asks(tcx, &self.closed, held),
                 None => self.anything_asks(tcx, held),
             },
             _ => self.anything_asks(tcx, held),
@@ -387,8 +387,8 @@ impl<'tcx> CellBorrows<'tcx> {
 impl<'tcx> Summary<'tcx> {
     /// Whether it may ask of `held`: one of its borrows may, or a drop its
     /// caller says may run anything.
-    fn asks(&self, tcx: TyCtxt<'tcx>, held: Borrow<'tcx>) -> bool {
-        !self.drops.is_empty() || self.cells.iter().any(|&theirs| asks(tcx, theirs, held))
+    fn asks(&self, tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, held: Borrow<'tcx>) -> bool {
+        !self.drops.is_empty() || self.cells.iter().any(|&theirs| asks(tcx, closed, theirs, held))
     }
 }
 
@@ -1133,14 +1133,18 @@ fn is_thread_local_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Whether a borrow asks of one `held`: of a cell that may be its, one of
-/// them mutable.
-fn asks<'tcx>(tcx: TyCtxt<'tcx>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
-    (theirs.mutable || held.mutable) && overlap(tcx, theirs.cell, held.cell)
+/// them mutable. `closed`, the keys only their own accesses reach.
+fn asks<'tcx>(tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
+    (theirs.mutable || held.mutable) && overlap(tcx, closed, theirs.cell, held.cell)
 }
 
 /// Whether two cells may be one: a thread-local's and another's of its key,
-/// or of its cell's type; two types alike.
-fn overlap<'tcx>(tcx: TyCtxt<'tcx>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
+/// or of its cell's type, where a reference to its cell may be had: not of
+/// one of `closed`, its cell no `with` lends, which a borrow through a
+/// reference or a field, React's `fiber.return.borrow()` while
+/// `HYDRATION_PARENT_FIBER.set(..)` runs, never is (ADR 0960, amended);
+/// two types alike.
+fn overlap<'tcx>(tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
     let held = |key: DefId| match tcx.type_of(key).instantiate_identity().skip_normalization().kind() {
         ty::Adt(_, args) => args.types().next().map(|cell| tcx.erase_and_anonymize_regions(cell)),
         _ => None,
@@ -1149,7 +1153,7 @@ fn overlap<'tcx>(tcx: TyCtxt<'tcx>, a: Cell<'tcx>, b: Cell<'tcx>) -> bool {
     match (a, b) {
         (Cell::Key(x), Cell::Key(y)) => x == y,
         (Cell::Key(key), Cell::Type(ty)) | (Cell::Type(ty), Cell::Key(key)) => {
-            held(key).is_none_or(|cell| alike(cell, ty))
+            !closed.contains(&key) && held(key).is_none_or(|cell| alike(cell, ty))
         }
         (Cell::Type(x), Cell::Type(y)) => alike(x, y),
     }

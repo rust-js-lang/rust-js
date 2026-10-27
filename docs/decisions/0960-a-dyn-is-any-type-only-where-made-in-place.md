@@ -3,7 +3,7 @@
 Status: Accepted. Amends [0863](0863-a-refcell-of-an-object-is-the-object.md),
 which cells may be one another (`may_be_cell`), and [0397](0397-a-refcell-of-a-dyn.md)'s
 `RefCell<dyn T>` that shares its cell. Fixes #374. Amended (2026-10-27): a thread-local's own
-cell only its key reaches is no other cell of its type.
+cell only its key reaches is no other cell of its type; and either way round, a field's borrow held while the key's runs.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Which borrows are
 checked is rust-js's own judgment of which can meet; a cell no borrow of
@@ -121,3 +121,26 @@ null`. Held by `test/lowering-cell-borrows.test.ts`'s "a thread-local only
 its key reaches is no cell a borrow by reference is of"; mutation
 `closed-key-type-borrow-asks`.
 
+
+## Amendment: either way round, a field's borrow held while the key's runs (hp1, 2026-10-27)
+
+The rule above said a borrow of a cell of its type through a reference
+is never a closed thread-local's own, where the thread-local's borrow is
+the one held. React's popToNextHostParent is the other way round:
+`HYDRATION_PARENT_FIBER.set(fiber.r#return.borrow().clone())` holds the
+field's borrow, `fiber.return`, while the key's `set` borrows its own
+cell. That was taken to be maybe the field's, a `RefCell<Option<Rc<Fiber>>>`
+both, so every `return` field of the crate was a checked cell,
+`$borrow($fieldCell(fiber, "return"), true)`.
+
+**The one rule is now where two cells may be one** (`cell_borrows.rs`,
+`overlap`): a closed key's own cell, which no `with` lends, is no cell
+reached through a reference or a field, whichever borrow is held. The
+filter `anything_asks` kept for it is gone, as `overlap` answers it.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N; a borrow that may
+  meet another is still checked.
+- Held by the corpus case `thread_local_set_of_a_field_borrow.rs` (no
+  `$fieldCell`, run beside native Rust), `test/lowering-cell-borrows.test.ts`
+  "only its key reaches is no cell", and the mutation `own-key-cell-a-fields`,
+  which replaces `closed-key-type-borrow-asks`.
