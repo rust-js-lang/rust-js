@@ -908,6 +908,46 @@ pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &
     }
 }
 
+/// `if (t) { rest } return;`, a unit function's end, of an `if !t { return;
+/// }` the program wrote (`Written::thens`, its `return` written there),
+/// `rest` written after it: `if (!t) { return; } rest`, as written, which
+/// runs the same either way round, and so each such `if` the rest ends with
+/// in turn. React's recordLegacyContextWarning's `if (didWarn.has(..)) {
+/// return; }`, which MIR joins to the function's end (ADR 0879, amended).
+pub(in crate::lower::mir::tidy) fn written_exits(
+    stmts: &mut Vec<Stmt>,
+    thens: &[(js::Span, js::Span)],
+    returns: &[js::Span],
+) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    loop {
+        let [.., if_stmt, exit] = stmts.as_slice() else {
+            return;
+        };
+        let (StmtKind::If(_, rest, None), StmtKind::Return(None)) = (&if_stmt.kind, &exit.kind) else {
+            return;
+        };
+        let Some((_, then)) = thens.iter().find(|(cond, _)| within(cond, if_stmt.span)) else {
+            return;
+        };
+        if !returns.iter().any(|r| within(then, *r)) || !first_written(rest).is_some_and(|at| at >= then.hi) {
+            return;
+        }
+        let exit = stmts.pop().expect("matched");
+        let if_stmt = stmts.pop().expect("matched");
+        let StmtKind::If(test, rest, None) = if_stmt.kind else {
+            unreachable!("matched")
+        };
+        let goes_on = !rest.last().is_some_and(ends);
+        stmts.push(StmtKind::If(test.negated_test(), vec![exit.clone()], None).at(if_stmt.span));
+        stmts.extend(rest);
+        if !goes_on {
+            return;
+        }
+        stmts.push(exit);
+    }
+}
+
 /// `if (a) { x } else if (b) { y } else { z; continue; } break;`, a chain of
 /// `if`s the program wrote without an `else` (`Written::thens`) whose jumps
 /// MIR joined after it, the last `else` the rest, which never goes on: each

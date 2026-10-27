@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-exits-at-the-end-nested",
+    breaks: "an `if` that returns, written before a unit function's end MIR joined its `return` to, stays `if (!t) { rest }`, the rest nested (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        if !returns.iter().any(|r| within(then, *r)) || !first_written(rest).is_some_and(|at| at >= then.hi) {\n",
+    replace: "        if true {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
+  },
+  {
+    name: "written-exits-of-a-then-written",
+    breaks: "an `if` whose `then` the program wrote with the rest in it is a guard, `if (!t) { return; } rest`, not as written (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "|| !first_written(rest).is_some_and(|at| at >= then.hi) {\n",
+    replace: "|| first_written(rest).is_none() {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
+  },
+  {
     name: "loop-returns-past-block-kept",
     breaks: "a loop's `return` MIR joined past a block stays the block's `break`, `bb6: while (..) { .. continue bb6; } return;`, a label upstream hasn't (ADR 0742, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",

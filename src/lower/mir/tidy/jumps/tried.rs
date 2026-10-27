@@ -171,6 +171,37 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
             i += 1;
             continue;
         }
+        // `if (c) { e } else { s } return;` of an `e` written in a `let …
+        // else`'s `else`, first, and the `return;` a unit function ends
+        // with, which `e` goes on to: `if (c) { e return; } s` (ADR 0879,
+        // amended).
+        if let StmtKind::If(_, then, Some(otherwise)) = &stmts[i].kind
+            && let [exit] = &stmts[i + 1..]
+            && matches!(exit.kind, StmtKind::Return(None))
+            && !then.last().is_some_and(ends)
+            && let_else_exit(then, otherwise).is_some_and(|written| !within(written, exit))
+            && written_first(then, otherwise)
+            && fits_in_place(stmts, i, otherwise)
+        {
+            let exit = stmts.pop().expect("matched");
+            let span = stmts[i].span;
+            let StmtKind::If(test, mut then, Some(otherwise)) = stmts.pop().expect("matched").kind else {
+                unreachable!("matched")
+            };
+            let goes_on = !otherwise.last().is_some_and(ends);
+            then.push(exit.clone());
+            let test = Expr {
+                facts: test.facts.with(js::Known::Guard),
+                ..test
+            };
+            stmts.push(StmtKind::If(test, then, None).at(span));
+            stmts.extend(otherwise);
+            if goes_on {
+                stmts.push(exit);
+            }
+            i += 1;
+            continue;
+        }
         let rest = &stmts[i + 1..];
         // A lone jump after an `else` that goes on to it, MIR's, which the
         // `else` ends with.

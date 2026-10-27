@@ -205,26 +205,27 @@ export function App() {
       return;
     }
     const path = $trim(answer);
-    if (path) {
-      const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
-      if (!modulePath.test(path)) {
-        const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
-        setStatus(say(text, "Bad"));
-      } else if (!Project.has(project, path)) {
-        setProject(Project.adding(project, path, live()));
-        const rsplitOnce = $rsplitOnce(path, "/");
-        let file;
-        if (rsplitOnce) {
-          file = rsplitOnce[1];
-        } else {
-          file = path;
-        }
-        const module = $stripSuffix(file, ".rs") ?? file;
-        const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
-        setStatus(say(text, "Plain"));
+    if (!path) {
+      return;
+    }
+    const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
+    if (!modulePath.test(path)) {
+      const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
+      setStatus(say(text, "Bad"));
+    } else if (!Project.has(project, path)) {
+      setProject(Project.adding(project, path, live()));
+      const rsplitOnce = $rsplitOnce(path, "/");
+      let file;
+      if (rsplitOnce) {
+        file = rsplitOnce[1];
       } else {
-        setStatus(say(`${path} already exists.`, "Bad"));
+        file = path;
       }
+      const module = $stripSuffix(file, ".rs") ?? file;
+      const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
+      setStatus(say(text, "Plain"));
+    } else {
+      setStatus(say(`${path} already exists.`, "Bad"));
     }
   }
   function openOutput(path) {

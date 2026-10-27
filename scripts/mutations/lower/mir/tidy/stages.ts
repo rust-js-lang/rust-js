@@ -4,6 +4,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-else-first-unit-end-unseen",
+    breaks: "a unit function that goes on to its end has no `return;` there for its `let … else`s and `if`s that return, each nested in an `else` (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                let goes_on = !b.last().is_some_and(ends);\n",
+    replace: "                let goes_on = false;\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
+  },
+  {
     name: "mir-tidy-branch-values-kept",
     breaks: "`if (c) { x = a; } else { x = b; }` stays two branches, not `x = c ? a : b`",
     file: "src/lower/mir/tidy/stages.rs",

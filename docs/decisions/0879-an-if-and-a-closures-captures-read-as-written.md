@@ -469,3 +469,35 @@ Held by `test/lowering-early-exits.test.ts`, "ifs that each break a loop
 are each written with their break", run, beside an `else if` chain the
 program wrote; the mutations `if-jumps-chained-past-the-first` and
 `if-jumps-of-a-written-else` (`mir/tidy/jumps/tails.ts`).
+
+## Amendment: a unit function's early `return`s MIR joined to its end are each a guard (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements
+run on each path: falling off a function's end is its `return;`.
+
+React's recordLegacyContextWarning, `const strictRoot =
+findStrictRoot(fiber); if (strictRoot === null) { console.error(..);
+return; } if (didWarn.has(fiber.type)) { return; } if (..) { .. }` (c20
+of the port's gaps). Where a `let … else` takes apart a local an `Rc`
+drop follows, MIR joins each `return` to the function's end, and its port
+printed `if (strictRoot == null) { console.error(..); } else { if
+(!didWarn.has(..)) { .. } }`: no `return` to make a guard of, as the
+`returned` pass had taken the one the function ends with away.
+
+**Tidy's `let else first` pass sees a unit function that goes on to its
+end as ending in `return;`** (`stages.rs`), then takes it away again: a
+`let … else`'s `else`, written first, `if (c) { e } else { s }`, is its
+guard, `if (c) { e return; } s` (`tried::let_else_first`); and each `if
+t { return; }` the program wrote without an `else` (`Written::thens`, the
+`return` written in it) before the rest, `if (!t) { rest }`, is `if (t) {
+return; } rest` (`tails::written_exits`), in turn. An `if` whose `then`
+the program wrote with the rest in it stays. The playground's `new_file`'s
+`if path.is_empty() { return; }` is its guard too, as written.
+
+Held by `test/lowering-early-exits.test.ts`, "a unit function's early
+returns joined to its end are each a guard first", run on each path; the
+mutations `let-else-first-at-the-end-nested`,
+`let-else-first-at-the-end-unended` (`mir/tidy/jumps/tried.ts`),
+`written-exits-at-the-end-nested`, `written-exits-of-a-then-written`
+(`mir/tidy/jumps/tails.ts`) and `let-else-first-unit-end-unseen`
+(`mir/tidy/stages.ts`).

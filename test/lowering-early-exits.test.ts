@@ -661,3 +661,69 @@ pub fn walk(work_in_progress: &Rc<Node>, log: &mut Vec<u32>) {
   lib.walk(root as never, log as never);
   expect(log).toEqual([1, 2]);
 });
+
+// React's recordLegacyContextWarning, `const strictRoot =
+// findStrictRoot(fiber); if (strictRoot === null) { console.error(..);
+// return; } if (didWarn.has(fiber.type)) { return; } ..`, of a unit
+// function whose `return`s MIR joins to where it ends, which printed `if
+// (strictRoot == null) { .. } else if (!didWarn.has(..)) { .. }`: each a
+// guard first, as written, the `return;` the function ends with in it
+// (ADR 0879, amended).
+test("a unit function's early returns joined to its end are each a guard first", async () => {
+  const { js, lib } = await compiled("early-returns-at-the-end", `use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub root: Option<Rc<Fiber>>,
+}
+
+fn find_root(fiber: &Fiber) -> Option<Rc<Fiber>> {
+    fiber.root.clone()
+}
+
+pub fn record(fiber: &Fiber, log: &mut Vec<u8>) {
+    let root = find_root(fiber);
+    let Some(root) = root else {
+        log.push(0);
+        return;
+    };
+    if fiber.tag == 3 {
+        return;
+    }
+    if root.tag > 2 {
+        log.push(root.tag);
+    }
+}
+
+pub fn record_within(fiber: &Fiber, log: &mut Vec<u8>) {
+    let root = find_root(fiber);
+    if fiber.tag != 3 {
+        if root.is_none() {
+            return;
+        }
+        log.push(fiber.tag);
+    }
+}
+
+pub fn fiber(tag: u8, root: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, root })
+}
+`);
+  expect(js).toContain(
+    "  if (root == null) {\n    log.push(0);\n    return;\n  }\n  if (fiber.tag === 3) {\n    return;\n  }\n  if (root.tag > 2) {\n",
+  );
+  const log: number[] = [];
+  const [two, five] = [2, 5].map((tag) => lib.fiber(tag as never, null as never));
+  for (const [tag, root] of [
+    [1, null],
+    [3, five],
+    [1, five],
+    [1, two],
+  ] as const) {
+    lib.record(lib.fiber(tag as never, root as never) as never, log as never);
+    lib.recordWithin(lib.fiber(tag as never, root as never) as never, log as never);
+  }
+  expect(log).toEqual([0, 5, 1, 1]);
+  // Not an `if` whose `then` the program wrote with the rest in it.
+  expect(js).toContain("  if (fiber.tag !== 3) {\n    if (root == null) {\n      return;\n    }\n    log.push(fiber.tag);\n  }\n");
+});

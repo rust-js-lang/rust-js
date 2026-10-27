@@ -555,7 +555,20 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
             }),
             pass("let else first", |b, h| {
-                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses))
+                // And where a unit function goes on to its end, as to the
+                // `return;` it ends with, each `if` the program wrote before
+                // it that returns: its guard (ADR 0879, amended).
+                let goes_on = !b.last().is_some_and(ends);
+                if goes_on {
+                    b.push(StmtKind::Return(None).at(js::Span::NONE));
+                }
+                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));
+                if goes_on {
+                    written_exits(b, &h.written.thens, h.returns);
+                    if b.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {
+                        b.pop();
+                    }
+                }
             }),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
             // What its passes emptied, an `if` of nothing, gone, its test kept
