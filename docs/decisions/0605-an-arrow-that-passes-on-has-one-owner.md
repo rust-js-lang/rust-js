@@ -5,7 +5,8 @@ Status: Accepted. Amends [0198](0198-optional-handlers.md) and
 the question with each position's rule, and a binding's `FnOnce` callback
 is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
 library's function is passed on as the crate's is; and a closure that
-captures nothing as a `fn` is the function of the crate's it calls.
+captures nothing as a `fn`, or lent as a `&dyn Fn`, is the function of
+the crate's it only adapts.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -203,6 +204,18 @@ wrote to be its own, as upstream's DEV dispatchers wrap each of theirs,
 A closure whose call's value it doesn't give, `|a| { first(a); }`, a
 binding's call, whose JS may read more than it's given, or a call with
 anything else, stays the arrow too.
+
+**So is one lent as a `&dyn Fn`**, React's `TransitionAwareHostComponent`
+rendered as a component of two parameters, `render(&|_, _|
+transition_aware_host_component())`, which is `render(transitionAwareHostComponent)`:
+the same component each render, as upstream's, where an arrow made at each
+call would be a new one. A reference to a closure of no size compares as
+nothing reliable in Rust either. Not one an `Rc` or a `Box` owns as a
+`dyn Fn`: an `Rc`'s allocation is its own, which `Rc::ptr_eq` compares,
+so two of them are two functions as before. Held by "a closure that
+captures nothing lent as a dyn Fn that only adapts the crate's function is
+the function", run, the `Rc`s apart; mutations `owned-dyn-closure-passed-on`
+and `lent-dyn-closure-kept-arrow` (`mir/rvalues.ts`).
 
 Held by `test/lowering-passed-on.test.ts`, "a closure as a fn that only
 calls the crate's function with what it's given is the function", run;

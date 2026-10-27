@@ -281,3 +281,42 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
   expect(lib.RUNNING.useLog(9)).toBe(undefined);
   expect(() => lib.call(lib.CONTEXT_ONLY)).toThrow("Invalid hook call.");
 });
+
+// React renders TransitionAwareHostComponent as a component, a function of
+// no parameters where a component of two goes; ported, `render(&|_, _|
+// transition_aware_host_component())`. A closure that captures nothing,
+// lent as a `&dyn Fn`, that only adapts a function of the crate's, is the
+// function, as one as a `fn` is: the same component each render, as
+// upstream's. One an `Rc` owns has a pointer of its own, which
+// `Rc::ptr_eq` compares, and stays its arrow (ADR 0605, amended).
+test("a closure that captures nothing lent as a dyn Fn that only adapts the crate's function is the function", async () => {
+  const dir = fixture("dyn-fn-passed-on");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub type Component = dyn Fn(u32, u32) -> u32;
+
+fn render(component: &Component) -> u32 {
+    component(1, 2)
+}
+
+pub fn transition_aware_host_component() -> u32 {
+    7
+}
+
+pub fn render_transition_aware() -> u32 {
+    render(&|_, _| transition_aware_host_component())
+}
+
+pub fn owned_apart() -> bool {
+    let a: Rc<Component> = Rc::new(|_, _| transition_aware_host_component());
+    let b: Rc<Component> = Rc::new(|_, _| transition_aware_host_component());
+    Rc::ptr_eq(&a, &b) || a(1, 2) != b(1, 2)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return render(transitionAwareHostComponent);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.renderTransitionAware()).toBe(7);
+  expect(lib.ownedApart()).toBe(false);
+});

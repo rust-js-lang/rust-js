@@ -564,4 +564,20 @@ export const mutations: Mutation[] = [
     replace: "            return Given::Unknown;\n        }\n        if itself\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
   },
+  {
+    name: "owned-dyn-closure-passed-on",
+    breaks: "a closure an `Rc` owns as a `dyn Fn` is the function it adapts, so two `Rc`s of two closures are `Rc::ptr_eq` (ADR 0605, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        if from.is_ref()\n",
+    replace: "                        if true\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
+  },
+  {
+    name: "lent-dyn-closure-kept-arrow",
+    breaks: "a closure lent as a `&dyn Fn` that only adapts the crate's function stays an arrow, a new component each render (ADR 0605, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
+    replace: "                            && false\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
+  },
 ];

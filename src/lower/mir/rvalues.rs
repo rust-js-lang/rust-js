@@ -443,7 +443,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             return Ok(Value::Fmt(Std::FmtDebug, self.pointee(from), value));
                         }
-                        return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
+                        let made = self.unsize_trait(from, *to, value, span, out)?;
+                        // A closure lent as a `&dyn Fn`, as one as a `fn`:
+                        // the function of the crate's it only adapts with
+                        // what it's given, so captures nothing, React's
+                        // component `|_, _| transition_aware_host_component()`
+                        // (ADR 0605, amended). Not one an `Rc` or a `Box`
+                        // owns, whose pointer is its own.
+                        if from.is_ref()
+                            && matches!(self.pointee(from).kind(), ty::Closure(..))
+                            && let Some(callee) = crate::lower::passed_on::passed_on(
+                                &made,
+                                crate::lower::passed_on::Taker::FnPointer,
+                                self.forwarding(),
+                            )
+                        {
+                            return Ok(Value::Expr(callee));
+                        }
+                        return Ok(Value::Expr(made));
                     }
                     // An array's pointer as its first item's (ADR 0407).
                     PointerCoercion::ArrayToPointer if self.is_handle_pointer(*to) => {
