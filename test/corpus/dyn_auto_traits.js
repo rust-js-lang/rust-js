@@ -19,7 +19,7 @@ function counterDrop_drop(counter) {
   counter[0].value = (counter[0].value + 1) >>> 0;
 }
 
-function keep(_) {}
+function keep() {}
 
 function main() {
   const _boxed = { value: ["boxed"], impl: { $drop: noisyDrop_drop } };

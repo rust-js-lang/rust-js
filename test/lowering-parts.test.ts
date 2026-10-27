@@ -145,3 +145,53 @@ pub fn is_hidden(node: &Node) -> bool {
   const hidden = [{ stateNode: null }, { stateNode: { _visibility: 1 } }, { stateNode: { _visibility: 2 } }];
   expect(hidden.map((n) => lib.isHidden(n))).toEqual([false, false, true]);
 });
+
+// The user's decision (2026-10-27), ADR 0678, amended: React's
+// findNextSibling(child), a visitor its traversal gives three more it
+// doesn't take. A function the crate doesn't export leaves out its last
+// parameters that are `_`, as JS ignores what it's given past its own; an
+// exported one keeps them, its arity its declaration's, and one named `_a`
+// is the program's name.
+test("a private function's last unnamed parameters are left out", async () => {
+  const dir = fixture("unnamed-last-params");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub type Visit<A, B> = dyn Fn(u32, &A, &B) -> bool;
+
+pub fn traverse<A, B>(child: u32, visit: &Visit<A, B>, a: &A, b: &B) -> bool {
+    visit(child, a, b)
+}
+
+fn find_next_sibling(child: u32, _: &(), _: &()) -> bool {
+    child == 1
+}
+
+fn named_too(child: u32, _a: &(), _: &()) -> bool {
+    child == 2
+}
+
+pub fn exported(child: u32, _: &(), _: &()) -> bool {
+    child == 3
+}
+
+pub fn next(child: u32) -> [bool; 3] {
+    [
+        traverse(child, &find_next_sibling, &(), &()),
+        traverse(child, &named_too, &(), &()),
+        traverse(child, &exported, &(), &()),
+    ]
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function findNextSibling(child) {\n");
+  expect(js).toContain("function namedToo(child, a) {\n");
+  expect(js).toContain("export function exported(child, _, _$1) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([1, 2, 3].map((child) => lib.next(child))).toEqual([
+    [true, false, false],
+    [false, true, false],
+    [false, false, true],
+  ]);
+});

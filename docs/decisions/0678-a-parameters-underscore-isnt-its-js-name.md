@@ -102,3 +102,33 @@ keeps `_v`.
   `parameter-closure-bindings-unseen`,
   `parameter-sibling-closure-bindings-seen` and
   `parameter-inner-closure-bindings-unseen`.
+
+## Amendment: a private function's last `_` parameters are left out
+
+The user's decision (2026-10-27). React's findNextSibling(child) is a
+visitor its traversal calls with three more arguments it doesn't take;
+its port, `fn find_next_sibling(child: u32, _: &(), _: &(), _: &())`,
+whose type the visitor's `dyn Fn` asks, printed `function
+findNextSibling(child, _, _$1, _$2)`.
+
+**A function the crate doesn't export, a `fn` that isn't `pub`, leaves
+out its last parameters that are `_`**, named nothing and read nowhere
+(`last_params`): JS ignores what a call gives past a function's own
+parameters, and the crate's calls and its function values give them as
+before. Not of one given anything after them, a generic function's
+dictionaries, `fn id<T: Any>(_: &T)`'s `id(_, TAny)`, or a formatter's
+`options`, whose places they hold; not of a method or a closure, whose
+arity JS may read; and not of an exported function, whose `.d.ts` and
+`length` are its API. A parameter the program named, `_a`, stays, `a`.
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)) to the program,
+which never reads a function's `length`; JS that reads a private
+function's `length` can't reach it.
+
+Held by `test/lowering-parts.test.ts`'s "a private function's last
+unnamed parameters are left out", run in JS; the corpus's `dyn_any.rs`,
+`type_facts.rs` and `closure_type_ids.rs` for the dictionaries after
+them; and the mutations `unnamed-last-params-kept`,
+`unnamed-last-params-of-generics-too` and
+`unnamed-last-params-of-exported-too` (`lower/mir.ts`).
+

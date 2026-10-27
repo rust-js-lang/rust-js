@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     "name": "mir-unread-param-named-temporary",
     "breaks": "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
     "file": "src/lower/mir.rs",
-    "find": "if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
-    "replace": "if false && !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
+    "find": "                if unnamed(&state.locals, local) {\n",
+    "replace": "                if false && unnamed(&state.locals, local) {\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
@@ -330,5 +330,29 @@ export const mutations: Mutation[] = [
     find: "                    && !self.krate.foreign.is_instance(def_id)\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+  },
+  {
+    "name": "unnamed-last-params-kept",
+    "breaks": "React's `function findNextSibling(child, _, _$1, _$2)`, a private function's last `_`s kept",
+    "file": "src/lower/mir.rs",
+    "find": "        {\n            params.pop();\n        }\n",
+    "replace": "        {\n            break;\n        }\n",
+    "tests": ["test/lowering-parts.test.ts", "-t", "a private function's last unnamed parameters"]
+  },
+  {
+    "name": "unnamed-last-params-of-generics-too",
+    "breaks": "a generic function's last `_` is left out though its dictionaries are given after it, `id(_, TAny)` reading the value as its dictionary",
+    "file": "src/lower/mir.rs",
+    "find": "            || tcx.generics_of(def_id).count() != 0\n",
+    "replace": "",
+    "tests": ["test/corpus.test.ts", "-t", "^(dyn_any|type_facts|closure_type_ids).rs$"]
+  },
+  {
+    "name": "unnamed-last-params-of-exported-too",
+    "breaks": "an exported function's last `_`s are left out too, its declaration's arity changed for JS callers",
+    "file": "src/lower/mir.rs",
+    "find": "            || tcx.visibility(def_id).is_public()\n",
+    "replace": "",
+    "tests": ["test/lowering-parts.test.ts", "-t", "a private function's last unnamed parameters"]
   },
 ];

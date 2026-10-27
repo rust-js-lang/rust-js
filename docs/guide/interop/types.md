@@ -2245,6 +2245,11 @@ export function delete$(tasks, at) {
   an `x`, it stays; a closure beside it doesn't count, `|_instance| false`
   beside `|instance, _callback| ..` is `(instance) => false`
   ([ADR 0678](../../decisions/0678-a-parameters-underscore-isnt-its-js-name.md)).
+  A function the crate doesn't export leaves its last `_` parameters out,
+  `fn find_next_sibling(child: u32, _: &(), _: &())`'s `function
+  findNextSibling(child)`, as JS ignores what it's given past them; an
+  exported one, or a generic one given its dictionaries after them, keeps
+  them (ADR 0678, amended).
 - **A `const` keeps its name**, `MAX_SIZE`, as JS writes a constant.
 - **A `thread_local!` is named as a module variable**, `CLICK_COUNT` as
   `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).

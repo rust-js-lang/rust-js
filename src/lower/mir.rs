@@ -341,6 +341,12 @@ impl Locals {
     }
 }
 
+/// Whether `local`, a parameter, is one the program names nothing and reads
+/// nowhere, `_: Ref`: JS's `_`.
+fn unnamed(locals: &Locals, local: Local) -> bool {
+    !locals.user[local] && locals.reads[local] == 0 && !locals.borrowed[local]
+}
+
 /// What a body's writes say of its `Option`s.
 #[derive(Default)]
 struct OptionWrites {
@@ -676,12 +682,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// A C-variadic function's last parameter, its `VaList`, gathers what it's
-    /// given past the rest, `...args`: the array of them (ADR 0428); and so
-    /// does a function's slice marked `#[rust_js::rest]`, the array of what
-    /// JS gives it (ADR 0664); and a closure's last parameter of rest
-    /// arguments as a value, `&dyn js::Rest<T>`, the array of them (ADR 0851).
-    fn gather_rest(&self, mir_body: &mir::Body<'tcx>, params: &mut Vec<js::Pattern>) {
+    /// A function's last parameters, as JS takes them. A C-variadic
+    /// function's last, its `VaList`, gathers what it's given past the rest,
+    /// `...args`: the array of them (ADR 0428); and so does a function's
+    /// slice marked `#[rust_js::rest]`, the array of what JS gives it (ADR
+    /// 0664); and a closure's last parameter of rest arguments as a value,
+    /// `&dyn js::Rest<T>`, the array of them (ADR 0851). And of a function
+    /// the crate doesn't export, given nothing after them, no dictionary nor
+    /// formatter's `options`, those that are `_` are left out, as JS
+    /// ignores what it's given past its own: React's `function
+    /// findNextSibling(child)`, a visitor given three more (ADR 0678,
+    /// amended, the user's decision, 2026-10-27).
+    fn last_params(
+        &self,
+        mir_body: &mir::Body<'tcx>,
+        (locals, options): (&Locals, bool),
+        params: &mut Vec<js::Pattern>,
+    ) {
         let def_id = mir_body.source.def_id();
         let rest_value = (mir_body.args_iter().last())
             .is_some_and(|last| super::bindings::is_rest_value(self.tcx, mir_body.local_decls[last].ty));
@@ -689,6 +706,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(js::Pattern::Name(name)) = params.pop()
         {
             params.push(js::Pattern::Rest(name));
+            return;
+        }
+        let tcx = self.tcx;
+        if options
+            || !def_id.is_local()
+            || tcx.def_kind(def_id) != rustc_hir::def::DefKind::Fn
+            || tcx.visibility(def_id).is_public()
+            || tcx.generics_of(def_id).count() != 0
+            || params.len() != mir_body.arg_count
+        {
+            return;
+        }
+        while let Some(arg) = params.len().checked_sub(1).map(|i| Local::from_usize(i + 1))
+            && unnamed(locals, arg)
+        {
+            params.pop();
         }
     }
 
@@ -803,7 +836,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.locals.declared[local] = true;
                 // One the program names nothing and reads nowhere, `_: Ref`,
                 // is `_`.
-                if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {
+                if unnamed(&state.locals, local) {
                     state.locals.names[local] = String::new();
                 }
                 let name = match state.locals.names[local].as_str() {
@@ -959,7 +992,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.locals.declared[local] = true;
             }
         }
-        self.gather_rest(mir_body, &mut params);
+        self.last_params(mir_body, (&state.locals, options.is_some()), &mut params);
         let start = BasicBlock::from_usize(0);
         let given = self.writer_options(&state, options.as_deref());
         let lowered = self.with_given(given, |cx| cx.mir_tree(&mut state, start))?;

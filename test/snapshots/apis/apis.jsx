@@ -249,7 +249,7 @@ export function Misc() {
   );
 }
 
-function unused(_, _$1) {}
+function unused() {}
 
 /** Putting React on a page, and rendering it on a server, with options. */
 export function Page() {

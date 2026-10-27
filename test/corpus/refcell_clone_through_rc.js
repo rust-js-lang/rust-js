@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function last(_) {}
+function last() {}
 
 function first(n) {
   return n > 1 ? last : undefined;

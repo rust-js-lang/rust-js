@@ -557,7 +557,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0672 A property a chain tests and binds is read once](0672-a-property-a-test-reads-is-read-once.md) *(amended by 0701: a read nothing after reads is gone; amended: the read says it's a getter's, `js::Known`; a getter's read held by MIR isn't written at each use; amended by 0842: a chain after a test of its own isn't joined where it would read a place twice; amended by 0870: a chain's value reads its binding first)*
 - [0676 `js::Kind` tells `undefined` and `null`](0676-kind-tells-undefined-and-null.md)
 - [0677 A weak collection's key is what `js::Kind` holds](0677-a-weak-key-is-what-kind-holds.md) *(amended by 0910: an object or an array is one key, `kind.object()`)*
-- [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function)*
+- [0678 A parameter's leading `_` isn't in its JS name](0678-a-parameters-underscore-isnt-its-js-name.md) *(amended: a closure beside it is no binding of its function; amended: a private function's last `_` parameters are left out (the user's decision))*
 - [0683 An `if` keeps its test and branches as written, and an `else if` stays a chain](0683-an-if-is-as-written-and-an-else-if-stays-a-chain.md)
 - [0684 A `continue` the program wrote is where it wrote it, with its comment](0684-a-continue-the-program-wrote-is-where-it-wrote-it.md) *(amended by 0730: an early `continue` only where the program wrote one; amended: a `for…in`'s guards, with their comments, as React's hydration diffs write them)*
 - [0685 A `let` a loop's body declares is in it, set in a block MIR made](0685-a-let-a-loops-body-declares-is-in-it.md)
