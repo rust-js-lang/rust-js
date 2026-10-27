@@ -309,12 +309,31 @@ fn pairs_fields(e: &mut Expr) {
 /// For the source map: a `return` given the value it returns, at MIR's end
 /// of the body, which the map has nothing of, where that value was written;
 /// an `if`, where its test says, `if c` or its arm's pattern.
-fn source_spans(stmts: &mut [Stmt]) {
+fn source_spans(stmts: &mut Vec<Stmt>) {
     for stmt in stmts.iter_mut() {
         match &stmt.kind {
             StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,
             StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,
             _ => {}
+        }
+    }
+    // Where a tail `None`'s comments end (ADR 0862, amended), a statement printed
+    // there, a nullable function's `return null;`: the comments its, before
+    // it, not a block's of only comments after it (ADR 0753).
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        match (&stmts[i], &stmts[i + 1]) {
+            (comments, next)
+                if matches!(comments.kind, StmtKind::Comments)
+                    && !comments.span.is_none()
+                    && next.span.lo == comments.span.lo
+                    && !matches!(&next.kind, StmtKind::Return(None))
+                    && !matches!(&next.kind, StmtKind::Return(Some(v))
+                        if matches!(v.kind, ExprKind::Undefined | ExprKind::GivenUndefined)) =>
+            {
+                stmts.remove(i);
+            }
+            _ => i += 1,
         }
     }
 }

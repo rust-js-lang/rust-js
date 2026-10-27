@@ -73,3 +73,22 @@ pub fn made(name: &'static str) -> Info {
   expect(lib.track("a" as never, 2 as never)).toEqual({ name: "a", start: 2 });
   expect(lib.first("ab" as never, 1 as never)).toBe(3);
 });
+
+// React's getActivityInstanceFromFiber ends `// TODO: Implement this on
+// ActivityComponent.` then `return null;`. The port's tail `None` of a
+// nullable result is `return null;`, where the `None`'s comments end: they
+// were a block's of only comments there, printed after it (ADR 0862,
+// amended).
+test("a comment before a tail None is before its return", async () => {
+  const { js, lib } = await compiled("comment-before-tail-none", `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn instance(tag: u8) -> Option<u32> {
+    if tag == 31 {
+        return Some(1);
+    }
+    // TODO: Implement this on ActivityComponent.
+    None
+}
+`);
+  expect(js).toContain("  // TODO: Implement this on ActivityComponent.\n  return null;\n}");
+  expect([lib.instance(31 as never), lib.instance(1 as never)]).toEqual([1, null]);
+});

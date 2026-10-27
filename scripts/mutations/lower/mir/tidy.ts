@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "comments-before-unprinted-return-dropped",
+    breaks: "a tail `None`'s comments where its `return;` of nothing goes are taken for a `return null;`'s, and move before the code above them (ADR 0862, amended)",
+    file: "src/lower/mir/tidy.rs",
+    find: "                        if matches!(v.kind, ExprKind::Undefined | ExprKind::GivenUndefined)) =>\n",
+    replace: "                        if false) =>\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given at a function's end"],
+  },
+  {
+    name: "comments-before-tail-return-kept",
+    breaks: "a tail `None`'s comments, where a nullable function's `return null;` is printed, stay a block's of only comments, printed after it (ADR 0444)",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && next.span.lo == comments.span.lo\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment before a tail None"],
+  },
+  {
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",

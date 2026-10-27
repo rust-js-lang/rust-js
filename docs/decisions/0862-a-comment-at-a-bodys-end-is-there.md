@@ -114,3 +114,26 @@ closure or its Err's block is at its block's end", in what a module runs
 when it's loaded and in a function, each run. Mutations
 `clause-block-comments-outside` and `clause-block-starts-at-comments`
 (`to_oxc/statements.ts`).
+
+## Amendment: before a nullable function's `return null;` (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+React's getActivityInstanceFromFiber ends `// TODO: Implement this on
+ActivityComponent.` then `return null;` (c10 of the port's gaps). Its
+port's tail `None`, of a `#[rust_js::nullable]` result, is no `return;`
+that goes but `return null;`, where the `None` is. The marker of where its
+comments end (`StmtKind::Comments`, above) stayed before it, and a block's
+comments of only comments are printed after its code (ADR 0753):
+`return null; // TODO ..`.
+
+**Where a statement is printed at the marker, the comments are that
+statement's, before it**: tidy's `source spans` drops a marker followed by
+a statement that starts where it is, but a `return` of nothing, which
+goes. A tail `None` that prints nothing keeps its marker, as before.
+
+Held by `test/lowering-comments-ends.test.ts`, "a comment before a tail
+None is before its return", run; mutations
+`comments-before-tail-return-kept` and, of a `return;` of nothing, which
+isn't printed, `comments-before-unprinted-return-dropped`
+(`lower/mir/tidy.ts`).
