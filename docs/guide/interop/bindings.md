@@ -212,6 +212,7 @@ are properties ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 | `"node:path#join"` | `import { join } from "node:path"` |
 | `"canvas-confetti#default"` | `import confetti from "canvas-confetti"`, the default export |
 | `"./greet.js#*.polite"` | `import * as greet from "./greet.js"`, then `greet.polite` |
+| `"scheduler#* as Scheduler.unstable_now"` | `import * as Scheduler from "scheduler"`, then `Scheduler.unstable_now` |
 | `"chart.js#Chart.register"` | `import { Chart } from "chart.js"`, then `Chart.register` |
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
@@ -254,6 +255,36 @@ export function celebrate() {
   its bindings and the props they take, `mod ContextMenu`, names it,
   `import * as ContextMenu`
   ([ADR 0256](../../decisions/0256-namespace-import-names.md), amended).
+  Or as its path names it, `* as Name`, as JS's `import * as` writes it,
+  each `link_name` of its `*` naming it the same, or it's an error
+  (ADR 0256, amended):
+
+```rust
+#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_now")]
+fn unstable_now() -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_yieldValue")]
+fn unstable_yield_value(value: u32) {
+    unreachable!()
+}
+
+pub fn yielded(value: u32) -> f64 {
+    unstable_yield_value(value);
+    unstable_now()
+}
+```
+
+```js
+import * as Scheduler from "scheduler";
+
+export function yielded(value) {
+  Scheduler.unstable_yieldValue(value);
+  return Scheduler.unstable_now();
+}
+```
+
 - **`js::import!(f)` loads a binding's module when it's asked for**:
   `js::import!(highlight).await` is `const { highlight } = await
   import("./highlight.js")`, and nothing imports it statically

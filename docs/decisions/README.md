@@ -275,7 +275,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0253 next/link takes a ref and passHref](0253-next-link-ref.md)
 - [0254 A key or ref that does nothing is captured in no order](0254-pure-key-ref.md)
 - [0255 next/router's events](0255-next-router-events.md)
-- [0256 A namespace import is named as the module of its bindings](0256-namespace-import-names.md)
+- [0256 A namespace import is named as the module of its bindings](0256-namespace-import-names.md) *(amended: a namespace named as its path names it, `* as Name` (the user's decision))*
 - [0257 A closure that only spawns an async block is an async arrow](0257-spawning-closure-async-arrow.md)
 - [0258 A promise's then, a module of a component, next/head and the Router](0258-search-bindings.md)
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)

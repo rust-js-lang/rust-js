@@ -12,7 +12,7 @@ use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// What of JS the crate's bodies use (ADRs 0024, 0028).
 pub(super) struct JsUses {
@@ -46,9 +46,15 @@ pub(super) fn js_uses<'tcx>(
     };
     // What a module's `const` of a binding reads (ADR 0633), `import * as
     // react from "react"` of `react.__CLIENT_INTERNALS..`.
+    // What each path of a module's namespace names it, `* as Scheduler`'s.
+    let mut namespaces: HashMap<Export, Vec<(Option<String>, DefId)>> = HashMap::new();
     for (&module, bindings) in &held.modules {
         for binding in bindings.iter().filter(|binding| binding.through.is_none()) {
             if let Some((export, _)) = js_import(&binding.path) {
+                namespaces.entry(export.clone()).or_default().push((
+                    bindings::namespace_name(&binding.path).map(str::to_string),
+                    binding.binding,
+                ));
                 uses.bound_to.entry(export.clone()).or_default().insert(binding.binding);
                 uses.imported.entry(export).or_default().insert(module);
             }
@@ -98,7 +104,11 @@ pub(super) fn js_uses<'tcx>(
                     uses.globals.insert("require".to_string());
                     uses.required.insert(export);
                 }
-                Some((_, Some((export, _)))) => {
+                Some((path, Some((export, _)))) => {
+                    namespaces
+                        .entry(export.clone())
+                        .or_default()
+                        .push((bindings::namespace_name(path).map(str::to_string), def_id));
                     uses.bound_to.entry(export.clone()).or_default().insert(def_id);
                     uses.imported.entry(export).or_default().insert(module);
                 }
@@ -139,6 +149,36 @@ pub(super) fn js_uses<'tcx>(
         for expr in body.thir.exprs.iter() {
             if let ExprKind::Let { pat, .. } = &expr.kind {
                 tested(pat);
+            }
+        }
+    }
+    // A namespace named as `import * as Scheduler` writes it, where each
+    // path of its module names it so; one that names it otherwise, or
+    // doesn't, refused (ADR 0256, amended).
+    for (export, paths) in namespaces {
+        let names: BTreeSet<Option<&str>> = paths.iter().map(|(name, _)| name.as_deref()).collect();
+        match names.iter().collect::<Vec<_>>().as_slice() {
+            [Some(name)] => {
+                uses.named.insert(export, name.to_string());
+            }
+            [None] => {}
+            _ => {
+                let at = paths
+                    .iter()
+                    .find(|(name, _)| *name != paths[0].0)
+                    .map_or(paths[0].1, |(_, id)| *id);
+                let written: Vec<String> = (names.iter())
+                    .map(|name| name.map_or_else(|| "with no name".to_string(), |name| format!("as `{name}`")))
+                    .collect();
+                tcx.dcx().span_err(
+                    tcx.def_span(at),
+                    format!(
+                        "rust-js: `{}` is imported {}: each `link_name` of its `*` names it the same, `{}#* as Name.path` (ADR 0256, amended)",
+                        export.0,
+                        written.join(" and "),
+                        export.0
+                    ),
+                );
             }
         }
     }

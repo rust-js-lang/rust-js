@@ -1231,3 +1231,41 @@ export { half, double as unstable_double } from "./runtime.js";
   expect([lib.area(circle), lib.twice(circle), lib.__COMPILER_RUNTIME.double(2), lib.cache(1), lib.unstable_cache(2)]).toEqual([9, 18, 4, 2, 3]);
   expect([lib.unstable_double(3), lib.half(3), lib.math.pi]).toEqual([6, 1.5, 3]);
 });
+
+// The user's decision (2026-10-27), ADR 0256, amended: React's reconciler
+// Scheduler.js, `import * as Scheduler from 'scheduler'; export const now =
+// Scheduler.unstable_now;`. A `link_name`'s `* as Name` names the namespace
+// import; each of its module's must name it the same, or it's an error.
+test("a namespace import is named as its link_name's * as names it", () => {
+  const dir = fixture("namespace-named");
+  const source = (second: string) => `#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_now")]
+fn unstable_now() -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "${second}")]
+fn unstable_yield_value(value: u32) {
+    let _ = value;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::name = "now")]
+pub static NOW: fn() -> f64 = unstable_now;
+
+pub fn yielded(value: u32) {
+    unstable_yield_value(value);
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source("scheduler#* as Scheduler.unstable_yieldValue"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import * as Scheduler from "scheduler";\n');
+  expect(js).toContain("export const now = Scheduler.unstable_now;\n");
+  expect(js).toContain("  Scheduler.unstable_yieldValue(value);\n");
+  for (const second of ["scheduler#*.unstable_yieldValue", "scheduler#* as Sched.unstable_yieldValue"]) {
+    writeFileSync(join(dir, "lib.rs"), source(second));
+    expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+      "each `link_name` of its `*` names it the same, `scheduler#* as Name.path`",
+    );
+  }
+});

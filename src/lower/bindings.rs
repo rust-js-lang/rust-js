@@ -13,9 +13,11 @@ use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
 mod effects;
+mod imports;
 mod nullable;
 mod rest_values;
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
+pub(super) use imports::{Export, js_import, module_binding, namespace_name};
 pub(super) use nullable::{
     is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init,
     nullable_items, nullable_local, nullable_option, nullable_params, nullable_result, of_type_parameter,
@@ -1462,35 +1464,3 @@ const STEPS_METHODS: &[&str] = &[
     "ownNth",
     "ownLast",
 ];
-
-/// What a JS module exports under a name, `("node:path", "join")`, or
-/// `"default"` or `"*"` for its default export or the module itself.
-pub(super) type Export = (String, String);
-
-/// An import from a JS module (ADR 0028): `"@codemirror/state#EditorState.create"`
-/// is the export `("@codemirror/state", "EditorState")`, then the rest of
-/// the path, `".create"`. The last `#` splits them, since a module's name
-/// can start with one (Node's `#internal`).
-pub(super) fn js_import(path: &str) -> Option<(Export, &str)> {
-    let (from, path) = path.rsplit_once('#')?;
-    let export = path.split('.').next().unwrap_or_default();
-    (!from.is_empty() && !export.is_empty()).then(|| ((from.to_string(), export.to_string()), &path[export.len()..]))
-}
-
-/// What a default or namespace import is called: after its module, as in
-/// ReScript. `./greet.js` is `greet`, and `@codemirror/lang-rust` is `langRust`.
-pub(super) fn module_binding(from: &str) -> String {
-    let file = from.rsplit(['/', ':']).find(|s| !s.is_empty()).unwrap_or_default();
-    let stem = file.split('.').next().unwrap_or_default();
-    // Its words, `lang` and `rust`, joined as a Rust name's are in JS.
-    let words: Vec<&str> = stem
-        .split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '$')
-        .filter(|w| !w.is_empty())
-        .collect();
-    let name = super::camel_case(&words.join("_"));
-    if name.is_empty() || name.starts_with(|c: char| c.is_ascii_digit()) {
-        format!("_{name}")
-    } else {
-        name
-    }
-}

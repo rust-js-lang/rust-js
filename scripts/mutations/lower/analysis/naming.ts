@@ -373,4 +373,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|_| true);\n",
     tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
   },
+  {
+    name: "namespace-names-unchecked",
+    breaks: "a module's `*` named `Scheduler` by one `link_name` and otherwise, or not at all, by another is one of them, not refused",
+    file: "src/lower/analysis/naming.rs",
+    find: "            [Some(name)] => {\n",
+    replace: "            [.., Some(name)] => {\n",
+    tests: ["test/modules.test.ts", "-t", "a namespace import is named as its link_name"],
+  },
 ];

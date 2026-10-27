@@ -89,3 +89,32 @@ props `jsx!` writes of; and the mutations
 `namespace-of-any-holding-module`, `namespace-module-of-other-items`,
 `namespace-module-of-another-namespace`, `namespace-module-of-props-unread`,
 `namespace-module-written-impls-unread` and `namespace-module-jsx-macro-unread`.
+
+## Amendment: a namespace named as its path names it, `* as Name`
+
+The user's decision (2026-10-27). React's reconciler's Scheduler.js
+writes `import * as Scheduler from 'scheduler'; export const now =
+Scheduler.unstable_now;`; its port's `link_name =
+"scheduler#*.unstable_now"` printed `import * as scheduler`, named after
+the module, as this decision names it: nothing in the Rust said
+`Scheduler`.
+
+**`link_name`'s path may name the namespace as JS's `import * as`
+writes it: `"scheduler#* as Scheduler.unstable_now"`** is the export
+`*` named `Scheduler`, then `.unstable_now` (`bindings::js_import`,
+`namespace_name`). One form, `module#*.path`, extended with JS's own
+spelling, not an attribute beside it. **Each `link_name` of the
+module's `*` names it the same, or it's an error** naming the form:
+`scheduler` imported with no name and as `Scheduler`, or as two names,
+is refused, as one import has one name (`naming::js_uses`). A name the
+program gives is the import's, before this decision's of a file, which
+the module's other names still yield to as any import's does.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): an import's local
+name is the program's to choose.
+
+Held by `test/modules.test.ts`'s "a namespace import is named as its
+link_name's `* as` names it", and the guide's example, compiled; and
+the mutations `namespace-name-unread`, `namespace-names-unchecked`
+(`lower/bindings.ts`, `lower/analysis/naming.ts`).
+
