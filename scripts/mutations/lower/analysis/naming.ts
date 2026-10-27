@@ -381,4 +381,12 @@ export const mutations: Mutation[] = [
     replace: "            [.., Some(name)] => {\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as its link_name"],
   },
+  {
+    name: "use-group-named-each-the-same",
+    breaks: "a `#[rust_js::name]` on a group `use` names each of its imports the same, `ImmediatePriority as SchedulerPriority, NormalPriority as SchedulerPriority$1`, not an error",
+    file: "src/lower/analysis/naming.rs",
+    find: "                && bindings::given_name(tcx, item.owner_id.to_def_id()).is_some()\n",
+    replace: "                && false\n",
+    tests: ["test/modules.test.ts", "-t", "a use of one name is imported by its rust_js::name"],
+  },
 ];

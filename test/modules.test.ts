@@ -825,6 +825,55 @@ test("two uses naming one item apart are refused", () => {
   expect(built.stderr.toString()).toContain("imports `client` once, by one name, and another `use` names it `first`; name it once");
 });
 
+// A `#[rust_js::name]` on a `use` of one name is its import's name, React's
+// `import { ImmediatePriority as ImmediateSchedulerPriority }`; one without
+// is cased as the item, a thread-local of a primitive as Rust writes it.
+// On a group or a glob, which it would name each the same, it's refused.
+test("a use of one name is imported by its rust_js::name", async () => {
+  const dir = fixture("use-named");
+  const priorities = `pub mod priorities {
+    thread_local! {
+        #[cfg_attr(rust_js, rust_js::name = "ImmediatePriority")]
+        pub static IMMEDIATE_PRIORITY: u8 = 1;
+        #[cfg_attr(rust_js, rust_js::name = "NormalPriority")]
+        pub static NORMAL_PRIORITY: u8 = 3;
+    }
+}
+`;
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `${priorities}
+#[cfg_attr(rust_js, rust_js::name = "ImmediateSchedulerPriority")]
+use priorities::IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY;
+use priorities::NORMAL_PRIORITY as NORMAL_SCHEDULER_PRIORITY;
+
+pub fn both() -> u8 {
+    IMMEDIATE_SCHEDULER_PRIORITY.with(|&p| p) + NORMAL_SCHEDULER_PRIORITY.with(|&p| p)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("ImmediatePriority as ImmediateSchedulerPriority,");
+  expect(js).toContain("NormalPriority as NORMAL_SCHEDULER_PRIORITY,");
+  expect((await import(join(dir, "lib.js"))).both()).toBe(4);
+  const group = fixture("use-group-named");
+  writeFileSync(
+    join(group, "lib.rs"),
+    `${priorities}
+#[cfg_attr(rust_js, rust_js::name = "SchedulerPriority")]
+use priorities::{IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY, NORMAL_PRIORITY as NORMAL_SCHEDULER_PRIORITY};
+
+pub fn both() -> u8 {
+    IMMEDIATE_SCHEDULER_PRIORITY.with(|&p| p) + NORMAL_SCHEDULER_PRIORITY.with(|&p| p)
+}
+`,
+  );
+  const built = Bun.spawnSync([compiler, join(group, "lib.rs"), "-o", join(group, "lib.js")], { stderr: "pipe" });
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("`#[rust_js::name]` names the import of a `use` of one name");
+});
+
 // A module of re-exports only is a file of them, as react.dev's
 // Sidebar/index is `export {SidebarLink} from './SidebarLink'`.
 test("a module of only pub uses is a file of re-exports", async () => {

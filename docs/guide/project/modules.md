@@ -120,7 +120,14 @@ item's own name is, a thread-local's camelCase, `use shared::object_is::OBJECT_I
 as IS;`'s `import is`, a function's camelCase as any name is: another module's function, a library's item, a module's default
 too, `import queueMacrotask from "../shared/enqueueTask.js"`, and a
 binding's export, `import { useId as makeId } from "react"`; by its
-`#[rust_js::name]` where it has one. The module reads it by that name;
+`#[rust_js::name]` where it has one. A `use` of one name with a
+`#[rust_js::name]` of its own is imported by that, React's
+`#[cfg_attr(rust_js, rust_js::name = "ImmediateSchedulerPriority")] use
+scheduler::IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY;`'s
+`import { ImmediatePriority as ImmediateSchedulerPriority }`; on a group
+or a glob, which it would name each the same, it's an error
+([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md),
+amended). The module reads it by that name;
 every other module keeps its own. Two `use`s naming one item apart in
 one module are an error, as its file imports it once
 ([ADR 0202](../../decisions/0202-imports-named-around-importers.md),

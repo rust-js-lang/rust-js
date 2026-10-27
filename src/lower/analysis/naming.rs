@@ -424,6 +424,20 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
 pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool {
     let mut failed = false;
     for &module in modules {
+        // A `#[rust_js::name]` names the import of a `use` of one name; of
+        // a group or a glob it would name each the same.
+        for id in tcx.hir_module_items(module).free_items() {
+            let item = tcx.hir_item(id);
+            if let ItemKind::Use(_, UseKind::ListStem | UseKind::Glob) = item.kind
+                && bindings::given_name(tcx, item.owner_id.to_def_id()).is_some()
+            {
+                let message = "rust-js: `#[rust_js::name]` names the import of a `use` of one name, \
+                    `use priorities::IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY;`: \
+                    write a `use` of its own for the name it gives";
+                tcx.dcx().span_err(item.span, message);
+                failed = true;
+            }
+        }
         let mut first: HashMap<DefId, String> = HashMap::new();
         for (def_id, alias, span) in use_renames(tcx, module) {
             match first.get(&def_id) {

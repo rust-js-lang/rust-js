@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted. Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -185,3 +185,26 @@ attribute, one meaning, the name the `use` gives in JS.
   `reexport-comments-unplaced`), `to_oxc/statements.ts`
   (`namespace-reexport-as-a-name`), `analysis/naming.ts`
   (`use-name-attribute-ignored`).
+
+## Amendment: a `#[rust_js::name]` names a `use` of one name (c23b, the user's decision, 2026-10-27)
+
+React's ReactFiberWorkLoop imports Scheduler's priorities by names of its
+own, `import {ImmediatePriority as ImmediateSchedulerPriority} from
+'./Scheduler'`. The port's `use scheduler::IMMEDIATE_PRIORITY as
+IMMEDIATE_SCHEDULER_PRIORITY;` is imported as cased, a thread-local of a
+primitive as Rust writes it, `ImmediatePriority as
+IMMEDIATE_SCHEDULER_PRIORITY`. The user decided: **a `#[cfg_attr(rust_js,
+rust_js::name = "ImmediateSchedulerPriority")]` on a `use` of one name
+names its import**, as this decision's private `use .. as` already read
+it; otherwise the casing rule applies.
+
+What was missing is a `use` of more than one name: `#[rust_js::name]` on
+`use priorities::{A as X, B as Y};`, a group, or a glob, which rustc gives
+each import it makes, named each the same, `ImmediatePriority as
+SchedulerPriority, NormalPriority as SchedulerPriority$1`. **That's an
+error now** (`analysis/naming.rs`, `refuse_two_names`), saying to write a
+`use` of its own for the name it gives: the attribute names one import.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): none, a name.
+- Held by `test/modules.test.ts`, "a use of one name is imported by its
+  rust_js::name", and the mutation `use-group-named-each-the-same`.
