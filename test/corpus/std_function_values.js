@@ -10,7 +10,6 @@ import {
   $debugStr,
   $displayF64,
   $f64Max,
-  $orInsertWith,
   $parseInt,
   $unwrap,
 } from "@rust-js/runtime";
@@ -72,7 +71,10 @@ function main() {
   const groups = new Map();
   for (let n = 1; n < 6; n++) {
     const key = n % 2 === 0;
-    $orInsertWith(groups, key, () => []).push(n);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(n);
   }
   console.log(
     `[${$unwrap(groups.get(true), "no entry found for key").join(", ")}] [${$unwrap(groups.get(false), "no entry found for key").join(", ")}]`,

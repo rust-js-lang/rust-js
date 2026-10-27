@@ -15,7 +15,10 @@ function main() {
   const groups = new Map();
   for (let n = 1; n < 6; n++) {
     const key = n % 2 === 0;
-    $orInsertWith(groups, key, () => []).push(n);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(n);
   }
   const lens = new Map();
   $orInsertWith(lens, "abc", () => 3);

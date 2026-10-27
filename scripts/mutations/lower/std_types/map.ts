@@ -530,4 +530,22 @@ export const mutations: Mutation[] = [
     replace: "    js::each_item_block_mut(&mut items[..0], &mut |stmts| {\n",
     tests: ["test/lowering-collections.test.ts", "-t", "closure set at load"],
   },
+  {
+    name: "inserted-entries-helper",
+    breaks: "`m.entry(k).or_default().push(v)` stays `$orInsertWith(m, k, () => []).push(v)`, not `if (!m.has(k)) { m.set(k, []); } m.get(k).push(v);` (ADR 0059, amended)",
+    file: "src/lower/std_types/map.rs",
+    find: "        let Some((map, key, made)) = made else {\n",
+    replace: "        let Some((map, key, made)) = made.filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^entry_default_pushed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "inserted-entry-value-alone",
+    breaks: "a count's `const current = $orInsert(m, k, 0)` is its map's steps too, `if (!m.has(k)) { .. } const current = m.get(k);`, three statements for one (ADR 0059, amended)",
+    file: "src/lower/std_types/map.rs",
+    find: "            .filter(|e| !matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_some()))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^entry_default_pushed.rs$"],
+    snapshots: true,
+  },
 ];

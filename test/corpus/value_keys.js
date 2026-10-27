@@ -9,7 +9,6 @@ import {
   $mutGet,
   $next,
   $orInsert,
-  $orInsertWith,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -75,9 +74,18 @@ function main() {
 
   // An `Option` key, `None` among them.
   const byParent = new $KeyMap();
-  $orInsertWith(byParent, undefined, () => []).push("root");
-  $orInsertWith(byParent, 1, () => []).push("leaf");
-  $orInsertWith(byParent, undefined, () => []).push("other root");
+  if (!byParent.has(undefined)) {
+    byParent.set(undefined, []);
+  }
+  byParent.get(undefined).push("root");
+  if (!byParent.has(1)) {
+    byParent.set(1, []);
+  }
+  byParent.get(1).push("leaf");
+  if (!byParent.has(undefined)) {
+    byParent.set(undefined, []);
+  }
+  byParent.get(undefined).push("other root");
   const value$6 = byParent.get(undefined);
   const value$7 = byParent.get(1);
   console.log(

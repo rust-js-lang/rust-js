@@ -11,7 +11,6 @@ import {
   $dedup,
   $formatted,
   $max,
-  $orInsertWith,
   $pad,
   $parseInt,
   $pretty,
@@ -138,7 +137,10 @@ const Inventory = {
   byCategory(inventory) {
     const groups = new Map();
     for (const item of Array.from(inventory.items.values())) {
-      $orInsertWith(groups, item.category, () => []).push(item);
+      if (!groups.has(item.category)) {
+        groups.set(item.category, []);
+      }
+      groups.get(item.category).push(item);
     }
     for (const items of $sortedEntries(groups, (a, b) =>
       $cmpIn(["Tools", "Garden", "Kitchen"], a, b),

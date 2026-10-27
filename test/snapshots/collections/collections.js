@@ -13,7 +13,6 @@ import {
   $insert,
   $mutGet,
   $orInsert,
-  $orInsertWith,
   $rangeNext,
   $remove,
   $retain,
@@ -285,7 +284,10 @@ export function grouped(n) {
   const groups = new Map();
   for (let i = 1; i < n; i++) {
     const key = i % 3;
-    $orInsertWith(groups, key, () => []).push(i);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(i);
   }
   const copy = new Map(Array.from(groups).map(([key, value]) => [key, value.slice()]));
   const zero = groups.get(0);

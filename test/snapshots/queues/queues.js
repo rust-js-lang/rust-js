@@ -15,7 +15,6 @@ import {
   $heapPush,
   $heapSorted,
   $index,
-  $orInsertWith,
   $pop,
   $range,
   $removeOpt,
@@ -273,7 +272,10 @@ export function report() {
   const words = new Map();
   for (const w of "the quick brown fox jumps over the lazy dog".split(" ")) {
     const key = Array.from(w).length;
-    $orInsertWith(words, key, () => []).push(w);
+    if (!words.has(key)) {
+      words.set(key, []);
+    }
+    words.get(key).push(w);
   }
   const lens = Array.from(words.keys());
   $sortUnstable(lens, (a, b) => $cmp(b, a) < 0, "network");

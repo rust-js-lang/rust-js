@@ -1042,7 +1042,8 @@ test("HashMap and HashSet are a JS Map and Set", async () => {
   expect(js).toContain("const current = $orInsert(counts, word, 0);\n    counts.set(word, (current + 1) >>> 0);");
   // A value that's used is the old one; one that isn't is plain `set`.
   expect(js).toContain('  m.set("a", n);\n  const old = $insert(m, "a", (n + 1) >>> 0);');
-  expect(js).toContain("$orInsertWith(groups, key, () => []).push(i);");
+  // A value put in where it's missing, then used: its map's own steps.
+  expect(js).toContain("if (!groups.has(key)) {\n      groups.set(key, []);\n    }\n    groups.get(key).push(i);");
   expect(js).toContain("const copy = new Map(Array.from(groups).map(([key, value]) => [key, value.slice()]));");
 });
 

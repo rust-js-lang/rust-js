@@ -12,7 +12,6 @@ import {
   $lazyScan,
   $lazyZip,
   $maxBy,
-  $orInsertWith,
   $partialCmp,
   $sortedEntries,
   $toFixed,
@@ -48,7 +47,10 @@ function main() {
   const all = sales();
   const byRegion = new Map();
   for (const s of all) {
-    $orInsertWith(byRegion, s.region, () => []).push(s);
+    if (!byRegion.has(s.region)) {
+      byRegion.set(s.region, []);
+    }
+    byRegion.get(s.region).push(s);
   }
   for (const [region, list] of $sortedEntries(byRegion, $cmp)) {
     const revenue = list.map((s) => s.units * s.price).reduce((a, b) => a + b, -0);

@@ -12,7 +12,6 @@ import {
   $next,
   $nextSome,
   $orInsert,
-  $orInsertWith,
   $toBytes,
   $traitImpl,
 } from "@rust-js/runtime";
@@ -24,7 +23,10 @@ export function entry() {
 function group(iter, KHash, KPartialEq, KMap) {
   const map = new KMap();
   for (const [k, v] of iter) {
-    $orInsertWith(map, k, () => []).push(v);
+    if (!map.has(k)) {
+      map.set(k, []);
+    }
+    map.get(k).push(v);
   }
   return map;
 }

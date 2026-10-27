@@ -14,7 +14,6 @@ import {
   $iter,
   $lines,
   $maxByKey,
-  $orInsertWith,
   $pad,
   $parseBool,
   $parseChar,
@@ -118,7 +117,10 @@ export function table(input) {
   }
   const byTeam = new Map();
   for (const r of rows) {
-    $orInsertWith(byTeam, r.team, () => []).push(r);
+    if (!byTeam.has(r.team)) {
+      byTeam.set(r.team, []);
+    }
+    byTeam.get(r.team).push(r);
   }
   for (const [team, members] of $sortedEntries(byTeam, $cmp)) {
     const total = members.map((r) => r.score).reduce((a, b) => (a + b) >>> 0, 0);

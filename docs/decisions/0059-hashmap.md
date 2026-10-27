@@ -1,7 +1,7 @@
 # 0059. `HashMap` is a JS `Map`, `HashSet` a `Set`, keyed by value
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md). Extended by
-[0121](0121-value-keys.md): a key that compares by value, a struct or a tuple.
+[0121](0121-value-keys.md): a key that compares by value, a struct or a tuple. Amended: a value put in where it's missing, then used, is the map's own steps (below).
 
 Case: A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -138,3 +138,23 @@ it's `get`'s `Some`, boxed (ADR 0051), unwrapped**:
 other, as before. Held by the corpus case `map_index_of_options` and the
 mutation `map-index-of-options-unboxed`.
 
+
+## Amendment: a value put in where it's missing, then used, is the map's own steps (2026-10-27)
+
+`groups.entry(key).or_default().push(v)`, the grouping idiom, printed
+`$orInsertWith(groups, key, () => []).push(v)`, a helper of what JS
+writes as three steps. **Where it's the first its statement does, and its
+map and key read the same each time, it's those steps** (`std_types/map.rs`,
+`inserted_entries`, tidy's): `if (!groups.has(key)) { groups.set(key,
+[]); } groups.get(key).push(v);`, the helper's own, in its order. Of
+`or_insert_with(f)` where `f` is one value; of `or_insert(v)` where `v`
+only reads variables, which Rust evaluates whether or not it's put in.
+A maker that does more, `|| { made += 1; Vec::new() }`, one given drops
+(ADRs 0321, 0467, 0469), and a count's `const current = $orInsert(..)`,
+its statement's value alone, keep the helper.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+- Held by the corpus case `entry_default_pushed.rs`, `test/compiler.test.ts`
+  "HashMap and HashSet are a JS Map and Set", and the mutations
+  `inserted-entries-helper` and `inserted-entry-value-alone`
+  (`scripts/mutations/lower/std_types/map.ts`).
