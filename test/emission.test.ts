@@ -61,7 +61,9 @@ test("source map points from fib.js back into fib.rs", async () => {
   const probes: [string, string][] = [
     ["export function fib(", "pub fn fib("],
     ["fib(n - 1)", "fib(n - 1)"],
-    ["while (i < n)", "while i < n"],
+    // A `while` that steps its own variable last is a `for` (ADR 0974),
+    // whose test is the `while`'s.
+    ["i < n; i++)", "i < n"],
     ["if (i === n)", "if i == n"],
     ["(((x * 3) | 0) - 7) | 0", "x * 3 - 7"],
     ["$div(a, b, -2147483648) | 0", "a / b"],
