@@ -72,30 +72,35 @@ test("a string written across lines keeps its lines", async () => {
 // React's ReactPerformanceTrackProperties writes `const UNCHANGED =
 // ' \xa0';`, a figure space one can't tell from a space: a space but
 // `' '`, and a mark one can't see, is written as its escape, in a string
-// and a template, as oxc writes `\xA0` (ADR 0732). What joins an emoji's
-// parts, or varies one, is as it is; and a U+FFFD is itself.
+// and a template, its hex in lowercase, `\xa0`, as upstream writes it (ADR
+// 0732, amended): `\x` below U+0100, in a string as in a template. What
+// joins an emoji's parts, or varies one, is as it is; and a U+� is
+// itself.
 test("a space one can't tell from ' ' is written as its escape", async () => {
   const dir = fixture("unseen-escapes");
   writeFileSync(join(dir, "lib.rs"), `pub const UNCHANGED: &str = "\\u{2007}\\u{a0}";
-pub const MARKS: &str = "a\\u{200b}b\\u{feff}c\\u{fffd}d";
+pub const MARKS: &str = "a\\u{200b}b\\u{feff}c\\u{fffd}d\\u{ad}";
 pub const FAMILY: &str = "👨\\u{200d}👩 ❤\\u{fe0f}";
+pub const QUOTED: &str = "\\u{200b}\\"q\\" \\\\ \\t\\n\\r\\u{1}\\u{2028}";
 
 pub fn line(indent: usize, key: &str) -> String {
-    format!("{UNCHANGED}{}{key}\\u{2007}\\u{3000}", "\\u{a0}".repeat(indent))
+    format!("{UNCHANGED}{}{key}\\u{2007}\\u{3000}\\u{ad}", "\\u{a0}".repeat(indent))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('export const UNCHANGED = "\\u2007\\xA0";');
-  expect(js).toContain('export const MARKS = "a\\u200Bb\\uFEFFc�d";');
+  expect(js).toContain('export const UNCHANGED = "\\u2007\\xa0";');
+  expect(js).toContain('export const MARKS = "a\\u200bb\\ufeffc�d\\xad";');
   expect(js).toContain('export const FAMILY = "👨‍👩 ❤️";');
-  expect(js).toContain("${key}\\u2007\\u3000`;");
+  expect(js).toContain("${key}\\u2007\\u3000\\xad`;");
+  expect(js).toContain(`export const QUOTED = '\\u200b"q" \\\\ \\t\\n\\r\\x01\\u2028';`);
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.UNCHANGED, lib.MARKS, lib.FAMILY, lib.line(1, "k")]).toEqual([
+  expect([lib.UNCHANGED, lib.MARKS, lib.FAMILY, lib.line(1, "k"), lib.QUOTED]).toEqual([
     " \xa0",
-    "a​b﻿c�d",
+    "a​b﻿c�d\xad",
     "👨‍👩 ❤️",
-    " \xa0\xa0k 　",
+    " \xa0\xa0k 　\xad",
+    "​\"q\" \\ \t\n\r\u0001 ",
   ]);
 });
 
@@ -1208,7 +1213,7 @@ pub fn room(n: usize) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return prefix + "\\xA0\\xA0".repeat(indent) + name;\n');
+  expect(js).toContain('  return prefix + "\\xa0\\xa0".repeat(indent) + name;\n');
   expect(js).toContain("  return $byteLen(`${text}!`.repeat(start));\n");
   expect(js).toContain("  $roomFor(n, 4);\n");
   expect(js.match(/\$roomFor\(/g)).toHaveLength(1);

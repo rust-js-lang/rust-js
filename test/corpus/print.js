@@ -21,6 +21,6 @@ function main() {
   console.log("100% {literal} %s %d");
   const name = "x";
   console.log(`${$pad(name, 5, ">")}|${"12".padEnd(4)}|${$pad("mid", 7, "^")}|`);
-  console.log('tab	quote" backslash\\ unicode é 🦀');
+  console.log('tab\tquote" backslash\\ unicode é 🦀');
 }
 //# sourceMappingURL=case.js.map

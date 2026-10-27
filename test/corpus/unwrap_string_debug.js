@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function main() {
-  const r = { TAG: "Err", _0: 'bell \x07, tab 	, quote "' };
+  const r = { TAG: "Err", _0: 'bell \x07, tab \t, quote "' };
   console.log(`${$unwrapOk(r)}`);
 }
 //# sourceMappingURL=case.js.map

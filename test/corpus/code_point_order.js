@@ -98,7 +98,7 @@ function main() {
   console.log(`${crab > "z"} ${"m" < crab} ${"apple" < "banana"}`);
 
   // trim() by White_Space.
-  for (const s of ["\u0085hi\u0085", "\uFEFFhi\uFEFF", " 	 hi \n", "\u3000hi\u2028"]) {
+  for (const s of ["\x85hi\x85", "\ufeffhi\ufeff", " \t hi \n", "\u3000hi\u2028"]) {
     console.log(`${$debugStr($trim(s))} ${$debugStr($trimStart(s))} ${$debugStr($trimEnd(s))}`);
   }
 }

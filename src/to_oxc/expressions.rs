@@ -282,25 +282,17 @@ impl<'a> Cx<'a> {
         }
     }
 
-    /// `"text"`, each code point `unseen` gives as its escape, `"\u2007"`
-    /// (ADR 0732): as oxc writes a lone surrogate's, `\u{FFFD}` and its
-    /// four digits, and a U+FFFD so its own `fffd`. What oxc escapes
-    /// itself, a control's and U+00A0's `\xA0`, it escapes.
+    /// `"text"`, each code point `unseen` gives, and each control, as its
+    /// escape, `"\u2007\xa0"` (ADR 0732, amended): where there's one, the
+    /// literal as its source, `string_raw`, each escape spelled as a
+    /// template's (`escape`), its hex in lowercase, which oxc's own `\xA0`
+    /// isn't, and a control one can't see escaped, which oxc writes as it is.
     fn string_literal(&self, sp: Span, text: &str) -> Expression<'a> {
         let b = &self.b;
-        let escaped = |c: char| unseen(c) && !c.is_ascii_control() && c != '\u{A0}';
-        if !text.chars().any(escaped) {
+        if !text.chars().any(|c| c.is_control() || unseen(c)) {
             return Expression::new_string_literal(sp, self.allocator.alloc_str(text), None, b);
         }
-        let mut value = String::with_capacity(text.len() + 8);
-        for c in text.chars() {
-            match c {
-                '\u{FFFD}' => value.push_str("\u{FFFD}fffd"),
-                c if escaped(c) => value.push_str(&format!("\u{FFFD}{:04X}", c as u32)),
-                c => value.push(c),
-            }
-        }
-        Expression::new_string_literal_with_lone_surrogates(sp, self.allocator.alloc_str(&value), None, true, b)
+        Expression::new_identifier(sp, self.name(&string_raw(text)), b)
     }
 
     /// A JSX element (ADR 0040), laid out by the formatter.
@@ -805,20 +797,50 @@ fn template_raw(text: &str, lines: bool) -> String {
             '\\' => raw.push_str("\\\\"),
             '$' if chars.peek() == Some(&'{') => raw.push_str("\\$"),
             '\n' if lines => raw.push('\n'),
-            '\n' => raw.push_str("\\n"),
-            '\r' => raw.push_str("\\r"),
-            '\t' => raw.push_str("\\t"),
-            '\u{2028}' => raw.push_str("\\u2028"),
-            '\u{2029}' => raw.push_str("\\u2029"),
-            c if c.is_control() => raw.push_str(&format!("\\u{:04x}", c as u32)),
-            c if unseen(c) => raw.push_str(&match c as u32 {
-                n @ ..=0xFF => format!("\\x{n:02X}"),
-                n => format!("\\u{n:04X}"),
-            }),
-            c => raw.push(c),
+            c => escape(c, &mut raw),
         }
     }
     raw
+}
+
+/// `text` as a string literal writes it, `"a\u200bb"`: what would end it
+/// escaped, and each code point as `escape` writes it.
+fn string_raw(text: &str) -> String {
+    let mut raw = String::with_capacity(text.len() + 8);
+    raw.push('"');
+    for c in text.chars() {
+        match c {
+            '"' => raw.push_str("\\\""),
+            '\\' => raw.push_str("\\\\"),
+            c => escape(c, &mut raw),
+        }
+    }
+    raw.push('"');
+    raw
+}
+
+/// `c` as a string or a template writes it: a line's end, a control and
+/// what `unseen` says as its escape, JS's own, `\t`, `\v`, or its hex in
+/// lowercase, `\x` of what's below U+0100, `\xa0`, `\x1b`, as upstream
+/// React writes it (ADR 0732, amended); another as it is.
+fn escape(c: char, raw: &mut String) {
+    match c {
+        '\n' => raw.push_str("\\n"),
+        '\r' => raw.push_str("\\r"),
+        '\t' => raw.push_str("\\t"),
+        '\u{8}' => raw.push_str("\\b"),
+        '\u{B}' => raw.push_str("\\v"),
+        '\u{C}' => raw.push_str("\\f"),
+        '\u{2028}' => raw.push_str("\\u2028"),
+        '\u{2029}' => raw.push_str("\\u2029"),
+        // Each below U+00A0.
+        c if c.is_control() => raw.push_str(&format!("\\x{:02x}", c as u32)),
+        c if unseen(c) => raw.push_str(&match c as u32 {
+            n @ ..=0xFF => format!("\\x{n:02x}"),
+            n => format!("\\u{n:04x}"),
+        }),
+        c => raw.push(c),
+    }
 }
 
 /// Replace the temporary concatenated source with the actual source files.

@@ -683,11 +683,13 @@ export function formatProdErrorMessage(code, url) {
   A comment between them is before the piece it's written before.
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
-- A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, and a mark
-  one can't see, `\u{200b}`, are written as their escapes, `"\u2007\xA0"`,
-  in a string and a template; what joins or varies an emoji, `\u{200d}`
-  and `\u{fe0f}`, is as it is ([ADR
-  0732](../../decisions/0732-a-space-one-cant-see-is-its-escape.md)).
+- A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, a mark one
+  can't see, `\u{200b}`, and a control, `\u{1}`, are written as their
+  escapes, their hex in lowercase, `"\u2007\xa0"`, `"\x01"`, in a string
+  and a template; what joins or varies an emoji, `\u{200d}` and
+  `\u{fe0f}`, is as it is ([ADR
+  0732](../../decisions/0732-a-space-one-cant-see-is-its-escape.md),
+  amended).
 - A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the
   one string rustc makes of it.
 - A format string of a `concat!`, `format!(concat!(..), ..)` or

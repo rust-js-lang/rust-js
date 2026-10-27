@@ -25,7 +25,7 @@ function main() {
   const u = $iter(Array.from($escapeDebug("ab", true)));
   const value = $next(u);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} ${$restStr(u)}`);
-  const w = $iter(Array.from($escapeUnicode("	")));
+  const w = $iter(Array.from($escapeUnicode("\t")));
   $next(w);
   $next(w);
   console.log(`${w.end - w.at} ${$restStr(w)}`);

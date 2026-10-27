@@ -49,7 +49,7 @@ function main() {
   );
   console.log(`${$debugStr($trimMatches("--==x==--", (c) => ["-", "="].includes(c)))}`);
   console.log(
-    `[${"  tabs	and  spaces\n"
+    `[${"  tabs\tand  spaces\n"
       .split(/[\t\n\f\r ]+/)
       .filter((word) => word !== "")
       .map((item) => $debugStr(item))

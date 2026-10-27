@@ -445,7 +445,7 @@ export function sample() {
     pair: [255, "é", undefined],
     empty: [],
     nested: [[], [1, 2]],
-    text: "tab	ü😀",
+    text: "tab\t\x01ü😀",
     floats: [0.1, -0, 1e-7, 123456789, NaN, 1e16],
   };
 }

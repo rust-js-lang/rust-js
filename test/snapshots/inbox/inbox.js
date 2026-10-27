@@ -762,7 +762,7 @@ export function report() {
   } else {
     out += `err ${$displayJsonError(value$17._0)} / ${$debugJsonError(value$17._0)}\n`;
   }
-  const value$18 = $fromJson('{"itemName":"a"}', orderDeserialize_deserialize);
+  const value$18 = $fromJson('{"itemName":"a\x01"}', orderDeserialize_deserialize);
   if (value$18.TAG === "Ok") {
     out += `ok ${orderDebug_fmt(value$18._0)}\n`;
   } else {
@@ -1737,7 +1737,7 @@ export function report() {
   } else {
     out += `err ${$displayJsonError(value$171._0)} / ${$debugJsonError(value$171._0)}\n`;
   }
-  const value$172 = $fromJson("[\r\n1	,2  ]", $json.vec($json.u32));
+  const value$172 = $fromJson("[\r\n1\t,2  ]", $json.vec($json.u32));
   if (value$172.TAG === "Ok") {
     out += `ok [${value$172._0.join(", ")}]\n`;
   } else {

@@ -16,7 +16,7 @@ function main() {
   }
   console.log("");
   const quoted = $escapeDebug('a\n"é', true);
-  const tabs = Array.from($escapeDefault("tab	")).length;
+  const tabs = Array.from($escapeDefault("tab\t")).length;
   const marks = Array.from("x́")
     .flatMap((c) => Array.from($escapeUnicode(c)))
     .join("");

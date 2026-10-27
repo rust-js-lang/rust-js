@@ -167,7 +167,7 @@ function main() {
   const pair = [0, false];
   const items = [0, 0, 0];
   const point = { x: 0, y: 0n, on: false };
-  const c = "\0";
+  const c = "\x00";
   const arg = c.codePointAt(0);
   console.log(
     `${n} (${pair[0]}, ${pair[1]}) [${items.join(", ")}] ${pointDebug_fmt(point)} ${arg} ()`,

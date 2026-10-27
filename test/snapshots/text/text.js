@@ -97,16 +97,16 @@ export function slicePanics(start, end) {
   return $slice(v, start, end);
 }
 export function escapes() {
-  return `${$debugStr('a"b\\c\n	\r\0\x1Bé\u3000\xA0\u200B\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
+  return `${$debugStr('a"b\\c\n\t\r\x00\x1b\x7fé\u3000\xa0\u200b\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
 }
 // A template literal's own characters, in the text around the values.
 export function templates(n) {
-  return `\`${n}\` costs \${n} \\ ${(n + 1) >>> 0}\t\u2028|\u0001|`;
+  return `\`${n}\` costs \${n} \\ ${(n + 1) >>> 0}\t\u2028|\x01|`;
 }
 
 export function report() {
   let out = "";
-  for (const c of ["a", "Z", "7", " ", "\n", "\u3000", "é", "ß", "٣", "Ⅻ", "!", "\uFEFF", ""]) {
+  for (const c of ["a", "Z", "7", " ", "\n", "\u3000", "é", "ß", "٣", "Ⅻ", "!", "\ufeff", "\x7f"]) {
     const value = chars(c);
     const value$1 = ascii(c);
     const arg = casts(c);
@@ -136,8 +136,8 @@ export function report() {
     out += `${$debugStr(s)} ${arg}\n`;
   }
   for (const text of [
-    "1 2	3",
-    "a\u3000b  c\uFEFFd",
+    "1 2\t3",
+    "a\u3000b  c\ufeffd",
     "x\r\ny\n\nz\n",
     "  ",
     "4\n-5\r\n",

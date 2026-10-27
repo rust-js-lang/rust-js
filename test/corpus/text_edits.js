@@ -47,7 +47,7 @@ function main() {
     `${/^[\0-\x7f]*$/.test("abc")} ${/^[\0-\x7f]*$/.test("héllo")} ${/^[\0-\x7f]*$/.test("")}`,
   );
   console.log(
-    `[${" 	 a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "")}] [${"  x ".replace(/^[\t\n\f\r ]+/, "")}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`,
+    `[${" \t a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "")}] [${"  x ".replace(/^[\t\n\f\r ]+/, "")}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`,
   );
   console.log(`${$debugStr("\vx\v ".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, ""))}`);
   console.log(

@@ -152,7 +152,7 @@ export function parseErrors() {
 
 export function functionValues(words) {
   const upper = words.map((w) => w.toUpperCase());
-  const spaces = Array.from("a b	c").map((c) => /^\p{White_Space}$/u.test(c));
+  const spaces = Array.from("a b\tc").map((c) => /^\p{White_Space}$/u.test(c));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
   const owned = words.slice();
   return [upper, spaces, roots, owned];
