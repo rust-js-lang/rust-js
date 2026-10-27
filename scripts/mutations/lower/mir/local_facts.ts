@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "                Some(Std::Drop)\n",
     tests: ["test/lowering-nullable-reads.test.ts"],
   },
+  {
+    name: "nullable-local-clone-unread",
+    breaks: "a nullable thread-local's `with_borrow(Clone::clone)` may be `undefined`, so popSearchTarget returns `searchTarget ?? null`",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n                quiet.nullable.insert(block);\n",
+    replace: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
 ];

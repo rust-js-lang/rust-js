@@ -298,13 +298,14 @@ pub fn current_tag() -> Option<u8> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export let current = null;\n");
   expect(js).toContain("export let owner = null;\n");
-  // A nullable parameter's `None` is `null` where a call gives it, and
-  // `undefined` from JS too, as its `.d.ts` says (ADR 0861).
-  expect(js).toContain("  current = fiber ?? null;\n");
+  // A nullable parameter is `Fiber | null` as declared, stored as it is
+  // (ADR 0861, amended, the user's decision, 2026-10-27).
+  expect(js).toContain("  current = fiber;\n");
   expect(js).toContain("  current = null;\n  owner = null;\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(types).toContain("export let current: Fiber | null;\n");
   expect(types).toContain("export let owner: string | null;\n");
+  expect(types).toContain("export function setCurrentFiber(fiber: Fiber | null): void;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.current, lib.owner]).toEqual([null, null]);
   lib.setCurrentFiber({ tag: 3 });

@@ -25,6 +25,7 @@ use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
 mod comments;
+mod functions;
 mod imports;
 mod parts;
 mod written;
@@ -735,71 +736,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// A function's or a `const`'s name, as its JS has it.
     fn js_name(&self, def_id: DefId) -> String {
         (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())
-    }
-
-    fn function(&mut self, def_id: DefId) -> Value {
-        let sig = self
-            .tcx
-            .fn_sig(def_id)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder();
-        let idents = self.tcx.fn_arg_idents(def_id);
-        let decl = (def_id.as_local()).and_then(|local| self.tcx.hir_node_by_def_id(local).fn_decl());
-        // Its trailing `Option`s are optional, `greeting?: string | null`, so a
-        // JS caller leaves them out (ADR 0443).
-        let is_option =
-            |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), LangItem::Option));
-        // Its last, a slice marked `#[rust_js::rest]`, is a rest parameter,
-        // `...args: T[]`, which those before it may still be left out before
-        // (ADR 0664).
-        let rest = super::bindings::takes_rest(self.tcx, def_id).then(|| sig.inputs().len() - 1);
-        let before = &sig.inputs()[..rest.unwrap_or(sig.inputs().len())];
-        let optional_from = before.len() - before.iter().rev().take_while(|&&ty| is_option(ty)).count();
-        let params: Vec<Value> = (sig.inputs().iter().enumerate())
-            .map(|(i, &ty)| {
-                // As its JS spells it, a word JS keeps given apart, `new$`.
-                let name = match idents.get(i).copied().flatten() {
-                    // Its JS name's, without a `_` of one unused (ADR 0678).
-                    Some(ident) => {
-                        let named = super::parameter_name(self.tcx, def_id, ident.name.as_str());
-                        crate::names::js_ident(&named)
-                    }
-                    // A pattern, `TagProps { variant, .. }`: its props'.
-                    None => "props".to_string(),
-                };
-                let ty = self.as_written(decl.and_then(|decl| decl.inputs.get(i)), |out| out.ts(ty));
-                let rest = rest == Some(i);
-                json!({ "name": name, "optional": i >= optional_from && !rest, "rest": rest, "type": ty })
-            })
-            .collect();
-        let output = sig.output();
-        let written = decl.and_then(|decl| match decl.output {
-            hir::FnRetTy::Return(written) => Some(written),
-            hir::FnRetTy::DefaultReturn(_) => None,
-        });
-        // A nullable result's `None` is `null` where it's made, never
-        // `undefined`, `string | null` (ADRs 0574, 0578).
-        let nullable = (super::bindings::nullable_result(self.tcx, def_id))
-            .then(|| self.option(output))
-            .flatten();
-        let returns = match (output.is_unit(), nullable) {
-            (true, _) => keyword("void"),
-            (false, Some(inner)) => {
-                let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
-                json!({ "kind": "union", "types": [inner, keyword("null")] })
-            }
-            (false, None) => self.as_written(written, |out| out.ts(output)),
-        };
-        json!({
-            "kind": "function",
-            "name": self.js_name(def_id),
-            "exported": true,
-            "declare": false,
-            "typeParameters": self.generics(def_id),
-            "params": params,
-            "returns": returns,
-        })
     }
 
     /// `export declare class Component { constructor(props?: unknown);

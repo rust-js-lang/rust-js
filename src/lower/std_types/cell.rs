@@ -461,13 +461,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // borrows nothing counts (`QuietCells`), `f` given it where
                 // it's called, as `plain_statics` would: what tidy reads,
                 // `const last = LAST.value` a place's read (ADR 0866, amended).
+                // A nullable one's clone, `with_borrow(Clone::clone)`, `null`
+                // or a value, never `undefined` (ADR 0861, amended).
+                let read = |e: Expr| match null_for_none {
+                    true => Expr {
+                        facts: e.facts.with(js::Known::Defined),
+                        ..e
+                    },
+                    false => e,
+                };
                 if call.quiet {
                     let [key, f] = <[Expr; 2]>::try_from(given).ok().expect("a key and a function");
                     let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {
                         true => key,
                         false => Expr::held(key),
                     };
-                    return Ok(Some(crate::lower::calls::apply(f, vec![given])));
+                    return Ok(Some(read(crate::lower::calls::apply(f, vec![given]))));
                 }
                 let name = match mutable {
                     true => {
@@ -483,7 +492,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         "$withBorrow"
                     }
                 };
-                Expr::call(Expr::helper(name), given)
+                read(Expr::call(Expr::helper(name), given))
             }
             _ => return Ok(None),
         }))

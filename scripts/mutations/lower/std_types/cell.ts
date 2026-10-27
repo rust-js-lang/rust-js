@@ -502,4 +502,12 @@ export const mutations: Mutation[] = [
     replace: "                    facts: read.facts,\n",
     tests: ["test/lowering-nullable-reads.test.ts"],
   },
+  {
+    name: "nullable-local-clone-maybe-undefined",
+    breaks: "what a nullable thread-local's `with_borrow(Clone::clone)` gives isn't known never `undefined`, `return searchTarget ?? null`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                        facts: e.facts.with(js::Known::Defined),\n",
+    replace: "                        facts: e.facts,\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
 ];

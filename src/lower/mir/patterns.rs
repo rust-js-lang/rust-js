@@ -73,6 +73,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each copy of a variable, `_2 = copy _1`, MIR's of `owner` in `Info
         // { owner }`: the variable's read, given where the copy is.
         let mut copies: Vec<(Local, Local)> = Vec::new();
+        // A `#[rust_js::nullable]` function's result, which a variable it
+        // returns is given to: `let mut found = None; .. found = Some(n); ..
+        // found`'s `None` is `null` where it's made, `let found = null;`,
+        // and the variable returned as it is (ADR 0957, amended, the user's
+        // decision, 2026-10-27).
+        let returns_nullable = bindings::nullable_result(self.tcx, body.source.def_id());
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
             let mir::StatementKind::Assign(assign) = &statement.kind else {
                 continue;
@@ -82,6 +88,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && assign.0.projection.is_empty()
             {
                 copies.push((assign.0.local, read.local));
+                if returns_nullable && assign.0.local == mir::RETURN_PLACE {
+                    *given.entry(read.local).or_default() += 1;
+                }
             }
             let Rvalue::Aggregate(kind, operands) = &assign.1 else {
                 continue;
@@ -224,12 +233,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A copy made once and only given to nullable fields or parameters
         // gives what it's a copy of to them: `let owner = None;`'s `None` is `null` where
         // it's made (ADR 0781).
-        for (copy, of) in copies {
+        for &(copy, of) in &copies {
             if locals.writes[copy] == 1 && given.get(&copy).is_some_and(|&n| n == locals.reads[copy]) {
                 *given.entry(of).or_default() += 1;
                 if stored.contains(&copy) {
                     stored.insert(of);
                 }
+            }
+        }
+        // A `Some(..)` MIR makes in a temporary of its own, read once, then
+        // moves in, `found = Some(Rc::clone(&n))`'s: a write of a `Some`.
+        for &(copy, of) in &copies.iter().copied().collect::<std::collections::HashSet<_>>() {
+            if made
+                .get(&of)
+                .is_some_and(|&(writes, none)| !none && writes == locals.writes[of])
+                && locals.reads[of] == 1
+            {
+                made.entry(copy).or_default().0 += 1;
             }
         }
         // A `#[rust_js::nullable]` function's result is read by its return,

@@ -532,4 +532,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "own-nullable-param-maybe-undefined",
+    breaks: "a `#[rust_js::nullable(..)]` parameter given on is `nearest ?? null`, though it's `Fiber | null` as declared (ADR 0861, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if self.own_nullable_param(state, place) {\n            return Given::Nulled;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
 ];

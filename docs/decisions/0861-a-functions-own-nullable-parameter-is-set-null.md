@@ -100,3 +100,57 @@ function mapIntoArray(children, ..) {
 - Mutations `own-nullable-param-set-undefined`,
   `own-nullable-param-any-argument` (`scripts/mutations/lower/mir/assign.ts`)
   and `null-nones-own-param-call-coalesced` (`lower/mir/patterns.ts`).
+
+## Amendment: a nullable parameter is `T | null` as declared, and what only nulls is returned as it is
+
+The user's decision (2026-10-27), Case A ([0262](0262-when-rust-and-js-disagree.md)):
+React's ports printed `?? null` where upstream passes a value on:
+
+| Rust | Was | Upstream |
+|---|---|---|
+| `capture_commit_phase_error(current, nearest_mounted_ancestor)`, both `#[rust_js::nullable(..)]` | `captureCommitPhaseError(current, nearestMountedAncestor ?? null)` | `captureCommitPhaseError(current, nearestMountedAncestor)` |
+| `SEARCH_TARGET.set(target)` of a nullable parameter | `searchTarget = target ?? null` | `searchTarget = target` |
+| `SEARCH_TARGET.with_borrow(Clone::clone)` | `return searchTarget ?? null` | `return searchTarget` |
+| `let mut root = None; .. root = Some(Rc::clone(&n)); .. root` | `let root; .. return root ?? null` | `let root = null; .. return root` |
+
+A nullable parameter's `None` was `null` where the crate's calls give it,
+but its `.d.ts` said `T | null | undefined`, so a JS caller might give
+`undefined`, which `?? null` turned to `null` wherever it went next.
+
+**A `#[rust_js::nullable(..)]` parameter of the crate's function is `T |
+null` as declared**: its `.d.ts` is `fiber: Fiber | null`, never left
+out, and its body takes it as `null` or a value already
+(`stored_given`'s `Nulled`), given on to a nullable parameter or stored
+in a nullable place as it is. A JS caller that gives `undefined` breaks
+the declaration, as it would TypeScript's. The body still reads `null`
+and `undefined` alike as `None` (ADR 0030).
+
+And what a nullable function returns that holds only `null`s and values:
+
+- **a nullable thread-local's whole value cloned**,
+  `KEY.with_borrow(Clone::clone)`: every write of it stores `null` for
+  `None` (ADR 0586, amended), and ES modules give importers no way to set
+  a module's variable, so it's `null` or a value (`QuietCells::nullable`,
+  `Known::Defined`);
+- **a `let` of `None` the function returns**, set only to `Some(..)`s,
+  one MIR makes in a temporary and moves in too: the return is a
+  nullable place it's read by (`null_nones`, ADR 0781), so its `None` is
+  `null` where it's made, `let root = null;`, and it's returned as it is
+  (ADR 0957's let set only to values, extended to one that starts
+  `None`).
+
+A nullable field's read kept in a `let` and returned keeps its `?? null`:
+JS may have set the field `undefined`.
+
+Held by `test/lowering-nullable-reads.test.ts`'s "a nullable parameter,
+a nullable thread-local's clone and a let of None returned are as they
+are" and `test/lowering-module-variables.test.ts`'s "a nullable
+thread-local's None is null where it's made and set", its `.d.ts`
+`setCurrentFiber(fiber: Fiber | null)`, run in JS; and the mutations
+`own-nullable-param-maybe-undefined` (`mir/rvalues.ts`),
+`nullable-local-clone-unread` (`mir/local_facts.ts`),
+`nullable-local-clone-maybe-undefined` (`std_types/cell.ts`),
+`nullable-return-not-a-nullable-read`, `some-in-a-temporary-not-a-write`
+(`mir/patterns.ts`) and `nullable-param-declared-optional`
+(`declarations/functions.ts`).
+

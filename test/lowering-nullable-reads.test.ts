@@ -160,3 +160,87 @@ pub fn first(items: &[u32]) -> Option<u32> {
   const a = { keep: true };
   expect([lib.collect([]), lib.collect([{}, a]), lib.first([5]), lib.first([0])]).toEqual([null, [a], null, 0]);
 });
+
+// The user's decision (2026-10-27), ADR 0861, amended: a
+// `#[rust_js::nullable(..)]` parameter is `T | null` as declared, given on
+// as it is, React's `captureCommitPhaseError(current,
+// nearestMountedAncestor)` and `searchTarget = target`; a nullable
+// thread-local's whole value cloned, `with_borrow(Clone::clone)`, is
+// returned as it is, popSearchTarget's `return searchTarget;`; and a `let`
+// of `None` a nullable function returns, set only to values, starts `null`
+// and is returned as it is, findStrictRoot's `let maybeStrictRoot = null;`.
+test("a nullable parameter, a nullable thread-local's clone and a let of None returned are as they are", async () => {
+  const dir = fixture("nullable-as-declared");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsCapture")]
+#[cfg_attr(rust_js, rust_js::nullable(nearest))]
+fn capture(source: &Fiber, nearest: Option<&Rc<Fiber>>) {
+    let _ = (source, nearest);
+    unreachable!()
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static SEARCH_TARGET: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(nearest))]
+pub fn pass_on(current: &Fiber, nearest: Option<&Rc<Fiber>>) {
+    capture(current, nearest);
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(target))]
+pub fn push_search_target(target: Option<Rc<Fiber>>) {
+    SEARCH_TARGET.set(target);
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn pop_search_target() -> Option<Rc<Fiber>> {
+    SEARCH_TARGET.with_borrow(Clone::clone)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn find_strict_root(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
+    let mut maybe_strict_root = None;
+    let mut node = Some(Rc::clone(fiber));
+    while let Some(current) = node {
+        if current.tag == 8 {
+            maybe_strict_root = Some(Rc::clone(&current));
+        }
+        node = current.r#return.borrow().clone();
+    }
+    maybe_strict_root
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function passOn(current, nearest) {\n  rustJsCapture(current, nearest);\n}");
+  expect(js).toContain("export function pushSearchTarget(target) {\n  searchTarget = target;\n}");
+  expect(js).toContain("export function popSearchTarget() {\n  return searchTarget;\n}");
+  expect(js).toContain("  let maybeStrictRoot = null;\n");
+  expect(js).toContain("  return maybeStrictRoot;\n}");
+  const global = globalThis as Record<string, unknown>;
+  const given: unknown[] = [];
+  global.rustJsCapture = (_: unknown, nearest: unknown) => given.push(nearest);
+  const lib = await import(join(dir, "lib.js"));
+  const root = { tag: 8, return: null };
+  const child = { tag: 1, return: root };
+  lib.passOn(child as never, null as never);
+  lib.passOn(child as never, root as never);
+  expect(given).toEqual([null, root]);
+  expect(lib.popSearchTarget()).toBe(null);
+  lib.pushSearchTarget(child as never);
+  expect(lib.popSearchTarget()).toBe(child);
+  expect([lib.findStrictRoot(child as never), lib.findStrictRoot({ tag: 1, return: null } as never)]).toEqual([root, null]);
+});

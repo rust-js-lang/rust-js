@@ -833,9 +833,16 @@ export function ratio(a, b) {
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   The crate's function's parameter is `null` where a call gives it `None`
   and where its body sets it so, `children = None`'s `children = null`,
-  and what a call gives it otherwise is as it is, its body reading either
-  as `None`; its `.d.ts` is `T | null | undefined`
-  ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md)).
+  and what a call gives it otherwise is as it is; its `.d.ts` is `T |
+  null`, never left out, and its body takes it so, given on or stored as
+  it is, `captureCommitPhaseError(current, nearestMountedAncestor)`,
+  `searchTarget = target`
+  ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md), amended).
+  A nullable thread-local's whole value cloned,
+  `SEARCH_TARGET.with_borrow(Clone::clone)`, is returned as it is,
+  `return searchTarget;`, and so is a `let` of `None` a nullable function
+  returns, set only to `Some`s, which starts `null`, `let
+  maybeStrictRoot = null;` (ADR 0861, amended).
   A `Some(..)` given to one is its value, `Object.create(Object.prototype)`.
   A result is `?? null` of an `Option` that may be `undefined`, and a
   nullable function's call as it is, `null` for `None` already, `return

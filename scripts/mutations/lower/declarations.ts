@@ -101,14 +101,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts"],
   },
   {
-    name: "parameter-declared-underscored",
-    breaks: "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
-    file: "src/lower/declarations.rs",
-    find: "                        let named = super::parameter_name(self.tcx, def_id, ident.name.as_str());\n",
-    replace: "                        let named = super::camel_case(ident.name.as_str());\n",
-    tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
-  },
-  {
     name: "untagged-null-declared-literal",
     breaks: "an untagged enum's `#[rust_js::null]` variant is declared its name's string, not `null`",
     file: "src/lower/declarations.rs",
@@ -413,14 +405,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
   },
   {
-    name: "alias-param-unwritten",
-    breaks: "a function's parameter written as an alias is its expansion, `(instance: HTMLElement | null) => void`, where it's `RefCallback<HTMLElement>`",
-    file: "src/lower/declarations.rs",
-    find: "                let ty = self.as_written(decl.and_then(|decl| decl.inputs.get(i)), |out| out.ts(ty));",
-    replace: "                let ty = self.as_written(None, |out| out.ts(ty));",
-    tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
-  },
-  {
     name: "namespace-member-imported-whole",
     breaks: "`JSX.Element` is imported as `import type { JSX.Element } from \"react\"`, which isn't TypeScript",
     file: "src/lower/declarations.rs",
@@ -535,14 +519,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "union"],
   },
   {
-    name: "declared-param-rust-name",
-    breaks: "a parameter named `new` is declared `new`, which TypeScript doesn't read, where the JS names it `new$`",
-    file: "src/lower/declarations.rs",
-    find: "                        crate::names::js_ident(&named)\n",
-    replace: "                        named\n",
-    tests: ["test/declarations.test.ts", "-t", "as its JS does"],
-  },
-  {
     name: "optional-field-refuses-undefined",
     breaks: "a field a caller may leave out is `?: T`, which refuses `undefined` under `exactOptionalPropertyTypes`, where Rust takes it as `None`",
     file: "src/lower/declarations.rs",
@@ -573,14 +549,6 @@ export const mutations: Mutation[] = [
     find: "    if types.is_empty() {\n        return keyword(\"never\");\n    }\n",
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "no variants"],
-  },
-  {
-    name: "trailing-option-param-required",
-    breaks: "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
-    file: "src/lower/declarations.rs",
-    find: "                json!({ \"name\": name, \"optional\": i >= optional_from && !rest, \"rest\": rest, \"type\": ty })\n",
-    replace: "                json!({ \"name\": name, \"optional\": false, \"rest\": rest, \"type\": ty })\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations take JS's null for an Option"],
   },
   {
     name: "written-alias-expanded",
@@ -628,14 +596,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "            self.imported(file, did, name.clone());",
     replace: "            let _ = file;",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
-  },
-  {
-    name: "written-return-expanded",
-    breaks: "a function's result written as an alias is what it stands for, `TocItem[][]`, where it's `Toc[]`",
-    file: "src/lower/declarations.rs",
-    find: "            (false, None) => self.as_written(written, |out| out.ts(output)),",
-    replace: "            (false, None) => self.ts(output),",
     tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
   },
   {
@@ -695,14 +655,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
   },
   {
-    name: "rest-declared-array",
-    breaks: "a `.d.ts` declares a rest parameter an array argument, `xs: number[]`, which TypeScript callers give whole",
-    file: "src/lower/declarations.rs",
-    find: "                let rest = rest == Some(i);\n",
-    replace: "                let rest = rest == Some(i) && false;\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
-  },
-  {
     name: "nullable-cell-declared-undefined",
     breaks: "a nullable `Cell` field is declared `T | undefined`, where JS has its `None` `null`",
     file: "src/lower/declarations.rs",
@@ -725,14 +677,6 @@ export const mutations: Mutation[] = [
     find: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),\n",
     replace: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => self.function_type(&inputs, output),\n",
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
-  },
-  {
-    name: "nullable-result-declared-undefined",
-    breaks: "a nullable function's result is declared `string | null | undefined`, though its `None` is `null`, never `undefined`",
-    file: "src/lower/declarations.rs",
-    find: "            .then(|| self.option(output))\n",
-    replace: "            .then(|| self.option(output))\n            .filter(|_| false)\n",
-    tests: ["test/declarations.test.ts", "-t", "a nullable function's result is declared T or null"],
   },
   {
     name: "own-alias-declared-exported",

@@ -276,4 +276,20 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
   },
+  {
+    name: "nullable-return-not-a-nullable-read",
+    breaks: "a `let` of `None` a nullable function returns isn't read by a nullable place, so it starts `undefined` and is returned `?? null`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                if returns_nullable && assign.0.local == mir::RETURN_PLACE {\n",
+    replace: "                if false && returns_nullable && assign.0.local == mir::RETURN_PLACE {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
+  {
+    name: "some-in-a-temporary-not-a-write",
+    breaks: "`found = Some(Rc::clone(&n))`, made in a temporary MIR moves in, isn't a write of a `Some`, so `found`'s `None` stays `undefined`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                made.entry(copy).or_default().0 += 1;\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+  },
 ];

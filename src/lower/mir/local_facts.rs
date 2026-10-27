@@ -327,6 +327,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             };
             let Some(first) = args.first() else { continue };
+            // A nullable one's whole value cloned, `KEY.with_borrow(Clone::clone)`,
+            // `null` or a value, as each write of it stores (ADR 0861,
+            // amended, the user's decision, 2026-10-27).
+            if let Some(Std::LocalBorrow { mutable: false }) = self.recognition().classify(def_id, generic_args)
+                && let Some(key) = local_key(&first.node)
+                && crate::lower::bindings::nullable_local(tcx, key)
+                && let Some(f) = args.get(1)
+                && let Some((f, _)) = fn_def(f.node.ty(body, tcx))
+                && tcx
+                    .trait_of_assoc(f)
+                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
+            {
+                quiet.nullable.insert(block);
+            }
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
                 // A `with_borrow` of one of this module's, given what it

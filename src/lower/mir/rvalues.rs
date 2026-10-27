@@ -1070,6 +1070,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.facts.options().null_nones.contains(&place.local) {
             return Given::Nulled;
         }
+        // A `#[rust_js::nullable(..)]` parameter of the function's own, `T |
+        // null` as declared: what each caller gives it and the body sets it
+        // to, `null` for `None` (ADR 0861, amended), the user's decision
+        // (2026-10-27).
+        if self.own_nullable_param(state, place) {
+            return Given::Nulled;
+        }
         if state.locals.writes[place.local] != 1 {
             return Given::Unknown;
         }

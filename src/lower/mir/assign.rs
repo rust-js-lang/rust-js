@@ -252,7 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+    pub(super) fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
         let def_id = state.body.source.def_id();
         let arg = place.local.as_usize();
         place.projection.is_empty()
