@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
   },
+  {
+    name: "cell-shape-dyn-anywhere",
+    breaks: "a library's checked `RefCell<Vec<Rc<dyn Fn()>>>` is taken to be any `RefCell<Vec<Rc<_>>>`, so its consumer's `RefCell<Vec<Rc<Node>>>` is checked, `$borrowMut(siblings, true)` (#374, ADR 0960)",
+    file: "src/lower/library.rs",
+    find: "        _ if dyn_shape && unsized_here => true,\n",
+    replace: "        _ if dyn_shape => true,\n",
+    tests: ["test/crates.test.ts", "-t", "a library's checked cell of a Vec of dyn Fns"],
+  },
 ];

@@ -1384,6 +1384,12 @@ export function shared() {
   of which is ever held while code that may borrow it runs is checked
   nowhere, as none can fail
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+  What may borrow it is what may borrow a cell of its type, or of a type
+  it may be made in place: a `RefCell<Circle>` is the `RefCell<dyn Shape>`
+  made of it, and a struct's last field is made `dyn` so too, but a
+  `RefCell<Vec<Rc<Node>>>` is no `RefCell<Vec<Rc<dyn Fn()>>>`, whose
+  hooks may run anything while it's borrowed
+  ([ADR 0960](../../decisions/0960-a-dyn-is-any-type-only-where-made-in-place.md)).
 - **A library's manifest says what it does with its `RefCell`s**, and a
   crate using it that would read one otherwise is refused: one it shares as
   the object, which the crate's generic code would box, or a borrow of one

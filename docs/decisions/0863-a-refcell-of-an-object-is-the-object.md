@@ -687,3 +687,11 @@ already was: `const EMPTY = { count: 0 };`, its `None` the field left out.
 Case "results change" ([0262](0262-when-rust-and-js-disagree.md)):
 Rust's answer, preserved. Tested by `test/corpus/ref_cell_field_const.rs`
 against native Rust; its mutation is `ref-cell-field-const-boxed`.
+
+## Amendment: a cell's `dyn` is any type only where made in place (ADR 0960)
+
+`may_be_cell` took a `dyn` anywhere in a cell's type for any type, so a
+`RefCell<Vec<Rc<dyn Fn()>>>` borrowed while its hooks run checked every
+`RefCell<Vec<Rc<Node>>>` (#374). A `dyn` is any type only where a value is
+made one in place, the cell's own value or a struct's last field; elsewhere
+it's a `dyn` of its trait. See [0960](0960-a-dyn-is-any-type-only-where-made-in-place.md).

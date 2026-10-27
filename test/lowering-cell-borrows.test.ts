@@ -243,3 +243,65 @@ pub fn touch(root: &Root) {
   expect(lib.applyMade(r, () => (n: number) => n + 1)).toBe(3);
   expect(() => lib.applyMade(r, () => () => (lib.touch(r), 0))).toThrow("already borrowed");
 });
+
+// #374, ADR 0960: React's test selectors call their commit hooks, which may
+// run anything a JS caller gave, while their thread-local is borrowed, so
+// that cell is checked. The hydration diffs' `children`, a `RefCell` of a
+// `Vec<Rc<Node>>`, isn't one that may be it: a `Vec`'s `Rc<dyn Fn()>` is
+// no `Rc<Node>`, as only a cell's own value, or a struct's last field, is
+// made a `dyn` in place, a `RefCell<Circle>` a `RefCell<dyn Shape>`.
+test("a borrow held while hooks run checks only cells that may be its own", async () => {
+  const dir = fixture("hooks-cells-apart");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+thread_local! {
+    static COMMIT_HOOKS: RefCell<Vec<Rc<dyn Fn()>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub struct Node {
+    pub name: String,
+    pub children: RefCell<Vec<Rc<Node>>>,
+}
+
+pub fn on_commit_root() {
+    COMMIT_HOOKS.with_borrow(|commit_hooks| commit_hooks.iter().for_each(|commit_hook| commit_hook()));
+}
+
+pub fn observe(callback: Box<dyn Fn()>) {
+    let commit_hook: Rc<dyn Fn()> = Rc::new(move || callback());
+    COMMIT_HOOKS.with_borrow_mut(|commit_hooks| commit_hooks.push(commit_hook));
+}
+
+pub fn node(name: &str) -> Rc<Node> {
+    Rc::new(Node {
+        name: name.to_string(),
+        children: RefCell::new(Vec::new()),
+    })
+}
+
+fn push(siblings: &RefCell<Vec<Rc<Node>>>, child: Rc<Node>) {
+    siblings.borrow_mut().push(child);
+}
+
+pub fn adopt(parent: &Node, child: Rc<Node>) {
+    push(&parent.children, child);
+}
+
+pub fn first(parent: &Node) -> String {
+    parent.children.borrow()[0].name.clone()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
+  expect(js).toContain("$withBorrow(\n    commitHooks,");
+  const lib = await import(join(dir, "lib.js"));
+  const root = lib.node("root");
+  lib.observe(() => lib.adopt(root, lib.node("child")));
+  lib.onCommitRoot();
+  expect(lib.first(root)).toBe("child");
+  // A hook that observes again while the hooks are borrowed panics, as Rust's.
+  lib.observe(() => lib.observe(() => {}));
+  expect(() => lib.onCommitRoot()).toThrow("already borrowed");
+});

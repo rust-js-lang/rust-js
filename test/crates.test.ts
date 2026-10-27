@@ -204,6 +204,15 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   expect(contract(holder).counted_rcs).toEqual([{}]);
 }, 300_000);
 
+// #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
+// borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
+// that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.
+test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Vec of its own", () => {
+  const out = chain(pairs, "cell_dyn_apart", ["dep", "app"]);
+  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).toContain("$borrowMut(hooks.list, true)");
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
+}, 300_000);
+
 // ADR 0852: a library counts the `Rc`s of each type apart, and its contract
 // says which. React's context, read by `use_context<T>` of any `T`, is the
 // value itself beside a generic `Rc<Slot<T>>` it counts, as is its

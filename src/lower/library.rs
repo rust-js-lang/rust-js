@@ -348,25 +348,42 @@ pub(super) fn shapes<'tcx>(
 
 /// May `ty`, a `RefCell`'s type, be one `shape` names, a library's, as
 /// `analysis::may_be_cell` says of two (ADR 0863): a type parameter of
-/// either any type, and a `dyn`'s or a slice's what it's made of.
+/// either any type, a slice's what it's made of, and a `dyn`'s any type
+/// where a value may be made one in place (ADR 0960).
 pub(in crate::lower) fn may_be_cell_shape<'tcx>(
     tcx: TyCtxt<'tcx>,
     shape: &RcShape,
     ty: rustc_middle::ty::Ty<'tcx>,
 ) -> bool {
+    may_be_cell_shape_at(tcx, (shape, ty), true)
+}
+
+/// `may_be_cell_shape` of `shape` and `ty`, where `unsized_here`, a `dyn`
+/// there may be any type made one in place.
+fn may_be_cell_shape_at<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (shape, ty): (&RcShape, rustc_middle::ty::Ty<'tcx>),
+    unsized_here: bool,
+) -> bool {
     use rustc_middle::ty;
+    let dyn_shape = shape.of.as_deref().is_some_and(|of| of.starts_with("dyn "));
     match ty.kind() {
-        ty::Dynamic(..) => true,
+        ty::Dynamic(..) if unsized_here => true,
+        _ if dyn_shape && unsized_here => true,
         ty::Slice(item) | ty::Array(item, _) => {
             shape.of.as_deref().is_none_or(|of| matches!(of, "[]" | "[;]"))
-                && shape.args.first().is_none_or(|arg| may_be_cell_shape(tcx, arg, *item))
+                && shape
+                    .args
+                    .first()
+                    .is_none_or(|arg| may_be_cell_shape_at(tcx, (arg, *item), false))
         }
         _ => match (&shape.of, super::analysis::head(tcx, ty)) {
             (Some(of), Some((head, args))) => {
-                of.starts_with("dyn ")
-                    || *of == head_key(tcx, &head)
-                        && shape.args.len() == args.len()
-                        && (shape.args.iter().zip(args)).all(|(shape, arg)| may_be_cell_shape(tcx, shape, arg))
+                let tail = super::analysis::unsized_in_place(tcx, ty);
+                *of == head_key(tcx, &head)
+                    && shape.args.len() == args.len()
+                    && (shape.args.iter().zip(args).enumerate())
+                        .all(|(i, (shape, arg))| may_be_cell_shape_at(tcx, (shape, arg), tail == Some(i)))
             }
             _ => true,
         },
