@@ -740,7 +740,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0953 Two values' truths joined are the truth of the two, `!!(a && b)`](0953-truths-joined-are-the-truth-of-the-two.md)
 - [0954 A call that never returns ends what it's in](0954-a-call-that-never-returns-ends.md)
 - [0955 A `return` of a function's call of values is copied as one value is, React's getTag one switch](0955-a-returned-call-of-values-is-one-value.md)
-- [0956 The arms of a `switch` keep their statements, a tail they share too](0956-switch-arms-keep-their-tails.md)
+- [0956 The arms of a `switch` keep their statements, a tail they share too](0956-switch-arms-keep-their-tails.md) *(amended: an arm that goes on to its value keeps it, `_`'s its `default`)*
 - [0957 A place a test shows isn't `null`, stored right after it, is stored as it is](0957-a-place-a-test-shows-present-is-stored-as-it-is.md)
 - [0958 A chain of `js::strict_equals` tests of one subject is a `switch`](0958-a-chain-of-strict-equals-tests-is-a-switch.md)
 - [0959 `Rc::ptr_eq` of an `Rc<dyn Fn>` made of a closure made with it is `===`, uncounted](0959-ptr-eq-of-a-closure-made-with-its-rc.md)

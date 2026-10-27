@@ -1349,6 +1349,7 @@ pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span], switch
                 let kept = &then[..then.len() - shared];
                 if shared == 0
                     || shared != rest.len()
+                    || super::switches::switched(test, stmts[i].span, switches)
                     || kept.is_empty()
                     || reads_declared(rest, kept.iter())
                     || guards(&then[kept.len()..])

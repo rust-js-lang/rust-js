@@ -1400,3 +1400,40 @@ pub fn attach(finished_work: &Fiber) -> Option<&'static js::Unknown> {
     lib.attach({ tag: 1, stateNode: node }),
   ]).toEqual([["public", node], ["public", null], "fragment", node, node]);
 });
+
+// ADR 0956, amended: React's unwindWork, `case SuspenseListComponent: {
+// ..; if (..) { .. } return null; } default: return null;`, an arm whose
+// statements go on to the value it ends with: that value its case's, as
+// the program wrote it, not shared with `_`'s after the `switch`.
+test("an arm of a switch that goes on to its value returns it, and `_`'s is its default", async () => {
+  const dir = fixture("switch-arm-going-on-to-its-value");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn unwind(tag: u8, value: u32, log: &mut Vec<u32>) -> Option<u32> {
+    match tag {
+        5 => {
+            log.push(value);
+            None
+        }
+        25 => {
+            if value > 2 {
+                log.push(value);
+            }
+            None
+        }
+        _ => None,
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "    case 25:\n      if (value > 2) {\n        log.push(value);\n      }\n      return null;\n    default:\n      return null;\n  }\n}\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const log: number[] = [];
+  expect([5, 25, 25, 1].map((tag, i) => lib.unwind(tag, i + 1, log))).toEqual([null, null, null, null]);
+  expect(log).toEqual([1, 3]);
+});

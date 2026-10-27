@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "switch-arm-going-on-tail-shared",
+    breaks: "React's unwindWork's arm that goes on to its `return null` shares it with `_`'s after the `switch`, no `default` (ADR 0956, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    || shared != rest.len()\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
+    replace: "                    || shared != rest.len()\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "goes on to its value"],
+  },
+  {
     name: "flag-given-first",
     breaks: "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0929)",
     file: "src/lower/mir/tidy/branches.rs",
@@ -593,8 +601,8 @@ export const mutations: Mutation[] = [
     name: "switch-arms-tail-shared",
     breaks: "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    || super::switches::switched(test, stmts[i].span, switches)\n",
-    replace: "                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
+    find: "                if shared == 0\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
+    replace: "                if shared == 0\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
     tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
   },
   {
