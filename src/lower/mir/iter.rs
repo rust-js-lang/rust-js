@@ -161,6 +161,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             span,
             made,
             |cx, a, b| {
+                // One stepped from its back, its source made knowing it, a map
+                // `$mapEnds` and a filter `$filterEnds`, as one not cloned
+                // apart is (ADRs 0455, 0526, 0984).
+                if matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {
+                    let source = cx.as_double_ended(a, receiver_ty, span)?;
+                    let callback = cx.unary_callback(b, own);
+                    let ends = if parted == Parted::Map {
+                        "$mapEnds"
+                    } else {
+                        "$filterEnds"
+                    };
+                    return Ok(Expr::call_helper(ends, vec![source, callback]));
+                }
                 let a = cx.as_js_iterator(a, receiver_ty, span)?;
                 Ok(match parted {
                     // Its source given its function, `it.map(f)`.

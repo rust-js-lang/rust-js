@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "      taking.n--;\n      return taking.iter.next();\n",
     replace: "      return taking.iter.next();\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
   },
   {
     name: "taking-back-by-next",

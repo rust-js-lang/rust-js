@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "        if (inner[other] === undefined) return done;\n        const at = inner[other][by]();\n",
     replace: "        if (true) return done;\n        const at = inner[other][by]();\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_from_its_back|flatten_from_both_ends).rs$"],
   },
   {
     name: "flatten-ends-source-unfused",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      const outer = ended ? done : it[by]();\n",
     replace: "      const outer = it[by]();\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_from_its_back|flatten_from_both_ends).rs$"],
   },
   {
     name: "step-by-nth-by-next",

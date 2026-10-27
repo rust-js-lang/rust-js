@@ -768,6 +768,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0981 A held struct's `rfold` is std's compiled one where it reaches the crate's own](0981-a-held-struct-s-rfold-is-std-s-compiled-one.md)
 - [0982 A lent iterator keeps its back and its length](0982-a-lent-iterator-keeps-its-back.md)
 - [0983 A `fuse()` that drops its source stays where it's stepped](0983-a-fuse-that-drops-its-source-stays.md)
+- [0984 A map or a filter cloned apart keeps its back](0984-a-map-or-filter-cloned-apart-keeps-its-back.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

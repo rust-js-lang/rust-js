@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0522](0522-a-closure-cloned-apart-is-made-again.md)
 and [0181](0181-iterator-clones.md); accepts part of the
 [iterators draft](draft/cloned-and-buffering-iterators.md).
+Amended by [0984](0984-a-map-or-filter-cloned-apart-keeps-its-back.md): one
+stepped from its back is made knowing it.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): a clone of an iterator
 is where the iterator is, with a clone of its closure, as Rust's `Clone` of

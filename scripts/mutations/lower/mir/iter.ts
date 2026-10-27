@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cloned-apart-filter-unknowing",
+    breaks: "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
+    file: "src/lower/mir/iter.rs",
+    find: "                if matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {\n",
+    replace: "                if false && matches!(parted, Parted::Map | Parted::Filter) && cx.stepped_from_its_back(output) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
+  },
+  {
     name: "mir-max-is-min",
     breaks: "`max()` of an iterator from MIR is its least item",
     file: "src/lower/mir/iter.rs",
