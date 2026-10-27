@@ -1125,6 +1125,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Given::Nulled;
         }
+        // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
+        // field's, is what it's made of (ADR 0841, amended).
+        if let Some((func, args)) = call
+            && let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx))
+            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellNew)
+            && let [arg] = &args[..]
+        {
+            return self.stored_given(state, &arg.node);
+        }
         if itself
             && let Some((func, args)) = call
             && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))

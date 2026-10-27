@@ -790,6 +790,10 @@ fn applied_in_place(items: &mut [js::Item]) {
             js::applied_blocks(&mut function.body, true);
         }
     }
+    // What a nullable place stores, `x ?? null`, of what's now read in
+    // the parameter's place, a nullable thread-local's lent value, never
+    // `undefined`: `x` (ADR 0841, amended).
+    js::each_item_expr_mut(items, &mut js::Expr::store_again);
 }
 
 /// `const g = $borrow(h, true)` of a handle `h` made there, a plain

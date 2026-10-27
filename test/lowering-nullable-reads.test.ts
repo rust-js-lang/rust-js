@@ -288,3 +288,58 @@ pub fn other(next: Option<&'static Unknown>) -> bool {
   const next = { instance: 3 };
   expect([lib.claim(1, next), next, lib.claim(2, undefined), lib.other({ instance: 0 }), lib.other(undefined)]).toEqual([3, { instance: 3, id: 1 }, undefined, true, false]);
 });
+
+// React's hooks store what's never `undefined` where `None` is `null`:
+// `lastRenderedReducer: reducer`, a `Cell::new(Some(reducer))` of a
+// nullable field, and `ReactSharedInternals.H = HooksDispatcherOnUpdateInDEV`,
+// a nullable thread-local's value, `with`'s, given a nullable parameter.
+// Each is `null` or a value already, stored as it is, no `?? null` (ADR
+// 0841, amended).
+test("a Some made into a nullable field's Cell, and a nullable thread-local's lent value, are stored as they are", async () => {
+  const dir = fixture("nullable-stored-as-is");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Queue {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub last_rendered_reducer: Cell<Option<&'static dyn Fn(u32) -> u32>>,
+}
+
+pub struct Dispatcher {
+    pub use_id: fn() -> u32,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static ON_UPDATE_IN_DEV: Option<Dispatcher> = Some(Dispatcher { use_id: || 1 });
+}
+
+/// JS's, \`globalThis.setH\`, which keeps what it's given.
+#[cfg_attr(rust_js, rust_js::link_name = "setH")]
+#[cfg_attr(rust_js, rust_js::nullable(dispatcher))]
+#[allow(unused_variables)]
+fn set_h(dispatcher: Option<&Dispatcher>) {
+    unreachable!()
+}
+
+pub fn make(reducer: &'static dyn Fn(u32) -> u32) -> Queue {
+    Queue { last_rendered_reducer: Cell::new(Some(reducer)) }
+}
+
+pub fn dispatch() {
+    ON_UPDATE_IN_DEV.with(|dispatcher| set_h(dispatcher.as_ref()));
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { lastRenderedReducer: reducer };");
+  expect(js).toContain("  setH(onUpdateInDev);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.make((n: number) => n + 1).lastRenderedReducer(1)).toBe(2);
+  const kept: any[] = [];
+  (globalThis as any).setH = (dispatcher: any) => kept.push(dispatcher);
+  lib.dispatch();
+  expect(kept.map((dispatcher) => dispatcher.useId())).toEqual([1]);
+});

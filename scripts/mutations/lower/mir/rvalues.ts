@@ -556,4 +556,12 @@ export const mutations: Mutation[] = [
     replace: "                        if false\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
   },
+  {
+    name: "cell-new-of-some-unknown",
+    breaks: "a `Cell::new(Some(reducer))` of a nullable field is taken to maybe be `undefined`, `lastRenderedReducer: reducer ?? null` (ADR 0841, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            return self.stored_given(state, &arg.node);\n        }\n        if itself\n",
+    replace: "            return Given::Unknown;\n        }\n        if itself\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
+  },
 ];

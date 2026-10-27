@@ -3,7 +3,8 @@
 Status: Accepted. Amended: a nullable function's result, kept in a
 variable or a `Drop` guard's field, is stored as it is, and a trait's
 method's isn't taken as one; stored again where it's read in place; an
-`and_then` of one is `null` for `None` wherever it's kept. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
+`and_then` of one is `null` for `None` wherever it's kept; a `Cell` made
+of a `Some`, and what a closure put in its place is given. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
 whose `Storage::written` kept as it is only a constant and what MIR's
 `nulled` says; and [0781](0781-a-none-only-nullables-read-is-null-where-its-made.md),
 whose variable only nullable fields read was of `Option`s made, now of a
@@ -295,3 +296,38 @@ Held by `test/lowering-nullable-reads.test.ts`'s "an and_then of a
 closure of a nullable function's call is null for None", run, and the
 mutation `and-then-of-closure-of-nullable-none-undefined` (`calls.ts`).
 
+## Amendment (2026-10-27): a `Cell` made of a `Some`, and a closure put in its place
+
+React's hooks store, where `None` is `null`, what's never `undefined`:
+`lastRenderedReducer: reducer` of a queue made, and
+`ReactSharedInternals.H = HooksDispatcherOnUpdateInDEV`, a nullable
+thread-local's value given a nullable binding's parameter. Ported, the
+first is `last_rendered_reducer: Cell::new(Some(reducer))`, a nullable
+field's `Cell`, and was `reducer ?? null`: MIR's `nulled` (`stored_given`)
+knew `Some(reducer)` but not the `Cell` made of it. The second,
+`ON_UPDATE_IN_DEV.with(|d| set_h(d.as_ref()))`, was `setH(onUpdateInDev ??
+null)`: the closure's body stores what it's given, which it can't know,
+and the closure called where it's made is put in its place after tidy's
+`stored again` ran, given the thread-local's read, `null` or a value.
+
+- **A `Cell` made of what's `null` or a value already is so**:
+  `stored_given` sees through `Cell::new(x)` to `x`.
+- **What a closure put in its place is given is stored again**: after
+  `applied_in_place` (`std_types/cell.rs`), `made ?? null` of what's now
+  never `undefined` is `made`, `Expr::store_again`, as tidy's pass does.
+
+Case A: `x ?? null` is `x` of what's never `undefined`.
+
+```js
+export function make(reducer) {
+  return { lastRenderedReducer: reducer };
+}
+export function dispatch() {
+  setH(onUpdateInDev);
+}
+```
+
+Held by `test/lowering-nullable-reads.test.ts`, "a Some made into a
+nullable field's Cell, and a nullable thread-local's lent value, are
+stored as they are", run; mutations `cell-new-of-some-unknown`
+(`mir/rvalues.ts`) and `applied-stored-again-skipped` (`std_types/cell.ts`).

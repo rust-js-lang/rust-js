@@ -510,4 +510,12 @@ export const mutations: Mutation[] = [
     replace: "            js::Item::Const(_) => {}\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local's with in a closure of a constant's value is its body"],
   },
+  {
+    name: "applied-stored-again-skipped",
+    breaks: "a closure put in its place keeps a nullable store's `?? null` of what it's now given, never `undefined` (ADR 0841, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "    js::each_item_expr_mut(items, &mut js::Expr::store_again);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
+  },
 ];
