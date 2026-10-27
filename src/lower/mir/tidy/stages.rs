@@ -688,6 +688,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A `continue` or a loop's `break` the program wrote, where it
             // wrote it, which its comment is before (ADR 0684, amended).
             pass("written jumps", |b, h| {
+                written_breaks_of_last_loops(b, &h.written.breaks);
                 js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
             }),
         ],

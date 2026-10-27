@@ -212,3 +212,25 @@ comments, run nothing.
 - Mutations `restored-continue-at-its-if`, `loop-tail-continue-kept`
   (`tidy/jumps/continues.ts`), `loop-bound-let-kept` (`tidy/loops.ts`)
   and `written-extent-of-a-binding` (`to_oxc.ts`).
+
+## Amendment: a `break` of the loop a function ends with is a `break` (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jump: past
+the loop a function ends with is its end.
+
+React's commitDeletedPairViewTransitions, `while (child !== null) { .. if
+(pairs.size === 0) { break; } .. }`, the loop its function ends with
+(cv5 of the port's gaps). MIR's jump of the `break` goes to the function's
+end, the `return` its loop's end goes to, and the JS was `if (..) {
+return; }`.
+
+**In the loop a function ends with, an `if` the program wrote of a
+`break` (`Written::breaks`) whose `then` ends `return;` ends `break;`**
+(`continues::written_breaks_of_last_loops`), as written; not in a loop or
+a `switch` inside it, which a `break;` would leave instead, and not a
+`return` the program wrote.
+
+Held by `test/lowering-early-exits.test.ts`, "a break of the loop a
+function ends with is a break", run, beside a written `return`; the
+mutations `last-loop-break-returned` and `last-loop-return-of-any-if-broken`
+(`mir/tidy/jumps/continues.ts`).

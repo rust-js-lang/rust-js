@@ -5,6 +5,22 @@ const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are a
 
 export const mutations: Mutation[] = [
   {
+    name: "last-loop-break-returned",
+    breaks: "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                            last.kind = StmtKind::Break(None);\n",
+    replace: "                            last.kind = StmtKind::Return(None);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "break of the loop a function ends with"],
+  },
+  {
+    name: "last-loop-return-of-any-if-broken",
+    breaks: "a `return` the program wrote in the loop a function ends with is a `break`, so the loop goes on after it, a wrong answer (ADR 0684, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                        .any(|(test, _)| !span.is_none() && span.lo <= test.lo && test.hi <= span.hi);\n",
+    replace: "                        .any(|_| true);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "break of the loop a function ends with"],
+  },
+  {
     name: "default-tail-continue-kept",
     breaks: "a `switch` that ends a loop's body keeps its `default`'s `continue;`, which goes on anyway (ADR 0905, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",

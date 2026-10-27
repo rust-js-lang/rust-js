@@ -727,3 +727,32 @@ pub fn fiber(tag: u8, root: Option<Rc<Fiber>>) -> Rc<Fiber> {
   // Not an `if` whose `then` the program wrote with the rest in it.
   expect(js).toContain("  if (fiber.tag !== 3) {\n    if (root == null) {\n      return;\n    }\n    log.push(fiber.tag);\n  }\n");
 });
+
+// React's commitDeletedPairViewTransitions, `while (child !== null) { ..
+// if (pairs.size === 0) { break; } .. }`, the loop its function ends with:
+// MIR's jump of the `break` goes to the function's end, which printed
+// `return;`. The `break` the program wrote, where it wrote it (ADR 0684,
+// amended); a `return` it wrote stays.
+test("a break of the loop a function ends with is a break", async () => {
+  const { js, lib } = await compiled("break-of-last-loop", `pub fn find(items: &[u32], wanted: &mut Vec<u32>, log: &mut Vec<u32>) {
+    for &item in items {
+        if let Some(index) = wanted.iter().position(|&w| w == item) {
+            wanted.remove(index);
+            if wanted.is_empty() {
+                break;
+            }
+        }
+        if item == 0 {
+            return;
+        }
+        log.push(item);
+    }
+}
+`);
+  expect(js).toContain("      if (wanted.length === 0) {\n        break;\n      }\n");
+  expect(js).toContain("    if (item === 0) {\n      return;\n    }\n");
+  const [wanted, log]: number[][] = [[2, 3], []];
+  lib.find([1, 2, 4, 3, 5] as never, wanted as never, log as never);
+  lib.find([6, 0, 7] as never, [9] as never, log as never);
+  expect(log).toEqual([1, 2, 4, 6]);
+});

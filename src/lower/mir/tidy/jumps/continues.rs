@@ -137,6 +137,45 @@ pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards:
     }
 }
 
+/// `for (..) { .. if (c) { ..; return; } .. }`, the loop a function ends
+/// with, whose `return;` MIR made of a `break` the program wrote there, `if c
+/// { ..; break; }` (`Written::breaks`), the function's end the loop's: that
+/// `break;`, as written, React's commitDeletedPairViewTransitions' `if
+/// (pairs.size === 0) { break; }` (ADR 0684, amended). Not in a loop or a
+/// `switch` inside it, which a `break;` would leave instead.
+pub(in crate::lower::mir::tidy) fn written_breaks_of_last_loops(body: &mut [Stmt], breaks: &[(js::Span, js::Span)]) {
+    fn broken(stmts: &mut [Stmt], breaks: &[(js::Span, js::Span)]) {
+        for stmt in stmts {
+            let span = stmt.span;
+            match &mut stmt.kind {
+                StmtKind::If(_, then, otherwise) => {
+                    let written = breaks
+                        .iter()
+                        .any(|(test, _)| !span.is_none() && span.lo <= test.lo && test.hi <= span.hi);
+                    match then.last_mut() {
+                        Some(last) if written && matches!(last.kind, StmtKind::Return(None)) => {
+                            last.kind = StmtKind::Break(None);
+                        }
+                        _ => broken(then, breaks),
+                    }
+                    if let Some(otherwise) = otherwise {
+                        broken(otherwise, breaks);
+                    }
+                }
+                StmtKind::Labeled(_, inner) => broken(inner, breaks),
+                _ => {}
+            }
+        }
+    }
+    if let Some(Stmt {
+        kind: StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. },
+        ..
+    }) = body.last_mut()
+    {
+        broken(body, breaks);
+    }
+}
+
 pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Span)], span: js::Span) -> bool {
     continues
         .iter()
