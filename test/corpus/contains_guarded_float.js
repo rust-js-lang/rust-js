@@ -37,7 +37,7 @@ function merge(values, into) {
     }
     let contains;
     try {
-      contains = tmp$1.some((each) => each === v);
+      contains = tmp$1.indexOf(v) >= 0;
     } catch (error) {
       $unborrow(tmp$1);
       $unborrow(borrow);

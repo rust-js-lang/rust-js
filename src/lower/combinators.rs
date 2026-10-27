@@ -755,8 +755,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let which = comb == Comb::IsOkAnd;
                 Expr::bin(Op::And, tag(which), holds)
             }
-            // `v.contains(&x)`: JS's `includes` for what `===` compares, and
-            // `==` item by item for the rest (ADR 0053).
+            // `v.contains(&x)` (ADRs 0053, 0966), `contained`'s.
             Comb::SplitOff => helper("$splitOff", vec![subject, next()]),
             Comb::BinarySearch => {
                 let item =
@@ -768,16 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self
                     .slice_item(subject_ty)
                     .ok_or_else(|| self.unsupported(span, "`contains` of this"))?;
-                if self.eq_is_identity(item) {
-                    Expr::call(Expr::member(subject, "includes"), vec![x])
-                } else {
-                    let x = once(self, x, "item", out);
-                    let mut body = Vec::new();
-                    let same = self.eq_value(Expr::var("each"), x, item, span, &mut body)?;
-                    body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
-                    let f = Expr::arrow(vec!["each".into()], body);
-                    Expr::call(Expr::member(subject, "some"), vec![f])
-                }
+                self.contained(subject, x, item, span, out)?
             }
             Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), span, out)?,
             // Each item a clone, as `to_vec()` makes them.

@@ -151,6 +151,10 @@ pub fn all_stocked(items: &[Item]) -> bool {
 pub fn has_number(xs: &[i32], x: i32) -> bool {
     xs.contains(&x)
 }
+
+pub fn has_float(xs: &[f64], x: f64) -> bool {
+    xs.contains(&x)
+}
 ```
 
 ```js
@@ -187,6 +191,10 @@ export function allStocked(items) {
 export function hasNumber(xs, x) {
   return xs.includes(x);
 }
+
+export function hasFloat(xs, x) {
+  return xs.indexOf(x) >= 0;
+}
 ```
 
 | JS | Rust |
@@ -197,7 +205,7 @@ export function hasNumber(xs, x) {
 | `find` | `iter().find(..)`, an `Option` |
 | `findIndex` | `iter().position(..)`, an `Option`, never `-1` |
 | `some`, `every` | `iter().any(..)`, `iter().all(..)` |
-| `includes` | `contains(&x)` |
+| `includes` | `contains(&x)`; of floats, which `==` finds no `NaN` of, `indexOf(x) >= 0` ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md)) |
 | `flat` | `iter().flatten()` |
 | `slice(a, b)` | `&v[a..b]` |
 | `forEach` | `for x in &v` |

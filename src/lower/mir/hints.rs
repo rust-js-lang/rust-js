@@ -1000,25 +1000,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The names each of whose locals is a `bool`, a shared reference to one
-    /// too, which JS reads as it, of a closure what it captures too; and the
-    /// names each of whose locals is an integer.
+    /// too, which JS reads as it, of a closure what it captures too; the
+    /// names each of whose locals is an integer; and those each of whose
+    /// locals is a float, a JS number too (ADR 0966).
     pub(super) fn typed_names(
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> (std::collections::HashSet<String>, std::collections::HashSet<String>) {
+    ) -> (
+        std::collections::HashSet<String>,
+        std::collections::HashSet<String>,
+        std::collections::HashSet<String>,
+    ) {
         // A name each of whose locals is a `bool`, and one each of whose
         // locals is an integer.
         let mut booleans = std::collections::HashSet::new();
         let mut others = std::collections::HashSet::new();
         let mut numbers = std::collections::HashSet::new();
         let mut not_numbers = std::collections::HashSet::new();
+        let mut floats = std::collections::HashSet::new();
+        let mut not_floats = std::collections::HashSet::new();
         for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;
             match ty.is_integral() {
                 true => numbers.insert(name.clone()),
                 false => not_numbers.insert(name.clone()),
+            };
+            match ty.is_floating_point() {
+                true => floats.insert(name.clone()),
+                false => not_floats.insert(name.clone()),
             };
             let bool = match ty.kind() {
                 ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),
@@ -1046,7 +1057,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         booleans.retain(|name| !others.contains(name));
         numbers.retain(|name| !not_numbers.contains(name));
-        (booleans, numbers)
+        floats.retain(|name| !not_floats.contains(name));
+        (booleans, numbers, floats)
     }
 }
 

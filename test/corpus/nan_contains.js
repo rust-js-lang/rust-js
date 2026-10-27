@@ -7,7 +7,7 @@ export function entry() {
 function main() {
   const values = [NaN, 1, -0];
   console.log(
-    `${values.some((each) => each === NaN)} ${values.some((each) => each === 1)} ${values.some((each) => each === 0)}`,
+    `${values.some((each) => each === NaN)} ${values.indexOf(1) >= 0} ${values.indexOf(0) >= 0}`,
   );
   const held = [NaN];
   console.log(`${held.some((each) => each === NaN)}`);

@@ -696,4 +696,13 @@ export const mutations: Mutation[] = [
     replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[]))\n            }),\n            pass(\"written order steps\"",
     tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
   },
+  {
+    name: "ordered-floats-unread",
+    breaks: "a float's `partial_cmp(&b) != Some(Less)` stays `$partialCmp(a, b) !== -1`, not React's `!(a < b)` (ADR 0966)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::each_expr_mut(b, &mut |e| ordered_floats(e, h.floats))\n",
+    replace: "                js::each_expr_mut(b, &mut |_| ())\n",
+    tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
+    snapshots: true,
+  },
 ];

@@ -828,4 +828,21 @@ export const mutations: Mutation[] = [
     replace: "                    if self.js_eq(payload).unwrap_or(JsEq::SameValue) == JsEq::Strict {\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_eq_by_value.rs$"],
   },
+  {
+    name: "contains-strict-some",
+    breaks: "`contains` of floats is `some((each) => each === x)`, not `indexOf(x) >= 0`, React's `nextInstanceRoots.indexOf(target) < 0` (ADR 0966)",
+    file: "src/lower/std_impls.rs",
+    find: "        if body.is_empty() && strict {\n",
+    replace: "        if body.is_empty() && strict && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "contains-strict-includes",
+    breaks: "`contains` of floats is `includes(x)`, which finds `NaN`, where Rust's `==` doesn't (ADR 0966)",
+    file: "src/lower/std_impls.rs",
+    find: "                Expr::call(Expr::member(items, \"indexOf\"), vec![x]),\n                Expr::int(0),\n",
+    replace: "                Expr::call(Expr::member(items, \"includes\"), vec![x]),\n                Expr::bool(true),\n",
+    tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
+  },
 ];

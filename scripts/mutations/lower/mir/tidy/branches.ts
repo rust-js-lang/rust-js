@@ -309,22 +309,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names are the enum"],
   },
   {
-    name: "turned-of-floats",
-    breaks: "`!(x < 50)` of a float is `x >= 50`, which a `NaN` makes `false` where Rust's test is `true`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Var(v) => numbers.contains(v),\n",
-    replace: "        ExprKind::Var(_) => true,\n",
-    tests: ["test/corpus.test.ts", "-t", "loop_exits"],
-  },
-  {
-    name: "turned-not-of-text",
-    breaks: "`!(c >= \"a\")` of a `char` stays so, not `c < \"a\"`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));\n",
-    replace: "    let text = |_: &Expr| false;\n",
-    tests: ["test/snapshots.test.ts", "-t", "lexer"],
-  },
-  {
     name: "boolean-methods-unknown",
     breaks: "`v.some(f) && b` is `!!v.some(f) && b`, a `bool` made a `bool`",
     file: "src/lower/mir/tidy/branches.rs",

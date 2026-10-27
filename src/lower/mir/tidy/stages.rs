@@ -618,6 +618,9 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`; a guard's too,
             // that a case of a `switch` tests negated (ADR 0905).
+            pass("ordered floats", |b, h| {
+                js::each_expr_mut(b, &mut |e| ordered_floats(e, h.floats))
+            }),
             pass("turned", |b, h| js::each_expr_mut(b, &mut |e| turned(e, h.numbers))),
             // A block the program labeled that a `break` in a `switch` or
             // a loop of a case leaves: the label of the `switch` it leaves

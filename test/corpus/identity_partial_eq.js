@@ -21,9 +21,7 @@ function main() {
     `${differ(first, again)} ${differ(first, alike)} ${differ(undefined, first)} ${differ(undefined)}`,
   );
   const updates = [first, alike];
-  console.log(
-    `${has(updates, again, { eq: (a, b) => a === b })} ${updates.some((each) => each === alike)}`,
-  );
+  console.log(`${has(updates, again, { eq: (a, b) => a === b })} ${updates.indexOf(alike) >= 0}`);
   const lone = { lane: 2 };
   console.log(`${has([lone], lone, { eq: (a, b) => a === b })} ${(lone.lane + first.lane) >>> 0}`);
 }

@@ -1000,8 +1000,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let captured = std::mem::replace(&mut self.locals.mir.captured, outer_captured);
-        // The names of `bool`s, and of integers.
-        let (mut booleans, numbers) = self.typed_names(mir_body, &state);
+        // The names of `bool`s, of integers, and of floats.
+        let (mut booleans, numbers, floats) = self.typed_names(mir_body, &state);
         // And each field path that's a `bool` each time it's read.
         booleans.extend(
             (self.locals.mir.paths.iter())
@@ -1030,6 +1030,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 kept: &hints::kept_captures(&state),
                 booleans: &booleans,
                 numbers: &numbers,
+                floats: &floats,
                 plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),

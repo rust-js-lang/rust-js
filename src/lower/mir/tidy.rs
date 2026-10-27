@@ -11,6 +11,7 @@ use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
 mod bindings;
 mod branches;
+mod comparisons;
 mod contracts;
 mod copied;
 mod decisions;
@@ -32,8 +33,8 @@ pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_pa
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
-    bindings::*, branches::*, copied::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*, options::*,
-    switches::switched, values::*,
+    bindings::*, branches::*, comparisons::*, copied::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*,
+    options::*, switches::switched, values::*,
 };
 use super::hints::{LabeledBlock, Switch};
 
@@ -91,6 +92,9 @@ pub(super) struct Hints<'h> {
     pub(super) booleans: &'h HashSet<String>,
     /// The variables of Rust's integers: JS's numbers, which `++` steps.
     pub(super) numbers: &'h HashSet<String>,
+    /// The variables of Rust's floats: JS's numbers, never an object whose
+    /// `valueOf` a comparison runs (ADR 0966).
+    pub(super) floats: &'h HashSet<String>,
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
     pub(super) plain: &'h HashSet<String>,

@@ -853,41 +853,6 @@ pub(super) fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
     }
 }
 
-/// `!(b >= 48)`, a comparison of what's never `NaN`: `b < 48`, as a person
-/// writes it. An integer is never `NaN`, nor what a bitwise operator or a
-/// `length` gives; a string compared, to a string literal as Rust's types
-/// say, is ordered too. A float may be `NaN`, neither less nor more (ADR
-/// 0371).
-pub(super) fn turned(e: &mut Expr, numbers: &HashSet<String>) {
-    let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind else {
-        return;
-    };
-    let ExprKind::Binary(op, a, b) = &inner.kind else {
-        return;
-    };
-    let op = match op {
-        Op::Lt => Op::Ge,
-        Op::Le => Op::Gt,
-        Op::Gt => Op::Le,
-        Op::Ge => Op::Lt,
-        _ => return,
-    };
-    let never_nan = |x: &Expr| match &x.kind {
-        ExprKind::Var(v) => numbers.contains(v),
-        ExprKind::Num(n) => n.fract() == 0.0,
-        ExprKind::Binary(Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr, ..) => true,
-        ExprKind::Member(_, m) => m == "length",
-        _ => false,
-    };
-    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));
-    if text(a) || text(b) || (never_nan(a) && never_nan(b)) {
-        *e = Expr {
-            span: e.span,
-            ..Expr::bin(op, (**a).clone(), (**b).clone())
-        };
-    }
-}
-
 /// `if (c) { s; result = a; } else { result = b; } return result;`, the
 /// function's value its branches make: returned where each is made, `if (c)
 /// { s; return a; } return b;`, at the `return`s the program wrote. Of a

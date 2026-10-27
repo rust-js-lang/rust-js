@@ -35,7 +35,7 @@ function main() {
     console.log(`${sizeDebug_fmt(a)} [${row.join(", ")}]`);
   }
   // `NaN` isn't found, as Rust's `==` finds none.
-  console.log(`${sizes.some((each) => each === NaN)} ${sizes.some((each) => each === "1")}`);
+  console.log(`${sizes.some((each) => each === NaN)} ${sizes.indexOf("1") >= 0}`);
   const items = [1, 2];
   console.log(`${$eq(items, [1, 2])} ${items === 2}`);
 }

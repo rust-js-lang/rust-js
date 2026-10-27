@@ -1053,12 +1053,19 @@ pub fn at_least(a: &Unknown, b: &Unknown) -> bool {
 pub fn ordered(a: &Unknown, b: &Unknown) -> Option<std::cmp::Ordering> {
     a.partial_cmp(b)
 }
+
+pub fn not_less(a: &Unknown, b: &Unknown) -> bool {
+    a.partial_cmp(b) != Some(std::cmp::Ordering::Less)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  if (a === b) {\n    return 0;\n  }\n  return a < b ? -1 : 1;\n");
   expect(js).toContain("  return a > b;\n");
   expect(js).toContain("  return $partialCmp(a, b) <= 0;\n");
+  // Not \`!(a < b)\`, as of floats (ADR 0966): the helper may run a
+  // \`valueOf\` twice.
+  expect(js).toContain("  return $partialCmp(a, b) !== -1;\n");
   const lib = await import(join(dir, "lib.js"));
   const o = {};
   expect([lib.compare(1, 2), lib.compare("b", "a"), lib.compare(o, o), lib.compare("a", "ab")]).toEqual([-1, 1, 0, -1]);

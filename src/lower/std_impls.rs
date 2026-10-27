@@ -1028,6 +1028,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(super::representation::symbol_for(text.clone()))
     }
 
+    /// `items.contains(&x)` of `item`s: JS's `includes` for what `===`
+    /// compares (ADR 0053); `indexOf(x) >= 0` for what `===` compares but
+    /// `NaN`, a float or a value of any shape, which `indexOf` never finds,
+    /// as Rust's `==` doesn't, where `includes` would (ADR 0966); and `==`
+    /// item by item for the rest.
+    pub(super) fn contained(
+        &mut self,
+        items: Expr,
+        x: Expr,
+        item: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if self.eq_is_identity(item) {
+            return Ok(Expr::call(Expr::member(items, "includes"), vec![x]));
+        }
+        let x = match x.reads_same() {
+            true => x,
+            false => self.spill("item", x, out),
+        };
+        let mut body = Vec::new();
+        let same = self.eq_value(Expr::var("each"), x.clone(), item, span, &mut body)?;
+        let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
+            if matches!(&each.kind, js::ExprKind::Var(v) if v == "each") && **of == x);
+        if body.is_empty() && strict {
+            return Ok(Expr::bin(
+                Op::Ge,
+                Expr::call(Expr::member(items, "indexOf"), vec![x]),
+                Expr::int(0),
+            ));
+        }
+        body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
+        let f = Expr::arrow(vec!["each".into()], body);
+        Ok(Expr::call(Expr::member(items, "some"), vec![f]))
+    }
+
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
