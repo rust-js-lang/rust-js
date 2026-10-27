@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "library-shape-any",
     breaks: "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0852)",
     file: "src/lower/library.rs",
-    find: "            *of == head_key(tcx, &head)\n",
-    replace: "            true\n",
+    find: "        (Some(of), Some((head, args))) => {\n            *of == head_key(tcx, &head)\n",
+    replace: "        (Some(of), Some((head, args))) => {\n            true\n",
     tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
   },
   {
