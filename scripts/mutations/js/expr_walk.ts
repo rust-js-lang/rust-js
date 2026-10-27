@@ -81,7 +81,8 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "                        \"BigInt\" => matches!(name.as_str(), \"asIntN\" | \"asUintN\"),\n",
     "replace": "                        \"BigInt\" => false,\n",
-    "tests": ["test/lowering-numbers.test.ts", "-t", "a wide field updated from MIR"]
+    "tests": ["test/corpus.test.ts", "-t", "^value_keys.rs$"],
+    "snapshots": true
   },
   {
     "name": "math-call-does",
