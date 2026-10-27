@@ -244,3 +244,47 @@ pub fn find_strict_root(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
   expect(lib.popSearchTarget()).toBe(child);
   expect([lib.findStrictRoot(child as never), lib.findStrictRoot({ tag: 1, return: null } as never)]).toEqual([root, null]);
 });
+
+// ADR 0841, amended: React's claimNextHydratableActivityInstance, `const
+// activityInstance = nextInstance ? tryHydrateActivity(fiber, nextInstance)
+// : null;`. An `and_then` of a closure whose value is a nullable function's
+// call is `null` for `None`, as of the function itself; of a closure of
+// another function's, `undefined`.
+test("an and_then of a closure of a nullable function's call is null for None", async () => {
+  const dir = fixture("and-then-closure-nullable");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn try_hydrate(id: u32, next: &'static Unknown) -> Option<&'static Unknown> {
+    js::set(next, "id", id);
+    js::get(next, "instance")
+}
+
+fn plain(next: &'static Unknown) -> Option<&'static Unknown> {
+    js::get(next, "instance")
+}
+
+pub fn claim(id: u32, next: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    let instance = next.and_then(|next| try_hydrate(id, next));
+    let Some(instance) = instance else {
+        return None;
+    };
+    Some(instance)
+}
+
+pub fn other(next: Option<&'static Unknown>) -> bool {
+    let instance = next.and_then(|next| plain(next));
+    instance.is_some()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const instance = next != null ? tryHydrate(id, next) : null;\n");
+  expect(js).toContain(": undefined;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const next = { instance: 3 };
+  expect([lib.claim(1, next), next, lib.claim(2, undefined), lib.other({ instance: 0 }), lib.other(undefined)]).toEqual([3, { instance: 3, id: 1 }, undefined, true, false]);
+});

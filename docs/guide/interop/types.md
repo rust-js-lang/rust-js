@@ -870,7 +870,9 @@ export function ratio(a, b) {
   guard's field, `ReactSharedInternals.T = prevTransition;`, or what an
   `and_then` of one gives, `source != null ? nameOf(source) : null`, its
   `None` `null` wherever it's kept, a variable too, `const ownerName =
-  owner ? nameOfOwner(owner) : null`, but not a trait's method's, whose
+  owner ? nameOfOwner(owner) : null`, and of a closure of its call,
+  `next.and_then(|next| try_hydrate(fiber, next))`'s `next != null ?
+  tryHydrate(fiber, next) : null`, but not a trait's method's, whose
   impl may give `undefined`
   ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md),
   amended).

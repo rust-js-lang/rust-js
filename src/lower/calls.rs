@@ -244,9 +244,12 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
 /// `None` is, so the whole `Option` is `f`'s, React's `owner ?
 /// getComponentNameFromOwner(owner) : null` (ADR 0841, amended); else
 /// `undefined`, as a `None` is.
+/// Of a closure, where what it gives is such a call, never `undefined`,
+/// `|i| try_hydrate_activity(fiber, i)`'s, the same (ADR 0841, amended).
 pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Expr) -> (Expr, Expr) {
     let none = match f.kind() {
         ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),
+        ty::Closure(..) if then.facts.has(crate::js::Known::Defined) => Expr::null(),
         _ => Expr::undefined(),
     };
     (given_by(tcx, f, then), none)

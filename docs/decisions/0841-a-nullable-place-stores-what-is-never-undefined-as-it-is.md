@@ -275,3 +275,23 @@ function is stored as it is", now with a variable tested for truth and
 one tested `is_some()`, run; mutations `and-then-of-nullable-none-undefined`
 (`lower/calls.ts`) and `filtered-and-then-none-undefined`
 (`lower/combinators.ts`).
+
+## Amendment: an `and_then` of a closure of a nullable function's call
+
+React's claimNextHydratableActivityInstance writes `const
+activityInstance = nextInstance ? tryHydrateActivity(fiber,
+nextInstance) : null;`; its port, `next_instance.and_then(|next_instance|
+try_hydrate_activity(fiber, next_instance))`, printed `: undefined`:
+`and_then_given` gave `null` only of a function item that
+`gives_null_for_none`, and a closure is none.
+
+**An `and_then` of a closure whose value, inlined, is known never
+`undefined` (`Known::Defined`), a nullable function's call, gives `null`
+where what it's of is `None`**, so the whole `Option` is the call's, as
+of the function itself. A closure of anything else is as before, `:
+undefined`. Case N ([0262](0262-when-rust-and-js-disagree.md)), as above.
+
+Held by `test/lowering-nullable-reads.test.ts`'s "an and_then of a
+closure of a nullable function's call is null for None", run, and the
+mutation `and-then-of-closure-of-nullable-none-undefined` (`calls.ts`).
+
