@@ -766,6 +766,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0979 A dictionary a body writes twice is declared once at its top](0979-a-dictionary-a-body-writes-twice-is-declared-once.md)
 - [0980 std's struct given to std's `rev()` is given as it is](0980-std-s-struct-given-to-rev-is-given-as-it-is.md)
 - [0981 A held struct's `rfold` is std's compiled one where it reaches the crate's own](0981-a-held-struct-s-rfold-is-std-s-compiled-one.md)
+- [0982 A lent iterator keeps its back and its length](0982-a-lent-iterator-keeps-its-back.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

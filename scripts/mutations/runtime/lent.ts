@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-back-unpassed",
+    breaks: "a JS iterator lent as a `&mut` keeps none of its back, so `r.copied().next_back()` of an `&mut R` throws `it.back is not a function` (ADR 0982)",
+    file: "src/runtime/lent.js",
+    find: "  if (it.back !== undefined) lent.back = () => it.back();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_parameter.rs$"],
+  },
+  {
     name: "lent-nth-drop-unpassed",
     breaks: "a lent iterator's `nth` doesn't pass on the items' drop, so a chain's `nth` past a compiled `fuse()`'s items never drops them (#285)",
     file: "src/runtime/lent.js",
