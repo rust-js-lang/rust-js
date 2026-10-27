@@ -140,3 +140,19 @@ $unwrap(ReactSharedInternals.thrownErrors).length = 0;
 - Mutations in `scripts/mutations/lower/analysis/cell_borrows.ts`:
   `binding-runs-nothing-ignored`, `is-defined-runs-code`,
   `js-object-deref-runs-code`.
+
+## Amendment: `js::null()` runs nothing (2026-10-27)
+
+React's `updateReducerImpl` clones an update, `{ .., gesture:
+update.gesture, .., next: null }`. Its port's `RefCell::new(js::null())`
+is made while the borrow of `update.gesture` its field before it took is
+held, as a struct literal's temporaries are, and a binding's call was
+taken to run what may borrow the cell: `gesture` became a checked
+`$fieldCell` everywhere, `$borrow($fieldCell(update, "gesture"))` and
+`$cellReplace($borrowMut(..))`.
+
+**`js::null()`, JS's `null` (`JsForm::Null`), runs nothing**, as a
+binding of a JSX element or `typeof` doesn't: `binding_runs_nothing`
+says so. Held by `test/lowering-cell-borrows.test.ts`'s "js::null() made
+while a borrow is held runs nothing"; mutation `null-binding-runs-code`.
+

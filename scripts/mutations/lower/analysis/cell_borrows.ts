@@ -371,4 +371,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
   },
+  {
+    name: "null-binding-runs-code",
+    breaks: "`js::null()` made while a borrow of a field is held is taken to run code that may borrow it, so React's update clone's `gesture` is a checked `$fieldCell` everywhere",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                | JsForm::Null\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "js::null.. made while a borrow"],
+  },
 ];

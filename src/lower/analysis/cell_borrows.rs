@@ -477,8 +477,8 @@ enum Called<'tcx> {
 /// or an object, or casts a value, a component given called when React
 /// renders it; a read of a property, `node.sortIndex`, `in` or
 /// `instanceof`, but by a JS getter that calls back into Rust; whether the
-/// host has a global, `typeof X !== "undefined"`; and one that says it runs
-/// nothing, `#[rust_js::runs_nothing]` (ADR 0867).
+/// host has a global, `typeof X !== "undefined"`; JS's `null`, `js::null()`;
+/// and one that says it runs nothing, `#[rust_js::runs_nothing]` (ADR 0867).
 fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_binding(tcx, id)
         && (matches!(
@@ -497,6 +497,7 @@ fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
                 | JsForm::Defined
                 | JsForm::Function
                 | JsForm::TypeofObject
+                | JsForm::Null
         ) || runs_nothing(tcx, id))
 }
 

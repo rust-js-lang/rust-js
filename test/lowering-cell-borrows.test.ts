@@ -564,3 +564,43 @@ pub fn listened(listener: Rc<dyn Fn()>) -> usize {
   expect(() => borrowed.runHooks()).toThrow("already borrowed");
   expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("$borrowMut(listeners");
 });
+
+// React's update clone, `{ .., gesture: update.gesture, .., next: null }`: a
+// `js::null()` made while a borrow of a field is held, as a struct literal's
+// temporaries are, runs no code, so it can't borrow the field's cell, which
+// stays the value it holds, unchecked (ADR 0863, amended).
+test("js::null() made while a borrow is held runs nothing", async () => {
+  const dir = fixture("null-under-borrow");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct G {
+    pub count: Cell<i32>,
+}
+
+pub struct Update {
+    pub lane: Cell<u32>,
+    pub gesture: RefCell<Option<Rc<G>>>,
+    pub next: RefCell<Option<Rc<Update>>>,
+}
+
+pub fn clone_update(update: &Update) -> Rc<Update> {
+    Rc::new(Update {
+        lane: Cell::new(update.lane.get()),
+        gesture: RefCell::new(update.gesture.borrow().clone()),
+        next: RefCell::new(js::null()),
+    })
+}
+
+pub fn write(update: &Update, gesture: &Rc<G>) {
+    update.gesture.replace(Some(Rc::clone(gesture)));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$fieldCell");
+  expect(js).toContain("  update.gesture = gesture;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const update = { lane: 2, gesture: { count: 1 }, next: null };
+  expect(lib.cloneUpdate(update)).toEqual({ lane: 2, gesture: { count: 1 }, next: null });
+});
