@@ -137,6 +137,49 @@ chromium-headless-shell`, again whenever `bun install` updates Playwright,
 or the pilot's and the browser tests fail to launch (`Executable doesn't
 exist`); and the apps above under Developer Tools.
 
+### A compile cache shared by the worktrees: sccache
+
+Each agent's worktree has a `target/` of its own, so each first builds
+every crate rust-js depends on again, oxc and the rest, minutes of CPU
+the other worktrees already spent. [sccache](https://github.com/mozilla/sccache)
+keeps what rustc wrote for a crate and gives it to the next build that
+asks for the same crate, compiled the same way. Set it up once per machine:
+
+```
+brew install sccache          # or: cargo install sccache --locked
+```
+
+and in `~/.cargo/config.toml`, the user's, not the repository's:
+
+```toml
+[build]
+rustc-wrapper = "/opt/homebrew/bin/sccache"   # `which sccache`
+```
+
+`sccache --show-stats` says what it hit; its cache is 10 GB by default
+(`SCCACHE_CACHE_SIZE`), in `~/Library/Caches/Mozilla.sccache` on macOS.
+
+Why it can't change what rust-js writes:
+
+- Its key is the crate's sources, rustc's binary and version, every flag,
+  the target and the environment rustc reads: any difference compiles anew.
+- rust-js's own compile of a crate to JS doesn't go through it. Cargo runs
+  rust-js as `RUSTC_WRAPPER` from the environment (`tooling/cargo.js`),
+  which wins over the config's wrapper.
+- A crate built incrementally, rust-js itself in a debug build, isn't
+  cached: sccache counts it "non-cacheable" and rustc compiles it.
+- CI doesn't use it, so CI is the check that the cache changed nothing.
+
+What a cache bug would look like, and what to do: a build or link that
+fails in one worktree and not another from the same commit, a native
+crate's error that names a file or line that isn't there, or a local
+failure CI's run of the same commit doesn't have. Build again without the
+cache, `RUSTC_WRAPPER= cargo build`, and if that passes, the cache was
+the cause: clear it, `sccache --stop-server && rm -rf
+~/Library/Caches/Mozilla.sccache`, and file an issue titled "sccache: …"
+with both outputs, so every agent knows. Turn it off for good by removing
+the `rustc-wrapper` line.
+
 ## What a step of the loop costs
 
 On the M3 Max, with the scan off:

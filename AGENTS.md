@@ -200,6 +200,12 @@ workflow jobs, counts or CI times change noticeably. Update its table and
 date using its recount instructions. Local setup is documented in
 [DEVELOPMENT.md](DEVELOPMENT.md#the-mac-with-the-scan-off).
 
+Install [sccache](DEVELOPMENT.md#a-compile-cache-shared-by-the-worktrees-sccache)
+on each machine, so worktrees reuse each other's compiled dependencies. It
+never sits in rust-js's own compile to JS. If a build fails in one worktree
+and not another, or locally and not on CI, rebuild with `RUSTC_WRAPPER=`
+first; if the cache was the cause, clear it and file an issue at once.
+
 ## Keep the disk free
 
 Check `df -h ~` before long work. Clean up periodically and at task end:
