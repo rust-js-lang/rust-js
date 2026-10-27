@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    mapped.hint = () => $sizeHint(this);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
   },
   {
     name: "skip-last-not-nth",

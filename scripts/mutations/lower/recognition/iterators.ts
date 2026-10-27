@@ -590,6 +590,7 @@ export const mutations: Mutation[] = [
     find: "        \"std::iter::Chain\" => Parted::Chain,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
+    snapshots: true,
   },
   {
     name: "zip-not-cloned-apart",

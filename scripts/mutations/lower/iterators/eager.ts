@@ -366,6 +366,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "            if method == \"map\" && crate::lower::iterators::stepped_value(object).is_some() {",
     replace: "            if false {",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
   },
 ];
