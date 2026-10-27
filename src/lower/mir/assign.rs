@@ -193,9 +193,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What's `null` or a value already, as it is (ADR 0949).
             Rvalue::Use(operand, _) => {
                 let nulled = self.nulled(state, operand);
-                self.nullable_written(state, *place, value?, (None, nulled), span)?
+                self.nullable_written(state, *place, value?, nulled, span)?
             }
-            _ => self.nullable_written(state, *place, value?, (None, false), span)?,
+            _ => self.nullable_written(state, *place, value?, false, span)?,
         };
         // A `#[rust_js::nullable]` field assigned, `p.title = None`: its
         // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
@@ -268,8 +268,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's written to a `#[rust_js::nullable]` function's result, where
     /// it's written (ADR 0578): a `None` it makes is `null` already, and a
     /// `Some(x)` is `x` (`null_nones`); a call of a nullable function,
-    /// `made_by`, this one or another, a binding too, is `null` for `None`
-    /// as it is (ADR 0638); another `Option`, a call's or a variable's, is
+    /// this one or another, a binding too, is `null` for `None` as it is,
+    /// which `calls::given_by` marks it (ADRs 0638, 0620, amended); another
+    /// `Option`, a call's or a variable's, is
     /// `null` for `undefined`, `heap[0] ?? null`. Each `return` gives what
     /// was written, so it's written where it's made. So is a call's
     /// `Option` that only nullable fields and parameters read
@@ -281,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         place: Place<'tcx>,
         value: Value<'tcx>,
-        (made_by, nulled): (Option<rustc_span::def_id::DefId>, bool),
+        nulled: bool,
         span: Span,
     ) -> R<Value<'tcx>> {
         let read_nullable = place.projection.is_empty()
@@ -291,7 +292,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (place != Place::from(mir::RETURN_PLACE)
                 || state.writer.is_some()
                 || !bindings::null_result(self.tcx, state.body.source.def_id()))
-            || made_by.is_some_and(|made_by| crate::lower::calls::gives_null_for_none(self.tcx, made_by))
         {
             return Ok(value);
         }

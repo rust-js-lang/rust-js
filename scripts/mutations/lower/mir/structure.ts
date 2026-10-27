@@ -198,14 +198,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each"],
   },
   {
-    name: "nullable-call-unknown",
-    breaks: "a nullable result of a call isn't told the function called, so a nullable function's call is `?? null` too",
-    file: "src/lower/mir/structure.rs",
-    find: ".map(|(def_id, _)| def_id);\n",
-    replace: ".and(None);\n",
-    tests: ["test/lowering-options.test.ts", "-t", "nullable function's call is the call"],
-  },
-  {
     name: "throwing-fn-returns-caught",
     breaks: "a throwing function's result is `return $try(() => \"\" + value);`, not the call, though its callers catch it",
     file: "src/lower/mir/structure.rs",
@@ -299,6 +291,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                            Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),\n",
     replace: "                            Value::Expr(e) => Value::Expr(e),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a variable of what a nullable function gave is returned and stored as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "test/lowering-options.test.ts",
+      "-t",
+      "a variable of what a nullable function gave is returned and stored as it is|nullable function's call is the call",
+    ],
   },
 ];

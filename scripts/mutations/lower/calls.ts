@@ -115,4 +115,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "an and_then of a closure of a nullable"],
   },
+  {
+    name: "nullable-call-of-any-function",
+    breaks: "a nullable result of any function's call is the call, so `plain(n)`'s `None`, `undefined`, is a JS caller's value",
+    file: "src/lower/calls.rs",
+    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => value.defined(),\n",
+    replace: "        ty::FnDef(..) => value.defined(),\n",
+    tests: ["test/lowering-options.test.ts", "-t", "nullable function's call is the call"],
+  },
 ];

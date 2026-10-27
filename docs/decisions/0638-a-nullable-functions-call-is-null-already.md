@@ -79,3 +79,16 @@ keeps its `?? null`; so does a variable a call set, which isn't told.
   `?? null`, each run.
 - Mutations in `scripts/mutations/lower/mir/assign.ts` and
   `scripts/mutations/lower/mir/structure.ts`.
+
+## Amendment: one owner, `calls::given_by`
+
+ADR 0620's amendment marked what a nullable function's call gives never
+`undefined` where the call is made (`calls::given_by`), which a nullable
+place then stores as it is; `nullable_written` asked the same of the
+function the call was made by (`made_by`). Two answers to one rule, and
+either alone wrote the same JS: `nullable-call-coalesced` and
+`nullable-call-unknown`, which took `made_by`'s away, and
+`nullable-call-kept-undefined`, which took `given_by`'s, all survived. The
+mark is the one kept, as a fact the value carries to every place it's
+stored; `made_by` and its two mutations went, and
+`nullable-call-of-any-function` mutates `given_by` now.
