@@ -533,7 +533,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0647 What `is_defined` names is no read; a test kept by its truth is `&&`](0647-type-name-as-react-writes-it.md)
 - [0648 V8's stack trace API is the node crate's, as @types/node types it](0648-v8s-stack-trace-api-is-the-node-crates.md) *(amended by 0653: captureStackTrace bound; 0686: the hook's type is named)*
 - [0649 `#[inline(never)]` is `/** @noinline */`](0649-inline-never-is-noinline.md) *(amended: a function written in a body too)*
-- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0853: a binding the variable it shadows is given last)*
+- [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0853: a binding the variable it shadows is given last; amended: an `if` branch that does more than give the binding is set in place)*
 - [0651 A `let`, then its fallback where it's falsy, is `||`](0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](0652-consecutive-appends-are-one.md)
 - [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*

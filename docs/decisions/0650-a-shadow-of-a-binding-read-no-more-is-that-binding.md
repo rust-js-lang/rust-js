@@ -191,3 +191,35 @@ apart, `let noisy$1;`.
 - Mutations `shadow-set-in-cases-kept-apart`, `-own-value-kept`,
   `-read-after`, `-fallen-unset`, `-left-branch-goes-on`,
   `-unnamed-rest-followed`, `shadow-set-in-branches-own-value-emptied`.
+
+## Amendment: an `if` branch that does more than give the binding is set in place (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same values are
+read where they were: the branch's own value, `x$1 = x`, set nothing new.
+
+React's createWorkInProgress, `let workInProgress = current.alternate; if
+(workInProgress === null) { workInProgress = createFiber(..); .. } else {
+workInProgress.flags = NoFlags; .. }` (r06 of the port's gaps). Its port
+shadows, `let work_in_progress = current.alternate.borrow().clone(); let
+work_in_progress = match work_in_progress { None => { .. }, Some(work_in_progress)
+=> { work_in_progress.flags.set(NO_FLAGS); work_in_progress } };`, an
+`if` whose `else` ends `workInProgress$1 = workInProgress;`. A shadow set
+to the binding's own value was the binding only in a `switch`'s cases,
+lest an `if`'s branch be left empty, `if (a) {} else ..`; so the JS was
+`const workInProgress = ..; let workInProgress$1; if (..) { .. } else {
+..; workInProgress$1 = workInProgress; }`.
+
+**An own value in a list of statements that does more is the binding
+too** (`shadows::shadow_of`), its `x$1 = x` gone: `let workInProgress =
+current.alternate; if (workInProgress == null) { workInProgress = {..};
+current.alternate = workInProgress; } else { workInProgress.flags = 0; }`,
+as upstream. A branch that is the own value alone stays apart, as before.
+A port names the result as the variable it takes apart, shadowing it, as
+upstream assigns one variable; with another name, `let alternate = ..;
+let work_in_progress = match alternate { .. }`, both names stay, as
+written.
+
+Held by `test/corpus/shadow_set_in_cases.rs`'s `work_in_progress`, both
+arms, against native Rust; the mutations
+`shadow-set-in-a-branch-that-does-more-apart` and
+`shadow-set-in-a-branch-of-it-alone` (`mir/tidy/shadows.ts`).

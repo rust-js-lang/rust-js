@@ -144,25 +144,38 @@ fn shadow_of(
     // 0629), it's the binding where nothing names that once it may be set,
     // its own value nothing (ADR 0650, amended).
     let Some(value) = value else {
-        // Not where a branch of an `if` is the binding's own value, which
-        // would leave it empty, `if (a) {} else ..`: a case's `break;` is
-        // upstream's. Each name is the body's own till it's reclaimed (ADR
-        // 0352), so nothing after declares the binding's.
+        // Not where a branch of an `if` is the binding's own value alone,
+        // which would leave it empty, `if (a) {} else ..`: a case's `break;`
+        // is upstream's; and a branch that does more keeps that, `let
+        // work_in_progress = match work_in_progress { .., Some(w) => { ..; w }
+        // }`'s `else { workInProgress.flags = 0; }`, as React's
+        // createWorkInProgress (ADR 0650, amended). Each name is the body's
+        // own till it's reclaimed (ADR 0352), so nothing after declares the
+        // binding's.
         let own = |s: &Stmt| {
             matches!(&s.kind, StmtKind::Assign(target, value)
                 if matches!(&target.kind, ExprKind::Var(v) if *v == shadow)
                     && matches!(&value.kind, ExprKind::Var(v) if *v == binding))
         };
-        let (mut owns, mut in_cases) = (0, 0);
+        let (mut owns, mut kept) = (0, 0);
         js::each_list(&stmts[i + 1..], &mut |list| {
-            owns += list.iter().filter(|s| own(s)).count();
+            let here = list.iter().filter(|s| own(s)).count();
+            owns += here;
+            if list.len() > here {
+                kept += here;
+            }
             for s in list {
                 if let StmtKind::Switch { cases, default, .. } = &s.kind {
-                    in_cases += js::case_lists(cases, default).flatten().filter(|s| own(s)).count();
+                    kept += (js::case_lists(cases, default))
+                        .map(|case| case.iter().filter(|s| own(s)).count())
+                        .zip(js::case_lists(cases, default).map(|case| case.len()))
+                        .filter(|&(here, len)| here == len)
+                        .map(|(here, _)| here)
+                        .sum::<usize>();
                 }
             }
         });
-        if owns != in_cases {
+        if owns != kept {
             return None;
         }
         set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;

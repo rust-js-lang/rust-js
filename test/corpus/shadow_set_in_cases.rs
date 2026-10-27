@@ -4,7 +4,13 @@
 // `unstable_runWithPriority`, `switch (priorityLevel) { case 1: .. break;
 // default: priorityLevel = 3; }`, with a guarded case that falls through,
 // and one set again in a loop after. One whose old value a closure made
-// before reads, or a drop after, stays apart.
+// before reads, or a drop after, stays apart. And of an `Option`, whose arm
+// gives what's in it after doing more: React's createWorkInProgress, `let
+// workInProgress = current.alternate; if (workInProgress === null) {
+// workInProgress = ..; } else { workInProgress.flags = NoFlags; }`.
+
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 struct Noisy(u32);
 
@@ -88,6 +94,33 @@ fn dropped_after(n: u32) {
     println!("made {}", noisy.0);
 }
 
+struct Fiber {
+    flags: Cell<u32>,
+    alternate: RefCell<Option<Rc<Fiber>>>,
+}
+
+fn work_in_progress(current: &Rc<Fiber>) -> Rc<Fiber> {
+    let work_in_progress = current.alternate.borrow().clone();
+    let work_in_progress = match work_in_progress {
+        None => {
+            let work_in_progress = Rc::new(Fiber {
+                flags: Cell::new(1),
+                alternate: RefCell::new(Some(Rc::clone(current))),
+            });
+            current.alternate.replace(Some(Rc::clone(&work_in_progress)));
+            work_in_progress
+        }
+        Some(work_in_progress) => {
+            work_in_progress.flags.set(0);
+            work_in_progress
+        }
+    };
+    work_in_progress
+        .flags
+        .set(work_in_progress.flags.get() + current.flags.get());
+    work_in_progress
+}
+
 fn main() {
     for p in [0, 1, 3, 5, 6, 200] {
         println!("{}", run_with_priority(p));
@@ -109,4 +142,13 @@ fn main() {
     }
     dropped_after(2);
     dropped_after(7);
+    let current = Rc::new(Fiber {
+        flags: Cell::new(4),
+        alternate: RefCell::new(None),
+    });
+    let first = work_in_progress(&current);
+    println!("{}", first.flags.get());
+    first.flags.set(9);
+    let second = work_in_progress(&current);
+    println!("{} {}", second.flags.get(), Rc::ptr_eq(&first, &second));
 }

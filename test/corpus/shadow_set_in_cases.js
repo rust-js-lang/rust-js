@@ -117,6 +117,21 @@ function droppedAfter(n) {
   console.log(`drop ${n}`);
 }
 
+function workInProgress(current) {
+  let workInProgress = current.alternate;
+  if (workInProgress == null) {
+    workInProgress = {
+      flags: 1,
+      alternate: current,
+    };
+    current.alternate = workInProgress;
+  } else {
+    workInProgress.flags = 0;
+  }
+  workInProgress.flags = (workInProgress.flags + current.flags) >>> 0;
+  return workInProgress;
+}
+
 function main() {
   for (const p of [0, 1, 3, 5, 6, 200]) {
     console.log(`${runWithPriority(p)}`);
@@ -144,5 +159,14 @@ function main() {
   }
   droppedAfter(2);
   droppedAfter(7);
+  const current = {
+    flags: 4,
+    alternate: undefined,
+  };
+  const first = workInProgress(current);
+  console.log(`${first.flags}`);
+  first.flags = 9;
+  const second = workInProgress(current);
+  console.log(`${second.flags} ${first === second}`);
 }
 //# sourceMappingURL=case.js.map

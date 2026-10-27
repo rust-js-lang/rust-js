@@ -5,6 +5,24 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-set-in-a-branch-that-does-more-apart",
+    breaks: "a shadow set in an `if` branch that does more than give the binding stays apart, React's createWorkInProgress `const workInProgress = ..; let workInProgress$1;` (ADR 0650, amended)",
+    file: "src/lower/mir/tidy/shadows.rs",
+    find: "            if list.len() > here {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "shadow-set-in-a-branch-of-it-alone",
+    breaks: "a shadow whose `if` branch is the binding's own value alone is the binding, the branch left empty (ADR 0650, amended)",
+    file: "src/lower/mir/tidy/shadows.rs",
+    find: "            if list.len() > here {\n",
+    replace: "            if list.len() >= here {\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
+    snapshots: true,
+  },
+  {
     name: "shadow-kept-apart",
     breaks: "a `let` that shadows a binding read no more is `const stack$1`, not `stack = ..`",
     file: "src/lower/mir/tidy/shadows.rs",
@@ -90,8 +108,8 @@ export const mutations: Mutation[] = [
     name: "shadow-set-in-branches-own-value-emptied",
     breaks: "a shadow of an `if` chain one of whose branches is the binding's own value is the binding, that branch left empty, `if (level >= 1 && level <= 3) {} else ..`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        if owns != in_cases {\n",
-    replace: "        if false && owns != in_cases {\n",
+    find: "        if owns != kept {\n",
+    replace: "        if false && owns != kept {\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
     snapshots: true,
   },
