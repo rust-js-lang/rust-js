@@ -52,11 +52,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-drops-unlisted",
-    breaks: "a library's manifest says none of its functions takes a drop, so a consumer gives `Sink.put` none, and its value isn't dropped",
+    breaks: "a library's manifest says none of its functions takes a drop, so a consumer compiles its own copy of `second`, which takes one, not calling the library's",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Drop);\n",
     replace: "        param(&mut params, index);\n",
-    tests: ["test/crates.test.ts", "-t", "a library's generic trait method drops a consumer's value where Rust does"],
+    tests: ["test/crates.test.ts", "-t", "a library's generic function that takes a drop is called with the consumer's"],
   },
   {
     name: "library-facts-unsaid",

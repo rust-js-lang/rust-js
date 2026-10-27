@@ -533,6 +533,51 @@ test("a library's generic function takes the drops its body uses", () => {
   expect(app).toContain("\nfunction discard(value, dropT) {\n  pick(undefined, value, dropT);\n}");
 }, 300_000);
 
+// A library's generic function its own crate gives a value with a
+// destructor takes a drop (ADR 0914), and its manifest says so: a consumer
+// calls it where it is, the library's, with its own drop, not a copy it
+// compiles itself.
+test("a library's generic function that takes a drop is called with the consumer's", () => {
+  const dir = fixture("library-function-drop");
+  const lib = join(dir, "dep");
+  mkdirSync(lib, { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), `pub fn second<T>(a: T, b: T) -> T {
+    let _first = a;
+    println!("second");
+    b
+}
+pub struct Own(pub u32);
+impl Drop for Own {
+    fn drop(&mut self) {
+        println!("own {}", self.0);
+    }
+}
+pub fn own() -> u32 {
+    second(Own(1), Own(2)).0
+}
+`);
+  writeFileSync(join(dir, "app.rs"), `struct Loud(u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+pub fn main() {
+    println!("{}", dep::second(Loud(2), Loud(3)).0);
+    println!("after");
+}
+`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
+  expect(readFileSync(join(lib, "lib.js"), "utf8")).toContain("export function second(a, b, dropT) {");
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
+    "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
+  const app = readFileSync(join(dir, "app.js"), "utf8");
+  expect(app).toContain('import { second } from "./dep/lib.js";');
+  expect(app).not.toContain("function second(");
+  expect(printed(join(dir, "app.js"))).toBe("second\ndropped 2\n3\ndropped 3\nafter\n");
+}, 300_000);
+
 // A library's generic trait method is given a drop for its own type
 // parameters, as its trait declares them (ADR 0163): a consumer's value with
 // a destructor is dropped where Rust drops it, at the end of `put`, called on

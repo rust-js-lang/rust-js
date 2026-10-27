@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "library-generic-drops-nothing",
-    breaks: "a library's generic function isn't given a `dropT`, so a consumer's value with a destructor is never dropped",
-    file: "src/lower/analysis/drops.rs",
-    find: "    if library {\n        for &id in fns.iter() {\n",
-    replace: "    if false {\n        for &id in fns.iter() {\n",
-    tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
-  },
-  {
     name: "impl-drops-unseeded",
     breaks: "a generic impl isn't given drops, so what its methods, their helpers, or a default of its trait drop is never dropped",
     file: "src/lower/analysis/drops.rs",
@@ -50,14 +42,6 @@ export const mutations: Mutation[] = [
     find: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            given.insert((id, index));\n",
     replace: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
-  },
-  {
-    name: "library-takes-every-drop",
-    breaks: "a library's public generic function takes a drop of each type parameter a consumer could give one of, `useState(initialState, dispatcher, dropS)`, where its own crate's calls give none, so its JS isn't its program's (ADR 0914)",
-    file: "src/lower/analysis/drops.rs",
-    find: "            if !crate::lower::recognition::is_compiled_std(tcx, id)\n",
-    replace: "            if !crate::lower::library::reachable(tcx, id)\n",
-    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
   },
   {
     name: "component-destructor-not-refused",

@@ -534,3 +534,13 @@ what JS gives a `T` is a JS value, its own clone, with no destructor.
   (`analysis/cell_borrows.rs`), `generic-rc-of-any-param-counted`
   (`analysis/rc_counts.rs`) and `rc-drop-params-unsettled`
   (`analysis.rs`).
+
+## Amendment: std's bodies take the drops their bodies make, as a library's do
+
+`@rust-js/std`'s generic bodies were given a drop for each type parameter
+that isn't `Copy`, whether or not they drop one. Every one they drop they
+take already, as a library's own function does, from its body's drops and
+its crate's calls: without that seeding the committed package, the
+corpus, the crates' and the workspace's JS were the same, and its
+mutation, `library-generic-drops-nothing`, survived every run. The
+seeding and its mutation went.

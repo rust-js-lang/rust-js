@@ -92,31 +92,9 @@ pub(super) fn drop_params<'tcx>(
             }
         }
     }
-    // `@rust-js/std`'s bodies, compiled once, are given a drop for each type
-    // parameter a consumer could give a value with a destructor, one that
-    // isn't `Copy` (ADR 0561). A library's own function is given what its
-    // crate's calls give it; a consumer that gives one more compiles it
-    // itself (ADR 0914).
-    if library {
-        for &id in fns.iter() {
-            // A trait impl's, and its methods, are decided above.
-            if !crate::lower::recognition::is_compiled_std(tcx, id)
-                || tcx.trait_of_assoc(id).is_some()
-                || tcx.trait_impl_of_assoc(id).is_some()
-                || matches!(tcx.def_kind(id), DefKind::Impl { .. })
-            {
-                continue;
-            }
-            let typing_env = ty::TypingEnv::non_body_analysis(tcx, id);
-            let generics = tcx.generics_of(id);
-            for index in 0..generics.count() {
-                let param = generics.param_at(index, tcx);
-                if crate::lower::traits::given_a_drop(tcx, typing_env, param) {
-                    given.insert((id, index as u32));
-                }
-            }
-        }
-    }
+    // A library's own function, `@rust-js/std`'s bodies too, is given what
+    // its crate's calls and its body's drops give it; a consumer that gives
+    // one more compiles it itself (ADR 0914).
     // A caller's type parameter passed on as a callee's: `relay<U>` calling `consume::<U>`.
     let mut passed: Vec<((DefId, u32), (DefId, u32))> = Vec::new();
     // Each function's std associated types given drops, after its type
