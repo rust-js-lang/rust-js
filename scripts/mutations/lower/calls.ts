@@ -75,15 +75,6 @@ export const mutations: Mutation[] = [
     tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
   },
   {
-    name: "lazy-local-path-unapplied",
-    breaks: "`source.with(|e| e.clone())` of a thread-local made where it's first used stays `((e) => e)(source())`",
-    file: "src/lower/calls.rs",
-    find: "        && path_of(value, param)\n",
-    replace: "        && false && path_of(value, param)\n",
-    tests: ["test/snapshots.test.ts", "-t", "playground"],
-    snapshots: true,
-  },
-  {
     name: "and-then-of-nullable-coalesced",
     breaks: "`o.and_then(nullable_fn)` stored in a nullable place is `(o != null ? f(o) : undefined) ?? null`, where it's `o != null ? f(o) : null` (ADR 0841, amended)",
     file: "src/lower/calls.rs",

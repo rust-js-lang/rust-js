@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "                    Some(outer) => (outer, false, own.lo),\n",
     replace: "                    Some(_) => (own.lo, true, own.lo),\n",
-    tests: ["test/snapshots.test.ts", "-t", "consts: the generated JS"],
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
     snapshots: true,
   },
   {

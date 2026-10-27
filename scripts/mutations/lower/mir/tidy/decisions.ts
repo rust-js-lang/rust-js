@@ -90,7 +90,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        && matches!(value.kind, ExprKind::Var(_))\n",
     replace: "        && false\n",
-    tests: ["test/snapshots.test.ts", "-t", "playground"],
+    tests: ["test/corpus.test.ts", "-t", "^tuple_scrutinee_calls.rs$"],
+    snapshots: true,
   },
   {
     name: "default-value-past-a-bare-break",

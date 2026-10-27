@@ -424,3 +424,12 @@ and `uses`' `LIMITED`, in an import cycle, where it's first used;
 mutations `library-read-taken-lazy`, `other-module-read-unordered` and
 `other-module-read-lazy`.
 
+
+## Amendment: a lazy thread-local's `with` of a path is tidy's to apply
+
+`source.with(|e| e.clone())` of a thread-local made where it's first used
+was the path of its call, `source()`, where `calls::apply` lowered it, and
+again where tidy applies an arrow called where it's made (`applied
+arrows`). The first decided nothing: without it the corpus, the snapshots,
+the ports, JSX and the module tests wrote the same JS, and its mutation,
+`lazy-local-path-unapplied`, survived. It went with its mutation.
