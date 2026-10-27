@@ -41,15 +41,13 @@ export function ownState(start) {
 export function freshCopyEachTime(times) {
   const n = 0;
   let total = 0;
-  let i = 0;
-  while (i < times) {
+  for (let i = 0; i < times; i++) {
     let n$1 = n;
     function bump() {
       n$1 = (n$1 + 1) | 0;
       return n$1;
     }
     total = (total + ((((bump() * 10) | 0) + bump()) | 0)) | 0;
-    i++;
   }
   return total;
 }

@@ -11,11 +11,9 @@ function thenable() {
       listeners.push(listener);
     },
     resolve() {
-      let i = 0;
-      while (i < listeners.length) {
+      for (let i = 0; i < listeners.length; i++) {
         const listener = listeners[i];
         listener();
-        i++;
       }
     },
   };

@@ -21,15 +21,13 @@ function find(limit, wanted) {
   try {
     const first = step(limit);
     if (first > 3) {
-      let i = 0;
-      while (i < limit) {
+      for (let i = 0; i < limit; i++) {
         if (step(i) === wanted) {
           return `found ${i} at depth ${depth}`;
         }
         if (i > 15) {
           break;
         }
-        i++;
       }
     }
   } finally {

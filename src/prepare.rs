@@ -13,6 +13,7 @@ mod chains;
 mod initializers;
 mod reclaim;
 mod shadows;
+mod stepped_whiles;
 mod truths;
 mod typeofs;
 
@@ -39,6 +40,7 @@ pub fn module(module: &mut js::Module) {
     js::each_item_block_mut(&mut module.items, &mut tested_assignments);
     reclaim::module(module);
     compound(module);
+    js::each_item_block_mut(&mut module.items, &mut stepped_whiles::stepped_whiles);
     stepped(module);
     js::each_item_block_mut(&mut module.items, &mut chains::chained);
     read_together(module);
@@ -797,10 +799,19 @@ fn block(body: &mut Vec<Stmt>) {
                 expr(iterable);
                 block(body);
             }
-            StmtKind::For { start, test, body, .. } => {
+            StmtKind::For {
+                start,
+                test,
+                step,
+                body,
+                ..
+            } => {
                 expr(start);
                 expr(test);
                 block(body);
+                if let Some(value) = step.value_mut() {
+                    expr(value);
+                }
             }
             // A function declared in a body (ADR 0308), as the one it's in.
             StmtKind::Function(function) => function_body(&mut function.params, &mut function.body),

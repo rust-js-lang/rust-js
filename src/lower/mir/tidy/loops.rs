@@ -256,7 +256,7 @@ pub(super) fn for_of(
                     name,
                     start,
                     test,
-                    down: true,
+                    step: js::Step::Down,
                     body,
                 }
             } else {
@@ -334,7 +334,7 @@ pub(super) fn for_of(
                 ),
                 name,
                 start: start.clone(),
-                down: false,
+                step: js::Step::Up,
                 body,
             };
             let mut out: Vec<Stmt> = held
@@ -836,7 +836,9 @@ fn broken_apart(test: Expr, op: Op, written_breaks: &[(js::Span, js::Span)]) -> 
 pub(super) fn looped_reads(stmt: &Stmt, name: &str) -> bool {
     match &stmt.kind {
         StmtKind::While { cond, .. } => cond.mentions_var(name),
-        StmtKind::For { start, test, .. } => start.mentions_var(name) || test.mentions_var(name),
+        StmtKind::For { start, test, step, .. } => {
+            start.mentions_var(name) || test.mentions_var(name) || step.value().is_some_and(|v| v.mentions_var(name))
+        }
         StmtKind::ForOf { iterable, .. } => iterable.mentions_var(name),
         _ => true,
     }

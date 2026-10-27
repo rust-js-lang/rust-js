@@ -806,13 +806,11 @@ pub fn changed(mut previous: u32) -> u32 {
   expect(js).not.toContain("_restoreProps");
   expect(js).toContain(`  try {
     const lines = globalThis.lines();
-    let s = 0;
-    while (s < lines.length) {
+    for (let s = 0; s < lines.length; s++) {
       if (lines[s].includes("Root")) {
         const frame = \`\\n\${lines[s]}\`;
         return frame;
       }
-      s++;
     }
   } finally {
     reentry = false;

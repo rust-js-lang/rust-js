@@ -384,6 +384,35 @@ pub struct Case {
     pub falls: bool,
 }
 
+/// What a `for`'s update does to its variable: `name++`, `name--`, or
+/// `name = value` and `name -= value`, which only preparation makes (ADR
+/// 0974).
+#[derive(Clone, PartialEq)]
+pub enum Step {
+    Up,
+    Down,
+    To(Expr),
+    By(Op, Expr),
+}
+
+impl Step {
+    /// The value it gives the variable, of `name = value`.
+    pub fn value(&self) -> Option<&Expr> {
+        match self {
+            Step::To(value) | Step::By(_, value) => Some(value),
+            Step::Up | Step::Down => None,
+        }
+    }
+
+    /// The value it gives the variable, of `name = value`, to change.
+    pub fn value_mut(&mut self) -> Option<&mut Expr> {
+        match self {
+            Step::To(value) | Step::By(_, value) => Some(value),
+            Step::Up | Step::Down => None,
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum StmtKind {
     Const(String, Expr),
@@ -420,14 +449,15 @@ pub enum StmtKind {
         keys: bool,
     },
     /// `for (let name = start; test; name++) { .. }`: a `for` over a range;
-    /// or, `down`, `name--`, over a range or an array's indices from its
-    /// end (ADR 0904).
+    /// or, `Step::Down`, `name--`, over a range or an array's indices from
+    /// its end (ADR 0904); or, `Step::To`, `name = value`, a `while` that
+    /// gives its variable its next value last, preparation's (ADR 0974).
     For {
         label: Option<String>,
         name: String,
         start: Expr,
         test: Expr,
-        down: bool,
+        step: Step,
         body: Vec<Stmt>,
     },
     /// `label: { .. }`, which a `break label` leaves: a let chain's (ADR 0048).

@@ -1069,10 +1069,11 @@ impl Given<'_> {
                     label,
                     start,
                     test,
+                    step,
                     body,
                     ..
                 } => {
-                    if !quiet(start) || !quiet(test) {
+                    if !quiet(start) || !quiet(test) || step.value().is_some_and(|v| !quiet(v)) {
                         return None;
                     }
                     self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?

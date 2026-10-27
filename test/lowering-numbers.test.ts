@@ -753,8 +753,8 @@ pub fn upto(n: u8) -> u8 {
   // can't wrap, and it settles round the loop at most 254.
   expect(js).toContain("  while (i + 1 < n) {\n    i++;\n  }\n");
   expect(js).toContain("    if (formatString.charCodeAt(i) !== 37) {\n      i++;\n      continue;\n    }\n    i++;\n    n = (n + 1) >>> 0;\n    i++;\n");
-  expect(js).toContain("  while (i + 1 < items.length) {\n");
-  expect(js).toMatch(/\n {4}i\+\+;\n {2}\}\n {2}return s;/);
+  expect(js).toContain("  for (let i = 0; i + 1 < items.length; i++) {\n");
+  expect(js).toContain("    s = (s ^ (items[i] ^ items[i + 1])) >>> 0;\n  }\n  return s;");
   expect(js).toContain("  while ((i + 1) >>> 0 < items.length) {\n");
   expect(js).toContain("    i = (i + 2) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));

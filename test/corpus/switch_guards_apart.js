@@ -47,10 +47,8 @@ function described(tag, owned, flags, log) {
         info += "forwardRef";
       }
   }
-  let owner = 2;
-  while (owner != null) {
+  for (let owner = 2; owner != null; owner = owner > 0 ? owner - 1 : undefined) {
     info += "/";
-    owner = owner > 0 ? owner - 1 : undefined;
   }
   return info;
 }

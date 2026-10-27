@@ -441,24 +441,9 @@ impl<'a> Cx<'a> {
                 Statement::new_expression_statement(sp, update, b)
             }
             StmtKind::Compound(op, target, value) => {
-                let operator = match op {
-                    Op::Add => AssignmentOperator::Addition,
-                    Op::Sub => AssignmentOperator::Subtraction,
-                    Op::Mul => AssignmentOperator::Multiplication,
-                    Op::Div => AssignmentOperator::Division,
-                    Op::Rem => AssignmentOperator::Remainder,
-                    Op::Coalesce => AssignmentOperator::LogicalNullish,
-                    Op::BitAnd => AssignmentOperator::BitwiseAnd,
-                    Op::BitOr => AssignmentOperator::BitwiseOR,
-                    Op::BitXor => AssignmentOperator::BitwiseXOR,
-                    Op::Shl => AssignmentOperator::ShiftLeft,
-                    Op::Shr => AssignmentOperator::ShiftRight,
-                    Op::UShr => AssignmentOperator::ShiftRightZeroFill,
-                    _ => unreachable!("preparation compounds these alone"),
-                };
                 let assign = Expression::new_assignment_expression(
                     sp,
-                    operator,
+                    compound_operator(*op),
                     self.assignment_target(target),
                     self.expr(value),
                     b,
@@ -595,7 +580,7 @@ impl<'a> Cx<'a> {
                 name,
                 start,
                 test,
-                down,
+                step,
                 body,
             } => {
                 let id = BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
@@ -608,11 +593,28 @@ impl<'a> Cx<'a> {
                     b,
                 );
                 let counter = SimpleAssignmentTarget::new_assignment_target_identifier(SPAN, self.name(name), b);
-                let step = match down {
-                    true => UpdateOperator::Decrement,
-                    false => UpdateOperator::Increment,
+                let update = match step {
+                    js::Step::Up => {
+                        Expression::new_update_expression(SPAN, UpdateOperator::Increment, false, counter, b)
+                    }
+                    js::Step::Down => {
+                        Expression::new_update_expression(SPAN, UpdateOperator::Decrement, false, counter, b)
+                    }
+                    js::Step::To(value) => {
+                        let target = AssignmentTarget::from(counter);
+                        Expression::new_assignment_expression(
+                            SPAN,
+                            AssignmentOperator::Assign,
+                            target,
+                            self.expr(value),
+                            b,
+                        )
+                    }
+                    js::Step::By(op, value) => {
+                        let target = AssignmentTarget::from(counter);
+                        Expression::new_assignment_expression(SPAN, compound_operator(*op), target, self.expr(value), b)
+                    }
                 };
-                let update = Expression::new_update_expression(SPAN, step, false, counter, b);
                 let l = Statement::new_for_statement(
                     sp,
                     Some(init),
@@ -793,4 +795,23 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
         .map(|s| s.span.lo)
         .max();
     end.map_or(SPAN, |end| Span::new(end, end + 1))
+}
+
+/// `a op= b`'s operator of `op`, a compound assignment preparation makes.
+fn compound_operator(op: Op) -> AssignmentOperator {
+    match op {
+        Op::Add => AssignmentOperator::Addition,
+        Op::Sub => AssignmentOperator::Subtraction,
+        Op::Mul => AssignmentOperator::Multiplication,
+        Op::Div => AssignmentOperator::Division,
+        Op::Rem => AssignmentOperator::Remainder,
+        Op::Coalesce => AssignmentOperator::LogicalNullish,
+        Op::BitAnd => AssignmentOperator::BitwiseAnd,
+        Op::BitOr => AssignmentOperator::BitwiseOR,
+        Op::BitXor => AssignmentOperator::BitwiseXOR,
+        Op::Shl => AssignmentOperator::ShiftLeft,
+        Op::Shr => AssignmentOperator::ShiftRight,
+        Op::UShr => AssignmentOperator::ShiftRightZeroFill,
+        _ => unreachable!("preparation compounds these alone"),
+    }
 }

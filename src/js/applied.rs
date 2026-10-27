@@ -476,7 +476,13 @@ fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool 
         }
         StmtKind::While { cond, body, .. } => one(cond) && substituted(body, with),
         StmtKind::ForOf { iterable, body, .. } => one(iterable) && substituted(body, with),
-        StmtKind::For { start, test, body, .. } => one(start) && one(test) && substituted(body, with),
+        StmtKind::For {
+            start,
+            test,
+            step,
+            body,
+            ..
+        } => one(start) && one(test) && substituted(body, with) && step.value_mut().is_none_or(one),
         StmtKind::Labeled(_, body) => substituted(body, with),
         StmtKind::Switch {
             discriminant,

@@ -25,12 +25,10 @@ export function fibMatch(n) {
 export function fibIter(n) {
   let a = 0;
   let b = 1;
-  let i = 0;
-  while (i < n) {
+  for (let i = 0; i < n; i++) {
     const next = (a + b) >>> 0;
     a = b;
     b = next;
-    i++;
   }
   return a;
 }

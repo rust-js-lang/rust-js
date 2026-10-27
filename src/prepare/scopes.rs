@@ -272,6 +272,7 @@ impl Walk {
                 name,
                 start,
                 test,
+                step,
                 body,
                 ..
             } => {
@@ -279,6 +280,9 @@ impl Walk {
                 self.declare(name);
                 self.expr(start);
                 self.expr(test);
+                if let Some(value) = step.value() {
+                    self.expr(value);
+                }
                 self.block(body);
                 self.leave();
             }

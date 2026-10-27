@@ -2083,6 +2083,43 @@ export function untilTag(words) {
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
 
+A `while` that steps its own variable last, `child = child.sibling`, `i +=
+1`, a `let` right before it and read nowhere after it, is the `for` that
+steps it, as React walks a fiber's children
+([ADR 0974](../../decisions/0974-a-while-that-steps-its-variable-last-is-a-for.md)).
+Not where a `continue` would skip the step, the body sets the variable
+before, or the step reads what the body declares:
+
+```rust
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub duration: f64,
+    pub child: Option<Rc<Fiber>>,
+    pub sibling: Option<Rc<Fiber>>,
+}
+
+pub fn self_time(fiber: &Fiber) -> f64 {
+    let mut total = fiber.duration;
+    let mut child = fiber.child.clone();
+    while let Some(current) = child {
+        total -= current.duration;
+        child = current.sibling.clone();
+    }
+    total
+}
+```
+
+```js
+export function selfTime(fiber) {
+  let total = fiber.duration;
+  for (let child = fiber.child; child != null; child = child.sibling) {
+    total -= child.duration;
+  }
+  return total;
+}
+```
+
 ## `null` and `undefined`: `Option`
 
 Rust has no `null`. A value that may be missing is an `Option<T>`: `Some(v)`

@@ -44,11 +44,9 @@ function changedSince(n, i) {
 
 function counted(n) {
   const found = [];
-  let i = 0;
-  while (i < n) {
+  for (let i = 0; i < n; i++) {
     found.push(n - i);
     n--;
-    i++;
   }
   return found;
 }
@@ -76,12 +74,10 @@ function shrunk(n, i) {
 
 function sumBelow(xs, n) {
   let sum = 0;
-  let i = 0;
-  while (i < xs.length) {
+  for (let i = 0; i < xs.length; i++) {
     if (i < n) {
       sum = (sum + $index(xs, i)) >>> 0;
     }
-    i++;
   }
   return sum;
 }

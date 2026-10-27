@@ -581,7 +581,7 @@ pub fn chained(first: Option<Rc<Node>>, a: &Rc<Node>, b: &Rc<Node>) -> u8 {
 `);
   // An `else` the program wrote stays.
   expect(js).toContain("      found = 1;\n    } else if (child === b) {\n");
-  expect(js).toContain(`  while (child != null) {
+  expect(js).toContain(`  for (let child = first; child != null; child = child.sibling) {
     if (child === a) {
       found = 1;
       break;
@@ -590,7 +590,6 @@ pub fn chained(first: Option<Rc<Node>>, a: &Rc<Node>, b: &Rc<Node>) -> u8 {
       found = 2;
       break;
     }
-    child = child.sibling;
   }`);
   const nodes = lib.list(3 as never) as { sibling: unknown };
   const second = nodes.sibling as { sibling: unknown };

@@ -182,12 +182,16 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 name: n,
                 start,
                 test,
+                step,
                 body,
                 ..
             } => {
                 visitor.name(n);
                 expr(start, visitor);
                 expr(test, visitor);
+                if let Some(value) = step.value_mut() {
+                    expr(value, visitor);
+                }
                 block(body, visitor);
             }
             StmtKind::Labeled(_, body) => block(body, visitor),

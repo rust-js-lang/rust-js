@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "bitwise-and-assign-printed-or",
     breaks: "a compound `lanes &= ~lane` is printed `lanes |= ~lane`",
     file: "src/to_oxc/statements.rs",
-    find: "                    Op::BitAnd => AssignmentOperator::BitwiseAnd,\n",
-    replace: "                    Op::BitAnd => AssignmentOperator::BitwiseOR,\n",
+    find: "        Op::BitAnd => AssignmentOperator::BitwiseAnd,\n",
+    replace: "        Op::BitAnd => AssignmentOperator::BitwiseOR,\n",
     tests: ["test/lowering-bits.test.ts", "-t", "assignment is its compound"],
   },
   {
@@ -281,5 +281,13 @@ export const mutations: Mutation[] = [
     find: "                    ] => self.stmt(only),\n",
     replace: "                    ] if false => self.stmt(only),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
+  },
+  {
+    name: "for-step-by-assigned",
+    breaks: "a `for`'s step of two, `at -= 2`, is printed `at = 2` (ADR 0974)",
+    file: "src/to_oxc/statements.rs",
+    find: "compound_operator(*op), target, self.expr(value), b)\n",
+    replace: "AssignmentOperator::Assign, target, self.expr(value), b)\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"],
   },
 ];

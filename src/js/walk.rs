@@ -91,10 +91,13 @@ macro_rules! walks {
                         iterable.$expr(f);
                         $exprs(body, f);
                     }
-                    StmtKind::For { start, test, body, .. } => {
+                    StmtKind::For { start, test, step, body, .. } => {
                         start.$expr(f);
                         test.$expr(f);
                         $exprs(body, f);
+                        if let crate::js::Step::To(value) | crate::js::Step::By(_, value) = step {
+                            value.$expr(f);
+                        }
                     }
                     StmtKind::Labeled(_, body) => $exprs(body, f),
                     StmtKind::Switch {

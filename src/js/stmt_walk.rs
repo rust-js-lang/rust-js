@@ -284,10 +284,19 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 iterable.visit_vars(read);
                 visit_stmts(body, read);
             }
-            StmtKind::For { start, test, body, .. } => {
+            StmtKind::For {
+                start,
+                test,
+                step,
+                body,
+                ..
+            } => {
                 start.visit_vars(read);
                 test.visit_vars(read);
                 visit_stmts(body, read);
+                if let Some(value) = step.value() {
+                    value.visit_vars(read);
+                }
             }
             StmtKind::Labeled(_, body) => visit_stmts(body, read),
             StmtKind::Switch {

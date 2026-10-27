@@ -15,11 +15,9 @@ function sleep(ms) {
 }
 
 async function countDown(output, from) {
-  let n = from;
-  while (n > 0) {
+  for (let n = from; n > 0; n--) {
     output.textContent = String(n);
     await sleep(500);
-    n--;
   }
   output.textContent = "Go!";
 }
