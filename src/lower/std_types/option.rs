@@ -662,7 +662,25 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
 /// where it's `None`: `option ?? fallback`; of a `filter`'s, its test and
 /// value in place of a `const` of it, `x != null && keep ? x : d`
 /// (`filtered`). A `Some` not boxed, or one of the same box.
+/// And of a `map`'s, `x != null ? `\n  ${x}` : undefined`, of a value
+/// that's never `null` nor `undefined`, a literal's, the test's: `x != null
+/// ? `\n  ${x}` : ""`, React's constructClassInstance's (ADR 0647,
+/// amended).
 pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
+    if let js::ExprKind::Cond(test, value, none) = &option.kind
+        && matches!(none.kind, js::ExprKind::Undefined)
+        && matches!(
+            value.kind,
+            js::ExprKind::Template(..)
+                | js::ExprKind::Str(_)
+                | js::ExprKind::Num(_)
+                | js::ExprKind::Bool(_)
+                | js::ExprKind::Object(..)
+                | js::ExprKind::Array(_)
+        )
+    {
+        return Expr::cond((**test).clone(), (**value).clone(), fallback);
+    }
     match filtered(&option) {
         Some((kept, value)) => Expr::cond(kept, value, fallback),
         None => Expr::bin(Op::Coalesce, option, fallback),

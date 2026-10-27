@@ -64,3 +64,23 @@ The runtime's own helpers step the same way, `channel.senders++`,
 - `test/lowering-numbers.test.ts`, "a statement stepping by one is ++ or
   --", run in JS.
 - Mutations `step-of-any-number-incremented`, `step-down-incremented`.
+
+## Amendment: a bitwise chain of its target is its compound assignment
+
+React's mountClassInstance writes `workInProgress.flags |= Update |
+LayoutStatic;`; its port, `fiber.flags.set(fiber.flags.get() | UPDATE |
+LAYOUT_STATIC)`, printed `workInProgress.flags = workInProgress.flags |
+Update | LayoutStatic;`: `compound` made `x op= v` only of `x = x op v`,
+and the chain is `(x | A) | B`.
+
+**A chain of one bitwise operator, `|`, `&` or `^`, whose first part is
+the target, is its compound assignment, the rest after it**: `x = x | A
+| B` is `x |= A | B`. Case N ([0262](0262-when-rust-and-js-disagree.md)):
+each is associative of the integers Rust gives it, each part read in the
+same order; not `-`, `/` or a shift, which aren't.
+
+Held by `test/lowering-math.test.ts`'s "a bitwise chain of its target is
+its compound assignment", run, and the mutations
+`bitwise-chain-not-compound` and `bitwise-chain-of-any-operator`
+(`prepare.ts`).
+

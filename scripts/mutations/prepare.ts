@@ -754,4 +754,20 @@ export const mutations: Mutation[] = [
     replace: "            && !test.facts.has(js::Known::Else)\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else after a branch that returns stays"],
   },
+  {
+    "name": "bitwise-chain-not-compound",
+    "breaks": "React's `workInProgress.flags = workInProgress.flags | Update | LayoutStatic`, a chain of its target, not `|=` (ADR 0631, amended)",
+    "file": "src/prepare.rs",
+    "find": "            if bitwise && js::same_path(first, target) {\n",
+    "replace": "            if false && bitwise && js::same_path(first, target) {\n",
+    "tests": ["test/lowering-math.test.ts", "-t", "bitwise chain"]
+  },
+  {
+    "name": "bitwise-chain-of-any-operator",
+    "breaks": "a chain of `-` of its target, `x = x - a - b`, made `x -= a - b`, another value",
+    "file": "src/prepare.rs",
+    "find": "            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);\n",
+    "replace": "            let bitwise = true;\n",
+    "tests": ["test/lowering-math.test.ts", "-t", "bitwise chain"]
+  },
 ];

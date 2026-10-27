@@ -486,6 +486,32 @@ fn compound(module: &mut js::Module) {
             if !compounds {
                 continue;
             }
+            // Of a chain of one bitwise operator whose first part is the
+            // target, `flags = flags | Update | LayoutStatic`: `flags |=
+            // Update | LayoutStatic`, as React writes it (ADR 0631,
+            // amended). Each is associative of the integers Rust gives it,
+            // each part read in the same order.
+            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);
+            let mut first = &**lhs;
+            while let ExprKind::Binary(inner, part, _) = &first.kind
+                && bitwise
+                && inner == op
+            {
+                first = part;
+            }
+            if bitwise && js::same_path(first, target) {
+                while let ExprKind::Binary(inner, part, second) = &mut lhs.kind
+                    && inner == op
+                {
+                    let (part, second) = (
+                        std::mem::replace(&mut **part, Expr::undefined()),
+                        std::mem::replace(&mut **second, Expr::undefined()),
+                    );
+                    let rest = std::mem::replace(&mut **rhs, Expr::undefined());
+                    **rhs = Expr::bin(*op, second, rest);
+                    **lhs = part;
+                }
+            }
             // An item's, its index checked on one side, `v[i] = v[$at(v, i)]
             // | lane`: the checked place's, `v[$at(v, i)] |= lane`, which
             // checks it, reads it, evaluates `lane` and writes, in that order,

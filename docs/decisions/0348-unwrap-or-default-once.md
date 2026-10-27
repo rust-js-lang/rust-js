@@ -53,3 +53,22 @@ it: react.dev's calculateNestedToc writes
 is its arrow, made first, which does nothing. A lowering test reads one
 of each once, its fallback run only where it's needed; a mutation keeps
 the `const option`.
+
+## Amendment: a map of a literal's value and its fallback is one conditional
+
+React's constructClassInstance writes `foundWillMountName !== null ?
+`\n  ${foundWillMountName}` : ''`; its port, `found.map(|name|
+format!("\n  {name}")).unwrap_or_default()`, printed `(foundWillMountName
+!= null ? `\n  ${foundWillMountName}` : undefined) ?? ""`.
+
+**A `map`'s `c ? v : undefined` of a value never `null` nor `undefined`,
+a template's, a string's, a number's, a `bool`'s, an object's or an
+array's literal, given its fallback, is `c ? v : fallback`**
+(`option::or_fallback`). Case N ([0262](0262-when-rust-and-js-disagree.md)):
+where `c` holds the value isn't nullish, so `??` keeps it; where it
+doesn't, `??` gives the fallback.
+
+Held by `test/lowering-option-truth.test.ts`'s "a map of a literal's
+value and its fallback is one conditional", run, and the mutation
+`map-fallback-coalesced` (`std_types/option.ts`).
+

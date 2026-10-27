@@ -409,4 +409,12 @@ export const mutations: Mutation[] = [
     replace: "            && callee.helper_name() == Some(\"$someGot\")\n",
     tests: ["test/lowering-collections.test.ts", "-t", "get flattened"],
   },
+  {
+    name: "map-fallback-coalesced",
+    breaks: "React's `foundWillMountName != null ? `\\n  ${..}` : \"\"` is `(.. ? .. : undefined) ?? \"\"`, a map's literal and its fallback two steps (ADR 0348, amended)",
+    file: "src/lower/std_types/option.rs",
+    find: "        return Expr::cond((**test).clone(), (**value).clone(), fallback);\n",
+    replace: "        return Expr::bin(Op::Coalesce, option, fallback);\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "map of a literal"],
+  },
 ];

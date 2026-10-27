@@ -313,6 +313,8 @@ export function parseAge(s) {
 - **A step of one is `++`:** a statement `n += 1` is `n++`, and `n -= 1`
   is `n--`
   ([ADR 0631](../../decisions/0631-a-step-of-one-is-plus-plus.md)); a
+  bitwise chain of its target, `flags = flags | UPDATE | LAYOUT`, is
+  `flags |= UPDATE | LAYOUT` (ADR 0631, amended); a
   value read and then stepped, `let id = n; n = id + 1.0;`, is `const id
   = n++;`
   ([ADR 0948](../../decisions/0948-a-value-read-then-stepped-is-plus-plus.md)). An

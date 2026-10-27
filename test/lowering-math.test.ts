@@ -129,3 +129,56 @@ test("js::is_defined of a std function that isn't Math's is refused", () => {
   const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
   expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::is_defined` of what isn't a JS global's binding")]);
 });
+
+// ADR 0631, amended: React's mountClassInstance, `workInProgress.flags |=
+// Update | LayoutStatic;`. A chain of one bitwise operator whose first part
+// is the target is its compound assignment, the rest after it: each is
+// associative of the integers Rust gives it.
+test("a bitwise chain of its target is its compound assignment", async () => {
+  const dir = fixture("bitwise-compound");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub const UPDATE: i32 = 0b100;
+pub const LAYOUT_STATIC: i32 = 0b1000;
+
+pub struct Fiber {
+    pub flags: Cell<i32>,
+}
+
+pub fn mark(fiber: &Fiber) {
+    fiber.flags.set(fiber.flags.get() | UPDATE | LAYOUT_STATIC);
+}
+
+pub fn masked(fiber: &Fiber, keep: i32) {
+    fiber.flags.set(fiber.flags.get() & keep & !UPDATE);
+}
+
+pub fn other(fiber: &Fiber, a: i32) -> i32 {
+    a | fiber.flags.get() | UPDATE
+}
+
+pub struct Clock {
+    pub time: Cell<f64>,
+}
+
+pub fn spent(clock: &Clock, a: f64, b: f64) {
+    clock.time.set(clock.time.get() - a - b);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  fiber.flags |= UPDATE | LAYOUT_STATIC;\n");
+  expect(js).toContain("  fiber.flags &= keep & ~UPDATE;\n");
+  expect(js).toContain("  return a | fiber.flags | UPDATE;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const fiber = { flags: 1 };
+  lib.mark(fiber);
+  expect(fiber.flags).toBe(13);
+  lib.masked(fiber, 0b1101);
+  expect([fiber.flags, lib.other(fiber, 16)]).toEqual([9, 29]);
+  // Of `-`, which isn't associative, the assignment as it is.
+  expect(js).toContain("  clock.time = clock.time - a - b;\n");
+  const clock = { time: 10 };
+  lib.spent(clock, 3, 2);
+  expect(clock.time).toBe(5);
+});

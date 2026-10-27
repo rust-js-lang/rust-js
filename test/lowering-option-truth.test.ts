@@ -395,3 +395,24 @@ pub fn either(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
   expect([lib.shouldConstruct(C), lib.shouldConstruct(() => 1), lib.shouldConstruct({ prototype: {} })]).toEqual([true, false, false]);
   expect([lib.either(0, ""), lib.either(0, "x"), lib.either(1, undefined)]).toEqual([false, true, true]);
 });
+
+// ADR 0348, amended: React's constructClassInstance, `foundWillMountName !==
+// null ? `\\n  ${foundWillMountName}` : ''`. A `map`'s `Option` of a value
+// never `null` nor `undefined`, a template's, given its fallback, is the
+// conditional of the fallback, not `(c ? v : undefined) ?? d`.
+test("a map of a literal's value and its fallback is one conditional", async () => {
+  const dir = fixture("map-fallback-conditional");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(found: Option<&str>) -> String {
+    found.map(|name| format!("\\n  {name}")).unwrap_or_default()
+}
+
+pub fn counted(found: Option<u32>) -> u32 {
+    found.map(|n| n.wrapping_add(1)).unwrap_or(7)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return found != null ? `\\n  ${found}` : "";\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.named("a"), lib.named(undefined), lib.counted(1), lib.counted(undefined)]).toEqual(["\n  a", "", 2, 7]);
+});

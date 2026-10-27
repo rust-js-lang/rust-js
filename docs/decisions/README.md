@@ -367,7 +367,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0345 A B-tree's `first_entry` and `last_entry`](0345-btree-end-entries.md)
 - [0346 The next crate binds all of Next.js, and coverage only grows](0346-next-coverage.md)
 - [0347 The react crate's types are measured against @types/react, and only grow](0347-react-coverage.md)
-- [0348 `unwrap_or_default()` of a call is its `??`](0348-unwrap-or-default-once.md)
+- [0348 `unwrap_or_default()` of a call is its `??`](0348-unwrap-or-default-once.md) *(amended: a map of a literal's value and its fallback is one conditional)*
 - [0349 A body's `js::directive!` is its function's or its closure's](0349-body-directives.md)
 - [0350 Next.js's metadata is typed as Next.js types it, its tagged unions one struct](0350-next-metadata.md)
 - [0351 The node crate is measured against @types/node, and only grows](0351-node-coverage.md)
@@ -513,7 +513,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0628 A loop after a loop is after it](0628-a-loop-after-a-loop-is-after-it.md)
 - [0629 A `match` of constants is a `switch`](0629-a-match-of-constants-is-a-switch.md) *(amended by 0634: a `Some`'s constants and the registry's symbols are cases; by 0636: a guarded arm is a case; by 0668: a `match` of what a value is is a `switch (typeof value)`; amended: a `break` only where a case goes on to another; by 0731: a case's `break` past the `switch` is its own; amended: a last `_`'s statements are its `default`, and an `Option`'s text is the value's `switch`; by 0905: a guarded case falls through to the next; amended: an `Option`'s constants are the value's test, no label, and a last clause's jump the switch's; by 0958: a chain of `js::strict_equals` tests of one subject is a `switch`)*
 - [0630 A comment inside an expression is after the code before it](0630-a-comment-inside-an-expression.md) *(amended: one after an `=` is before the value, on a line of its own too; amended: a block comment after an argument's `,` is after the argument)*
-- [0631 A step of one is `++`](0631-a-step-of-one-is-plus-plus.md)
+- [0631 A step of one is `++`](0631-a-step-of-one-is-plus-plus.md) *(amended: a bitwise chain of its target is its compound assignment)*
 - [0632 A JS string's `length` is below `u32::MAX`, and a counter below it doesn't wrap](0632-a-js-strings-length-is-below-u32-max.md) *(amended by 0682: at most `2^31 - 1`, so two add without a wrap)*
 - [0682 A JS string's `length` is at most `2^31 - 1`, so two add without a wrap](0682-a-js-strings-length-is-at-most-int32-max.md) *(amended by 0701: an array of sized items is at most `2^31 - 1` long too)*
 - [0633 A binding named through a module is read through it](0633-a-binding-named-through-a-module-is-read-through-it.md) *(amended by 0773: a binding the default names is exported as the default alone)*
