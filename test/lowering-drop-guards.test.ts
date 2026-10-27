@@ -480,3 +480,84 @@ pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
   ).toThrow("thrown");
   expect(lib.h()).toBe(0);
 });
+
+// React's DEV dispatchers as upstream writes them, made where the module
+// loads, `if (__DEV__) { HooksDispatcherOnMountInDEV = { useMemo(..) {
+// const prevDispatcher = ReactSharedInternals.H; try { .. } finally {
+// ReactSharedInternals.H = prevDispatcher; } } }; }`, ported in
+// `js::on_load!`: a guard in a closure of what the module runs as it loads
+// is its drop's body there too (ADR 0608, amended).
+test("a guard in a closure of what a module runs as it loads is its drop's body there", async () => {
+  const { js, dir } = compiled(
+    "drop-in-load-closure",
+    `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+unsafe extern "Rust" {
+    safe static __DEV__: bool;
+}
+
+thread_local! {
+    static H: Cell<u32> = const { Cell::new(0) };
+    static ON_MOUNT_IN_DEV: RefCell<Option<Rc<Dispatcher>>> = RefCell::new(js::null());
+}
+
+pub fn set_h(h: u32) {
+    H.set(h);
+}
+
+pub fn h() -> u32 {
+    H.get()
+}
+
+struct Restore(u32);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        set_h(self.0);
+    }
+}
+
+pub struct Dispatcher {
+    pub use_memo: fn(&dyn Fn() -> u32) -> u32,
+}
+
+js::on_load! {
+    if __DEV__ {
+        ON_MOUNT_IN_DEV.set(Some(Rc::new(Dispatcher {
+            use_memo: |create| {
+                let prev_dispatcher = h();
+                set_h(7);
+                let _restore = Restore(prev_dispatcher);
+                create()
+            },
+        })));
+    }
+}
+
+pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
+    let use_memo = ON_MOUNT_IN_DEV.with_borrow(|d| d.as_ref().map(|d| d.use_memo));
+    use_memo.map(|use_memo| use_memo(create))
+}
+`,
+  );
+  expect(js).toContain(`    useMemo(create) {
+      const prevDispatcher = h();
+      setH(7);
+      try {
+        return create();
+      } finally {
+        setH(prevDispatcher);
+      }
+    },`);
+  expect(js).not.toContain("_drop");
+  (globalThis as any).__DEV__ = true;
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.memo(() => lib.h()), lib.h()]).toEqual([7, 0]);
+  expect(() =>
+    lib.memo(() => {
+      throw new Error("thrown");
+    }),
+  ).toThrow("thrown");
+  expect(lib.h()).toBe(0);
+});

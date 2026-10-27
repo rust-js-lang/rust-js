@@ -294,4 +294,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Cond(_, then, otherwise) => {\n                let _ = then;\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard in a closure of a conditional thread-local"],
   },
+  {
+    name: "load-closure-drop-kept",
+    breaks: "a guard in a closure of what a module runs as it loads, React's DEV dispatchers made in `js::on_load!`, keeps its drop a function, `restoreDrop_drop(_restore)` (ADR 0608, amended)",
+    file: "src/lower/drops/inlined.rs",
+    find: "        Item::Statements(stmts) => f(&[], stmts),\n",
+    replace: "        Item::Statements(_) => {}\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard in a closure of what a module runs as it loads"],
+  },
 ];

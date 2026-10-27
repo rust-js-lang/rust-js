@@ -381,7 +381,8 @@ drop can't change it, and the drop's body is in it, what it declares
 named apart from the function's where JS's scopes need it, of a closure
 a `const` is made of too, `const CALL: fn(..) = |f| { .. }`, a `const`
 struct's `fn` field, or one of either value a conditional chooses, a
-thread-local's `if __DEV__ { Some(Dispatcher { .. }) } else { None }`
+thread-local's `if __DEV__ { Some(Dispatcher { .. }) } else { None }`,
+or one `js::on_load!` makes
 ([ADR 0608](../../decisions/0608-a-drop-is-its-body-at-each-drop.md), amended).
 The scope reads as it would without the guard, and the guard's fields
 are the variables it was made of, `name` above, a tuple struct's one

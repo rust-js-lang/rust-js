@@ -330,7 +330,7 @@ type EachFunction<'f> = dyn FnMut(&[Pattern], &mut Vec<Stmt>) + 'f;
 /// to a `fn`, `const CALL: fn(..) = |f| { .. }`, or a field of a struct
 /// or a tuple of them, React's `callComponent = { react_stack_bottom_frame:
 /// |..| { .. } }`, or of either value a conditional chooses, as a
-/// function is.
+/// function is; and what the module runs as it loads.
 fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
     fn arrow(value: &mut Expr, f: &mut EachFunction<'_>) {
         match &mut value.kind {
@@ -363,7 +363,11 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
             }
         }
         Item::Const(constant) => arrow(&mut constant.value, f),
-        Item::Statements(_) => {}
+        // What the module runs as it loads, `js::on_load!`'s, with its
+        // closures, React's DEV dispatchers made there: no function's body,
+        // which no `return` ends, but a drop's call there is a statement
+        // as in one.
+        Item::Statements(stmts) => f(&[], stmts),
     }
 }
 

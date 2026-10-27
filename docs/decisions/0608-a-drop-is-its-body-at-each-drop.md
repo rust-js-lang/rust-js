@@ -2,7 +2,8 @@
 
 Status: Accepted; amended (a name its body shares with the caller is
 named apart; a closure a `const` is made of is a function a drop is its
-body in; either value a conditional `const` chooses too). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
+body in; either value a conditional `const` chooses too, and what a
+module runs as it loads). Amends [0589](0589-a-drop-dropped-once-is-its-body-there.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: each drop runs the
 same code where it ran.
@@ -252,3 +253,13 @@ const onMountInDev = __DEV__
 Held by `test/lowering-drop-guards.test.ts`, "a guard in a closure of a
 conditional thread-local is its drop's body there", run, a throw too; the
 mutation `conditional-closure-drop-kept`.
+
+And where upstream writes them, made as the module loads, `if (__DEV__) {
+HooksDispatcherOnMountInDEV = { .. }; }`, which a port writes in
+`js::on_load!` (ADR 0580, amended): **what the module runs as it loads is
+looked into as a function's body is**, its closures' guards their drops'
+bodies there, `try { .. } finally { setH(prevDispatcher); }`. A drop's
+call at its top, in no closure, is put in its place only where its body
+returns nowhere, as `applied_call` already asks. Held by "a guard in a
+closure of what a module runs as it loads is its drop's body there", run,
+a throw too; the mutation `load-closure-drop-kept`.
