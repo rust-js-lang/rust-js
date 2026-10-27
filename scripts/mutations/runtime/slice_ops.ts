@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks: "`retain_mut` keeps what `f` rejects",
     file: "src/runtime/slice_ops.js",
     find: "    if (keep) v[kept++] = v[at];\n",
-    replace: "    v[kept++] = v[at];\n",
+    replace: "    if (true) v[kept++] = v[at];\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {

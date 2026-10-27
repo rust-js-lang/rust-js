@@ -720,14 +720,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
-    name: "given-chain-unmade",
-    breaks: "a chain stepped from its back is made $chainEnds where it's made",
-    file: "src/lower/mir/std_calls.rs",
-    find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Chain)",
-    replace: "IterComb::Flatten | IterComb::FlatMap)",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
-  },
-  {
     name: "pushed-component-raw",
     breaks: "`buf.push(c)` of a `Component` pushes its object",
     file: "src/lower/mir/std_calls.rs",

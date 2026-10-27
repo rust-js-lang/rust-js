@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     breaks: "`escape_ascii` writes a tab as `\\x09`, not `\\t`",
     file: "src/runtime/utf8.js",
     find: "    if (byte in named) text += named[byte];\n",
-    replace: "",
+    replace: "    if (false) text += named[byte];\n",
     tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
   },
   {

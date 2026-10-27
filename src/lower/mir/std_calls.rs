@@ -986,16 +986,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let made = this.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, span, out)?;
                     // A flatten the crate steps from its back, made knowing it
                     // (ADR 0545): `$flattenEnds`, of what the recognizers made
-                    // in place, so marked, not std's struct (ADR 0899); a
-                    // chain a function gives behind an `impl`, `$chainEnds`.
+                    // in place, so marked, not std's struct (ADR 0899). A
+                    // chain a function gives behind an `impl` is std's `Chain`,
+                    // held, stepped from its back by its own methods (ADR 0919).
                     let output = this.reveal(output);
                     let made = match crate::lower::recognition::is_held_compiled(this.tcx, output) {
                         true => made.in_place(),
                         false => made,
                     };
-                    match matches!(comb, IterComb::Flatten | IterComb::FlatMap | IterComb::Chain)
-                        && this.stepped_from_its_back(output)
-                    {
+                    match matches!(comb, IterComb::Flatten | IterComb::FlatMap) && this.stepped_from_its_back(output) {
                         true => this.as_double_ended(made, output, span)?,
                         false => made,
                     }

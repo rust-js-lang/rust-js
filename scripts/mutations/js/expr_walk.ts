@@ -73,7 +73,8 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "same_path(next, x))",
     "replace": "same_path(next, x) && false)",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a guarded binding of an Option|a test from MIR that .x. is set and true"]
+    "tests": ["test/snapshots.test.ts", "-t", "options: the generated JS is its snapshot"],
+    "snapshots": true
   },
   {
     "name": "wrap-call-an-effect",
