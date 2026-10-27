@@ -4,7 +4,10 @@ Status: Accepted. Amends tidy's destructuring
 ([0293](0293-cells-read-at-once.md)). Amended (2026-10-26): a binding the
 program names of a variable rust-js named, `old` of `take()`, names both,
 a `let`-`else`'s too;
-no pattern binds a name rust-js gave.
+no pattern binds a name rust-js gave. Amended (2026-10-27, the user's
+decision): `let`s side by side are `const`s side by side, as written;
+only a pattern destructures, which supersedes "`let`s side by side, each
+named as its part, are one destructuring".
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -192,3 +195,54 @@ read more than once and kept, it's its own `const`, which preparation's
 Held by `test/lowering-field-cells.test.ts`, "a struct literal of cells
 another's read makes reads each in place", run in JS, and the mutation
 `rust-js-names-in-a-pattern` (`lower/mir/tidy/destructuring.ts`).
+
+## Amendment: `let`s side by side are `const`s side by side, as written (2026-10-27)
+
+The user's decision (r10 of the React port's gaps). React's
+createFiberFromElement writes each part of the element as its own
+`const`:
+
+```js
+const type = element.type;
+const key = element.key;
+const pendingProps = element.props;
+```
+
+Its port's three `let`s printed `const { type, key } = element; const
+pendingProps = element.props;`: preparation's `read_together_in` made a
+run of `const`s side by side, each named as the property it reads, one
+destructuring (the amendment above, for getComponentNameFromFiber's
+`const {tag, type} = fiber;`). The program wrote three statements.
+
+**A destructuring is a pattern the program wrote, `let Fiber { tag,
+r#type, .. } = fiber;`, its `Cell` fields' too (ADR 0863); `let`s side by
+side are `const`s side by side, each its own statement, however they're
+named.** `read_together_in` is gone. A module's constants side by side,
+`const P = MDXComponents.p;` (ADR 0031's `read_together`), are as before:
+they aren't `let`s.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, each property is
+read once, in its order, either way.
+
+- **Why**: one rule a reader can see in the Rust: a pattern is a
+  destructuring, a `let` of a name a `const`. Measured on the React port
+  before deciding: of the 17 runs `read_together_in` destructured, upstream
+  writes 13 as separate `const`s (ReactFiberLane's `const pendingLanes =
+  root.pendingLanes; ..` six times, createFiberFromElement,
+  ReactFiberCommitEffects, ReactFiberCommitHostEffects, ..) and 4 as one
+  destructuring (getComponentNameFromFiber, ReactFiberHotReloading,
+  ReactFiberScope twice), which the port now writes as patterns.
+- **Alternatives**: keep the run's destructuring, and accept 13
+  differences from upstream; or tell them apart by something the Rust
+  doesn't say.
+- What changes: the corpus's and the guide's runs of `let`s each named as
+  its field, `sum`'s `let x = p.x; let y = p.y;`, `math_values`'
+  `const sqrt = Math.sqrt; const atan2 = Math.atan2;`, std's `rfold`s'
+  `const iter = map.iter; const f = map.f;`, and `static_mut.rs`'s reads,
+  are `const`s side by side again.
+- Held by `test/lowering-field-cells.test.ts`, "lets side by side are
+  consts as written, a struct's pattern one destructuring", run in JS,
+  and `test/lowering-parts.test.ts`, which `named-let-part-of-a-pattern`
+  (`lower/mir/tidy/destructuring.ts`), a `let` of a name joining a pattern,
+  fails both. The mutations `body-reads-apart` and
+  `body-reads-renamed-together` went with `read_together_in`.

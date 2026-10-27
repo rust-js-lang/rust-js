@@ -659,22 +659,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
   },
   {
-    name: "body-reads-apart",
-    breaks: "`let tag = fiber.tag.get(); let r#type = fiber.r#type.get();` stay two `const`s, not `const { tag, type } = fiber;` (ADR 0598, amended)",
-    file: "src/prepare.rs",
-    find: "    js::each_item_block_mut(&mut module.items, &mut read_together_in);\n",
-    replace: "",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side of an object's cells, each by its name, are one destructuring"],
-  },
-  {
-    name: "body-reads-renamed-together",
-    breaks: "`const sibling = node.sibling; const returnFiber = node.return;` is `const { sibling, return: returnFiber } = node;`, a name the program gave in a pattern",
-    file: "src/prepare.rs",
-    find: "        (name == property).then_some((object.as_str(), property.as_str(), name.as_str()))\n",
-    replace: "        crate::names::is_identifier(property).then_some((object.as_str(), property.as_str(), name.as_str()))\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side of an object's cells, each by its name, are one destructuring"],
-  },
-  {
     name: "post-step-unmade",
     breaks: "React's `const globalClientId = globalClientIdCounter++;` is a read then `globalClientIdCounter = globalClientId + 1` (ADR 0948)",
     file: "src/prepare.rs",

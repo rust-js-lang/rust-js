@@ -1510,7 +1510,8 @@ export function mapIterator_fold(
   dropG,
   dropIItem,
 ) {
-  const { iter, f } = map;
+  const iter = map.iter;
+  const f = map.f;
   const f$1 = $dropping(
     (acc, elt) => g(acc, f(elt)),
     () => {
@@ -1582,7 +1583,8 @@ export function mapDoubleEndedIterator_rfold(
   dropG,
   dropIItem,
 ) {
-  const { iter, f } = map;
+  const iter = map.iter;
+  const f = map.f;
   const f$1 = $dropping(
     (acc, elt) => g(acc, f(elt)),
     () => {
@@ -1677,7 +1679,8 @@ export function filterIterator_count(filter, IIterator, dropI, dropP, dropIItem)
     $dispose,
     dropIItem,
   );
-  const { iter, f } = map;
+  const iter = map.iter;
+  const f = map.f;
   const captured = (a, b) => (a + b) >>> 0;
   const f$1 = $dropping(
     (acc, elt) => captured(acc, f(elt)),
@@ -1706,7 +1709,8 @@ export function filterIterator_fold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, predicate } = filter;
+  const iter = filter.iter;
+  const predicate = filter.predicate;
   const f = $dropping(
     (acc, item) => {
       if (predicate(item)) {
@@ -1789,7 +1793,8 @@ export function filterDoubleEndedIterator_rfold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, predicate } = filter;
+  const iter = filter.iter;
+  const predicate = filter.predicate;
   const f = $dropping(
     (acc, item) => {
       if (predicate(item)) {
@@ -2074,7 +2079,8 @@ export function filterMapIterator_fold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, f } = filterMap;
+  const iter = filterMap.iter;
+  const f = filterMap.f;
   const f$1 = $dropping(
     (acc, item) => {
       const value = f(item);
@@ -2184,7 +2190,8 @@ export function filterMapDoubleEndedIterator_rfold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, f } = filterMap;
+  const iter = filterMap.iter;
+  const f = filterMap.f;
   const f$1 = $dropping(
     (acc, item) => {
       const value = f(item);
@@ -2800,7 +2807,8 @@ export function inspectIterator_fold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, f } = inspect;
+  const iter = inspect.iter;
+  const f = inspect.f;
   const f$1 = $dropping(
     (acc, item) => {
       f(item);
@@ -2879,7 +2887,8 @@ export function inspectDoubleEndedIterator_rfold(
   dropFold,
   dropIItem,
 ) {
-  const { iter, f } = inspect;
+  const iter = inspect.iter;
+  const f = inspect.f;
   const f$1 = $dropping(
     (acc, item) => {
       f(item);

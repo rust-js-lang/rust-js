@@ -222,13 +222,13 @@ pub fn get_parent_name(fiber: &Fiber) -> Option<String> {
   expect([lib.getParentName(child), lib.getParentName(app), lib.getParentName(root)]).toEqual(["Root", "Root", undefined]);
 });
 
-// React's getComponentNameFromFiber: `const {tag, type} = fiber;`. Its
-// port reads each cell, `let tag = fiber.tag.get(); let r#type =
-// fiber.r#type.get();`, a `Cell` field that's its property (ADR 0863): one
-// destructuring, each named as the property it reads, as a plain field's
-// are; not one named otherwise, `const returnFiber = node.return;`, nor
-// past a statement between (ADR 0598, amended).
-test("lets side by side of an object's cells, each by its name, are one destructuring", async () => {
+// React's createFiberFromElement writes `const type = element.type; const
+// key = element.key;`, each its own `const`, and getComponentNameFromFiber
+// `const {tag, type} = fiber;`, one destructuring. Its port writes them as
+// they are: `let`s side by side are `const`s side by side, as written,
+// and a pattern of a struct, `let Fiber { tag, r#type, .. } = fiber;`, its
+// cells' too (ADR 0863), is one destructuring (ADR 0598, amended).
+test("lets side by side are consts as written, a struct's pattern one destructuring", async () => {
   const dir = fixture("cells-read-together");
   writeFileSync(
     join(dir, "lib.rs"),
@@ -242,6 +242,11 @@ pub struct Fiber {
 }
 
 pub fn name(fiber: &Fiber) -> u32 {
+    let Fiber { tag, r#type, .. } = fiber;
+    tag.get() * 10 + r#type.get()
+}
+
+pub fn read_apart(fiber: &Fiber) -> u32 {
     let tag = fiber.tag.get();
     let r#type = fiber.r#type.get();
     tag * 10 + r#type
@@ -259,10 +264,13 @@ pub fn walked(node: &Fiber) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const { tag, type } = fiber;\n  return (((tag * 10) >>> 0) + type) >>> 0;\n");
+  expect(js).toContain("  const tag = fiber.tag;\n  const type = fiber.type;\n  return (((tag * 10) >>> 0) + type) >>> 0;\n");
   expect(js).toContain("  const sibling = node.sibling;\n  const returnFiber = node.return;\n");
   const lib = await import(join(dir, "lib.js"));
   const node = { tag: 1, type: 2, sibling: 3, return: 4 };
-  expect([lib.name(node as never), lib.walked(node as never), node.return]).toEqual([12, 8, 3]);
+  expect([lib.name(node as never), lib.readApart(node as never), lib.walked(node as never), node.return]).toEqual([
+    12, 12, 8, 3,
+  ]);
 });
 
 // React's enqueueCapturedUpdate clones each update, `const clone = { lane:

@@ -414,56 +414,6 @@ fn read_together(module: &mut js::Module) {
             ]),
         });
     }
-    js::each_item_block_mut(&mut module.items, &mut read_together_in);
-}
-
-/// `read_together` of a body's `const`s side by side, each named as the
-/// property it reads, `const tag = fiber.tag; const type = fiber.type;`, a
-/// field's or a cell's that's its property (ADR 0863): `const { tag, type
-/// } = fiber;`, as React writes it (ADR 0031, amended). Each is read once,
-/// in its order, either way. Not one the program names otherwise, `const
-/// returnFiber = node.return;`, which reads best as it is.
-fn read_together_in(stmts: &mut Vec<Stmt>) {
-    fn read(stmt: &Stmt) -> Option<(&str, &str, &str)> {
-        let StmtKind::Const(name, value) = &stmt.kind else {
-            return None;
-        };
-        let ExprKind::Member(object, property) = &value.kind else {
-            return None;
-        };
-        let ExprKind::Var(object) = &object.kind else {
-            return None;
-        };
-        (name == property).then_some((object.as_str(), property.as_str(), name.as_str()))
-    }
-    let mut i = 0;
-    while i < stmts.len() {
-        let Some((object, _, _)) = read(&stmts[i]) else {
-            i += 1;
-            continue;
-        };
-        let run = stmts[i..]
-            .iter()
-            .take_while(|s| read(s).is_some_and(|(of, ..)| of == object))
-            .count();
-        if run < 2 {
-            i += 1;
-            continue;
-        }
-        let object = Expr::var(object);
-        let fields = (stmts[i..i + run].iter())
-            .filter_map(read)
-            .map(|(_, property, name)| (property.to_string(), js::Pattern::Name(name.to_string()), None))
-            .collect();
-        let span = stmts[i].span;
-        let destructured = StmtKind::Destructure {
-            pattern: js::Pattern::Object(fields, None),
-            value: object,
-            mutable: false,
-        };
-        stmts.splice(i..i + run, [destructured.at(span)]);
-        i += 1;
-    }
 }
 
 /// `target = target op value` as JS writes it, `target op= value`: `s += t`
