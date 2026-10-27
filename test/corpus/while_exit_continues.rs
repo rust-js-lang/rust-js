@@ -55,6 +55,31 @@ fn find_first_suspended(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
     }
 }
 
+// Up past each fiber `marked` names while it has no sibling, then on to
+// the sibling. A marked one's `continue 'up` is in a `for` in the loop's
+// exit, its `return`'s way, so the exit stays in the loop, where that
+// `continue` lands, not after it.
+fn climb_marked(from: &Rc<Fiber>, marked: &[&str]) -> &'static str {
+    let mut node = Rc::clone(from);
+    loop {
+        'up: while node.sibling.borrow().is_none() {
+            for &name in marked {
+                if node.name == name {
+                    let parent = node.r#return.borrow().clone().unwrap();
+                    node = parent;
+                    continue 'up;
+                }
+            }
+            return node.name;
+        }
+        let sibling = node.sibling.borrow().clone().unwrap();
+        node = sibling;
+        if node.tag.get() == 13 {
+            return node.name;
+        }
+    }
+}
+
 fn main() {
     // row -> a -> b, the deepest, with no sibling; a's sibling c is
     // suspended. Past b, the loop goes up to a and on to its sibling c, not
@@ -71,4 +96,6 @@ fn main() {
     c.tag.set(0);
     println!("{:?}", find_first_suspended(&row).map(|f| f.name));
     println!("{:?}", find_first_suspended(&b).map(|f| f.name));
+    // b marked: up to a, on to c, which has no sibling and isn't marked.
+    println!("{} {}", climb_marked(&b, &["b"]), climb_marked(&b, &[]));
 }
