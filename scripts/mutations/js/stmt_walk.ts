@@ -272,4 +272,28 @@ export const mutations: Mutation[] = [
     replace: "            Item::Statements(_) => {}\n",
     tests: ["test/modules.test.ts", "-t", "a module's items are in source order"],
   },
+  {
+    name: "this-read-in-nested-functions",
+    breaks: "a function nested in a `with_this` function reads its own `this` for the outer one's, `inner.call(i)` of `outer.call(o)` reads `i in i`, not `i in o` (a wrong answer, ADR 0972)",
+    file: "src/js/stmt_walk.rs",
+    find: "            && mentions_in(&function.body, name) > 0\n        {\n            nested = true;\n",
+    replace: "            && false\n        {\n            nested = true;\n",
+    tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
+  },
+  {
+    name: "this-read-not-told-nested",
+    breaks: "a function nested in a `with_this` function reads the outer `this` through a variable no one declares, a `ReferenceError` (ADR 0972)",
+    file: "src/js/stmt_walk.rs",
+    find: "            nested = true;\n            renamed(&mut function.body, name, APART);\n",
+    replace: "            renamed(&mut function.body, name, APART);\n",
+    tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
+  },
+  {
+    name: "reads-this-of-nested-functions",
+    breaks: "an arrow in which a `with_this` function reads its own `this` is taken to read its maker's, so a `let` of it stays `const helper = () => ..`, not `function helper() { .. }` (ADR 0972)",
+    file: "src/js/stmt_walk.rs",
+    find: "            function.body.clear();\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
+  },
 ];

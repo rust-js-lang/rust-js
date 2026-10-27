@@ -595,7 +595,7 @@ pub(super) fn receiver_as_this(
     tcx: TyCtxt<'_>,
     function: DefId,
     params: &mut Vec<Pattern>,
-    body: &mut [Stmt],
+    body: &mut Vec<Stmt>,
     booleans: &mut std::collections::HashSet<String>,
 ) -> Result<(), &'static str> {
     if !matches!(
@@ -609,11 +609,11 @@ pub(super) fn receiver_as_this(
         _ => return Err("a method whose `self` is no parameter"),
     };
     params.remove(0);
-    js::each_expr_mut(body, &mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if *v == receiver) {
-            e.kind = ExprKind::This;
-        }
-    });
+    // A function nested in it, `js::function::with_this`'s, has a `this`
+    // of its own: it reads `self` as the method's, a `const` of it.
+    if js::read_as_this(body, &receiver) {
+        body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));
+    }
     let through = format!("{receiver}.");
     *booleans = std::mem::take(booleans)
         .into_iter()
@@ -697,11 +697,9 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             }
         }
     });
-    js::each_expr_mut(body, &mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if *v == instance) {
-            e.kind = ExprKind::This;
-        }
-    });
+    if js::read_as_this(body, &instance) {
+        return Err("a constructor whose instance a function made in it reads, whose `this` is its own");
+    }
     Ok(())
 }
 

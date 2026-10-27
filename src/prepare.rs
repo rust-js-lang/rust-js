@@ -53,18 +53,37 @@ pub fn module(module: &mut js::Module) {
 /// nothing: a `const`, never set again, whose name no read before it can
 /// reach, as JS's `const` throws there, and the names of a block are given
 /// apart; not one that reads `this` or `arguments`, which a function has
-/// of its own.
+/// of its own. A function made as a value, `js::function::with_this`'s,
+/// is declared so too, a value alone as well, its `this` its own as it
+/// was; and one stored as a property is named as it, `update.callback =
+/// function callback() { .. }` (ADR 0972).
 fn declared_functions(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {
+        if let StmtKind::Assign(target, value) = &mut stmt.kind
+            && let ExprKind::Member(_, property) = &target.kind
+        {
+            named_as(value, property);
+            continue;
+        }
+        if let StmtKind::Const(_, value) = &stmt.kind
+            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())
+            && let StmtKind::Const(name, value) = std::mem::replace(&mut stmt.kind, StmtKind::Comments)
+            && let ExprKind::Function(mut function) = value.kind
+        {
+            function.name = name;
+            function.span = stmt.span;
+            stmt.kind = StmtKind::Function(function);
+            continue;
+        }
         let StmtKind::Const(name, value) = &stmt.kind else {
             continue;
         };
         let (ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body)) = &value.kind else {
             continue;
         };
-        let mut own = false;
+        let mut own = js::reads_this(body);
         js::each_expr(body, &mut |e| {
-            own |= matches!(&e.kind, ExprKind::This) || matches!(&e.kind, ExprKind::Var(v) if v == "arguments");
+            own |= matches!(&e.kind, ExprKind::Var(v) if v == "arguments")
         });
         let value_alone = matches!(
             body.as_slice(),
@@ -88,6 +107,22 @@ fn declared_functions(stmts: &mut [Stmt]) {
             param_spans: Vec::new(),
         };
         stmt.kind = StmtKind::Function(Box::new(function));
+    }
+}
+
+/// `value`, where it's a function of no name, named `property`, as the
+/// property it's stored as: where that's a name a function may have, and
+/// one it reads nothing by, which its own name would be inside it.
+fn named_as(value: &mut Expr, property: &str) {
+    let ExprKind::Function(function) = &mut value.kind else {
+        return;
+    };
+    if function.name.is_empty()
+        && crate::names::is_identifier(property)
+        && !crate::names::kept_word(property)
+        && js::mentions_in(&function.body, property) == 0
+    {
+        function.name = property.to_owned();
     }
 }
 
@@ -1134,9 +1169,7 @@ fn method(prop: &Prop, beside: bool) -> Option<Prop> {
     let (ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body)) = &value.kind else {
         return None;
     };
-    let mut this = false;
-    js::each_expr(body, &mut |e| this |= matches!(&e.kind, ExprKind::This));
-    if this {
+    if js::reads_this(body) {
         return None;
     }
     // One of a value alone, `double: (x) => x * 2`, reads as it is, as a

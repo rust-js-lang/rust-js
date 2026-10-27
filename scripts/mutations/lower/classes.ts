@@ -41,10 +41,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-self-not-this",
-    breaks: "a method's `self` stays its parameter, read where JS gives its first argument, not `this`",
+    breaks: "a method's `self` stays the variable of its parameter, which no one declares, not `this`",
     file,
-    find: "        if matches!(&e.kind, ExprKind::Var(v) if *v == receiver) {\n            e.kind = ExprKind::This;\n",
-    replace: "        if matches!(&e.kind, ExprKind::Var(v) if *v == receiver) {\n",
+    find: "    if js::read_as_this(body, &receiver) {\n",
+    replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },
   {
@@ -263,5 +263,13 @@ export const mutations: Mutation[] = [
     find: "                    (true, false) => refuse(span, \"struct's impl is marked `#[rust_js::object]` too\"),\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "what an object is refused"],
+  },
+  {
+    name: "method-self-in-function-undeclared",
+    breaks: "a `with_this` function in a class's method reads `self` through a variable no one declares, a `ReferenceError`, not `const counter = this;` (ADR 0972)",
+    file,
+    find: "        body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "in a class's method"],
   },
 ];

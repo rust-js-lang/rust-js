@@ -280,6 +280,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Delete, Some(this)) if args.len() == 1 => {
                 Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))
             }
+            (JsForm::WithThis, Some(closure)) if args.is_empty() => {
+                self.function_with_this(closure, generic_args.types().nth(1), span)?
+            }
             (JsForm::InstanceOf(class), Some(this)) if args.is_empty() => {
                 Expr::bin(Op::InstanceOf, this, self.js_ref(&class))
             }
@@ -443,5 +446,89 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(())
+    }
+
+    /// `js::function::with_this(closure)`: the closure, an arrow of its
+    /// `this` and of the tuple of its parameters, `parameters`, as the JS
+    /// function it makes, `function (a, b) { .. }`, each read of its `this`
+    /// JS's (ADR 0972). Its tuple's items are the function's parameters,
+    /// `(this$, [a, b]) => ..`'s `a` and `b`; a tuple it reads whole, the
+    /// array of them. A function nested in it reads its `this` through
+    /// `const this$ = this;`, as one that sets it, `let this$ = this;`.
+    /// Anonymous: preparation names it where it's stored (ADR 0972).
+    fn function_with_this(&mut self, closure: Expr, parameters: Option<ty::Ty<'tcx>>, span: Span) -> R<Expr> {
+        let refuse =
+            |cx: &Self, why: &str| Err(cx.tcx.dcx().span_err(span, format!("`js::function::with_this` {why}")));
+        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {
+            return refuse(
+                self,
+                "takes a closure written in its call, `with_this(move |this, (a, b)| ..)`, not a variable that holds one",
+            );
+        };
+        let arity = match parameters.map(|ty| ty.kind()) {
+            Some(ty::Tuple(items)) => items.len(),
+            _ => return refuse(self, "is given a closure of its `this` and a tuple of its parameters"),
+        };
+        // A `this` of its maker's read already, which the function's own
+        // would be: none is, as a class's `self` is its `this` only once
+        // its method is lowered, through each function nested in it.
+        if js::reads_this(&body) {
+            return Err(self.unsupported(
+                span,
+                "`js::function::with_this` of a closure that reads its maker's `this`",
+            ));
+        }
+        let tuple = (params.len() > 1).then(|| params.remove(1));
+        let this = (!params.is_empty()).then(|| params.remove(0));
+        let mut own = Vec::new();
+        match tuple {
+            Some(js::Pattern::Array(items)) => {
+                for item in items {
+                    own.push(match item {
+                        Some(pattern) => pattern,
+                        None => js::Pattern::Name(self.fresh("_")),
+                    });
+                }
+            }
+            Some(js::Pattern::Name(tuple)) => {
+                let items: Vec<String> = (0..arity).map(|_| self.fresh(&tuple)).collect();
+                let whole = match arity {
+                    0 => Expr::undefined(),
+                    _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),
+                };
+                body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));
+                own.extend(items.into_iter().map(js::Pattern::Name));
+            }
+            Some(_) => return refuse(self, "is given a closure whose parameters aren't a tuple"),
+            None => {}
+        }
+        match this {
+            Some(js::Pattern::Name(this)) => {
+                // Set, or a place lent: a variable of its own, `this` given first.
+                if js::Writes::of(&body).may_replace(&this) {
+                    body.insert(0, StmtKind::Let(this, Some(Expr::this())).at(js::Span::NONE));
+                } else if js::read_as_this(&mut body, &this) {
+                    body.insert(0, StmtKind::Const(this, Expr::this()).at(js::Span::NONE));
+                }
+            }
+            Some(_) => return refuse(self, "is given a closure whose `this` is a pattern, not a name"),
+            None => {}
+        }
+        let function = js::Function {
+            name: String::new(),
+            params: own,
+            body,
+            export: false,
+            is_async: false,
+            noinline: false,
+            span: self.js_span(span),
+            name_span: js::Span::NONE,
+            param_spans: Vec::new(),
+        };
+        Ok(Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::Function(Box::new(function)),
+            span: closure.span,
+        })
     }
 }

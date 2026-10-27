@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "field-method-reads-this",
     breaks: "a field's closure that reads a class's `this` is a method, `read(k) { this.n }`, whose `this` is the object it's in",
     file: "src/prepare.rs",
-    find: "    if this {\n        return None;\n    }\n",
+    find: "    if js::reads_this(body) {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "reads this stays"],
   },
@@ -710,8 +710,8 @@ export const mutations: Mutation[] = [
     name: "let-closure-of-this-declared",
     breaks: "a closure that reads a class's `this` is a function, whose `this` is its own (ADR 0882, amended)",
     file: "src/prepare.rs",
-    find: "            own |= matches!(&e.kind, ExprKind::This) || matches!(&e.kind, ExprKind::Var(v) if v == \"arguments\");\n",
-    replace: "            own |= matches!(&e.kind, ExprKind::Var(v) if v == \"arguments\");\n",
+    find: "        let mut own = js::reads_this(body);\n",
+    replace: "        let mut own = false;\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
   },
   {
@@ -785,5 +785,45 @@ export const mutations: Mutation[] = [
     find: "                        Some(option) if matches!(value.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
     replace: "                        Some(option) if false => {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
+  },
+  {
+    "name": "function-stored-unnamed",
+    "breaks": "a `with_this` function stored as a property stays anonymous, `update.callback = function () { .. }`, not React's `function callback()` (ADR 0972)",
+    "file": "src/prepare.rs",
+    "find": "            named_as(value, property);\n",
+    "replace": "",
+    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+  },
+  {
+    "name": "function-named-as-what-it-reads",
+    "breaks": "a function stored as `update.callback` is named `callback` where it reads a variable of that name, which its own name then is: `function callback() { return callback(); }` calls itself (a wrong answer, ADR 0972)",
+    "file": "src/prepare.rs",
+    "find": "        && js::mentions_in(&function.body, property) == 0\n",
+    "replace": "",
+    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+  },
+  {
+    "name": "function-named-a-kept-word",
+    "breaks": "a function stored as `update.default` is named `function default()`, a `SyntaxError` (ADR 0972)",
+    "file": "src/prepare.rs",
+    "find": "        && !crate::names::kept_word(property)\n",
+    "replace": "",
+    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+  },
+  {
+    "name": "function-named-no-name",
+    "breaks": "a function stored as `on[\"data-on\"]` is named `function data-on()`, a `SyntaxError` (ADR 0972)",
+    "file": "src/prepare.rs",
+    "find": "        && crate::names::is_identifier(property)\n",
+    "replace": "",
+    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+  },
+  {
+    "name": "function-of-a-let-not-declared",
+    "breaks": "a `let` of a `with_this` function stays `const inner = function () { .. }`, not `function inner() { .. }` (ADR 0972)",
+    "file": "src/prepare.rs",
+    "find": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
+    "replace": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
+    "tests": ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
   },
 ];

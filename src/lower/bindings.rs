@@ -374,6 +374,10 @@ pub(super) enum JsForm {
     /// object or an array, `typeof this === "object" && this !== null`,
     /// else `undefined`, `js::Kind::object`'s (ADR 0910).
     TypeofObject,
+    /// `function`: a JS function of the closure given, `function (a, b) {
+    /// .. }`, its first parameter JS's `this`, its second the tuple of what
+    /// it's called with, `js::function::with_this`'s (ADR 0972).
+    WithThis,
 }
 
 pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
@@ -401,6 +405,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "class" => return JsForm::Class,
         "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
+        "function" => return JsForm::WithThis,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

@@ -509,6 +509,48 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
     renamed(stmts, APART, name);
 }
 
+/// Each read of the variable `name` in `stmts` JS's `this`: in them, and
+/// in each arrow in them, which sees the `this` of the function it's
+/// made in; not in a function made in them, `js::function::with_this`'s,
+/// which JS calls with a `this` of its own, where `name` stays. Whether
+/// one reads it there, so `stmts` must declare it, `const name = this;`
+/// (ADRs 0761, 0972). Of a body lowered, before preparation makes
+/// methods of arrows (ADR 0882), and where a function declared in it is
+/// a nested `fn`'s, which captures nothing.
+pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
+    const APART: &str = "\u{0}this";
+    let mut nested = false;
+    each_expr_mut(stmts, &mut |e| {
+        if let ExprKind::Function(function) = &mut e.kind
+            && mentions_in(&function.body, name) > 0
+        {
+            nested = true;
+            renamed(&mut function.body, name, APART);
+        }
+    });
+    each_expr_mut(stmts, &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(v) if v == name) {
+            e.kind = ExprKind::This;
+        }
+    });
+    renamed(stmts, APART, name);
+    nested
+}
+
+/// Whether `stmts` read their function's `this`: in them, or in an arrow
+/// in them, not in a function made in them, whose `this` is its own.
+pub fn reads_this(stmts: &[Stmt]) -> bool {
+    let mut stmts = stmts.to_vec();
+    each_expr_mut(&mut stmts, &mut |e| {
+        if let ExprKind::Function(function) = &mut e.kind {
+            function.body.clear();
+        }
+    });
+    let mut read = false;
+    each_expr(&stmts, &mut |e| read |= matches!(e.kind, ExprKind::This));
+    read
+}
+
 /// Each name `stmts` declare, however deep: a statement's, an arrow's
 /// parameters and statements, a function's too.
 pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {

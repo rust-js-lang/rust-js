@@ -2175,6 +2175,80 @@ export function logMeasure(task, name, start, end) {
   task.run(performance.measure.bind(performance, name, options));
 }
 ```
+- **A function that reads its `this` is `function::with_this`'s**, of a
+  closure given that `this`, `Option<&'static Unknown>`, and a tuple of
+  what it's called with, `(a, b)`, `()` of nothing: a JS `function (a, b)
+  { .. }` whose `this` is what it's called on, `function::call`'s, an
+  object's whose method it is, `None` called alone. It's a closure, so
+  rustc checks what it captures. Stored as a property it's named as it,
+  a `let` of it is declared, and a function nested in it reads its
+  `this` through a `const`; an arrow in it reads it as it is
+  ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md)).
+  React's error boundary callback, called on the instance:
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{Unknown, function};
+
+pub struct Fiber {
+    pub lanes: Cell<u32>,
+}
+
+pub struct Update {
+    pub callback: Cell<Option<&'static Unknown>>,
+}
+
+fn log_caught_error(fiber: &Fiber) {
+    fiber.lanes.set(0);
+}
+
+fn mark_legacy_error_boundary_as_failed(instance: Option<&'static Unknown>) {
+    let _ = instance;
+}
+
+pub fn initialize_class_error_update(update: &Update, fiber: &Rc<Fiber>) {
+    let fiber = Rc::clone(fiber);
+    update.callback.set(Some(js::unknown_of(function::with_this(move |this, ()| {
+        log_caught_error(&fiber);
+        mark_legacy_error_boundary_as_failed(this);
+    }))));
+}
+
+pub fn named_by(name: String) -> Box<dyn Fn(u32) -> String> {
+    function::with_this(move |this, (count,): (u32,)| {
+        let read = function::with_this(move |own, ()| own.is_some() && this.is_some());
+        format!("{name} {count} {}", read())
+    })
+}
+```
+
+```js
+function logCaughtError(fiber) {
+  fiber.lanes = 0;
+}
+
+function markLegacyErrorBoundaryAsFailed(instance) {}
+
+export function initializeClassErrorUpdate(update, fiber) {
+  update.callback = function callback() {
+    logCaughtError(fiber);
+    markLegacyErrorBoundaryAsFailed(this);
+  };
+}
+
+export function namedBy(name) {
+  return function (count) {
+    const this$ = this;
+    function read() {
+      return this != null && this$ != null;
+    }
+    const arg = read();
+    return `${name} ${count} ${arg}`;
+  };
+}
+```
 - **A constructor is a `fn` item**, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
   the block it's written in; a closure is an arrow

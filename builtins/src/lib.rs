@@ -470,6 +470,66 @@ pub mod function {
         unreachable!()
     }
 
+    /// [`function (a, b) { .. }`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/function):
+    /// a JS function of `f`, a closure given the function's `this`, any
+    /// value, `None` of `undefined` or `null`, and a tuple of what it's
+    /// called with, `(a, b)`, `()` of nothing (ADR 0972). Its `this` is
+    /// what JS calls it on: `function::call(f, Some(&instance), ())`'s
+    /// `instance`, `object.f()`'s `object`, `None` of a call of it alone.
+    /// React's `update.callback = function callback() { .. this .. }` of
+    /// `update.callback.set(Some(js::unknown_of(function::with_this(move
+    /// |this, ()| { .. }))))`. A closure, so what it captures is Rust's to
+    /// check, as any closure's is; called from Rust, `f(a, b)`, its `this`
+    /// is `None`.
+    #[cfg_attr(rust_js, rust_js::link_name = "function")]
+    pub fn with_this<'l, F, A, R>(this: F) -> <A as Parameters<'l, R>>::Function
+    where
+        F: Fn(Option<&'static super::Unknown>, A) -> R + 'l,
+        A: Parameters<'l, R>,
+    {
+        unreachable!()
+    }
+
+    /// What a function [`with_this`] makes is, given a tuple of its
+    /// parameters, `Self`, and giving `R`: of `(A, B)`, a `Box<dyn Fn(A, B)
+    /// -> R>`, which lives as long as what its closure keeps, `'l`. Of each
+    /// tuple of up to 12. No program names it.
+    #[diagnostic::on_unimplemented(
+        message = "`{Self}` isn't a tuple of the parameters a JS function takes",
+        note = "a function `with_this` makes is given its `this` and a tuple of its parameters: `|this, (a, b)|`, `|this, (a,)|` of one, `|this, ()|` of none"
+    )]
+    pub trait Parameters<'l, R> {
+        /// The JS function.
+        type Function;
+    }
+
+    /// `Parameters` of each tuple of up to 12.
+    macro_rules! parameters {
+        ($(($($a:ident),*))*) => {
+            $(
+                impl<'l, R, $($a),*> Parameters<'l, R> for ($($a,)*) {
+                    type Function = Box<dyn Fn($($a),*) -> R + 'l>;
+                }
+            )*
+        };
+    }
+
+    parameters! {
+        ()
+        (A)
+        (A, B)
+        (A, B, C)
+        (A, B, C, D)
+        (A, B, C, D, E)
+        (A, B, C, D, E, F1)
+        (A, B, C, D, E, F1, G)
+        (A, B, C, D, E, F1, G, H)
+        (A, B, C, D, E, F1, G, H, I)
+        (A, B, C, D, E, F1, G, H, I, J)
+        (A, B, C, D, E, F1, G, H, I, J, K)
+        (A, B, C, D, E, F1, G, H, I, J, K, L)
+    }
+
     /// What a function `F`, of the signature `M`, a `fn` pointer's, is with
     /// its first arguments `L` bound, [`bind`]'s: of none, `F` itself, and
     /// of some, a function of the parameters it has left, which lives as
