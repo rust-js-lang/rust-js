@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "transparent-constant-unnamed",
+    breaks: "a `match` of a `#[repr(transparent)]` struct's constants tests their numbers, `eventPriority === 2`, not `DiscreteEventPriority` (ADR 0590, amended)",
+    file: "src/lower/body_queries.rs",
+    find: "        PatKind::Leaf { .. } if let Some(field) = transparent_subpattern(tcx, pat) => pattern_value(tcx, field),\n",
+    replace: "",
+    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
+  },
+  {
+    name: "transparent-constant-field-walked",
+    breaks: "a `#[repr(transparent)]` struct's constant's field, its number, is a pattern written another way of its value, so the constant goes unnamed (ADR 0590, amended)",
+    file: "src/lower/body_queries.rs",
+    find: "            let into = value.is_none() || transparent_subpattern(tcx, pat).is_none();\n",
+    replace: "            let into = true;\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
+  },
+  {
     name: "named-constant-signed-as-unsigned",
     breaks: "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
     file: "src/lower/body_queries.rs",

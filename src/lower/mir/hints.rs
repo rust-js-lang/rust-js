@@ -730,6 +730,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let scalar = ty.is_integral() || ty.is_floating_point() || ty.is_char() || ty.is_str();
                 scalar.then(|| vec![value(Constant::Value(self.js_span(pattern.span)))])
             }
+            // A `#[repr(transparent)]` struct's of such a constant, which is
+            // its field in JS (ADR 0584), `EventPriority(2)`.
+            thir::PatKind::Leaf { .. }
+                if let Some(field) = body_queries::transparent_subpattern(self.tcx, pattern)
+                    && let thir::PatKind::Constant { .. } = field.kind
+                    && (field.ty.is_integral() || field.ty.is_floating_point() || field.ty.is_char()) =>
+            {
+                Some(vec![value(Constant::Value(self.js_span(pattern.span)))])
+            }
             // The registry's symbol, `REACT_MEMO_TYPE`, which `===` compares
             // as it does its key (ADR 0634).
             thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {

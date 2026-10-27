@@ -75,3 +75,28 @@ trait's item, of no type, and resolving it crashed rustc (rustc's
 value is named only by a constant of no generics; a trait's is its value,
 `case 250:`. Held by `test/corpus/match_trait_const.rs` and the mutation
 `pattern-trait-const-named`.
+
+## Amendment: a transparent struct's constant is named too (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, `===` of the number
+is the struct's `==`: a `#[repr(transparent)]` struct is its field in JS
+(ADR [0584](0584-a-transparent-struct-is-its-field.md)), and a
+constant pattern of it needs the structural `PartialEq` of that field.
+
+React's onCommitRoot, `switch (eventPriority) { case
+DiscreteEventPriority: .. case ContinuousEventPriority: .. default: .. }`,
+of priorities its port makes `pub struct EventPriority(pub i32)` (c23 of
+the port's gaps). Its constants' patterns are rustc's `EventPriority(2)`,
+whose value was the struct's, not a number's: the `match` was `if
+(eventPriority === 2) { .. } if (eventPriority === 8) { .. }`.
+
+**A transparent struct's pattern's value is its field's**
+(`body_queries::transparent_subpattern`, `pattern_value`), named by the
+constant as a number's is, its field's pattern not again; and of such a
+constant, a `switch`'s case (`hints::valued_constants`): `case
+DiscreteEventPriority:`.
+
+Held by `test/lowering-constants.test.ts`, "a match of a transparent
+struct's constants names them in a switch", run; the mutations
+`transparent-constant-unnamed`, `transparent-constant-field-walked`
+(`body_queries.ts`) and `transparent-constant-no-case` (`mir/hints.ts`).

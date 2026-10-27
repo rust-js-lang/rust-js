@@ -894,16 +894,20 @@ pub(super) enum PatternValue<'tcx> {
 fn constant_patterns<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<PatternValue<'tcx>, Option<DefId>> {
     let mut found: HashMap<PatternValue<'tcx>, Option<DefId>> = HashMap::new();
     let mut of = |pattern: &Pat<'tcx>| {
-        pattern.walk_always(|pat| {
+        pattern.walk(|pat| {
             // A constant of no generics: a trait's, `<u8 as Level>::HIGH`, is
             // of a type the pattern doesn't keep, so it's its value.
             let named = (pat.extra.as_ref().and_then(|extra| extra.expanded_const))
                 .filter(|&d| tcx.generics_of(d).count() == 0);
-            if let Some(value) = pattern_value(tcx, pat) {
+            let value = pattern_value(tcx, pat);
+            // Not again of a `#[repr(transparent)]` struct's field, its value.
+            let into = value.is_none() || transparent_subpattern(tcx, pat).is_none();
+            if let Some(value) = value {
                 (found.entry(value))
                     .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))
                     .or_insert(named);
             }
+            into
         });
     };
     thir.arms.iter().for_each(|arm| of(&arm.pattern));
@@ -1448,6 +1452,9 @@ pub(super) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<
             .valtree
             .try_to_leaf()
             .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),
+        // A `#[repr(transparent)]` struct's, which is its field in JS (ADR
+        // 0584): its field's, `EventPriority(2)`'s `2`.
+        PatKind::Leaf { .. } if let Some(field) = transparent_subpattern(tcx, pat) => pattern_value(tcx, field),
         // Its key's pattern, a string's, inside it.
         PatKind::Leaf { subpatterns }
             if matches!(pat.ty.kind(), ty::Adt(adt, _)
@@ -1460,6 +1467,19 @@ pub(super) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<
         }
         _ => None,
     }
+}
+
+/// The pattern of the field a `#[repr(transparent)]` struct's pattern is in
+/// JS, as the struct is its field (ADR 0584): a constant's, `EventPriority(2)`
+/// of `DISCRETE_EVENT_PRIORITY =>`, its `2`.
+pub(super) fn transparent_subpattern<'p, 'tcx>(tcx: TyCtxt<'tcx>, pat: &'p Pat<'tcx>) -> Option<&'p Pat<'tcx>> {
+    let (PatKind::Leaf { subpatterns }, ty::Adt(adt, _)) = (&pat.kind, pat.ty.kind()) else {
+        return None;
+    };
+    let at = super::recognition::transparent_field(tcx, *adt)?;
+    (subpatterns.iter())
+        .find(|field| field.field.as_usize() == at)
+        .map(|field| &field.pattern)
 }
 
 /// The text a pattern of a string, `"react.memo"`, is.

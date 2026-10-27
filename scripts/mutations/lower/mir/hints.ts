@@ -5,6 +5,14 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 const toDefault = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"];
 export const mutations: Mutation[] = [
   {
+    name: "transparent-constant-no-case",
+    breaks: "a `match` of a `#[repr(transparent)]` struct's constants is no `switch`, an `if` chain of its tests (ADR 0590, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    && let thir::PatKind::Constant { .. } = field.kind\n",
+    replace: "                    && let thir::PatKind::Never = field.kind\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
+  },
+  {
     name: "guard-before-its-constants-unjoined",
     breaks: "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
     file: "src/lower/mir/hints.rs",

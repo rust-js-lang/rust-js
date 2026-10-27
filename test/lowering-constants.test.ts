@@ -324,3 +324,40 @@ pub fn logged(quiet: bool) -> bool {
   lib.bump();
   expect(lib.hasWarnings()).toBe(true);
 });
+
+// React's onCommitRoot, `switch (eventPriority) { case
+// DiscreteEventPriority: .. case ContinuousEventPriority: .. default: .. }`,
+// of priorities its port makes a `#[repr(transparent)]` struct, which is its
+// number in JS (ADR 0584): a `match` of its constants tests each by its
+// name, a `switch`, as one of numbers does (ADR 0590, amended).
+test("a match of a transparent struct's constants names them in a switch", async () => {
+  const dir = fixture("transparent-consts-match");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct EventPriority(pub i32);
+
+#[cfg_attr(rust_js, rust_js::name = "DiscreteEventPriority")]
+pub const DISCRETE_EVENT_PRIORITY: EventPriority = EventPriority(2);
+#[cfg_attr(rust_js, rust_js::name = "ContinuousEventPriority")]
+pub const CONTINUOUS_EVENT_PRIORITY: EventPriority = EventPriority(8);
+
+pub fn scheduler_priority(event_priority: EventPriority) -> u8 {
+    match event_priority {
+        DISCRETE_EVENT_PRIORITY => 1,
+        CONTINUOUS_EVENT_PRIORITY => 2,
+        _ => 3,
+    }
+}
+
+pub fn priority(n: i32) -> EventPriority {
+    EventPriority(n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "  switch (eventPriority) {\n    case DiscreteEventPriority:\n      return 1;\n    case ContinuousEventPriority:\n      return 2;\n    default:\n      return 3;\n  }\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect([2, 8, 32].map((n) => lib.schedulerPriority(lib.priority(n)))).toEqual([1, 2, 3]);
+});
