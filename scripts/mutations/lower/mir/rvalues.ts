@@ -540,4 +540,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
   },
+  {
+    name: "stored-given-of-a-parameter",
+    breaks: "what a parameter assigned once stores is asked of that assignment alone, though it holds its caller's value too, and `x = x;` is followed forever: the compiler's stack overflows (rustc's nll/issue-50461-used-mut-from-moves)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if place.local.as_usize() <= state.body.arg_count || state.locals.writes[place.local] != 1 {\n",
+    replace: "        if state.locals.writes[place.local] != 1 {\n",
+    tests: ["test/corpus.test.ts", "-t", "parameter_assigned_itself"],
+  },
 ];

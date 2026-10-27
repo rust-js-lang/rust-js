@@ -1077,7 +1077,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.own_nullable_param(state, place) {
             return Given::Nulled;
         }
-        if state.locals.writes[place.local] != 1 {
+        // Any other parameter holds what its caller gave as well as what
+        // the body assigns it, and an assignment of it may read itself,
+        // `x = x;`, which the search below would follow forever.
+        if place.local.as_usize() <= state.body.arg_count || state.locals.writes[place.local] != 1 {
             return Given::Unknown;
         }
         // What it's assigned, once: another such, or `Some(..)`.
