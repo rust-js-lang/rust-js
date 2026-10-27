@@ -14,6 +14,8 @@ tests its guard, where a failed guard goes on to nothing; by
 arm's test is found wherever MIR tests it, its cases written as the arms
 are. By [0905](0905-a-guarded-arm-falls-to-the-next.md): a guarded
 case falls through to the next where the next arm names its constants.
+By [0958](0958-a-chain-of-strict-equals-tests-is-a-switch.md): an
+`if` chain of `js::strict_equals` tests of one subject is a `switch` too.
 Amended below: a last arm of a name, `current => current`, is the
 `default`, as a last `_` is.
 

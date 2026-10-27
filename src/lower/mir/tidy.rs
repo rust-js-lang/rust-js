@@ -23,6 +23,7 @@ mod moves;
 mod options;
 mod shadows;
 mod stages;
+mod strict_switches;
 mod switches;
 mod unwinds;
 mod values;

@@ -1951,6 +1951,37 @@ export function is(a, b) {
   return a === b;
 }
 ```
+- **An `if`/`else if` chain of `js::strict_equals` tests of one subject,
+  three ways or more, is a `switch`**, as JS writes a test of tags no
+  `match` of constants can name: the subject read the same each time, no
+  call or getter, and each case's value one that does nothing. A chain
+  that tests two subjects, or whose branch `break`s a loop, stays
+  ([ADR 0958](../../decisions/0958-a-chain-of-strict-equals-tests-is-a-switch.md)):
+
+```rust
+pub fn name(tag: &js::Unknown, component: &js::Unknown, role: &js::Unknown) -> &'static str {
+    if js::strict_equals(tag, component) {
+        "component"
+    } else if js::strict_equals(tag, role) {
+        "role"
+    } else {
+        "text"
+    }
+}
+```
+
+```js
+export function name(tag, component, role) {
+  switch (tag) {
+    case component:
+      return "component";
+    case role:
+      return "role";
+    default:
+      return "text";
+  }
+}
+```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
   name, TypeScript's `Record<string, T>`.
 

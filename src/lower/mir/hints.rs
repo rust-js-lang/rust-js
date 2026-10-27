@@ -28,6 +28,9 @@ pub(super) struct Written {
     pub let_elses: Vec<js::Span>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
+    /// Each `js::strict_equals(a, b)` the program wrote, a chain of which
+    /// of one subject is a `switch` (ADR 0958).
+    pub strict_tests: Vec<js::Span>,
     /// Each `!( .. )` the program wrote of an `&&` or `||`: where what it
     /// negates is, and whether that's an `&&` (`written_negations`).
     pub negations: Vec<(js::Span, bool)>,
@@ -221,6 +224,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
             .map(|e| self.js_span(e.span))
             .collect();
+        // Where each `js::strict_equals(a, b)` is (ADR 0958).
+        let strict_tests: Vec<js::Span> = (self.frame.thir.exprs.iter())
+            .filter(|e| {
+                matches!(e.kind, thir::ExprKind::Call { fun, .. }
+                    if fn_def(self.frame.thir[fun].ty).is_some_and(|(f, _)| {
+                        crate::lower::bindings::is_binding(self.tcx, f)
+                            && matches!(crate::lower::bindings::js_form(self.tcx, f), crate::lower::bindings::JsForm::StrictEquals)
+                    }))
+            })
+            .map(|e| self.js_span(e.span))
+            .collect();
         // Where each `!( .. )` of an `&&` or `||` is, `!(a && b)`'s `a && b`.
         let negations: Vec<(js::Span, bool)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| {
@@ -333,6 +347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             elses,
             let_elses,
             logicals,
+            strict_tests,
             negations,
             continues,
             breaks,

@@ -439,6 +439,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written chains", |b, _| {
                 js::statement_lists(b, &mut |s| written_chains(s))
             }),
+            // A chain of `js::strict_equals` tests of one subject, before
+            // its last two ways are a returned `?:` (ADR 0958).
+            pass("strict switches", |b, h| {
+                strict_switches::strict_switches(b, &h.written.strict_tests, &h.written.elses)
+            }),
             // `const result = e; return result;` of what the function gives:
             // `return e;`.
             pass("returned consts", |b, h| {
