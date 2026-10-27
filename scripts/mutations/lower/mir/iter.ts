@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                .is_some_and(|item| !self.needs_clone(item.peel_refs()))\n",
     replace: "                .is_some_and(|item| self.is_copy(item.peel_refs()))\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
+    tests: ["test/corpus.test.ts", "-t", "^(copied_structs_apart).rs$"],
   },
   {
     "name": "mir-iterator-method-ungated",
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            || self.explicit_adapter(iter_ty)\n            || self.struct_hint_known(iter_ty)\n",
     replace: "            || self.struct_hint_known(iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_cycle).rs$"],
   },
   {
     name: "cloned-mapped-anyway",

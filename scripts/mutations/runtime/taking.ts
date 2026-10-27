@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    const past = Math.max(taking.iter.len() - taking.n, 0);\n    taking.n--;\n",
     replace: "    const past = Math.max(taking.iter.len() - taking.n, 0);\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
   {
     name: "taking-length-its-source",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "  taking.len = () => Math.min(taking.iter.len(), taking.n);\n",
     replace: "  taking.len = () => taking.iter.len();\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_back_folds_by_try_rfold|own_back_through_adapters).rs$"],
   },
   {
     name: "taking-front-uncounted",

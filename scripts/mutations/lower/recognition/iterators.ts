@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "            \"std::iter::Take\"\n            | \"std::iter::Skip\"\n",
     replace: "            \"std::iter::Take\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(fold_back_drops_what_it_takes|own_iterator_dropped_through_adapters).rs$"],
   },
   {
     name: "empty-iter-not-an-array",
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\" | \"std::iter::Rev\"\n",
     replace: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Rev\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(fuse_enumerate_ends|enumerate_of_known_length).rs$"],
   },
   {
     name: "map-length-unknown",

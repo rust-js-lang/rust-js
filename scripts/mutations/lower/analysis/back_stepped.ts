@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),\n",
     replace: "                false => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(back_stepped_adapter_sources|flatten_from_its_back).rs$"],
   },
   {
     name: "held-adapter-not-back-stepped",

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lent.js",
     find: "  if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);\n",
     replace: "  if (it.nth !== undefined) lent.nth = (k) => it.nth(k);\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(chain_nth_drops_what_it_passes|own_nth_last_dropping).rs$"],
   },
   {
     name: "lent-nth-steps",

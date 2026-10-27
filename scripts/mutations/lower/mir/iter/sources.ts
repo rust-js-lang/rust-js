@@ -163,7 +163,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/sources.rs",
     find: "            || crate::lower::recognition::reversed_source(self.tcx, ty).is_some_and(|source| self.steps_an_array(source))\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rposition_of_lazy|std_rev).rs$"],
   },
   {
     name: "try-for-each-callback-unshifted",

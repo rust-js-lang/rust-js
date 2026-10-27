@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))\n",
     replace: "        && false\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR"],
+    tests: ["test/corpus.test.ts", "-t", "^(lazy_chains).rs$"],
   },
   {
     name: "iter-eager-take-kept",

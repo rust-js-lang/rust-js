@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/closing.rs",
     find: "                Expr::call_helper(\"$skipping\", vec![it, n, drop])\n",
     replace: "                {\n                    let _ = drop;\n                    Expr::call(Expr::member(it, \"drop\"), vec![n])\n                }\n",
-    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(chain_sides_own_steps|step_by_compiled_source_nth).rs$"],
   },
   {
     name: "nth-dropping-refused",

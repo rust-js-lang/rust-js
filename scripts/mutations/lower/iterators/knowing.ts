@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.compiled_struct_at(ty, span) && !made_in_place(&it) {\n",
     replace: "        if self.compiled_struct_at(ty, span) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_in_place_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_from_its_back|flatten_of_iterators_from_back).rs$"],
   },
   {
     name: "compiled-rfold-unasked",
