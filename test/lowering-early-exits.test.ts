@@ -339,3 +339,115 @@ impl From<String> for Big {
   lib.setCurrent(undefined as never);
   expect([...set, lib.currentStack(true as never), lib.named("b" as never), lib.named(undefined as never)]).toEqual(["a!", "", "", "b?", ""]);
 });
+
+// ADR 0702, amended: React's getHostSibling, `siblings: while (true) { ..
+// while (node.tag !== HostComponent && node.tag !== HostText) { if
+// (isScope(node)) continue siblings; .. } if (!(node.flags & Placement))
+// return node.stateNode; }`. The `while` the program wrote is a `while`,
+// the `break` MIR wrote after its test falling out to what follows it;
+// each `continue 'siblings` is where the program wrote it, not a `break`
+// past a block to MIR's one; and the `if` after the loop keeps its body.
+test("a while's continues of the loop around are where the program wrote them", async () => {
+  const { js, lib } = await compiled(
+    "host-sibling",
+    `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: Cell<u8>,
+    pub flags: Cell<i32>,
+    pub child: RefCell<Option<Rc<Fiber>>>,
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+    pub state_node: Cell<u32>,
+}
+
+pub const HOST_COMPONENT: u8 = 5;
+pub const HOST_TEXT: u8 = 6;
+pub const HOST_PORTAL: u8 = 4;
+pub const PLACEMENT: i32 = 2;
+
+fn is_scope(fiber: &Fiber) -> bool {
+    fiber.tag.get() == 21
+}
+
+pub fn get_host_sibling(fiber: &Rc<Fiber>) -> Option<u32> {
+    let mut node = Rc::clone(fiber);
+    'siblings: loop {
+        while node.sibling.borrow().is_none() {
+            let return_fiber = node.r#return.borrow().clone();
+            let Some(return_fiber) = return_fiber else {
+                return None;
+            };
+            node = return_fiber;
+        }
+        let sibling = node.sibling.borrow().clone().unwrap();
+        node = sibling;
+        while node.tag.get() != HOST_COMPONENT && node.tag.get() != HOST_TEXT {
+            if is_scope(&node) {
+                continue 'siblings;
+            }
+            if (node.flags.get() & PLACEMENT) != 0 {
+                continue 'siblings;
+            }
+            let child = node.child.borrow().clone();
+            if let Some(child) = child
+                && node.tag.get() != HOST_PORTAL
+            {
+                child.r#return.replace(Some(Rc::clone(&node)));
+                node = child;
+            } else {
+                continue 'siblings;
+            }
+        }
+        if (node.flags.get() & PLACEMENT) == 0 {
+            return Some(node.state_node.get());
+        }
+    }
+}
+
+// A \`loop\` the program wrote stays one, \`while (true)\`.
+pub fn settle(mut n: u32) -> u32 {
+    loop {
+        if n % 2 == 1 {
+            n += 3;
+            continue;
+        }
+        if n > 10 {
+            break;
+        }
+        return n;
+    }
+    n * 2
+}
+`,
+  );
+  expect(js).toContain(`    while (node.tag !== HOST_COMPONENT && node.tag !== HOST_TEXT) {
+      if (isScope(node)) {
+        continue siblings;
+      }
+      if (node.flags & PLACEMENT) {
+        continue siblings;
+      }
+`);
+  expect(js).toContain("      continue siblings;\n    }\n    if (!(node.flags & PLACEMENT)) {\n      return node.stateNode;\n    }\n  }\n}");
+  const fiber = (tag: number, stateNode: number, flags = 0): Record<string, unknown> => ({ tag, flags, child: undefined, sibling: undefined, return: undefined, stateNode });
+  // A parent of: a placed host, a scope, a portal of a host, a wrapper of a host, a host.
+  const parent = fiber(3, 0);
+  const inner = fiber(6, 4);
+  const wrapper = fiber(0, 3);
+  wrapper.child = inner;
+  const portal = fiber(4, 5);
+  portal.child = fiber(5, 6);
+  const first = fiber(5, 0);
+  const last = fiber(5, 7);
+  const chain = [first, fiber(5, 1, 2), fiber(21, 2), portal, wrapper, last];
+  chain.forEach((f, i) => {
+    f.return = parent;
+    f.sibling = chain[i + 1];
+  });
+  expect([lib.getHostSibling(first as never), lib.getHostSibling(portal as never), lib.getHostSibling(last as never)]).toEqual([4, 4, undefined]);
+  expect(inner.return).toBe(wrapper);
+  expect(js).toContain("export function settle(n) {\n  while (true) {\n");
+  expect([1, 4, 9, 12].map((n) => lib.settle(n as never))).toEqual([4, 4, 24, 24]);
+});

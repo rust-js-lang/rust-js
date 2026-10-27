@@ -320,6 +320,9 @@ pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
 /// with the loop, never by a `break`, which would run `rest` once it's
 /// outside. React's `findFirstSuspended` walks up while a fiber has no
 /// sibling, its `rest` a `continue` of the loop around (ADR 0702, amended).
+/// Its `rest`'s own `break`s, which left the loop to what follows it, fall
+/// out to there (`fallen`), as React's getHostSibling's `if (!(node.flags
+/// & Placement)) { break; }` does after its `while`.
 pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &[(js::Span, bool, Option<String>)]) {
     let mut i = 0;
     while i < stmts.len() {
@@ -328,8 +331,8 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
             && let Some((test, then, rest)) = tested_at_head(body, label.as_deref(), {
                 written_loop(written, stmts[i].span).is_some_and(|&(_, w, _)| w)
             })
-            && !own_jumps(rest, label.as_deref())
             && rest.last().is_some_and(ends)
+            && let Some(rest) = fallen(rest, label.as_deref())
         {
             let span = stmts[i].span;
             let looped = StmtKind::While {
@@ -337,11 +340,34 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
                 cond: test.clone(),
                 body: then.to_vec(),
             };
-            let rest = rest.to_vec();
             stmts.splice(i..=i, std::iter::once(looped.at(span)).chain(rest));
         }
         i += 1;
     }
+}
+
+/// A `while`'s `rest`, `while_heads`', after the loop: its own `break`s,
+/// which leave the loop for what follows it, falling out to there, as
+/// they would once `rest` is after the loop. A last one gone, and `if (c)
+/// { break; } r`, `if (!c) { r }`: React's getHostSibling, whose `while
+/// (node.tag !== HostComponent ..)` the program wrote, `if (!(node.flags &
+/// Placement)) { break; } continue siblings;` after it (ADR 0702,
+/// amended). None where it jumps to the loop otherwise.
+fn fallen(rest: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
+    let own_break = |s: &Stmt| matches!(&s.kind, StmtKind::Break(l) if l.as_deref().is_none_or(|l| Some(l) == label));
+    let Some(at) = rest.iter().position(|s| own_jumps(std::slice::from_ref(s), label)) else {
+        return Some(rest.to_vec());
+    };
+    let (before, stmt, after) = (&rest[..at], &rest[at], &rest[at + 1..]);
+    let tail = match &stmt.kind {
+        _ if own_break(stmt) => None,
+        StmtKind::If(test, then, None) if matches!(then.as_slice(), [only] if own_break(only)) => {
+            let after = fallen(after, label).filter(|after| !after.is_empty())?;
+            Some(StmtKind::If(test.clone().negated_test(), after, None).at(stmt.span))
+        }
+        _ => return None,
+    };
+    Some(before.iter().cloned().chain(tail).collect())
 }
 
 /// Of a `while (true)`'s `body`, `while_heads`': its test, what each turn

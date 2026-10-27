@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-while-head-rest-jumps",
     breaks: "MIR's loop's rest, moved out, keeps a jump of the loop, which then goes to another",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            && !own_jumps(rest, label.as_deref())\n",
-    replace: "",
+    find: "            && let Some(rest) = fallen(rest, label.as_deref())\n",
+    replace: "            && let Some(rest) = Some(rest.to_vec())\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
@@ -119,5 +119,13 @@ export const mutations: Mutation[] = [
     find: "            Some((_, first, false)) if !mutable => aliases.push((bound.clone(), first.clone())),\n",
     replace: "            Some((_, _, false)) if !mutable => parts.push((part, bound.clone(), mutable)),\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_mut_patterns.rs$"],
+  },
+  {
+    name: "fallen-test-not-negated",
+    breaks: "getHostSibling's `if (!(node.flags & Placement)) { break; } continue siblings;` after its loop is `if (!(..)) { continue siblings; }`, its test not turned",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            Some(StmtKind::If(test.clone().negated_test(), after, None).at(stmt.span))\n",
+    replace: "            Some(StmtKind::If(test.clone(), after, None).at(stmt.span))\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
   },
 ];

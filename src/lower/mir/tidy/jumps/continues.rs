@@ -93,6 +93,50 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
 
 /// Whether `span` is of the test of an `if` of a `continue` the program
 /// wrote, of `continues` (`Written::continues`).
+/// `l: { .. if (c) { break l; } .. } continue outer;`, a block MIR made of
+/// what each `continue` the program wrote there goes on to: each `if` of
+/// one (`Written::continues`) that leaves the block, the `continue` itself,
+/// `if (c) { continue outer; }`, where it wrote it, which then needs no
+/// block. React's getHostSibling's `if isScope(node) { continue 'siblings;
+/// }` (ADR 0702, amended). The `break` goes to the `continue` and nowhere
+/// else, so the two run the same; not into a loop inside the block, whose
+/// own `continue` an unlabeled one would be.
+pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards: &[(js::Span, js::Span)]) {
+    fn replaced(stmts: &mut [Stmt], block: &str, jump: &Stmt, guards: &[(js::Span, js::Span)]) {
+        for stmt in stmts.iter_mut() {
+            let span = stmt.span;
+            match &mut stmt.kind {
+                StmtKind::If(_, then, otherwise)
+                    if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == block)
+                        && tests_continue(guards, span) =>
+                {
+                    then[0] = Stmt {
+                        kind: jump.kind.clone(),
+                        span: then[0].span,
+                    };
+                    if let Some(otherwise) = otherwise {
+                        replaced(otherwise, block, jump, guards);
+                    }
+                }
+                StmtKind::If(_, then, otherwise) => {
+                    replaced(then, block, jump, guards);
+                    if let Some(otherwise) = otherwise {
+                        replaced(otherwise, block, jump, guards);
+                    }
+                }
+                StmtKind::Labeled(_, body) => replaced(body, block, jump, guards),
+                _ => {}
+            }
+        }
+    }
+    for at in 1..stmts.len() {
+        let (before, after) = stmts.split_at_mut(at);
+        if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
+            replaced(body, block, &after[0], guards);
+        }
+    }
+}
+
 pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Span)], span: js::Span) -> bool {
     continues
         .iter()

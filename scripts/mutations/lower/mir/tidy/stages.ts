@@ -688,4 +688,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(rev_loops|mut_ref_loop|inclusive_range_loops).rs$"],
     snapshots: true,
   },
+  {
+    name: "written-thens-not-after-while-heads",
+    breaks: "getHostSibling's `if (node.flags & Placement) == 0 { return .. }`, after a loop `while heads` made, is `if (node.flags & PLACEMENT) { continue; } return ..`, a guard (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))\n            }),\n            pass(\"written order steps\"",
+    replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[]))\n            }),\n            pass(\"written order steps\"",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
+  },
 ];

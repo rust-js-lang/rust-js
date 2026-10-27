@@ -528,6 +528,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("while heads", |b, h| {
                 js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
             }),
+            // An `if` the program wrote without an `else` that a loop
+            // `while heads` made ends, its body in it (ADR 0879, amended).
+            pass("written thens", |b, h| {
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+            }),
             pass("written order steps", |b, _| {
                 js::statement_lists(b, &mut |s| written_order_steps(s))
             }),
@@ -759,6 +764,11 @@ const JUMPS: &[Pass] = &[
     // An arm MIR made the block's fall-through, written first: first.
     pass("written first", |b, h| {
         js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))
+    }),
+    // A `continue` of a loop around the program wrote, MIR's jump past a
+    // block to it: where it wrote it (ADR 0702, amended).
+    pass("continues written", |b, h| {
+        js::statement_lists(b, &mut |s| continues_written(s, &h.written.continues))
     }),
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),

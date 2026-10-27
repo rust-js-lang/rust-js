@@ -370,3 +370,82 @@ left.
   (`lower/mir/tidy/jumps/labels.ts`). That a second `break` keeps the
   code in place is a guard no program here reaches: MIR makes one block
   of what's after a loop, which each `break` reaches.
+
+## Amendment: a `continue` of the loop around is where it's written
+
+React's getHostSibling (ReactFiberCommitHostEffects.js) walks siblings in
+`siblings: while (true) { .. }`, and in it a `while (node.tag !==
+HostComponent && node.tag !== HostText)` whose arms `continue siblings`:
+
+```js
+while (node.tag !== HostComponent && node.tag !== HostText) {
+  if (isScope(node)) continue siblings;
+  if (node.flags & Placement) continue siblings;
+  ..
+}
+if (!(node.flags & Placement)) return node.stateNode;
+```
+
+Its port, the same `'siblings: loop { .. while .. { if is_scope(&node) {
+continue 'siblings; } .. } if (node.flags.get() & PLACEMENT) == 0 { return
+..; } }`, printed the inner `while` as `while (true) { if (t) { .. }
+.. }`, each `continue 'siblings` a negated test nesting the rest, and
+the found `return` outside the outer loop. Three things kept it so:
+
+- **MIR joins the three `continue`s into one**, a block whose `break`s
+  go to the outer loop's `continue`, `bb86: { if (isScope(node)) { break
+  bb86; } .. } continue bb2;`, and `tail jumps` nested the rest of the
+  block in each test's negation. **A `break` past a block to a
+  `continue`, in an `if` of a `continue` the program wrote
+  (`Written::continues`), is that `continue`** (`continues_written`,
+  `jumps`' stage, before `tail jumps`): the `break` goes there and
+  nowhere else, so the two run the same. Not inside a loop in the block,
+  whose own an unlabeled `continue` would be.
+- **`while_heads` took no `rest` with a `break` of the loop**, the `if
+  (!(node.flags & PLACEMENT)) { break; } continue siblings;` MIR left
+  after the inner loop's test: once `rest` is after the loop, the `break`
+  would leave another. Now **the `rest`'s own `break`s fall out to what
+  follows it** (`fallen`): a last one goes, and `if (c) { break; } r` is
+  `if (!c) { r }`, where it went on to what's after the loop, as it does
+  there. Any other jump of the loop's in `rest` keeps it a `while (true)`.
+- **The `if` after it was a guard**, `if (node.flags & PLACEMENT) {
+  continue; } return ..`: `written thens` (ADR 0879, amended) ran before
+  the `while` was made. It runs again after `while heads`.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): each rewrite moves a
+jump to where it goes, or runs the statements a jump went to.
+
+```js
+while (node.tag !== HOST_COMPONENT && node.tag !== HOST_TEXT) {
+  if (isScope(node)) {
+    continue siblings;
+  }
+  if (node.flags & PLACEMENT) {
+    continue siblings;
+  }
+  const child = node.child;
+  if (child != null && node.tag !== HOST_PORTAL) {
+    child.return = node;
+    node = child;
+    continue;
+  }
+  continue siblings;
+}
+if (!(node.flags & PLACEMENT)) {
+  return node.stateNode;
+}
+```
+
+Left: the `else { continue 'siblings; }` the program wrote after its `if
+let` is `continue siblings;` after the `if`, whose `then` ends `continue;`:
+`Written::continues` has only an `if`'s `then`'s jumps, so nothing says
+the last `continue siblings` is the `else`'s.
+
+Held by `test/lowering-early-exits.test.ts`, "a while's continues of the
+loop around are where the program wrote them", run in JS, with a `loop`
+that stays `while (true)`; and the mutations
+`continues-written-left-breaks`, `continues-written-of-any-break`
+(`tidy/jumps/continues.ts`), `mir-tidy-while-head-rest-jumps`,
+`fallen-test-not-negated` (`tidy/jumps/tried.ts`) and
+`written-thens-not-after-while-heads` (`tidy/stages.ts`).
+

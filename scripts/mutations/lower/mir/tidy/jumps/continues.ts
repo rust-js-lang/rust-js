@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
     snapshots: true,
   },
+  {
+    name: "continues-written-left-breaks",
+    breaks: "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            replaced(body, block, &after[0], guards);\n",
+    replace: "",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
+  },
+  {
+    name: "continues-written-of-any-break",
+    breaks: "a `break` past a block to a `continue` is that `continue` where the program wrote no `continue`, a `break` of its own labeled block's (ADR 0790)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                        && tests_continue(guards, span) =>\n                {\n                    then[0] = Stmt {\n",
+    replace: "                        && true =>\n                {\n                    then[0] = Stmt {\n",
+    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+  },
 ];

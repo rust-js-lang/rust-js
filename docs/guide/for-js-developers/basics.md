@@ -1940,6 +1940,10 @@ export function untilTag(words) {
   rest of the turn after it, is the two loops, `while (node.sibling ==
   null) { .. }` in `while (true) { .. }`, with no label round either ([ADR
   0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md)).
+  A `continue 'outer` written in the inner `while` is where it's
+  written, `if (isScope(node)) { continue siblings; }`, and what's after
+  the `while` follows it, `if (!(node.flags & PLACEMENT)) { return ..; }`,
+  as React's getHostSibling writes them (ADR 0702, amended).
 - A `match` arm that returns one value, `Kind::Object(_) | Kind::Array(_)
   => return ArrayKind::Complex`, which an arm before it goes on to, a pair
   the guard of `Kind::Array(&[first, _]) if ..` refused, is `return
