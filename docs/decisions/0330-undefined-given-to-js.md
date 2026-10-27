@@ -1,7 +1,9 @@
 # 0330. An `undefined` given to JS is an argument
 
 Status: Accepted. Amends [0313](0313-console-forms.md); extends
-[0021](0021-js-interop.md). Amended: a `fold`'s start (below).
+[0021](0021-js-interop.md). Amended: a `fold`'s start (below); a fn
+pointer that may only be the crate's functions (the user's decision,
+2026-10-27).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -54,3 +56,26 @@ tells. `reduce` is such a function: without a start it starts from the
 first item, and throws of an empty array, so `largest(&[])` threw. A
 `fold`'s start is given to JS, `GivenUndefined`, as a binding's argument
 is. `fold_from_none` runs it against native Rust.
+
+## Amendment: a fn pointer that may only be the crate's functions (2026-10-27)
+
+The user's decision (h15). A call through a fn pointer was given to JS,
+its trailing `undefined` kept, as the pointer may be JS's. ADR 0907 now
+says what each fn pointer type may be: each function and closure the
+crate makes one of, or anything, where a value of it may come from
+outside the crate's code.
+
+**A call through a fn pointer that may only be the crate's functions and
+closures, none a binding's, is one of rust-js's own**: its trailing
+`undefined` after another argument is left out, `DISPATCHER.repeat("ab")`
+(`mir/dispatch.rs`'s `mir_fn_pointer_call`, asking
+`FnPointers::may_be`). One that may be a binding's, `Math.max`, or come
+from outside, a JS-reachable dispatcher's, React's `dispatcher.useState`
+read from `ReactSharedInternals.H`, keeps it; so does a `dyn Fn`'s. Case A
+as before: the crate's code never counts its arguments.
+
+Held by `test/runtime-package.test.ts`'s "an undefined given to JS is an
+argument": a private dispatcher's pointer, `DISPATCHER.useState(1)`; one
+that may be `Math.max`, `NaN`; one given from outside, `NaN`; and the
+guide's `twice`. Mutations `own-pointer-given-undefined` and
+`binding-pointer-undefined-left-out`.

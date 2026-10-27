@@ -637,6 +637,25 @@ pub fn closed(n: f64) -> f64 {
     };
     add(1.0, None) + add(2.0, Some(1.0))
 }
+
+pub struct Dispatcher {
+    pub use_state: fn(f64, Option<f64>) -> f64,
+}
+
+static DISPATCHER: Dispatcher = Dispatcher { use_state: own };
+
+pub fn dispatched() -> f64 {
+    (DISPATCHER.use_state)(1.0, None)
+}
+
+pub fn picked(js: bool) -> f64 {
+    let max: fn(f64, Option<u32>) -> f64 = if js { math_max::<Option<u32>> } else { |a, b| a + b.unwrap_or(0) as f64 };
+    max(1.0, None)
+}
+
+pub fn pointed(f: fn(f64, Option<i8>) -> f64) -> f64 {
+    f(1.0, None)
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -646,10 +665,16 @@ pub fn closed(n: f64) -> f64 {
   // The crate's own function takes it as missing: `own(1)`, as a person writes it.
   expect(js).toContain("own(1)");
   expect(js).toContain("add(1)");
+  // A fn pointer that may only be the crate's function is called as it is
+  // (ADR 0330, amended); one that may be a binding's, or JS's, is given it.
+  expect(js).toContain("DISPATCHER.useState(1)");
+  expect(js).toContain("max(1, undefined)");
+  expect(js).toContain("f(1, undefined)");
   const call = (expression: string) =>
     run([node ?? "node", "--input-type=module", "--eval", `const m = await import(${JSON.stringify(out)}); console.log(${expression});`]);
   expect(call("m.bound()")).toBe("NaN\n");
   expect(call("m.given(Math.max)")).toBe("NaN\n");
   expect(call("m.called()")).toBe("1\n");
   expect(call("m.closed(3)")).toBe("14\n");
+  expect(call("[m.dispatched(), m.picked(true), m.picked(false), m.pointed(Math.max)].join()")).toBe("1,NaN,1,NaN\n");
 });

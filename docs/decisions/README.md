@@ -349,7 +349,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0327 Cells', locks', a `VecDeque`'s, `char`'s and arrays' other methods](0327-cell-deque-char-methods.md)
 - [0328 A `RefCell` counts its borrows, as std's does](0328-refcell-borrow-counts.md) *(amended by 0863: a `RefCell` of an object is the object, its borrows counted only where one may meet another)*
 - [0329 A `Pin` is its pointer](0329-pin.md)
-- [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md)
+- [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md) *(amended: a `fold`'s start; a fn pointer that may only be the crate's functions is called as they are)*
 - [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](0331-dyn-any.md) *(amended by 0660: what unwound is one)*
 - [0332 A `MaybeUninit` is its value, or `undefined` before it's written](0332-maybe-uninit.md)
 - [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](0333-heap-and-vec-methods.md)

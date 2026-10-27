@@ -837,6 +837,48 @@ export function repeat(text, times) {
 `None` is `undefined`, so `unwrap_or` is `??`. A Rust caller writes
 `greeting(None)` or `greeting(Some("Ada"))`.
 
+A trailing `None` after another argument, given to the crate's own
+function, is left out, `repeat("ab")`, and so is one given through a `fn`
+pointer that may only be the crate's functions and closures, a
+dispatcher's. Given to what may be JS's, a binding's, a `dyn Fn`'s, or a
+pointer JS may have made, it's `undefined`, as a JS function may count its
+arguments ([ADR 0330](../../decisions/0330-undefined-given-to-js.md),
+amended):
+
+```rust
+pub struct Dispatcher {
+    pub repeat: fn(&str, Option<usize>) -> String,
+}
+
+static DISPATCHER: Dispatcher = Dispatcher { repeat };
+
+pub fn twice() -> String {
+    (DISPATCHER.repeat)("ab", None)
+}
+
+pub fn twice_by(repeat: &dyn Fn(&str, Option<usize>) -> String) -> String {
+    repeat("ab", None)
+}
+# pub fn repeat(text: &str, times: Option<usize>) -> String {
+#     text.repeat(times.unwrap_or(1))
+# }
+```
+
+```js
+const DISPATCHER = { repeat };
+
+export function twice() {
+  return DISPATCHER.repeat("ab");
+}
+
+export function twiceBy(repeat) {
+  return repeat("ab", undefined);
+}
+export function repeat(text, times) {
+  return text.repeat(times ?? 1);
+}
+```
+
 ## Objects and structs
 
 A JS object with a fixed set of fields is a Rust `struct`. Declare it once;

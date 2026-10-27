@@ -39,7 +39,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if rest {
             crate::lower::calls::spread_rest(&mut exprs);
         }
-        crate::lower::calls::given_to_js(&mut exprs);
+        // One that may only be the crate's functions and closures, which
+        // never count their arguments, is called as they are,
+        // `dispatcher.useState()` (ADR 0907); one that may be a binding's,
+        // or come from JS, is given what JS is (ADR 0330, amended).
+        let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
+        let own = (self.krate.cell_borrows.pointers().may_be(self.tcx, fn_ptr)).is_some_and(|may_be| {
+            may_be
+                .iter()
+                .all(|&(f, _)| f.is_local() && !bindings::is_binding(self.tcx, f))
+        });
+        if !own {
+            crate::lower::calls::given_to_js(&mut exprs);
+        }
         Ok(Value::Expr(Expr::call(callee, exprs)))
     }
 
