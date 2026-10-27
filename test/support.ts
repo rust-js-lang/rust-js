@@ -268,7 +268,10 @@ export function installRuntime(app: string) {
 // unpacks into is as old as the tarball says. Removing a directory removes
 // the links in it, not what they link to.
 export const fixtures = join(target, "fixtures");
-const mine = join(fixtures, `${process.pid}-${crypto.randomUUID().slice(0, 8)}`);
+// Its random part after a letter, and each fixture's after a `_`: what a
+// test looks for in the JS, a block's `bb5` say, never in the path its
+// header names, as `-bb6e90b4` was (`\bbb\d+`).
+const mine = join(fixtures, `${process.pid}-x${crypto.randomUUID().slice(0, 8)}`);
 
 /** What a binding crate packages, as its `Cargo.toml`'s `include` names
  * it: each file of each path it lists, relative to the crate, sorted. The
@@ -303,7 +306,7 @@ export function fixture(name: string): string {
     }
     if (!process.env.RUST_JS_KEEP_FIXTURES) process.on("exit", () => rmSync(mine, { recursive: true, force: true }));
   }
-  return mkdtempSync(join(mine, `${name}-`));
+  return mkdtempSync(join(mine, `${name}_`));
 }
 
 /** serde, serde_derive and serde_json (ADR 0077): the flags that find them,
