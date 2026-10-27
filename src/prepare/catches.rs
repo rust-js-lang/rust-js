@@ -48,6 +48,17 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>) {
         if i + 1 >= body.len() {
             break;
         }
+        // A flag out of `catch_unwind` to return from the function, the
+        // `try` the closure's body is (`flagged_try`), where nothing after
+        // reads it.
+        if let Some(flagged) = flagged_try(&body[i], &body[i + 1])
+            && let StmtKind::Const(result, _) = &body[i].kind
+            && js::mentions_in(&body[i + 2..], result) == 0
+        {
+            body.splice(i..i + 2, [flagged]);
+            i += 1;
+            continue;
+        }
         // Past what's declared for it to set, `let text;`, as MIR's lowering
         // declares a variable where the program does.
         let declared = (body[i + 1..].iter())
@@ -62,6 +73,89 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>) {
         }
         i += 1;
     }
+}
+
+/// `const r = $catchUnwind(() => { ..; if (c) { ..; return true; } return
+/// false; }); if (r.TAG === "Ok" && r._0) { return v; }`, a flag a closure
+/// gives out of `catch_unwind` to return from its function, which a closure
+/// can't: the `try` its body is, each `return` of the flag the `if`'s
+/// `return v;`, its last, of the other, gone, `try { ..; if (c) { ..; return
+/// v; } } catch {}`, as JS returns from inside a `try`, React's
+/// dispatchSetStateInternal (ADR 0660, amended). Only where the `if`'s
+/// `return` can't throw, which the `catch` would catch; where each other
+/// `return` of the body gives the flag; and of `!r._0`, the other way.
+fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
+    let StmtKind::Const(result, value) = &made.kind else {
+        return None;
+    };
+    let ExprKind::Call(callee, args) = &value.kind else {
+        return None;
+    };
+    let (Some("$catchUnwind"), [f]) = (callee.helper_name(), args.as_slice()) else {
+        return None;
+    };
+    let ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let StmtKind::If(test, then, None) = &tested.kind else {
+        return None;
+    };
+    let (head, Some(flag)) = split_chain(test) else {
+        return None;
+    };
+    let (of, ok, eq) = js::result::tested(&head)?;
+    if !params.is_empty() || ok != eq || !matches!(&of.kind, ExprKind::Var(v) if v == result) {
+        return None;
+    }
+    let (read, when) = match &flag.kind {
+        ExprKind::Unary(js::UnaryOp::Not, read) => (&**read, false),
+        _ => (&flag, true),
+    };
+    if !js::result::reads_held(read, result) {
+        return None;
+    }
+    let [
+        Stmt {
+            kind: StmtKind::Return(returned),
+            ..
+        },
+    ] = then.as_slice()
+    else {
+        return None;
+    };
+    if returned.as_ref().is_some_and(Expr::may_throw) {
+        return None;
+    }
+    let (last, before) = body.split_last()?;
+    if !matches!(&last.kind, StmtKind::Return(Some(Expr { kind: ExprKind::Bool(b), .. })) if *b != when) {
+        return None;
+    }
+    let tried = flag_returns(before, when, then)?;
+    Some(StmtKind::TryCatch(tried, None, Vec::new()).at(tested.span))
+}
+
+/// `stmts`, each `return` of the flag, `when`, `then`; `None` where another
+/// `return` is in them, or one in what isn't an `if`.
+fn flag_returns(stmts: &[Stmt], when: bool, then: &[Stmt]) -> Option<Vec<Stmt>> {
+    let mut out = Vec::with_capacity(stmts.len());
+    for stmt in stmts {
+        match &stmt.kind {
+            StmtKind::Return(Some(Expr {
+                kind: ExprKind::Bool(b),
+                ..
+            })) if *b == when => out.extend(then.iter().cloned()),
+            StmtKind::If(test, yes, no) => {
+                let no = match no {
+                    Some(no) => Some(flag_returns(no, when, then)?),
+                    None => None,
+                };
+                out.push(StmtKind::If(test.clone(), flag_returns(yes, when, then)?, no).at(stmt.span));
+            }
+            _ if js::returns(std::slice::from_ref(stmt)).0 => return None,
+            _ => out.push(stmt.clone()),
+        }
+    }
+    Some(out)
 }
 
 /// The name a `Result` tested where it's made is given,

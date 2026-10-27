@@ -764,6 +764,47 @@ export function described(value) {
   A `return` inside the closure, in a loop, is the function's own where
   the `try` ends the function, as nothing runs after it but its
   `finally` ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md#amended-2026-10-25-a-return-in-the-closure-of-a-try-that-ends-the-function)).
+- **A flag the closure gives to return from its function is the `try` it
+  returns from**: a closure can't return from its function, so the flag
+  comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;
+  return false; } catch {}`, where the `if`'s `return` can't throw and
+  nothing after reads the `Result`, as React's dispatchSetStateInternal
+  writes it ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md), amended):
+
+```rust
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+fn bailout() {}
+
+pub fn dispatch(reducer: &dyn Fn(u32) -> u32, state: u32) -> bool {
+    let did_bail_out = catch_unwind(AssertUnwindSafe(|| {
+        if reducer(state) == state {
+            bailout();
+            return true;
+        }
+        false
+    }));
+    if let Ok(true) = did_bail_out {
+        return false;
+    }
+    true
+}
+```
+
+```js
+function bailout() {}
+
+export function dispatch(reducer, state) {
+  try {
+    if (reducer(state) === state) {
+      bailout();
+      return false;
+    }
+  } catch {}
+  return true;
+}
+```
+
 - **What it unwinds through is dropped** before `catch_unwind` returns,
   as [above](#unwinding-runs-drop). The payload drops nothing, a panic's
   message or what JS threw, unless the crate makes a `dyn Any` of a value

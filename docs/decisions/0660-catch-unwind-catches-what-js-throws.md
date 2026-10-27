@@ -347,3 +347,44 @@ writes it, where it was a closure's.
 Held by `test/corpus/catch_unwind_ok_returns.rs`'s `until_seven`;
 mutations `tail-try-anywhere` and `tail-try-valued-return`
 (`prepare/catches.ts`).
+
+## Amendment: a flag out of the closure to return from the function is the `try` (2026-10-27)
+
+React's dispatchSetStateInternal returns from inside its `try`:
+
+```js
+try {
+  const eagerState = lastRenderedReducer(currentState, action);
+  ..
+  if (is(eagerState, currentState)) {
+    enqueueConcurrentHookUpdateAndEagerlyBailout(fiber, queue, update);
+    return false;
+  }
+} catch (error) {
+  // Suppress the error. It will throw again in the render phase.
+}
+```
+
+A closure can't return from its function, so its port gives a flag out
+of `catch_unwind`, `if let Ok(true) = did_bail_out { return false; }`,
+which printed `const didBailOut = $catchUnwind(() => { ..; return true;
+.. return false; }); if (didBailOut.TAG === "Ok" && didBailOut._0) {
+return false; }`.
+
+**`const r = $catchUnwind(() => body); if (r.TAG === "Ok" && r._0) {
+return v; }` is `try { body' } catch {}`** (`prepare/catches.rs`'s
+`flagged_try`): each `return true` of the body the `if`'s `return v`,
+its last, `return false`, gone, falling out of the `try` to what follows,
+as the `Ok(false)` and the `Err` both went on to it; of `!r._0`, the other
+way round. Only where the `if`'s `return` can't throw, which the `catch`
+would catch where it ran outside the `Result`'s; where every other
+`return` of the body gives the flag; and where nothing after reads `r`.
+Case N: the same values returned, what was caught dropped as `$catchUnwind`'s
+`Err` was.
+
+Held by `test/corpus/catch_unwind_flag_return.rs`, against native Rust:
+a flag, one the other way, one whose `return` may throw and one whose
+`Result` is read after, kept; the guide's `dispatch`; mutations
+`flagged-try-never`, `flagged-try-throwing-return`,
+`flagged-try-negation-unseen` and `flagged-try-result-read-after`.
+
