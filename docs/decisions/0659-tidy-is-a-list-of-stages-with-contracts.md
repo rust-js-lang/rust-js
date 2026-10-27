@@ -317,3 +317,35 @@ ends with `unreachable_after`. Held by
 `chains`, which runs the same passes again on what's read in place, ends
 with `never taken` too (fuzz seed 49772), held by
 `loop_branch_emptied.rs`'s `scaled_or_last` and `chains-empty-if-kept`.
+
+## Amendment: a stage a later phase can't take is refused, not run
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): what a test checks;
+no program's JS changes.
+
+The nightly found three cases refused at early stages that compile once
+tidy is done. `class_methods.rs` and `class_constructor_statements.rs`:
+a class's constructor is made of a body whose every `return` gives a
+struct literal, or the variable one made (ADR 0761), and before `jumps
+again`, or `loops`, its body is MIR's `result = { .. }; return result;`.
+`exported_cell_filled_in_place.rs` and `refcell_field_places.rs`: an
+exported cell is its module's `export let` only where the module's JS
+reads it by what it holds (ADR 0270, amended), and early stages leave it
+read through its `{ value }`. Each phase reads the body as tidy finishes
+it, and refuses what it can't take, as it would that body however it was
+reached: a compile error, no JS made, so none wrong.
+
+- **A stage the case is refused at, where the finished stage isn't, has
+  nothing to run.** What runs before tidy is the same at every stage, so
+  such a refusal is a phase's after tidy, of the body as that stage left
+  it. The test passes over it; a crash is a problem at any stage, and so
+  is a refusal of the finished stage, whose JS the corpus ships.
+- **Not taken: each phase taking every stage's body.** A constructor of
+  `result = { .. }; return result;` is what tidy's `jumps` and `values`
+  make a `return { .. }` of; a second reading of it in `classes.rs` would
+  be a second owner of that rule, for a body no build but `--tidy-until`'s
+  gives it.
+
+It found a wrong answer too, of the finished JS: a failing writer's
+string that tidy makes a `const` was declared inside the `try` that
+reads it in its `catch` (ADR 0187, amended).

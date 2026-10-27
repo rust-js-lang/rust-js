@@ -41,7 +41,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
             }
             true => {
-                let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
+                // Its declaration, a `let`, or a `const` where tidy found it
+                // never set again: the `try` and its `catch` are in its scope.
+                let made = (out.iter())
+                    .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name));
                 let mut body = out.split_off(made.map_or(0, |at| at + 1));
                 // Its last `return f`, the one after the `try`.
                 if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r)))

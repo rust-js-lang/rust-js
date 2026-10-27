@@ -43,6 +43,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "fmt_error"],
   },
   {
+    name: "mir-writer-const-string-in-try",
+    breaks: "a failing writer's string tidy made a `const` is declared in the `try`, out of its `catch`'s and its `return`'s scope",
+    file: "src/lower/mir/writer.rs",
+    find: "matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name)",
+    replace: "matches!(&s.kind, StmtKind::Let(n, _) if n == name)",
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_unwritten_branches"],
+  },
+  {
     name: "mir-writer-unshaped",
     breaks: "MIR's writer is `let f = \"\"; f += s; return f`, not `return s`",
     file: "src/lower/mir/writer.rs",

@@ -111,3 +111,21 @@ body names its string, what it wrote before failing is `""`, `throw
 $fmtWritten(error, "")`, and its body gives what it gives, with no `return
 f` after. Held by `test/corpus/fmt_error_unwritten.rs`, run as native
 Rust, and a mutation in `scripts/mutations/lower/mir/writer.ts`.
+
+## Amendment: a writer's string tidy makes a `const`
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): what `write!` gives
+and what the string holds after it are Rust's.
+
+A writer that may fail on more than one branch having written nothing,
+`if self.0 { return Err(fmt::Error); } if f.alternate() { return
+Err(fmt::Error); } Ok(())`, names its string where it returns, and tidy,
+seeing it never set again, declares it `const f = "";`. The end this
+decision writes found its declaration only as a `let`, so the whole body,
+`const` and all, went in the `try`: the `catch`'s `$fmtWritten(error, f)`
+and the `return f` after it were out of its scope, a `ReferenceError`
+however the writer ended. Its declaration is a `let` or a `const`; either
+is kept before the `try`. Found by the nightly's tidy stages (ADR 0659),
+whose `fmt_error_unwritten.rs` after `values` declared its string so. Held
+by `test/corpus/fmt_error_unwritten_branches.rs`, run as native Rust, and
+the mutation `mir-writer-const-string-in-try`.

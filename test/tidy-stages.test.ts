@@ -93,9 +93,19 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
     const native = runNative(file, dir, want.edition, want.native);
     if (typeof native === "string") throw new Error(native);
     const problems: string[] = [];
-    for (const end of stageEnds()) {
+    const ends = stageEnds();
+    for (const end of ends) {
       const compiled = compileJs(file, dir, want.edition, false, {}, ["--tidy-until", end]);
       if (!("js" in compiled)) {
+        // What runs before tidy is the same at every stage, so a stage the
+        // case is refused at, and the finished one isn't, is refused by a
+        // phase after tidy that reads a body as tidy finishes it: a class's
+        // constructor, the struct literal it returns, or an exported cell,
+        // read only by what it holds. That phase refuses the body as it
+        // would however it was reached, so no JS is made to be wrong, and
+        // there's none to run (ADR 0659, amended). A crash isn't a refusal,
+        // nor is one of the finished stage.
+        if (compiled.kind === "rejected" && end !== ends.at(-1)) continue;
         problems.push(`after ${end}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
         continue;
       }
