@@ -5,7 +5,9 @@
 //! (ADR 0852).
 
 use crate::lower::pointers::raw_pointee;
-use crate::lower::recognition::{is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee};
+use crate::lower::recognition::{
+    compares_fn_identity, is_fn_dyn, is_rc_new, is_std_crate, known_by_bounds, rc_pointee, reads_rc_count, weak_pointee,
+};
 use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
@@ -117,6 +119,11 @@ pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>
 /// Each counted, every `Rc` the crate has of what may be the same type is:
 /// generic code's `Rc<Slot<T>>` is any `Slot`'s, and an `Rc<T>`'s every
 /// one (ADR 0852).
+/// And an `Rc` of a `dyn Fn` whose `ptr_eq` the crate asks, where one that
+/// may be it may be made of a function made apart from it, which another
+/// `Rc` may be made of too: a function item's, a type parameter's, or a
+/// closure copied or held before. A library's is counted anyway, as its
+/// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
@@ -152,6 +159,11 @@ pub(super) fn counted_rcs<'tcx>(
     // Each `Rc` made another's, `Rc<RefCell<Logger>>` an
     // `Rc<RefCell<dyn Listener>>`: the two share their counts.
     let mut made_others: HashSet<(Ty<'tcx>, Ty<'tcx>)> = HashSet::new();
+    // What each `ptr_eq` of an `Rc<dyn Fn>` compares, and the closures
+    // given `Rc::new` as they're made, and those given it made before, a
+    // copy or a variable (ADR 0959).
+    let mut asked: HashSet<Ty<'tcx>> = HashSet::new();
+    let (mut made_with, mut made_apart) = (HashSet::new(), HashSet::new());
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
@@ -177,10 +189,24 @@ pub(super) fn counted_rcs<'tcx>(
             }
             // A count read by a call, or by the function given as a value,
             // `.map(Rc::strong_count)`: either is an expression of its type.
-            if let Some((def_id, args)) = fn_def(expr.ty)
-                && reads_rc_count(tcx, def_id, args.types().next())
+            if let Some((def_id, args)) = fn_def(expr.ty) {
+                if reads_rc_count(tcx, def_id, args.types().next()) {
+                    counted.insert(erased(args.type_at(0)));
+                } else if compares_fn_identity(tcx, def_id, args.types().next()) {
+                    asked.insert(erased(args.type_at(0)));
+                }
+            }
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && fn_def(body.thir[fun].ty).is_some_and(|(def_id, _)| is_rc_new(tcx, def_id))
+                && let [given] = args[..]
+                && let closure = body.thir[given].ty
+                && let ty::Closure(..) = closure.kind()
             {
-                counted.insert(erased(args.type_at(0)));
+                let closure = erased(closure);
+                match made_where_given(&body.thir, given) {
+                    true => made_with.insert(closure),
+                    false => made_apart.insert(closure),
+                };
             }
         }
     }
@@ -196,6 +222,20 @@ pub(super) fn counted_rcs<'tcx>(
                     &mut seen,
                 );
             }
+        }
+    }
+    // An `Rc` of a `dyn Fn` compared by identity is counted where one that
+    // may be it may be made of a function made apart from it (ADR 0959).
+    // One made of another `dyn Fn`'s, its lifetime's, is that one, which
+    // its own making answers for.
+    let made_with_it = |from: Ty<'tcx>| match *from.kind() {
+        ty::Closure(id, _) => id.is_local() && made_with.contains(&from) && !made_apart.contains(&from),
+        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
+        _ => false,
+    };
+    for &pointee in &asked {
+        if (made_others.iter()).any(|&(from, to)| !made_with_it(from) && may_be(tcx, to, pointee)) {
+            counted.insert(pointee);
         }
     }
     pointees.extend(counted.iter().copied());
@@ -228,6 +268,15 @@ pub(super) fn counted_rcs<'tcx>(
     // An `Rc` of a type parameter's value may be of any type.
     counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());
     counted
+}
+
+/// Is `given`, what `Rc::new` is given, a closure made there, `Rc::new(move
+/// || ..)`, a JS function no other value is (ADR 0959)?
+fn made_where_given(thir: &Thir<'_>, mut given: ExprId) -> bool {
+    while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[given].kind {
+        given = inner;
+    }
+    matches!(thir[given].kind, ExprKind::Closure(_))
 }
 
 /// Each `Rc` a body owns in `ty`, not behind a reference, a pointer or a

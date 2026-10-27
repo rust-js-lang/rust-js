@@ -465,7 +465,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0922 An export is named first, and two exports of one name are refused](0922-an-export-is-named-first.md)
 - [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing; extended by 0898: a binding that runs only what it's given, given only numbers and text; extended by 0907: a fn pointer runs what the crate made it of)*
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
-- [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too)*
+- [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too; extended by 0959: of an `Rc<dyn Fn>` made of a closure made with it)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value)*
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
@@ -743,6 +743,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0956 The arms of a `switch` keep their statements, a tail they share too](0956-switch-arms-keep-their-tails.md)
 - [0957 A place a test shows isn't `null`, stored right after it, is stored as it is](0957-a-place-a-test-shows-present-is-stored-as-it-is.md)
 - [0958 A chain of `js::strict_equals` tests of one subject is a `switch`](0958-a-chain-of-strict-equals-tests-is-a-switch.md)
+- [0959 `Rc::ptr_eq` of an `Rc<dyn Fn>` made of a closure made with it is `===`, uncounted](0959-ptr-eq-of-a-closure-made-with-its-rc.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

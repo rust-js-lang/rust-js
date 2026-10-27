@@ -342,4 +342,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
     snapshots: true,
   },
+  {
+    name: "fn-identity-read-as-count",
+    breaks: "`Rc::ptr_eq` of an `Rc<dyn Fn>` counts it, so React's commit hooks, each made of its closure, are `{ value, strong, weak }`, and what holds one `$dropping` (ADR 0959)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    if compares_fn_identity(tcx, id, pointee) {\n        return false;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "rc-new-of-closure-unseen",
+    breaks: "`Rc::new` isn't recognized, so no `Rc<dyn Fn>` is seen made of its closure, and each compared by identity is counted (ADR 0959)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    tcx.item_name(id).as_str() == \"new\" && is_rc_method(tcx, id)\n",
+    replace: "    tcx.item_name(id).as_str() == \"new_rc\" && is_rc_method(tcx, id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq.rs$"],
+    snapshots: true,
+  },
 ];

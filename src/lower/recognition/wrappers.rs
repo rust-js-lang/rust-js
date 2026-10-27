@@ -532,6 +532,11 @@ pub(crate) fn weak_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'
 /// not std's, a `String`'s text, nor a binding's, of markers alone, whose
 /// value may be any JS value.
 pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
+    // A function's identity is the function's where each `Rc` of it is
+    // made with it, which the crate's `Rc`s answer (ADR 0959).
+    if compares_fn_identity(tcx, id, pointee) {
+        return false;
+    }
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
         if adt.is_struct()
             && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))
@@ -567,6 +572,28 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
                     | "ptr_eq"
                     | "as_ptr"
             )
+}
+
+/// Is `id`, of an `Rc` of `pointee`, `Rc::ptr_eq` or `Arc::ptr_eq` of a
+/// `dyn Fn`'s, which is the JS function itself (ADR 0022)? Its `===` is the
+/// two `Rc`s' identity only where each `Rc` that may be one is made of a
+/// closure made with it, a JS function made there, which `rc_counts` asks
+/// of the crate's (ADR 0959).
+pub(crate) fn compares_fn_identity<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option<Ty<'tcx>>) -> bool {
+    matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Dynamic(predicates, ..)) if is_fn_dyn(tcx, predicates))
+        && tcx.item_name(id).as_str() == "ptr_eq"
+        && is_rc_method(tcx, id)
+}
+
+/// Is `id` `Rc::new` or `Arc::new`, an `Rc` of what it's given?
+pub(crate) fn is_rc_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.item_name(id).as_str() == "new" && is_rc_method(tcx, id)
+}
+
+/// Is `id` a function of an `Rc`'s or an `Arc`'s own impl?
+fn is_rc_method(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    (tcx.inherent_impl_of_assoc(id))
+        .is_some_and(|imp| rc_pointee(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization()).is_some())
 }
 
 /// Is `id` a thread-local's `with_borrow` or `with_borrow_mut`, which runs

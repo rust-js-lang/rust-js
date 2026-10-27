@@ -265,6 +265,10 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   destructor ([0320](../decisions/0320-counted-rcs.md)). `Rc::ptr_eq` of
   an `Rc` of a struct with fields is `a === b` of the objects, and counts
   nothing; a `#[repr(transparent)]` one is its field, and counts ([0582](../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)).
+  Of an `Rc<dyn Fn>` it's `a === b` of the functions where each `Rc` that
+  may be one is made of a closure written in its `Rc::new`, and counted
+  where one may be made of a function item, a closure's variable or a type
+  parameter's function, which another `Rc` may be made of too ([0959](../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md)).
   `Rc::as_ptr` is a pointer to what it points at, so `Rc::as_ptr(a) ==
   Rc::as_ptr(b)` is `a === b` too, and of an `Rc` of a number it counts,
   as `ptr_eq` does ([0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended).

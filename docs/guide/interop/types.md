@@ -1087,6 +1087,36 @@ export function same(a, b) {
 }
 ```
 
+An `Rc<dyn Fn>` is the function, and `Rc::ptr_eq` of two is `===` of the
+functions where each `Rc` of that type is made of a closure written in its
+`Rc::new`, a function made there, as React's test selectors keep their
+commit hooks. Where one may be made of a function item, a closure's
+variable or a type parameter's function, which two `Rc`s may be made of,
+they're counted, compared by their boxes
+([ADR 0959](../../decisions/0959-ptr-eq-of-a-closure-made-with-its-rc.md)):
+
+```rust
+use std::rc::Rc;
+
+pub fn hook(n: u32) -> Rc<dyn Fn() -> u32> {
+    Rc::new(move || n + 1)
+}
+
+pub fn is_hook(hooks: &[Rc<dyn Fn() -> u32>], hook: &Rc<dyn Fn() -> u32>) -> bool {
+    hooks.iter().any(|h| Rc::ptr_eq(h, hook))
+}
+```
+
+```js
+export function hook(n) {
+  return () => (n + 1) >>> 0;
+}
+
+export function isHook(hooks, hook) {
+  return hooks.some((h) => h === hook);
+}
+```
+
 A clone of a parameter's `Rc` moved into a closure is the same object, so
 the closure reads it by the parameter's name
 ([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md)):
