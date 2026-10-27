@@ -117,3 +117,46 @@ pub fn next() -> Option<&'static Unknown> {
   lib.restoreOr({ tag: 7, stateNode: undefined });
   expect(lib.next()).toBe(null);
 });
+
+// ADR 0957, amended: React's getParentFragmentInstances, `let
+// parentFragmentInstances = null; .. return parentFragmentInstances;`: a
+// `let` made and set only to what's never `undefined` is returned as it is;
+// one a closure may set keeps its `?? null`.
+test("a let set only to values is returned as it is", async () => {
+  const dir = fixture("nullable-let-returned");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn collect(items: &[&'static js::Unknown]) -> Option<Vec<&'static js::Unknown>> {
+    let mut found = js::null();
+    for &item in items {
+        if js::truthy(js::get(item, "keep")) {
+            match &mut found {
+                None => found = Some(vec![item]),
+                Some(found) => found.push(item),
+            }
+        }
+    }
+    found
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn first(items: &[u32]) -> Option<u32> {
+    let mut seen = js::null();
+    items.iter().for_each(|&n| {
+        if seen.is_none() {
+            seen = items.get(n as usize).copied();
+        }
+    });
+    seen
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return found;\n");
+  expect(js).toContain("  return seen ?? null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const a = { keep: true };
+  expect([lib.collect([]), lib.collect([{}, a]), lib.first([5]), lib.first([0])]).toEqual([null, [a], null, 0]);
+});

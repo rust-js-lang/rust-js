@@ -368,6 +368,7 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
             }
         }
     });
+    defined.extend(lets_never_undefined(body, &declared));
     // Where a test shows a `const` defined, `x !== undefined ? x ?? null :
     // ..`'s branch, `if (x != null) { return x ?? null; }`'s: `x` there too.
     let once = |x: &str| declared.get(x) == Some(&1);
@@ -417,6 +418,59 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
             *e = (**made).clone().or_at(span);
         }
     });
+}
+
+/// Each `let` the body declares once, made and set only to what's never
+/// `undefined`, `let found = null; .. found = [item];`, React's
+/// getParentFragmentInstances' (ADR 0957, amended): not one a closure
+/// reads, which may set it, nor one set otherwise, `found ??= ..`.
+fn lets_never_undefined(body: &[Stmt], declared: &HashMap<String, usize>) -> HashSet<String> {
+    let mut lets: HashSet<String> = HashSet::new();
+    let mut not: HashSet<String> = HashSet::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            match &stmt.kind {
+                StmtKind::Let(name, Some(value)) if declared.get(name) == Some(&1) && !value.may_be_undefined() => {
+                    lets.insert(name.clone());
+                }
+                StmtKind::Assign(target, value) => {
+                    if let ExprKind::Var(name) = &target.kind
+                        && value.may_be_undefined()
+                    {
+                        not.insert(name.clone());
+                    }
+                }
+                StmtKind::Compound(_, target, _) => {
+                    if let ExprKind::Var(name) = &target.kind {
+                        not.insert(name.clone());
+                    }
+                }
+                StmtKind::Destructure { pattern, .. } => not.extend(pattern.names().into_iter().map(str::to_string)),
+                _ => {}
+            }
+        }
+    });
+    let mut closed = |inner: &[Stmt]| {
+        for name in &lets {
+            if js::mentions_in(inner, name) > 0 {
+                not.insert(name.clone());
+            }
+        }
+    };
+    js::each_expr(body, &mut |e| match &e.kind {
+        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => closed(inner),
+        ExprKind::Function(f) => closed(&f.body),
+        _ => {}
+    });
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Function(f) = &stmt.kind {
+                closed(&f.body);
+            }
+        }
+    });
+    lets.retain(|name| !not.contains(name));
+    lets
 }
 
 /// Whether `stmt` makes its value first: a declaration's, or an

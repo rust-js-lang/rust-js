@@ -214,4 +214,20 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
+  {
+    name: "lets-never-undefined-unread",
+    breaks: "React's `return parentFragmentInstances` of a `let` made `null` is `?? null` (ADR 0957, amended)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    defined.extend(lets_never_undefined(body, &declared));\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
+  },
+  {
+    name: "lets-never-undefined-of-closures",
+    breaks: "a `let` a closure sets, maybe to `undefined`, is returned with no `?? null` (ADR 0957, amended)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => closed(inner),\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
+  },
 ];

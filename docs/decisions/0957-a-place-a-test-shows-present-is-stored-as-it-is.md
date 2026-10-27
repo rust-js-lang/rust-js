@@ -35,3 +35,15 @@ A part of an `||` shows nothing, and stays `?? null`.
 - `test/lowering-nullable-reads.test.ts`, "a place a test shows present
   is stored as it is".
 - Mutations: `present-place-stored-coalesced`, `present-place-of-an-or`.
+
+## Amendment: a `let` set only to values is returned as it is (2026-10-27)
+
+React's `getParentFragmentInstances` returns `let parentFragmentInstances
+= null`, set only to arrays. Its port returned `?? null` of it. **A `let`
+the body declares once, made and set only to what's never `undefined`, is
+a value or `null` wherever it's read** (`lets_never_undefined`): not one a
+closure or a function declared in the body mentions, which may set it, nor
+one set by a compound or a pattern. Held by
+`test/lowering-nullable-reads.test.ts`, "a let set only to values is
+returned as it is", and mutations `lets-never-undefined-unread` and
+`lets-never-undefined-of-closures`.
