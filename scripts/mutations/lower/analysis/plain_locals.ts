@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "outside-borrow-unquiet-read",
     breaks: "a consumer's `with_borrow` of a library's variable whose closure calls the library's code is read as the variable, where nothing counts its borrows (ADR 0270, amended)",
     file: "src/lower/analysis/plain_locals.rs",
-    find: "                        given(thir, args[1]).is_some_and(|given| quiet(given, def_id))\n",
+    find: "                        given(thir, args[1]).is_some_and(|given| quiet(given, def_id, false))\n",
     replace: "                        given(thir, args[1]).is_some()\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
   },
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "        return !tcx.is_foreign_item(key);\n",
     replace: "        return false;\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a pub static mut its module alone writes"],
+  },
+  {
+    name: "with-borrow-held-mutably",
+    breaks: "a thread-local's `with_borrow` is held as a mutable borrow, which another `with_borrow` JS may run asks of, so React's DEV dispatcher read around `setH` stays a checked cell (ADR 0580, amended)",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                    let mutable = tcx.item_name(id).as_str() != \"with_borrow\";\n",
+    replace: "                    let mutable = true;\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
   },
 ];

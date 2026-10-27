@@ -361,3 +361,87 @@ pub fn count() -> &'static js::Unknown {
   expect(() => run([compiler, join(dir, "boxed.rs"), "-o", join(dir, "boxed.js"), ...withBindings]))
     .toThrow("a `std::cell::RefCell<u32>` given to JS or taken from it");
 });
+
+// React's DEV dispatchers, as upstream writes them: `let
+// HooksDispatcherOnMountInDEV = null; if (__DEV__) { HooksDispatcherOnMountInDEV
+// = { .. }; }`, and each render sets the dispatcher to one,
+// `ReactSharedInternals.H = HooksDispatcherOnMountInDEV`, a binding's call,
+// which may run anything. Ported, the thread-local is set where its module
+// loads, `js::on_load!`, which runs once, before JS can call into it: what
+// JS runs while a borrow is held may borrow only what the crate's other
+// bodies do, here only `with_borrow`s, which ask nothing of a shared one.
+// So the cell is the module's `let`, upstream's (ADR 0580, amended). A
+// borrow held mutably across JS, and a thread-local another crate may
+// borrow, `pub`, or one whose cell is lent, `with`, stay checked.
+test("a thread-local set only where its module loads is a variable JS can't meet a borrow of", async () => {
+  const dir = fixture("set-where-loaded");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+unsafe extern "Rust" {
+    safe static __DEV__: bool;
+}
+
+pub struct Dispatcher {
+    pub use_a: fn(u32) -> u32,
+}
+
+thread_local! {
+    static ON_MOUNT_IN_DEV: RefCell<Option<Rc<Dispatcher>>> = RefCell::new(js::null());
+    static SEEN: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+    pub static SHARED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    static LENT: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+js::on_load! {
+    if __DEV__ {
+        ON_MOUNT_IN_DEV.set(Some(Rc::new(Dispatcher { use_a: |n| n + 1 })));
+    }
+}
+
+pub fn render(set_h: &dyn Fn(Option<&Dispatcher>)) {
+    ON_MOUNT_IN_DEV.with_borrow(|dispatcher| set_h(dispatcher.as_deref()));
+}
+
+// Held mutably while JS runs, which may call \`seen\`: checked.
+pub fn see(f: &dyn Fn()) {
+    SEEN.with_borrow_mut(|seen| {
+        f();
+        seen.push(1);
+    });
+}
+
+pub fn seen() -> usize {
+    SEEN.with_borrow(|seen| seen.len())
+}
+
+pub fn shared(f: &dyn Fn()) -> usize {
+    SHARED.with_borrow(|shared| {
+        f();
+        shared.len()
+    })
+}
+
+pub fn lent(f: &dyn Fn()) -> usize {
+    LENT.with(|lent| lent.borrow_mut().push(1));
+    LENT.with_borrow(|lent| {
+        f();
+        lent.len()
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let onMountInDev = null;\n");
+  expect(js).toContain("if (__DEV__) {\n  onMountInDev = { useA: (n) => (n + 1) >>> 0 };\n}\n");
+  expect(js).toContain("export function render(setH) {\n  setH(onMountInDev);\n}");
+  expect(js).toContain("$withBorrowMut(\n    SEEN,");
+  expect(js).toContain("$withBorrow(\n    SHARED,");
+  expect(js).toContain("$withBorrow(\n    LENT,");
+  (globalThis as any).__DEV__ = true;
+  const lib = await import(join(dir, "lib.js"));
+  const used: number[] = [];
+  lib.render((dispatcher: any) => used.push(dispatcher.useA(1)));
+  expect(used).toEqual([2]);
+  expect(() => lib.see(() => lib.seen())).toThrow("already mutably borrowed");
+});

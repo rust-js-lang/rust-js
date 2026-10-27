@@ -955,12 +955,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
     // What `with_borrow` runs while its thread-local is borrowed, that can't
-    // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it.
-    // It's held as a `with_borrow_mut`'s, which nothing may ask of.
-    let quiet = |given: plain_locals::Given<'tcx>, key: DefId| {
+    // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it,
+    // held as it's held, a `with_borrow`'s shared, which only a mutable
+    // borrow asks of, and a `with_borrow_mut`'s or a `with`'s mutably (ADR
+    // 0580, amended).
+    let quiet = |given: plain_locals::Given<'tcx>, key: DefId, mutable: bool| {
         let held = Borrow {
             cell: Cell::Key(key),
-            mutable: true,
+            mutable,
         };
         match given {
             plain_locals::Given::Closure(closure) => {

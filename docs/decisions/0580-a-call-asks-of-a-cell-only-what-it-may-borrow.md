@@ -11,7 +11,10 @@ only what it's given, so `vec![..]` runs nothing. Extended by
 only what it's given, given only numbers and text, borrows nothing.
 Extended by [0907](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md):
 a fn pointer's call runs what the crate made one of its type of, not
-anything, where no value of its type comes from outside.
+anything, where no value of its type comes from outside. Amended
+(2026-10-27): what JS runs borrows, of a thread-local only the crate's
+code reaches, what the crate's bodies do but what its modules run as
+they load; a `with_borrow` is held shared.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet. A JS getter that
@@ -106,3 +109,73 @@ const timerQueue = [];
 - Mutations: a key never its own, a function of the crate's borrowing
   nothing or anything, a body asked of nothing, an element's binding taken
   to run code, a call beside a guard taken as asking nothing.
+
+## Amendment (2026-10-27): what JS runs borrows what the crate's code does
+
+React's DEV dispatchers are upstream's module variables, set once where
+the module loads, and each render sets the dispatcher to one:
+
+```js
+let HooksDispatcherOnMountInDEV = null;
+if (__DEV__) {
+  HooksDispatcherOnMountInDEV = { .. };
+}
+..
+ReactSharedInternals.H = HooksDispatcherOnMountInDEV;
+```
+
+Ported, the variable is a thread-local set in `js::on_load!`, read by
+`with_borrow(|dispatcher| set_h(dispatcher.as_deref()))`, where `set_h`
+is a binding's call, which may run anything: so the borrow was counted,
+the thread-local its `{ value: null }` cell, `$cellReplace($borrowMut(..))`
+where it's set and `$withBorrow(.., (dispatcher) => { .. })` where it's
+read. And a `with_borrow` was asked as a `with_borrow_mut`, mutably held,
+so even a shared borrow elsewhere asked of it.
+
+**What code rust-js can't see, JS's or a library's, may borrow of a
+thread-local only the crate's code reaches is what the crate's bodies
+borrow, but what its modules run as they load** (`cell_borrows.rs`'s
+`anything_asks`): the union of every body's own borrows (`later`), but
+`js::on_load!`'s own body, which runs once, as its module is evaluated,
+before any of its functions can be called from JS, and whose closures
+are bodies of their own. Only a thread-local of the crate's is so
+(`closed_keys`): not `pub`, as another crate may borrow it, and each use a
+read or a write of what it holds, `get`, `set`, `take`, `replace`,
+`with_borrow` or `with_borrow_mut`, never its cell lent, `with`'s, which
+code rust-js can't see may borrow by its type, nor its key handed on. Any
+other cell is asked of as before, by anything.
+
+**A `with_borrow` is held as it's held, shared** (`plain_locals.rs`):
+only a mutable borrow asks of it. A `with_borrow_mut`'s, and a `with`'s,
+which lends the cell, are held mutably, as before.
+
+Case A ([0262](0262-when-rust-and-js-disagree.md)): a borrow left
+uncounted is still one no other borrow of its cell can meet. JS can't
+run a module's load again, and what it calls into is the crate's bodies.
+
+```js
+let HooksDispatcherOnMountInDEV = null;
+
+if (__DEV__) {
+  HooksDispatcherOnMountInDEV = { useId: () => 1 };
+}
+
+export function render(setDispatcher) {
+  setDispatcher(HooksDispatcherOnMountInDEV);
+}
+```
+
+- A borrow held mutably while JS runs, which may call a function that
+  borrows the cell, stays checked: `$withBorrowMut(SEEN, ..)`, whose
+  second borrow throws as Rust panics.
+- A library's borrow of a cell the crate lends it by `with` isn't one of
+  the crate's bodies', so a lent thread-local is asked of by anything, as
+  before. No test of one crate can reach it; it's held by the rule's
+  reading, not a mutation.
+
+Held by `test/lowering-cell-borrows.test.ts`, "a thread-local set only
+where its module loads is a variable JS can't meet a borrow of" (run, the
+mutable one's second borrow throwing); mutations `unseen-runs-what-loads`,
+`unseen-never-reaches-public`, `unseen-asks-everything`
+(`analysis/cell_borrows.ts`) and `with-borrow-held-mutably`
+(`analysis/plain_locals.ts`).

@@ -55,6 +55,15 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// The type parameters whose `Clone` bound takes its dictionary, whose
     /// clone may run code of the crate's (ADR 0914, amended).
     clones: HashSet<(DefId, u32)>,
+    /// What code rust-js can't see may borrow of a thread-local of the
+    /// crate's that only its code reaches (`closed`): what the crate's
+    /// bodies borrow but what its modules run as they load, which runs
+    /// once, before JS can call into it (ADR 0580, amended).
+    later: HashSet<Borrow<'tcx>>,
+    /// The crate's thread-locals no code but the crate's reaches: not
+    /// visible outside it, each use a read or a write of what it holds,
+    /// never its cell lent, `with`'s, or handed on.
+    closed: HashSet<DefId>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -144,7 +153,26 @@ impl<'tcx> CellBorrows<'tcx> {
             }
         }
         found.of = of;
+        // What may run after the crate's modules have loaded: every body
+        // but what a module runs as it loads, `js::on_load!`'s own, whose
+        // closures are bodies of their own.
+        found.later = (direct.iter())
+            .filter(|&(&id, _)| !crate::lower::bindings::is_on_load(tcx, id))
+            .flat_map(|(_, d)| d.own.cells.iter().copied())
+            .collect();
+        found.closed = closed_keys(tcx, bodies);
         found
+    }
+
+    /// Whether code rust-js can't see, JS's or a library's, may ask of
+    /// `held`: of a thread-local only the crate's code reaches (`closed`),
+    /// only where a body that may run after its modules load borrows it so
+    /// (ADR 0580, amended); of any other cell, it may.
+    fn anything_asks(&self, tcx: TyCtxt<'tcx>, held: Borrow<'tcx>) -> bool {
+        match held.cell {
+            Cell::Key(key) if self.closed.contains(&key) => self.later.iter().any(|&theirs| asks(tcx, theirs, held)),
+            _ => true,
+        }
     }
 
     /// Whether `Clone::clone` of `ty` in `owner`'s body is the value itself,
@@ -161,7 +189,7 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn body_asks(&self, tcx: TyCtxt<'tcx>, body: DefId, held: Borrow<'tcx>) -> bool {
         match self.of.get(&body) {
             Some(Some(summary)) => summary.asks(tcx, held),
-            _ => true,
+            _ => self.anything_asks(tcx, held),
         }
     }
 
@@ -185,11 +213,11 @@ impl<'tcx> CellBorrows<'tcx> {
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
-                given.any
+                (given.any && self.anything_asks(tcx, held))
                     || given.cells.iter().any(|&theirs| asks(tcx, theirs, held))
                     || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
             }
-            Called::Any => true,
+            Called::Any => self.anything_asks(tcx, held),
         }
     }
 
@@ -301,7 +329,7 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         let tcx = recognition.tcx;
         let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
-            return true;
+            return self.anything_asks(tcx, held);
         };
         may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
             true => self.runs_asks(tcx, f, Some(args), held, drops),
@@ -336,8 +364,11 @@ impl<'tcx> CellBorrows<'tcx> {
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> bool {
         match self.of.get(&body) {
-            Some(Some(theirs)) => instantiated(tcx, theirs, args, drops).is_none_or(|theirs| theirs.asks(tcx, held)),
-            _ => true,
+            Some(Some(theirs)) => match instantiated(tcx, theirs, args, drops) {
+                Some(theirs) => theirs.asks(tcx, held),
+                None => self.anything_asks(tcx, held),
+            },
+            _ => self.anything_asks(tcx, held),
         }
     }
 }
@@ -1043,6 +1074,50 @@ fn unsized_tail<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<usize>
             _ => return None,
         }
     }
+}
+
+/// The crate's thread-locals no code but the crate's reaches: not visible
+/// outside the crate, and each use of one in its bodies a read or a write
+/// of what it holds, `get`, `set`, `take`, `replace`, `with_borrow` or
+/// `with_borrow_mut`; never its cell lent, `with`'s, nor the key handed on.
+fn closed_keys<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> HashSet<DefId> {
+    use crate::lower::recognition::local_key_access;
+    let mut keys = HashSet::new();
+    let mut open = HashSet::new();
+    for body in bodies {
+        let thir = &body.thir;
+        let mut accessed = HashSet::new();
+        for expr in thir.exprs.iter() {
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && let Some((id, _)) = fn_def(thir[fun].ty)
+                && local_key_access(tcx, id).is_some()
+                && let Some(&first) = args.first()
+                && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
+            {
+                accessed.insert(strip(thir, arg));
+            }
+        }
+        for (id, expr) in thir.exprs.iter_enumerated() {
+            if let ExprKind::NamedConst { def_id, .. } = expr.kind
+                && def_id.is_local()
+                && is_thread_local_key(tcx, def_id)
+            {
+                keys.insert(def_id);
+                if !accessed.contains(&id) {
+                    open.insert(def_id);
+                }
+            }
+        }
+    }
+    keys.retain(|&key| !open.contains(&key) && !tcx.visibility(key).is_public());
+    keys
+}
+
+/// Whether `def_id` is a thread-local's key, a `LocalKey`.
+fn is_thread_local_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(tcx.def_kind(def_id), DefKind::Const { .. })
+        && matches!(tcx.type_of(def_id).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey))
 }
 
 /// Whether a borrow asks of one `held`: of a cell that may be its, one of

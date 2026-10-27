@@ -40,7 +40,7 @@ pub(super) fn plain_thread_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     keys: impl Iterator<Item = LocalDefId>,
-    quiet: &dyn Fn(Given<'tcx>, DefId) -> bool,
+    quiet: &dyn Fn(Given<'tcx>, DefId, bool) -> bool,
 ) -> HashSet<LocalDefId> {
     let mut plain: HashSet<LocalDefId> = keys.collect();
     for body in bodies {
@@ -55,9 +55,12 @@ pub(super) fn plain_thread_locals<'tcx>(
                 && let Some(&first) = args.first()
                 && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
                 && (!lends || {
+                    // A `with_borrow`'s is held shared; a `with_borrow_mut`'s,
+                    // and a `with`'s, which lends the cell, mutably.
+                    let mutable = tcx.item_name(id).as_str() != "with_borrow";
                     matches!((given(thir, args[1]), &thir[strip(thir, arg)].kind),
                         (Some(given), ExprKind::NamedConst { def_id: key, .. })
-                            if key.is_local() && quiet(given, *key))
+                            if key.is_local() && quiet(given, *key, mutable))
                 })
             {
                 accessed.insert(strip(thir, arg));
@@ -145,7 +148,7 @@ pub(super) fn outside_writes<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     variable: &dyn Fn(DefId) -> bool,
-    quiet: &dyn Fn(Given<'tcx>, DefId) -> bool,
+    quiet: &dyn Fn(Given<'tcx>, DefId, bool) -> bool,
 ) -> Vec<(rustc_span::Span, DefId)> {
     let mut refused = Vec::new();
     for body in bodies {
@@ -171,7 +174,7 @@ pub(super) fn outside_writes<'tcx>(
                     ExprKind::NamedConst { def_id, .. }
                         if !def_id.is_local() && is_local_borrow(tcx, id) && variable(def_id) =>
                     {
-                        given(thir, args[1]).is_some_and(|given| quiet(given, def_id))
+                        given(thir, args[1]).is_some_and(|given| quiet(given, def_id, false))
                     }
                     _ => true,
                 };

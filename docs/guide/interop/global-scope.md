@@ -738,6 +738,56 @@ export function last() {
   borrow is asked of its body
   ([ADR 0580](../../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
   [ADR 0587](../../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
+- **What JS runs while a borrow is held borrows what the crate's code
+  does, but what its modules run as they load**: of a thread-local no
+  other crate reaches, `pub` none, whose cell isn't lent, `with`'s, a
+  `with_borrow` around a call into JS asks only whether another body
+  borrows it mutably. One set only in `js::on_load!`, which runs once,
+  before JS can call into the module, is the variable, as React's DEV
+  dispatchers are, `let HooksDispatcherOnMountInDEV = null; if (__DEV__) {
+  .. }`
+  ([ADR 0580](../../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
+  amended):
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+unsafe extern "Rust" {
+    safe static __DEV__: bool;
+}
+
+pub struct Dispatcher {
+    pub use_id: fn() -> u32,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "HooksDispatcherOnMountInDEV")]
+    static ON_MOUNT_IN_DEV: RefCell<Option<Rc<Dispatcher>>> = RefCell::new(js::null());
+}
+
+js::on_load! {
+    if __DEV__ {
+        ON_MOUNT_IN_DEV.set(Some(Rc::new(Dispatcher { use_id: || 1 })));
+    }
+}
+
+pub fn render(set_dispatcher: &dyn Fn(Option<&Dispatcher>)) {
+    ON_MOUNT_IN_DEV.with_borrow(|dispatcher| set_dispatcher(dispatcher.as_deref()));
+}
+```
+
+```js
+let HooksDispatcherOnMountInDEV = null;
+
+if (__DEV__) {
+  HooksDispatcherOnMountInDEV = { useId: () => 1 };
+}
+
+export function render(setDispatcher) {
+  setDispatcher(HooksDispatcherOnMountInDEV);
+}
+```
 
 ### A `static mut`
 
