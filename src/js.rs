@@ -610,6 +610,10 @@ pub enum Known {
     /// where statements follow the `if`, `if (a) { ..; return; } else if
     /// (b) { return; } more` (ADR 0879, amended), not 0237's `if` after.
     Else,
+    /// The test of a `let … else`'s guard, `if (parentA == null) { break; }`,
+    /// where the program wrote it: never the test of the loop it's first in,
+    /// `while ((parentA = a.return) != null)` (ADRs 0860, 0879, amended).
+    Guard,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

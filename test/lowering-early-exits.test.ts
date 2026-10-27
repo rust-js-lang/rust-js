@@ -451,3 +451,79 @@ pub fn settle(mut n: u32) -> u32 {
   expect(js).toContain("export function settle(n) {\n  while (true) {\n");
   expect([1, 4, 9, 12].map((n) => lib.settle(n as never))).toEqual([4, 4, 24, 24]);
 });
+
+// React's findCurrentFiberUsingSlowPath: `const parentA = a.return; if
+// (parentA === null) { // We're at the root. break; }`, and a second guard
+// whose `else` goes on before it breaks. MIR joins both `else`s' `break`
+// into one after them, so each guard was nested in the one before, and its
+// comments were before the loop. Each `let .. else` is its guard first, its
+// `else`'s `break` its own, the comment before it (ADR 0879, amended).
+test("let elses that each break a loop are each a guard first", async () => {
+  const { js, lib } = await compiled("let-elses-break", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+    pub alternate: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>, alternate: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber {
+        tag,
+        r#return: RefCell::new(parent),
+        alternate: RefCell::new(alternate),
+    })
+}
+
+pub fn root_of(fiber: &Rc<Fiber>) -> u8 {
+    let mut a = Rc::clone(fiber);
+    loop {
+        let parent_a = a.r#return.borrow().clone();
+        let Some(parent_a) = parent_a else {
+            // We're at the root.
+            break;
+        };
+        let parent_b = parent_a.alternate.borrow().clone();
+        let Some(_parent_b) = parent_b else {
+            let next_parent = parent_a.r#return.borrow().clone();
+            if let Some(next_parent) = next_parent {
+                a = next_parent;
+                continue;
+            }
+            // If there's no parent, we're at the root.
+            break;
+        };
+        a = parent_a;
+    }
+    a.tag
+}
+`);
+  expect(js).toContain(`    const parentA = a.return;
+    if (parentA == null) {
+      // We're at the root.
+      break;
+    }
+    const parentB = parentA.alternate;
+    if (parentB == null) {
+      const nextParent = parentA.return;
+      if (nextParent != null) {
+        a = nextParent;
+        continue;
+      }
+      // If there's no parent, we're at the root.
+      break;
+    }
+    a = parentA;
+  }`);
+  const none = undefined as never;
+  const root = lib.fiber(3 as never, none, none) as never;
+  const other = lib.fiber(7 as never, none, none) as never;
+  const middle = lib.fiber(1 as never, root, other) as never;
+  const loose = lib.fiber(1 as never, middle, none) as never;
+  const lone = lib.fiber(5 as never, lib.fiber(9 as never, none, none) as never, none) as never;
+  const climbed = lib.fiber(2 as never, lib.fiber(4 as never, root, none) as never, none) as never;
+  expect([lib.rootOf(root), lib.rootOf(middle), lib.rootOf(loose), lib.rootOf(lone), lib.rootOf(climbed)]).toEqual([
+    3, 1, 1, 5, 3,
+  ]);
+});

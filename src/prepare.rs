@@ -291,7 +291,9 @@ fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
 /// expression's matches (ADR 0860). Before its locals are named, so the
 /// `let` is one name of the block it's in. Not where a closure reads it,
 /// which a `const` gives a variable of each turn, nor where the test reads
-/// it again, `last == null || last.TAG !== "Op"`, or reads anything first.
+/// it again, `last == null || last.TAG !== "Op"`, or reads anything first;
+/// nor a `let … else`'s guard, `Known::Guard`, as written, `const parentA =
+/// a.return; if (parentA == null) { break; }` (ADR 0879, amended).
 fn tested_assignments(stmts: &mut Vec<Stmt>) {
     // What a test reads first, of what it evaluates first.
     fn first_read(e: &Expr) -> &Expr {
@@ -327,6 +329,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                 },
                 rest @ ..,
             ] if matches!(cond.kind, ExprKind::Bool(true))
+                && !test.facts.has(js::Known::Guard)
                 && matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(l), .. }] if l.is_none() || l == label)
                 && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)
                 && {

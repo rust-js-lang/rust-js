@@ -82,31 +82,118 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
 /// Some(x) = .. else { return a; }; return f(x);`, whose two `return`s MIR
 /// joins after the `if` (ADR 0879, amended). Not of a guard already
 /// first, `if (r.TAG === "Err") { return .. } const x = r._0; ..` of a
-/// `?`, whose rest's `let` is written before its exit.
+/// `?`, whose rest's `let` is written before its exit. And of `else`s that
+/// each `break` a loop, whose `break`s MIR joins into one after the `if`,
+/// `if (c) { s } break;` or `if (c) { s } else { e } break;`: each its
+/// guard, `if (!c) { break; }`, `if (!c) { e break; }`, its test marked so
+/// (`Known::Guard`), which no loop's head takes (ADR 0879, amended).
 pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
     let written_first =
         |e: &[Stmt], s: &[Stmt]| matches!((first_written(e), first_written(s)), (Some(e), Some(s)) if e < s);
-    // Each of `exit`'s statements written in one `let … else`'s `else`, and
-    // none of `then`'s.
+    // The `let … else`'s `else` each of `exit`'s statements is written in,
+    // and none of `then`'s; but its last, a jump MIR placed where the loop
+    // or the body ends, which each `else` it ends shares.
     let let_else_exit = |exit: &[Stmt], then: &[Stmt]| {
         let written = |s: &&Stmt| !s.span.is_none();
         let within = |e: &js::Span, s: &Stmt| e.lo <= s.span.lo && s.span.hi <= e.hi;
-        exit.iter().any(|s| written(&s))
-            && let_elses.iter().any(|e| {
-                exit.iter().filter(written).all(|s| within(e, s)) && !then.iter().filter(written).any(|s| within(e, s))
+        let exit = match exit.split_last() {
+            Some((last, before))
+                if matches!(
+                    last.kind,
+                    StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_)
+                ) =>
+            {
+                match let_elses.iter().any(|e| within(e, last)) {
+                    true => exit,
+                    false => before,
+                }
+            }
+            _ => exit,
+        };
+        (exit.iter().any(|s| written(&s)))
+            .then(|| {
+                let_elses.iter().copied().find(|e| {
+                    exit.iter().filter(written).all(|s| within(e, s))
+                        && !then.iter().filter(written).any(|s| within(e, s))
+                })
             })
+            .flatten()
+    };
+    // The `let … else` whose test `test` is, its `else` written right after
+    // it and before `then`, the rest.
+    let else_after = |test: &Expr, then: &[Stmt]| {
+        (!test.span.is_none())
+            .then(|| {
+                (let_elses.iter().copied())
+                    .filter(|e| e.lo >= test.span.hi)
+                    .min_by_key(|e| e.lo)
+                    .filter(|e| first_written(then).is_none_or(|at| at >= e.hi))
+            })
+            .flatten()
+    };
+    // Whether `stmt` is written in `at`, an `else`.
+    let within = |at: js::Span, stmt: &Stmt| !stmt.span.is_none() && at.lo <= stmt.span.lo && stmt.span.hi <= at.hi;
+    // A `let … else`'s test negated, its guard's, as written (`Known::Guard`).
+    let guard = |test: Expr| {
+        let test = test.negated_test();
+        Expr {
+            facts: test.facts.with(js::Known::Guard),
+            ..test
+        }
     };
     let mut i = 0;
     while i < stmts.len() {
+        // `if (c) { s } e` of a lone jump `e` MIR joined the `else`s after it
+        // into, not written in the `else` of the `let … else` whose test `c`
+        // is: its guard first, `if (!c) { e }`, then `s`, and `e` where `s`
+        // goes on to it.
+        if let StmtKind::If(test, then, None) = &stmts[i].kind
+            && let [exit] = &stmts[i + 1..]
+            && matches!(
+                exit.kind,
+                StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_)
+            )
+            && let Some(written) = else_after(test, then)
+            && !within(written, exit)
+            && fits_in_place(stmts, i, then)
+        {
+            let exit = stmts.pop().expect("matched");
+            let span = stmts[i].span;
+            let StmtKind::If(test, then, _) = stmts.pop().expect("matched").kind else {
+                unreachable!("matched")
+            };
+            let goes_on = !then.last().is_some_and(ends);
+            stmts.push(StmtKind::If(guard(test), vec![exit.clone()], None).at(span));
+            stmts.extend(then);
+            if goes_on {
+                stmts.push(exit);
+            }
+            i += 1;
+            continue;
+        }
         let rest = &stmts[i + 1..];
+        // A lone jump after an `else` that goes on to it, MIR's, which the
+        // `else` ends with.
+        let mut joined = false;
         let first = match &stmts[i].kind {
+            StmtKind::If(_, then, Some(otherwise)) if otherwise.last().is_some_and(ends) => {
+                written_first(otherwise, then) && fits_in_place(stmts, i, then)
+            }
+            // `if (c) { s } else { e } j` of an `s` that never goes on and
+            // an `e` written in a `let … else`'s `else` that goes on to `j`,
+            // a jump MIR joined the `else`s into: `if (!c) { e j } s`.
             StmtKind::If(_, then, Some(otherwise)) => {
-                otherwise.last().is_some_and(ends) && written_first(otherwise, then) && fits_in_place(stmts, i, then)
+                joined = true;
+                then.last().is_some_and(ends)
+                    && matches!(rest, [exit] if matches!(exit.kind, StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_)))
+                    && let_else_exit(otherwise, then).is_some_and(|written| !within(written, &rest[0]))
+                    && written_first(otherwise, then)
+                    && fits_in_place(stmts, i, then)
             }
             StmtKind::If(_, then, None) => {
                 then.last().is_some_and(ends)
                     && rest.last().is_some_and(ends)
-                    && let_else_exit(rest, then)
+                    && let_else_exit(rest, then).is_some()
                     && written_first(rest, then)
                     && fits_in_place(stmts, i, then)
             }
@@ -120,10 +207,17 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
         let StmtKind::If(test, then, otherwise) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
-        let otherwise = otherwise.unwrap_or_else(|| stmts.split_off(i + 1));
+        let otherwise = match (otherwise, joined) {
+            (Some(mut otherwise), true) => {
+                otherwise.extend(stmts.pop());
+                otherwise
+            }
+            (Some(otherwise), false) => otherwise,
+            (None, _) => stmts.split_off(i + 1),
+        };
         stmts.splice(
             i..=i,
-            std::iter::once(StmtKind::If(test.negated_test(), otherwise, None).at(span)).chain(then),
+            std::iter::once(StmtKind::If(guard(test), otherwise, None).at(span)).chain(then),
         );
         i += 1;
     }

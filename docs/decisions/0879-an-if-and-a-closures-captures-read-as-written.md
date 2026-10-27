@@ -393,3 +393,55 @@ match of arms that give () is its arms, no returns", run in JS; and the
 mutations `tail-returns-branch-else-after` and
 `tail-returns-of-branches-only-at-the-top` (`tidy/jumps.ts`).
 
+## Amendment: `let … else`s that each `break` a loop are each its guard (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements
+run on each path.
+
+React's findCurrentFiberUsingSlowPath (c11 of the port's gaps):
+
+```js
+while (true) {
+  const parentA = a.return;
+  if (parentA === null) {
+    // We're at the root.
+    break;
+  }
+  const parentB = parentA.alternate;
+  if (parentB === null) {
+    ..
+    // If there's no parent, we're at the root.
+    break;
+  }
+  ..
+}
+```
+
+Its port's two `let … else`s each `break`, and MIR joins both `break`s
+into one after them: `if (parentA != null) { ..; if (parentB != null) {
+..; continue; } .. } break;`, each guard nested in the one before, and
+their comments printed before the loop, where no statement of theirs was.
+
+- **`if (c) { s } j` of a lone jump `j` that isn't written in the `else` of
+  the `let … else` whose test `c` is**, its `else` written right after the
+  test and before `s`: `if (!c) { j } s`, and `j` after `s` where `s` goes
+  on to it.
+- **`if (c) { s } else { e } j` of an `s` that never goes on and an `e`
+  written in a `let … else`'s `else`** that goes on to `j`: `if (!c) { e j }
+  s`.
+- **Each such guard's test says it's one (`Known::Guard`)**, so
+  preparation's loop of a test (ADR 0860), which takes `while (true) {
+  const x = ..; if (x == null) { break; } .. }` for `while ((x = ..) !=
+  null)`, leaves it as written: a `while let` or a `for`'s steps, which
+  MIR makes alike, are still that loop.
+
+Held by `test/lowering-early-exits.test.ts`, "let elses that each break a
+loop are each a guard first", run; the mutations
+`let-else-joined-break-nested`, `let-else-joined-break-left-out`
+(`mir/tidy/jumps/tried.ts`) and `let-else-guard-a-loop-head`
+(`prepare.ts`).
+
+The port's own findCurrentFiberUsingSlowPath doesn't take this shape yet:
+MIR places the code after its loop inside it, `if (a.tag !== HostRoot) {
+break; } .. return ..;` before the loop's end, and the `break`s go there,
+which is still to do.

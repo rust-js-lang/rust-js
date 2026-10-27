@@ -3,10 +3,27 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-else-joined-break-nested",
+    breaks: "a `let … else` whose `break` MIR joined with the next's is no guard first, each nested in the one before, its comment before the loop (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            && let Some(written) = else_after(test, then)\n",
+    replace: "            && let Some(written) = None::<js::Span>\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "let elses that each break a loop"],
+  },
+  {
+    name: "let-else-joined-break-left-out",
+    breaks: "a `let … else`'s `else` that goes on to the `break` MIR joined after it is a guard without it, so the guard falls through to the code after it (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "                joined = true;\n",
+    replace: "                joined = false;\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "let elses that each break a loop"],
+  },
+
+  {
     "name": "let-else-return-not-guard",
     "breaks": "a `let .. else`'s `else` stays the `else` of an `if`, not a guard first, a second one's too, after a first",
     "file": "src/lower/mir/tidy/jumps/tried.rs",
-    "find": "                otherwise.last().is_some_and(ends) && written_first(otherwise, then) && fits_in_place(stmts, i, then)\n",
+    "find": "                written_first(otherwise, then) && fits_in_place(stmts, i, then)\n",
     "replace": "                false\n",
     "tests": ["test/jsx-react-dev.test.ts", "-t", "let-else binds is read"]
   },
@@ -14,7 +31,7 @@ export const mutations: Mutation[] = [
     name: "let-else-joined-return-not-guard",
     breaks: "a `let … else { return a; }` before a written `return`, whose two returns MIR joins, stays `if (x != null) { .. } return a;`, not a guard first (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "                    && let_else_exit(rest, then)\n",
+    find: "                    && let_else_exit(rest, then).is_some()\n",
     replace: "                    && false\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a let else before a return is a guard first"],
   },
@@ -22,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "let-else-joined-return-of-any-exit",
     breaks: "any exit written before the rest is a guard first, a `?`'s guard turned into `if (r.TAG !== \"Err\") { .. }` (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "                    && let_else_exit(rest, then)\n",
+    find: "                    && let_else_exit(rest, then).is_some()\n",
     replace: "",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a let else before a return is a guard first"],
   },

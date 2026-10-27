@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-else-guard-a-loop-head",
+    breaks: "a `let … else`'s guard first in a loop is the loop's test, `while ((parentA = a.return) != null)`, not the guard written (ADR 0879, amended)",
+    file: "src/prepare.rs",
+    find: "                && !test.facts.has(js::Known::Guard)\n",
+    replace: "",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "let elses that each break a loop"],
+  },
+  {
     name: "field-method-reads-this",
     breaks: "a field's closure that reads a class's `this` is a method, `read(k) { this.n }`, whose `this` is the object it's in",
     file: "src/prepare.rs",
