@@ -9,12 +9,27 @@ fn start(n: u32) -> u32 {
     n
 }
 
-fn main() {
-    let r = start(1)..start(11);
-    println!("{:?}", hint(r.clone().step_by(3)));
-    println!("{:?}", hint(r.clone().step_by(20)));
-    let mut stepped = r.step_by(4);
+fn stepped(by: usize) -> (usize, Option<usize>) {
+    hint((start(1)..start(11)).step_by(by))
+}
+
+fn after_first() -> (usize, Option<usize>) {
+    let mut stepped = (start(1)..start(11)).step_by(4);
     stepped.next();
-    println!("{:?}", hint(stepped));
-    println!("{:?}", hint((start(5)..start(5)).step_by(2)));
+    hint(stepped)
+}
+
+fn empty() -> (usize, Option<usize>) {
+    hint((start(5)..start(5)).step_by(2))
+}
+
+fn show(hint: (usize, Option<usize>)) {
+    println!("{hint:?}");
+}
+
+fn main() {
+    show(stepped(3));
+    show(stepped(20));
+    show(after_first());
+    show(empty());
 }
