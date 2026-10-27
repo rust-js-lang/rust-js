@@ -637,3 +637,76 @@ pub fn flush(a: &[usize], b: &[usize]) -> usize {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.flush([1, 2], [3])).toEqual(1 + 2 + 3 + 2 + 1 + 100 + 200);
 });
+
+// A copy of a module's variable set after it is the variable only where
+// each read of it is before each set (ADR 0277, amended, h4): one a closure
+// reads, when it's called, after the set, one read after the set, a store,
+// an `if` and a `switch` of it after the set, each stays a copy, which
+// holds what Rust read. What each gives is what native Rust prints.
+test("a copy of a module's variable read after the variable is set stays a copy", async () => {
+  const dir = fixture("shadow-read-after-set");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static COUNT: Cell<u32> = const { Cell::new(0) };
+    static SEEN: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn read_later() -> u32 {
+    COUNT.set(1);
+    let count = COUNT.get();
+    let read = move || count;
+    COUNT.set(2);
+    read() * 10 + COUNT.get()
+}
+
+pub fn read_after_set() -> u32 {
+    let mut total = 0;
+    COUNT.set(3);
+    while COUNT.get() < 6 {
+        let count = COUNT.get();
+        COUNT.set(count + 1);
+        total += count * 10 + COUNT.get();
+    }
+    total
+}
+
+pub fn set_twice() -> u32 {
+    COUNT.set(1);
+    let count = COUNT.get();
+    COUNT.set(count + 1);
+    COUNT.set(count + 5);
+    COUNT.get()
+}
+
+pub fn set_then_tested() -> bool {
+    SEEN.set(false);
+    COUNT.set(1);
+    let count = COUNT.get();
+    COUNT.set(count + 1);
+    if count == 1 {
+        SEEN.set(true);
+    }
+    SEEN.get()
+}
+
+pub fn set_then_matched() -> u32 {
+    COUNT.set(1);
+    let count = COUNT.get();
+    COUNT.set(count + 1);
+    match count {
+        1 => SEEN.set(true),
+        2 => COUNT.set(9),
+        _ => {}
+    }
+    COUNT.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const read = () => count$1;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.readLater(), lib.readAfterSet(), lib.setTwice(), lib.setThenTested(), lib.setThenMatched()]).toEqual([
+    12, 135, 6, true, 2,
+  ]);
+});

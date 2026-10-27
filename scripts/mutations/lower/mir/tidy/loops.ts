@@ -365,4 +365,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
     snapshots: true,
   },
+  {
+    name: "while-of-a-copy-untested",
+    breaks: "a loop that copies a thread-local first and tests the copy stays `while (true) { const hydrationParentFiber$1 = hydrationParentFiber; if (hydrationParentFiber$1 == null) { return; } .. }`, not React's `while (hydrationParentFiber != null)` (ADR 0860, amended)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        let copied = copy_tested_first(&mut stmts[i]);\n",
+    replace: "        let copied: Option<Vec<Stmt>> = None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_over_a_thread_local.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "while-of-a-copy-of-an-item",
+    breaks: "a loop that copies an array's item first and tests it reads the item twice, `while (xs[i] != null) { const x = xs[i]; .. }`, not `while ((x = xs[i]) != null)` (ADR 0860, amended)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if !named(value)\n",
+    replace: "    if false\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break is before the break"],
+  },
 ];

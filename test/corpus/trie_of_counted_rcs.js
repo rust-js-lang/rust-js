@@ -128,11 +128,10 @@ function insert(root, word) {
       $rcDrop(cur, dropNode);
       throw error;
     }
-    const entry$1 = entry;
     try {
       $orInsertWith(
-        entry$1._0[0],
-        entry$1._0[1],
+        entry._0[0],
+        entry._0[1],
         () => {
           let tmp;
           try {
@@ -186,7 +185,7 @@ function insert(root, word) {
       throw error;
     }
     try {
-      next = $rcClone($mutGet(entry$1._0[0], entry$1._0[1]).value);
+      next = $rcClone($mutGet(entry._0[0], entry._0[1]).value);
     } catch (error) {
       $unborrow(borrowMut);
       function dropNode(node) {

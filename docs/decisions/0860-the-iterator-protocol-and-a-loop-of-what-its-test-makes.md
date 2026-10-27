@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0102](0102-js-and-webapi.md)'s js crate with
 TypeScript's `Iterator<T>` and `IteratorResult<T>`, and
 [0310](0310-any-value-as-js-reads-it.md)'s `number::to_string` with its
-radix.
+radix. Amended: a loop's test of a copy of a variable is the variable's (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each binding is the
 call TypeScript types; the loop runs the same statements in the same
@@ -139,3 +139,36 @@ so the `let` is one name of the block it's in.
   (`scripts/mutations/prepare.ts`), `reclaim-assigned-unrenamed`
   (`prepare/reclaim.ts`) and `assigned-value-alone`
   (`to_oxc/expressions.ts`).
+
+## Amendment: a loop's test of a copy of a variable is the variable's (h4, 2026-10-27)
+
+A `while let` of a thread-local, React's popToNextHostParent's `while let
+Some(parent) = HYDRATION_PARENT_FIBER.with_borrow(Clone::clone)`, reached
+tidy's loop tests as `while (true) { const hydrationParentFiber$1 =
+hydrationParentFiber; if (hydrationParentFiber$1 == null) { return; } ..
+}`: the `if` that ends the loop wasn't the body's first, so the loop kept
+`while (true)`, and ADR 0277 couldn't read the copy in place till after,
+in preparation.
+
+**A body that copies a variable first and tests the copy tests the
+variable itself, the copy after it** (`tidy/loops.rs`,
+`copy_tested_first`), `if (hydrationParentFiber == null) { return; }
+const hydrationParentFiber$1 = hydrationParentFiber;`, so the loop's test
+is its own, `while (hydrationParentFiber != null)`, and preparation reads
+the copy in place where ADR 0277 says it may, `switch
+(hydrationParentFiber.tag)`. Where the test reads only variables, so
+nothing runs between it and the copy, which reads the variable as the
+test did; where the variable is one, or a property of one, a
+thread-local's cell's, not an array's item, whose loop is this
+decision's `while ((x = xs[i]) != null)`; and where what leaves the loop
+reads no copy, which the loop's block declares. Where the loop's test
+can't be made of it, the body is as it was.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value
+  tested.
+- Held by the corpus case `loop_over_a_thread_local.rs` and the mutations
+  `while-of-a-copy-untested` and `while-of-a-copy-of-an-item`
+  (`scripts/mutations/lower/mir/tidy/loops.ts`).
+- `while (hydrationParentFiber)`, upstream's test by truth, would need an
+  `Option<Rc<T>>` to be never falsy, as an `Option<&T>` is (ADR 0298):
+  that changes every such test of the ports, written up for the user.

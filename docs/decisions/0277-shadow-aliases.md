@@ -2,7 +2,7 @@
 
 Status: Accepted. Amended: another's variable only where nothing runs
 before it's read (below); and past a `try`'s start and a binding's call
-that runs nothing (below).
+that runs nothing (below); and set after its last read, in a loop too (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -156,3 +156,46 @@ callback that sets the variable, run as JS. Its mutations are
 `runs-nothing-runs-code` (`prepare/shadows.rs`),
 `binding-call-runs-nothing-unmarked` and `every-binding-call-runs-nothing`
 (`lower/binding_calls.rs`).
+
+## Amendment: set after its last read, in a loop too (h4, 2026-10-27)
+
+React's popToNextHostParent walks up from a fiber by a module variable,
+`hydrationParentFiber`, set at the end of each turn:
+
+```js
+while (hydrationParentFiber) {
+  switch (hydrationParentFiber.tag) {
+    case HostComponent: .. return;
+    default: hydrationParentFiber = hydrationParentFiber.return;
+  }
+}
+```
+
+The port's `while let Some(parent) = HYDRATION_PARENT_FIBER.with_borrow(
+Clone::clone)` copies it each turn, and the copy stayed one, `const
+hydrationParentFiber$1 = hydrationParentFiber;`, as the rule took any set
+of the variable after the copy, or anywhere in a loop around it, for one
+its reads might see. A set after the copy's last read can't be seen: what
+follows reads nothing of it, and a loop's next turn makes the copy anew,
+the copy a `const` of the loop's block.
+
+- **A copy whose variable is set after it is the variable where each of
+  its reads, in JS's order, is before each set** (`read_before_set`): a
+  branch's ways each their own, a `switch`'s cases one after another, as
+  one falls into the next, a store of the variable reading it first,
+  `hydrationParentFiber = hydrationParentFiber.parent`; and a loop in what
+  follows, which goes round, only where it reads it or sets it, not both.
+- **Not one a closure, a function or a handle's accessors read**
+  (`read_later`): each reads it when it's called, after the variable may
+  be set; a handle's `{ get value() { return list$1.next; } }`, kept on
+  the copy, is called later too.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value
+  read.
+- Held by the corpus case `loop_over_a_thread_local.rs`, React's loop;
+  `test/lowering-shadows.test.ts`, "a copy of a module's variable read
+  after the variable is set stays a copy", its stores and `if`s and
+  `switch`es after the set, a closure's read, and a loop that reads after
+  it sets, each run; and the mutations `shadow-set-after-never-read-in-place`,
+  `shadow-read-later-in-place`, `shadow-read-after-set-in-place`,
+  `shadow-stored-after-set-in-place`, `shadow-tested-after-set-in-place`
+  and `shadow-switched-after-set-in-place`.

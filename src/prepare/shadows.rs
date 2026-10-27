@@ -86,11 +86,91 @@ fn shadow(body: &[Stmt], own: &HashSet<String>) -> Option<(String, String)> {
             .filter(|(_, name)| *name == of)
             .map(|&(set, _)| set)
             .collect();
-        let kept = !in_closures.contains(&of) && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at));
-        let seen =
-            own.contains(&of) || after(body, &alias).is_some_and(|rest| read_before_code(rest, &alias, &mut false));
+        let rest = after(body, &alias);
+        // Set after it only where nothing reads it after: in a loop too,
+        // whose next turn makes it anew, React's popToNextHostParent's
+        // `hydrationParentFiber = hydrationParentFiber.return` (ADR 0277,
+        // amended).
+        let unread_after =
+            || rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false));
+        let kept = !in_closures.contains(&of)
+            && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after());
+        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false));
         (kept && seen).then_some((alias, of))
     })
+}
+
+/// Whether `stmts` read `alias` where they don't run: in a closure, or a
+/// function, or a handle's accessors, `{ get value() { return list$1.next;
+/// } }`, each of which reads it when it's called.
+fn read_later(stmts: &[Stmt], alias: &str) -> bool {
+    let mut later = false;
+    js::each_expr(stmts, &mut |e| {
+        later |= match &e.kind {
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_in(body, alias) > 0,
+            ExprKind::Function(function) => js::mentions_in(&function.body, alias) > 0,
+            ExprKind::Handle(place, _) => place.mentions_var(alias),
+            ExprKind::Pair(a, b) => a.mentions_var(alias) || b.mentions_var(alias),
+            _ => false,
+        };
+    });
+    js::each_list(stmts, &mut |list| {
+        later |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, alias) > 0));
+    });
+    later
+}
+
+/// Whether each read of `alias` in `stmts`, in JS's order, is before
+/// anything sets `of`: `set` whether something did already. A branch's way
+/// each its own; a `switch`'s cases one after another, as one falls into
+/// the next; a loop's, which goes round, only where it sets nothing or
+/// reads nothing. `of = .. alias ..` reads it first.
+fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> bool {
+    let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
+    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
+    for stmt in stmts {
+        let one = std::slice::from_ref(stmt);
+        let ok = match &stmt.kind {
+            StmtKind::If(test, a, b) => {
+                let first = !*set || !test.mentions_var(alias);
+                let mut other = *set;
+                let ok = read_before_set(a, alias, of, set)
+                    && read_before_set(b.as_deref().unwrap_or(&[]), alias, of, &mut other);
+                *set |= other;
+                first && ok
+            }
+            StmtKind::Switch {
+                discriminant,
+                cases,
+                default,
+            } => {
+                let first = !*set || !discriminant.mentions_var(alias);
+                first && js::case_lists(cases, default).all(|body| read_before_set(body, alias, of, set))
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                read_before_set(a, alias, of, set) && read_before_set(b, alias, of, set)
+            }
+            StmtKind::Labeled(_, body) => read_before_set(body, alias, of, set),
+            StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Var(v) if v == of)
+                    && !sets(&[StmtKind::Expr(value.clone()).at(js::Span::NONE)]) =>
+            {
+                let ok = !*set || !value.mentions_var(alias);
+                *set = true;
+                ok
+            }
+            _ => {
+                let (read, sets) = (reads(one), sets(one));
+                let ok = !read || !*set && !sets;
+                *set |= sets;
+                ok
+            }
+        };
+        if !ok {
+            return false;
+        }
+    }
+    true
 }
 
 /// The statements after `const alias = ..` in the list that has it.

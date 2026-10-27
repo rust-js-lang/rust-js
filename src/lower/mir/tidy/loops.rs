@@ -676,6 +676,9 @@ pub(super) fn while_tests(
             i += 1;
             continue;
         }
+        // Its test of a copy of a variable made first, the variable's
+        // (`copy_tested_first`), as it was where the loop isn't one of it.
+        let copied = copy_tested_first(&mut stmts[i]);
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
             && matches!(cond.kind, ExprKind::Bool(true))
             && let [first, rest @ ..] = body.as_slice()
@@ -718,10 +721,70 @@ pub(super) fn while_tests(
             .at(span);
             let n = exit.len();
             stmts.splice(i + 1..i + 1, exit);
-            i += n;
+            i += n + 1;
+            continue;
+        }
+        if let Some(original) = copied
+            && let StmtKind::While { body, .. } = &mut stmts[i].kind
+        {
+            *body = original;
         }
         i += 1;
     }
+}
+
+/// Of a `while (true)`, `stmt`, whose body copies a variable first and
+/// tests the copy, `const fiber$1 = fiber; if (fiber$1 == null) { exit }
+/// rest`: the test of the variable itself first, `if (fiber == null) {
+/// exit } const fiber$1 = fiber; rest`, so the loop's test is its own, as
+/// React's `while (hydrationParentFiber)` is (ADR 0860, amended). Where
+/// the test reads only variables, so nothing runs between it and the
+/// copy, which reads the variable as the test did; and the exit reads no
+/// copy, which the loop's block declares. Its body as it was, given back.
+fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
+    let StmtKind::While { cond, body, .. } = &mut stmt.kind else {
+        return None;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::Const(copy, value),
+            ..
+        },
+        Stmt {
+            kind: StmtKind::If(test, exit, None),
+            ..
+        },
+        ..,
+    ] = body.as_slice()
+    else {
+        return None;
+    };
+    // A variable, or a property of one, a thread-local's cell's, its
+    // module's variable once it's assembled; not an item of an array, which
+    // reads as `while ((item = items[i]) != null)` (`assigned_tests`).
+    fn named(e: &Expr) -> bool {
+        match &e.kind {
+            ExprKind::Var(_) | ExprKind::Symbol(_) => true,
+            ExprKind::Member(of, _) => named(of),
+            _ => false,
+        }
+    }
+    if !named(value)
+        || !value.reads_same()
+        || !matches!(cond.kind, ExprKind::Bool(true))
+        || !test.reads_only_vars()
+        || !test.mentions_var(copy)
+        || js::mentions_in(exit, copy) > 0
+    {
+        return None;
+    }
+    let tested = test.substitute(&|name| (name == copy).then(|| value.clone()))?;
+    let original = body.clone();
+    if let StmtKind::If(test, ..) = &mut body[1].kind {
+        *test = tested;
+    }
+    body.swap(0, 1);
+    Some(original)
 }
 
 /// A `while`'s test, `test`, of the tests `op` joins, `&&` of those it
