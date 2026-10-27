@@ -380,7 +380,7 @@ fn may_be_cell_shape_at<'tcx>(
         _ => match (&shape.of, super::analysis::head(tcx, ty)) {
             (Some(of), Some((head, args))) => {
                 let tail = super::analysis::unsized_in_place(tcx, ty);
-                *of == head_key(tcx, &head)
+                head_key(tcx, &head) == *of
                     && shape.args.len() == args.len()
                     && (shape.args.iter().zip(args).enumerate())
                         .all(|(i, (shape, arg))| may_be_cell_shape_at(tcx, (shape, arg), tail == Some(i)))

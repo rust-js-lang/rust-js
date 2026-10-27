@@ -84,15 +84,15 @@ function transform(s, withWord, boundary, options) {
         } else {
           mode = nextMode;
         }
-        continue;
-      }
-      if (!firstWord) {
-        f += boundary(options);
       } else {
-        firstWord = false;
+        if (!firstWord) {
+          f += boundary(options);
+        } else {
+          firstWord = false;
+        }
+        f += withWord($strSlice(word, init), options);
+        break;
       }
-      f += withWord($strSlice(word, init), options);
-      break;
     }
   }
   return f;

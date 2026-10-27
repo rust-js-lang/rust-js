@@ -464,27 +464,9 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut Vec<Stmt>, every
 /// no label, as `loops` say, not `'rows`, whose `continue 'rows` it wrote:
 /// each `continue l` of its own, not a loop's inside it, its `break`, which
 /// ends `l`'s turn as well, as Rust's `break` of a loop that ends
-/// another's does.
+/// another's does. So does one that ends a branch of an `if` that ends it,
+/// React's `if (..) { return true; } else { while (..) { .. } }` (ADR 0961).
 pub(in crate::lower::mir::tidy) fn outer_continues(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
-    fn broken(stmts: &mut [Stmt], looped: &str) {
-        for stmt in stmts {
-            match &mut stmt.kind {
-                StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
-                StmtKind::If(_, a, b) => {
-                    broken(a, looped);
-                    if let Some(b) = b {
-                        broken(b, looped);
-                    }
-                }
-                StmtKind::Labeled(_, body) => broken(body, looped),
-                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                    broken(a, looped);
-                    broken(b, looped);
-                }
-                _ => {}
-            }
-        }
-    }
     for stmt in stmts {
         let named = matches!(written_loop(loops, stmt.span), Some((_, _, Some(_))));
         if let StmtKind::While {
@@ -503,13 +485,48 @@ pub(in crate::lower::mir::tidy) fn outer_continues(stmts: &mut [Stmt], loops: &[
             ..
         } = &mut stmt.kind
             && !named
-            && let Some(
-                StmtKind::While { body: inner, .. }
-                | StmtKind::ForOf { body: inner, .. }
-                | StmtKind::For { body: inner, .. },
-            ) = body.last_mut().map(|s| &mut s.kind)
         {
-            broken(inner, label);
+            ending(body, label);
+        }
+    }
+}
+
+/// Each loop that ends `stmts`, or a branch of an `if` that ends them: its
+/// own `continue looped`, its `break` (`outer_continues`).
+fn ending(stmts: &mut [Stmt], looped: &str) {
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(
+            StmtKind::While { body: inner, .. }
+            | StmtKind::ForOf { body: inner, .. }
+            | StmtKind::For { body: inner, .. },
+        ) => outer_broken(inner, looped),
+        Some(StmtKind::If(_, a, b)) => {
+            ending(a, looped);
+            if let Some(b) = b {
+                ending(b, looped);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Each `continue looped` of `stmts`, not a loop's inside them, `break`.
+fn outer_broken(stmts: &mut [Stmt], looped: &str) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
+            StmtKind::If(_, a, b) => {
+                outer_broken(a, looped);
+                if let Some(b) = b {
+                    outer_broken(b, looped);
+                }
+            }
+            StmtKind::Labeled(_, body) => outer_broken(body, looped),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                outer_broken(a, looped);
+                outer_broken(b, looped);
+            }
+            _ => {}
         }
     }
 }

@@ -427,7 +427,11 @@ fn from_the_end(
         (false, Some(end)) => Expr::int(end - 1),
         (false, None) => Expr::bin(Op::Sub, range.end.clone(), Expr::int(1)),
     };
-    let test = Expr::bin(Op::Ge, Expr::var(&name), range.start.clone());
+    // Down to 1, `i > 0`, as a person writes it (ADR 0961).
+    let test = match range.start.as_int() {
+        Some(1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),
+        _ => Expr::bin(Op::Ge, Expr::var(&name), range.start.clone()),
+    };
     Some((name, start, test, body.to_vec()))
 }
 

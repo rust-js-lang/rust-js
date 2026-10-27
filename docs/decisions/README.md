@@ -745,6 +745,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0958 A chain of `js::strict_equals` tests of one subject is a `switch`](0958-a-chain-of-strict-equals-tests-is-a-switch.md)
 - [0959 `Rc::ptr_eq` of an `Rc<dyn Fn>` made of a closure made with it is `===`, uncounted](0959-ptr-eq-of-a-closure-made-with-its-rc.md)
 - [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md)
+- [0961 A loop that ends a branch of the body it ends leaves with no label](0961-a-loop-ending-a-branch-leaves-without-a-label.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

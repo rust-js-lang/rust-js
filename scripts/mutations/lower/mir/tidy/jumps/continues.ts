@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     name: "outer-continue-kept",
     breaks: "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
+    find: "            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
     snapshots: true,
@@ -232,5 +232,14 @@ export const mutations: Mutation[] = [
     find: "            && tests_continue(guards, before.span)\n        {\n            body.pop();\n",
     replace: "            && tests_continue(guards, before.span)\n        {\n",
     tests: keysIn,
+  },
+  {
+    name: "outer-continues-of-a-branch-unseen",
+    breaks: "a loop that ends a branch of an `if` that ends another's body leaves by `continue bb7`, a label, not as the `while (child != null)` React's test selectors write (ADR 0961)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        Some(StmtKind::If(_, a, b)) => {\n            ending(a, looped);\n",
+    replace: "        Some(StmtKind::If(_, a, b)) if false => {\n            ending(a, looped);\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
+    snapshots: true,
   },
 ];

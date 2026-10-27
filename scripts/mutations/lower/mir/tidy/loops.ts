@@ -356,4 +356,13 @@ export const mutations: Mutation[] = [
     replace: "            if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "arithmetic is a counting"],
   },
+  {
+    name: "reversed-range-to-one-at-least-one",
+    breaks: "`(1..n).rev()` is `for (let i = n - 1; i >= 1; i--)`, not the `i > 0` React's findBoundingRects writes (ADR 0961)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        Some(1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
+    replace: "        Some(-1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
+    snapshots: true,
+  },
 ];

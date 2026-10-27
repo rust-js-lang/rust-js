@@ -569,6 +569,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("innermost jumps", |b, _| {
                 js::statement_lists(b, &mut |s| innermost_jumps(s))
             }),
+            // And a `continue` those left where its loop's turn ends anyway,
+            // React's `if (i !== j) { ..; continue; }` that ends a `for`'s
+            // body (ADR 0961).
+            pass("tail continues", |b, h| {
+                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+            }),
             // Each `break` a loop that ends a block MIR made leaves it by,
             // once what's after each loop is placed: the loop's own, a
             // `loop` that ends an `if`'s branch, its `else` after it, as
