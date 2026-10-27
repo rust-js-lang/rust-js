@@ -56,21 +56,12 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   if (hint !== undefined) {
     it.hint = () => hint(iterator);
   }
-  // Its back and its length, a use site's, where they weren't given where
-  // it was made, of the value it steps (ADR 0542).
-  it.knowing = (back, size) => {
-    if (back !== undefined) it.back = () => step(back(iterator));
-    if (size !== undefined) it.len = () => size(iterator);
-  };
   return it;
 }
 
-// `it`, an explicit adapter (ADR 0542), stepped by a use site that knows its
-// source's back and length, `back` and `len`, functions of the value the
-// `$iterator` it steps steps, which that's given: what it steps from its
-// back as Rust's does. Or a compiled std iterator's struct (ADR 0561),
-// `$stdIterator`'s, given its own, and its compiled `rfold` and `nth_back`,
-// which pass the crate's own on (#224).
+// `it`, a compiled std iterator's struct (ADR 0561), `$stdIterator`'s,
+// given its back and length, a use site's, and its compiled `rfold` and
+// `nth_back`, which pass the crate's own on (#224).
 function $knowing(it, back, len, rfold, nthBack, tryRfold) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;

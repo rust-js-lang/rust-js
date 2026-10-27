@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
-    name: "knowing-installs-nothing",
-    breaks: "a use site's back and length aren't given the `$iterator` a held adapter steps",
-    file: "src/runtime/iterator.js",
-    find: "    if (back !== undefined) it.back = () => step(back(iterator));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
-  },
-  {
     name: "iterator-hint-ignored",
     breaks: "a JS iterator given the crate's `size_hint` doesn't answer `$sizeHint` with it",
     file: "src/runtime/iterator.js",
