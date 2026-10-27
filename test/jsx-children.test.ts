@@ -649,6 +649,20 @@ pub static DOUBLE: fn(u32) -> u32 = {
 pub fn doubled(n: u32) -> u32 {
     DOUBLE(n)
 }
+// Named in itself, it takes no name of the module's, where a function of
+// the module's is named alike.
+pub static WHISPER: fn(&str) -> String = {
+    fn whisper(s: &str) -> String {
+        s.to_lowercase()
+    }
+    whisper
+};
+fn whisper(s: &str) -> String {
+    format!("{s}...")
+}
+pub fn quiet(s: &str) -> String {
+    whisper(s)
+}
 pub fn Page() -> JSX::Element {
     jsx! { <main><Label text="hi" /><Shout text="up" /><Count n={2} /></main> }
 }
@@ -662,9 +676,11 @@ pub fn Page() -> JSX::Element {
   expect(jsx).toContain("export const Count = memo(function Count$1({ n }) {");
   expect(jsx).toContain("\nfunction fact(n) {");
   expect(jsx).toContain("\nfunction double(x, TAdd) {");
+  expect(jsx).toContain("export const WHISPER = function whisper(s) {");
+  expect(jsx).toContain("\nfunction whisper(s) {");
   const lib = await import(join(dir, "lib.jsx"));
-  expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.factOf(3), lib.doubled(4)])
-    .toEqual(["<main><b>hi</b><i>UP</i><b>2<b>1<b>0</b></b></b></main>", "Label", 6, 8]);
+  expect([renderToStaticMarkup(lib.Page()), lib.Label.type.name, lib.factOf(3), lib.doubled(4), lib.WHISPER("Hi"), lib.quiet("Hi")])
+    .toEqual(["<main><b>hi</b><i>UP</i><b>2<b>1<b>0</b></b></b></main>", "Label", 6, 8, "hi", "Hi..."]);
 });
 
 // ADR 0297: a closure a `let` names and only a hook's function is is written

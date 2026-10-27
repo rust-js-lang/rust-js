@@ -61,14 +61,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "closure-declared-shadow-kept",
-    breaks: "a closure's loop variable shadowed by its cast, `let arg: &JsObject = unsafe { js::cast(arg) };`, is `const arg$1 = arg;`, not `arg`",
-    file: "src/prepare/shadows.rs",
-    find: "                    own.extend(pattern.names().into_iter().map(str::to_string));\n",
-    replace: "",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a closure's loop variable shadowed by its own value"],
-  },
-  {
     name: "shadow-catch-read-before-its-block",
     breaks: "a copy of a module's variable read in a `catch`, `level$1 + 100`, is the variable, which the `try`'s call set before it threw (ADR 0277, amended)",
     file: "src/prepare/shadows.rs",

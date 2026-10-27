@@ -34,9 +34,10 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> HashSet<String> {
                 }
                 StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.clone()),
                 StmtKind::Function(function) => _ = own.insert(function.name.clone()),
-                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                    own.extend(pattern.names().into_iter().map(str::to_string));
-                }
+                // Not a pattern's names, a `for…of`'s or a destructuring's:
+                // a binding of one of them as it is, `let arg: &JsObject =
+                // cast(arg)`, is that name already, never `const arg$1 =
+                // arg;` (ADR 0853, amended).
                 _ => {}
             }
         }

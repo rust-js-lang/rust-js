@@ -225,16 +225,22 @@ pub fn keyed(map: &'static WeakMap<JsObject, f64>) -> impl Fn(&[Option<&'static 
         for &arg in arguments {
             if let Kind::Function(_) | Kind::Object(_) | Kind::Array(_) = js::classify(arg) {
                 let arg: &JsObject = unsafe { js::cast(arg) };
+                seen();
                 total += map.get(arg).unwrap_or(1.0);
             }
         }
         total
     }
 }
+
+fn seen() {
+    println!("seen");
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`      if (typeof arg === "function" || (typeof arg === "object" && arg !== null)) {
+        seen();
         total += map.get(arg) ?? 1;
       }`);
   expect(js).not.toContain("arg$1");

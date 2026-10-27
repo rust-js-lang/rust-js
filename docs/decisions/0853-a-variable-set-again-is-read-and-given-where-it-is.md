@@ -183,3 +183,15 @@ if (cacheNode.s === Terminated) {
   `scripts/mutations/lower/mir/tidy/stages.ts` (`given-last-unasked`,
   `filled-lazily-unasked`) and `scripts/mutations/prepare.ts`
   (`closure-declared-shadow-kept`).
+
+## Amendment: a pattern's names aren't asked
+
+A closure's loop variable shadowed by its cast, `let arg: &JsObject =
+unsafe { js::cast(arg) };`, was `const arg$1 = arg;`, which preparation
+made `arg` again as the closure's own name, a `for…of`'s pattern's. MIR
+gives such a binding the name it binds already: no `const x$1 = x;` of a
+`for…of`'s or a destructuring's name is made, of a cast, a deref
+coercion or a clone, in a closure or not, and no corpus case's shadow was
+decided by one, so `closure-declared-shadow-kept` survived every run.
+Shadows ask a pattern's names no more; the test of the cast keeps a call
+between it and its read, so a shadow made again would show as `arg$1`.
