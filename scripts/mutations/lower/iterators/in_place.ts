@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fuse-of-drops-elided",
+    breaks: "a `fuse()` stepped in place given its source's drop is elided with it, so what a `Vec` of items with a destructor didn't give is never dropped (ADR 0983)",
+    file: "src/lower/iterators/in_place.rs",
+    find: "        _ if fused && given.len() <= 3 && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
+    replace: "        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^owned_items_through_fuse.rs$"],
+  },
+  {
     name: "iter-eager-lent-root-kept",
     breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
     file: "src/lower/iterators/in_place.rs",
@@ -32,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "fuse-kept-in-place",
     breaks: "`fuse()` of a JS iterator stepped till it ends keeps its `iterator_fuse` call, which steps the same",
     file: "src/lower/iterators/in_place.rs",
-    find: "        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
+    find: "        _ if fused && given.len() <= 3 && given.first().is_some_and(is_js_iterator) => given[0].clone(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterator.rs$"],
     snapshots: true,

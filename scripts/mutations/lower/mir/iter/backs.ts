@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                    None => self.closing(receiver.clone(), held, span)?,\n",
     replace: "                    None => receiver.clone(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^owned_items_through_fuse.rs$"],
   },
   {
     name: "back-kept-closes-borrowed",

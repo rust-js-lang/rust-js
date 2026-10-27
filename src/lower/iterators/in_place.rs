@@ -48,7 +48,11 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
         Some("$knowing") if is_stepped_items(&given[0]) => given[0].clone(),
-        _ if fused && given.first().is_some_and(is_js_iterator) => given[0].clone(),
+        // A `fuse()` given no drops, its dictionary and its fact alone, the
+        // drops it doesn't use left off (ADR 0300): its source. One given
+        // its source's drop stays, which drops what it didn't give as it's
+        // closed (ADR 0983).
+        _ if fused && given.len() <= 3 && given.first().is_some_and(is_js_iterator) => given[0].clone(),
         _ => return,
     };
     *e = replacement;

@@ -11,6 +11,8 @@ is reached only at a leaf of addressable memory, and
 [0514](0514-a-peekable-of-what-has-a-destructor.md) and
 [0543](0543-a-held-peekable-keeps-what-it-peeked-at.md), whose `Peekable`
 is std's own now.
+Amended by [0983](0983-a-fuse-that-drops-its-source-stays.md): a `fuse()`
+stepped in place is left out only where it's given no drops.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): a std function's
 answer, its order of effects, its drops and its panics are Rust's, as its
