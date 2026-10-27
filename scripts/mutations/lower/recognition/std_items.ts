@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "zip-clone-uncompiled",
+    breaks: "a held zip's `clone()` isn't std's compiled `Zip::clone`: the std package isn't what its catalog makes, and with std's structs alone it's refused (ADR 0975)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Zip\", Some(\"Clone\"), \"clone\"),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "zip-by-index-pure",
     breaks: "a zip by index ignores whether its first side runs code, so a slice's plain zip, which no one can tell apart, is `$trustedZip` too, noisier (ADR 0973)",
     file: "src/lower/recognition/std_items.rs",

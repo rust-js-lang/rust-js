@@ -59,6 +59,7 @@ const few = [
   "copied_default_own_params.rs",
   "result_given_as_items.rs",
   "range_steps_anywhere.rs",
+  "cloned_chains_and_cycles.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -68,7 +69,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
-  "cloned_chains_and_cycles.rs": "throws: a zip cloned apart clones its part, std's `Chain` here, as its maker made it, `$clone`",
 };
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {

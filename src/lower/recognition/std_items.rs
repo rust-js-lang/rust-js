@@ -379,6 +379,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Zip", Some("Iterator"), "fold"),
     ("Zip", Some("DoubleEndedIterator"), "next_back"),
     ("Zip", Some("Iterator"), "__iterator_get_unchecked"),
+    ("Zip", Some("Clone"), "clone"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and

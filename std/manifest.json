@@ -8639,6 +8639,52 @@
         ]
       },
       {
+        "key": "608f92abc48d28dab2966e9c67d81140",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "zipClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da32a135fccf026708",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "zipClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da6a09b3eefc2db1b3",
         "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -11742,6 +11788,7 @@
       "608f92abc48d28dab1158ebefa322c0f",
       "608f92abc48d28dab1fea28ef5e5aa1a",
       "608f92abc48d28dab1ffa93dff469a2",
+      "608f92abc48d28dab2966e9c67d81140",
       "608f92abc48d28dab3289fdfaa62dae8",
       "608f92abc48d28dab3cebdf684212611",
       "608f92abc48d28dab7e2991507a3c394",
@@ -12034,6 +12081,7 @@
         "zipIterator_fold",
         "zipDoubleEndedIterator_nextBack",
         "zipIterator___iteratorGetUnchecked",
+        "zipClone_clone",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -12138,7 +12186,8 @@
         "takeIDebug",
         "stepByClone",
         "chainClone",
-        "chainABDebug"
+        "chainABDebug",
+        "zipClone"
       ],
       "links": [],
       "type_links": []
@@ -12147,7 +12196,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "a3ebae15b8a8a008"
+      "hash": "1fe0e5e95580eb32"
     },
     {
       "file": "iter.js.map",

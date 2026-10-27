@@ -420,6 +420,7 @@ const $takeIDebug = new WeakMap();
 const $stepByClone = new WeakMap();
 const $chainClone = new WeakMap();
 const $chainABDebug = new WeakMap();
+const $zipClone = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   const peeked = peekable.peeked;
@@ -5630,6 +5631,13 @@ export function zipIterator___iteratorGetUnchecked(
   );
 }
 
+export function zipClone_clone(zip, AClone, BClone) {
+  return $stdIterator(
+    { a: AClone.clone(zip.a), b: BClone.clone(zip.b), index: zip.index, len$: zip.len$ },
+    zip.$steps,
+  );
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -9217,6 +9225,12 @@ export function chainClone(AClone, BClone) {
 export function chainABDebug(ADebug, BDebug) {
   return $traitImpl($chainABDebug, [ADebug, BDebug], () => ({
     fmt: (arg0, arg1) => chainABDebug_fmt(arg0, arg1, ADebug, BDebug),
+  }));
+}
+
+export function zipClone(AClone, BClone) {
+  return $traitImpl($zipClone, [AClone, BClone], () => ({
+    clone: (arg0) => zipClone_clone(arg0, AClone, BClone),
   }));
 }
 //# sourceMappingURL=iter.js.map

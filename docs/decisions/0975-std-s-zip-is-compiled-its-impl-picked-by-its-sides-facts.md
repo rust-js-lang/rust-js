@@ -88,7 +88,10 @@ std's `zip`, and `TrustedRandomAccessNoCoerce::size`.
 ## Consequences
 
 `zip_from_back` and `result_given_as_items` (ADR 0976) run as Rust does
-with std's structs alone: `differs` is down to 2. A zip made and
+with std's structs alone. With its derived `clone` compiled too,
+`cloned_chains_and_cycles` does, and with ADR 0977's `evidence_paths`,
+the iterator forms' `differs` is empty: every corpus case runs as Rust
+does with std's structs alone. A zip made and
 consumed in place is still the recognizers' `$lazyZip` in either build
 (ADR 0871). So #380, a zip whose `next` and `fold` differ in std itself,
 waits on the in-place chain being std's structs, phase 4.
@@ -105,3 +108,4 @@ both builds. The mutations are:
 - `held-facts-unreduced`
 - `given-reader-a-step`
 - `struct-steps-own-params-unfilled`
+- `zip-clone-uncompiled`
