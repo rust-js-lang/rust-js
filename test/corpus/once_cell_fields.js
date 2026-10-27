@@ -14,6 +14,7 @@ function ioInfoDebug_fmt(ioInfo) {
 function lazy(dev) {
   const payload = {
     status: 0,
+    ioInfo: undefined,
   };
   const lazy = {
     payload,
@@ -124,7 +125,12 @@ function main() {
   );
   console.log(`${$eq(copy, flags)} ${$eq(flags, {})}`);
 
-  const owned = {};
+  const owned = {
+    seen: undefined,
+    unit: undefined,
+    maybe: undefined,
+    label: undefined,
+  };
   owned.seen = 1;
   const value$1 = { TAG: "Ok" };
   console.log(`${value$1.TAG === "Ok" ? "Ok(())" : `Err(${value$1._0})`}`);
@@ -168,6 +174,7 @@ function main() {
 function drops() {
   const held = {
     name: "held",
+    loud: undefined,
   };
   held.loud = ["first"];
   const set = { TAG: "Ok" };
@@ -184,6 +191,7 @@ function drops() {
     console.log(`${held.name} ${again.TAG === "Err"}`);
     const empty = {
       name: "empty",
+      loud: undefined,
     };
     console.log(`${empty.name}`);
     try {

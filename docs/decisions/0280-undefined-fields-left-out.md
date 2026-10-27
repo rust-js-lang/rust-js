@@ -2,7 +2,8 @@
 
 Status: Accepted. Amended: a `None` field a comment is written after on
 its line keeps its key, `undefined`, the comment's place; a comment before a
-field changes no key, but where no key follows it.
+field changes no key, but where no key follows it; a field that holds a
+cell keeps its key where it's made `None` (the user's decision, 2026-10-27).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -171,3 +172,42 @@ ReactElement's and the cache context's shapes and a comment before a last
 key and its comment"; and the mutations `commented-field-leading-unread`,
 `commented-field-leading-as-on` (`lower/aggregates.ts`),
 `led-none-always-kept` and `led-none-last-left-out` (`prepare/undefined_keys.ts`).
+
+## Amendment: a field that holds a cell keeps its key (2026-10-27)
+
+The user's decision. React's `createEffectInstance` writes `{ destroy:
+undefined }`, a key the effect sets later, so every instance has its
+shape from the start:
+
+```rust
+pub struct EffectInstance {
+    pub destroy: Cell<Option<&'static Unknown>>,
+}
+
+pub fn create_effect_instance() -> EffectInstance {
+    EffectInstance { destroy: Cell::new(None) }
+}
+```
+
+It was `{}`: a `None` is no key, wherever it is.
+
+**A field that holds a cell, the property it holds (`property_cell`: a
+`Cell`'s, a struct's `RefCell`'s by its declaration, a `OnceCell`'s),
+keeps its key where it's made `None`, `destroy: undefined`.** A cell is
+there to be set later; a plain `Option` field isn't, and its `None` is
+still left out. A nullable and optional cell field, `#[rust_js::nullable,
+rust_js::optional]`, is absent until it's set, as ADR 0810 says, so
+upstream's fields set only under a flag, `FiberNode`'s `actualDuration`
+and `_debugOwner`, whose Flow types are optional too, are written so.
+Case A, as before: what reads the field reads `undefined` either way.
+
+- **One list of kept keys**: the struct literal's lowering (`aggregates.rs`)
+  gives its object's `ObjectLayout::kept`, the keys a comment is written
+  on and those of cell fields, which `undefined_keys::left_out` keeps.
+- About 15 corpus outputs re-blessed, `cache: undefined` of a
+  `OnceCell`, `next: undefined` of a `Cell`; the guide's `FiberNode`
+  marks its flag-only fields optional; the error on `optional` of a field
+  that isn't nullable says a cell's keeps its key.
+- Held by `test/lowering-field-cells.test.ts`'s "a cell field made None
+  keeps its key"; mutations `kept-none-left-out` and
+  `cell-fields-unknown`.

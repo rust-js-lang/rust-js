@@ -17,6 +17,7 @@ function addType(transition, ty) {
 
 function nested(prev) {
   const current = {
+    types: undefined,
     seen: new Set(),
   };
   current.types = prev?.types;

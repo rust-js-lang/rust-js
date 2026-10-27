@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "commented-field-leading-as-on",
     breaks: "a comment on lines of its own before a field keeps its `None`'s key, so React's createContext writes `_currentRenderer: undefined` upstream leaves out",
     file: "src/lower/aggregates.rs",
-    find: "                commented = keys(on);\n",
-    replace: "                commented = keys(on.into_iter().chain(before.iter().copied()).collect());\n",
+    find: "                kept = keys(on);\n",
+    replace: "                kept = keys(on.into_iter().chain(before.iter().copied()).collect());\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
   },
   {
@@ -257,5 +257,21 @@ export const mutations: Mutation[] = [
     find: "        if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+  },
+  {
+    name: "cell-fields-unknown",
+    breaks: "no field is known to hold a cell where its struct literal is made, so `destroy: undefined` is left out, `{}`",
+    file: "src/lower/aggregates.rs",
+    find: "                kept.extend(cells);\n",
+    replace: "",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "a cell field made None keeps its key"],
+  },
+  {
+    name: "commented-none-left-out",
+    breaks: "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
+    file: "src/lower/aggregates.rs",
+    find: "                kept = keys(on);\n",
+    replace: "",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
   },
 ];

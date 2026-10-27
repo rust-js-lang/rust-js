@@ -11,6 +11,7 @@ function fiber(name) {
     name,
     index: $byteLen(name),
     child: null,
+    sibling: undefined,
   };
 }
 

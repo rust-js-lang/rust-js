@@ -230,10 +230,11 @@ pub fn current_state() -> Option<&'static Unknown> {
   expect(out).toContain("  fiber.debugHookTypes = null;\n");
   expect(out).not.toContain("?? null;\n");
   const lib = await import(join(dir, "lib.js"));
-  const keys = ["memoizedState", "memoizedProps", "debugStack", "debugHookTypes", "name"];
-  expect(Object.entries(lib.EMPTY)).toEqual(keys.filter((k) => k !== "debugHookTypes").map((k) => [k, null]));
+  // A cell's field made `None` keeps its key, `undefined` (ADR 0280, amended).
+  const nulls = { memoizedState: null, memoizedProps: null, updateQueue: undefined, debugStack: null, debugHookTypes: undefined, name: null };
+  expect(Object.entries(lib.EMPTY)).toEqual(Object.entries(nulls));
   const fiber = lib.createFiber();
-  expect(Object.entries(fiber)).toEqual(keys.map((k) => [k, null]));
+  expect(Object.entries(fiber)).toEqual(Object.entries({ ...nulls, debugHookTypes: null }));
   expect([lib.hasState(fiber), lib.named(fiber), lib.hookTypes(fiber), lib.currentState()]).toEqual([false, false, 0, null]);
   // What JS stores is kept as it is: `undefined` isn't made `null`.
   lib.setState(fiber, undefined);

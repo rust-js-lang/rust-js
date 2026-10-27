@@ -31,6 +31,7 @@ function cloned(first, captured) {
     while (true) {
       const clone = {
         lane: (update.lane * 10) >>> 0,
+        next: undefined,
       };
       if (newLast == null) {
         newFirst = clone;

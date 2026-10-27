@@ -308,3 +308,39 @@ pub fn clone_update(update: &Update) -> Update {
   const clone = lib.cloneUpdate(update as never);
   expect([clone, clone === update]).toEqual([update, false]);
 });
+
+// ADR 0280, amended (the user's decision, 2026-10-27): a field that holds a
+// cell, set later, keeps its key where it's made `None`, `destroy:
+// undefined`, as React's createEffectInstance writes it, the object's shape
+// whole from its start; a plain `None` field is left out as before.
+test("a cell field made None keeps its key", async () => {
+  const dir = fixture("cell-field-undefined");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct EffectInstance {
+    pub destroy: Cell<Option<u32>>,
+    pub name: Option<u32>,
+}
+
+pub fn create_effect_instance() -> EffectInstance {
+    EffectInstance {
+        destroy: Cell::new(None),
+        name: None,
+    }
+}
+
+pub fn destroyed(instance: &EffectInstance) -> u32 {
+    instance.destroy.set(Some(3));
+    instance.destroy.get().unwrap_or(0) + instance.name.unwrap_or(1)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return {\n    destroy: undefined,\n  };\n");
+  const lib = await import(join(dir, "lib.js"));
+  const instance = lib.createEffectInstance();
+  expect([Object.keys(instance), lib.destroyed(instance)]).toEqual([["destroy"], 4]);
+});

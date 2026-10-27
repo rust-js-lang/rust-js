@@ -31,18 +31,18 @@ test("a None field a comment is written on keeps its key and its comment", async
 
 pub struct CacheNode {
     pub s: Cell<u32>,
-    pub v: Cell<Option<u32>>,
+    pub v: Option<u32>,
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub o: Cell<Option<u32>>,
-    pub p: Cell<Option<u32>>,
+    pub p: Option<u32>,
 }
 
 pub fn create_cache_node() -> CacheNode {
     CacheNode {
         s: Cell::new(0), // status
-        v: Cell::new(None), // value, either the cached result or an error, depending on s
+        v: None, // value, either the cached result or an error, depending on s
         o: Cell::new(None), // object cache
-        p: Cell::new(None),
+        p: None,
     }
 }
 `);
@@ -68,9 +68,9 @@ test("a comment before a field changes no key but where it has no other place", 
 
 pub struct Context {
     #[cfg_attr(rust_js, rust_js::name = "_currentValue")]
-    pub current_value: Cell<Option<u32>>,
+    pub current_value: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "_currentValue2")]
-    pub current_value2: Cell<Option<u32>>,
+    pub current_value2: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "_threadCount")]
     pub thread_count: Cell<f64>,
     #[cfg_attr(rust_js, rust_js::name = "Provider")]
@@ -89,8 +89,8 @@ pub struct Context {
 pub fn create_context() -> Context {
     Context {
         // We'll initialize these at the root.
-        current_value: Cell::new(None),
-        current_value2: Cell::new(None),
+        current_value: None,
+        current_value2: None,
         thread_count: Cell::new(0.0),
         // These are circular
         provider: Cell::new(1),
@@ -107,7 +107,7 @@ pub struct Element {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub r#ref: Option<u32>,
     #[cfg_attr(rust_js, rust_js::name = "_store")]
-    pub store: Cell<Option<u32>>, // 0: not validated, 1: validated, 2: force fail
+    pub store: Option<u32>, // 0: not validated, 1: validated, 2: force fail
 }
 
 pub fn element(props: u32, owner: u32) -> Element {
@@ -116,7 +116,7 @@ pub fn element(props: u32, owner: u32) -> Element {
         // Record the component responsible for creating this element.
         owner,
         r#ref: None,
-        store: Cell::new(None),
+        store: None,
     }
 }
 
@@ -126,7 +126,7 @@ pub fn last(props: u32) -> Element {
         owner: 0,
         r#ref: None,
         // Set where it's validated.
-        store: Cell::new(None),
+        store: None,
     }
 }
 `);

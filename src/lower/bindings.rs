@@ -140,9 +140,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
-                // An `Option` field's `None` is left out already (ADRs 0280, 0810).
+                // An `Option` field's `None` is left out already (ADRs 0280,
+                // 0810); a cell's keeps its key, `undefined`, absent until
+                // it's set only where it's nullable and optional (ADR 0280,
+                // amended).
                 if is_optional(tcx, field) && !is_nullable(tcx, field) {
-                    let message = "rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
+                    let message = "rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already, and a cell's, `Cell<Option<T>>`, keeps its key, `undefined`, unless it's nullable and optional";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }

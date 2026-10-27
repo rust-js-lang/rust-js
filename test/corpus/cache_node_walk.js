@@ -10,6 +10,8 @@ function createNode() {
   return {
     s: "Unterminated",
     v: 0,
+    o: undefined,
+    next: undefined,
   };
 }
 

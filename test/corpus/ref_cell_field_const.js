@@ -5,6 +5,7 @@ export function entry() {
 }
 
 const EMPTY = {
+  items: undefined,
   count: 0,
 };
 
@@ -19,7 +20,7 @@ function filled(slot) {
 
 function main() {
   console.log(`${undefined != null} 0`);
-  console.log(`${filled({ count: 0 })} ${filled({ items: 4, count: 1 })}`);
+  console.log(`${filled({ items: undefined, count: 0 })} ${filled({ items: 4, count: 1 })}`);
   const slot = { items: 4, count: 1 };
   slot.items = undefined;
   const value = { items: 4, count: 1 };

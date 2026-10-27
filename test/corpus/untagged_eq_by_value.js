@@ -24,7 +24,14 @@ function main() {
   const text = "a";
   const optimistic = 7;
   console.log(`${text === "a"} ${text === "b"} ${optimistic === 7} ${optimistic === text}`);
-  const fibers = [{}, { key: text }, { key: "a" }, { key: optimistic }, {}, { key: "7" }];
+  const fibers = [
+    { key: undefined },
+    { key: text },
+    { key: "a" },
+    { key: optimistic },
+    { key: undefined },
+    { key: "7" },
+  ];
   for (const a of fibers) {
     const row = fibers.map((b) => sameKey(a, b));
     console.log(`[${row.join(", ")}]`);

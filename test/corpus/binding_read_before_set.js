@@ -7,6 +7,7 @@ export function entry() {
 function node(value) {
   return {
     value,
+    next: undefined,
   };
 }
 

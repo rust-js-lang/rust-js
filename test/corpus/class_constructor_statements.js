@@ -13,6 +13,7 @@ function bump(count) {
 export function Fiber(tag, profiled) {
   const fiber = this;
   this.tag = tag;
+  this.actualDuration = undefined;
   this.reads = 0;
   if (tag === 0) {
     return;

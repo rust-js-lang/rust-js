@@ -9,14 +9,16 @@ use super::{ExprKind, ObjectLayout, Prop};
 /// comment is written after on its line, the comment's place (amended); one
 /// a comment is before only where no key is kept after it, before which the
 /// comment is otherwise (amended again): a comment changes which keys are
-/// written only where it has no other place.
+/// written only where it has no other place. Nor a field that holds a
+/// cell, set later, `destroy: undefined`, the object's shape whole from its
+/// start (amended, the user's decision, 2026-10-27).
 pub fn left_out(props: &mut Vec<Prop>, layout: &ObjectLayout) {
     if props.iter().any(|p| matches!(p, Prop::Spread(_))) {
         return;
     }
     let undefined = |p: &Prop| {
         matches!(p, Prop::Field(key, value)
-            if matches!(value.kind, ExprKind::Undefined) && !layout.commented.contains(key))
+            if matches!(value.kind, ExprKind::Undefined) && !layout.kept.contains(key))
     };
     let mut kept_after = false;
     let kept: Vec<bool> = (props.iter().rev())

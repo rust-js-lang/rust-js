@@ -346,9 +346,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => Shape::Object(self.variant_fields(variant, args)),
             None => self.shape(ty),
         };
-        // The keys a comment is written on, whose `undefined`, a `None`'s,
-        // is kept: the comment's place (ADR 0280, amended).
-        let (mut commented, mut led) = (Vec::new(), Vec::new());
+        // The keys whose `undefined`, a `None`'s, is kept: one a comment is
+        // written on, the comment's place (ADR 0280, amended).
+        let (mut kept, mut led) = (Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
@@ -358,8 +358,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
                         .collect()
                 };
-                commented = keys(on);
+                kept = keys(on);
                 led = keys(before);
+                // A field that holds a cell, set later, keeps its key where
+                // it's made `None`, but one declared optional, absent until
+                // it's set (ADR 0280, amended).
+                let cells = (names.iter().zip(&variant.fields))
+                    .filter(|&(&(_, field_ty), field)| self.property_cell(Some(field), field_ty).is_some())
+                    .filter(|(_, field)| !bindings::is_optional(self.tcx, field))
+                    .map(|((name, _), _)| name.clone());
+                kept.extend(cells);
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
                     .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
                     .collect();
@@ -387,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
             *layout = js::ObjectLayout {
-                commented,
+                kept,
                 led,
                 ..self.object_layout(&adt_def, variant_index, span)
             };

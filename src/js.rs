@@ -686,10 +686,12 @@ impl TemplateLayout {
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct ObjectLayout {
     pub lines: bool,
-    /// The keys a comment is written on in its literal, `v: Cell::new(None),
-    /// // why`, whose `undefined` is kept, `v: undefined, // why`: the
-    /// comment's place (ADR 0280, amended).
-    pub commented: Vec<String>,
+    /// The keys whose `undefined` is kept: one a comment is written on in
+    /// its literal, `v: None, // why`, `v: undefined, // why`, the comment's
+    /// place (ADR 0280, amended); and one of a field that holds a cell, set
+    /// later, `destroy: undefined`, the object's shape whole from its start
+    /// (amended, the user's decision, 2026-10-27).
+    pub kept: Vec<String>,
     /// The keys a comment on lines of their own is before: whose `undefined`
     /// is left out as any is, the comment before the next key kept, and
     /// kept only where no key after it is, the comment's place then (ADR

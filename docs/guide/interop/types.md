@@ -912,7 +912,8 @@ export function ratio(a, b) {
   marks are the two attributes: `nullable` the `| null`, `optional` the
   `?`. Read, absent, `null` or a value, it's its `Option`. Its `.d.ts` is a
   nullable field's. On a field that isn't nullable it's an error, as a
-  plain `Option` field's `None` is left out already
+  plain `Option` field's `None` is left out already, and a cell's keeps
+  its key
   ([ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)):
 
   ```
@@ -1360,7 +1361,12 @@ export function shared() {
 ```
 
 - **A `Cell` in a field is the property it holds**: `counter.hits`, read and
-  set in place ([ADR 0288](../../decisions/0288-cell-fields.md)).
+  set in place ([ADR 0288](../../decisions/0288-cell-fields.md)). Made
+  `None`, a cell's field keeps its key, `destroy: undefined`, as it's set
+  later: the object's shape is whole from its start, where a plain
+  `Option` field's `None` is left out; a nullable and optional one is
+  absent until it's set
+  ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 - **A `RefCell` in a struct's field is the value it holds**, by the
   field's declaration, as JS that makes the object writes it: whatever
   else has its type, a generic struct's `RefCell<T>`, a thread-local, and
@@ -1510,6 +1516,7 @@ pub fn rename(payload: &Payload, name: &str) -> bool {
 export function payload(dev) {
   const payload = {
     status: 0,
+    info: undefined,
   };
   if (dev) {
     const info = {

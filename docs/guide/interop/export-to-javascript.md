@@ -778,8 +778,10 @@ thread_local! {
 pub struct Fiber {
     pub tag: Cell<u8>,
     pub memoized_state: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
     pub actual_duration: Cell<Option<f64>>,
     #[cfg_attr(rust_js, rust_js::name = "_debugOwner")]
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
     pub debug_owner: Cell<Option<&'static Unknown>>,
 }
 
@@ -835,8 +837,8 @@ export declare class FiberNode {
     constructor(tag: number, dev: boolean);
     tag: number;
     memoizedState: unknown | null | undefined;
-    actualDuration: number | null | undefined;
-    _debugOwner: unknown | null | undefined;
+    actualDuration?: number | null | undefined;
+    _debugOwner?: unknown | null | undefined;
 }
 
 export function createFiber(tag: number, dev: boolean): FiberNode;

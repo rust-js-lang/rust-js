@@ -43,7 +43,9 @@ function main() {
       {
         held: ["e"],
       },
-      {},
+      {
+        held: undefined,
+      },
     ];
     console.log(`slots ${slots.length}`);
     for (const item of slots) {

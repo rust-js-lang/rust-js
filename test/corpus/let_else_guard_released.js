@@ -20,8 +20,8 @@ function link(update, next) {
 }
 
 function main() {
-  const a = { lane: 1 };
-  const b = { lane: 2 };
+  const a = { lane: 1, next: undefined };
+  const b = { lane: 2, next: undefined };
   link(a, b);
   console.log(`${last(a).lane} ${last(b).lane}`);
 

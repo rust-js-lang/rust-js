@@ -10,6 +10,9 @@ function fiber(name, tag) {
   return {
     name,
     tag,
+    return: undefined,
+    sibling: undefined,
+    child: undefined,
   };
 }
 

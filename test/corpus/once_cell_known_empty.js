@@ -9,6 +9,7 @@ export function entry() {
 function node(id) {
   return {
     id,
+    cache: undefined,
   };
 }
 
@@ -39,6 +40,7 @@ function main() {
   const a = node(1);
   const fresh = {
     id: 2,
+    cache: undefined,
   };
   fresh.cache = "first";
   let set = { TAG: "Ok" };
@@ -53,6 +55,7 @@ function main() {
   // Given to a call that sets it.
   const given = {
     id: 3,
+    cache: undefined,
   };
   fill(given);
   const unset$1 = given.cache === undefined;
@@ -65,6 +68,7 @@ function main() {
   // Through a clone of its `Rc`, held in a struct.
   const shared = {
     id: 4,
+    cache: undefined,
   };
   const holder = {
     node: shared,
@@ -80,6 +84,7 @@ function main() {
   // A clone kept that nothing uses: still empty.
   const kept = {
     id: 5,
+    cache: undefined,
   };
   const other = {
     node: kept,
@@ -92,6 +97,7 @@ function main() {
   // A holder that runs nothing as it's dropped, gone before it's set.
   const dropped = {
     id: 12,
+    cache: undefined,
   };
   dropped.cache = "mine";
   set = { TAG: "Ok" };
@@ -100,6 +106,7 @@ function main() {
   // Set through a clone of its `Rc` that a struct holds: set.
   const through = {
     id: 13,
+    cache: undefined,
   };
   const via = {
     node: through,
@@ -118,6 +125,7 @@ function main() {
   const deep = {
     node: {
       id: 14,
+      cache: undefined,
     },
   };
   deep.node.cache = "deep";
@@ -127,6 +135,7 @@ function main() {
   // Through a raw pointer to a struct that holds it.
   const raw = {
     id: 15,
+    cache: undefined,
   };
   const pointed = {
     node: raw,
@@ -144,6 +153,7 @@ function main() {
   // A closure that sets it, called first.
   const closed = {
     id: 6,
+    cache: undefined,
   };
   const setIt = () => fill(closed);
   setIt();
@@ -158,6 +168,7 @@ function main() {
   // its loop breaks.
   const guarded = {
     id: 7,
+    cache: undefined,
   };
   let _guard = {
     node: guarded,
@@ -173,6 +184,7 @@ function main() {
   show("guarded", guarded, set);
   const broken = {
     id: 8,
+    cache: undefined,
   };
   _guard = {
     node: broken,
@@ -205,10 +217,12 @@ function main() {
   // only the first.
   const outer = {
     id: 10,
+    cache: undefined,
   };
   for (let i = 0; i < 3; i++) {
     const inner = {
       id: i,
+      cache: undefined,
     };
     inner.cache = `inner ${i}`;
     const cache = inner.cache;
@@ -226,6 +240,7 @@ function main() {
   // What it's set to is made first, whether it's set or not.
   const effects = {
     id: 11,
+    cache: undefined,
   };
   effects.cache = made("one");
   const value$1 = made("two");

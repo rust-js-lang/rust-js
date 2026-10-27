@@ -19,12 +19,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
   },
   {
-    name: "commented-none-left-out",
-    breaks: "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
+    name: "kept-none-left-out",
+    breaks: "a `None` field whose key its object keeps, a comment's or a cell's, is left out, `v: undefined, // why` and `destroy: undefined` gone",
     file: "src/js/undefined_keys.rs",
-    find: " && !layout.commented.contains(key))",
+    find: " && !layout.kept.contains(key))",
     replace: ")",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+    tests: ["test/lowering-field-cells.test.ts", "-t", "a cell field made None keeps its key"],
   },
   {
     name: "undefined-fields-kept",

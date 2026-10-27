@@ -774,15 +774,15 @@ use std::cell::Cell;
 
 pub struct CacheNode {
     pub status: Cell<u32>,
-    pub value: Cell<Option<f64>>,
-    pub next: Cell<Option<f64>>,
+    pub value: Option<f64>,
+    pub next: Option<f64>,
 }
 
 pub fn create_cache_node() -> CacheNode {
     CacheNode {
         status: Cell::new(0), // whether it returned or threw
-        value: Cell::new(None), // what it returned, or threw
-        next: Cell::new(None),
+        value: None, // what it returned, or threw
+        next: None,
     }
 }
 
