@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "key-borrow-counts-its-type",
+    breaks: "a thread-local's borrow held while its hooks run counts every cell of its type, so a controller's listeners, which no hook can borrow while it's held, are checked (ADR 0960, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                let own = (found.key).is_some_and(|key| self.krate.cell_borrows.reached_only_by_key(key));\n",
+    replace: "                let own = false;\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+  },
+  {
+    name: "key-counted-unasked",
+    breaks: "a thread-local's own cell, counted only by its key's borrow held while its hooks run, is quiet where its key writes it, so a hook's `HOOKS.set(..)` doesn't panic as Rust's does (ADR 0960, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            || (of_key && key_counted())\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+  },
+  {
     name: "untagged-boxed-ref-cell-unrefused",
     breaks: "an untagged enum's variant of a `RefCell<Vec<f64>>` the crate has as `{ value }` is tested `Array.isArray`, which it never is (ADR 0214, amended)",
     file: "src/lower/drops/ref_cells.rs",

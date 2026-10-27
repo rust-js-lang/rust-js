@@ -25,6 +25,11 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// library that says so (ADR 0906).
     library_quiet: HashMap<String, String>,
     counted: HashSet<Ty<'tcx>>,
+    /// Each counted only as a thread-local's own cell, by its key, that no
+    /// `&RefCell` can be (`CellBorrows::reached_only_by_key`): its key's
+    /// own writes count it, not a borrow of any cell of its type (ADR
+    /// 0960, amended).
+    key_counted: HashSet<Ty<'tcx>>,
     /// Each the crate's bodies borrow.
     borrowed: HashSet<Ty<'tcx>>,
     /// Each its types' fields hold, and its exported functions take and give.
@@ -100,7 +105,7 @@ impl<'tcx> RefCells<'tcx> {
         let tcx = recognition.tcx;
         let shapes = |tys: &HashSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
         let unchecked: HashSet<Ty<'tcx>> = (self.borrowed.iter())
-            .filter(|&&ty| self.quiet(recognition, borrows, ty, drops))
+            .filter(|&&ty| self.quiet(recognition, borrows, (ty, true), drops))
             .copied()
             .collect();
         crate::library::RefCellFacts {
@@ -158,16 +163,21 @@ impl<'tcx> RefCells<'tcx> {
     /// (`CellBorrows::impls_ask`), `drops` saying what drops. So none can
     /// find it borrowed, and none is checked. Nor one a library counts; and
     /// a library's consumers count none it doesn't while its code runs.
+    /// `of_key`, whether it's a thread-local's own cell, by its key, which
+    /// its key's own borrows count too (ADR 0960, amended).
     pub(in crate::lower) fn quiet(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
         borrows: &crate::lower::analysis::CellBorrows<'tcx>,
-        ty: Ty<'tcx>,
+        (ty, of_key): (Ty<'tcx>, bool),
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> bool {
         let tcx = recognition.tcx;
         let ty = tcx.erase_and_anonymize_regions(ty);
+        let key_counted =
+            || (self.key_counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty));
         if (self.counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty))
+            || (of_key && key_counted())
             || self.library_has(tcx, ty, |f| &f.counted).is_some()
         {
             return false;
@@ -272,18 +282,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is counted, held while code that may borrow it runs, of it or of a
     /// type that may be it, and its own impls, which borrow it while what
     /// it holds runs its own, borrow nothing that may be it. So none can
-    /// find it borrowed, and none is checked.
-    pub(in crate::lower) fn quiet_ref_cell(&self, ty: Ty<'tcx>) -> bool {
+    /// find it borrowed, and none is checked. `of_key`, a thread-local's own
+    /// cell, by its key, `KEY.replace(v)`'s (ADR 0960, amended).
+    pub(in crate::lower) fn quiet_ref_cell(&self, ty: Ty<'tcx>, of_key: bool) -> bool {
         let recognition = self.recognition();
         self.is_std_type(ty, StdItem::RefCell)
-            && self.ref_cells().quiet(&recognition, self.krate.cell_borrows, ty, &|t| {
-                super::drop_runs(
-                    recognition,
-                    (self.krate.library, self.krate.closure_facts),
-                    self.krate.counted,
-                    t,
-                )
-            })
+            && self
+                .ref_cells()
+                .quiet(&recognition, self.krate.cell_borrows, (ty, of_key), &|t| {
+                    super::drop_runs(
+                        recognition,
+                        (self.krate.library, self.krate.closure_facts),
+                        self.krate.counted,
+                        t,
+                    )
+                })
     }
 
     fn find_ref_cells(&self) -> RefCells<'tcx> {
@@ -296,6 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which borrows it while what it holds runs its own.
         let mut derived: HashMap<DefId, rustc_span::Span> = HashMap::new();
         let mut counted = HashSet::new();
+        let mut key_counted = HashSet::new();
         let mut borrowed = HashSet::new();
         let mut unseen: Vec<(Ty<'tcx>, rustc_span::Span)> = Vec::new();
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
@@ -321,7 +335,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
             for found in self.counted_in(&recognition, thir, &facts) {
                 borrowed.insert(found.cell);
-                if found.counted {
+                // Of a thread-local's own cell only its key reaches, which no
+                // borrow of a `&RefCell` of its type can be: its key's borrows
+                // alone, each checked as its own, `COMMIT_HOOKS`' while its
+                // hooks run, not every cell of its type, a controller's
+                // listeners (ADR 0960, amended).
+                let own = (found.key).is_some_and(|key| self.krate.cell_borrows.reached_only_by_key(key));
+                if found.counted && own {
+                    key_counted.insert(found.cell);
+                }
+                if found.counted && !own {
                     counted.insert(found.cell);
                     if let Some(field) = found.field {
                         counted_fields.entry(field).or_insert(found.span);
@@ -419,6 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             set.into_iter().map(|ty| tcx.erase_and_anonymize_regions(ty)).collect()
         };
         let counted = erased(counted);
+        let key_counted = erased(key_counted);
         let borrowed = erased(borrowed);
         // Whether a struct's field may be one some borrow of which meets
         // another: not one no body lends, binds, moves or holds a borrow of,
@@ -431,6 +455,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (boxed_all, boxed, seen) = self.boxed_ref_cells(&loud);
         let mut found = RefCells {
             counted,
+            key_counted,
             borrowed,
             handed: self.handed_ref_cells(),
             libraries: self.krate.foreign.ref_cell_facts(),
@@ -457,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let recognition = self.recognition();
         for (field, span) in derived {
             let ty = tcx.type_of(field).instantiate_identity().skip_normalization();
-            let quiet = found.quiet(&recognition, self.krate.cell_borrows, ty, &|t| {
+            let quiet = found.quiet(&recognition, self.krate.cell_borrows, (ty, false), &|t| {
                 super::drop_runs(
                     recognition,
                     (self.krate.library, self.krate.closure_facts),
@@ -789,7 +814,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => false,
             };
-            if a_borrow && let Some(cell) = crate::lower::analysis::borrowed(recognition, thir, id).and_then(cell_of) {
+            let borrow = crate::lower::analysis::borrowed(recognition, thir, id);
+            if a_borrow && let Some(cell) = borrow.and_then(cell_of) {
                 // Of a struct's field, `x.f` of `x.f.borrow()`.
                 let field =
                     args.first()
@@ -801,6 +827,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         });
                 found.push(Found {
                     cell,
+                    key: borrow.and_then(|borrow| match borrow.cell {
+                        Cell::Key(key) => Some(key),
+                        Cell::Type(_) => None,
+                    }),
                     field: field.map(|field| field.did),
                     counted: held,
                     seen: matches!(kind, Some(Std::Borrow { .. })) && facts.held_while_seen.contains(&fun),
@@ -822,6 +852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),
                         tcx.mk_args(&[held.into()]),
                     ),
+                    key: None,
                     field: None,
                     counted: true,
                     seen: false,
@@ -838,6 +869,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// runs while it's held.
 struct Found<'tcx> {
     cell: Ty<'tcx>,
+    /// Of a thread-local's own cell, borrowed by its key, the key.
+    key: Option<DefId>,
     field: Option<DefId>,
     counted: bool,
     seen: bool,

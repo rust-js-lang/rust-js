@@ -445,3 +445,122 @@ pub fn lent(f: &dyn Fn()) -> usize {
   expect(used).toEqual([2]);
   expect(() => lib.see(() => lib.seen())).toThrow("already mutably borrowed");
 });
+
+// React's test selectors call their commit hooks while COMMIT_HOOKS, a
+// `RefCell<Vec<Rc<dyn Fn()>>>`, is borrowed; ReactFiberCacheComponent's
+// AbortControllerShim keeps its listeners in a cell of the same type. A
+// thread-local's own cell only its key reaches, never lent by `with`, is no
+// other cell: its borrow held while the hooks run checks its own borrows,
+// not every cell of its type (ADR 0960, amended). One its `with` lends may
+// be any `&RefCell` of its type, so those stay checked.
+test("a thread-local's borrow held while hooks run checks no other cell of its type", async () => {
+  const dir = fixture("hooks-key-apart");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Controller {
+    pub add: Box<dyn Fn(Rc<dyn Fn()>)>,
+    pub abort: Box<dyn Fn()>,
+}
+
+pub fn controller() -> Controller {
+    let listeners: Rc<RefCell<Vec<Rc<dyn Fn()>>>> = Rc::new(RefCell::new(Vec::new()));
+    Controller {
+        add: {
+            let listeners = Rc::clone(&listeners);
+            Box::new(move |listener| listeners.borrow_mut().push(listener))
+        },
+        abort: Box::new(move || {
+            let count = listeners.borrow().len();
+            for index in 0..count {
+                let listener = Rc::clone(&listeners.borrow()[index]);
+                listener();
+            }
+        }),
+    }
+}
+
+thread_local! {
+    static HOOKS: RefCell<Vec<Rc<dyn Fn()>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn add_hook(hook: Rc<dyn Fn()>) {
+    HOOKS.with_borrow_mut(|hooks| hooks.push(hook));
+}
+
+pub fn run_hooks() {
+    HOOKS.with_borrow(|hooks| hooks.iter().for_each(|hook| hook()));
+}
+
+pub fn clear_hooks() {
+    HOOKS.set(Vec::new());
+}
+
+pub fn take_hooks() -> usize {
+    HOOKS.take().len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("      listeners.push(listener);\n");
+  expect(js).toContain("      const listener = listeners[index];\n");
+  expect(js).toContain("$withBorrow(\n    hooks,");
+  const lib = await import(join(dir, "lib.js"));
+  const controller = lib.controller();
+  const log: string[] = [];
+  controller.add(() => {
+    log.push("first");
+    controller.add(() => log.push("added"));
+  });
+  lib.addHook(() => controller.abort());
+  lib.runHooks();
+  controller.abort();
+  expect(log).toEqual(["first", "first", "added"]);
+  // A hook that adds a hook while the hooks are borrowed panics, as Rust's,
+  // and so does one that sets them, the key's own write.
+  lib.addHook(() => lib.addHook(() => {}));
+  expect(() => lib.runHooks()).toThrow("already borrowed");
+  lib.clearHooks();
+  lib.addHook(() => lib.clearHooks());
+  expect(() => lib.runHooks()).toThrow("already borrowed");
+  expect(lib.takeHooks()).toBe(1);
+  lib.addHook(() => lib.takeHooks());
+  expect(() => lib.runHooks()).toThrow("already borrowed");
+
+  const lent = fixture("hooks-key-lent");
+  writeFileSync(join(lent, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+thread_local! {
+    static HOOKS: RefCell<Vec<Rc<dyn Fn()>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn add_hook(hook: Rc<dyn Fn()>) {
+    HOOKS.with_borrow_mut(|hooks| hooks.push(hook));
+}
+
+pub fn run_hooks() {
+    HOOKS.with_borrow(|hooks| hooks.iter().for_each(|hook| hook()));
+}
+
+fn clear(hooks: &RefCell<Vec<Rc<dyn Fn()>>>) {
+    hooks.borrow_mut().clear();
+}
+
+pub fn clear_hooks() {
+    HOOKS.with(clear);
+}
+
+pub fn listened(listener: Rc<dyn Fn()>) -> usize {
+    let listeners: RefCell<Vec<Rc<dyn Fn()>>> = RefCell::new(Vec::new());
+    listeners.borrow_mut().push(listener);
+    let count = listeners.borrow().len();
+    count
+}
+`);
+  run([compiler, join(lent, "lib.rs"), "-o", join(lent, "lib.js"), ...withBindings]);
+  const borrowed = await import(join(lent, "lib.js"));
+  borrowed.addHook(() => borrowed.clearHooks());
+  expect(() => borrowed.runHooks()).toThrow("already borrowed");
+  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("$borrowMut(listeners");
+});

@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // Not one of its module's variable's, whose borrows are
                 // never counted (`quiet`, ADR 0270, amended).
-                let checked = !call.quiet && ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell));
+                let checked = !call.quiet && ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));
                 let target = match checked {
                     true => Expr::call(Expr::helper("$borrowMut"), vec![cell.clone()]),
                     false => cell.clone(),
@@ -237,8 +237,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => self.default_value(item, span)?,
                     },
                 );
-                // A thread-local's, its cell's (ADR 0595, amended).
+                // A thread-local's, its cell's (ADR 0595, amended), its own
+                // by its key (ADR 0960, amended).
                 let held = crate::lower::recognition::cell_of_key(self.tcx, tys[0].peel_refs());
+                let of_key = self.is_std_type(tys[0].peel_refs(), StdItem::LocalKey);
                 // A `RefCell` of an object is the object (ADR 0863): its
                 // contents taken in place, as a `&mut` to it would, borrowed
                 // to do it where it's counted. Not a field's no borrow of
@@ -248,13 +250,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // reference to it, a variable, in place.
                 let a_place = matches!(cell.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..));
                 if self.is_value_cell(held) && !(call.quiet && a_place) {
-                    let cell = match self.quiet_ref_cell(held) {
+                    let cell = match self.quiet_ref_cell(held, of_key) {
                         true => cell,
                         false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
                     };
                     return Ok(Some(Expr::call(Expr::helper("$take"), vec![cell, next])));
                 }
-                if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held) {
+                if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held, of_key) {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
                     return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));
                 }
@@ -317,7 +319,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // check can't fail (ADR 0362).
             // Of a `RefCell` no borrow of which can meet another, the cell
             // itself, unchecked and uncounted (ADR 0863).
-            Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs()) => {
+            Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
                 let cell = arg();
                 self.uncounted(cell)
             }

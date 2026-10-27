@@ -1399,6 +1399,12 @@ export function shared() {
   `RefCell<Vec<Rc<Node>>>` is no `RefCell<Vec<Rc<dyn Fn()>>>`, whose
   hooks may run anything while it's borrowed
   ([ADR 0960](../../decisions/0960-a-dyn-is-any-type-only-where-made-in-place.md)).
+  A private thread-local's own cell, used only through its key's
+  `with_borrow`, `with_borrow_mut`, `set`, `take` and `replace`, never lent
+  by `with`, is no other cell of its type: its hooks' borrow held while
+  they run checks its key's uses, not a controller's
+  `Rc<RefCell<Vec<Rc<dyn Fn()>>>>` of listeners
+  ([ADR 0960](../../decisions/0960-a-dyn-is-any-type-only-where-made-in-place.md), amended).
   A borrow only where a test finds the loop's own item isn't there meets
   none: `for t in types.borrow().iter() { if !into.borrow().contains(t) {
   into.borrow_mut().push(t.clone()); } }`, of strings, integers, `bool`s

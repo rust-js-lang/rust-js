@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],
                     ));
                 }
-                let cell = match self.quiet_ref_cell(ty) {
+                let cell = match self.quiet_ref_cell(ty, false) {
                     true => place,
                     false => Expr::call(Expr::helper("$borrow"), vec![place]),
                 };
@@ -1312,7 +1312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
             }
             ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {
-                let (a, b) = match self.quiet_ref_cell(ty) {
+                let (a, b) = match self.quiet_ref_cell(ty, false) {
                     true => (a, b),
                     false => (
                         Expr::call(Expr::helper("$borrow"), vec![a]),

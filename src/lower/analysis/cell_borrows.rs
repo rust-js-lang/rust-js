@@ -175,6 +175,13 @@ impl<'tcx> CellBorrows<'tcx> {
         }
     }
 
+    /// Whether `key`'s thread-local is one only its key reaches (`closed`):
+    /// its own cell, which no `with` lends, is no `&RefCell` of its type
+    /// anywhere, so a borrow of one is never of it (ADR 0960, amended).
+    pub(in crate::lower) fn reached_only_by_key(&self, key: DefId) -> bool {
+        self.closed.contains(&key)
+    }
+
     /// Whether `Clone::clone` of `ty` in `owner`'s body is the value itself,
     /// running nothing: a type parameter's whose bound takes no dictionary
     /// (`clones_by_itself`, ADR 0914, amended).

@@ -744,7 +744,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0957 A place a test shows isn't `null`, stored right after it, is stored as it is](0957-a-place-a-test-shows-present-is-stored-as-it-is.md)
 - [0958 A chain of `js::strict_equals` tests of one subject is a `switch`](0958-a-chain-of-strict-equals-tests-is-a-switch.md)
 - [0959 `Rc::ptr_eq` of an `Rc<dyn Fn>` made of a closure made with it is `===`, uncounted](0959-ptr-eq-of-a-closure-made-with-its-rc.md)
-- [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md)
+- [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md) *(amended: a thread-local's own cell only its key reaches is no other cell of its type)*
 - [0961 A loop that ends a branch of the body it ends leaves with no label](0961-a-loop-ending-a-branch-leaves-without-a-label.md)
 - [0962 A `RefCell` of an object given to JS is the object, and a boxed one is refused](0962-a-refcell-of-an-object-given-to-js-is-the-object.md)
 - [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md)

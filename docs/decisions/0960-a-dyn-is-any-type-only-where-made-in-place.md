@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0863](0863-a-refcell-of-an-object-is-the-object.md),
 which cells may be one another (`may_be_cell`), and [0397](0397-a-refcell-of-a-dyn.md)'s
-`RefCell<dyn T>` that shares its cell. Fixes #374.
+`RefCell<dyn T>` that shares its cell. Fixes #374. Amended (2026-10-27): a thread-local's own
+cell only its key reaches is no other cell of its type.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Which borrows are
 checked is rust-js's own judgment of which can meet; a cell no borrow of
@@ -57,3 +58,44 @@ type. A library's contract shapes compare so too (`may_be_cell_shape`).
 - A struct's last field made `dyn` inside a cell, `RefCell<Framed<dyn
   Shape>>`, isn't tested against native Rust: its coercion is a wrong
   answer of its own today, #375.
+
+## Amendment: a thread-local's own cell only its key reaches is no other cell (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above: which
+borrows are checked is rust-js's judgment of which can meet.
+
+React's test selectors call their commit hooks while `COMMIT_HOOKS`, a
+`RefCell<Vec<Rc<dyn Fn()>>>`, is borrowed, which Rust must check, as a
+hook may observe again. That counted every cell of the type, so
+ReactFiberCacheComponent's AbortControllerShim, whose `listeners` are an
+`Rc<RefCell<Vec<Rc<dyn Fn()>>>>`, checked each borrow of them,
+`$borrowMut(listeners, true)` where upstream writes `listeners.push(listener)`
+(ts6 of the port's gaps). No hook can borrow `listeners` while the hooks'
+borrow is held as a borrow of `COMMIT_HOOKS`: they're two cells.
+
+**A borrow of a thread-local's own cell by its key, of a key only the
+crate's code reaches and never lends (`closed_keys`, ADR 0580, amended:
+private, each use `with_borrow`, `with_borrow_mut`, `get`, `set`, `take`
+or `replace`, never `with`), counts that cell alone** (`RefCells::
+key_counted`, asked by `CellBorrows::reached_only_by_key`): no `&RefCell`
+anywhere is it, so a borrow of a cell through a reference, a field, an
+`Rc`, is never of it, and its type isn't counted for them. The key's own
+writes, `HOOKS.set(..)`, `take`, `replace`, which `quiet_ref_cell` asks of
+its type, still count it (`of_key`), as its `with_borrow`s are checked:
+a hook that sets the hooks while they run panics, as Rust's does. A key
+its `with` lends, or a public one, which another crate's code may lend,
+counts every cell of its type, as before.
+
+- What changes: React's ReactFiberCacheComponent's listeners are plain
+  arrays beside ReactTestSelectors, as upstream; ReactStrictModeWarnings'
+  `$assign($borrowMut(pendingComponentWillMountWarnings), [])`, a key's
+  own write while its borrow may be held, stays checked. No corpus case,
+  snapshot or guide example changed.
+- Held by `test/lowering-cell-borrows.test.ts`, "a thread-local's borrow
+  held while hooks run checks no other cell of its type", run: the
+  controller's listeners plain, the hooks still panicking where one adds,
+  sets or takes them, and a key its `with` lends keeping every cell of its
+  type checked; the mutations `key-borrow-counts-its-type`,
+  `key-counted-unasked` (`drops/ref_cells.ts`),
+  `lent-key-reached-only-by-key` (`analysis/cell_borrows.ts`),
+  `key-set-of-any-cell` and `key-take-of-any-cell` (`std_types/cell.ts`).

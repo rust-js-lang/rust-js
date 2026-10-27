@@ -281,7 +281,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),
             tcx.mk_args(&[held.into()]),
         );
-        ref_cells.quiet(&self.recognition, borrows, cell, &|t| {
+        ref_cells.quiet(&self.recognition, borrows, (cell, false), &|t| {
             super::drop_runs(self.recognition, (self.library, self.closure_facts), self.counted, t)
         })
     }

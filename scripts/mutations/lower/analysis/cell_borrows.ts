@@ -316,6 +316,14 @@ export const mutations: Mutation[] = [
     tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
   },
   {
+    name: "lent-key-reached-only-by-key",
+    breaks: "a thread-local whose `with` lends its cell is taken for one only its key reaches, so a `&RefCell` of its type borrowed mutably while its hooks run, `clear(hooks)`, isn't checked, where Rust panics (ADR 0960, amended)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        self.closed.contains(&key)\n",
+    replace: "        true\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+  },
+  {
     name: "cell-dyn-anywhere",
     breaks: "a `dyn` in a `Vec`'s items is taken to be any type, so a `RefCell<Vec<Rc<Node>>>` may be React's commit hooks' `RefCell<Vec<Rc<dyn Fn()>>>`, borrowed while they run, and each borrow of it is checked (#374, ADR 0960)",
     file: "src/lower/analysis/cell_borrows.rs",
