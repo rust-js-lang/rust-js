@@ -5,6 +5,15 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 const toDefault = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"];
 export const mutations: Mutation[] = [
   {
+    name: "guard-before-its-constants-unjoined",
+    breaks: "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "                            && self.does_nothing(arms[i].body)\n",
+    replace: "                            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
+    snapshots: true,
+  },
+  {
     name: "switch-last-name-an-if-chain",
     breaks: "a `match` of constants whose last arm is a name, `current => current`, is an `if` chain or its `?:`, not upstream's `switch` with that arm its `default` (ADR 0629, amended)",
     file: "src/lower/mir/hints.rs",

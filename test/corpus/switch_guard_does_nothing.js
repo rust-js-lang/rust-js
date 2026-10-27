@@ -9,7 +9,12 @@ export function entry() {
 export const A = 1;
 export const B = 2;
 export const C = 3;
+export const H = 4;
+export const S = 5;
 export const K = 6;
+export const I = 7;
+export const SC = 8;
+export const T = 9;
 
 const log = [];
 
@@ -54,6 +59,53 @@ function completeOn(tag, legacyOff) {
   return tag;
 }
 
+/**
+ * React's completeWork's whole shape: guards falling through to the next
+ * arm, and `I if legacy_off => {}` before `I => { .. }`, one case of them,
+ * `case I: if (legacyOff) { break; } ..`.
+ */
+function completeAll(tag, legacyOff, resources, singletons, scope) {
+  switch (tag) {
+    case A:
+      if (legacyOff) {
+        break;
+      }
+    // Fallthrough
+    case B:
+    case C:
+      return 1;
+    case H:
+      if (resources) {
+        return 2;
+      }
+    // Fall through
+    case S:
+      if (singletons) {
+        return 3;
+      }
+    // Fall through
+    case K:
+      return 4;
+    case I:
+      if (legacyOff) {
+        break;
+      }
+      work(5);
+      return 5;
+    case SC:
+      if (scope) {
+        return 6;
+      }
+      break;
+    case T:
+      if (!legacyOff) {
+        // Only Legacy Mode completes an errored node.
+        return 7;
+      }
+  }
+  throw new Error(`Unknown unit of work tag (${tag}).`);
+}
+
 function main() {
   for (const [tag, legacyOff] of [
     [A, true],
@@ -69,6 +121,18 @@ function main() {
     console.log(
       `${tag} ${legacyOff}: panicked ${caught}, ${on == null ? "None" : `Some(${on})`}, [${log$1.join(", ")}]`,
     );
+  }
+  for (const tag of [A, B, H, S, K, I, SC, T, 10]) {
+    for (let flags = 0; flags < 16; flags++) {
+      const [legacyOff, resources, singletons, scope] = [1, 2, 4, 8].map(
+        (bit) => (flags & bit) !== 0,
+      );
+      const done = $catchUnwind(() => completeAll(tag, legacyOff, resources, singletons, scope));
+      const log$1 = $take(log, []);
+      console.log(
+        `all ${tag} ${flags}: ${done.TAG === "Ok" ? `Ok(${done._0 == null ? "None" : `Some(${done._0})`})` : "Err(Any { .. })"}, [${log$1.join(", ")}]`,
+      );
+    }
   }
 }
 //# sourceMappingURL=case.js.map

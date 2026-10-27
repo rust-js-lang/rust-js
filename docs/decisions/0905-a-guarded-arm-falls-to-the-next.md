@@ -355,3 +355,26 @@ code; the mutations `switch-of-a-case-break-ends` (`js/stmt_walk.ts`) and
 `rest-one-case-reaches-kept-after` (`mir/tidy/case_rests.ts`, beside the moved `switch-block-one-case-reaches-kept`). The new
 corpus case raises `docs/readability.txt`'s `return;` share, 10.5 to 10.8
 in 10,000 lines: its arms' `return None;`, as upstream's `return null;`.
+
+## Amendment: a guarded arm that does nothing before one of its constants alone is that one's case (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests and
+the same statements run of each value.
+
+React's completeWork writes `case IncompleteClassComponent: { if
+(disableLegacyMode) { break; } .. return null; }`; its port, `I if
+legacy_off => {}` then `I => { ..; return None; }` (cw2b of the port's
+gaps). An arm falls to the next only where the next names a constant of
+its own (above), so this `match` was no `switch`: an `if` chain in three
+labeled blocks, with cw2's case as well.
+
+**A guarded arm whose body does nothing, followed by an arm of no guard
+that names its constants and no others, is one arm of them, their case**
+(`hints::written_switches`): its statements are what MIR tests of them,
+the guard's `if` that leaves, then the next arm's body, `case I: if
+(legacyOff) { break; } ..; return;`. With cw2's fix, completeWork's
+`match` is upstream's one `switch`.
+
+Held by the corpus's `switch_guard_does_nothing.rs`, `complete_all`, each
+tag and flag against native Rust; the mutation
+`guard-before-its-constants-unjoined` (`mir/hints.ts`).

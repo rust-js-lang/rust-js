@@ -481,8 +481,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     && !self.fails_to_nothing(&arms[i].pattern, &arms[i + 1..])))
                     })
                     .collect();
+                // A guarded arm that does nothing, `I if legacy_off => {}`,
+                // before one of its constants alone and no guard, `I => {
+                // .. }`: one case of them, `case I: if (legacyOff) { break; }
+                // ..`, as React's completeWork writes it, the guard's `if` in
+                // its statements as MIR tests it (ADR 0905, amended).
+                let joined: Vec<bool> = (0..arms.len())
+                    .map(|i| {
+                        guards[i].is_some()
+                            && i < last
+                            && guards[i + 1].is_none()
+                            && self.does_nothing(arms[i].body)
+                            && matches!(
+                                (
+                                    self.constant_values(&arms[i].pattern, present),
+                                    self.constant_values(&arms[i + 1].pattern, present),
+                                ),
+                                (Some(a), Some(b)) if a.len() == b.len() && a.iter().all(|v| b.contains(v))
+                            )
+                    })
+                    .collect();
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
+                    .filter(|&(i, _)| !i.checked_sub(1).is_some_and(|before| joined[before]))
                     .map(|(i, arm)| {
+                        if joined[i] {
+                            return Some(SwitchArm {
+                                span: self.js_span(arm.span.to(arms[i + 1].span)),
+                                pattern: self.js_span(arm.pattern.span),
+                                guard: None,
+                                constants: self.constants_of(&arm.pattern, present)?,
+                                falls: false,
+                            });
+                        }
                         let guard = guards[i];
                         let constants = match &arm.pattern.kind {
                             thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
