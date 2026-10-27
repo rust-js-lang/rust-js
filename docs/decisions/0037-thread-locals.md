@@ -1,6 +1,6 @@
 # 0037. `thread_local!` is a variable of its module
 
-Status: Accepted. Amended, below; last: a boxed closure only makes a value.
+Status: Accepted. Amended, below; last: an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used (#376).
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -324,3 +324,69 @@ createChildReconciler(true);`, its Rust call `reconcileChildFibers(..)`.
 
 Held by `test/corpus/thread_local_made_by_boxed_closure.rs`, against
 native Rust and its snapshot, and the mutation `maker-boxed-closure-lazy`.
+
+## Amendment: an initializer that reads what may change, prints, or gives std the crate's closure (#376)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed;
+Rust's behavior is kept. Three wrong answers.
+
+```rust
+thread_local! {
+    static TRIES: Cell<u32> = const { Cell::new(0) };
+    static MADE: Option<u32> = if TRIES.get() == 0 { Some(1) } else { None };
+    static PRINTED: u32 = { println!("printed"); 3 };
+    static MAPPED: Option<u32> = Some(2).map(|n| { println!("mapped {n}"); n * 2 });
+}
+
+fn main() {
+    println!("main");
+    TRIES.set(3);
+    println!("{:?}", MADE.with(|m| *m));
+}
+```
+
+Rust prints `main`, then `None`: `MADE` is made where it's first used,
+after `TRIES` is 3. Each initializer called only std's code, `LocalKey::get`,
+`_print`, `Option::map`, which the first amendment took to run none of
+the crate's, so each was made as its module loaded: `MADE` was `Some(1)`,
+and `printed` and `mapped 2` came before `main`. A maker of the crate's
+that reads a `static` or a thread-local, or prints, was already refused
+(`makes_only`); the initializer's own body wasn't asked so.
+
+**An initializer is made where it's first used where it** (`lazy_locals`'
+`Initializer`):
+
+- **reads what may change after its module loads**: a `static mut`, or a
+  `static` with interior mutability, an atomic's `HITS.load(..)`; or
+  another thread-local, by its key, `TRIES.get()`, `NAMES.take()`, but one
+  that's made as its module loads, in the same module before it, and holds
+  what can't change once made (`unchanging`: numbers, text, functions and
+  fn pointers, through shared references, `Box`, `Vec`, `String`, `Rc` and
+  tuples, and types of no cell whose fields are; not a cell, an atomic, a
+  `dyn` or a binding's JS value). That one it reads the same whenever it
+  runs: React's scheduler's `schedulePerformWorkUntilDeadline` reads
+  `localSetImmediate`, an `Option<fn>` made of a binding, and stays
+  upstream's `let` and `if`. A read of one made where it's first used makes
+  the reader so too, to a fixed point: reading it as the module loads would
+  run its initializer there. A `static` that can't change, `BASE * 2`, or
+  a binding's, React's `__DEV__`, is read as before, as its module loads.
+- **prints**: std's `_print` or `_eprint` (`recognition::print_of`, which
+  `classify` and the unwinding analysis ask too).
+- **gives std a closure or a function of the crate's that runs its code**:
+  among a std call's type arguments, a closure whose body would, by these
+  rules, `Some(2).map(|n| { println!(..); .. })`, or a function that isn't
+  one that only makes a value. Not a call that only makes a value of it,
+  `Box::new(f)`, which stores it, and not a closure that only reads what
+  it's lent, the scheduler's `LOCAL_SET_IMMEDIATE.with(|f| *f)`.
+
+What a std call does inside std, its panic, and what a binding's call
+does, stay at the module's load, as decided (the guide's difference 25).
+
+Held by `test/corpus/thread_local_reads_another_set.rs`, against native
+Rust and its snapshot: a `Cell`'s and a `RefCell`'s key, a `static mut`
+and an atomic read, a print, a closure given `Option::map`, one reading a
+lazy one, one reading one made after it, and one indexing past its end,
+each made where it's first used; a `static` that can't change and a `fn`
+thread-local made before, read as the module loads; and
+`test/port-scheduler.test.ts`'s snapshot. The mutations
+`initializer-*` and `lazy-local-panics-unseen`.

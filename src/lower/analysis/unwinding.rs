@@ -97,7 +97,7 @@ fn std_never_unwinds<'tcx>(
     let name = tcx.item_name(callee);
     let name = name.as_str();
     match () {
-        _ if path.ends_with("io::_print") || path.ends_with("io::_eprint") => true,
+        _ if crate::lower::recognition::print_of(tcx, callee).is_some() => true,
         _ if path.contains("fmt::Arguments") => matches!(name, "new" | "new_const" | "new_v1" | "from_str"),
         _ if path.contains("fmt::rt::Argument") => {
             matches!(name, "new_display" | "new_debug") && args.types().all(|ty| shown_whole(recognition, ty))

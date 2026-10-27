@@ -424,7 +424,12 @@ of what it's given, `if (!count.initWith({ value }))`, its initializer never
 run, as std's `LocalKey::set` is. One that only makes a value, or calls
 std's or a binding's functions, React's `createContext([])`, or a fn
 pointer that may only be one of those, `let now: fn() -> f64 =
-js::date::now`, is made as its module loads, as JS writes it; so is one
+js::date::now`, is made as its module loads, as JS writes it. Not one
+that prints, gives std a closure of the crate's that runs its code,
+`Some(2).map(|n| { println!(..); .. })`, or reads what may change after
+its module loads: a `static mut`, an atomic, or another thread-local,
+`TRIES.get()`, but one made before it in its module that holds what can't
+change, React's scheduler's `localSetImmediate`. So is one
 that calls a function of the crate's that only makes a value of what it's
 given, reads no `static` or thread-local, may not panic and calls only
 others that do and std's `const fn`s of no trait and `Box::new`, React's

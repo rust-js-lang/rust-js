@@ -451,10 +451,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if krate == sym::core && name.as_str() == "unreachable_display" && std_path(tcx, def_id).contains("panicking") {
             return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
+        if let Some(error) = print_of(tcx, def_id) {
+            return Some(Some(Std::Print { error }));
+        }
         if krate == sym::std {
             match std_path(tcx, def_id).as_str() {
-                "std::io::_print" => return Some(Some(Std::Print { error: false })),
-                "std::io::_eprint" => return Some(Some(Std::Print { error: true })),
                 "std::rt::begin_panic" => return Some(Some(Std::BeginPanic)),
                 "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),
                 "std::panic::resume_unwind" => return Some(Some(Std::Unwind(UnwindOp::Resume))),
@@ -1268,6 +1269,19 @@ fn to_owned_of(ty: Ty<'_>) -> Std {
         _ if ty.is_str() => Std::Same,
         _ if ty.is_slice() => Std::ToVec,
         _ => Std::ToOwnedClone,
+    }
+}
+
+/// Whether `def_id` is what `println!` calls, std's `_print`, `Some(false)`,
+/// or `eprintln!`'s `_eprint`, `Some(true)`, its error.
+pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    if tcx.crate_name(def_id.krate) != sym::std {
+        return None;
+    }
+    match std_path(tcx, def_id).as_str() {
+        "std::io::_print" => Some(false),
+        "std::io::_eprint" => Some(true),
+        _ => None,
     }
 }
 
