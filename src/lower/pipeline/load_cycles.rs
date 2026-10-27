@@ -48,7 +48,8 @@ pub(super) fn load_cycles(
 }
 
 /// Each thread-local, of `makers`, made as its module loads by functions of
-/// the crate's that only make a value (ADR 0037, amended), one of which is
+/// the crate's that only make a value, or of another module's thread-local
+/// its initializer reads (ADR 0037, amended), one of which is
 /// of a module that may load after its own: of another module that reaches
 /// its own by what the crate's modules import of each other, `imports`, an
 /// import cycle. Its maker may read what that module hasn't made yet, a

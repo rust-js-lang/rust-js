@@ -46,8 +46,43 @@ thread_local! {
     static FIRST: u32 = [1, 2][BASE as usize];
 }
 
+// A thread-local of another module's that can't change, made first as that
+// module loads first, is read as its module loads; one of a module that
+// imports its own back, in an import cycle, which may load after it, where
+// it's first used.
+mod flags {
+    thread_local! {
+        pub static ON: bool = true;
+    }
+}
+
+thread_local! {
+    static USES_FLAG: bool = flags::ON.with(|&on| on) && BASE > 1;
+}
+
+mod marks {
+    thread_local! {
+        pub static LIMIT: u32 = 4;
+    }
+
+    pub fn used() -> u32 {
+        super::uses::read()
+    }
+}
+
+mod uses {
+    thread_local! {
+        static LIMITED: u32 = super::marks::LIMIT.with(|&limit| limit) + 1;
+    }
+
+    pub fn read() -> u32 {
+        LIMITED.with(|&limited| limited)
+    }
+}
+
 fn main() {
     println!("main");
+    println!("{} {}", USES_FLAG.with(|&uses| uses), marks::used());
     TRIES.set(3);
     NAMES.with_borrow_mut(|names| names.push("a".to_string()));
     unsafe { LIMIT = 4 };

@@ -33,14 +33,15 @@ pub(in crate::lower) struct LazyLocals {
 /// The thread-locals, by their keys, whose initializer (`inits`, each
 /// initializer's key) runs the crate's code, may panic, or reads what may
 /// change after its module loads; a fn pointer's call runs what `pointers`
-/// says it may be (ADR 0907). And those made so already,
-/// `made_where_used`, which a lowering of the crate found make their value
-/// by a function of a module that may load after theirs.
+/// says it may be (ADR 0907); a library's thread-local is made where it's
+/// first used where its contract says so, `library_lazy`. And those made so
+/// already, `made_where_used`, which a lowering of the crate found make
+/// their value by a function of a module that may load after theirs.
 pub(super) fn lazy_locals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[&Body<'tcx>],
     (inits, made_where_used): (&HashMap<LocalDefId, LocalDefId>, &HashSet<LocalDefId>),
-    pointers: &FnPointers<'tcx>,
+    (pointers, library_lazy): (&FnPointers<'tcx>, &dyn Fn(DefId) -> bool),
 ) -> LazyLocals {
     let by_id: HashMap<DefId, &Body<'tcx>> = bodies.iter().map(|&body| (body.def_id, body)).collect();
     let mut found = LazyLocals {
@@ -74,9 +75,11 @@ pub(super) fn lazy_locals<'tcx>(
     // one is made before it and holds what can't change after
     // (`made_ahead`): it reads then what Rust's reads where it's first used
     // (#376). As one is made where it's first used, so is each that reads it.
+    let ahead =
+        |read: DefId, key: LocalDefId, lazy: &HashSet<LocalDefId>| made_ahead(tcx, (read, key), (lazy, library_lazy));
     loop {
         let lazy: Vec<LocalDefId> = (at_load.iter())
-            .filter(|(key, read, _)| !read.iter().all(|&read| made_ahead(tcx, read, *key, &found.lazy)))
+            .filter(|(key, read, _)| read.iter().any(|&read| ahead(read, *key, &found.lazy) == Ahead::No))
             .map(|&(key, ..)| key)
             .collect();
         if lazy.is_empty() {
@@ -85,7 +88,11 @@ pub(super) fn lazy_locals<'tcx>(
         at_load.retain(|(key, ..)| !lazy.contains(key));
         found.lazy.extend(lazy);
     }
-    for (key, _, makers) in at_load {
+    // One of another module of the crate's is made before only where that
+    // module loads first: as a maker of its, the pipeline makes it where
+    // it's first used where the two are in an import cycle (`made_by`).
+    for (key, read, mut makers) in at_load {
+        makers.extend((read.into_iter()).filter(|&read| ahead(read, key, &found.lazy) == Ahead::IfLoadedFirst));
         if !makers.is_empty() {
             found.made_by.insert(key, makers);
         }
@@ -93,19 +100,49 @@ pub(super) fn lazy_locals<'tcx>(
     found
 }
 
+/// Whether a thread-local an initializer reads is made ahead of it.
+#[derive(PartialEq)]
+enum Ahead {
+    Yes,
+    /// Where its module, another of the crate's, loads first.
+    IfLoadedFirst,
+    No,
+}
+
 /// Whether `read`, a thread-local `key`'s initializer reads, is made as its
-/// module loads, not one of `lazy`, ahead of `key`, in its module and before
-/// it, and holds what can't change after (`unchanging`), React's scheduler's
-/// `localSetImmediate`: whenever `key`'s initializer runs, it reads the
-/// same of it. A library's isn't asked, and is taken to change.
-fn made_ahead(tcx: TyCtxt<'_>, read: DefId, key: LocalDefId, lazy: &HashSet<LocalDefId>) -> bool {
-    let Some(read) = read.as_local() else { return false };
-    let at = |key: LocalDefId| tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+/// module loads ahead of `key`, and holds what can't change after
+/// (`unchanging`), React's scheduler's `localSetImmediate`: whenever `key`'s
+/// initializer runs, it reads the same of it. One of the crate's not of
+/// `lazy`, in `key`'s module and before it, or of another, where that one
+/// loads first; a library's that its contract makes as its module loads,
+/// not `library_lazy`, whose module loads before any of the crate's,
+/// React's `enableProfilerTimer` and `getPrototypeOf`.
+fn made_ahead(
+    tcx: TyCtxt<'_>,
+    (read, key): (DefId, LocalDefId),
+    (lazy, library_lazy): (&HashSet<LocalDefId>, &dyn Fn(DefId) -> bool),
+) -> Ahead {
     let ty = tcx.type_of(read).instantiate_identity().skip_normalization();
-    !lazy.contains(&read)
-        && tcx.parent_module_from_def_id(read) == tcx.parent_module_from_def_id(key)
-        && at(read).lo() < at(key).lo()
-        && matches!(ty.kind(), ty::Adt(_, held) if unchanging(tcx, held.type_at(0), &mut Vec::new()))
+    if !matches!(ty.kind(), ty::Adt(_, held) if unchanging(tcx, held.type_at(0), &mut Vec::new())) {
+        return Ahead::No;
+    }
+    let Some(local) = read.as_local() else {
+        return match library_lazy(read) {
+            true => Ahead::No,
+            false => Ahead::Yes,
+        };
+    };
+    if lazy.contains(&local) {
+        return Ahead::No;
+    }
+    if tcx.parent_module_from_def_id(local) != tcx.parent_module_from_def_id(key) {
+        return Ahead::IfLoadedFirst;
+    }
+    let at = |key: LocalDefId| tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+    match at(local).lo() < at(key).lo() {
+        true => Ahead::Yes,
+        false => Ahead::No,
+    }
 }
 
 /// Whether a value of `ty` can't change once made: of numbers, text,

@@ -465,6 +465,17 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
   expect(app).toContain("  valueStack[$at(valueStack, 0)] = undefined;\n");
 }, 300_000);
 
+// ADR 0037, amended (#376): a thread-local whose initializer reads a
+// library's flag, which its contract makes as its module loads and which
+// can't change, is made as its own module loads, React's
+// `supportsUserTiming`; one of the count the library sets, where it's first
+// used.
+test("a thread-local of a library's flag is made as its module loads", () => {
+  const out = chain(pairs, "thread_local_reads_library", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("const SUPPORTS_USER_TIMING = ENABLE_PROFILER_TIMER;\nconst SEEN = $local(() => count);\n");
+}, 300_000);
+
 /** The library contract of `out`'s `dep`. */
 function contract(out: string) {
   return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;

@@ -428,8 +428,9 @@ js::date::now`, is made as its module loads, as JS writes it. Not one
 that prints, gives std a closure of the crate's that runs its code,
 `Some(2).map(|n| { println!(..); .. })`, or reads what may change after
 its module loads: a `static mut`, an atomic, or another thread-local,
-`TRIES.get()`, but one made before it in its module that holds what can't
-change, React's scheduler's `localSetImmediate`. So is one
+`TRIES.get()`, but one made before it that holds what can't change, of its
+module, React's scheduler's `localSetImmediate`, of a module that loads
+first, or a library's, React's `enableProfilerTimer`. So is one
 that calls a function of the crate's that only makes a value of what it's
 given, reads no `static` or thread-local, may not panic and calls only
 others that do and std's `const fn`s of no trait and `Box::new`, React's

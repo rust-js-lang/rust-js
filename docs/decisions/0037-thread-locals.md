@@ -1,6 +1,6 @@
 # 0037. `thread_local!` is a variable of its module
 
-Status: Accepted. Amended, below; last: an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used (#376).
+Status: Accepted. Amended, below; last: a library's flag, and another module's, read as the module loads.
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -390,3 +390,37 @@ each made where it's first used; a `static` that can't change and a `fn`
 thread-local made before, read as the module loads; and
 `test/port-scheduler.test.ts`'s snapshot. The mutations
 `initializer-*` and `lazy-local-panics-unseen`.
+
+## Amendment: a library's flag, and another module's, read as the module loads
+
+Case A, as the amendment above: it reads the same whenever it runs.
+
+The amendment above made a thread-local reading another made where it's
+first used unless the other is of its own module, made before it.
+React's `ReactFiberPerformanceTrack`'s `supportsUserTiming` reads
+`shared`'s `enableProfilerTimer`, a `bool`, and was `$local(() => ..)`,
+called at each use, where upstream's is its module's `const`.
+
+**One that holds what can't change (`unchanging`) and is made as its
+module loads, before the reader, is read as the reader's module loads**
+(`made_ahead`): a library's, whose contract doesn't say it's made where
+it's first used (`ItemFact::Lazy`), as a library's modules load before
+any of the crate's; another module's of the crate's, where that module
+loads first: a maker of the reader's (`made_by`), which the pipeline
+makes where it's first used where the two modules import each other
+(`made_in_cycles`), as it does a function's.
+
+Still made where they're first used: React's `ReactTaint`'s
+`TaintRegistryObjects` and the like, which read cells of
+`ReactSharedInternals`, which its `js::on_load!` sets, and its
+`TypedArrayConstructor`, which calls `shared`'s `getPrototypeOf` fn
+pointer, which may be any function: written up for a decision.
+
+Held by `test/crates.test.ts`'s "a thread-local of a library's flag is
+made as its module loads" (and its pair, against native Rust: one of the
+library's count, which it sets, where it's first used) and
+`thread_local_reads_another_set`'s `USES_FLAG`, made as its module loads,
+and `uses`' `LIMITED`, in an import cycle, where it's first used;
+mutations `library-read-taken-lazy`, `other-module-read-unordered` and
+`other-module-read-lazy`.
+

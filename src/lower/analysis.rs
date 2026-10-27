@@ -994,7 +994,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         tcx,
         all_bodies,
         (&thread_local_inits, made_where_used),
-        cell_borrows.pointers(),
+        (cell_borrows.pointers(), &|key| {
+            // A library's thread-local its contract doesn't list, made where
+            // it's first used, as what's taken to change.
+            (foreign.item(key)).is_none_or(|item| item.calling.has(crate::library::ItemFact::Lazy))
+        }),
     );
     let quiet_locals = plain_locals::plain_thread_locals(
         tcx,
