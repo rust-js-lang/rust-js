@@ -169,7 +169,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::call(Expr::member(a, name.as_str()), vec![callback])
                     }
                     Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
-                    Parted::Zip => Expr::call_helper("$lazyZip", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
+                    Parted::Zip => {
+                        let b = cx.as_js_iterator(b, other_ty, span)?;
+                        cx.zipped((a, receiver_ty), (b, other_ty), span)?
+                    }
                 })
             },
         )?;

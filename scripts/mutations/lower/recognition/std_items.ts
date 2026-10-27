@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "zip-by-index-pure",
+    breaks: "a zip by index ignores whether its first side runs code, so a slice's plain zip, which no one can tell apart, is `$trustedZip` too, noisier (ADR 0973)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    is_random_access(a) && is_random_access(b) && steps_code(tcx, typing_env, a)\n",
+    replace: "    is_random_access(a) && is_random_access(b)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(zip_by_index|lazy_chains).rs$"],
+    snapshots: true,
+  },
+  {
     name: "copied-back-uncompiled",
     breaks: "std's `Copied`'s `next_back` isn't compiled: the build of std's structs alone refuses a `copied()` stepped from its back, `the DoubleEndedIterator of a Copied<slice::Iter>` (ADR 0938)",
     file: "src/lower/recognition/std_items.rs",

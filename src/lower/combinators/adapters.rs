@@ -214,6 +214,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// `a.zip(b)` of `a` and `b`, JS iterators of `IntoIterator`s of those
+    /// types: of sides std
+    /// reads by index, a step of `a` running code, `$trustedZip(a, b)`, `b`
+    /// knowing its length, as std pairs them up to the shorter's (ADR 0973);
+    /// else `$lazyZip(a, b)`, of items with a destructor, each of `a`'s it
+    /// steps where `b`'s run out dropped (ADR 0465).
+    pub(in crate::lower) fn zipped(&mut self, a: (Expr, Ty<'tcx>), b: (Expr, Ty<'tcx>), span: Span) -> R<Expr> {
+        let ((a, a_ty), (b, b_ty)) = (a, b);
+        if crate::lower::recognition::zips_by_index(self.tcx, self.typing_env, a_ty, b_ty) {
+            let b_ty = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, b_ty);
+            let b = self.as_exact_size(b, b_ty, false, span)?;
+            return Ok(Expr::call_helper("$trustedZip", vec![a, b]));
+        }
+        let mut args = vec![a, b];
+        args.extend(self.item_drop_of(a_ty, span)?);
+        Ok(Expr::call_helper("$lazyZip", args))
+    }
+
     /// One of `IterComb`'s, on `items`, a JS iterator (ADR 0517).
     #[allow(clippy::too_many_arguments)]
     pub(in crate::lower) fn iter_comb(
@@ -325,12 +343,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     method(items, "flatMap", vec![each])
                 }
             },
-            // Of items with a destructor, each of its own it steps where the
-            // other's run out dropped (ADR 0465).
             IterComb::Zip => {
-                let mut args = vec![items, next()];
-                args.extend(self.item_drop_of(receiver_ty, span)?);
-                Expr::call(Expr::helper("$lazyZip"), args)
+                let b = next();
+                self.zipped((items, receiver_ty), (b, generic_args.type_at(1)), span)?
             }
             IterComb::Chain => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
             // Not fused, as Rust's `MapWhile` isn't: `$lazyMapWhile`.

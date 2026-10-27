@@ -469,10 +469,14 @@ What's refused is in [the limitations](limitations.md).
   [0139](../decisions/0139-lazy-chains.md)).
 - **`zip` takes its first side's next item, then its second's,** as std's
   `Zip::next` does, so where the second ends first, one more of the first
-  is made, its closure run. std's `collect` and `fold` of two iterators it
-  can index, a slice's or a range's, skip that one, which std's docs leave
-  unspecified: a closure that prints shows it
-  ([0139](../decisions/0139-lazy-chains.md)).
+  is made, its closure run. Of two sides std reads by index,
+  `TrustedRandomAccess`'s, a slice's, a range's or a `map` of one, it pairs
+  up to the shorter's length, as std does, by `for`, `next()` and
+  `collect()` alike: the first side is never stepped once the second has
+  none ([0973](../decisions/0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)).
+  Of other sides std's `collect` and `fold` alone skip that item, which
+  std's docs leave unspecified: a closure that prints shows it
+  ([0139](../decisions/0139-lazy-chains.md), #380).
 - **A shared slice is a copy,** `&v[a..b]`, `split_at` and `get(a..b)`:
   nothing changes `v` while it's borrowed
   ([0153](../decisions/0153-collection-and-cell-methods.md)). **A `&mut`
@@ -903,10 +907,11 @@ React and JSX are [their own pages](README.md#react).
     `step_by`'s of it, or `(0, None)`:
     an endless `n..`'s too, Rust's `(usize::MAX, None)`.
 15. `zip` makes one more of its first side's items where its second ends
-    first, as `Zip::next` does, also where std's wouldn't: where both sides
-    know their length, a `map` of a range or of a slice's items, std's
-    specialization stops at the shorter by `for`, `next()`, `collect()` or
-    `count()` alike.
+    first, as `Zip::next` does, also by `collect()` and `fold`, where std's
+    stops at the shorter: of sides that know their length but that std
+    can't read by index, a `Vec`'s `into_iter()` or a `rev()` (#380). Of
+    sides it can, a `map` of a range or of a slice's items, it stops at the
+    shorter as std does (ADR 0973).
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
 17. Where the crate's iterator's impl writes its own `fold`, std's

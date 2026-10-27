@@ -7,11 +7,13 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
+  $mapEnds,
   $next,
   $nextSome,
   $position,
   $slice,
   $someValue,
+  $trustedZip,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -118,11 +120,11 @@ function main() {
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);
   console.log(`${counted.reduce((n) => n + 1, 0)}`);
-  const pairs = $lazyZip(
+  const pairs = $trustedZip(
     $slice(v, 0, 2)
       .values()
       .map((x) => noisy("left", x)),
-    v.values().map((x) => noisy("right", x)),
+    $mapEnds($iter(v), (x) => noisy("right", x)),
   ).toArray();
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const short = $lazyZip(

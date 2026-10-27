@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "zip-by-index-unasked",
+    breaks: "a zip of two `TrustedRandomAccess` sides is the general `$lazyZip`: `v.iter().map(f).zip(w.iter())` runs `f` once more than std, which stops at the shorter (ADR 0973)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if crate::lower::recognition::zips_by_index(self.tcx, self.typing_env, a_ty, b_ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index.rs$"],
+  },
+  {
     name: "step-by-past-a-skip-filtered",
     breaks: "a `step_by` whose first step is a `skip`'s `nth` of a reversed `Vec` is a `filter`, whose fold reaches `Skip::fold`, dropping back to front (#294)",
     file: "src/lower/combinators/adapters.rs",

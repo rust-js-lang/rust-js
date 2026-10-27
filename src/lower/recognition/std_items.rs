@@ -488,6 +488,61 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
     })
 }
 
+/// Whether std's zip of `a` and `b`, `IntoIterator`s, reads each item by
+/// its index, as its
+/// `TrustedRandomAccess` specialization does, where that's seen: both
+/// sides `TrustedRandomAccess`, a slice's or a range's say, and a step of
+/// `a` may run code, its `MAY_HAVE_SIDE_EFFECT`, a `map`'s closure or a
+/// `cloned()`'s clone. It pairs while both have an item left, so `a` is
+/// never stepped once `b` has none, where the general impl steps `a` first
+/// (ADR 0973).
+pub(crate) fn zips_by_index<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    a: Ty<'tcx>,
+    b: Ty<'tcx>,
+) -> bool {
+    let [a, b] = [a, b].map(|ty| iterator_type_of(tcx, typing_env, ty));
+    let Some(random_access) = registry::by_path(tcx, "core", &["iter", "TrustedRandomAccess"]) else {
+        return false;
+    };
+    let is_random_access = |ty: Ty<'tcx>| {
+        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, random_access, [ty]));
+        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+    };
+    is_random_access(a) && is_random_access(b) && steps_code(tcx, typing_env, a)
+}
+
+/// `<ty as IntoIterator>::IntoIter`, what `ty` is stepped as, `zip`'s
+/// argument's: an iterator's, itself.
+pub(crate) fn iterator_type_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    let into_iterator = std_item(tcx, StdItem::IntoIterator);
+    let into_iter = trait_method(tcx, into_iterator, "IntoIter");
+    let projection = Ty::new_projection(tcx, ty::IsRigid::No, into_iter, [ty]);
+    tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))
+        .unwrap_or(projection)
+}
+
+/// `MAY_HAVE_SIDE_EFFECT` of `ty`, a `TrustedRandomAccess`: whether reading
+/// an item of it may run code. Where rustc can't say, it may.
+fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    let effect = registry::by_path(tcx, "core", &["iter", "TrustedRandomAccessNoCoerce"]).and_then(|no_coerce| {
+        tcx.associated_items(no_coerce)
+            .filter_by_name_unhygienic(Symbol::intern("MAY_HAVE_SIDE_EFFECT"))
+            .next()
+            .map(|item| item.def_id)
+    });
+    let value = effect.and_then(|effect| {
+        let args = tcx.mk_args(&[tcx.erase_and_anonymize_regions(ty).into()]);
+        let instance = ty::Instance::try_resolve(tcx, typing_env, effect, args).ok()??;
+        let value = tcx
+            .const_eval_instance(typing_env, instance, rustc_span::DUMMY_SP)
+            .ok()?;
+        value.try_to_scalar()?.to_bool().discard_err()
+    });
+    value.unwrap_or(true)
+}
+
 /// Whether std's type `adt` has bodies `@rust-js/std` compiles for this
 /// build: a compiled iterator's, or a private struct one holds,
 /// `FlattenCompat` of a `Flatten`, a struct as the crate's are.

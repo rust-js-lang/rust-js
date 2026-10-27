@@ -24,6 +24,28 @@ function $lazyZip(a, b, dropA) {
   return zipped;
 }
 
+// `a.zip(b)` std reads by index, its sides `TrustedRandomAccess` and a
+// step of `a` running code, a `map`'s closure: a pair of each's next while
+// both have one, `a` never stepped once `b`, which knows its length, has
+// none, as std's zip pairs them up to the shorter's length (ADR 0973).
+function $trustedZip(a, b) {
+  const left = a[Symbol.iterator]();
+  const zipped = new $Steps(
+    () => {
+      if (b.len() === 0) return { done: true, value: undefined };
+      const item = left.next();
+      if (item.done) return item;
+      return { done: false, value: [item.value, b.next().value] };
+    },
+    () => {
+      left.return?.();
+      b.return?.();
+    },
+  );
+  zipped.from = [left, b];
+  return zipped;
+}
+
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,
 // `$iter`s: the longer trimmed from its back to the shorter's length, then
 // each's back paired, as Rust's `Zip::next_back` does (ADR 0493).

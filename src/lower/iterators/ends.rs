@@ -212,7 +212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let a = self.iterable_items(a, tys[0], span, out)?;
                 let b = self.iterable_items(b, tys[1], span, out)?;
-                Expr::call_helper("$lazyZip", vec![a, b])
+                self.zipped((a, tys[0]), (b, tys[1]), span)?
             }
             Std::IterSource(IterSource::Once) => Expr::array(vec![arg()]),
             Std::IterSource(IterSource::Empty) => Expr::array(vec![]),

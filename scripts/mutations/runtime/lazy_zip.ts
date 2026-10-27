@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "zip-by-index-steps-a",
+    breaks: "`$trustedZip` steps `a` before asking whether `b` has an item left, as the general zip does: the closure runs once more (ADR 0973)",
+    file: "src/runtime/lazy_zip.js",
+    find: "      if (b.len() === 0) return { done: true, value: undefined };\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index.rs$"],
+  },
+  {
     name: "zip-pulled-undropped",
     breaks: "an item `zip` steps where the other side's run out isn't dropped",
     file: "src/runtime/lazy_zip.js",
@@ -30,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "zip-closed-at-end",
     breaks: "a `zip` closes both sides at its first end, so a side that gives more after a `None` isn't stepped on",
     file: "src/runtime/lazy_zip.js",
-    find: "    if (item.done) return item;\n",
-    replace: "    if (item.done) {\n      close();\n      return item;\n    }\n",
+    find: "    const item = left.next();\n    if (item.done) return item;\n",
+    replace: "    const item = left.next();\n    if (item.done) {\n      close();\n      return item;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
   },
 ];

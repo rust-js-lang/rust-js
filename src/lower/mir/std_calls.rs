@@ -944,6 +944,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if !matches!(comb, IterComb::Zip | IterComb::Chain) {
                                 return Ok(e);
                             }
+                            // An iterator a zip by index asks its length of, as
+                            // it is, `zipped` makes it knowing it (ADR 0973).
+                            if comb == IterComb::Zip
+                                && this.implements_iterator(ty)
+                                && crate::lower::recognition::zips_by_index(this.tcx, this.typing_env, iter_ty, ty)
+                            {
+                                return Ok(e);
+                            }
                             let e = this.iterable_items(e, ty, span, out)?;
                             // Closed to drop what it holds, a JS iterator of it.
                             Ok(match this.closing_drop(ty, span)? {

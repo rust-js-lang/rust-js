@@ -1,6 +1,8 @@
 # 0139. A chain whose stages do what can be seen runs in Rust's order
 
 Status: Accepted. Amends [0036](0036-iterators-and-sorting.md); extends [0055](0055-iterator.md) and [0128](0128-iterator-sources.md).
+Amended by [0973](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md):
+a zip std reads by index stops at the shorter.
 
 Case: C, A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -118,6 +120,11 @@ const kept = v
 - [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made
 
 ## Amendment: `zip`'s first side, one item more
+
+Amended by [0973](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md):
+std 1.99's zip of two `TrustedRandomAccess` sides no longer steps the
+first side past the shorter's length by `next` either, and rust-js now
+stops there too, `$trustedZip`. What follows holds of other sides alone.
 
 `$lazyZip(a, b)` takes `a`'s next item, then `b`'s, and drops `a`'s where
 `b` has ended, as std's `Zip::next` does. std's `collect` and `fold` of
