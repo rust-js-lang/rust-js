@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "if-jumps-chained-past-the-first",
+    breaks: "of `if`s written without an `else` whose `break`s MIR joined, only the first ends with its own, the rest an `else if` chain (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            [inner] => unchained(inner, jump, without_else)?,\n",
+    replace: "            [inner] => return None,\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "ifs that each break a loop"],
+  },
+  {
+    name: "if-jumps-of-a-written-else",
+    breaks: "an `else if` chain the program wrote is unchained, each branch its own `break` (ADR 0879, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        if !without_else(chain) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "ifs that each break a loop"],
+  },
+  {
     name: "mir-tidy-branch-ends-kept",
     breaks: "a `match`'s arms stay labeled blocks, `bb1: { if (c) { s; break bb1; } t }`",
     file: "src/lower/mir/tidy/jumps/tails.rs",

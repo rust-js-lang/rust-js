@@ -542,6 +542,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written order steps", |b, _| {
                 js::statement_lists(b, &mut |s| written_order_steps(s))
             }),
+            // A chain of `if`s written without an `else` whose jumps MIR joined
+            // after it: each its own (ADR 0879, amended).
+            pass("written jumps of ifs", |b, h| {
+                js::statement_lists(b, &mut |s| written_jumps_of_ifs(s, &h.written.thens))
+            }),
             // The `continue`s a loop's body ends with anyway, which the
             // program didn't write, once those have each loop's shape: of
             // what was after a loop inside it, too, which `while heads` put

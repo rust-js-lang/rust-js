@@ -832,6 +832,55 @@ pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &
     }
 }
 
+/// `if (a) { x } else if (b) { y } else { z; continue; } break;`, a chain of
+/// `if`s the program wrote without an `else` (`Written::thens`) whose jumps
+/// MIR joined after it, the last `else` the rest, which never goes on: each
+/// `if` ends with the jump it wrote, `if (a) { x; break; } if (b) { y;
+/// break; } z; continue;`, as React's findCurrentFiberUsingSlowPath writes
+/// it (ADR 0879, amended). The same statements run on each path: the jump
+/// after the chain was reached only from its `then`s.
+pub(in crate::lower::mir::tidy) fn written_jumps_of_ifs(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+    let without_else = |s: &Stmt| {
+        thens
+            .iter()
+            .any(|(cond, _)| !s.span.is_none() && cond.lo <= s.span.lo && s.span.hi <= cond.hi)
+    };
+    // Of `chain`, an `if` followed by `jump`: each `then` ending with it,
+    // and the last `else`, which never goes on, after them.
+    fn unchained(chain: &Stmt, jump: &Stmt, without_else: &dyn Fn(&Stmt) -> bool) -> Option<Vec<Stmt>> {
+        let StmtKind::If(test, then, Some(otherwise)) = &chain.kind else {
+            return None;
+        };
+        if !without_else(chain) {
+            return None;
+        }
+        let rest = match otherwise.as_slice() {
+            [.., last] if ends(last) => otherwise.clone(),
+            [inner] => unchained(inner, jump, without_else)?,
+            _ => return None,
+        };
+        let mut then = then.clone();
+        if !then.last().is_some_and(ends) {
+            then.push(jump.clone());
+        }
+        Some(
+            std::iter::once(StmtKind::If(test.clone(), then, None).at(chain.span))
+                .chain(rest)
+                .collect(),
+        )
+    }
+    if let [.., chain, jump] = stmts.as_slice()
+        && matches!(
+            jump.kind,
+            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(_)
+        )
+        && let Some(unchained) = unchained(chain, jump, &without_else)
+    {
+        stmts.truncate(stmts.len() - 2);
+        stmts.extend(unchained);
+    }
+}
+
 /// What a run of statements a function ends with returns, as a person
 /// writes it: `if (a) { if (b) { return t; } } return f;` is `return a &&
 /// b ? t : f;` of a `bool`, and a `let … else`'s guard first, `if (!(a &&

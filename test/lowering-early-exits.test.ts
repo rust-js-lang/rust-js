@@ -527,3 +527,73 @@ pub fn root_of(fiber: &Rc<Fiber>) -> u8 {
     3, 1, 1, 5, 3,
   ]);
 });
+
+// React's findCurrentFiberUsingSlowPath: `while (child) { if (child === a) {
+// ..; break; } if (child === b) { ..; break; } child = child.sibling; }`.
+// MIR joins the two `break`s after an `if` chain, `if (..) { .. } else if
+// (..) { .. } else { child = ..; continue; } break;`: each `if` the
+// program wrote without an `else` ends with the `break` it wrote (ADR
+// 0879, amended).
+test("ifs that each break a loop are each written with their break", async () => {
+  const { js, lib } = await compiled("ifs-break-loop", `use std::rc::Rc;
+
+pub struct Node {
+    pub sibling: Option<Rc<Node>>,
+}
+
+pub fn list(n: u32) -> Option<Rc<Node>> {
+    (0..n).fold(None, |sibling, _| Some(Rc::new(Node { sibling })))
+}
+
+pub fn which(first: Option<Rc<Node>>, a: &Rc<Node>, b: &Rc<Node>) -> u8 {
+    let mut found = 0;
+    let mut child = first;
+    while let Some(current) = child {
+        if Rc::ptr_eq(&current, a) {
+            found = 1;
+            break;
+        }
+        if Rc::ptr_eq(&current, b) {
+            found = 2;
+            break;
+        }
+        child = current.sibling.clone();
+    }
+    found
+}
+
+pub fn chained(first: Option<Rc<Node>>, a: &Rc<Node>, b: &Rc<Node>) -> u8 {
+    let mut found = 0;
+    let mut child = first;
+    while let Some(current) = child {
+        if Rc::ptr_eq(&current, a) {
+            found = 1;
+        } else if Rc::ptr_eq(&current, b) {
+            found = 2;
+        } else {
+            child = current.sibling.clone();
+            continue;
+        }
+        break;
+    }
+    found
+}
+`);
+  // An `else` the program wrote stays.
+  expect(js).toContain("      found = 1;\n    } else if (child === b) {\n");
+  expect(js).toContain(`  while (child != null) {
+    if (child === a) {
+      found = 1;
+      break;
+    }
+    if (child === b) {
+      found = 2;
+      break;
+    }
+    child = child.sibling;
+  }`);
+  const nodes = lib.list(3 as never) as { sibling: unknown };
+  const second = nodes.sibling as { sibling: unknown };
+  const lone = lib.list(1 as never);
+  expect([lib.which(nodes as never, second as never, nodes as never), lib.which(nodes as never, lone as never, second as never), lib.which(nodes as never, lone as never, lone as never), lib.chained(nodes as never, second as never, nodes as never)]).toEqual([2, 2, 0, 2]);
+});

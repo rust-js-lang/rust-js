@@ -445,3 +445,27 @@ The port's own findCurrentFiberUsingSlowPath doesn't take this shape yet:
 MIR places the code after its loop inside it, `if (a.tag !== HostRoot) {
 break; } .. return ..;` before the loop's end, and the `break`s go there,
 which is still to do.
+
+## Amendment: `if`s written without an `else` that each `break` a loop end with it (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements
+run on each path: the jump after the chain was reached only from its
+`then`s.
+
+React's findCurrentFiberUsingSlowPath walks a child list, `while (child) {
+if (child === a) { ..; break; } if (child === b) { ..; break; } child =
+child.sibling; }` (c12 of the port's gaps). MIR joins the two `break`s
+after the `if`s, and its port printed `if (child === a) { .. } else if
+(child === b) { .. } else { child = child.sibling; continue; } break;`.
+
+**A chain of `if`s the program wrote without an `else`
+(`Written::thens`), followed by the jump MIR joined their ends into, its
+last `else` the rest, which never goes on, is each `if` ending with that
+jump and the rest after them** (`tails::written_jumps_of_ifs`), in tidy's
+`written` stage: `if (child === a) { ..; break; } if (child === b) { ..;
+break; } child = child.sibling;`. An `else` the program wrote stays.
+
+Held by `test/lowering-early-exits.test.ts`, "ifs that each break a loop
+are each written with their break", run, beside an `else if` chain the
+program wrote; the mutations `if-jumps-chained-past-the-first` and
+`if-jumps-of-a-written-else` (`mir/tidy/jumps/tails.ts`).
