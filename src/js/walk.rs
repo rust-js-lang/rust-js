@@ -33,7 +33,7 @@ macro_rules! walks {
                             $slotted(b, Slot::Else, f);
                         }
                     }
-                    StmtKind::While { body, .. }
+                    StmtKind::While { body, .. } | StmtKind::DoWhile { body, .. }
                     | StmtKind::ForOf { body, .. }
                     | StmtKind::For { body, .. }
                     | StmtKind::Labeled(_, body) => $slotted(body, Slot::Block, f),
@@ -83,7 +83,7 @@ macro_rules! walks {
                             $exprs(b, f);
                         }
                     }
-                    StmtKind::While { cond, body, .. } => {
+                    StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                         cond.$expr(f);
                         $exprs(body, f);
                     }

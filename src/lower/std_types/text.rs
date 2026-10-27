@@ -1086,6 +1086,7 @@ pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &HashSet<String>) 
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => appended(body, text),
+            StmtKind::DoWhile { body, .. } => appended(body, text),
             StmtKind::Switch { cases, default, .. } => {
                 js::case_lists_mut(cases, default).for_each(|body| appended(body, text));
             }

@@ -436,6 +436,14 @@ pub enum StmtKind {
         cond: Expr,
         body: Vec<Stmt>,
     },
+    /// `do { .. } while (cond);`: a `while (true)` each of whose turns ends
+    /// giving its variable its next value and testing it, preparation's
+    /// alone, last (ADR 0978).
+    DoWhile {
+        label: Option<String>,
+        body: Vec<Stmt>,
+        cond: Expr,
+    },
     /// `for (const name of iterable) { .. }`: a `for` over a sequence (ADR 0025),
     /// and `for (const [i, x] of ..)` for a tuple's parts. `let` if one's `mut`.
     /// Of `keys`, `for (const key in iterable)`, the keys JS's `for…in`

@@ -182,6 +182,7 @@ fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
         let found = match &stmt.kind {
             StmtKind::If(_, a, b) => after(a, alias).or_else(|| b.as_deref().and_then(|b| after(b, alias))),
             StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => after(body, alias),
@@ -334,7 +335,9 @@ impl Walk {
                         self.stmts(b, looped);
                     }
                 }
-                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } => self.stmts(body, true),
+                StmtKind::While { body, .. } | StmtKind::DoWhile { body, .. } | StmtKind::ForOf { body, .. } => {
+                    self.stmts(body, true)
+                }
                 StmtKind::For { name, body, .. } => {
                     self.sets.push((self.at, name.clone()));
                     self.stmts(body, true);

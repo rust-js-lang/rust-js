@@ -68,6 +68,9 @@ fn shadowed_block(
             StmtKind::While { body, .. } | StmtKind::For { body, .. } | StmtKind::Labeled(_, body) => {
                 shadowed_block(body, &[], user, captured);
             }
+            StmtKind::DoWhile { body, .. } => {
+                shadowed_block(body, &[], user, captured);
+            }
             StmtKind::Switch { cases, default, .. } => {
                 for body in js::case_lists_mut(cases, default) {
                     shadowed_block(body, &[], user, captured);

@@ -164,7 +164,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                     block(no, visitor);
                 }
             }
-            StmtKind::While { cond, body, .. } => {
+            StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 expr(cond, visitor);
                 block(body, visitor);
             }

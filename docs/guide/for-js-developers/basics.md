@@ -2094,6 +2094,59 @@ export function selfTime(fiber) {
 }
 ```
 
+A `loop` each of whose ways ends advancing to the next item where it
+passes a test, else `break`, the same test of each, is a `do … while`, as
+React walks a circular queue
+([ADR 0978](../../decisions/0978-a-loop-that-advances-then-tests-at-each-end-is-a-do-while.md)):
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Update {
+    pub lane: u32,
+    pub next: RefCell<Option<Rc<Update>>>,
+}
+
+pub fn sum(first: &Rc<Update>, skip: u32) -> u32 {
+    let mut total = 0;
+    let mut update = Rc::clone(first);
+    loop {
+        if update.lane == skip {
+            let next = update.next.borrow().clone();
+            match next {
+                Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+                _ => break,
+            }
+            continue;
+        }
+        total += update.lane;
+        let next = update.next.borrow().clone();
+        match next {
+            Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+            _ => break,
+        }
+    }
+    total
+}
+```
+
+```js
+export function sum(first, skip) {
+  let total = 0;
+  let update = first;
+  do {
+    if (update.lane === skip) {
+      update = update.next;
+    } else {
+      total = (total + update.lane) >>> 0;
+      update = update.next;
+    }
+  } while (update != null && update !== first);
+  return total;
+}
+```
+
 ## `null` and `undefined`: `Option`
 
 Rust has no `null`. A value that may be missing is an `Option<T>`: `Some(v)`

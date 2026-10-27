@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod catches;
+mod do_whiles;
 mod initializers;
 mod reclaim;
 mod shadows;
@@ -43,6 +44,7 @@ pub fn module(module: &mut js::Module) {
     stepped(module);
     read_together(module);
     js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
+    js::each_item_block_mut(&mut module.items, &mut |stmts| do_whiles::do_whiles(stmts)); // Last (ADR 0978).
 }
 
 /// `const deleteChild = (returnFiber, child) => { .. };`, a closure of
@@ -768,7 +770,7 @@ fn block(body: &mut Vec<Stmt>) {
                     block(b);
                 }
             }
-            StmtKind::While { cond, body, .. } => {
+            StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 // Its test as a test, as an `if`'s.
                 *cond = cond.tested();
                 expr(cond);

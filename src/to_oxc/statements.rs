@@ -546,6 +546,10 @@ impl<'a> Cx<'a> {
                 let w = Statement::new_while_statement(sp, self.expr(cond), self.block(body), b);
                 self.labeled(sp, label.as_deref(), w)
             }
+            StmtKind::DoWhile { label, body, cond } => {
+                let w = Statement::new_do_while_statement(sp, self.block(body), self.expr(cond), b);
+                self.labeled(sp, label.as_deref(), w)
+            }
             StmtKind::ForOf {
                 label,
                 pattern,

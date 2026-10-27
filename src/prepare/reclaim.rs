@@ -346,7 +346,9 @@ fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
                     declared_mut(b, f);
                 }
             }
-            StmtKind::While { body, .. } | StmtKind::Labeled(_, body) => declared_mut(body, f),
+            StmtKind::While { body, .. } | StmtKind::DoWhile { body, .. } | StmtKind::Labeled(_, body) => {
+                declared_mut(body, f)
+            }
             StmtKind::Switch { cases, default, .. } => {
                 js::case_lists_mut(cases, default).for_each(|body| declared_mut(body, f));
             }

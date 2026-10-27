@@ -435,6 +435,7 @@ pub fn returns(stmts: &[Stmt]) -> (bool, bool) {
                 (x || z, y || w)
             }
             StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => returns(body),
@@ -474,7 +475,9 @@ fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool 
         StmtKind::If(test, a, b) => {
             one(test) && substituted(a, with) && b.as_deref_mut().is_none_or(|b| substituted(b, with))
         }
-        StmtKind::While { cond, body, .. } => one(cond) && substituted(body, with),
+        StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
+            one(cond) && substituted(body, with)
+        }
         StmtKind::ForOf { iterable, body, .. } => one(iterable) && substituted(body, with),
         StmtKind::For {
             start,
@@ -544,9 +547,10 @@ fn returns_broken(body: &mut [Stmt]) -> bool {
             StmtKind::If(_, a, b) => broken(a) && b.as_deref_mut().is_none_or(broken),
             StmtKind::Labeled(_, a) => broken(a),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => broken(a) && broken(b),
-            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-                !returns(body).0
-            }
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. } => !returns(body).0,
             // Whose `break` would leave it.
             StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
             _ => true,

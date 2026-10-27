@@ -276,7 +276,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                     visit_stmts(els, read);
                 }
             }
-            StmtKind::While { cond, body, .. } => {
+            StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 cond.visit_vars(read);
                 visit_stmts(body, read);
             }
@@ -606,7 +606,9 @@ fn rename_binders(stmts: &mut [Stmt], rename: &mut dyn FnMut(&mut String)) {
                     rename_binders(b, rename);
                 }
             }
-            StmtKind::While { body, .. } | StmtKind::Labeled(_, body) => rename_binders(body, rename),
+            StmtKind::While { body, .. } | StmtKind::DoWhile { body, .. } | StmtKind::Labeled(_, body) => {
+                rename_binders(body, rename)
+            }
             StmtKind::Switch { cases, default, .. } => {
                 case_lists_mut(cases, default).for_each(|body| rename_binders(body, rename));
             }
@@ -654,6 +656,7 @@ fn unspan(stmts: &mut [Stmt]) {
                 }
             }
             StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
             | StmtKind::ForOf { body, .. }
             | StmtKind::For { body, .. }
             | StmtKind::Labeled(_, body) => unspan(body),
@@ -678,9 +681,10 @@ pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
         StmtKind::Labeled(_, body) => breaks(body, label),
         // In a loop of its own, one that names it; in a `switch`, which a
         // `break` of no label would leave, too (ADR 0629).
-        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-            label.is_some_and(|l| names_break(body, l))
-        }
+        StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. } => label.is_some_and(|l| names_break(body, l)),
         StmtKind::Switch { cases, default, .. } => {
             label.is_some_and(|l| case_lists(cases, default).any(|body| names_break(body, l)))
         }
@@ -699,9 +703,10 @@ pub fn continues(stmts: &[Stmt], label: Option<&str>) -> bool {
         StmtKind::If(_, a, b) => continues(a, label) || b.as_deref().is_some_and(|b| continues(b, label)),
         StmtKind::Labeled(_, body) => continues(body, label),
         StmtKind::Switch { cases, default, .. } => case_lists(cases, default).any(|body| continues(body, label)),
-        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-            label.is_some_and(|l| names_jump(body, l))
-        }
+        StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. } => label.is_some_and(|l| names_jump(body, l)),
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => continues(a, label) || continues(b, label),
         _ => false,
     })
@@ -713,6 +718,7 @@ pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
         StmtKind::Break(Some(l)) => l == label,
         StmtKind::If(_, a, b) => names_break(a, label) || b.as_deref().is_some_and(|b| names_break(b, label)),
         StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
         | StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }
         | StmtKind::Labeled(_, body) => names_break(body, label),
@@ -728,6 +734,7 @@ pub fn names_jump(stmts: &[Stmt], label: &str) -> bool {
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
         StmtKind::If(_, a, b) => names_jump(a, label) || b.as_deref().is_some_and(|b| names_jump(b, label)),
         StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
         | StmtKind::ForOf { body, .. }
         | StmtKind::For { body, .. }
         | StmtKind::Labeled(_, body) => names_jump(body, label),

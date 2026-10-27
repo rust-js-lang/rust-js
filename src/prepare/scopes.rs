@@ -250,7 +250,7 @@ impl Walk {
                     self.block(els);
                 }
             }
-            StmtKind::While { cond, body, .. } => {
+            StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 self.expr(cond);
                 self.block(body);
             }
