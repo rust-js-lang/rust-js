@@ -769,7 +769,9 @@ pub fn has(value: Option<&Unknown>) -> bool {
 // ADR 0298: a `const` only tests read is a test itself, as react.dev's
 // Preview has `const hideContent = error || !iframeComputedHeight ||
 // !bundlerIsReady;`: what it's made of is read by its truth. One read as a
-// value keeps its boolean.
+// value keeps its boolean. One that's one \`Option\`'s presence alone is
+// \`x != null\`, a \`bool\` still, as React's completeWork writes \`const
+// isTimedOutSuspense = nextState !== null;\` (amended).
 test("a const only tests read is read by its truth", async () => {
   const dir = fixture("tested-consts");
   writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
@@ -785,6 +787,10 @@ pub fn shown(error: Option<&Failure>, ready: bool) -> u32 {
     if !hide && ready {
         n += 10;
     }
+    let failed = error.is_some();
+    if failed {
+        n += 1000;
+    }
     n + if hide { 100 } else { 0 }
 }
 
@@ -797,9 +803,10 @@ pub fn kept(error: Option<&Failure>, ready: bool) -> (bool, u32) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const hide = error || !ready;");
   expect(js).toContain("const has = !!error || !ready;");
+  expect(js).toContain("const failed = error != null;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown({ message: "" }, true), lib.shown(undefined, true), lib.shown(undefined, false), lib.kept({ message: "" }, true)])
-    .toEqual([101, 10, 101, [true, 1]]);
+    .toEqual([1101, 10, 101, [true, 1]]);
 });
 
 // An `Option` compared with a `Some(..)`, of what's never `undefined` or

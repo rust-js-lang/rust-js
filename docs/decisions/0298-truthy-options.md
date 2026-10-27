@@ -10,7 +10,8 @@ nullish, whatever it holds"). **Amended a third time, which restores the
 first decision and keeps that one's readability: an `Option` is tested by
 what its payload's JS value may be, by its truth where that's never falsy,
 against `null` where it may be** (below, "An `Option` is tested by what
-its payload may be").
+its payload may be"). Amended last: a `const` of one `Option`'s presence
+alone, read only by tests, is `x != null` (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -316,3 +317,29 @@ always marks the `!!x` it makes. Its one caller,
 `null_test(.., true)`, and the arm's mutation `presence-truthy-unread`,
 which survived, is gone with it. `text-truth-chained` still breaks the
 optional-chain fold the same way, inline, and is still caught.
+
+## Amendment: a const of one `Option`'s presence alone is `x != null`
+
+React's completeWork writes `const isTimedOutSuspense = nextState !==
+null; if (isTimedOutSuspense) { .. }`. Its port, `let is_timed_out_suspense
+= next_state.is_some();`, printed `const isTimedOutSuspense = nextState;`:
+`prepare.rs`'s `tested_constants` reads a `const` only tests read by its
+truth, as the amendment of react.dev's Preview decided for `const hide =
+error || !ready`, and so a name meant to hold a `bool` held the object.
+
+The user decided (2026-10-27, cw3): **a `const` only tests read that is
+one `Option`'s presence alone, `!!x` (`Known::Presence`), is `x !=
+null`**: a test still, and a `bool`, as upstream writes it. A chain,
+`!!error || !ready`, keeps its parts read by their truth, `error ||
+!ready`, as before; one read as a value keeps its `!!`. ADR 0262 case N:
+`x != null` and `x`'s truth answer the same of an `Option` never falsy
+(ADR 0298), and the const is read only by tests.
+
+Tidy's `negations`, which rebuilt each `!` read in place with
+`Expr::unary`, dropped the `Known::Presence` mark `Expr::presence` gives
+`!!x`; it keeps it now, where the rebuilt is the same `!`, so the mark
+reaches preparation.
+
+Held by `test/lowering-options.test.ts`'s "a const only tests read",
+`const failed = error != null;`; mutations `tested-const-presence-truth`
+(`prepare.ts`) and `negation-presence-dropped` (`lower/mir/tidy.ts`).

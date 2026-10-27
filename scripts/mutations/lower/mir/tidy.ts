@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     "name": "late-not-unsimplified",
     "breaks": "`!matches!(t, \"pre\")` read in place stays `!(t === \"pre\")`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "            ..Expr::unary(*op, (**arg).clone())\n",
-    "replace": "            kind: ExprKind::Unary(*op, arg.clone()),\n            facts: js::Facts::NONE,\n",
+    "find": "        let made = Expr::unary(*op, (**arg).clone());\n",
+    "replace": "        let made = Expr { kind: ExprKind::Unary(*op, arg.clone()), facts: js::Facts::NONE, span: e.span };\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "negated matches, string methods"]
   },
   {
@@ -263,5 +263,13 @@ export const mutations: Mutation[] = [
     find: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {\n",
     replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
     tests: ["test/lowering-arrows.test.ts"],
+  },
+  {
+    "name": "negation-presence-dropped",
+    "breaks": "an `Option`'s presence read in place, `!!error`, isn't known as one after `negations`, so a const only tests read of it is `const failed = error;`, not `error != null` (ADR 0298, amended)",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        let presence = e.facts.has(js::Known::Presence) && ",
+    "replace": "        let presence = false && ",
+    "tests": ["test/lowering-options.test.ts", "-t", "a const only tests read"]
   },
 ];

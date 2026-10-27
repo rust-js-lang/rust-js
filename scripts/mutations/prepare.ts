@@ -778,4 +778,12 @@ export const mutations: Mutation[] = [
     "replace": "            let bitwise = true;\n",
     "tests": ["test/lowering-math.test.ts", "-t", "bitwise chain"]
   },
+  {
+    name: "tested-const-presence-truth",
+    breaks: "a `const` only tests read that's one `Option`'s presence, `!!error`, is `const failed = error;`, the object, not `error != null` (ADR 0298, amended)",
+    file: "src/prepare.rs",
+    find: "                        Some(option) if matches!(value.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
+    replace: "                        Some(option) if false => {\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read"],
+  },
 ];

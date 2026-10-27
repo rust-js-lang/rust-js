@@ -2159,7 +2159,11 @@ export function isAdult(p) {
   `x == null`, so `Some(0)`, `Some("")` and `Some(false)` are there
   ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
   `is_some()`, `if let Some(..)`, `while let Some(..)` and `?` all test
-  it so.
+  it so. A `let` of `is_some()` alone that only tests read is `const
+  failed = error != null;`, a `bool` as its name says; one of more,
+  `error.is_some() || !ready`, is read by its parts' truth, `const hide =
+  error || !ready;`
+  ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
 - A let chain after a test of its own, `if debug && let Some(value) =
   info.value.get()`, which clippy asks for over two `if`s, reads the place
   once, as a person writes it: `if (debug) { const value = info.value; if
