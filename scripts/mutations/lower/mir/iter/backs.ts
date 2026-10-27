@@ -55,8 +55,8 @@ export const mutations: Mutation[] = [
     name: "double-ended-next-back-refused",
     breaks: "`next_back()` of a generic `T: DoubleEndedIterator` is refused",
     file: "src/lower/mir/iter/backs.rs",
-    find: "|| self.knows_its_back(iter_ty) ||",
-    replace: "||",
+    find: "        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty)\n",
+    replace: "        self.steps_an_array(iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {

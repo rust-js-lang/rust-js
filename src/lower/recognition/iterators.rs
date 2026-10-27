@@ -1315,14 +1315,6 @@ pub(crate) fn is_compiled_std_iterator(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     }))
 }
 
-/// What std's adapter of type `ty` that may be explicit (ADR 0542) steps
-/// from its back and counts as its source does, `I` of `Enumerate<I>`, of
-/// `Take<I>` or of `Skip<I>`: the one answer, of what a use site makes
-/// knowing them.
-pub(crate) fn held_steps_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    counted_adapter(tcx, ty).map(|(_, _, source)| source)
-}
-
 /// What std's `Enumerate` adapter of type `ty` counts, `I` of `Enumerate<I>`.
 pub(crate) fn enumerated_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     counted_adapter(tcx, ty).and_then(|(kind, _, source)| (kind == Counted::Enumerate).then_some(source))

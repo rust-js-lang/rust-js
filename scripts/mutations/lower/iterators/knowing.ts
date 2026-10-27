@@ -99,28 +99,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
-    name: "held-enumerate-array-refused",
-    breaks: "a held kind's `Enumerate` of an array's iterator, made knowing its back, is refused from its back",
-    file: "src/lower/iterators/knowing.rs",
-    find: "                .is_some_and(|source| self.steps_an_array(source) || self.range_kind(source).is_some())\n",
-    replace: "                .is_some_and(|source| self.range_kind(source).is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
-  },
-  {
     name: "back-stepped-unknowing",
     breaks: "a map the crate steps from its back isn't made knowing it",
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
     replace: "            return self.knows_its_back(source);\n",
     tests: ["test/corpus.test.ts", "-t", "^filters_held_double_ended.rs$"],
-  },
-  {
-    name: "held-never-knowing",
-    breaks: "a held adapter's source isn't given a use site's back and length",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        if !self.explicit_adapter(ty) {\n            return Ok(None);\n        }\n        let Some(source)",
-    replace: "        if true {\n            return Ok(None);\n        }\n        let Some(source)",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
     name: "std-iterator-hint-missing",
@@ -153,14 +137,6 @@ export const mutations: Mutation[] = [
     find: "            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()));\n",
     replace: "            .is_some_and(|_| true);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
-  },
-  {
-    name: "counted-length-unknown",
-    breaks: "`len()` of an explicit `take` or `skip` is read as an array iterator's, `NaN`",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            return self.knows_its_length(source)\n                || self.steps_an_array(source)\n",
-    replace: "            return false && self.knows_its_length(source)\n                || false && self.steps_an_array(source)\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
   },
   {
     name: "peekable-hint-undictionaried",

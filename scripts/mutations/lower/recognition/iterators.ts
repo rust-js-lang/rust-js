@@ -528,14 +528,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
   {
-    name: "held-steps-enumerate-only",
-    breaks: "an explicit `take` or `skip` can't be stepped from its back, refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "    counted_adapter(tcx, ty).map(|(_, _, source)| source)\n",
-    replace: "    enumerated_source(tcx, ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
-  },
-  {
     name: "rev-of-closing-unclosed",
     breaks: "a `rev()` of a chain over items with a destructor isn't closed as it's dropped, so what it never gave isn't dropped",
     file: "src/lower/recognition/iterators.rs",

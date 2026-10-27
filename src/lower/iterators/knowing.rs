@@ -158,16 +158,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.made_knowing(source, self.recognition().exact_size_iterator())
                 || self.steps_an_array(source) && self.knows_its_back(ty);
         }
-        // An explicit `Take` or `Skip`, which counts from its source, made as
-        // capable as its type is, an array's iterator or an exclusive range's
-        // knowing its length (ADR 0542).
-        if self.explicit_adapter(ty)
-            && let Some(source) = crate::lower::recognition::held_steps_source(self.tcx, ty)
-        {
-            return self.knows_its_length(source)
-                || self.steps_an_array(source)
-                || self.range_kind(source) == Some(crate::lower::std_types::range::RangeKind::Exclusive);
-        }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);
         }
@@ -346,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return self.user_iterator_knowing(value, ty, (true, false), span);
         }
-        if self.knows_its_back(ty) || self.held_knows_its_back(ty) {
+        if self.knows_its_back(ty) {
             return Ok(value);
         }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
@@ -966,15 +956,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.evidence_for(ty::TraitRef::new(self.tcx, trait_id, [ty]))
     }
 
-    /// Whether `ty` is an adapter a struct holds (ADR 0542) made knowing its
-    /// back where it's made, of an array's iterator or a range, which it
-    /// steps as it is: the one answer, of what steps it from its back.
-    pub(in crate::lower) fn held_knows_its_back(&self, ty: Ty<'tcx>) -> bool {
-        self.explicit_adapter(ty)
-            && crate::lower::recognition::held_steps_source(self.tcx, ty.peel_refs())
-                .is_some_and(|source| self.steps_an_array(source) || self.range_kind(source).is_some())
-    }
-
     /// `it`, an adapter of type `ty` a struct holds (ADR 0542), of a source
     /// given as it is: it, stepped from its back and counted by this use's
     /// dictionaries of what it steps, `$knowing(it,
@@ -1040,24 +1021,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Ok(Some(Expr::call_helper("$knowing", given)));
         }
-        if !self.explicit_adapter(ty) {
-            return Ok(None);
-        }
-        let Some(source) = crate::lower::recognition::held_steps_source(self.tcx, ty) else {
-            return Ok(None);
-        };
-        let entry = |trait_id: Option<DefId>| -> Option<Expr> {
-            let trait_id = trait_id?;
-            let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
-            Some(Expr::member(self.iterator_evidence(source, trait_id)?, name))
-        };
-        let back = entry(self.recognition().double_ended_iterator());
-        let len = entry(self.recognition().exact_size_iterator());
-        if back.is_none() && len.is_none() {
-            return Ok(None);
-        }
-        let [back, len] = [back, len].map(|entry| entry.unwrap_or_else(Expr::undefined));
-        Ok(Some(Expr::call_helper("$knowing", vec![it, back, len])))
+        Ok(None)
     }
 }
 

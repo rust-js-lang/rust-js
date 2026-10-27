@@ -384,7 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn has_a_back(&self, iter_ty: Ty<'tcx>) -> bool {
-        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty) || self.held_knows_its_back(iter_ty)
+        self.steps_an_array(iter_ty) || self.knows_its_back(iter_ty)
     }
 
     /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its
