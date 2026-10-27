@@ -234,6 +234,20 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                         // however its caller is compiled, `js::object::keys`'s
                         // `Vec<String>`.
                         Some(callee) if super::bindings::is_binding(tcx, callee) => false,
+                        // A slice's `concat()`, an array of its own made of
+                        // its parts' items, `[...a, ...b]`: what it may share
+                        // of what it's given is its items, `addValueToProperties`'
+                        // `Option<&Unknown>`s (ADR 0914, amended).
+                        Some(_)
+                            if let Some((callee, generic)) = func.const_fn_def()
+                                && self.copying.recognition.classify(callee, generic)
+                                    == Some(super::Std::Comb(super::combinators::Comb::Concat)) =>
+                        {
+                            match destination.ty(&self.body.local_decls, tcx).ty.kind() {
+                                ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),
+                                _ => true,
+                            }
+                        }
                         // Another's, std's: one that makes what it's given a
                         // reference to, `Cell::get`, `clone`, `to_vec`.
                         Some(_) => {

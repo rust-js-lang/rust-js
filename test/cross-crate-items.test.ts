@@ -966,3 +966,45 @@ pub fn names(props: &Unknown) -> Vec<String> {
   const { names } = await import(join(dir, "app", "lib.js"));
   expect(names({ a: 1, b: 2 })).toEqual(["2"]);
 });
+
+// ADR 0914, amended: a slice's `concat()` makes an array of its own, `[...a,
+// ...b]`, so what a library's function of one may share with what it's
+// given is its items: React's shared's addValueToProperties, whose
+// `[&array[..1], &[Some(..)]].concat()` of `Option<&Unknown>`s the
+// reconciler's memo cache's `Vec` of them is pushed to, is imported. One of
+// items the crate changes in place, `Vec<u32>`s it pushes to, is compiled
+// again, its copies the crate's: the crate's push leaves what it was given
+// as it was, as Rust's clones do.
+test("a library's function of a concat is imported, unless its items are what the crate changes", async () => {
+  const dir = fixture("cross-crate-concat");
+  const { app } = compiled(dir, `use js::Unknown;
+
+pub fn truncated(array: &[Option<&'static Unknown>]) -> usize {
+    [&array[..1], &[Some(js::unknown("…"))]].concat().len()
+}
+
+pub fn joined(a: &[Vec<u32>], b: &[Vec<u32>]) -> Vec<Vec<u32>> {
+    [a, b].concat()
+}
+`, `use js::Unknown;
+
+pub fn log(array: &[Option<&'static Unknown>]) -> usize {
+    dep::truncated(array)
+}
+
+pub fn push(data: &mut Vec<Option<&'static Unknown>>, value: Option<&'static Unknown>) {
+    data.push(value);
+}
+
+pub fn pushed(x: &[Vec<u32>], y: &[Vec<u32>]) -> usize {
+    let mut joined = dep::joined(x, y);
+    joined[0].push(9);
+    x[0].len()
+}
+`);
+  expect(app).toContain('import { truncated } from "../dep/lib.js";\n');
+  expect(app).not.toContain("function truncated");
+  expect(app).toContain("function joined");
+  const lib = await import(join(dir, "app", "lib.js"));
+  expect([lib.log([null, null]), lib.pushed([[1], [2]], [[3]])]).toEqual([2, 1]);
+});

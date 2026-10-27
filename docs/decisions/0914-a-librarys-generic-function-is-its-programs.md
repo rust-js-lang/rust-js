@@ -9,7 +9,8 @@ and amends [0100](0100-separate-crates.md) and
 [0185](0185-library-trait-defaults.md); and a consumer gives an export the
 copy functions its contract says it takes; and a `Clone` bound, and a
 program's `Rc` of a type parameter's value, are what its callers give;
-and a binding's result copies nothing.
+and a binding's result copies nothing; and a slice's `concat()` copies
+its items alone.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for
 JS callers, so Rust's behavior holds for Rust callers, and JS's call is
@@ -600,3 +601,35 @@ Held by `test/crates/pairs/generic_boxed_drop/`, run as native Rust, and
 `test/crates.test.ts`'s "a consumer refuses a library's generic code it
 can't compile yet, and never crashes", with the mutations
 `optimized-boxes-read-through-pointer` and `ub-checks-in-library-mir`.
+
+## Amendment: a slice's `concat()` copies its items alone
+
+The binding's amendment above lifted half of what made React's reconciler
+compile its own copy of shared's `addObjectDiffToProperties`,
+`addValueToProperties`, `addObjectToProperties`, `readReactElementTypeof`
+and `getArrayKind`, about 620 lines with `bbN` labels, where it imports
+them. The other half (pt1's trigger): `addValueToProperties` truncates an
+array with std's `[&array[..1], &[Some(js::unknown("…"))]].concat()`, a
+`Vec<Option<&Unknown>>`, and the reconciler pushes to such a `Vec`, its
+memo cache's `memoCacheData.push(newData)`. `Copying` took a call of
+std's that makes what the crate changes in place, given a reference, for
+one that may copy what it was given, as `clone()` and `to_vec()` do,
+whose JS a library may leave the value it was given where its crate never
+changes one.
+
+**A slice's `concat()` (`Comb::Concat`, `into_flattened()`'s too) makes
+an array of its own, `[...a, ...b]` or `parts.flat()`: what it may share
+of what it's given is its items**, each copied as `copies_of` copies its
+item type. So a library's function of one copies what the crate changes
+only where its items may hold that, `holds(item)`: `Option<&Unknown>`
+doesn't, and `addValueToProperties` is imported; `Vec<u32>`s the crate
+pushes to do, and a library's `[a, b].concat()` of them is compiled
+again, its copies of them the crate's. Case N
+([0262](0262-when-rust-and-js-disagree.md)): the crate's JS is what it
+was, only where it's compiled changes.
+
+Held by `test/cross-crate-items.test.ts`'s "a library's function of a
+concat is imported, unless its items are what the crate changes", run:
+the `Vec<u32>`'s push leaves what the library was given as it was;
+mutations `concat-copies-its-array` and `concat-items-unasked`
+(`instances.ts`).

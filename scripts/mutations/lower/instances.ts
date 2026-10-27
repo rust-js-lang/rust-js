@@ -106,4 +106,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "binding's Vec is imported"],
   },
+  {
+    name: "concat-copies-its-array",
+    breaks: "a library's function of a slice's `concat()` of `Option<&Unknown>`s, which the crate pushes a `Vec` of, is compiled again, React's addValueToProperties' 620 lines in the reconciler (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),",
+    replace: "ty::Adt(..) => true,",
+    tests: ["test/cross-crate-items.test.ts", "-t", "of a concat is imported"],
+  },
+  {
+    name: "concat-items-unasked",
+    breaks: "a library's function of a `concat()` of `Vec<u32>`s the crate pushes to is imported, its library's JS sharing the arrays it was given, which the crate's push then changes (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: "ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),",
+    replace: "ty::Adt(_, made) => made.types().next().is_some_and(|_| false),",
+    tests: ["test/cross-crate-items.test.ts", "-t", "of a concat is imported"],
+  },
 ];
