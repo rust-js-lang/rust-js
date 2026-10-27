@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-struct-made-knowing",
+    breaks: "std's compiled struct given to std's `rev()` is wrapped in `$knowing` of the compiled back methods its dictionary already carries (ADR 0980)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                && !self.compiled_struct_at(given, span)\n            {\n",
+    replace: "            {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
+    snapshots: true,
+  },
+  {
     name: "result-items-unstepped",
     breaks: "a `Result` given to `chain` or `extend` is spread as the object it is: `TypeError: ... is not iterable` where Rust steps its `Ok` value (ADR 0923)",
     file: "src/lower/iterators/stepping.rs",

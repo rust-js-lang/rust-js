@@ -10,6 +10,8 @@ analysis makes the source of a held `rev()` knowing its back, and
 items with a destructor too. Amended by [0904](0904-a-loop-from-the-end-counts-down.md): a `for`
 over a slice's items reversed, or a range's, counts down, no
 `toReversed()` copy.
+Amended by [0980](0980-std-s-struct-given-to-rev-is-given-as-it-is.md):
+std's compiled struct given to `rev()` is given as it is.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a held `Rev`
 steps, from either end, what it counts, drops, clones and shows is std's,

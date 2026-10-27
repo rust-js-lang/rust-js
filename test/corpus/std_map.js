@@ -20,7 +20,6 @@ import {
   $foldOf,
   $iter,
   $iterator,
-  $knowing,
   $next,
   $nextBack,
   $rangeNext,
@@ -71,7 +70,6 @@ function lastOf(m, IDoubleEndedIterator) {
 
 function main() {
   const clone = { clone: (value) => value };
-  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const countdownExactSizeIterator = {
     len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
@@ -188,22 +186,7 @@ function main() {
     next: $next,
   });
   const back = iterator_rev(
-    $knowing(
-      cubes,
-      (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
-      undefined,
-      undefined,
-      (iterator, init, f, broke) =>
-        mapDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          { next_back: $nextBack },
-          $tryOf(broke),
-        ),
-    ),
+    cubes,
     { next: $next, fold: $foldOf },
     {
       next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
@@ -223,7 +206,7 @@ function main() {
   const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next, fold: $foldOf });
   const value$5 = $next(back);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator) })}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,
   );
 
   const by = "map's";

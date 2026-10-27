@@ -245,13 +245,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One given as it is to a std body compiled, `rev()`'s `self`,
             // that steps it from its back by its dictionary: of std's
             // adapter, a JS iterator, whose `next_back` is `$nextBack`,
-            // made knowing its back where it's given (ADR 0871).
+            // made knowing its back where it's given (ADR 0871). Not std's
+            // struct compiled, whose dictionary is its compiled back (ADR
+            // 0980).
             } else if crate::lower::recognition::is_compiled_std(self.tcx, callee)
                 && matches!(input.kind(), ty::Param(param) if crate::lower::iterators::given_as_it_is(self.tcx, callee, *param))
                 && self.steps_back_by_dictionary(callee, input)
                 && !crate::lower::recognition::known_by_bounds(given)
                 && !self.is_user_iterator(given)
                 && self.range_kind(given).is_none()
+                && !self.compiled_struct_at(given, span)
             {
                 let held = std::mem::replace(value, Expr::undefined());
                 *value = self.as_double_ended(held, given, span)?;
