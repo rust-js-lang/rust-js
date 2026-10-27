@@ -720,6 +720,7 @@ mod tests {
                 "given last",
                 "filled lazily",
                 "appends",
+                "bound captures",
                 "nulled as they are"
             ]
         );
