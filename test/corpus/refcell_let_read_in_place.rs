@@ -1,12 +1,12 @@
 // A `let` that ends a `RefCell`'s borrow, stored by the statement right
 // after it, React's createWorkInProgress's `let child =
 // current.child.borrow().clone(); work_in_progress.child.replace(child);`:
-// where nothing that statement runs before the read does anything, the
-// place is read there, `workInProgress.child = current.child;` (ADR 0866,
-// amended). Not where something runs first, which may change the cell, nor
-// where it's read again, nor where it's an argument, which the program
-// names, nor a `let` of a value that isn't a borrow's clone, a `Cell`'s
-// `get()`.
+// where nothing that statement runs before the read does anything, and its
+// name is the field's own, the place is read there, `workInProgress.child =
+// current.child;` (ADR 0866, amended). Not where something runs first,
+// which may change the cell, nor where it's read again, nor where it's an
+// argument, which the program names, nor one named otherwise, nor a `let`
+// of a value that isn't a borrow's clone, a `Cell`'s `get()`.
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -75,6 +75,16 @@ fn copy_index(work_in_progress: &Fiber, current: &Fiber) {
     work_in_progress.index.set(index);
 }
 
+/// Named otherwise than the field it reads: the program's name, as
+/// React's updateReducerImpl's `const pendingFirst = pendingQueue.next;
+/// baseQueue.next = pendingFirst;`.
+fn swap_children(base: &Fiber, pending: &Fiber) {
+    let base_first = base.child.borrow().clone();
+    let pending_first = pending.child.borrow().clone();
+    base.child.replace(pending_first);
+    pending.child.replace(base_first);
+}
+
 /// Read twice: its name kept.
 fn twice(work_in_progress: &Fiber, current: &Fiber) -> String {
     let sibling = current.sibling.borrow().clone();
@@ -97,6 +107,9 @@ fn main() {
     println!("read first {}", read_first(&fiber("w"), &current));
     current.child.replace(Some(fiber("c")));
     println!("later argument {}", later_argument(&current));
+    swap_children(&work, &current);
+    let swapped = (work.child.borrow().clone(), current.child.borrow().clone());
+    println!("swapped {} {}", name_of(&swapped.0), name_of(&swapped.1));
     let first = twice(&work, &current);
     let sibling = work.sibling.borrow().clone();
     println!("twice {first} {}", name_of(&sibling));

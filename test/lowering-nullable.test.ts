@@ -1279,9 +1279,8 @@ pub fn show(props: &Props) {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // The `let` that ends the borrow, the place read where it is stored (ADR
-  // 0866, amended).
-  expect(js).toContain("  sibling.return = node.return;\n");
+  // The program's name for it, not the field's own (ADR 0866, amended).
+  expect(js).toContain("  const returnFiber = node.return;\n  sibling.return = returnFiber;\n");
   expect(js).toContain("  const claimed = root.transitionTypes;\n  root.transitionTypes = null;\n  return claimed;\n");
   const lib = await import(join(dir, "lib.js"));
   const parent = lib.fiber("parent", null);

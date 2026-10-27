@@ -308,3 +308,28 @@ a store, a nullable field's, an argument, one past a call that empties
 the cell, one read twice, a `Cell`'s; and the mutations `ended-borrow-kept`,
 `ended-borrow-passed`, `ended-borrow-nulled-kept` (`tidy/moves.ts`) and
 `ended-borrow-of-any-let` (`mir/patterns.ts`).
+
+## Amendment: only of the field's own name (2026-10-27, r1)
+
+The amendment above took every such `let`, and React's own names went
+with them: ReactFiberHooks' updateReducerImpl writes `const pendingFirst =
+pendingQueue.next; baseQueue.next = pendingFirst;` and dispatchActionState
+`const first = last.next; actionNode.next = first;`, which printed
+`baseQueue.next = pendingQueue.next;` (r1 of the port's gaps).
+
+**Only a `let` named as the field it reads, `child` of `current.child`,
+`next` of `pending.next`, is read in place**, as the previous amendment's
+`if let` of a field's own name is: that name says nothing the field
+doesn't, and the `let` is there for the borrow alone. One named otherwise
+is the program's name, as upstream's `pendingFirst` is.
+
+- What this gives back: `const returnFiber = node.return; sibling.return =
+  returnFiber;` (`while_exit_continues.rs`, React's
+  ReactFiberCommitHostEffects and SuspenseComponent, which upstream reads in
+  place, `sibling.return = node.return`), `const next = node.return; node =
+  next;`, and createWorkInProgress's `_debugHookTypes`, whose name is its
+  `#[rust_js::name]`. Those ports name the `let` as the field, `let
+  r#return = ..`, where they want upstream's form.
+- Held by the corpus case's `swap_children`, `const pendingFirst =
+  pending.child;`, and the mutation `ended-borrow-of-another-name`
+  (`tidy/moves.ts`).

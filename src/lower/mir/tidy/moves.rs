@@ -486,12 +486,16 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
 /// `workInProgress.child = current.child;`, as the program would write it
 /// but for the borrow, which JS doesn't have (ADR 0866, amended, the user's
 /// decision, 2026-10-27). Nothing runs between the two reads, so the place
-/// holds what the `let` read.
+/// holds what the `let` read. Only of a name the field's own, `child` of
+/// `current.child`, which says nothing the field doesn't: one named
+/// otherwise, `const pendingFirst = pendingQueue.next;`, is the program's,
+/// as upstream's is (ADR 0866, amended again).
 pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && ends_borrow.contains(name)
+            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)
             && place_read(value, name)
             && stored_whole(&stmts[i + 1], name)
             && read_again(stmts, i)

@@ -67,6 +67,18 @@ function copyIndex(workInProgress, current) {
   workInProgress.index = index;
 }
 
+/**
+ * Named otherwise than the field it reads: the program's name, as
+ * React's updateReducerImpl's `const pendingFirst = pendingQueue.next;
+ * baseQueue.next = pendingFirst;`.
+ */
+function swapChildren(base, pending) {
+  const baseFirst = base.child;
+  const pendingFirst = pending.child;
+  base.child = pendingFirst;
+  pending.child = baseFirst;
+}
+
 /** Read twice: its name kept. */
 function twice(workInProgress, current) {
   const sibling = current.sibling;
@@ -89,6 +101,9 @@ function main() {
   console.log(`read first ${readFirst(fiber("w"), current)}`);
   current.child = fiber("c");
   console.log(`later argument ${laterArgument(current)}`);
+  swapChildren(work, current);
+  const swapped = [work.child, current.child];
+  console.log(`swapped ${nameOf(swapped[0])} ${nameOf(swapped[1])}`);
   const first = twice(work, current);
   const sibling = work.sibling;
   const arg = nameOf(sibling);

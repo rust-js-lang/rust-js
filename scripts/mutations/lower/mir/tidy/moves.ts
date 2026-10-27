@@ -4,6 +4,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "ended-borrow-of-another-name",
+    breaks: "a `let` that ends a borrow named otherwise than the field it reads, React's `const pendingFirst = pendingQueue.next; baseQueue.next = pendingFirst;`, loses the program's name to the place's read (ADR 0866, amended)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
+    snapshots: true,
+  },
+  {
     name: "tested-field-held",
     breaks: "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
     file: "src/lower/mir/tidy/moves.rs",

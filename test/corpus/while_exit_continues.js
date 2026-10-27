@@ -39,7 +39,8 @@ function findFirstSuspended(row) {
       node = returnFiber;
     }
     const sibling = node.sibling;
-    sibling.return = node.return;
+    const returnFiber = node.return;
+    sibling.return = returnFiber;
     node = sibling;
   }
 }
