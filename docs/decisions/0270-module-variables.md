@@ -6,7 +6,8 @@ array or an object its module sets whole is given the new one there; a
 `with_borrow_mut` given its `{ value }`, and a `with` its cell, used in
 place, leave it its variable, and an exported one its module needs the
 cell of is refused; and a `static mut` is its module's variable by the same
-rule (ADR 0096, amended).
+rule (ADR 0096, amended); and one set in a closure a `const` is made of,
+an impl's too, is set there.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -290,3 +291,37 @@ or an item, or a raw pointer taken to it, and one its module exports that
 a pointer it gives on keeps in its box is refused at its declaration
 (`refuse_boxed_export`). A library's manifest says it's a variable,
 `Calling.variable`, as of a thread-local.
+
+## Amendment (2026-10-27): set in a closure a `const` is made of
+
+A thread-local set only in a closure a `const` is made of, a closure
+coerced to a `fn`, `const BUMP: fn() = || TRIES.set(TRIES.get() + 1)`,
+or a struct's `fn` field, React's DEV dispatchers' `currentHookNameInDev`
+in each hook's, was `const tries = 0;`, which the closure reassigned:
+`tries = (tries + 1) >>> 0`, a `TypeError` where Rust counts. What sets
+it was looked for in functions and in what the module runs when it's
+loaded, not in a `const`'s value. And in an impl's `const`, a namespace's
+constant, `tries.value` wasn't even made `tries`: a property set on a
+number, a `TypeError` in a module too. Both a wrong answer.
+
+**What sets a module's variable, and what reads its `value`, is looked
+for in every closure, a `const`'s and an impl's `const`'s too**: the
+item walkers, `js::each_item_expr_mut` and `js::each_item_block_mut`,
+walk a namespace's constants as they walk a module's, and `plain_statics`
+counts sets, and `$assign`s made the variable's `=`, with
+`each_item_block_mut`. Case A: Rust's behavior, preserved.
+
+```js
+let tries = 0;
+
+const Counter = {
+  BUMP: () => {
+    tries = (tries + 1) >>> 0;
+  },
+};
+```
+
+Held by `test/corpus/thread_local_set_in_const_closure.rs`, against
+native Rust; the mutations `item-blocks-skip-constants`,
+`item-exprs-skip-namespace-constants` and
+`item-blocks-skip-namespace-constants` (`js/stmt_walk.ts`).

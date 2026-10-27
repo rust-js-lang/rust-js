@@ -788,15 +788,18 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
     order.into_iter().filter_map(|i| items[i].take()).collect()
 }
 
-/// Each expression in `items`, outermost first, as `each_expr_mut` goes.
+/// Each expression in `items`, outermost first, as `each_expr_mut` goes: a
+/// namespace's constants' too, an impl's `const`s.
 pub fn each_item_expr_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Expr)) {
     for item in items {
         match item {
             Item::Const(constant) => constant.value.each_mut(f),
             Item::Statements(stmts) => each_expr_mut(stmts, f),
-            Item::Namespace(_) | Item::Function(_) => item
-                .functions_mut()
-                .for_each(|function| each_expr_mut(&mut function.body, f)),
+            Item::Namespace(namespace) => {
+                (namespace.constants.iter_mut()).for_each(|constant| constant.value.each_mut(f));
+                (namespace.methods.iter_mut()).for_each(|method| each_expr_mut(&mut method.body, f));
+            }
+            Item::Function(function) => each_expr_mut(&mut function.body, f),
         }
     }
 }
@@ -815,9 +818,11 @@ pub fn each_item_slotted_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Ve
         match item {
             Item::Const(constant) => each_block_in_mut(&mut constant.value, f),
             Item::Statements(stmts) => each_slotted_block_mut(stmts, f),
-            Item::Namespace(_) | Item::Function(_) => item
-                .functions_mut()
-                .for_each(|function| each_slotted_block_mut(&mut function.body, f)),
+            Item::Namespace(namespace) => {
+                (namespace.constants.iter_mut()).for_each(|constant| each_block_in_mut(&mut constant.value, f));
+                (namespace.methods.iter_mut()).for_each(|method| each_slotted_block_mut(&mut method.body, f));
+            }
+            Item::Function(function) => each_slotted_block_mut(&mut function.body, f),
         }
     }
 }

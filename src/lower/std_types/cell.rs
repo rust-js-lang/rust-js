@@ -572,28 +572,19 @@ pub(in crate::lower) fn plain_statics(
             continue;
         }
         // What sets it, `X.value = ..`, its value replaced: in a function, a
-        // closure too, or in what the module runs when it's loaded,
-        // `js::on_load!`'s body in its place (ADR 0840, #201).
-        let mut sets_in = |body: &mut Vec<Stmt>| {
-            js::each_block_mut(body, &mut |stmts| {
-                for stmt in stmts.iter() {
-                    if let StmtKind::Assign(target, _) = &stmt.kind
-                        && matches!(&target.kind, js::ExprKind::Member(of, key)
-                            if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
-                    {
-                        sets += 1;
-                    }
+        // closure too, a constant's, or in what the module runs when it's
+        // loaded, `js::on_load!`'s body in its place (ADRs 0840, 0270
+        // amended, #201).
+        js::each_item_block_mut(items, &mut |stmts| {
+            for stmt in stmts.iter() {
+                if let StmtKind::Assign(target, _) = &stmt.kind
+                    && matches!(&target.kind, js::ExprKind::Member(of, key)
+                        if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                {
+                    sets += 1;
                 }
-            });
-        };
-        for item in items.iter_mut() {
-            if let js::Item::Statements(stmts) = item {
-                sets_in(stmts);
             }
-            for function in item.functions_mut() {
-                sets_in(&mut function.body);
-            }
-        }
+        });
         // A handle on it, lent, may set it too.
         js::each_item_expr_mut(items, &mut |e| {
             if let js::ExprKind::Handle(place, _) = &e.kind
@@ -645,31 +636,21 @@ pub(in crate::lower) fn plain_statics(
             continue;
         }
         let mut sets = 0;
-        let mut assigned = |body: &mut Vec<Stmt>| {
-            js::each_block_mut(body, &mut |stmts| {
-                for stmt in stmts.iter_mut() {
-                    if let StmtKind::Expr(e) = &mut stmt.kind
-                        && let js::ExprKind::Call(callee, args) = &mut e.kind
-                        && callee.helper_name() == Some("$assign")
-                        && let [target, _] = args.as_slice()
-                        && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
-                    {
-                        let value = args.pop().expect("what it's given");
-                        let target = args.pop().expect("the variable");
-                        stmt.kind = StmtKind::Assign(target, value);
-                        sets += 1;
-                    }
+        js::each_item_block_mut(items, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Expr(e) = &mut stmt.kind
+                    && let js::ExprKind::Call(callee, args) = &mut e.kind
+                    && callee.helper_name() == Some("$assign")
+                    && let [target, _] = args.as_slice()
+                    && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
+                {
+                    let value = args.pop().expect("what it's given");
+                    let target = args.pop().expect("the variable");
+                    stmt.kind = StmtKind::Assign(target, value);
+                    sets += 1;
                 }
-            });
-        };
-        for item in items.iter_mut() {
-            if let js::Item::Statements(stmts) = item {
-                assigned(stmts);
             }
-            for function in item.functions_mut() {
-                assigned(&mut function.body);
-            }
-        }
+        });
         if sets == 0 {
             continue;
         }
@@ -793,12 +774,17 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
 }
 
 /// Each closure called where it's made, its body (ADRs 0581, 0840), in a
-/// function or in what the module runs when it's loaded, which no
-/// `return` ends.
+/// function, in what the module runs when it's loaded, which no `return`
+/// ends, or in a closure a constant's value makes (ADR 0581, amended).
 fn applied_in_place(items: &mut [js::Item]) {
     for item in items.iter_mut() {
-        if let js::Item::Statements(stmts) = item {
-            js::applied_blocks(stmts, false);
+        match item {
+            js::Item::Statements(stmts) => js::applied_blocks(stmts, false),
+            js::Item::Const(constant) => js::applied_closures(&mut constant.value),
+            js::Item::Namespace(namespace) => {
+                (namespace.constants.iter_mut()).for_each(|constant| js::applied_closures(&mut constant.value))
+            }
+            js::Item::Function(_) => {}
         }
         for function in item.functions_mut() {
             js::applied_blocks(&mut function.body, true);

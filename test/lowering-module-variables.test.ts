@@ -1081,3 +1081,72 @@ pub fn stepped_by_two(ids: &mut Ids) -> f64 {
   const ids = { left: 3 };
   expect([lib.take(ids), lib.take(ids), ids.left, lib.steppedByTwo(ids), ids.left]).toEqual([6, 4, 1, 1, 3]);
 });
+
+// React's DEV dispatchers, ported: a thread-local of `if __DEV__ {
+// Some(Dispatcher { .. }) } else { None }` whose closures set the
+// dispatcher to another thread-local's, `NESTED.with(|dispatcher|
+// set_h(dispatcher.as_ref()))`. In a closure a constant's value makes, as
+// in a function's, the closure `with` is given is its body, reading the
+// variable, upstream's `ReactSharedInternals.H = InvalidNested..`, not
+// `((dispatcher) => { .. })(nested)` (ADR 0581, amended).
+test("a thread-local's with in a closure of a constant's value is its body", async () => {
+  const dir = fixture("with-in-constant-closure");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+unsafe extern "Rust" {
+    safe static __DEV__: bool;
+}
+
+pub struct Dispatcher {
+    pub use_a: fn() -> u32,
+}
+
+thread_local! {
+    static H: Cell<u32> = const { Cell::new(0) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static NESTED: Option<Dispatcher> = if __DEV__ { Some(Dispatcher { use_a: || 2 }) } else { None };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static ON_MOUNT: Option<Dispatcher> = if __DEV__ {
+        Some(Dispatcher {
+            use_a: || {
+                NESTED.with(|dispatcher| {
+                    set_h(dispatcher.as_ref());
+                    H.set(H.get() + 10);
+                });
+                1
+            },
+        })
+    } else {
+        None
+    };
+}
+
+fn set_h(dispatcher: Option<&Dispatcher>) {
+    H.set(dispatcher.map_or(0, |d| (d.use_a)()));
+}
+
+pub const SET: fn() = || {
+    NESTED.with(|dispatcher| {
+        set_h(dispatcher.as_ref());
+        H.set(H.get() + 10);
+    });
+};
+
+pub fn mount() -> (Option<u32>, u32) {
+    let a = ON_MOUNT.with(|d| d.as_ref().map(|d| (d.use_a)()));
+    (a, H.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain(`      useA() {
+        setH(nested);
+        h = (h + 10) >>> 0;
+        return 1;
+      },`);
+  expect(out).toContain("export const SET = () => {\n  setH(nested);\n  h = (h + 10) >>> 0;\n};");
+  expect(out).not.toContain("(dispatcher) =>");
+  (globalThis as any).__DEV__ = true;
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.mount()).toEqual([1, 12]);
+});

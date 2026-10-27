@@ -289,7 +289,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0267 js::on_load! is what a module runs when it's loaded](0267-on-load.md)
 - [0268 An element's type, key and props may be JS values of any shape](0268-unknown-elements.md)
 - [0269 What every global scope has is called bare](0269-global-scope.md)
-- [0270 A thread-local only read and set is its module's variable](0270-module-variables.md) *(amended: an exported one is its `export let`, which only its module sets; one of an array or an object its module sets whole is given the new one; what a borrow lends, used in place, is the variable, and an exported one that needs its cell is refused; a `static mut` is one too)*
+- [0270 A thread-local only read and set is its module's variable](0270-module-variables.md) *(amended: an exported one is its `export let`, which only its module sets; one of an array or an object its module sets whole is given the new one; what a borrow lends, used in place, is the variable, and an exported one that needs its cell is refused; a `static mut` is one too; amended: set in a closure a `const` is made of, an impl's too)*
 - [0271 A JS value's truthiness, and a value vouched to be a type](0271-truthy-and-cast.md)
 - [0272 Node's modules are a crate of their own, typed as @types/node](0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](0273-path-modules.md)
@@ -464,7 +464,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md) *(amended by 0922: an exported one keeps its Rust name only beside another export)*
 - [0922 An export is named first, and two exports of one name are refused](0922-an-export-is-named-first.md)
 - [0580 A call asks of a cell only what it may borrow](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) *(amended by 0863: what std's code a call runs may borrow, of the crate's impls; amended by 0867: a binding that says it runs nothing borrows nothing; 0868: what std's impls run is what their bounds say; extended by 0897: an intrinsic runs only what it's given, `vec![..]` nothing; extended by 0898: a binding that runs only what it's given, given only numbers and text; extended by 0907: a fn pointer runs what the crate made it of)*
-- [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first)*
+- [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first; amended: in a closure a constant's value makes)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too; extended by 0959: of an `Rc<dyn Fn>` made of a closure made with it)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value)*

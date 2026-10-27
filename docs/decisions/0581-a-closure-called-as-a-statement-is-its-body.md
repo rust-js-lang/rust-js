@@ -4,7 +4,8 @@ Status: Accepted. Extends [0270](0270-module-variables.md), whose plain
 thread-local's `with_borrow` is its closure given the variable, and
 [0444](0444-a-comment-is-where-its-code-is.md)'s comments. Extended by
 [0840](0840-a-thread-locals-with-is-its-closures-body.md): in what a
-module runs when it's loaded too, and as what a statement evaluates first.
+module runs when it's loaded too, and as what a statement evaluates first. Amended:
+in a closure a constant's value makes too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. Each rewrite
 changes nothing that runs.
@@ -87,3 +88,48 @@ function advanceTimers(currentTime) {
 - Mutations: the closure kept, its `return;` not broken, a tail one
   refused, its parameter unread, the comment lost, a closure's opening a
   blank line.
+
+## Amended (2026-10-27): in a closure a constant's value makes
+
+React's DEV dispatchers are thread-locals of `if __DEV__ {
+Some(Dispatcher { .. }) } else { None }`, each a `const` of a
+conditional, whose closures set the dispatcher to another's for the
+time a hook runs:
+
+```rust
+use_memo: |create, deps| {
+    let prev_dispatcher = ReactSharedInternals::h();
+    INVALID_NESTED_HOOKS_DISPATCHER_ON_MOUNT_IN_DEV.with(|dispatcher| set_h(dispatcher.as_ref()));
+    ..
+},
+```
+
+In a function that's `setH(invalidNested ?? null)`; in the `const`'s
+closure it was `((dispatcher) => { setH(dispatcher ?? null);
+})(invalidNested)`. The pass that puts a closure called where it's made
+in its place, `applied_in_place` in `std_types/cell.rs`, ran on each
+function's body and on what the module runs when it's loaded, never on a
+`const`'s value.
+
+**Each closure a constant's value makes, a module's `const`'s or a
+namespace's, is a function's body here too** (`js::applied_closures`):
+its own closures called where they're made are their bodies, a `return;`
+ending it as it ends a function. The value itself is no body, so nothing
+is put in its place. Case N: the same code runs, in the same order, and
+reads the same variable.
+
+```js
+const onMount = __DEV__
+  ? {
+      useA() {
+        setH(nested);
+        h = (h + 10) >>> 0;
+        return 1;
+      },
+    }
+  : null;
+```
+
+Held by `test/lowering-module-variables.test.ts`, "a thread-local's with
+in a closure of a constant's value is its body", run; the mutation
+`constant-closure-with-applied-kept` (`std_types/cell.ts`).

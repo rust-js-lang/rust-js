@@ -35,12 +35,10 @@ const GUARDED = $local(() => {
   return 5;
 });
 
-const tries = { value: 0 };
+let tries = 0;
 const FLAKY = $local(() => {
-  const n = ((t) => {
-    t.value = (t.value + 1) >>> 0;
-    return t.value;
-  })(tries);
+  tries = (tries + 1) >>> 0;
+  const n = tries;
   console.log(`try ${n}`);
   if (n === 1) {
     throw new Error("first try");

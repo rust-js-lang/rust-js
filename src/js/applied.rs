@@ -21,11 +21,26 @@ use std::collections::HashSet;
 /// ..)` in a `catch_unwind`'s closure is (ADR 0840, amended).
 pub fn applied_blocks(body: &mut Vec<Stmt>, ends_function: bool) {
     applied_in(body, ends_function);
-    each_expr_mut(body, &mut |e| match &mut e.kind {
+    each_expr_mut(body, &mut applied_in_closure);
+}
+
+/// `applied_blocks`' of each closure `value` makes, a `const`'s value's,
+/// a thread-local's that's its module's variable: each its own body, which
+/// a `return;` ends, as React's DEV dispatchers' `useA() {
+/// NESTED.with(|d| set_h(d.as_ref())) }` is `setH(nested ?? null)` (ADR
+/// 0581, amended). The value itself is no body.
+pub fn applied_closures(value: &mut Expr) {
+    value.each_mut(&mut applied_in_closure);
+}
+
+/// `applied_in` of `e`'s body, where it's a closure or a function, whose
+/// body a `return;` ends.
+fn applied_in_closure(e: &mut Expr) {
+    match &mut e.kind {
         ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => applied_in(inner, true),
         ExprKind::Function(function) => applied_in(&mut function.body, true),
         _ => {}
-    });
+    }
 }
 
 /// `applied_blocks`' of `body` itself, not the closures it makes.
