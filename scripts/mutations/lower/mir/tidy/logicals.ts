@@ -353,4 +353,28 @@ export const mutations: Mutation[] = [
     replace: "    (returns.iter()).filter(|r| around(r, at)).all(|_| false)\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
   },
+  {
+    name: "last-or-chain-unfolded",
+    breaks: "React's isFragmentInstanceHostBoundary's last `||`s are nested `if`s and a `return true` (ADR 0947, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                && let Some(value) = fold(&stmts[i], no, Some(stmts[i + 1].span))\n",
+    replace: "                && let Some(value) = fold(&stmts[i], no, None)\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
+  },
+  {
+    name: "last-or-chain-of-an-if-test",
+    breaks: "an `if (a || b) { return x; } return y;` is folded as a logical value, `a ? x : b ? x : y`, not its test kept (ADR 0947, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                    || !(yes.span.is_none() || around(outer, yes.span))\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts"],
+  },
+  {
+    name: "last-or-chain-of-conditionals",
+    breaks: "a chain of `if`s whose folding gives `?:`s is nested `?:`s, `o != null ? (o > 3 ? o : n) : n`, not the `if`s or the `&&` (ADR 0947, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            if matches!(value.kind, ExprKind::Cond(..)) {\n                return None;\n",
+    replace: "            if false {\n                return None;\n",
+    tests: ["test/lowering-options.test.ts", "-t", "a typeof test after a null check"],
+  },
 ];

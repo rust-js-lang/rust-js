@@ -402,7 +402,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::is_defined`'s (ADR 0597). Read where its path names it,
     /// at `named`, through the module that holds it (ADR 0633).
     fn js_global(&self, def_id: rustc_span::def_id::DefId, named: Span) -> Expr {
-        self.binding_ref(&bindings::js_name(self.tcx, def_id), named)
+        let read = self.binding_ref(&bindings::js_name(self.tcx, def_id), named);
+        // A `bool`'s, which TypeScript declares a `boolean` of, as a `bool`
+        // constant's is (ADRs 0031, 0953): `supportsSingletons && ..`.
+        match self
+            .tcx
+            .type_of(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .is_bool()
+        {
+            true => Expr {
+                facts: read.facts.with(js::Known::Boolean),
+                ..read
+            },
+            false => read,
+        }
     }
 
     /// The static a constant points to the start of: `&LOG`, a promoted

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "held-static-in-place",
     breaks: "a binding's static named through the module that holds it is read in place, `react.__CLIENT_INTERNALS..`",
     file: "src/lower/mir/operands.rs",
-    find: "        self.binding_ref(&bindings::js_name(self.tcx, def_id), named)\n",
-    replace: "        self.js_ref(&bindings::js_name(self.tcx, def_id))\n",
+    find: "        let read = self.binding_ref(&bindings::js_name(self.tcx, def_id), named);\n",
+    replace: "        let read = self.js_ref(&bindings::js_name(self.tcx, def_id));\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
@@ -161,5 +161,13 @@ export const mutations: Mutation[] = [
     find: "        (closure && is_place).then_some(capture)\n",
     replace: "        (closure && is_place && false).then_some(capture)\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "bool-binding-static-not-boolean",
+    breaks: "a `bool` binding's static in `&&` is `!!supportsSingletons && ..` (ADR 0953)",
+    file: "src/lower/mir/operands.rs",
+    find: "            .is_bool()\n",
+    replace: "            .is_bool()\n            && false\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
   },
 ];

@@ -58,7 +58,7 @@ fn returned_as_written(returns: &[js::Span], at: js::Span, test: js::Span) -> bo
 /// `isLegacyActEnvironment`, whose `return false` is after its `if
 /// (__DEV__)`.
 pub(super) fn returned_logicals(
-    body: &mut [Stmt],
+    body: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
     booleans: &HashSet<String>,
@@ -83,7 +83,21 @@ pub(super) fn returned_logicals(
             _ => None,
         }
     }
-    fn walk(stmts: &mut [Stmt], after: Option<&Expr>, fold: &dyn Fn(&Stmt, &Expr) -> Option<Expr>) {
+    type Fold<'f> = dyn Fn(&Stmt, &Expr, Option<js::Span>) -> Option<Expr> + 'f;
+    fn walk(stmts: &mut Vec<Stmt>, after: Option<&Expr>, fold: &Fold<'_>) {
+        // A chain followed by the `return` its failing tests go on to, in
+        // its list, neither the program's: one `return`, as
+        // `logical_returns` makes of one `if` (ADR 0947, amended).
+        let mut i = 0;
+        while i + 1 < stmts.len() {
+            if let StmtKind::Return(Some(no)) = &stmts[i + 1].kind
+                && let Some(value) = fold(&stmts[i], no, Some(stmts[i + 1].span))
+            {
+                let span = stmts[i].span;
+                stmts.splice(i..i + 2, [StmtKind::Return(Some(value)).at(span)]);
+            }
+            i += 1;
+        }
         let n = stmts.len();
         for i in 0..n {
             let next = match stmts.get(i + 1).map(|s| &s.kind) {
@@ -93,7 +107,7 @@ pub(super) fn returned_logicals(
             };
             if i + 1 == n
                 && let Some(no) = after
-                && let Some(value) = fold(&stmts[i], no)
+                && let Some(value) = fold(&stmts[i], no, None)
             {
                 let span = stmts[i].span;
                 stmts[i] = StmtKind::Return(Some(value)).at(span);
@@ -121,20 +135,46 @@ pub(super) fn returned_logicals(
             }
         }
     }
-    let fold = |stmt: &Stmt, no: &Expr| {
+    let fold = |stmt: &Stmt, no: &Expr, next: Option<js::Span>| {
         let mut tests = Vec::new();
         let (yes, at) = chain(stmt, &mut tests)?;
+        let around = |r: &js::Span, s: js::Span| !s.is_none() && r.lo <= s.lo && s.hi <= r.hi;
         // The `return` the program wrote, around each test: its value's.
-        let written = returns
-            .iter()
-            .find(|r| !at.is_none() && r.lo <= at.lo && at.hi <= r.hi)?;
-        let inside = |s: js::Span| !s.is_none() && written.lo <= s.lo && s.hi <= written.hi;
-        if !tests.iter().all(|&(_, s)| within(s) && inside(s)) || inside(no.span) {
-            return None;
+        match returns.iter().find(|r| around(r, at)) {
+            Some(written) => {
+                let inside = |s: js::Span| around(written, s);
+                if !tests.iter().all(|&(_, s)| within(s) && inside(s)) || inside(no.span) {
+                    return None;
+                }
+            }
+            // Of none, the one after it in its list, neither the program's
+            // `return`: a function's last value of `||`s.
+            None => {
+                let next = next?;
+                // Of one logical the value is a part of too: not an `if`'s
+                // test alone, `if (a || b) { return x; }`.
+                let (_, first) = tests.first()?;
+                let outer = logicals
+                    .iter()
+                    .filter(|l| around(l, *first))
+                    .max_by_key(|l| l.hi - l.lo)?;
+                if !tests.iter().all(|&(_, s)| within(s))
+                    || returns.iter().any(|r| around(r, next))
+                    || !(yes.span.is_none() || around(outer, yes.span))
+                {
+                    return None;
+                }
+            }
         }
-        let value = (tests.into_iter().rev()).fold(yes, |yes, (test, _)| {
-            conditional(test, yes, no.clone(), booleans, false)
-        });
+        // Each test folded into an `&&` or an `||`, as the logical is
+        // written: not a `?:` of what was an `if` (ADR 0947, amended).
+        let mut value = yes;
+        for (test, _) in tests.into_iter().rev() {
+            value = conditional(test, value, no.clone(), booleans, false);
+            if matches!(value.kind, ExprKind::Cond(..)) {
+                return None;
+            }
+        }
         Some(value)
     };
     walk(body, None, &fold);

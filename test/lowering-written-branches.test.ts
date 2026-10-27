@@ -1070,3 +1070,52 @@ pub fn claim(hydrating: bool, id: u32) -> bool {
   expect([lib.claim(false as never, 1 as never), lib.claim(true as never, 12 as never), lib.claim(true as never, 13 as never)]).toEqual([false, true, false]);
   expect(() => lib.claim(true as never, 3 as never)).toThrow("mismatch 3");
 });
+
+// ADR 0947, amended, and ADR 0953: React's isFragmentInstanceHostBoundary,
+// `return tag === HostComponent || tag === HostRoot || (supportsSingletons
+// ? tag === HostSingleton : false);`: a function's last value of `||`s,
+// its chain of `if`s and the `return` after them neither the program's, is
+// one `return`; and a `bool` binding's static reads as the `boolean` it is,
+// `supportsSingletons && ..`, no `!!`.
+test("a function's last || of an if's value is one return", async () => {
+  const { js, lib } = await compiled(
+    "or-of-if-value",
+    `unsafe extern "Rust" {
+    #[link_name = "rustJsSupports"]
+    safe static SUPPORTS: bool;
+}
+
+pub const HOST_COMPONENT: u8 = 5;
+pub const HOST_ROOT: u8 = 3;
+pub const HOST_SINGLETON: u8 = 27;
+
+pub struct Fiber {
+    pub tag: std::cell::Cell<u8>,
+}
+
+pub fn boundary_if(fiber: &Fiber) -> bool {
+    fiber.tag.get() == HOST_COMPONENT
+        || fiber.tag.get() == HOST_ROOT
+        || (if SUPPORTS { fiber.tag.get() == HOST_SINGLETON } else { false })
+}
+
+pub fn boundary_and(fiber: &Fiber) -> bool {
+    fiber.tag.get() == HOST_COMPONENT || fiber.tag.get() == HOST_ROOT || (SUPPORTS && fiber.tag.get() == HOST_SINGLETON)
+}
+`,
+  );
+  expect(js).toContain(
+    "    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports ? fiber.tag === HOST_SINGLETON : false)\n",
+  );
+  expect(js).toContain(
+    "    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports && fiber.tag === HOST_SINGLETON)\n",
+  );
+  const global = globalThis as Record<string, unknown>;
+  for (const supports of [false, true]) {
+    global.rustJsSupports = supports;
+    for (const tag of [5, 3, 27, 1]) {
+      const want = tag === 5 || tag === 3 || (supports && tag === 27);
+      expect([supports, tag, lib.boundaryIf({ tag } as never), lib.boundaryAnd({ tag } as never)]).toEqual([supports, tag, want, want]);
+    }
+  }
+});

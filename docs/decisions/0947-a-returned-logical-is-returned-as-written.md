@@ -42,3 +42,18 @@ took for two it wrote.
 - `test/lowering-written-branches.test.ts`, "a returned && chain in an
   if is returned as written".
 - Mutations: `returned-logicals-*`.
+
+## Amendment: a function's last value of `||`s (2026-10-27)
+
+React's `isFragmentInstanceHostBoundary` returns `tag === HostComponent ||
+tag === HostRoot || (supportsSingletons ? tag === HostSingleton : false)`,
+its port's last expression, no `return` written: MIR's `if (a) { if (b) {
+return c; } } return true;` stayed nested `if`s, as `logical_returns`
+folds one `if` alone. **A chain of `if`s followed in its list by the
+`return` its failing tests go on to, neither the program's, each test of
+a logical the value is a part of too, is one `return`**, folded as before.
+Not an `if (a || b) { return x; } return y;`, whose `x` is outside its
+test's logical, which stays as written. Held by
+`test/lowering-written-branches.test.ts`, "a function's last || of an
+if's value is one return", and mutations `last-or-chain-unfolded` and
+`last-or-chain-of-an-if-test`.
