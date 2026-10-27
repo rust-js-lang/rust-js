@@ -4,7 +4,8 @@ Status: Accepted. Amends [0198](0198-optional-handlers.md) and
 [0279](0279-callbacks-passed-on.md). Amended below: `passed_on.rs` owns
 the question with each position's rule, and a binding's `FnOnce` callback
 is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
-library's function is passed on as the crate's is.
+library's function is passed on as the crate's is; and a closure that
+captures nothing as a `fn` is the function of the crate's it calls.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -149,3 +150,53 @@ crate's FnOnce callback that only passes its call on is the function",
 run in JS, and `closures_of_their_value.rs` against native Rust; and the
 mutation `crate-once-callback-kept` (`mir/calls.ts`).
 
+## Amendment (2026-10-27): a closure that captures nothing as a `fn`
+
+React's `ContextOnlyDispatcher` gives every hook one function, whatever
+its arity:
+
+```js
+export const ContextOnlyDispatcher = {
+  readContext,
+  use,
+  useCallback: throwInvalidHookError,
+  useContext: throwInvalidHookError,
+  ..
+};
+```
+
+Rust can't make `throw_invalid_hook_error`, a `fn() -> !`, a `fn(A, B)
+-> R`, so a port writes a closure for each field, `use_callback: |_, _|
+throw_invalid_hook_error()`, and its JS was a method of each, `useCallback()
+{ throwInvalidHookError(); }`.
+
+**A closure that captures nothing, as a `fn` (ADR 0125), that only calls a
+function of the crate's, or one rust-js compiled of a library's, with what
+it's given, in order, or with none of it, is that function**
+(`Taker::FnPointer`, asked where `rvalues.rs` lowers the coercion): the
+closure's MIR fact says its one call is the crate's (`Callee::Own`), whose
+JS reads no more than it's given, so a caller's arguments it leaves out are
+never read; and where the call's value is the closure's, or it never
+returns, the function gives what the closure did. Rust compares no two
+`fn`s reliably (a `fn`'s address isn't unique), so whether the field is
+the same function as another, or as `throwInvalidHookError` itself, is
+nothing a program can rely on. Case N
+([0262](0262-when-rust-and-js-disagree.md)).
+
+```js
+export const CONTEXT_ONLY = {
+  useCallback: throwInvalidHookError,
+  useId: throwInvalidHookError,
+  ..
+};
+```
+
+A closure whose call's value it doesn't give, `|a| { first(a); }`, a
+binding's call, whose JS may read more than it's given, or a call with
+anything else, stays the arrow; a written `|a| first(a)` clippy calls a
+redundant closure, which `first` itself is anyway.
+
+Held by `test/lowering-passed-on.test.ts`, "a closure as a fn that only
+calls the crate's function with what it's given is the function", run;
+mutations `closure-fn-pointer-kept-arrow` (`mir/rvalues.ts`) and
+`fn-pointer-statement-kept` (`passed_on.ts`).

@@ -548,4 +548,12 @@ export const mutations: Mutation[] = [
     replace: "        if state.locals.writes[place.local] != 1 {\n",
     tests: ["test/corpus.test.ts", "-t", "parameter_assigned_itself"],
   },
+  {
+    name: "closure-fn-pointer-kept-arrow",
+    breaks: "a closure as a `fn` that only calls the crate's function is an arrow of it, React's `ContextOnlyDispatcher`'s `useCallback() { throwInvalidHookError(); }` (ADR 0605, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                        if matches!(coercion, PointerCoercion::ClosureFnPointer(_))\n",
+    replace: "                        if false\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+  },
 ];

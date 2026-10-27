@@ -1118,6 +1118,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
     "src/lower/jsx.rs",
     "src/lower/mir/calls.rs",
     "src/lower/mir/dispatch.rs",
+    "src/lower/mir/rvalues.rs",
     "src/lower/mir/tidy/stages.rs",
     "src/lower/mir/tidy/values.rs",
     "src/lower/traits/impls.rs",

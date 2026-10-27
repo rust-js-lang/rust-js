@@ -479,7 +479,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Ok(Value::Expr(function));
                         }
-                        return self.mir_operand(state, operand, out);
+                        let value = self.mir_operand(state, operand, out)?;
+                        // A closure that only calls a function of the crate's
+                        // with what it's given, or none of it, is that
+                        // function (ADR 0605, amended).
+                        if matches!(coercion, PointerCoercion::ClosureFnPointer(_))
+                            && let Value::Expr(arrow) = &value
+                            && let Some(callee) = crate::lower::passed_on::passed_on(
+                                arrow,
+                                crate::lower::passed_on::Taker::FnPointer,
+                                self.forwarding(),
+                            )
+                        {
+                            return Ok(Value::Expr(callee));
+                        }
+                        return Ok(value);
                     }
                 }
             }

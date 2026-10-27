@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "\n                && (def_id.is_local() && !self.takes_rest(def_id)))",
     tests: ["test/cross-crate-items.test.ts", "-t", "once-callback that passes its call on"],
   },
+  {
+    name: "fn-pointer-statement-kept",
+    breaks: "a closure as a `fn` whose call never returns, `|_, _| throw_invalid_hook_error()`, keeps its arrow, as its JS is a statement (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            matches!(taker, Taker::Handler | Taker::OnceCallback | Taker::FnPointer)\n",
+    replace: "            matches!(taker, Taker::Handler | Taker::OnceCallback)\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+  },
 ];

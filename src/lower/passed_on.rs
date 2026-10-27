@@ -42,6 +42,13 @@ pub(in crate::lower) enum Taker {
     /// drops it needs. A namespace's or a dictionary's member too,
     /// `Math.max`, which reads no `this`.
     Made,
+    /// A closure that captures nothing as a `fn` (ADR 0125), React's
+    /// `ContextOnlyDispatcher`'s `use_callback: |_, _|
+    /// throw_invalid_hook_error()`: Rust compares no two `fn`s reliably,
+    /// and what a JS caller gives it more, a function of the crate's never
+    /// reads, so it may be the function of the crate's it calls with what
+    /// it's given, or none of it (ADR 0605, amended).
+    FnPointer,
     /// A function as a value, `.map(str::len)`, a trait's method's,
     /// `ToString::to_string` (ADR 0538), an arrow of its call, which JS may
     /// give more than its parameters, an array method's index: its call's
@@ -121,6 +128,7 @@ impl Taker {
             Taker::ArrayMethod => matches!(callee, Callee::Own | Callee::Generic),
             Taker::Handler => true,
             Taker::OnceCallback => callee == Callee::Own,
+            Taker::FnPointer => callee == Callee::Own,
             Taker::Made | Taker::FnValue => false,
         }
     }
@@ -146,13 +154,13 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
             if !taker.takes(fact.callee) {
                 return None;
             }
-            taker == Taker::Handler || taker == Taker::OnceCallback
+            matches!(taker, Taker::Handler | Taker::OnceCallback | Taker::FnPointer)
         }
     };
     let (callee, arity) = passed_to(f, statement)?;
     let named = matches!(callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_));
     let takes = match taker {
-        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback => named,
+        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer => named,
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
         Taker::FnValue => match &callee.kind {
             js::ExprKind::Var(_) => callee.helper_name().is_none(),

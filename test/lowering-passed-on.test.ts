@@ -204,3 +204,67 @@ pub fn callbacks(queue: &js::Unknown, value: u32) -> u32 {
   const queue: Record<string, number> = {};
   expect([lib.callbacks(queue, 3), queue]).toEqual([12, { value: 3 }]);
 });
+
+// React's ContextOnlyDispatcher gives each hook one function, `useCallback:
+// throwInvalidHookError, useState: throwInvalidHookError, ..`, of whatever
+// arity; ported, each is a closure, `use_callback: |_, _|
+// throw_invalid_hook_error()`, as Rust can't make a `fn()` a `fn(A, B)`. A
+// closure that captures nothing as a `fn`, that only calls a function of
+// the crate's with what it's given, or none of it, is that function: Rust
+// compares no two `fn`s reliably, and what JS gives it more, the function
+// never reads (ADR 0605, amended). One that keeps its call's result back,
+// or calls a binding, whose JS function may read more, stays an arrow.
+test("a closure as a fn that only calls the crate's function with what it's given is the function", async () => {
+  const dir = fixture("fn-pointer-passed-on");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Dispatcher {
+    pub use_callback: fn(u32, u32) -> u32,
+    pub use_id: fn() -> u32,
+    pub use_state: fn(u32) -> u32,
+    pub use_log: fn(u32),
+}
+
+fn throw_invalid_hook_error() -> ! {
+    panic!("Invalid hook call.")
+}
+
+fn first(a: u32) -> u32 {
+    a
+}
+
+pub static CONTEXT_ONLY: Dispatcher = Dispatcher {
+    use_callback: |_, _| throw_invalid_hook_error(),
+    use_id: || throw_invalid_hook_error(),
+    use_state: |_| throw_invalid_hook_error(),
+    use_log: |_| throw_invalid_hook_error(),
+};
+
+pub static RUNNING: Dispatcher = Dispatcher {
+    use_callback: |a, _| first(a),
+    use_id: || 3,
+    use_state: |a| first(a) + 1,
+    use_log: |a| {
+        first(a);
+    },
+};
+
+pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
+    (dispatcher.use_callback)(1, 2);
+    (dispatcher.use_log)(9);
+    ((dispatcher.use_callback)(4, 5), (dispatcher.use_id)(), (dispatcher.use_state)(6))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export const CONTEXT_ONLY = {
+  useCallback: throwInvalidHookError,
+  useId: throwInvalidHookError,
+  useState: throwInvalidHookError,
+  useLog: throwInvalidHookError,
+};`);
+  expect(js).toContain("useCallback: first,");
+  expect(js).toContain("useState: (a) => (first(a) + 1) >>> 0,");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.call(lib.RUNNING)).toEqual([4, 3, 7]);
+  expect(lib.RUNNING.useLog(9)).toBe(undefined);
+  expect(() => lib.call(lib.CONTEXT_ONLY)).toThrow("Invalid hook call.");
+});
