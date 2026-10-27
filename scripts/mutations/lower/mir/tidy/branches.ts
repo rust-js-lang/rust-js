@@ -283,11 +283,11 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-chain-tail-folded",
-    "breaks": "a variable's value of three arms from MIR has its last two folded, `else { cls = w ? \"warn\" : \"tip\"; }`",
+    "breaks": "a variable's value of three arms from MIR has its last two folded, `else { counted = w ? 0 : n; }`",
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     "replace": "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
     "name": "mir-temp-chain-half-folded",
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/branches.rs",
     "find": " || is_temporary(x) && then.len() > 1)",
     "replace": ")",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
+    "tests": ["test/lowering-written-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
   {
     "name": "mir-tidy-table-taken-apart-unread",
@@ -613,5 +613,13 @@ export const mutations: Mutation[] = [
     find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     replace: "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
+  },
+  {
+    name: "plain-chain-kept",
+    breaks: "a value's chain of four arms each a plain value stays `let color; if (..) { color = .. } else if ..`, not upstream's `const color = a ? .. : b ? .. : ..` (ADR 0969, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && !switched(test, span, switches)\n                    && let Some(value) =\n",
+    replace: "                    && false\n                    && let Some(value) =\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
   },
 ];

@@ -14,18 +14,8 @@ function tagDisplay_fmt(tag, options) {
 export const probeDisplay = { fmt: probeDisplay_fmt };
 function probeDisplay_fmt(probe, options) {
   const value = options?.align;
-  let align;
-  if (value != null) {
-    if (value === "Left") {
-      align = "left";
-    } else if (value === "Right") {
-      align = "right";
-    } else {
-      align = "center";
-    }
-  } else {
-    align = "none";
-  }
+  const align =
+    value == null ? "none" : value === "Left" ? "left" : value === "Right" ? "right" : "center";
   const width = options?.width;
   const precision = options?.precision;
   return `w=${width == null ? "None" : `Some(${width})`} p=${precision == null ? "None" : `Some(${precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;

@@ -1,7 +1,9 @@
 # 0969. A variable's value of a chain of arms is the chain, every arm its own
 
 Status: Accepted. Records and extends the rule fd6e76df1 made (MIR keeps a
-variable's value of three arms a chain) to chains of any length.
+variable's value of three arms a chain) to chains of any length. Amended
+below: a chain whose every arm is a plain value is one nested conditional
+(the user's decision of 2026-10-27).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -62,3 +64,49 @@ arm's value is a value alone or the conditional of an `if` in that arm,
   four arms from MIR is their chain" and `test/lowering-branches.test.ts`'s
   three arms; mutations `chain-through-temporary-unseen`,
   `chain-negated-arm-kept`, `chain-rest-one-arm` and `mir-chain-tail-folded`.
+
+## Amendment: a chain of plain values is one nested conditional
+
+The user decided, of React's ReactFiberPerformanceTrack (pt3), between
+the chain of statements, every chain of conditionals, and the two by what
+the arms are: **a chain giving a variable its value whose every arm is a
+plain value, a string or a number literal (`-1` too) or a name, is one
+nested conditional**, `const color = yieldDuration < 5 ? "primary-light"
+: yieldDuration < 10 ? "primary" : .. : "error";`, as upstream writes its
+colors. A chain with an arm that's more, a call, a sum, an object, a
+conditional of its own (`wasHydrated ? "tertiary" : "primary"`), stays the
+`else if` chain above. `const` comes of it: the variable is given its
+value once.
+
+- `tidy/branches.rs`'s `branch_values` asks `value_chains.rs`'s
+  `plain_chain_of` first, of an `if` whose arms each give the variable
+  one value, one a plain value and the other the rest of the chain MIR
+  folded: the arms are those of `chained_arms` (`as_written`, now the one
+  place that reads MIR's arms the other way round, `!t ? e : r`, as the
+  chain writes them). Not of a temporary's, a `switch`'s arms (ADR 0629),
+  or the function's value given by `return`s the program wrote (ADR 0657).
+- A `match` is a chain of arms as an `if` chain is, so `match k { Note =>
+  "note", Warn { .. } => "warn", Tip(_) => "tip" }` is `const cls = k ===
+  "Note" ? "note" : k.TAG === "Warn" ? "warn" : "tip";`.
+- Where MIR's chain is in the `if`'s first arm, a nested `match` whose
+  `None` comes after its `Some`s, `if (value != null) { align = .. ? .. :
+  .. } else { align = "none"; }`, the conditional tests the negation
+  first, `value == null ? "none" : value === "Left" ? .. : ..`: the chain
+  is in each conditional's second value. ADR 0262 case N: a test and its
+  negation are one test, evaluated once, before either value.
+
+Alternatives were the user's options: every chain of three or more arms
+the chain (this ADR before), and every chain a conditional, which
+Prettier lays across lines however long its arms.
+
+Held by `test/lowering-written-branches.test.ts`'s "four arms" and "three
+arms" (moved there from `lowering-branches.test.ts`, at its line cap),
+and the guide's `color` and `shade`; mutations `plain-chain-kept`,
+`plain-arm-any-value`, `plain-chain-first-arm-any` and
+`plain-chain-in-yes-kept`. The corpus' chains of values re-blessed
+(`format_options_reached`, `formatter_queries`, `integers_128`, whose
+comment before the chain, lost before, is kept, `nested_loop_jumps`,
+`writer_callables`, `drop_functions`, `option_falsy_payloads`).
+`docs/readability.txt` is blessed with it: no shape's count changed, but
+the chains' 36 lines fewer make `renamed x$1`'s same 8,095 a larger share,
+696.8 to 697 in 10,000 lines.

@@ -88,10 +88,7 @@ function pointBranch(p) {
 }
 
 function listBranch(list) {
-  if (list) {
-    return list.length === 0 ? "empty" : "list";
-  }
-  return "none";
+  return !list ? "none" : list.length === 0 ? "empty" : "list";
 }
 
 function called(f) {

@@ -841,43 +841,6 @@ test("a function's value from MIR that branches assign is returned from each, it
 }`);
 });
 
-// A match of three arms or more giving a variable its value, from MIR, is
-// the chain of them: not its last two folded, \`c ? a : b\`.
-test("a variable's value of three arms from MIR is their chain", async () => {
-  const dir = fixture("mir-three-arms");
-  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
-pub enum Kind { Note, Warn { level: u8 }, Tip(&'static str) }
-pub fn class(k: Kind) -> String {
-    let cls = match k {
-        Kind::Note => "note",
-        Kind::Warn { .. } => "warn",
-        Kind::Tip(_) => "tip",
-    };
-    format!("{cls}!")
-}
-// Of a value MIR holds, \`tmp\`, its first branch doing more than giving
-// it, as react.dev's CodeDiagram picks a child.
-pub fn pick(x: i32) -> String {
-    let shown: Box<dyn std::fmt::Display> = if x > 5 {
-        let m = x * 2;
-        Box::new(m + 1)
-    } else if x < 0 {
-        Box::new("neg")
-    } else {
-        Box::new(x)
-    };
-    shown.to_string()
-}
-`);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
-  expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
-  const lib = await import(join(dir, "mir.js"));
-  expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
-  expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
-});
-
 test("a test from MIR that `x` is set and true reads `x`", async () => {
   const dir = fixture("mir-set-and-true");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {

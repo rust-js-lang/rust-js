@@ -1284,6 +1284,8 @@ pub fn named(instance: &ViewTransitionState) -> String {
 // the chain, each arm its own, as of three: not its first arm a statement
 // and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`, nor an
 // arm MIR wrote the other way round negated, `!(selfTime < 100) ? .. : ..`.
+// Where every arm is a value alone, a literal or a name, the chain is one
+// nested conditional, `const color = a ? "x" : b ? "y" : "z";` (amended).
 // React's ReactFiberPerformanceTrack's colors.
 test("a variable's value of four arms from MIR is their chain", async () => {
   const dir = fixture("mir-four-arms");
@@ -1311,13 +1313,14 @@ test("a variable's value of four arms from MIR is their chain", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`  } else if (yieldDuration < 10) {
-    color = "primary";
-  } else if (yieldDuration < 100) {
-    color = "primary-dark";
-  } else {
-    color = "error";
-  }`);
+  expect(js).toContain(`  const color =
+    yieldDuration < 5
+      ? "primary-light"
+      : yieldDuration < 10
+        ? "primary"
+        : yieldDuration < 100
+          ? "primary-dark"
+          : "error";`);
   expect(js).toContain(`  } else if (selfTime < 100) {
     other = wasHydrated ? "tertiary-dark" : "primary-dark";
   } else {
@@ -1329,4 +1332,63 @@ test("a variable's value of four arms from MIR is their chain", async () => {
     "primary-darkprimary-dark",
     "errorerror",
   ]);
+});
+
+// A match of three arms or more giving a variable its value, from MIR, is
+// the chain of them: not its last two folded, \`c ? a : b\`. Where every
+// arm is a value alone, a literal or a name, it's one nested conditional,
+// \`const cls = a ? "note" : b ? "warn" : "tip"\` (ADR 0969, amended).
+test("a variable's value of three arms from MIR is their chain", async () => {
+  const dir = fixture("mir-three-arms");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Kind { Note, Warn { level: u8 }, Tip(&'static str) }
+pub fn class(k: Kind) -> String {
+    let cls = match k {
+        Kind::Note => "note",
+        Kind::Warn { .. } => "warn",
+        Kind::Tip(_) => "tip",
+    };
+    format!("{cls}!")
+}
+pub fn count(k: Kind, n: i32) -> i32 {
+    let counted = match k {
+        Kind::Note => n + 1,
+        Kind::Warn { .. } => 0,
+        Kind::Tip(_) => n,
+    };
+    counted + 1
+}
+pub fn named(o: Option<Kind>) -> String {
+    let name = match o {
+        None => "none",
+        Some(Kind::Note) => "note",
+        Some(_) => "other",
+    };
+    format!("{name}.")
+}
+// Of a value MIR holds, \`tmp\`, its first branch doing more than giving
+// it, as react.dev's CodeDiagram picks a child.
+pub fn pick(x: i32) -> String {
+    let shown: Box<dyn std::fmt::Display> = if x > 5 {
+        let m = x * 2;
+        Box::new(m + 1)
+    } else if x < 0 {
+        Box::new("neg")
+    } else {
+        Box::new(x)
+    };
+    shown.to_string()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  const cls = k === "Note" ? "note" : k.TAG === "Warn" ? "warn" : "tip";\n');
+  expect(js).toContain('  const name = o == null ? "none" : o === "Note" ? "note" : "other";\n');
+  expect(js).toContain('  if (k === "Note") {\n    counted = (n + 1) | 0;\n  } else if (k.TAG === "Warn") {\n    counted = 0;\n  } else {\n    counted = n;\n  }\n');
+  expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
+  expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
+  expect([lib.count("Note", 3), lib.count({ TAG: "Warn", level: 1 }, 3), lib.count({ TAG: "Tip", _0: "x" }, 3)]).toEqual([5, 1, 4]);
+  expect([lib.named(undefined), lib.named("Note"), lib.named({ TAG: "Tip", _0: "x" })]).toEqual(["none.", "note.", "other."]);
 });

@@ -158,14 +158,10 @@ function main() {
   console.log(
     `${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`}`,
   );
-  let size;
-  if (big === 0n) {
-    size = "zero";
-  } else if (big >= 1n && big <= 18446744073709551615n) {
-    size = "fits in 64";
-  } else {
-    size = "wider";
-  }
+
+  // Matching and ordering.
+  const size =
+    big === 0n ? "zero" : big >= 1n && big <= 18446744073709551615n ? "fits in 64" : "wider";
   const values = [max, 0n, big, 1n];
   values.sort($cmp);
   console.log(

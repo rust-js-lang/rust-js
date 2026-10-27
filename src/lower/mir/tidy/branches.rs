@@ -259,6 +259,22 @@ pub(super) fn branch_values(
                 };
                 StmtKind::If(or_all(a, b), then, None)
             }
+            // A chain of more arms whose every arm is a plain value, a literal
+            // or a name, its last ones folded first: one nested conditional,
+            // `x = a ? p : b ? q : r;`, as upstream React writes its colors
+            // (ADR 0969, amended).
+            StmtKind::If(ref test, ref then, Some(ref otherwise))
+                if let Some((x, yes)) = assigned_only(then)
+                    && !is_temporary(x)
+                    && let Some((y, no)) = assigned_through(otherwise).or_else(|| assigned_only(otherwise))
+                    && x == y
+                    && !(x == result && written_returns((then, otherwise), returns, span))
+                    && !switched(test, span, switches)
+                    && let Some(value) =
+                        plain_chain_of(test, spanned(yes, then[0].span), spanned(no, otherwise[0].span)) =>
+            {
+                StmtKind::Assign(Expr::var(x), value)
+            }
             // A chain of more arms, its last ones folded first, `if (a) { x = p; }
             // else { x = b ? q : c ? r : s; }`: the chain, as it's written,
             // each arm its own (`chained_arms`); of a temporary, where its

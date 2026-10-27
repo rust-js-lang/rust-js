@@ -67,14 +67,11 @@ function splitWords(s) {
         if (peek) {
           const nextI = peek[0];
           const next = peek[1];
-          let nextMode;
-          if (/^\p{Lowercase}$/u.test(c)) {
-            nextMode = "Lowercase";
-          } else if (/^\p{Uppercase}$/u.test(c)) {
-            nextMode = "Uppercase";
-          } else {
-            nextMode = mode;
-          }
+          const nextMode = /^\p{Lowercase}$/u.test(c)
+            ? "Lowercase"
+            : /^\p{Uppercase}$/u.test(c)
+              ? "Uppercase"
+              : mode;
           if (nextMode === "Lowercase" && /^\p{Uppercase}$/u.test(next)) {
             words.push($strSlice(word, init, nextI));
             init = nextI;

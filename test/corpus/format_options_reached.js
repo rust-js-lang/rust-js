@@ -18,16 +18,8 @@ export function entry() {
 export const askedDisplay = { fmt: askedDisplay_fmt };
 function askedDisplay_fmt(asked, options) {
   const value = options?.align;
-  let align;
-  if (value == null) {
-    align = "none";
-  } else if (value === "Left") {
-    align = "left";
-  } else if (value === "Right") {
-    align = "right";
-  } else {
-    align = "center";
-  }
+  const align =
+    value == null ? "none" : value === "Left" ? "left" : value === "Right" ? "right" : "center";
   return `${align} ${$debugStr(options?.fill ?? " ", "'")} ${options?.zero === true}`;
 }
 

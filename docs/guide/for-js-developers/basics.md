@@ -1088,8 +1088,10 @@ export function fee(member, amount) {
 }
 ```
 
-A variable given its value by a chain of more arms is given it by the
-chain, each arm its own
+A variable given its value by a chain of more arms, each a value alone
+(a string or a number literal, or a name), is one nested conditional, a
+`const`; a chain with an arm that's more, a call, an object, a conditional
+of its own, is given it by the chain, each arm its own
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)):
 
 ```rust
@@ -1105,21 +1107,36 @@ pub fn color(duration: f64) -> String {
     };
     format!("{color}!")
 }
+
+pub fn shade(duration: f64, hydrated: bool) -> String {
+    let shade = if duration < 5.0 {
+        if hydrated { "tertiary" } else { "primary" }
+    } else if duration < 100.0 {
+        "dark"
+    } else {
+        "error"
+    };
+    format!("{shade}!")
+}
 ```
 
 ```js
 export function color(duration) {
-  let color;
-  if (duration < 5) {
-    color = "light";
-  } else if (duration < 10) {
-    color = "plain";
-  } else if (duration < 100) {
-    color = "dark";
-  } else {
-    color = "error";
-  }
+  const color =
+    duration < 5 ? "light" : duration < 10 ? "plain" : duration < 100 ? "dark" : "error";
   return `${color}!`;
+}
+
+export function shade(duration, hydrated) {
+  let shade;
+  if (duration < 5) {
+    shade = hydrated ? "tertiary" : "primary";
+  } else if (duration < 100) {
+    shade = "dark";
+  } else {
+    shade = "error";
+  }
+  return `${shade}!`;
 }
 ```
 
