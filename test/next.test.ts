@@ -952,13 +952,13 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(linkedJsx).toContain("const { slug } = useParams();");
   expect(linkedJsx).toContain('router.push("/about", { scroll: false })');
   expect(linkedJsx).toContain("<button key={router.bfcacheId} onClick={() => router.push(");
-  expect(readFileSync(join(dir, "app/actions.js"), "utf8")).toContain('  if (forbidden$1) {\n    forbidden();\n  } else {\n    redirect("/", "replace");\n  }');
+  expect(readFileSync(join(dir, "app/actions.js"), "utf8")).toContain('  if (forbidden$1) {\n    forbidden();\n  }\n  redirect("/", "replace");');
   // next/headers: the request's route is dynamic, rendered as it's asked.
   expect(output).toContain("ƒ /request");
   const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");
   expect(requestJsx).toContain("const jar = await cookies();");
   expect(requestJsx).toContain("(await draftMode()).isEnabled");
-  expect(requestJsx).toContain('const lighten = async () => {\n    "use server";\n    (await cookies()).set("theme", "light");\n  };');
+  expect(requestJsx).toContain('async function lighten() {\n    "use server";\n    (await cookies()).set("theme", "light");\n  }');
   const actionsJs = readFileSync(join(dir, "app/actions.js"), "utf8");
   expect(actionsJs).toContain('jar.set("theme", theme, { maxAge: 3600, sameSite: "lax" });');
   expect(actionsJs).toContain('jar.delete({ name: "old", path: "/" });');

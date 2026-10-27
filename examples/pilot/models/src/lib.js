@@ -117,12 +117,12 @@ export const MAX_NAME = 40;
  */
 export function validate(contact) {
   const errors = [];
-  const fail = (field, message) => {
+  function fail(field, message) {
     errors.push({
       field,
       message,
     });
-  };
+  }
   const name = $trim(contact.name);
   if (!name) {
     fail("name", "a name is required");

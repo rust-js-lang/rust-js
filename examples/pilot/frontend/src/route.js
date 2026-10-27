@@ -13,10 +13,10 @@ export function parse(hash) {
       return "New";
     default: {
       const option = $stripPrefix(path, "/contacts/");
-      const then = (id) => {
+      function then(id) {
         const result = $parseInt(id, 0, 4294967295);
         return result.TAG === "Ok" ? result._0 : undefined;
-      };
+      }
       const id = option != null ? then(option) : undefined;
       if (id != null) {
         return { TAG: "Contact", _0: id };

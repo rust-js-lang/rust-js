@@ -147,7 +147,7 @@ test("module-load statements resolve imports around their local bindings", async
   expect(code).toContain('import { value as value$1 } from "./util.js";');
   expect(code).toContain("const read = (value) => value$1(value);");
   // Not a name of the module's, which a closure keeps apart.
-  expect(code).toContain("const next = (ready$1) => (ready$1 + 1) >>> 0;");
+  expect(code).toContain("const next = (ready) => (ready + 1) >>> 0;");
   expect(code).not.toContain("\0");
   const seen: number[] = [];
   const globals = globalThis as typeof globalThis & { auditSeed?: () => number; auditLoaded?: (n: number) => void };

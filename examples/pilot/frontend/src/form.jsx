@@ -18,7 +18,7 @@ export function NewContactForm() {
   const [age, setAge] = useState("");
   const [errors, setErrors] = useState([]);
   const [sending, setSending] = useState(false);
-  const submit = (e) => {
+  function submit(e) {
     e.preventDefault();
     // Every field's error at once: an age that isn't a number is one.
     const result = $parseInt($trim(age), 0, 4294967295);
@@ -54,8 +54,8 @@ export function NewContactForm() {
       }
       setSending(false);
     })();
-  };
-  const field = (label, key, value, set) => {
+  }
+  function field(label, key, value, set) {
     const error = message(errors, key);
     return (
       <label className="field">
@@ -69,7 +69,7 @@ export function NewContactForm() {
         {error != null && <span className="field-error">{error}</span>}
       </label>
     );
-  };
+  }
   return (
     <form onSubmit={submit} noValidate>
       <h1>New contact</h1>
