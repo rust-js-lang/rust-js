@@ -399,7 +399,7 @@ test("a library's type equal only to itself keys its consumer's Set by itself", 
 test("a library's RefCells are the values they hold, and its consumer agrees or is refused", () => {
   const out = chain(pairs, "ref_cells", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  expect(dep).toContain("  const current = {\n    seen: new Set(),\n  };\n  current.types = prev?.types;\n");
+  expect(dep).toContain("  const current = {\n    types: undefined,\n    seen: new Set(),\n  };\n  current.types = prev?.types;\n");
   expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.some((t) => t === ty)) {\n    types.push(ty);\n");
   expect(dep).toContain("    return a === b;\n");
   expect(dep).toContain("    const count = transition.seen.size;\n    transition.seen.clear();\n");
@@ -415,7 +415,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // A consumer that only makes the library's struct makes its plain field
   // the value it holds, as the library reads it.
   counting(out, "use std::cell::RefCell;\n\npub fn main() {\n    let made = dep::Transition {\n        types: RefCell::new(None),\n        seen: None,\n    };\n    dep::add_type(&made, \"x\");\n    println!(\"{:?}\", dep::types(&made));\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  const made = {};\n");
+  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  const made = {\n    types: undefined,\n  };\n");
   const facts = contract(out).ref_cells;
   expect([facts.unchecked.length, facts.counted, facts.boxed]).toEqual([3, undefined, undefined]);
   expect(contract(out).fields.map((field: { facts: string[] }) => field.facts)).toEqual([["quiet"]]);
