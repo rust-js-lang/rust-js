@@ -1240,3 +1240,42 @@ pub fn lifecycles(current: Option<u32>, profile: bool, log: &mut Vec<u32>) {
   lib.lifecycles(undefined as never, false as never, log as never);
   expect(log).toEqual([1, 2, 7, 4]);
 });
+
+// The user's decision (2026-10-27), ADR 0866, amended: React's
+// getViewTransitionName, `if (instance.autoName !== null) { return
+// instance.autoName; }`. An `if let` of a plain field whose binding is the
+// field's own name, the `then` returning it first, reads the field in place
+// each time; a binding of another name keeps it.
+test("an if let of a field by its own name reads the field in place", async () => {
+  const { js, lib } = await compiled(
+    "own-name-field-read",
+    `use std::cell::RefCell;
+
+pub struct ViewTransitionState {
+    pub auto_name: RefCell<Option<String>>,
+}
+
+pub fn get_view_transition_name(instance: &ViewTransitionState) -> String {
+    if let Some(auto_name) = &*instance.auto_name.borrow() {
+        return auto_name.clone();
+    }
+    String::new()
+}
+
+pub fn named(instance: &ViewTransitionState) -> String {
+    if let Some(name) = &*instance.auto_name.borrow() {
+        return name.clone();
+    }
+    String::new()
+}
+`,
+  );
+  expect(js).toContain("  if (instance.autoName != null) {\n    return instance.autoName;\n  }\n");
+  expect(js).toContain("  const name = instance.autoName;\n");
+  expect([
+    lib.getViewTransitionName({ autoName: "a" } as never),
+    lib.getViewTransitionName({ autoName: null } as never),
+    lib.named({ autoName: "b" } as never),
+    lib.named({ autoName: null } as never),
+  ]).toEqual(["a", "", "b", ""]);
+});

@@ -417,13 +417,16 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
 pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, taken_apart: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        let Some(test) = tested_read(&stmts[i], &stmts[i + 1..], taken_apart) else {
+        let Some((test, then)) = tested_read(&stmts[i], &stmts[i + 1..], taken_apart) else {
             i += 1;
             continue;
         };
         stmts.remove(i);
-        if let StmtKind::If(tested, ..) = &mut stmts[i].kind {
+        if let StmtKind::If(tested, branch, _) = &mut stmts[i].kind {
             *tested = test;
+            if let Some((read, first)) = then {
+                *read.of_mut(&mut branch[0]) = first;
+            }
         }
         // A `let` before it may now be read by the `if` too.
         i = i.saturating_sub(1);
@@ -434,13 +437,21 @@ pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, taken_apart: &HashSet<String>)
 /// test of the `if` `rest` starts with, `x` read there as `p.f`: where `p.f`
 /// reads a variable's property, which no getter may answer and nothing
 /// that runs before each read changes, as the test does nothing; and
-/// nothing else reads `x`, its branches nor what follows it.
-fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Option<Expr> {
-    let (StmtKind::Const(name, value), Some(StmtKind::If(test, ..))) = (&stmt.kind, rest.first().map(|s| &s.kind))
+/// nothing else reads `x`, its branches nor what follows it. Or, where `x`
+/// is the property's own name, `const autoName = instance.autoName`, its
+/// `then`'s first statement too, where what it reads is `x` alone, `return
+/// autoName`, nothing run before it: `if (instance.autoName != null) {
+/// return instance.autoName; }`, as React's getViewTransitionName writes it
+/// (ADR 0866, amended, the user's decision, 2026-10-27). That statement's
+/// read too, where it reads `x` so.
+fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Option<(Expr, Option<(Read, Expr)>)> {
+    let (StmtKind::Const(name, value), Some(StmtKind::If(test, then, _))) = (&stmt.kind, rest.first().map(|s| &s.kind))
     else {
         return None;
     };
-    if !taken_apart.contains(name) {
+    // The property's own name, `const autoName = instance.autoName`.
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
+    if !taken_apart.contains(name) && !own_name {
         return None;
     }
     let mut root = value;
@@ -452,10 +463,25 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
         && !value.has_effects();
     let mut tested = 0;
     test.visit_vars(&mut |v| tested += usize::from(v == name));
-    if !place || tested == 0 || js::mentions_in(rest, name) != tested || test.has_effects() {
+    if !place || tested == 0 || test.has_effects() {
         return None;
     }
-    test.substitute(&|v| (v == name).then(|| value.clone()))
+    let substituted = |e: &Expr| e.substitute(&|v| (v == name).then(|| value.clone()));
+    // Of the property's own name, read once more by the `then`'s first
+    // statement, nothing it evaluates first doing anything.
+    let then = match js::mentions_in(rest, name) - tested {
+        0 if taken_apart.contains(name) => None,
+        1 if own_name
+            && let Some(first) = then.first()
+            && js::mentions_in(std::slice::from_ref(first), name) == 1
+            && let Some(read) = read_of(first, name)
+            && matches!(&read.of(first).kind, ExprKind::Var(v) if v == name) =>
+        {
+            Some((read, substituted(read.of(first))?))
+        }
+        _ => return None,
+    };
+    Some((substituted(test)?, then))
 }
 
 /// `if (fiber != null && fiber._debugTask) { const debugTask =

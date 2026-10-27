@@ -2063,6 +2063,11 @@ export function isAdult(p) {
   `if (lastFiber != null && lastFiber.index === fiber.index)`, as the
   test runs no code
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md), amended).
+  One named as the field it reads, `if let Some(auto_name) =
+  &*instance.auto_name.borrow() { return auto_name.clone(); }`, is the
+  field read in place where the `then` gives it first, `if
+  (instance.autoName != null) { return instance.autoName; }`; of another
+  name, `const name = instance.autoName;` (ADR 0866, amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

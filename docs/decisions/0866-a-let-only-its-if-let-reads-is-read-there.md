@@ -226,3 +226,28 @@ only its test reads", run, and the module variables test's another
 module's `with_borrow`; its mutations are
 `thread-local-binding-not-taken-apart`, `field-binding-taken-apart`,
 `quiet-with-borrow-called-late` and `quiet-with-borrow-of-another-module`.
+
+## Amendment: a binding of a field's own name is the field where the `then` gives it
+
+The user's decision (2026-10-27). React's getViewTransitionName writes
+`if (instance.autoName !== null) { return instance.autoName; }`; its port,
+`if let Some(auto_name) = &*instance.auto_name.borrow() { return
+auto_name.clone(); }`, printed `const autoName = instance.autoName; if
+(autoName != null) { return autoName; }`: `tested_read` took only a `let`
+the test alone reads.
+
+**A `const x = p.x` named as the property it reads, a plain field's
+that no getter answers, is read in place in the `if` after it where the
+test reads it and the `then`'s first statement gives it alone**, `return
+x`, nothing run between: the field holds what the test read there, so
+the program's name is no loss, being the field's. Another name, `if let
+Some(name) = ..`, keeps the `const`, as does a binding read anywhere
+else. Case N ([0262](0262-when-rust-and-js-disagree.md)): a plain
+property read twice, nothing between, is one value.
+
+Held by `test/lowering-written-branches.test.ts`'s "an if let of a field
+by its own name reads the field in place", run in JS, and the mutation
+`own-name-read-never-in-place` (`tidy/moves.ts`), beside the reworded
+`tested-read-of-any-let`, `tested-read-past-a-call` and
+`tested-read-body-unread`.
+
