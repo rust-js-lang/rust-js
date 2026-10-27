@@ -604,3 +604,53 @@ pub fn write(update: &Update, gesture: &Rc<G>) {
   const update = { lane: 2, gesture: { count: 1 }, next: null };
   expect(lib.cloneUpdate(update)).toEqual({ lane: 2, gesture: { count: 1 }, next: null });
 });
+
+// React's DEV dispatchers: `X.with_borrow(|d| set_h(d.as_deref()))`, a binding's
+// call, which may run anything, made while a thread-local only its key
+// reaches is borrowed. What may run then borrows a cell through a reference,
+// `cursor.current.borrow_mut()` of any `RefCell<T>`, never that one's own,
+// which no reference reaches: it stays its module's variable, `let nested;`
+// (ADR 0960, amended).
+test("a thread-local only its key reaches is no cell a borrow by reference is of", async () => {
+  const dir = fixture("closed-key-under-binding");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct D {
+    pub n: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.setH")]
+fn set_h(_d: Option<&D>) {
+    unreachable!()
+}
+
+pub struct Cursor<T> {
+    pub current: RefCell<T>,
+}
+
+pub fn push<T>(cursor: &Cursor<T>, value: T) {
+    *cursor.current.borrow_mut() = value;
+}
+
+thread_local! {
+    static NESTED: RefCell<Option<Rc<D>>> = const { RefCell::new(None) };
+}
+
+js::on_load! {
+    NESTED.set(Some(Rc::new(D { n: 1 })));
+}
+
+pub fn render() {
+    NESTED.with_borrow(|d| set_h(d.as_deref()));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function render() {\n  globalThis.setH(nested);\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const seen: unknown[] = [];
+  (globalThis as any).setH = (d: unknown) => seen.push(d);
+  lib.render();
+  expect(seen).toEqual([{ n: 1 }]);
+});

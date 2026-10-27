@@ -167,10 +167,14 @@ impl<'tcx> CellBorrows<'tcx> {
     /// Whether code rust-js can't see, JS's or a library's, may ask of
     /// `held`: of a thread-local only the crate's code reaches (`closed`),
     /// only where a body that may run after its modules load borrows it so
-    /// (ADR 0580, amended); of any other cell, it may.
+    /// (ADR 0580, amended), by its key: a borrow of a cell of its type
+    /// through a reference is never of its own, which none reaches (ADR
+    /// 0960, amended); of any other cell, it may.
     fn anything_asks(&self, tcx: TyCtxt<'tcx>, held: Borrow<'tcx>) -> bool {
         match held.cell {
-            Cell::Key(key) if self.closed.contains(&key) => self.later.iter().any(|&theirs| asks(tcx, theirs, held)),
+            Cell::Key(key) if self.closed.contains(&key) => {
+                (self.later.iter()).any(|&theirs| matches!(theirs.cell, Cell::Key(_)) && asks(tcx, theirs, held))
+            }
             _ => true,
         }
     }

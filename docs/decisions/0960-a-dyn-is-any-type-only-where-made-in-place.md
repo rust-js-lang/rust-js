@@ -99,3 +99,25 @@ counts every cell of its type, as before.
   `key-counted-unasked` (`drops/ref_cells.ts`),
   `lent-key-reached-only-by-key` (`analysis/cell_borrows.ts`),
   `key-set-of-any-cell` and `key-take-of-any-cell` (`std_types/cell.ts`).
+
+## Amendment: what code rust-js can't see borrows is no thread-local only its key reaches (2026-10-27)
+
+The amendment above made a thread-local's own cell, which only its key
+reaches, no other cell of its type where a borrow is held. What code
+rust-js can't see may borrow, a binding's call run under a `with_borrow`,
+was asked still of every borrow the crate's later bodies make, a generic
+`RefCell<T>`'s through a reference among them, `cursor.current.borrow_mut()`,
+which may be any cell's. React's DEV dispatchers call
+`REACT_SHARED_INTERNALS.set_h(dispatcher.as_deref())`, a library binding,
+under `X.with_borrow(..)`, and each of the seven was a `{ value: null }`
+cell read by `$withBorrow`.
+
+**Of a thread-local only its key reaches, what unseen code may borrow is
+what the crate's later bodies borrow of it by its key**
+(`anything_asks`): a borrow through a reference is never of its cell,
+which none reaches. React's dispatchers are their module's variables,
+`ReactSharedInternals.H = InvalidNestedHooksDispatcherOnMountInDEV ??
+null`. Held by `test/lowering-cell-borrows.test.ts`'s "a thread-local only
+its key reaches is no cell a borrow by reference is of"; mutation
+`closed-key-type-borrow-asks`.
+

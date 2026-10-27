@@ -367,8 +367,8 @@ export const mutations: Mutation[] = [
     name: "unseen-asks-everything",
     breaks: "what JS runs is taken to borrow any cell, so a thread-local set only where its module loads is a checked `{ value }` cell (ADR 0580, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Cell::Key(key) if self.closed.contains(&key) => self.later.iter().any(|&theirs| asks(tcx, theirs, held)),\n",
-    replace: "",
+    find: "            Cell::Key(key) if self.closed.contains(&key) => {\n",
+    replace: "            Cell::Key(key) if false && self.closed.contains(&key) => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
   },
   {
@@ -378,5 +378,13 @@ export const mutations: Mutation[] = [
     find: "                | JsForm::Null\n",
     replace: "",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "js::null.. made while a borrow"],
+  },
+  {
+    name: "closed-key-type-borrow-asks",
+    breaks: "a borrow by reference of any `RefCell<T>` is taken to be of a thread-local only its key reaches, so React's DEV dispatchers read under a binding's call are `{ value: null }` cells read by `$withBorrow`",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                (self.later.iter()).any(|&theirs| matches!(theirs.cell, Cell::Key(_)) && asks(tcx, theirs, held))\n",
+    replace: "                (self.later.iter()).any(|&theirs| asks(tcx, theirs, held))\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only its key reaches is no cell"],
   },
 ];
