@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     "name": "mir-chain-tail-folded",
     "breaks": "a variable's value of three arms from MIR has its last two folded, `else { cls = w ? \"warn\" : \"tip\"; }`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
+    "find": "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     "replace": "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
   },
@@ -596,5 +596,13 @@ export const mutations: Mutation[] = [
     find: "                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace: "                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
     tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
+  },
+  {
+    name: "chain-through-temporary-unseen",
+    breaks: "a variable's value of four arms MIR gives through a temporary is its first arm a statement and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
+    replace: "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
   },
 ];

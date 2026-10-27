@@ -1088,6 +1088,41 @@ export function fee(member, amount) {
 }
 ```
 
+A variable given its value by a chain of more arms is given it by the
+chain, each arm its own
+([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)):
+
+```rust
+pub fn color(duration: f64) -> String {
+    let color = if duration < 5.0 {
+        "light"
+    } else if duration < 10.0 {
+        "plain"
+    } else if duration < 100.0 {
+        "dark"
+    } else {
+        "error"
+    };
+    format!("{color}!")
+}
+```
+
+```js
+export function color(duration) {
+  let color;
+  if (duration < 5) {
+    color = "light";
+  } else if (duration < 10) {
+    color = "plain";
+  } else if (duration < 100) {
+    color = "dark";
+  } else {
+    color = "error";
+  }
+  return `${color}!`;
+}
+```
+
 An `if` condition must be a `bool`. There's no truthiness: write
 `!s.is_empty()`, `n != 0`, `opt.is_some()`.
 

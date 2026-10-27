@@ -259,10 +259,11 @@ pub(super) fn branch_values(
                 };
                 StmtKind::If(or_all(a, b), then, None)
             }
-            // A chain of more arms, its last two folded first, `if (a) { x = p; }
-            // else { x = b ? q : r; }`: the chain, as it's written; of a
-            // temporary, where its first arm does more than give it, so the
-            // whole is no conditional either.
+            // A chain of more arms, its last ones folded first, `if (a) { x = p; }
+            // else { x = b ? q : c ? r : s; }`: the chain, as it's written,
+            // each arm its own (`chained_arms`); of a temporary, where its
+            // first arm does more than give it, so the whole is no
+            // conditional either.
             StmtKind::If(ref test, ref then, Some(ref otherwise))
                 if let Some(Stmt {
                     kind: StmtKind::Assign(target, _),
@@ -270,17 +271,12 @@ pub(super) fn branch_values(
                 }) = then.last()
                     && let ExprKind::Var(x) = &target.kind
                     && (!is_temporary(x) && then.len() == 1 || is_temporary(x) && then.len() > 1)
-                    && let Some((y, folded)) = assigned_only(otherwise)
+                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))
                     && x == y
                     && !switched(test, span, switches)
-                    && let ExprKind::Cond(t, q, r) = &folded.kind
-                    && small(q)
-                    && small(r) =>
+                    && let Some(chained) = chained_arms(y, folded, otherwise[0].span) =>
             {
-                let at = otherwise[0].span;
-                let arm = |value: &Expr| vec![StmtKind::Assign(Expr::var(y), value.clone()).at(at)];
-                let chained = StmtKind::If((**t).clone(), arm(q), Some(arm(r))).at(at);
-                StmtKind::If(test.clone(), then.clone(), Some(vec![chained]))
+                StmtKind::If(test.clone(), then.clone(), Some(chained))
             }
             StmtKind::If(test, ref then, Some(ref otherwise))
                 if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches))

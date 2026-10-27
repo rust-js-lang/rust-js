@@ -1279,3 +1279,54 @@ pub fn named(instance: &ViewTransitionState) -> String {
     lib.named({ autoName: null } as never),
   ]).toEqual(["a", "", "b", ""]);
 });
+
+// ADR 0969: a variable's value of a chain of four arms or more, from MIR, is
+// the chain, each arm its own, as of three: not its first arm a statement
+// and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`, nor an
+// arm MIR wrote the other way round negated, `!(selfTime < 100) ? .. : ..`.
+// React's ReactFiberPerformanceTrack's colors.
+test("a variable's value of four arms from MIR is their chain", async () => {
+  const dir = fixture("mir-four-arms");
+  writeFileSync(join(dir, "lib.rs"), `pub fn log(yield_duration: f64, was_hydrated: bool, self_time: f64) -> String {
+    let color = if yield_duration < 5.0 {
+        "primary-light"
+    } else if yield_duration < 10.0 {
+        "primary"
+    } else if yield_duration < 100.0 {
+        "primary-dark"
+    } else {
+        "error"
+    };
+    let other = if self_time < 0.5 {
+        if was_hydrated { "tertiary-light" } else { "primary-light" }
+    } else if self_time < 10.0 {
+        if was_hydrated { "tertiary" } else { "primary" }
+    } else if self_time < 100.0 {
+        if was_hydrated { "tertiary-dark" } else { "primary-dark" }
+    } else {
+        "error"
+    };
+    color.to_string() + other
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  } else if (yieldDuration < 10) {
+    color = "primary";
+  } else if (yieldDuration < 100) {
+    color = "primary-dark";
+  } else {
+    color = "error";
+  }`);
+  expect(js).toContain(`  } else if (selfTime < 100) {
+    other = wasHydrated ? "tertiary-dark" : "primary-dark";
+  } else {
+    other = "error";
+  }`);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.log(1, true, 0.1), lib.log(50, false, 50), lib.log(500, true, 500)]).toEqual([
+    "primary-lighttertiary-light",
+    "primary-darkprimary-dark",
+    "errorerror",
+  ]);
+});
