@@ -188,6 +188,9 @@ What keeps them there:
   first test that asked, under the corpus's load, it outran bun's 5 s
   test timeout, was killed, and failed every test waiting on it, nearly
   every run. Tests that run `cargo` themselves declare a timeout that fits.
+- **The snapshot tests declare 60 s**: `inbox`'s compile, a crate of
+  serde's, outran bun's 5 s under load, nearly every loaded run, and in
+  CI's `wasm` job twice running (2026-10-27).
 - **`bun run port measure`** fails when the port's compile does: a module
   that fails keeps its JS from before, which reads as no difference.
 
@@ -284,7 +287,6 @@ checked:
 
 | Step | What it costs | What would fix it |
 |---|---|---|
-| `test/snapshots.test.ts`'s `inbox` case under load | Times out at 5 s nearly every loaded run; a re-run each time | A timeout that fits its compile, or a smaller program |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time |
 | Two or more agents' worktrees | A full `cargo build` and corpus each | A shared build cache across worktrees |
 | Clippy's crates in the compiler, for `rust-js clippy` (ADR 0888) | A cold `cargo build` builds them first: 12 s (29 s of CPU) of its 59 s on the M3 Max, and 330 MB more of `target/`; the debug binary is 104 MB, not 59 MB. A build after an edit is as before, 3.5 s | Built once for every worktree, the shared build cache above |

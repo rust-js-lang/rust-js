@@ -84,7 +84,9 @@ for (const [name, input, crates] of cases) {
     // same way on every machine.
     run([compiler, input, "-o", join(out, `${basename(input, ".rs")}.js`), ...(flags.length > 0 ? ["--", ...flags] : [])]);
     expectSnapshot(out, join(root, "test/snapshots", name));
-  });
+    // A compile of a crate of serde's, `inbox`'s, takes past bun's 5 s on a
+    // loaded machine, the wasm job's too: its compile's time, not a hang.
+  }, 60_000);
 }
 
 // The playground's own bindings declare JS types as a program does, and a
