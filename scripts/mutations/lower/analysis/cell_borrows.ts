@@ -331,4 +331,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Param(_) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_dyn_alias_borrow.rs$"],
   },
+  {
+    name: "cell-borrow-runs-unseen",
+    breaks: "a cell's borrow is code rust-js can't see, so a consumer's borrow of a library's `RefCell<Vec<String>>` held while it borrows another is refused (ADR 0863, amended)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })\n        ) {\n            return false;\n",
+    replace: "            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })\n        ) && false {\n            return false;\n",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
+  },
 ];

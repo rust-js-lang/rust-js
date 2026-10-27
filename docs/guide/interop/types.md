@@ -1390,11 +1390,20 @@ export function shared() {
   `RefCell<Vec<Rc<Node>>>` is no `RefCell<Vec<Rc<dyn Fn()>>>`, whose
   hooks may run anything while it's borrowed
   ([ADR 0960](../../decisions/0960-a-dyn-is-any-type-only-where-made-in-place.md)).
+  A borrow only where a test finds the loop's own item isn't there meets
+  none: `for t in types.borrow().iter() { if !into.borrow().contains(t) {
+  into.borrow_mut().push(t.clone()); } }`, of strings, integers, `bool`s
+  or `char`s, each equal to itself, is `for (const t of types) { if
+  (!into.includes(t)) { into.push(t); } }`, as were `into` the loop's
+  cell, `t` would be found, and nothing pushed; not of floats, nor where
+  `into` is set again
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
 - **A library's manifest says what it does with its `RefCell`s**, and a
   crate using it that would read one otherwise is refused: one it shares as
   the object, which the crate's generic code would box, or a borrow of one
-  it never checks held while the library's code may run
-  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+  it never checks held while the library's code may run, which a cell's
+  own borrow isn't
+  ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
 - **A local `Cell` whose cell no one else sees is a plain variable.**
 - **A `Mutex` and an `RwLock` are cells too**, `{ value }`.
 

@@ -18,7 +18,7 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use super::super::recognition::Std;
+use super::super::recognition::{Std, StdItem};
 use super::super::{fn_def, strip};
 use rustc_middle::middle::region;
 
@@ -559,7 +559,10 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             own: fun,
             cell,
             quiet: true,
+            items: HashSet::new(),
+            unmet: Vec::new(),
         };
+        quiet.items = quiet.items_of_own();
         for &stmt in stmts {
             quiet.visit_stmt(&self.thir[stmt]);
         }
@@ -696,11 +699,141 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     own: ExprId,
     cell: Borrow<'tcx>,
     quiet: bool,
+    /// The variables a `for` over what `own`'s guard holds binds each item
+    /// to, `for t in types.borrow().iter()`'s `t`: a reference to an item
+    /// of the cell `own` borrows, which stays there while it's held.
+    items: HashSet<LocalVarId>,
+    /// The variables, each a cell's handle, whose borrows can't meet
+    /// `own`'s where they're asked: in the `then` of `if
+    /// !v.borrow().contains(t)` of such an item `t` (`unmet_in`).
+    unmet: Vec<LocalVarId>,
 }
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
     fn drops(&self, ty: Ty<'tcx>) -> bool {
         self.cx.drops_but_guards(ty)
+    }
+
+    /// `e` through what reads a place's value as it is: a borrow, a deref,
+    /// a std handle's `Deref::deref`, an `Rc`'s, a `Ref`'s, a `Vec`'s, and
+    /// a slice's `iter()`, whose items are references into it. Not a type
+    /// of the program's, whose `deref` may give another place each time.
+    fn through_reads(&self, mut e: ExprId) -> ExprId {
+        let recognition = &self.cx.recognition;
+        let tcx = recognition.tcx;
+        loop {
+            e = strip(self.thir, e);
+            e = match self.thir[e].kind {
+                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => arg,
+                ExprKind::Call { fun, ref args, .. }
+                    if let [arg] = args[..]
+                        && let Some((id, _)) = fn_def(self.thir[fun].ty)
+                        && ((tcx
+                            .trait_of_assoc(id)
+                            .is_some_and(|t| tcx.is_lang_item(t, rustc_hir::attrs::lang_items::LangItem::Deref))
+                            && [StdItem::Rc, StdItem::RefCellRef, StdItem::Vec]
+                                .into_iter()
+                                .any(|item| recognition.is_std_type(self.thir[arg].ty.peel_refs(), item)))
+                            || recognition.is_std_type(self.thir[e].ty, StdItem::SliceIter)) =>
+                {
+                    arg
+                }
+                _ => return e,
+            };
+        }
+    }
+
+    /// `items`: each `for` of the body whose head reads `own`'s guard's
+    /// items by reference, its pattern's variable.
+    fn items_of_own(&self) -> HashSet<LocalVarId> {
+        let query = crate::lower::body_queries::BodyQuery {
+            tcx: self.cx.recognition.tcx,
+            thir: self.thir,
+        };
+        (self.thir.exprs.indices())
+            .filter_map(|e| query.as_for(e))
+            .filter(|for_loop| {
+                matches!(self.thir[self.through_reads(for_loop.head)].kind, ExprKind::Call { fun, .. } if fun == self.own)
+            })
+            .filter_map(|for_loop| match for_loop.pat.kind {
+                PatKind::Binding {
+                    var,
+                    mode: BindingMode(ByRef::No, _),
+                    subpattern: None,
+                    ..
+                } => Some(var),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// The variable `v` of `!v.borrow().contains(t)`, `t` one of `items`,
+    /// whose cell's borrows in the `if`'s `then` can't meet `own`'s
+    /// (ADR 0863, amended): were `v` `own`'s cell, `t` would be one of its
+    /// items, which `contains` finds, being equal to itself, a string's,
+    /// an integer's, a `bool`'s or a `char`'s, so the `then` never runs.
+    /// Of a `v` the body never sets again nor lends mutably, a handle to
+    /// one cell wherever it's read.
+    fn unmet_in(&self, cond: ExprId) -> Option<LocalVarId> {
+        let recognition = &self.cx.recognition;
+        let thir = self.thir;
+        let ExprKind::Unary {
+            op: rustc_middle::mir::UnOp::Not,
+            arg,
+        } = thir[strip(thir, cond)].kind
+        else {
+            return None;
+        };
+        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, arg)].kind else {
+            return None;
+        };
+        let (id, generic_args) = fn_def(thir[fun].ty)?;
+        let (Some(Std::Comb(crate::lower::combinators::Comb::Contains)), [slice, item]) =
+            (recognition.classify(id, generic_args), &args[..])
+        else {
+            return None;
+        };
+        let ExprKind::VarRef { id: item } = thir[self.through_reads(*item)].kind else {
+            return None;
+        };
+        let element = thir[*slice].ty.peel_refs().sequence_element_type(recognition.tcx);
+        let reflexive = recognition.is_string_like(element) || element.is_integral() || element.is_bool();
+        if !self.items.contains(&item) || !reflexive {
+            return None;
+        }
+        let ExprKind::Call {
+            fun: borrow,
+            args: ref lent,
+            ..
+        } = thir[self.through_reads(*slice)].kind
+        else {
+            return None;
+        };
+        let (id, generic_args) = fn_def(thir[borrow].ty)?;
+        let (
+            Some(Std::Borrow {
+                mutable: false,
+                lock: false,
+            }),
+            [cell],
+        ) = (recognition.classify(id, generic_args), &lent[..])
+        else {
+            return None;
+        };
+        let ExprKind::VarRef { id: var } = thir[self.through_reads(*cell)].kind else {
+            return None;
+        };
+        let changed = thir.exprs.iter().any(|e| match e.kind {
+            ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => {
+                matches!(thir[strip(thir, lhs)].kind, ExprKind::VarRef { id } if id == var)
+            }
+            ExprKind::Borrow {
+                borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
+                arg,
+            } => matches!(thir[strip(thir, arg)].kind, ExprKind::VarRef { id } if id == var),
+            _ => false,
+        });
+        (!changed).then_some(var)
     }
 }
 
@@ -713,7 +846,37 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
         if !self.quiet {
             return;
         }
+        // A borrow of a cell that can't be `own`'s here (`unmet_in`).
+        if let ExprKind::If {
+            cond, then, else_opt, ..
+        } = expr.kind
+            && let Some(var) = self.unmet_in(cond)
+        {
+            self.visit_expr(&self.thir[cond]);
+            self.unmet.push(var);
+            self.visit_expr(&self.thir[then]);
+            self.unmet.pop();
+            if let Some(otherwise) = else_opt {
+                self.visit_expr(&self.thir[otherwise]);
+            }
+            return;
+        }
+        let unmet = |quiet: &Self, id: DefId, generic_args, args: &[ExprId]| {
+            matches!(
+                quiet.cx.recognition.classify(id, generic_args),
+                Some(Std::Borrow { .. } | Std::TryBorrow { .. })
+            ) && args.first().is_some_and(|&cell| {
+                matches!(quiet.thir[quiet.through_reads(cell)].kind, ExprKind::VarRef { id } if quiet.unmet.contains(&id))
+            })
+        };
         let asks = match expr.kind {
+            ExprKind::Call { fun, ref args, .. }
+                if fun != self.own
+                    && let Some((id, generic_args)) = fn_def(self.thir[fun].ty)
+                    && unmet(self, id, generic_args, args) =>
+            {
+                false
+            }
             ExprKind::Call { fun, ref args, .. } if fun != self.own => {
                 let drops = &|ty| self.drops(ty);
                 let called = match fn_def(self.thir[fun].ty) {

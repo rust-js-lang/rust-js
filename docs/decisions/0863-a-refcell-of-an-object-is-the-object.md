@@ -695,3 +695,71 @@ against native Rust; its mutation is `ref-cell-field-const-boxed`.
 `RefCell<Vec<Rc<Node>>>` (#374). A `dyn` is any type only where a value is
 made one in place, the cell's own value or a struct's last field; elsewhere
 it's a `dyn` of its trait. See [0960](0960-a-dyn-is-any-type-only-where-made-in-place.md).
+
+## Amendment: a borrow only where the loop's item isn't found meets none
+
+React's scheduleGesture merges a transition's types into its gesture's,
+a port of upstream's loop: `for transition_type in
+transition_types.borrow().iter() { if
+!scheduled_types.borrow().contains(transition_type) {
+scheduled_types.borrow_mut().push(transition_type.clone()); } }`, both
+`Rc<RefCell<TransitionTypes>>`, `react_isomorphic`'s type, whose borrows
+that library checks nowhere. It was refused: "this borrow .. is held
+while code rust-js can't see runs". Two answers were wrong:
+
+- **A cell's borrow was code rust-js can't see.** `call_runs_unseen`
+  asked `called`, which needs the borrow's receiver to say which cell it
+  borrows, and given none answered `Any`. Which cell is the question of
+  what a borrow may meet, not of what code it runs: a `RefCell`'s
+  `borrow`, `borrow_mut` and `try_borrow*`, and a lock's, run nothing but
+  their own check. `call_runs_unseen` now says so first.
+- **The push's borrow was counted as meeting the loop's**, the two of
+  one type. It can't: were `scheduled_types` the loop's cell,
+  `transition_type`, one of its items, would be in it, and `contains`
+  would find it, a `String` being equal to itself; the `then` never runs.
+
+**A borrow of a variable's cell inside `if !v.borrow().contains(t)`
+meets no borrow `own` holds** (`Quiet::unmet_in`) where:
+
+- `t` is the variable a `for` over `own`'s guard's items binds, its head
+  `own`'s guard read by reference, through `Deref` of an `Rc`, a `Ref`
+  or a `Vec` and a slice's `iter()`, never a type of the program's,
+  whose `deref` may give another place each time (`items_of_own`);
+- what's compared is equal to itself: a string's, an integer's, a
+  `bool`'s or a `char`'s, not a float's, `NaN`;
+- `v` is a handle the body never sets again nor lends mutably, so one
+  cell wherever it's read.
+
+A borrow of `v` in the `then` is then no borrow that may ask of `own`;
+any other borrow there is asked as before. Case N
+([0262](0262-when-rust-and-js-disagree.md)): where the cells differ, the
+borrows can't meet; where they're one, the `then` never runs; so no
+check fails either way, in Rust or JS.
+
+```js
+for (const transitionType of transitionTypes) {
+  if (!scheduledTypes.includes(transitionType)) {
+    scheduledTypes.push(transitionType);
+  }
+}
+```
+
+The port's ReactFiberGestureScheduler compiles, its merge upstream's,
+and no other module of the reconciler checks its types' borrows.
+
+`docs/readability.txt`'s `while (true)` share grows 10 to 10.2 in 10,000
+lines, and `return;`'s 10.3 to 10.5: the three cases where the borrows
+would meet are counted loops, `$next` and `$unborrow` in a `while
+(true)`, each returning as it unborrows, as Rust checks them.
+
+Held by `test/corpus/contains_guarded_borrow.rs` against native Rust,
+uncounted, and its three where the borrow would meet, each panicking as
+Rust does, counted: `contains_guarded_float.rs`,
+`contains_guarded_other.rs`, `contains_guarded_set_again.rs`;
+`test/crates.test.ts`'s "a library's RefCells are the values they hold",
+a consumer's borrow held while it borrows another counted, not refused,
+and the merge of the library's cells uncounted; and the mutations
+`cell-borrow-runs-unseen` (`analysis/cell_borrows.ts`),
+`unmet-of-a-float`, `unmet-of-any-value`, `unmet-never` and
+`unmet-of-a-handle-set-again` (`drops/facts.ts`).
+

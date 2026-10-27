@@ -264,6 +264,15 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         let summarized = |body: &DefId| matches!(self.of.get(body), Some(Some(_)));
         let itself = |ty| self.clones_itself(recognition, owner, ty);
+        // A cell's borrow, `RefCell::borrow_mut`, a lock's, runs nothing but
+        // its own check, whichever cell it is (ADR 0863, amended): which,
+        // `called` asks of its receiver, a borrow's question, not this one.
+        if matches!(
+            recognition.classify(def_id, args),
+            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })
+        ) {
+            return false;
+        }
         match called(recognition, def_id, args, None, &itself) {
             Called::Nothing | Called::Cell(_) => false,
             Called::Body(body, _) => !summarized(&body),
