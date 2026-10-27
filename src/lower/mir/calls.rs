@@ -215,7 +215,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let mut fields = Vec::new();
                 for (key, value) in keys.into_iter().zip(values) {
-                    fields.push(Prop::Field(key, self.value_expr(value, span)?));
+                    let value = self.value_expr(value, span)?;
+                    // `{...}`: what's given spread into it, `js::object::spread`'s
+                    // (ADR 0967).
+                    fields.push(match key.as_str() {
+                        "..." => Prop::Spread(value),
+                        _ => Prop::Field(key, value),
+                    });
                 }
                 return Ok(Value::Expr(Expr::object(fields)));
             }

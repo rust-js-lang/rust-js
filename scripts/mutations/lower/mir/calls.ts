@@ -388,4 +388,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
   },
+  {
+    name: "object-binding-spread-a-field",
+    breaks: "`js::object::spread(obj)` is `{ \"...\": obj }`, an object of one field, not `{ ...obj }` (ADR 0967)",
+    file: "src/lower/mir/calls.rs",
+    find: "                        \"...\" => Prop::Spread(value),\n",
+    replace: "",
+    tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
+  },
 ];

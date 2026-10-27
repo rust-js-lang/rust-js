@@ -281,6 +281,18 @@ pub mod array {
     pub fn is_array(value: Option<&Unknown>) -> bool {
         unreachable!()
     }
+
+    /// [`array.splice(start, deleteCount)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/splice):
+    /// of any value an array, `deleteCount` of its items from `start`
+    /// removed in place, as JS's `splice` does, past its end none; what it
+    /// removed. Of a value with no `splice`, JS's `TypeError`, a panic
+    /// (ADR 0967). An array Rust owns is a `Vec`, whose `remove` and
+    /// `drain` say this.
+    #[cfg_attr(rust_js, rust_js::link_name = "splice")]
+    #[allow(unused_variables)]
+    pub fn splice(this: &Unknown, start: u32, delete_count: u32) -> Vec<Option<&'static Unknown>> {
+        unreachable!()
+    }
 }
 
 /// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,
@@ -840,11 +852,12 @@ impl PropertyKey for i32 {}
 impl PropertyKey for usize {}
 
 /// `value[key] = to`: `to` as JS has it, a string or a number, or an
-/// object, set on any value; of `undefined` or `null`, a `None`, JS's
-/// `TypeError`, a panic (ADR 0776).
+/// object, set on any value, by a name as [`get`] reads it, text, a
+/// number or a JS value (ADR 0967); of `undefined` or `null`, a `None`,
+/// JS's `TypeError`, a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "set []")]
 #[allow(unused_variables)]
-pub fn set<T>(this: impl IntoUnknown, key: &str, to: T) {
+pub fn set<K: PropertyKey + ?Sized, T>(this: impl IntoUnknown, key: &K, to: T) {
     unreachable!()
 }
 
@@ -1991,6 +2004,17 @@ pub mod object {
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
     #[allow(unused_variables)]
     pub fn from_entries<T>(entries: Vec<(String, T)>) -> &'static JsObject {
+        unreachable!()
+    }
+
+    /// [`{ ...value }`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Spread_syntax#spread_in_object_literals):
+    /// a new object of `value`'s own enumerable properties, each defined on
+    /// it as JS's spread defines it, a `__proto__` key too; `{}` of `None`,
+    /// `undefined` or `null` (ADR 0967). Not `assign(object, value)`, which
+    /// sets each, so a `__proto__` key sets the new object's prototype.
+    #[cfg_attr(rust_js, rust_js::link_name = "{...}")]
+    #[allow(unused_variables)]
+    pub fn spread(value: Option<&Unknown>) -> &'static JsObject {
         unreachable!()
     }
 

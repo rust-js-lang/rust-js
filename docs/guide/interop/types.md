@@ -1815,6 +1815,48 @@ export function forget(props) {
   delete props.ref;
 }
 ```
+- `js::object::spread(value)` is `{ ...value }`, a new object of its own
+  enumerable properties, a `__proto__` key one of them, where
+  `Object.assign({}, value)` would set the prototype; `js::array::splice(
+  value, start, n)` is `value.splice(start, n)` of any value an array; and
+  `js::set` takes a key as `js::get` does, text, a number or a JS value
+  ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md)),
+  as React's DevTools copies a value with one key gone:
+
+```rust
+use js::{Kind, Unknown};
+
+pub fn copy_with_delete(obj: &'static Unknown, key: &'static Unknown) -> &'static Unknown {
+    let updated: &Unknown = match js::classify(Some(obj)) {
+        Kind::Array(items) => js::unknown_of(items.to_vec()),
+        _ => js::object::spread(Some(obj)),
+    };
+    match js::classify(Some(key)) {
+        Kind::Number(at) if js::array::is_array(Some(updated)) => {
+            js::array::splice(updated, at as u32, 1);
+        }
+        _ => {
+            js::delete(updated, key);
+        }
+    }
+    updated
+}
+```
+
+```js
+import { $f64ToInt } from "@rust-js/runtime";
+
+export function copyWithDelete(obj, key) {
+  const updated = Array.isArray(obj) ? obj.slice() : { ...obj };
+  if (typeof key === "number" && Array.isArray(updated)) {
+    const value = $f64ToInt(key, 0, 4294967295);
+    updated.splice(value, 1);
+  } else {
+    delete updated[key];
+  }
+  return updated;
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it

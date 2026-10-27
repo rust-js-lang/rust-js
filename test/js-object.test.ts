@@ -1403,3 +1403,59 @@ pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
   }
   expect(seen).toEqual([[true, "render", 1, 2, "Components", undefined, "primary"]]);
 });
+
+// ADR 0967: React's DEV copyWithDelete (ReactFiberReconciler.js), `const
+// updated = isArray(obj) ? obj.slice() : {...obj};`, then `updated.splice(key,
+// 1)` or `delete updated[key]`, and `updated[key] = ..` of a string or a
+// number key. `js::object::spread` is `{ ...value }`, which defines a
+// `__proto__` key as its own, where `Object.assign({}, value)` sets the
+// prototype; `js::array::splice` is `value.splice(start, n)`; `js::set` takes
+// a key as `js::get` does.
+test("an object spread, a splice and a set by any key are JS's", async () => {
+  const { js, lib, warnings } = await compiled("js-object-spread", `use js::{Kind, Unknown};
+
+fn copy_with_delete_impl(obj: &'static Unknown, path: &[&'static Unknown], index: usize) -> &'static Unknown {
+    let key = path[index];
+    let updated: &Unknown = match js::classify(Some(obj)) {
+        Kind::Array(items) => js::unknown_of(items.to_vec()),
+        _ => js::object::spread(Some(obj)),
+    };
+    if index + 1 == path.len() {
+        if js::array::is_array(Some(updated)) {
+            if let Kind::Number(at) = js::classify(Some(key)) {
+                js::array::splice(updated, at as u32, 1);
+            }
+        } else {
+            js::delete(updated, key);
+        }
+        return updated;
+    }
+    let inner = js::get(obj, key).expect("a path");
+    js::set(updated, key, copy_with_delete_impl(inner, path, index + 1));
+    updated
+}
+
+pub fn copy_with_delete(obj: &'static Unknown, path: &[&'static Unknown]) -> &'static Unknown {
+    copy_with_delete_impl(obj, path, 0)
+}
+
+pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
+    js::object::spread(value)
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("  const updated = Array.isArray(obj) ? obj.slice() : { ...obj };\n");
+  expect(js).toContain("        updated.splice(value, 1);\n");
+  expect(js).toContain("      delete updated[key];\n");
+  expect(js).toContain("  updated[key] = copyWithDeleteImpl(inner, path, (index + 1) >>> 0);\n");
+  const state = { a: { b: [1, 2, 3], c: 4 }, d: 5 };
+  const copy = lib.copyWithDelete(state as never, ["a", "b", 1] as never) as any;
+  expect(copy).toEqual({ a: { b: [1, 3], c: 4 }, d: 5 });
+  expect(state).toEqual({ a: { b: [1, 2, 3], c: 4 }, d: 5 });
+  expect(lib.copyWithDelete(state as never, ["a", "c"] as never)).toEqual({ a: { b: [1, 2, 3] }, d: 5 });
+  // A `__proto__` key is the copy's own, its prototype `Object.prototype`.
+  const keyed = JSON.parse('{"__proto__": {"x": 1}, "y": 2}');
+  const spread = lib.copied(keyed as never) as any;
+  expect([Object.getPrototypeOf(spread) === Object.prototype, Object.keys(spread), spread.x]).toEqual([true, ["__proto__", "y"], undefined]);
+  expect(lib.copied(undefined as never)).toEqual({});
+});

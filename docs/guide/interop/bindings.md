@@ -502,6 +502,7 @@ pub fn circle(radius: f64) -> &'static Circle {
 | `"\"\" +"` | `"" + this` | `js::concat_text` |
 | `"get []"`, `"set []"`, `"in []"` | `this[key]`, `this[key] = v`, `key in this` | `js::get`, `js::set`, `js::has` |
 | `"{}"`, `"{label, value}"` | `{}`, `{ label, value }` | an object of the arguments |
+| `"{...}"` | `{ ...value }` | `js::object::spread` ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md)) |
 | `"<tag>"`, `"prop name"` | JSX | React's element bindings |
 
 A module's `#` goes with the forms that aren't of a value: a function, `new`,
