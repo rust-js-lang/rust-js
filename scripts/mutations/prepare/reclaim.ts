@@ -86,14 +86,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
   {
-    name: "reclaim-assigned-unrenamed",
-    breaks: "a loop's `let step$1` given its name back, `let step`, where the test's assignment still sets `step$1` (ADR 0860)",
-    file: "src/prepare/reclaim.rs",
-    find: "        ExprKind::Var(name) | ExprKind::Assigned(name, _) if reads => f(name),\n",
-    replace: "        ExprKind::Var(name) if reads => f(name),\n",
-    tests: ["test/snapshots.test.ts", "-t", "calc"],
-  },
-  {
     name: "own-alias-reclaimed-unlisted",
     breaks: "a function exported by its alias alone, given back a global's name, `function console`, is still `console$` in `export { console$ as log }`, which names nothing",
     file: "src/prepare/reclaim.rs",

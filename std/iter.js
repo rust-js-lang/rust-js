@@ -6565,8 +6565,7 @@ export function andThenOrClear(opt, f, dropT, dropU, dropFnOnce) {
     }
     return x;
   }
-  option = undefined;
-  x = undefined;
+  x = option = undefined;
   dropFnOnce?.(f);
   return x;
 }
@@ -6763,19 +6762,16 @@ export function flattenCompatIUIterator_sizeHint(
               const v = option$1;
               upper = { TAG: "Continue", _0: v }._0;
             } else {
-              option$1 = undefined;
-              upper = undefined;
+              upper = option$1 = undefined;
             }
           } else {
-            option = undefined;
-            upper = undefined;
+            upper = option = undefined;
           }
         } else {
           upper = undefined;
         }
       } else {
-        option = undefined;
-        upper = undefined;
+        upper = option = undefined;
       }
     } else {
       upper = undefined;
@@ -7622,8 +7618,7 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
     }
     return x;
   }
-  option = undefined;
-  x = undefined;
+  x = option = undefined;
   dropFnOnce?.(f);
   return x;
 }
@@ -7644,8 +7639,7 @@ export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
     }
     return x;
   }
-  option = undefined;
-  x = undefined;
+  x = option = undefined;
   dropFnOnce?.(f);
   return x;
 }

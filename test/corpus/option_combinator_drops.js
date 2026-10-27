@@ -355,8 +355,7 @@ function main() {
                     const b = value$2[1];
                     const both = value$2[2];
                     const value = parsePair(a, b, both, dNamed, dDrop_drop);
-                    value$0$1$live = true;
-                    value$0$0$live = true;
+                    value$0$0$live = value$0$1$live = true;
                     if (value.TAG === "Ok") {
                       value$0$0$live = false;
                       const d = value._0[0];
@@ -383,8 +382,7 @@ function main() {
                         dDrop_drop(value._0[1]);
                       }
                     }
-                    value$0$1$live = false;
-                    value$0$0$live = false;
+                    value$0$0$live = value$0$1$live = false;
                   }
                   console.log("end");
                 } finally {

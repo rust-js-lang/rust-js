@@ -752,6 +752,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0965 A shared function, an `Rc<dyn Fn>`, is of any shape, the function itself](0965-a-shared-function-is-of-any-shape.md)
 - [0966 A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`](0966-a-floats-order-is-its-comparison.md)
 - [0967 An object spread, a splice and a set by any key](0967-an-object-spread-a-splice-and-a-set-by-any-key.md)
+- [0968 Two places set the same value are one assignment, `a = b = v`](0968-two-places-set-the-same-value-are-one-assignment.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

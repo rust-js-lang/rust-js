@@ -25,8 +25,8 @@ impl Expr {
         match &self.kind {
             ExprKind::Var(name) => read(name),
             // The name it sets, which JS resolves as it does a read.
-            ExprKind::Assigned(name, value) => {
-                read(name);
+            ExprKind::Assigned(target, value) => {
+                target.visit_vars(read);
                 value.visit_vars(read);
             }
             ExprKind::Member(a, _)
@@ -198,8 +198,10 @@ impl Expr {
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary) => ExprKind::Pair(one(place)?, one(dictionary)?),
             // What it sets isn't replaced: one that names it is no assignment.
-            ExprKind::Assigned(name, _) if with(name).is_some() => return None,
-            ExprKind::Assigned(name, value) => ExprKind::Assigned(name.clone(), one(value)?),
+            ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name).is_some()) => {
+                return None;
+            }
+            ExprKind::Assigned(target, value) => ExprKind::Assigned(one(target)?, one(value)?),
             // What it steps isn't replaced: it's no read alone.
             ExprKind::Stepped(..) => return None,
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),

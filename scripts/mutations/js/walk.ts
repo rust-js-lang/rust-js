@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "                            $slotted(b, Slot::Block, f);",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
+  {
+    name: "assigned-target-unwalked",
+    breaks: "an assignment's value's target isn't walked, so a loop's `let step$1` is given its name back, `let step`, where the test's assignment still sets `step$1` (ADR 0860)",
+    file: "src/js/walk.rs",
+    find: "                    | ExprKind::Assigned(a, b) => {\n                        a.$expr(f);\n                        b.$expr(f);\n                    }\n",
+    replace: "                    => {\n                        a.$expr(f);\n                        b.$expr(f);\n                    }\n                    ExprKind::Assigned(_, b) => b.$expr(f),\n",
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+  },
 ];

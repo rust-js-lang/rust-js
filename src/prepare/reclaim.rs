@@ -310,7 +310,7 @@ pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut
 /// and what its body declares.
 fn expr_mut(e: &mut Expr, reads: bool, f: &mut dyn FnMut(&mut String)) {
     match &mut e.kind {
-        ExprKind::Var(name) | ExprKind::Assigned(name, _) if reads => f(name),
+        ExprKind::Var(name) if reads => f(name),
         ExprKind::Stringed(_) if reads => f(&mut "String".to_string()),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params.iter_mut().for_each(|p| pattern_mut(p, f));

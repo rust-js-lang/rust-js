@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod catches;
+mod chains;
 mod initializers;
 mod reclaim;
 mod shadows;
@@ -39,6 +40,7 @@ pub fn module(module: &mut js::Module) {
     reclaim::module(module);
     compound(module);
     stepped(module);
+    js::each_item_block_mut(&mut module.items, &mut chains::chained);
     read_together(module);
     js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
 }
@@ -346,7 +348,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                 };
                 let mut captured = false;
                 js::each_expr(rest, &mut |e| captured |= caught(e));
-                let assigned = Expr::assigned(name, made.clone());
+                let assigned = Expr::assigned(Expr::var(name), made.clone());
                 (!captured)
                     .then(|| test.substitute(&|n: &str| (n == name).then(|| assigned.clone())))
                     .flatten()

@@ -333,8 +333,8 @@ impl Walk {
         match &e.kind {
             ExprKind::Var(name) => self.read(name),
             // What it sets is resolved as a read is.
-            ExprKind::Assigned(name, a) => {
-                self.read(name);
+            ExprKind::Assigned(target, a) => {
+                self.expr(target);
                 self.expr(a);
             }
             // What the printer writes of JS's own: `String(x)`, `undefined`,

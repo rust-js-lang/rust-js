@@ -195,7 +195,6 @@ function main() {
   }
   console.log(`summed ${total}`);
   console.log("end");
-  steady$live = false;
-  loud$live = false;
+  loud$live = steady$live = false;
 }
 //# sourceMappingURL=case.js.map

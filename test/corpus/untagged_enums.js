@@ -409,8 +409,7 @@ function main() {
                 noisyDrop_drop(both.second);
               }
             }
-            both$0$live = false;
-            both$0$first$live = false;
+            both$0$first$live = both$0$live = false;
           } finally {
             noisyDrop_drop(other);
           }

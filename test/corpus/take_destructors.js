@@ -723,8 +723,7 @@ function main() {
       }
       throw error;
     }
-    next$live = false;
-    lent$live = false;
+    lent$live = next$live = false;
     try {
       for (const item of kept) {
         nDrop_drop(item);
@@ -762,8 +761,7 @@ function main() {
       }
       throw error;
     }
-    one$live = false;
-    t$live = false;
+    t$live = one$live = false;
   } finally {
     for (const item of firsts) {
       nDrop_drop(item);

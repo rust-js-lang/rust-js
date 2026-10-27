@@ -489,9 +489,9 @@ impl Expr {
         Expr::new(ExprKind::Stepped(op, Box::new(target)))
     }
 
-    /// `(name = value)`, its value the assignment's (ADR 0860).
-    pub fn assigned(name: &str, value: Expr) -> Expr {
-        Expr::new(ExprKind::Assigned(name.to_string(), Box::new(value)))
+    /// `(target = value)`, its value the assignment's (ADRs 0860, 0968).
+    pub fn assigned(target: Expr, value: Expr) -> Expr {
+        Expr::new(ExprKind::Assigned(Box::new(target), Box::new(value)))
     }
 
     /// What a box, a cell or a handle holds: `b.value` (`HELD`).

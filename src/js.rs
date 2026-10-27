@@ -812,11 +812,13 @@ pub enum ExprKind {
     /// a `&mut dyn Trait` of a value JS can't change in place, its impl's
     /// dictionary and a handle on its place (ADR 0099).
     Pair(Box<Expr>, Box<Expr>),
-    /// `(name = value)`, an assignment's value: what preparation makes of a
-    /// loop's first `const` that the test leaving it reads, `while (!(step =
-    /// iterator.next()).done) { .. }` (ADR 0860). Nothing before
-    /// preparation makes one, so lowering and tidy never see it.
-    Assigned(String, Box<Expr>),
+    /// `(target = value)`, an assignment's value, of a variable or a plain
+    /// field: what preparation makes of a loop's first `const` that the test
+    /// leaving it reads, `while (!(step = iterator.next()).done) { .. }` (ADR
+    /// 0860), and of two places set the same value, `a = b = v` (ADR 0968).
+    /// Nothing before preparation makes one, so lowering and tidy never see
+    /// it.
+    Assigned(Box<Expr>, Box<Expr>),
     /// `target++` or `target--` (`Op::Add`, `Op::Sub`), a step of one whose
     /// value, the one before the step, is read: what preparation makes of
     /// `const a = x; x = a + 1;`, `const a = x++;` (ADR 0948). Nothing

@@ -57,10 +57,10 @@ impl<'a> Cx<'a> {
         }
         match &e.kind {
             ExprKind::Handle(..) | ExprKind::Pair(..) => unreachable!("written by preparation"),
-            ExprKind::Assigned(name, value) => Expression::new_assignment_expression(
+            ExprKind::Assigned(target, value) => Expression::new_assignment_expression(
                 sp,
                 AssignmentOperator::Assign,
-                self.assignment_target(&js::Expr::var(name)),
+                self.assignment_target(target),
                 self.expr(value),
                 b,
             ),
