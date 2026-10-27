@@ -55,43 +55,13 @@ function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
 }
 
 function main() {
+  const tupleCopy = { copy: (value) => [value[0], value[1]] };
+  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const graph = new $KeyMap();
-  addEdge(
-    graph,
-    [0, "a"],
-    [1, "b"],
-    4,
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { copy: (value) => [value[0], value[1]] },
-    $KeyMap,
-  );
-  addEdge(
-    graph,
-    [0, "a"],
-    [2, "c"],
-    1,
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { copy: (value) => [value[0], value[1]] },
-    $KeyMap,
-  );
-  addEdge(
-    graph,
-    [2, "c"],
-    [1, "b"],
-    2,
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { copy: (value) => [value[0], value[1]] },
-    $KeyMap,
-  );
-  addEdge(
-    graph,
-    [0, "a"],
-    [1, "b"],
-    3,
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { copy: (value) => [value[0], value[1]] },
-    $KeyMap,
-  );
+  addEdge(graph, [0, "a"], [1, "b"], 4, tupleOrd, tupleCopy, $KeyMap);
+  addEdge(graph, [0, "a"], [2, "c"], 1, tupleOrd, tupleCopy, $KeyMap);
+  addEdge(graph, [2, "c"], [1, "b"], 2, tupleOrd, tupleCopy, $KeyMap);
+  addEdge(graph, [0, "a"], [1, "b"], 3, tupleOrd, tupleCopy, $KeyMap);
   console.log(
     `{${Array.from($sortedEntries(graph, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])))
       .map(
@@ -109,8 +79,8 @@ function main() {
       [[1, "x"], 1],
       [[0, "y"], 2],
     ],
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { copy: (value) => [value[0], value[1]] },
+    tupleOrd,
+    tupleCopy,
     $KeyMap,
   );
   const value = $index(maps, 0);
@@ -157,7 +127,7 @@ function main() {
         }
       },
     },
-    { copy: (value) => [value[0], value[1]] },
+    tupleCopy,
     $KeyMap,
   );
   const counts = Array.from(all).flatMap(([a, next]) =>

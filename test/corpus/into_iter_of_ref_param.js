@@ -64,37 +64,34 @@ function refMutBagIntoIterator_intoIter(bag) {
 }
 
 function main() {
-  const v = [1, 2, 3];
-  const c = { value: v };
-  doubleAll(c, {
+  const intoIterator$1 = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
+  const intoIterator = {
     intoIter: (cell) => $iter($mutItems(cell.value)),
     IntoIterIterator: () => ({ next: $next }),
-  });
+  };
+  const optionIntoIterator = {
+    intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
+    IntoIterIterator: () => ({ next: $next }),
+  };
+  const v = [1, 2, 3];
+  const c = { value: v };
+  doubleAll(c, intoIterator);
   $assign(v, c.value);
   const a = [4, 5];
   const c$1 = { value: a };
-  doubleAll(c$1, {
-    intoIter: (cell) => $iter($mutItems(cell.value)),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  doubleAll(c$1, intoIterator);
   $assign(a, c$1.value);
-  const value = total(v, { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) });
-  const arg = total(a, { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) });
+  const value = total(v, intoIterator$1);
+  const arg = total(a, intoIterator$1);
   console.log(`[${v.join(", ")}] [${a.join(", ")}] ${value} ${arg}`);
 
   let some = 7;
   const c$2 = { value: some };
-  doubleAll(c$2, {
-    intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  doubleAll(c$2, optionIntoIterator);
   some = c$2.value;
   let none;
   const c$3 = { value: none };
-  doubleAll(c$3, {
-    intoIter: (cell) => $iter(cell.value == null ? [] : [cell]),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  doubleAll(c$3, optionIntoIterator);
   none = c$3.value;
   const arg$1 = total(some, {
     intoIter: (x) => $iter(x == null ? [] : [x]),

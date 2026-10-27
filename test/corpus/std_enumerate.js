@@ -55,18 +55,20 @@ function lastOf(e, IDoubleEndedIterator, IExactSizeIterator) {
 }
 
 function main() {
+  const exactSizeIterator = { len: (iterator) => iterator.len() };
+  const countdownExactSizeIterator = {
+    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
+  };
   const e = iterator_enumerate([4], {
     next: countdownIterator_next,
     sizeHint: countdownIterator_sizeHint,
   });
   const next = $next(e);
-  const nextBack = enumerateDoubleEndedIterator_nextBack(
-    e,
-    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
-    { next_back: countdownDoubleEndedIterator_nextBack },
-  );
+  const nextBack = enumerateDoubleEndedIterator_nextBack(e, countdownExactSizeIterator, {
+    next_back: countdownDoubleEndedIterator_nextBack,
+  });
   console.log(
-    `${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`} ${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${enumerateExactSizeIterator_len(e, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })}`,
+    `${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`} ${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${enumerateExactSizeIterator_len(e, countdownExactSizeIterator)}`,
   );
   const c = enumerateClone_clone(e, { clone: (value) => [value[0]] });
   console.log(`${enumerateDebug_fmt(c, undefined, countdownDebug)}`);
@@ -84,14 +86,14 @@ function main() {
     held,
     1,
     { next: $next },
-    { len: (iterator) => iterator.len() },
+    exactSizeIterator,
     { next_back: $nextBack },
   );
   console.log(
-    `${nth == null ? "None" : `Some((${nth[0]}, ${nth[1]}))`} ${nthBack == null ? "None" : `Some((${nthBack[0]}, ${nthBack[1]}))`} ${enumerateExactSizeIterator_len(held, { len: (iterator) => iterator.len() })}`,
+    `${nth == null ? "None" : `Some((${nth[0]}, ${nth[1]}))`} ${nthBack == null ? "None" : `Some((${nthBack[0]}, ${nthBack[1]}))`} ${enumerateExactSizeIterator_len(held, exactSizeIterator)}`,
   );
   console.log(
-    `${enumerateDoubleEndedIterator_rfold(enumerateClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (acc, [i, x]) => (((((acc * 100) >>> 0) + ((i * 10) >>> 0)) >>> 0) + (x >>> 0)) >>> 0, { next: $next }, { len: (iterator) => iterator.len() }, { next_back: $nextBack })}`,
+    `${enumerateDoubleEndedIterator_rfold(enumerateClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (acc, [i, x]) => (((((acc * 100) >>> 0) + ((i * 10) >>> 0)) >>> 0) + (x >>> 0)) >>> 0, { next: $next }, exactSizeIterator, { next_back: $nextBack })}`,
   );
   console.log(
     `${enumerateDebug_fmt(held, undefined, { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
@@ -101,18 +103,16 @@ function main() {
     inner: numbered([3], { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint }),
   };
   const value = $next(n.inner);
-  const value$1 = enumerateDoubleEndedIterator_nextBack(
-    n.inner,
-    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
-    { next_back: countdownDoubleEndedIterator_nextBack },
-  );
+  const value$1 = enumerateDoubleEndedIterator_nextBack(n.inner, countdownExactSizeIterator, {
+    next_back: countdownDoubleEndedIterator_nextBack,
+  });
   console.log(
     `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
   );
   const value$2 = lastOf(
     numbered($iter(v), { next: $next }),
     { next_back: $nextBack },
-    { len: (iterator) => iterator.len() },
+    exactSizeIterator,
   );
   console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
 
@@ -141,21 +141,17 @@ function main() {
         next: countdownIterator_next,
         sizeHint: countdownIterator_sizeHint,
       });
-      const value$1 = enumerateDoubleEndedIterator_nextBack(
-        byMut,
-        { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
-        { next_back: countdownDoubleEndedIterator_nextBack },
-      );
+      const value$1 = enumerateDoubleEndedIterator_nextBack(byMut, countdownExactSizeIterator, {
+        next_back: countdownDoubleEndedIterator_nextBack,
+      });
       console.log(
-        `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(byMut, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })}`,
+        `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(byMut, countdownExactSizeIterator)}`,
       );
       // Lent where its own impl steps it, from its back: std's struct.
       const ends = iterator_enumerate($iter(v), { next: $next });
-      const value$2 = enumerateDoubleEndedIterator_nextBack(
-        $lent(ends),
-        { len: (iterator) => iterator.len() },
-        { next_back: $nextBack },
-      );
+      const value$2 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator, {
+        next_back: $nextBack,
+      });
       const value$3 = $next(ends);
       console.log(
         `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`,

@@ -37,34 +37,26 @@ function twices(all, HItemIntoIterator, HItemIntoIterClone) {
 }
 
 function main() {
+  const intoIterator$1 = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
+  const clone$1 = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const a = $iterator(
-    twice(
-      { start: 0, end: 3 },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-    ),
-    (iterator) =>
-      twiceIterator_next(
-        iterator,
-        { next: $rangeNext },
-        { clone: (value) => ({ start: value.start, end: value.end }) },
-      ),
+    twice({ start: 0, end: 3 }, intoIterator$1, clone$1),
+    (iterator) => twiceIterator_next(iterator, { next: $rangeNext }, clone$1),
     true,
   )
     .take(5)
     .toArray();
   const b = $iterator(
-    twice(
-      [7, 8],
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    ),
-    (iterator) =>
-      twiceIterator_next(
-        iterator,
-        { next: $next },
-        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-      ),
+    twice([7, 8], intoIterator, clone),
+    (iterator) => twiceIterator_next(iterator, { next: $next }, clone),
     true,
   )
     .take(3)
@@ -73,14 +65,9 @@ function main() {
     twice(
       $iter(Array.from("ab")),
       { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
+      clone,
     ),
-    (iterator) =>
-      twiceIterator_next(
-        iterator,
-        { next: $next },
-        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-      ),
+    (iterator) => twiceIterator_next(iterator, { next: $next }, clone),
     true,
   )
     .take(3)
@@ -91,19 +78,10 @@ function main() {
     { start: 0, end: 2 },
     { start: 5, end: 6 },
   ];
-  for (const t of twices(
-    $iter(value),
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-  )) {
+  for (const t of twices($iter(value), intoIterator$1, clone$1)) {
     const firsts = $iterator(
       t,
-      (iterator) =>
-        twiceIterator_next(
-          iterator,
-          { next: $rangeNext },
-          { clone: (value) => ({ start: value.start, end: value.end }) },
-        ),
+      (iterator) => twiceIterator_next(iterator, { next: $rangeNext }, clone$1),
       true,
     )
       .take(3)
@@ -111,19 +89,10 @@ function main() {
     console.log(`[${firsts.join(", ")}]`);
   }
   const value$1 = [["a", "b"], ["c"]];
-  for (const t of twices(
-    $iter(value$1),
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-  )) {
+  for (const t of twices($iter(value$1), intoIterator, clone)) {
     const firsts = $iterator(
       t,
-      (iterator) =>
-        twiceIterator_next(
-          iterator,
-          { next: $next },
-          { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-        ),
+      (iterator) => twiceIterator_next(iterator, { next: $next }, clone),
       true,
     )
       .take(3)

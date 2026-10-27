@@ -149,40 +149,13 @@ const Wrap = {
 };
 
 function main() {
-  const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
-  const value = positionsIterator_sizeHint(even);
-  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const next = positionsIterator_next(even);
-  const value$1 = positionsDoubleEndedIterator_nextBack(
-    even,
-    { next: $next },
-    { next_back: $nextBack },
-    { len: (iterator) => iterator.len() },
-  );
-  console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
-  );
-  console.log(
-    `${positionsDebug_fmt(even, undefined, {
-      fmt: (value, options) =>
-        options?.alternate
-          ? $pretty(
-              "IntoIter(",
-              [
-                options?.alternate
-                  ? $pretty(
-                      "[",
-                      value.items.slice(value.at, value.end).map((item) => String(item)),
-                      "]",
-                    )
-                  : `[${value.items
-                      .slice(value.at, value.end)
-                      .map((item) => String(item))
-                      .join(", ")}]`,
-              ],
-              ")",
-            )
-          : `IntoIter(${
+  const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const intoIterDebug = {
+    fmt: (value, options) =>
+      options?.alternate
+        ? $pretty(
+            "IntoIter(",
+            [
               options?.alternate
                 ? $pretty(
                     "[",
@@ -192,48 +165,38 @@ function main() {
                 : `[${value.items
                     .slice(value.at, value.end)
                     .map((item) => String(item))
-                    .join(", ")}]`
-            })`,
-    })}`,
+                    .join(", ")}]`,
+            ],
+            ")",
+          )
+        : `IntoIter(${
+            options?.alternate
+              ? $pretty(
+                  "[",
+                  value.items.slice(value.at, value.end).map((item) => String(item)),
+                  "]",
+                )
+              : `[${value.items
+                  .slice(value.at, value.end)
+                  .map((item) => String(item))
+                  .join(", ")}]`
+          })`,
+  };
+  const even = positions($iter([1, 2, 4, 5, 6]), (x) => x % 2 === 0, { next: $next });
+  const value = positionsIterator_sizeHint(even);
+  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+  const next = positionsIterator_next(even);
+  const value$1 = positionsDoubleEndedIterator_nextBack(
+    even,
+    { next: $next },
+    { next_back: $nextBack },
+    intoIterExactSizeIterator,
   );
   console.log(
-    `${positionsDebug_fmt(
-      even,
-      { alternate: true },
-      {
-        fmt: (value, options) =>
-          options?.alternate
-            ? $pretty(
-                "IntoIter(",
-                [
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => String(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => String(item))
-                        .join(", ")}]`,
-                ],
-                ")",
-              )
-            : `IntoIter(${
-                options?.alternate
-                  ? $pretty(
-                      "[",
-                      value.items.slice(value.at, value.end).map((item) => String(item)),
-                      "]",
-                    )
-                  : `[${value.items
-                      .slice(value.at, value.end)
-                      .map((item) => String(item))
-                      .join(", ")}]`
-              })`,
-      },
-    )}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
+  console.log(`${positionsDebug_fmt(even, undefined, intoIterDebug)}`);
+  console.log(`${positionsDebug_fmt(even, { alternate: true }, intoIterDebug)}`);
   console.log(
     `[${positionsDoubleEndedIterator_rfold(
       even,
@@ -244,7 +207,7 @@ function main() {
       },
       { next: $next },
       { next_back: $nextBack },
-      { len: (iterator) => iterator.len() },
+      intoIterExactSizeIterator,
     ).join(", ")}]`,
   );
   // An array's, which the crate's types holding an `Enumerate` makes

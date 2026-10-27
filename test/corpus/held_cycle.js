@@ -200,147 +200,52 @@ function turnsDebug_fmt(turns, options) {
 }
 
 function main() {
-  const round = circular(
-    $iter([1, 2]),
-    3,
-    { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-  );
-  console.log(
-    `${circularDebug_fmt(
-      round,
-      undefined,
-      {
-        fmt: (value, options) =>
-          options?.alternate
-            ? $pretty(
-                "IntoIter(",
-                [
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => String(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => String(item))
-                        .join(", ")}]`,
-                ],
-                ")",
-              )
-            : `IntoIter(${
-                options?.alternate
-                  ? $pretty(
-                      "[",
-                      value.items.slice(value.at, value.end).map((item) => String(item)),
-                      "]",
-                    )
-                  : `[${value.items
-                      .slice(value.at, value.end)
-                      .map((item) => String(item))
-                      .join(", ")}]`
-              })`,
-      },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    )}`,
-  );
-  const next = circularIterator_next(round, {
-    clone: (value) => $iter(value.items.slice(value.at, value.end)),
-  });
-  const value = circularIterator_next(round, {
-    clone: (value) => $iter(value.items.slice(value.at, value.end)),
-  });
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const intoIterDebug = {
+    fmt: (value, options) =>
+      options?.alternate
+        ? $pretty(
+            "IntoIter(",
+            [
+              options?.alternate
+                ? $pretty(
+                    "[",
+                    value.items.slice(value.at, value.end).map((item) => String(item)),
+                    "]",
+                  )
+                : `[${value.items
+                    .slice(value.at, value.end)
+                    .map((item) => String(item))
+                    .join(", ")}]`,
+            ],
+            ")",
+          )
+        : `IntoIter(${
+            options?.alternate
+              ? $pretty(
+                  "[",
+                  value.items.slice(value.at, value.end).map((item) => String(item)),
+                  "]",
+                )
+              : `[${value.items
+                  .slice(value.at, value.end)
+                  .map((item) => String(item))
+                  .join(", ")}]`
+          })`,
+  };
+  const round = circular($iter([1, 2]), 3, { next: $next }, clone);
+  console.log(`${circularDebug_fmt(round, undefined, intoIterDebug, clone)}`);
+  const next = circularIterator_next(round, clone);
+  const value = circularIterator_next(round, clone);
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  console.log(
-    `${circularDebug_fmt(
-      round,
-      undefined,
-      {
-        fmt: (value, options) =>
-          options?.alternate
-            ? $pretty(
-                "IntoIter(",
-                [
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => String(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => String(item))
-                        .join(", ")}]`,
-                ],
-                ")",
-              )
-            : `IntoIter(${
-                options?.alternate
-                  ? $pretty(
-                      "[",
-                      value.items.slice(value.at, value.end).map((item) => String(item)),
-                      "]",
-                    )
-                  : `[${value.items
-                      .slice(value.at, value.end)
-                      .map((item) => String(item))
-                      .join(", ")}]`
-              })`,
-      },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    )}`,
-  );
+  console.log(`${circularDebug_fmt(round, undefined, intoIterDebug, clone)}`);
   const copy = { ...round, iter: $clone(round.iter) };
   console.log(
-    `[${$iterator(
-      round,
-      (iterator) =>
-        circularIterator_next(iterator, {
-          clone: (value) => $iter(value.items.slice(value.at, value.end)),
-        }),
-      true,
-    )
+    `[${$iterator(round, (iterator) => circularIterator_next(iterator, clone), true)
       .toArray()
-      .join(", ")}] ${circularDebug_fmt(
-      copy,
-      { alternate: true },
-      {
-        fmt: (value, options) =>
-          options?.alternate
-            ? $pretty(
-                "IntoIter(",
-                [
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => String(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => String(item))
-                        .join(", ")}]`,
-                ],
-                ")",
-              )
-            : `IntoIter(${
-                options?.alternate
-                  ? $pretty(
-                      "[",
-                      value.items.slice(value.at, value.end).map((item) => String(item)),
-                      "]",
-                    )
-                  : `[${value.items
-                      .slice(value.at, value.end)
-                      .map((item) => String(item))
-                      .join(", ")}]`
-              })`,
-      },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    )}`,
+      .join(", ")}] ${circularDebug_fmt(copy, { alternate: true }, intoIterDebug, clone)}`,
   );
   const turns = {
     order: $cycleOf(
@@ -352,15 +257,10 @@ function main() {
   $next(turns.order);
   const arg = $lent(turns.order).drop(2).take(1).toArray()[0];
   console.log(`${turnsDebug_fmt(turns)} ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`}`);
-  const none = circular(
-    $iter([]),
-    2,
-    { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-  );
+  const none = circular($iter([]), 2, { next: $next }, clone);
   const arg$1 = $sizeHint(none.iter);
   console.log(
-    `${circularDebug_fmt(none, undefined, { fmt: (value, options) => "Empty" }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) })} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
+    `${circularDebug_fmt(none, undefined, { fmt: (value, options) => "Empty" }, clone)} (${arg$1[0]}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -93,11 +93,12 @@ function parsed(text, TSize) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   let s = stackFromIteratorT_fromIter($iter([1, 2, 3]), 1);
   let u = stackFromIteratorT_fromIter($iter([undefined, undefined]), 0);
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);
-  s = stackClone_clone(s, { clone: (value) => value }, 1);
-  u = stackClone_clone(u, { clone: (value) => value }, 0);
+  s = stackClone_clone(s, clone, 1);
+  u = stackClone_clone(u, clone, 0);
   fill(s, 4, 1);
   fill(u, undefined, 0);
   console.log(`${s.items.length} ${s.sized} ${u.items.length} ${u.sized}`);

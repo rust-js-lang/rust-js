@@ -61,6 +61,7 @@ function unitFromStr_fromStr(s) {
 }
 
 function main() {
+  const debug = { fmt: (value) => $debugStr(value) };
   const value = read("42", { fromStr: (s) => $parseInt(s, -2147483648, 2147483647) });
   const value$1 = read("x", { fromStr: (s) => $parseF64(s) });
   const value$2 = read("true", { fromStr: (s) => $parseBool(s) });
@@ -83,10 +84,10 @@ function main() {
     `${value$5.TAG === "Ok" ? `Ok([${value$5._0.join(", ")}])` : `Err(${$debugStr(value$5._0)})`}`,
   );
   console.log(
-    `${explain("ab", { fromStr: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr, unitDebug, { fmt: (value) => $debugStr(value) })} | ${explain(
+    `${explain("ab", { fromStr: (s) => $parseChar(s) }, { fmt: (value) => $debugStr(value, "'") }, { fmt: (value) => $debugParseError(value, "ParseCharError") })} | ${explain("g", unitFromStr, unitDebug, debug)} | ${explain(
       "s",
       { fromStr: (s) => ({ TAG: "Ok", _0: s }) },
-      { fmt: (value) => $debugStr(value) },
+      debug,
       { fmt: (value) => "" },
     )} | ${explain("-9", { fromStr: (s) => $parseBig(s, -9223372036854775808n, 9223372036854775807n) }, { fmt: (value) => String(value) }, { fmt: (value) => $debugParseError(value, "ParseIntError") })}`,
   );

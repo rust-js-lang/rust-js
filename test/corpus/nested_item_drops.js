@@ -226,10 +226,14 @@ function groupsFirstOfNext_firstOfNext(
 }
 
 function main() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   let groups = [[[1], [2]], [], [[3]]];
   const got = firsts(
     groups,
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     (vec) => {
       for (const item of vec) {
         for (const item$1 of item) {
@@ -258,7 +262,7 @@ function main() {
         $extend(collection.value, items);
       },
     },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     $dropEach(loudDrop_drop),
     (intoIter) => {
       for (const item of intoIter) {
@@ -285,7 +289,7 @@ function main() {
     value: groups,
     impl: groupsFirstOfNext(
       { next: $next },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      intoIterator,
       (intoIter) => {
         for (const item of intoIter) {
           for (const item$1 of item) {

@@ -32,10 +32,11 @@ function boxed(value, TAny) {
 }
 
 function main() {
+  const noisyAny = { typeId: () => "lib::Noisy", $drop: noisyDrop_drop };
   const _guard = ["guard"];
   try {
     console.log(`${$debugStr(describe(1))} ${$debugStr(describe(3))}`);
-    const any = boxed(["boxed"], { typeId: () => "lib::Noisy", $drop: noisyDrop_drop });
+    const any = boxed(["boxed"], noisyAny);
     try {
       console.log(`is noisy: ${any.impl.typeId() === "lib::Noisy"}`);
     } finally {
@@ -46,7 +47,7 @@ function main() {
       const value = number.impl.typeId() === "u8" ? number.value : undefined;
       console.log(`five: ${value == null ? "None" : `Some(${value})`}`);
       const resumed = $catchUnwind(() => {
-        throw $unwinding(boxed(["payload"], { typeId: () => "lib::Noisy", $drop: noisyDrop_drop }));
+        throw $unwinding(boxed(["payload"], noisyAny));
       });
       console.log(`resumed: ${resumed.TAG === "Err"}`);
       if (resumed.TAG === "Err") {

@@ -35,6 +35,7 @@ function windowDebug_fmt(window) {
 }
 
 function main() {
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const numbered = iterator_enumerate($iter(Array.from("abcde")), { next: $next });
   $next(numbered);
   const copy = enumerateClone_clone(numbered, {
@@ -49,22 +50,16 @@ function main() {
 
   const first = iterator_take({ start: 10, end: 20 }, 4, { next: $rangeNext });
   $next(first);
-  const rest = takeClone_clone(first, {
-    clone: (value) => ({ start: value.start, end: value.end }),
-  });
+  const rest = takeClone_clone(first, rangeClone);
   console.log(
     `[${$roomForHint(first, 4, true).toArray().join(", ")}] ${rest.reduce((a, b) => (a + b) | 0, 0)}`,
   );
 
   const tail = iterator_skip({ start: 1, end: 6 }, 2, { next: $rangeNext });
-  const fresh = skipClone_clone(tail, {
-    clone: (value) => ({ start: value.start, end: value.end }),
-  });
+  const fresh = skipClone_clone(tail, rangeClone);
   const stepped = tail;
   $next(stepped);
-  const after = skipClone_clone(stepped, {
-    clone: (value) => ({ start: value.start, end: value.end }),
-  });
+  const after = skipClone_clone(stepped, rangeClone);
   const collect = $roomForHint(fresh, 4, true).toArray();
   const value = $roomForHint(stepped, 4, true).toArray();
   console.log(

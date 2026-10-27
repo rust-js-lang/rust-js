@@ -27,15 +27,13 @@ function firsts(iters, HItemIntoIterator) {
 }
 
 function main() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const v = [[1, 2], [], [3]];
   console.log(
-    `[${lengths($iter(v), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    }).join(", ")}] [${firsts($iter(v), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })
+    `[${lengths($iter(v), intoIterator).join(", ")}] [${firsts($iter(v), intoIterator)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );

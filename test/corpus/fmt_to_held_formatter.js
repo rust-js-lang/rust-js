@@ -48,6 +48,7 @@ const Tagged = {
 
 export const pairDisplay = { fmt: pairDisplay_fmt };
 function pairDisplay_fmt(pair, options) {
+  const debug = { fmt: (value, options) => String(value) };
   let f = "";
   Tagged.show(
     {
@@ -62,8 +63,8 @@ function pairDisplay_fmt(pair, options) {
       },
     },
     pair[0],
-    { fmt: (value, options) => String(value) },
-    { fmt: (value, options) => String(value) },
+    debug,
+    debug,
   );
   f += ", ";
   Tagged.show(

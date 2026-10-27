@@ -16,9 +16,10 @@ function describe(x) {
 }
 
 function main() {
+  const toString = { toString: (value) => value };
   const items = [
     { value: 7, impl: { toString: String } },
-    { value: "seven", impl: { toString: (value) => value } },
+    { value: "seven", impl: toString },
     { value: [1, -2], impl: { toString: pointDisplay_fmt } },
   ];
   const texts = items.map((item) => item.impl.toString(item.value));
@@ -26,7 +27,7 @@ function main() {
   console.log(
     `${describe({ value: 2.5, impl: { toString: $displayF64 } })} ${describe({
       value: "two",
-      impl: { toString: (value) => value },
+      impl: toString,
     })}`,
   );
   const shown = (x) => x.impl.toString(x.value);

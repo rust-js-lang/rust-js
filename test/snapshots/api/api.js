@@ -888,6 +888,10 @@ function outerDebug_fmt(outer) {
 }
 
 export function report() {
+  const debug = { fmt: (value) => String(value) };
+  const f64Debug = { fmt: (value) => $debugF64(value) };
+  const stringDebug = { fmt: (value) => $debugStr(value) };
+  const vecDebug = { fmt: (value) => `[${value.join(", ")}]` };
   let out = "";
   const value = $fromJson(
     '{"items":[1,2],"nextItem":3,"total":2}',
@@ -907,7 +911,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value._0, debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value._0)}\n`;
   }
@@ -929,7 +933,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value$1._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value$1._0, debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$1._0)}\n`;
   }
@@ -951,7 +955,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value$2._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value$2._0, debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$2._0)}\n`;
   }
@@ -1015,7 +1019,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pageDebug_fmt(value$5._0, pageDebug({ fmt: (value) => String(value) }))} -> ${arg}\n`;
+    out += `ok ${pageDebug_fmt(value$5._0, pageDebug(debug))} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$5._0)}\n`;
   }
@@ -1070,7 +1074,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pairDebug_fmt(value$7._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${arg}\n`;
+    out += `ok ${pairDebug_fmt(value$7._0, stringDebug, f64Debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$7._0)}\n`;
   }
@@ -1099,7 +1103,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${pairDebug_fmt(value$8._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${arg}\n`;
+    out += `ok ${pairDebug_fmt(value$8._0, stringDebug, f64Debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$8._0)}\n`;
   }
@@ -1206,7 +1210,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$13._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$13._0, vecDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$13._0)}\n`;
   }
@@ -1233,7 +1237,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$14._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$14._0, vecDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$14._0)}\n`;
   }
@@ -1260,7 +1264,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${statusDebug_fmt(value$15._0, { fmt: (value) => `[${value.join(", ")}]` })} -> ${arg}\n`;
+    out += `ok ${statusDebug_fmt(value$15._0, vecDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$15._0)}\n`;
   }
@@ -1302,7 +1306,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${taggedDebug_fmt(value$17._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
+    out += `ok ${taggedDebug_fmt(value$17._0, debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$17._0)}\n`;
   }
@@ -1324,7 +1328,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${taggedDebug_fmt(value$18._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
+    out += `ok ${taggedDebug_fmt(value$18._0, debug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$18._0)}\n`;
   }
@@ -1353,7 +1357,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${eitherDebug_fmt(value$19._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
+    out += `ok ${eitherDebug_fmt(value$19._0, debug, stringDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$19._0)}\n`;
   }
@@ -1382,7 +1386,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${eitherDebug_fmt(value$20._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
+    out += `ok ${eitherDebug_fmt(value$20._0, debug, stringDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$20._0)}\n`;
   }
@@ -1411,7 +1415,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${eitherDebug_fmt(value$21._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
+    out += `ok ${eitherDebug_fmt(value$21._0, debug, stringDebug)} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$21._0)}\n`;
   }
@@ -1445,7 +1449,7 @@ export function report() {
       undefined,
       $debugJsonError,
     );
-    out += `ok ${wrapDebug_fmt(value$22._0, pairDebug({ fmt: (value) => String(value) }, { fmt: (value) => String(value) }))} -> ${arg}\n`;
+    out += `ok ${wrapDebug_fmt(value$22._0, pairDebug(debug, debug))} -> ${arg}\n`;
   } else {
     out += `err ${$displayJsonError(value$22._0)}\n`;
   }
@@ -1542,7 +1546,7 @@ export function report() {
         json.endArray();
       },
       $json.vec($json.u32),
-      { fmt: (value) => `[${value.join(", ")}]` },
+      vecDebug,
     ) + "\n";
   out +=
     roundtrip(
@@ -1559,7 +1563,7 @@ export function report() {
     '{"data":[1,2],"ok":false}',
     $json.with(responseDeserialize_deserialize, $json.vec($json.u8)),
   );
-  out += `${reply.TAG === "Ok" ? `Ok(${responseDebug_fmt(reply._0, { fmt: (value) => `[${value.join(", ")}]` })})` : `Err(${$debugStr(reply._0)})`}\n`;
+  out += `${reply.TAG === "Ok" ? `Ok(${responseDebug_fmt(reply._0, vecDebug)})` : `Err(${$debugStr(reply._0)})`}\n`;
   const n = borrowed("7", $json.u8);
   const m = borrowed("x", $json.u8);
   out += `${n == null ? "None" : `Some(${n})`} ${m == null ? "None" : `Some(${m})`}\n`;

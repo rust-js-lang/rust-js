@@ -220,14 +220,15 @@ export function reverses(a, b) {
 }
 
 export function report() {
+  const strDebug = { fmt: (value) => $debugStr(value) };
   let out = "";
-  const s = Stack.new({ fmt: (value) => $debugStr(value) });
+  const s = Stack.new(strDebug);
   for (const w of ["a", "b", "c"]) {
-    Stack.push(s, w, { fmt: (value) => $debugStr(value) });
+    Stack.push(s, w, strDebug);
   }
-  const pop = Stack.pop(s, { fmt: (value) => $debugStr(value) });
-  const peek = Stack.peek(s, { fmt: (value) => $debugStr(value) });
-  out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, { fmt: (value) => $debugStr(value) })}\n`;
+  const pop = Stack.pop(s, strDebug);
+  const peek = Stack.peek(s, strDebug);
+  out += `${pop == null ? "None" : `Some(${$debugStr(pop)})`} ${peek == null ? "None" : `Some(${$debugStr(peek)})`} ${Stack.len(s, strDebug)}\n`;
   const g = {
     w: 3,
     cells: $range(0, 9),

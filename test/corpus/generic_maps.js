@@ -77,6 +77,7 @@ function pHash_hash(p, state, HHasher) {
 }
 
 function main() {
+  const partialEq = { eq: (a, b) => a === b };
   const g = group(
     $iter([
       ["a", 1],
@@ -93,7 +94,7 @@ function main() {
         }
       },
     },
-    { eq: (a, b) => a === b },
+    partialEq,
     Map,
   );
   const get = g.get("a");
@@ -136,7 +137,7 @@ function main() {
         }
       },
     },
-    { eq: (a, b) => a === b },
+    partialEq,
     Map,
   );
   const value$1 = c.get("x");
@@ -155,7 +156,7 @@ function main() {
         H.write(state, items);
       },
     },
-    { eq: (a, b) => a === b },
+    partialEq,
     Map,
   );
   const value$2 = cp.get(0);
@@ -185,7 +186,7 @@ function main() {
         );
       },
     },
-    { eq: (a, b) => a === b },
+    partialEq,
     Map,
   );
   const value$4 = by.get(2);

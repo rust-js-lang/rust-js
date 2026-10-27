@@ -62,6 +62,9 @@ function lastOf(r, IIterator) {
 }
 
 function main() {
+  const iterDebug = {
+    fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])`,
+  };
   const r = iterator_rev(
     [4],
     { next: countdownIterator_next },
@@ -88,7 +91,7 @@ function main() {
   );
   const value$2 = revDoubleEndedIterator_rfind(back, (x) => x > 3, { next: $next });
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${revDebug_fmt(back, undefined, { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
   );
 
   const value$3 = lastOf(
@@ -167,8 +170,6 @@ function main() {
     4,
     true,
   ).toArray();
-  console.log(
-    `${revDebug_fmt(rev, undefined, { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` })} [${value$7.join(", ")}]`,
-  );
+  console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${value$7.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

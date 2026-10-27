@@ -105,11 +105,12 @@ function holderSkip_skip(holder, IIterator, dropI, dropIItem) {
 }
 
 function main() {
+  const genDefault = { default: () => [0, [0]] };
   const g = [[0, [1]]];
   try {
     holderSkipping(
       { next: genIterator_next },
-      { default: () => [0, [0]] },
+      genDefault,
       (gen) => {
         tagDrop_drop(gen[1]);
       },
@@ -137,7 +138,7 @@ function main() {
       console.log("dyn skipped");
       holderSkipping(
         { next: genIterator_next },
-        { default: () => [0, [0]] },
+        genDefault,
         (gen) => {
           tagDrop_drop(gen[1]);
         },
@@ -147,7 +148,7 @@ function main() {
       try {
         holderSkipping(
           { next: genIterator_next },
-          { default: () => [0, [0]] },
+          genDefault,
           (gen) => {
             tagDrop_drop(gen[1]);
           },

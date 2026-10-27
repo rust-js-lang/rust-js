@@ -21,6 +21,10 @@ function show(items) {
 }
 
 function main() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const it = mk([1, 2, 3]);
   $next(it);
   console.log(`${it.end - it.at}`);
@@ -29,12 +33,7 @@ function main() {
   console.log(
     `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${c.toArray().join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
-  const pair = both(
-    ["a", "b"],
-    [1, 2, 3],
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-  );
+  const pair = both(["a", "b"], [1, 2, 3], intoIterator, intoIterator);
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);
   const total = mk([4, 5]).reduce((a, b) => (a + b) >>> 0, 0);
   const value = [6, 7];

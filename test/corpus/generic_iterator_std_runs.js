@@ -20,10 +20,11 @@ function chunks(items, N, TDebug) {
 }
 
 function main() {
+  const i32Debug = { fmt: (value) => String(value) };
   const items = [1, 2, 3, 4, 5, 6, 7];
-  const iter = chunks(items, 3, { fmt: (value) => String(value) });
+  const iter = chunks(items, 3, i32Debug);
   while (true) {
-    const chunk = chunksIterator_next(iter, 3, { fmt: (value) => String(value) });
+    const chunk = chunksIterator_next(iter, 3, i32Debug);
     if (!chunk) {
       return;
     }

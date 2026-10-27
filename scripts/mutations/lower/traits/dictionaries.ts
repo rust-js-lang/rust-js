@@ -3,6 +3,33 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dictionary-declared-once-used",
+    breaks: "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            if count < 2 {\n",
+    replace: "            if count < 1 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "dictionary-repeats-unnamed",
+    breaks: "a dictionary its body writes twice or more is written each time, not declared once at its top (ADR 0979)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            self.keep_dictionary(&made, name, shared);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "dictionary-of-steps-declared",
+    breaks: "a dictionary of helpers alone, `{ next: $next }`, is declared at its body's top, where inline it reads as well (ADR 0979)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && holds_a_function(&made)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    snapshots: true,
+  },
+  {
     name: "identity-copy-param-refused",
     breaks: "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
     file: "src/lower/traits/dictionaries.rs",

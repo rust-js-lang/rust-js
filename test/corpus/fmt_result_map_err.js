@@ -47,13 +47,14 @@ function nested(cap) {
 }
 
 function main() {
+  const errorDebug = { fmt: (value) => "Error" };
   const value = make(8, "1-2");
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : `Err(${fullDebug_fmt(value._0, { fmt: (value) => "Error" })})`}`,
+    `${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : `Err(${fullDebug_fmt(value._0, errorDebug)})`}`,
   );
   const value$1 = make(2, "10-20");
   console.log(
-    `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${fullDebug_fmt(value$1._0, { fmt: (value) => "Error" })})`}`,
+    `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${fullDebug_fmt(value$1._0, errorDebug)})`}`,
   );
   const value$2 = counted(8, "four");
   const value$3 = counted(2, "four");

@@ -59,6 +59,9 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
 }
 
 function main() {
+  const countdownExactSizeIterator = {
+    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
+  };
   const back = $iterator(
     pad($iter([1, 2, 3]), 2, { next: $next }, true),
     (iterator) =>
@@ -81,13 +84,13 @@ function main() {
   const nextBack = padDoubleEndedIterator_nextBack(
     it,
     { next_back: countdownDoubleEndedIterator_nextBack },
-    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
+    countdownExactSizeIterator,
     false,
   );
   const value = padDoubleEndedIterator_nextBack(
     it,
     { next_back: countdownDoubleEndedIterator_nextBack },
-    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
+    countdownExactSizeIterator,
     false,
   );
   console.log(

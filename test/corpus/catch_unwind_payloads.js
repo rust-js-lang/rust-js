@@ -54,17 +54,18 @@ function halve(n, by) {
 }
 
 function main() {
+  const debug = { fmt: (value) => String(value) };
   caught(
     "returns",
     $catchUnwind(() => 5),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "literal",
     $catchUnwind(() => {
       throw new Error("boom");
     }),
-    { fmt: (value) => String(value) },
+    debug,
   );
   const n = 7;
   caught(
@@ -72,17 +73,17 @@ function main() {
     $catchUnwind(() => {
       throw new Error(`too big: ${n}`);
     }),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "index",
     $catchUnwind(() => pick([1, 2], 5)),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "unwrap",
     $catchUnwind(() => $unwrap(undefined)),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "parse",
@@ -91,12 +92,12 @@ function main() {
         $debugParseError(e, "ParseIntError"),
       ),
     ),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "divide",
     $catchUnwind(() => halve(n, (n - 7) | 0)),
-    { fmt: (value) => String(value) },
+    debug,
   );
 
   // What's resumed is caught again, as itself.
@@ -109,14 +110,14 @@ function main() {
     $catchUnwind(() => {
       throw $unwinding(payload);
     }),
-    { fmt: (value) => String(value) },
+    debug,
   );
   caught(
     "a number",
     $catchUnwind(() => {
       throw $unwinding({ value: 5, impl: { typeId: () => "i32" } });
     }),
-    { fmt: (value) => String(value) },
+    debug,
   );
 
   // Caught inside, it's the outer one's value.
@@ -127,7 +128,7 @@ function main() {
       return 9;
     }
   });
-  caught("nested", nested, { fmt: (value) => String(value) });
+  caught("nested", nested, debug);
 
   // The closure runs once, and what it changed stays changed.
   let count = 0;

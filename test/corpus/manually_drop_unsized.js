@@ -19,8 +19,9 @@ function labeled(labeled) {
 }
 
 function main() {
+  const strDisplay = { fmt: (value) => value };
   console.log(`${tagged($dynCell({ tag: 1, value: 5 }, { fmt: String }))}`);
-  console.log(`${tagged($dynCell({ tag: 2, value: "five" }, { fmt: (value) => value }))}`);
+  console.log(`${tagged($dynCell({ tag: 2, value: "five" }, strDisplay))}`);
   console.log(`${named($dynCell({ tag: 0, value: "x" }, { toString: (value) => value }))}`);
   const number = {
     tag: 3,
@@ -31,6 +32,6 @@ function main() {
     value: "five",
   };
   console.log(`${labeled($dynCell(number, { fmt: String }))}`);
-  console.log(`${labeled($dynCell(text, { fmt: (value) => value }))}`);
+  console.log(`${labeled($dynCell(text, strDisplay))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -58,6 +58,11 @@ function watched(it, IIterator) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const countdownExactSizeIterator = {
+    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
+  };
+  const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const seen = 0;
   const countdown = [4];
   let seen$1 = seen;
@@ -78,7 +83,7 @@ function main() {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${inspectExactSizeIterator_len(w, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(w))}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${inspectExactSizeIterator_len(w, countdownExactSizeIterator)} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(w))}`,
   );
   const c = inspectClone_clone(
     w,
@@ -98,10 +103,10 @@ function main() {
     { next: $next },
   );
   console.log(
-    `${inspectClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { clone: (value) => value }).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
+    `${inspectClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
   );
   console.log(
-    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { clone: (value) => value }), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
+    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
   );
 
   const shown = iterator_inspect([2], show, {
@@ -118,7 +123,7 @@ function main() {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${inspectExactSizeIterator_len(d.inner, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${inspectExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
   );
 
   const holder = { it: iterator_inspect({ start: 0, end: 3 }, show, { next: $rangeNext }) };
@@ -127,7 +132,7 @@ function main() {
     it: inspectClone_clone(
       holder.it,
       { clone: (value) => ({ start: value.start, end: value.end }) },
-      { clone: (value) => value },
+      clone,
     ),
   };
   $next(again.it);

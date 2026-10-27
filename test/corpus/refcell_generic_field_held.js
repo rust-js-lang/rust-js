@@ -21,10 +21,11 @@ function peek(cursor, f, TClone) {
 }
 
 function main() {
+  const vecClone = { clone: (value) => value.slice() };
   const cursor = {
     current: [1],
   };
-  console.log(`[${peek(cursor, () => {}, { clone: (value) => value.slice() }).join(", ")}]`);
+  console.log(`[${peek(cursor, () => {}, vecClone).join(", ")}]`);
   const captured = $fieldCell(cursor, "current");
   const seen = peek(
     cursor,
@@ -36,7 +37,7 @@ function main() {
         $unborrow(borrowMut);
       }
     },
-    { clone: (value) => value.slice() },
+    vecClone,
   );
   console.log(`[${seen.join(", ")}]`);
 }

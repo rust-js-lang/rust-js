@@ -116,12 +116,13 @@ function teeIterator_next(tee, IIterator, IItemClone, dropI, dropIItem) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const [a, b] = tee($iter([1, 2, 3]));
   try {
     try {
-      const next = teeIterator_next(a, { next: $next }, { clone: (value) => value });
-      const value = teeIterator_next(a, { next: $next }, { clone: (value) => value });
-      const value$1 = teeIterator_next(b, { next: $next }, { clone: (value) => value });
+      const next = teeIterator_next(a, { next: $next }, clone);
+      const value = teeIterator_next(a, { next: $next }, clone);
+      const value$1 = teeIterator_next(b, { next: $next }, clone);
       console.log(
         `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
@@ -131,7 +132,7 @@ function main() {
           const loud = teeIterator_next(
             c,
             { next: $next },
-            { clone: (value) => value },
+            clone,
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           );
@@ -156,7 +157,7 @@ function main() {
         const value = teeIterator_next(
           c,
           { next: $next },
-          { clone: (value) => value },
+          clone,
           $dropEach(loudDrop_drop),
           loudDrop_drop,
         );
@@ -180,9 +181,9 @@ function main() {
       const [e, f] = tee($iter([undefined, 1]));
       try {
         try {
-          const value = teeIterator_next(e, { next: $nextSome }, { clone: (value) => value });
-          const value$1 = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
-          const value$2 = teeIterator_next(f, { next: $nextSome }, { clone: (value) => value });
+          const value = teeIterator_next(e, { next: $nextSome }, clone);
+          const value$1 = teeIterator_next(f, { next: $nextSome }, clone);
+          const value$2 = teeIterator_next(f, { next: $nextSome }, clone);
           console.log(
             `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
           );

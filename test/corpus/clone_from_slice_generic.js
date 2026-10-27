@@ -56,12 +56,13 @@ function refillItems(into, from, AArray, AItemClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const a = [[1], [2]];
   refill(a, [[3], [4]], countedClone);
   const b = [[1]];
-  refill(b, [[5]], { clone: (value) => value });
+  refill(b, [[5]], clone);
   const n = [1, 2];
-  refill(n, [7, 8], { clone: (value) => value });
+  refill(n, [7, 8], clone);
   refillItems($view(a, 0, 1), [[6]], _T__N_Array(1), countedClone);
   console.log(
     `[${a.map((item) => countedDebug_fmt(item)).join(", ")}] ${b[0][0]} [${n.join(", ")}]`,

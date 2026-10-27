@@ -40,17 +40,16 @@ function top(items, VOrd, VCopy) {
 }
 
 function main() {
+  const optionOrd = {
+    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+  };
   console.log(`[${inOrder([3, 1, 4, 1, 5], { cmp: $cmp }).join(", ")}]`);
   console.log(
-    `[${inOrder([2, undefined, 7], {
-      cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-    })
+    `[${inOrder([2, undefined, 7], optionOrd)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value = top([undefined], {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  });
+  const value = top([undefined], optionOrd);
   const value$1 = top([], { cmp: $cmp });
   const value$2 = top(
     [

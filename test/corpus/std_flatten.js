@@ -81,10 +81,23 @@ function rowsAgain(
 
 function main() {
   // Of `Vec`s, stepped from both ends, what's left counted.
+  const intoIterator$3 = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: countdownIterator_next }),
+  };
+  const intoIterator$2 = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
+  const intoIterator$1 = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
+  const intoIterator = {
+    intoIter: (items) => $iter(items == null ? [] : [items]),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const cells = iterator_flatten(
     $iter([[1, 2], [], [3, 4, 5]]),
     { next: $next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator$1,
     true,
     undefined,
     false,
@@ -97,7 +110,7 @@ function main() {
   const nextBack = flattenDoubleEndedIterator_nextBack(
     cells,
     { next_back: $nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator$1,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -116,7 +129,7 @@ function main() {
       [4, 5, 6],
     ]),
     { next: $next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator$1,
     true,
     3,
     false,
@@ -127,7 +140,7 @@ function main() {
   flattenDoubleEndedIterator_nextBack(
     grid,
     { next_back: $nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator$1,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -136,17 +149,7 @@ function main() {
   const value$3 = $sizeHint(grid);
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
   console.log(
-    `${flattenDoubleEndedIterator_rfold(
-      grid,
-      0,
-      (acc, x) => (((acc * 10) | 0) + x) | 0,
-      { next: $next },
-      { next_back: $nextBack },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { next: $next },
-      { next_back: $nextBack },
-      false,
-    )}`,
+    `${flattenDoubleEndedIterator_rfold(grid, 0, (acc, x) => (((acc * 10) | 0) + x) | 0, { next: $next }, { next_back: $nextBack }, intoIterator$1, { next: $next }, { next_back: $nextBack }, false)}`,
   );
 
   // Of references to arrays, the same.
@@ -154,14 +157,7 @@ function main() {
     [1, 2],
     [3, 4],
   ];
-  const byRef = iterator_flatten(
-    $iter(pairs),
-    { next: $next },
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
-    true,
-    2,
-    false,
-  );
+  const byRef = iterator_flatten($iter(pairs), { next: $next }, intoIterator$2, true, 2, false);
   $next(byRef);
   const sizeHint = $sizeHint(byRef);
   console.log(
@@ -172,10 +168,7 @@ function main() {
   const some = iterator_flatten(
     $iter([1, undefined, 3]),
     { next: $nextSome },
-    {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    },
+    intoIterator,
     true,
     undefined,
     true,
@@ -183,10 +176,7 @@ function main() {
   const value$4 = flattenDoubleEndedIterator_nextBack(
     some,
     { next_back: $nextBackSome },
-    {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -203,7 +193,7 @@ function main() {
   const counted = iterator_flatten(
     $iter([[2], [3]]),
     { next: $next },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+    intoIterator$3,
     true,
     undefined,
     false,
@@ -212,7 +202,7 @@ function main() {
   const value$8 = flattenDoubleEndedIterator_nextBack(
     counted,
     { next_back: $nextBack },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+    intoIterator$3,
     { next: countdownIterator_next },
     { next_back: countdownDoubleEndedIterator_nextBack },
     true,
@@ -229,10 +219,7 @@ function main() {
           flattenDoubleEndedIterator_nextBack(
             iterator,
             { next_back: $nextBack },
-            {
-              intoIter: (items) => items,
-              IntoIterIterator: () => ({ next: countdownIterator_next }),
-            },
+            intoIterator$3,
             { next: countdownIterator_next },
             { next_back: countdownDoubleEndedIterator_nextBack },
             true,
@@ -248,10 +235,7 @@ function main() {
             f,
             { next: $next },
             { next_back: $nextBack },
-            {
-              intoIter: (items) => items,
-              IntoIterIterator: () => ({ next: countdownIterator_next }),
-            },
+            intoIterator$3,
             { next: countdownIterator_next },
             { next_back: countdownDoubleEndedIterator_nextBack },
             $tryOf(broke),
@@ -310,7 +294,7 @@ function main() {
     grids,
     { next: $next },
     { clone: (value) => $iter(value.items.slice(value.at, value.end).map((item) => item.slice())) },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator$1,
     true,
     2,
     false,
@@ -334,7 +318,7 @@ function main() {
         [3, 4],
       ]),
       { next: $next },
-      { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
+      intoIterator$2,
       true,
       2,
       false,

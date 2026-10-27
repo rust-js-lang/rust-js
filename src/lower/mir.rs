@@ -355,6 +355,13 @@ pub(super) struct Found {
     /// element made ahead of a branch reads, which tidy reads in place
     /// where it can.
     pub(super) captured: HashSet<String>,
+    /// Of a body lowered from its MIR, each dictionary it made of a type
+    /// known whole that holds a function, and the name it would have: one
+    /// written twice or more is declared once at the body's top and named
+    /// where it was (ADR 0979).
+    pub(super) dictionaries: Vec<(String, Expr)>,
+    /// Whether a body from its MIR is being lowered, whose top they go at.
+    pub(super) declaring: bool,
     /// Of a body lowered from its MIR, each closure it makes of one call:
     /// where it's written, and what it passes its call on to, which says
     /// where it may be that function (ADR 0605, amended).
@@ -683,7 +690,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, bool)> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
-        let (mut params, mut out) = self.mir_function(mir, None, None)?;
+        let (mut params, mut out) = self.lowered_from_mir(mir, None, None)?;
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
         // An `on_load!` body is its module's top, where JS has no `return`:
@@ -824,6 +831,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    fn lowered_from_mir(
+        &mut self,
+        mir: &Mir<'tcx>,
+        captures: Option<Vec<(Expr, bool)>>,
+        seed: Option<offsets::Seed>,
+    ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
+        // Its dictionaries of types known whole, each written twice
+        // declared once at its top (ADR 0979); the enclosing body's back
+        // after.
+        let dictionaries = std::mem::take(&mut self.locals.mir.dictionaries);
+        let declaring = std::mem::replace(&mut self.locals.mir.declaring, true);
+        let lowered = self.mir_function(mir, captures, seed);
+        self.locals.mir.dictionaries = dictionaries;
+        self.locals.mir.declaring = declaring;
+        lowered
+    }
+
+    /// Of the body being lowered from its MIR, `out`, each dictionary it
+    /// writes twice or more, declared at its top; any made past here, where
+    /// it's made (ADR 0979).
+    fn declare_kept(&mut self, out: &mut Vec<Stmt>) {
+        let made = std::mem::take(&mut self.locals.mir.dictionaries);
+        self.locals.mir.declaring = false;
+        let declared = self.declare_repeated(made, out);
+        out.splice(0..0, declared);
+    }
+
+    /// Keep `made`, a dictionary of a type known whole, of the body being
+    /// lowered from its MIR, as `name`, or `shared` where another type's is
+    /// the same: one it writes twice or more is declared once at its top
+    /// (`declare_repeated`, ADR 0979). None of another body.
+    pub(super) fn keep_dictionary(&mut self, made: &Expr, name: String, shared: String) {
+        if !self.locals.mir.declaring {
+            return;
+        }
+        match (self.locals.mir.dictionaries.iter_mut()).find(|(_, kept)| kept == made) {
+            Some((kept, _)) if *kept != name => *kept = shared,
+            Some(_) => {}
+            None => self.locals.mir.dictionaries.push((name, made.clone())),
+        }
+    }
+
+    /// `lowered_from_mir`'s, in the body it starts.
     fn mir_function(
         &mut self,
         mir: &Mir<'tcx>,
@@ -1145,6 +1195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::classes::receiver_as_this(self.tcx, def_id, &mut params, &mut out, &mut booleans)
             .map_err(|what| self.unsupported(mir_body.span, what))?;
         let params = std::cell::RefCell::new(params);
+        self.declare_kept(&mut out);
         tidy::tidy(
             &mut out,
             &tidy::Hints {

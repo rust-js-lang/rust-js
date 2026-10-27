@@ -33,11 +33,12 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const w = [["kept"]];
   try {
-    console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-    console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
-    console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
+    console.log(`${peeked(w, wrapPeek(clone, loudDrop_drop))}`);
+    console.log(`${wrapPeek_peek(w, clone, loudDrop_drop)}`);
+    console.log(`${peeked([1], wrapPeek(clone))}`);
   } finally {
     loudDrop_drop(w[0]);
   }

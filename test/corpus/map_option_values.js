@@ -25,6 +25,8 @@ function read(map, key, VDebug) {
 }
 
 function main() {
+  const u32Debug = { fmt: (value) => String(value) };
+  const optionDebug = { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) };
   const counts = new Map();
   counts.set("none", undefined);
   counts.set("zero", 0);
@@ -68,7 +70,7 @@ function main() {
     `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value$2))})`} ${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value$3))})`}`,
   );
   console.log(
-    `${read(names, 1, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })} ${read(names, 2, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })} ${read(names, 3, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`,
+    `${read(names, 1, optionDebug)} ${read(names, 2, optionDebug)} ${read(names, 3, optionDebug)}`,
   );
 
   const nested = new Map();
@@ -104,7 +106,7 @@ function main() {
   const value$4 = plain.get(1);
   const value$5 = plain.get(2);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${read(plain, 1, { fmt: (value) => String(value) })} ${read(plain, 2, { fmt: (value) => String(value) })}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${read(plain, 1, u32Debug)} ${read(plain, 2, u32Debug)}`,
   );
 }
 //# sourceMappingURL=case.js.map

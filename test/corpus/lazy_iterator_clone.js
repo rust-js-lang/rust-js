@@ -38,6 +38,9 @@ function joined(a, b, IIterator, IClone) {
 }
 
 function main() {
+  const clone$1 = { clone: (value) => value };
+  const clone = { clone: (value) => $clone(value) };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const calls = 0;
   const base = 10;
   let calls$1 = calls;
@@ -50,11 +53,7 @@ function main() {
       () => make(calls, base),
     );
   const it = iterator_map({ start: 1, end: 4 }, make(calls$1, base), { next: $rangeNext });
-  const copy = mapClone_clone(
-    it,
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-    { clone: (value) => $clone(value) },
-  );
+  const copy = mapClone_clone(it, rangeClone, clone);
   const value = $next(copy);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(`[${$roomForHint(it, 4, true).toArray().join(", ")}]`);
@@ -67,7 +66,7 @@ function main() {
     (x) => (x * 3) | 0,
     { next: $next },
   );
-  const a = mapClone_clone(evens, { clone: (value) => $clone(value) }, { clone: (value) => value });
+  const a = mapClone_clone(evens, clone, clone$1);
   $next(a);
   console.log(`[${a.toArray().join(", ")}] [${evens.toArray().join(", ")}]`);
 
@@ -85,7 +84,7 @@ function main() {
   const makeFilter$1 = (it, f) =>
     $cloning(it.filter(f), () => makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)));
   const odd = makeFilter$1(copied, make$1(seen$1));
-  const value$1 = both(odd, { next: $next }, { clone: (value) => $clone(value) });
+  const value$1 = both(odd, { next: $next }, clone);
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
 
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
@@ -101,25 +100,12 @@ function main() {
   $next(half);
   console.log(`[${half.toArray().join(", ")}] [${doubled.toArray().join(", ")}]`);
 
-  const tripled = scaled(
-    { start: 1, end: 4 },
-    3,
-    { next: $rangeNext },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-  );
-  const rest = mapClone_clone(
-    tripled,
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-    { clone: (value) => value },
-  );
+  const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
+  const rest = mapClone_clone(tripled, rangeClone, clone$1);
   mapIterator_next(rest, { next: $rangeNext });
   console.log(`[${rest.toArray().join(", ")}] [${tripled.toArray().join(", ")}]`);
 
-  const even = evensOf(
-    { start: 1, end: 7 },
-    { next: $rangeNext },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-  );
+  const even = evensOf({ start: 1, end: 7 }, { next: $rangeNext }, rangeClone);
   const later = $clone(even);
   $next(later);
   console.log(`[${later.toArray().join(", ")}] [${even.toArray().join(", ")}]`);
@@ -128,27 +114,16 @@ function main() {
     { start: 1, end: 3 },
     { start: 5, end: 7 },
     { next: $rangeNext },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
+    rangeClone,
   );
-  const after = chainClone_clone(
-    bothRanges,
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-  );
+  const after = chainClone_clone(bothRanges, rangeClone, rangeClone);
   chainIterator_next(after, { next: $rangeNext }, { next: $rangeNext });
   console.log(`[${after.toArray().join(", ")}] [${bothRanges.toArray().join(", ")}]`);
 
   const holder = {
     it: iterator_map({ start: 0, end: 3 }, (x) => (x + 100) | 0, { next: $rangeNext }),
   };
-  const again = {
-    ...holder,
-    it: mapClone_clone(
-      holder.it,
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-      { clone: (value) => value },
-    ),
-  };
+  const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone$1) };
   $next(again.it);
   console.log(
     `[${$roomForHint(again.it, 4, true).toArray().join(", ")}] [${$roomForHint(holder.it, 4, true).toArray().join(", ")}]`,

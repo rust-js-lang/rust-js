@@ -67,9 +67,8 @@ function two(iter, dropI) {
 }
 
 function main() {
-  console.log(
-    `[${firsts([2], 5, { next: countdownIterator_next }, { clone: (value) => [value[0]] }).join(", ")}]`,
-  );
+  const clone = { clone: (value) => [value[0]] };
+  console.log(`[${firsts([2], 5, { next: countdownIterator_next }, clone).join(", ")}]`);
   console.log(
     `[${firsts(
       { start: 0, end: 3 },
@@ -114,7 +113,7 @@ function main() {
     })
     .toArray();
   console.log(`[${tags.join(", ")}]`);
-  const held = firsts([0], 3, { next: genIterator_next }, { clone: (value) => [value[0]] });
+  const held = firsts([0], 3, { next: genIterator_next }, clone);
   console.log(`held ${held.length}`);
   for (const item of held) {
     loudDrop_drop(item);

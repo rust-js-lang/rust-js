@@ -38,6 +38,7 @@ const Ends = {
 };
 
 function main() {
+  const i32Debug = { fmt: (value) => String(value) };
   const loud = "fold";
   const value = [];
   try {
@@ -52,7 +53,7 @@ function main() {
       { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
     console.log(
-      `[${tags.map((item) => `(${tagDebug_fmt(item[0], { fmt: (value) => String(value) })}, ${$debugStr(item[1])})`).join(", ")}]`,
+      `[${tags.map((item) => `(${tagDebug_fmt(item[0], i32Debug)}, ${$debugStr(item[1])})`).join(", ")}]`,
     );
     const words = Ends.taggedBack(
       { inner: $iter(["x", "y"]) },
@@ -67,9 +68,7 @@ function main() {
       { next: $rangeNext },
       { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     );
-    console.log(
-      `${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, { fmt: (value) => String(value) })})`}`,
-    );
+    console.log(`${value$1 == null ? "None" : `Some(${tagDebug_fmt(value$1, i32Debug)})`}`);
   } finally {
     console.log(`drop ${loud}`);
   }

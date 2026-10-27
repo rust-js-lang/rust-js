@@ -50,22 +50,19 @@ function product(a, b, IIterator, JClone, IItemClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const countClone = { clone: (value) => [value[0], value[1]] };
+  const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   console.log(
     `[${$iterator(
-      product(
-        { start: 1, end: 3 },
-        [0, 2],
-        { next: $rangeNext },
-        { clone: (value) => [value[0], value[1]] },
-        { clone: (value) => value },
-      ),
+      product({ start: 1, end: 3 }, [0, 2], { next: $rangeNext }, countClone, clone),
       (iterator) =>
         productIterator_next(
           iterator,
           { next: $rangeNext },
-          { clone: (value) => [value[0], value[1]] },
+          countClone,
           { next: countIterator_next },
-          { clone: (value) => value },
+          clone,
         ),
     )
       .toArray()
@@ -74,21 +71,9 @@ function main() {
   );
   console.log(
     `[${$iterator(
-      product(
-        $iter(["a", "b"]),
-        $iter([7, 8]),
-        { next: $next },
-        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-        { clone: (value) => value },
-      ),
+      product($iter(["a", "b"]), $iter([7, 8]), { next: $next }, intoIterClone, clone),
       (iterator) =>
-        productIterator_next(
-          iterator,
-          { next: $next },
-          { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-          { next: $next },
-          { clone: (value) => value },
-        ),
+        productIterator_next(iterator, { next: $next }, intoIterClone, { next: $next }, clone),
     )
       .toArray()
       .map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`)

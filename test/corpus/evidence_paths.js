@@ -124,30 +124,27 @@ function bagAdd_add(bag, other) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const bagClone = { clone: (value) => [value[0].slice()] };
   console.log(`${check([3], 1, smallInt, u8NonZero)} ${check([3], 0, smallInt, u8NonZero)}`);
   console.log(`${produced(21, i32Source)}`);
   console.log(
     `${shout(12, { toString: String })} ${shout("abc", { toString: (value) => value })} ${shout([21.5], { toString: celsiusDisplay_fmt })}`,
   );
-  const twice = optionGetterT({ clone: (value) => value }).twice(4);
-  const value = optionGetterT({ clone: (value) => value }).twice("hi");
+  const twice = optionGetterT(clone).twice(4);
+  const value = optionGetterT(clone).twice("hi");
   console.log(`(${twice[0]}, ${twice[1]}) (${$debugStr(value[0])}, ${$debugStr(value[1])})`);
   console.log(`${iDigits({ next: $next }).digitSum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
-  let before = pointMovableS({ clone: (value) => value }, { add: (a, b) => (a + b) | 0 }).translate(
-    self,
-    3,
-  );
+  let before = pointMovableS(clone, { add: (a, b) => (a + b) | 0 }).translate(self, 3);
   $assign(p, self.value);
-  console.log(`${before} ${pointPositionedS_x(p, { clone: (value) => value })}`);
+  console.log(`${before} ${pointPositionedS_x(p, clone)}`);
   const bag = { x: [[1]] };
   const self$1 = { value: bag };
-  before = pointMovableS({ clone: (value) => [value[0].slice()] }, bagAdd).translate(self$1, [
-    [2, 3],
-  ]);
+  before = pointMovableS(bagClone, bagAdd).translate(self$1, [[2, 3]]);
   $assign(bag, self$1.value);
-  const value$1 = pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] });
+  const value$1 = pointPositionedS_x(bag, bagClone);
   console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(value$1)}`);
 }
 //# sourceMappingURL=case.js.map

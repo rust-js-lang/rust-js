@@ -65,37 +65,25 @@ function flat(items, IItemIntoIterator) {
 }
 
 function main() {
+  const intoIterator$2 = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: countdownIterator_next }),
+  };
+  const intoIterator$1 = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
+  const intoIterator = {
+    intoIter: (items) => $iter(items == null ? [] : [items]),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const options = () => $iter([1, undefined, 3]);
   console.log(
-    `${looped(options(), {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    })} ${givenOn(options(), {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    })} [${summed(options(), {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    }).join(", ")}] ${flat(options(), {
-      intoIter: (items) => $iter(items == null ? [] : [items]),
-      IntoIterIterator: () => ({ next: $next }),
-    })}`,
+    `${looped(options(), intoIterator)} ${givenOn(options(), intoIterator)} [${summed(options(), intoIterator).join(", ")}] ${flat(options(), intoIterator)}`,
   );
   const rows = () => $iter([[1, 2], [], [3]]);
   console.log(
-    `${looped(rows(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })} ${givenOn(rows(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })} [${summed(rows(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    }).join(", ")}] ${flat(rows(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })}`,
+    `${looped(rows(), intoIterator$1)} ${givenOn(rows(), intoIterator$1)} [${summed(rows(), intoIterator$1).join(", ")}] ${flat(rows(), intoIterator$1)}`,
   );
   const pairs = () =>
     $iter([
@@ -103,35 +91,11 @@ function main() {
       [3, 4],
     ]);
   console.log(
-    `${looped(pairs(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })} ${givenOn(pairs(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })} [${summed(pairs(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    }).join(", ")}] ${flat(pairs(), {
-      intoIter: (items) => $iter(items),
-      IntoIterIterator: () => ({ next: $next }),
-    })}`,
+    `${looped(pairs(), intoIterator$1)} ${givenOn(pairs(), intoIterator$1)} [${summed(pairs(), intoIterator$1).join(", ")}] ${flat(pairs(), intoIterator$1)}`,
   );
   const counts = () => $iter([[2], [3]]);
   console.log(
-    `${looped(counts(), {
-      intoIter: (items) => items,
-      IntoIterIterator: () => ({ next: countdownIterator_next }),
-    })} ${givenOn(counts(), {
-      intoIter: (items) => items,
-      IntoIterIterator: () => ({ next: countdownIterator_next }),
-    })} [${summed(counts(), {
-      intoIter: (items) => items,
-      IntoIterIterator: () => ({ next: countdownIterator_next }),
-    }).join(", ")}] ${flat(counts(), {
-      intoIter: (items) => items,
-      IntoIterIterator: () => ({ next: countdownIterator_next }),
-    })}`,
+    `${looped(counts(), intoIterator$2)} ${givenOn(counts(), intoIterator$2)} [${summed(counts(), intoIterator$2).join(", ")}] ${flat(counts(), intoIterator$2)}`,
   );
 }
 //# sourceMappingURL=case.js.map

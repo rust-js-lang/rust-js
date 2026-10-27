@@ -84,13 +84,14 @@ function scaled(x, k, TMulF64) {
 
 function main() {
   // `u8`'s and `i32`'s wrap as they do outside generic code.
+  const f64Add = { add: (a, b) => a + b };
   console.log(
     `${total([1, 2, 3], 0, {
       add: (a, b) => (a + b) >>> 0,
-    })} ${$displayF64(total([1.5, 2.25], 0, { add: (a, b) => a + b }))} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 })}`,
+    })} ${$displayF64(total([1.5, 2.25], 0, f64Add))} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 })}`,
   );
   console.log(
-    `${affine(2, -3, 7, { mul: (a, b) => Math.imul(a, b) }, { add: (a, b) => (a + b) | 0 })} ${$displayF64(affine(0.5, 4, 1, { mul: (a, b) => a * b }, { add: (a, b) => a + b }))}`,
+    `${affine(2, -3, 7, { mul: (a, b) => Math.imul(a, b) }, { add: (a, b) => (a + b) | 0 })} ${$displayF64(affine(0.5, 4, 1, { mul: (a, b) => a * b }, f64Add))}`,
   );
   const value = parts(
     17n,

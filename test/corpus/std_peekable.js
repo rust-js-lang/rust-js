@@ -50,6 +50,10 @@ function summed(it, IIterator, IClone, PeekableClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const debug = { fmt: (value) => String(value) };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const copiedClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const v = [1, 2, 3, 4];
   const value = firstTwo($iter(v));
   console.log(
@@ -72,12 +76,8 @@ function main() {
   const value$3 = summed(
     $iter(v),
     { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    peekableClone(
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-      { next: $next },
-      { clone: (value) => value },
-    ),
+    copiedClone,
+    peekableClone(copiedClone, { next: $next }, clone),
   );
   console.log(
     `(${value$3[0]}, ${value$3[1]}, ${value$3[2] == null ? "None" : `Some(${value$3[2]})`}, ${value$3[3] == null ? "None" : `Some(${value$3[3]})`})`,
@@ -85,12 +85,8 @@ function main() {
   const value$4 = summed(
     { start: 1, end: 4 },
     { next: $rangeNext },
-    { clone: (value) => ({ start: value.start, end: value.end }) },
-    peekableClone(
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-      { next: $rangeNext },
-      { clone: (value) => value },
-    ),
+    rangeClone,
+    peekableClone(rangeClone, { next: $rangeNext }, clone),
   );
   console.log(
     `(${value$4[0]}, ${value$4[1]}, ${value$4[2] == null ? "None" : `Some(${value$4[2]})`}, ${value$4[3] == null ? "None" : `Some(${value$4[3]})`})`,
@@ -102,7 +98,7 @@ function main() {
     `${nextIfEq == null ? "None" : `Some(${nextIfEq})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   console.log(
-    `${peekableDebug_fmt(p, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` }, { fmt: (value) => String(value) })}`,
+    `${peekableDebug_fmt(p, undefined, { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` }, debug)}`,
   );
   const r = iterator_peekable({ start: 5, end: 8 }, { next: $rangeNext });
   const next = $next(r);
@@ -111,7 +107,7 @@ function main() {
     nthBack: $rangeNthBack,
   });
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, { fmt: (value) => String(value) })}`,
+    `${next == null ? "None" : `Some(${next})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${peekableDebug_fmt(r, undefined, { fmt: (value) => `${value.start}..${value.end}` }, debug)}`,
   );
   console.log(`${$count(r)}`);
 }

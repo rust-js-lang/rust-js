@@ -49,6 +49,7 @@ function debug(value, TDebug) {
 }
 
 function main() {
+  const debug$1 = { fmt: (value, options) => $formatted(String(value), options, true) };
   console.log(
     `[${metersDisplay_fmt([1.5], {
       width: 8,
@@ -60,12 +61,9 @@ function main() {
     })}]`,
   );
   console.log(
-    `${show(42, { fmt: (value, options) => $formatted(String(value), options, true) })} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay)} ${show(["xyz"], nameDisplay)}`,
+    `${show(42, debug$1)} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay)} ${show(["xyz"], nameDisplay)}`,
   );
-  const d = {
-    value: 7,
-    impl: { fmt: (value, options) => $formatted(String(value), options, true) },
-  };
+  const d = { value: 7, impl: debug$1 };
   console.log(
     `[${d.impl.fmt(d.value, { width: 4, align: "Left" })}] [${nameDisplay_fmt(["rust"], {
       width: 7,
@@ -82,7 +80,7 @@ function main() {
   console.log(`${pointDebug_fmt({ x: 4, y: 5.5 }, { alternate: true, width: 5 })}`);
   console.log(`${metersDisplay_fmt([0.5])}`);
   const pair = [7, "a"];
-  const value = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
+  const value = debug(1, debug$1);
   const value$1 = debug([2, "b"], pairDebug);
   console.log(`[${pairDebug_fmt(pair, { width: 4 })}] ${value} ${value$1}`);
   const b = { value: [-2.5], impl: metersDisplay };

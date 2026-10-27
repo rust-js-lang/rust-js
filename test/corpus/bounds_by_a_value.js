@@ -93,46 +93,30 @@ function input(text, TFromStr) {
 }
 
 function main() {
+  const u8FromStr = { fromStr: (s) => $parseInt(s, 0, 255) };
+  const fromStr = { fromStr: (s) => $parseInt(s, 0, 4294967295) };
+  console.log(`[${coefficients(input("0", fromStr)).join(", ")}]`);
+  console.log(`[${coefficients(input("4", fromStr)).join(", ")}]`);
+  console.log(`[${coefficients(input("4294967295", fromStr)).join(", ")}]`);
+  console.log(`[${reversed(input("4", fromStr)).join(", ")}]`);
+  console.log(`[${reversed(input("0", fromStr)).join(", ")}]`);
+  console.log(`[${pastTheEnd(input("2", fromStr)).join(", ")}]`);
+  console.log(`${pastTheEnd(input("4294967294", fromStr)).length}`);
   console.log(
-    `[${coefficients(input("0", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
+    `${tested(input("5", fromStr), input("2", fromStr))} ${tested(input("5", fromStr), input("5", fromStr))} ${tested(input("5", fromStr), input("9", fromStr))}`,
   );
   console.log(
-    `[${coefficients(input("4", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
+    `${changedSince(input("5", fromStr), input("3", fromStr))} ${changedSince(input("5", fromStr), input("0", fromStr))}`,
   );
+  console.log(`[${counted(input("5", fromStr)).join(", ")}]`);
+  console.log(`[${stepped(input("5", u8FromStr)).join(", ")}]`);
+  console.log(`[${stepped(input("6", u8FromStr)).join(", ")}]`);
   console.log(
-    `[${coefficients(input("4294967295", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
+    `${shrunk(input("5", fromStr), input("3", fromStr))} ${shrunk(input("9", fromStr), input("1", fromStr))}`,
   );
+  console.log(`${sumBelow([1, 2, 3, 4], input("2", fromStr))}`);
   console.log(
-    `[${reversed(input("4", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
-  );
-  console.log(
-    `[${reversed(input("0", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
-  );
-  console.log(
-    `[${pastTheEnd(input("2", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
-  );
-  console.log(
-    `${pastTheEnd(input("4294967294", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).length}`,
-  );
-  console.log(
-    `${tested(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("2", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))} ${tested(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))} ${tested(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("9", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))}`,
-  );
-  console.log(
-    `${changedSince(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("3", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))} ${changedSince(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("0", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))}`,
-  );
-  console.log(
-    `[${counted(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) })).join(", ")}]`,
-  );
-  console.log(`[${stepped(input("5", { fromStr: (s) => $parseInt(s, 0, 255) })).join(", ")}]`);
-  console.log(`[${stepped(input("6", { fromStr: (s) => $parseInt(s, 0, 255) })).join(", ")}]`);
-  console.log(
-    `${shrunk(input("5", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("3", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))} ${shrunk(input("9", { fromStr: (s) => $parseInt(s, 0, 4294967295) }), input("1", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))}`,
-  );
-  console.log(
-    `${sumBelow([1, 2, 3, 4], input("2", { fromStr: (s) => $parseInt(s, 0, 4294967295) }))}`,
-  );
-  console.log(
-    `${twoPast(input("255", { fromStr: (s) => $parseInt(s, 0, 255) }), input("254", { fromStr: (s) => $parseInt(s, 0, 255) }))} ${twoPast(input("9", { fromStr: (s) => $parseInt(s, 0, 255) }), input("3", { fromStr: (s) => $parseInt(s, 0, 255) }))}`,
+    `${twoPast(input("255", u8FromStr), input("254", u8FromStr))} ${twoPast(input("9", u8FromStr), input("3", u8FromStr))}`,
   );
 }
 //# sourceMappingURL=case.js.map

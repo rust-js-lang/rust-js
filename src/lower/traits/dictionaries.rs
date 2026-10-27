@@ -45,7 +45,73 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
     }
 
+    /// `tr`'s dictionary, written where it's asked. Of a type known whole,
+    /// one that holds a function, a compiled method given its sources'
+    /// dictionaries, is kept: one its body writes twice or more is declared
+    /// once at its top (`declare_repeated`, ADR 0979).
     pub(in crate::lower) fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
+        let made = self.dictionary_made(tr, span)?;
+        if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
+            && !self.in_copied_default()
+            && holds_a_function(&made)
+            && reads_only_whole_bodys(&made)
+        {
+            let name = self.dictionary_name(tr);
+            let shared = crate::lower::lower_first(self.tcx.item_name(tr.def_id).as_str());
+            self.keep_dictionary(&made, name, shared);
+        }
+        Ok(made)
+    }
+
+    /// Of `made`, a body's dictionaries and their names, each that `body`
+    /// writes twice or more: named there, and declared, for its top, each
+    /// before what names it (ADR 0979).
+    pub(in crate::lower) fn declare_repeated(
+        &mut self,
+        mut made: Vec<(String, Expr)>,
+        body: &mut [js::Stmt],
+    ) -> Vec<js::Stmt> {
+        // The largest first, so one inside another is counted in its `const`.
+        made.sort_by_key(|(_, e)| std::cmp::Reverse(size(e)));
+        let mut declared: Vec<js::Stmt> = Vec::new();
+        for (hint, dictionary) in made {
+            let mut count = 0;
+            let mut counting = |e: &mut Expr| count += usize::from(*e == dictionary);
+            js::each_expr_mut(body, &mut counting);
+            js::each_expr_mut(&mut declared, &mut counting);
+            if count < 2 {
+                continue;
+            }
+            let name = self.fresh(&hint);
+            let mut put = |e: &mut Expr| {
+                if *e == dictionary {
+                    *e = Expr::var(&name);
+                }
+            };
+            js::each_expr_mut(body, &mut put);
+            js::each_expr_mut(&mut declared, &mut put);
+            declared.insert(0, StmtKind::Const(name, dictionary).at(js::Span::NONE));
+        }
+        declared
+    }
+
+    /// The name of a declared dictionary of `tr`: its type's and its
+    /// trait's, `chainDoubleEndedIterator` or `u32Clone`, or its trait's
+    /// alone of a type with no one name, `intoIterator`.
+    fn dictionary_name(&self, tr: ty::TraitRef<'tcx>) -> String {
+        let of = tr.self_ty().peel_refs();
+        let of = match of.kind() {
+            ty::Adt(adt, _) => self.tcx.item_name(adt.did()).to_string(),
+            ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str => of.to_string(),
+            ty::Tuple(parts) if parts.is_empty() => "unit".to_string(),
+            ty::Tuple(_) => "tuple".to_string(),
+            ty::Array(..) | ty::Slice(_) => "items".to_string(),
+            _ => String::new(),
+        };
+        crate::lower::lower_first(&format!("{of}{}", self.tcx.item_name(tr.def_id)))
+    }
+
+    fn dictionary_made(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         // `<Words as Source>::Item: Debug` of a bound instantiated: `String: Debug`;
         // in a copied default, where the impl's bounds and its own hold, in
         // the impl's terms: `K: Hash` of `<Map<T, F> as Iterator>::Item`.
@@ -936,4 +1002,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         props.extend(self.item_drops(tr, span)?);
         Ok(Expr::object(props))
     }
+}
+
+/// Whether `e`, a dictionary made, holds a function: a compiled method
+/// given its sources' dictionaries, not `{ next: $next }` alone.
+fn holds_a_function(e: &Expr) -> bool {
+    let js::ExprKind::Object(props, _) = &e.kind else {
+        return false;
+    };
+    props
+        .iter()
+        .any(|prop| matches!(prop, Prop::Field(_, value) if matches!(value.kind, js::ExprKind::Arrow(..))))
+}
+
+/// How many expressions `e` is made of.
+fn size(e: &Expr) -> usize {
+    let mut count = 0;
+    e.clone().each_mut(&mut |_| count += 1);
+    count
+}
+
+/// Whether `e` reads only what its body's top can: the runtime's helpers,
+/// the program's items, and the names its own functions bind (ADR 0979).
+fn reads_only_whole_bodys(e: &Expr) -> bool {
+    let mut bound: Vec<String> = Vec::new();
+    let mut each = e.clone();
+    each.each_mut(&mut |part| {
+        if let js::ExprKind::Arrow(params, _) = &mut part.kind {
+            for param in params {
+                param.each_name_mut(&mut |name| bound.push(name.clone()));
+            }
+        }
+    });
+    let mut only = true;
+    let mut each = e.clone();
+    each.each_mut(&mut |part| {
+        if let js::ExprKind::Var(name) = &part.kind {
+            only &= part.helper_name().is_some() || part.facts.has(js::Known::Item) || bound.contains(name);
+        }
+    });
+    only
 }

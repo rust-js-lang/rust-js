@@ -13,6 +13,7 @@ function has(items, item, TPartialEq) {
 }
 
 function main() {
+  const partialEq = { eq: (a, b) => a === b };
   const first = { lane: 1 };
   const alike = { lane: 1 };
   const again = first;
@@ -21,8 +22,8 @@ function main() {
     `${differ(first, again)} ${differ(first, alike)} ${differ(undefined, first)} ${differ(undefined)}`,
   );
   const updates = [first, alike];
-  console.log(`${has(updates, again, { eq: (a, b) => a === b })} ${updates.indexOf(alike) >= 0}`);
+  console.log(`${has(updates, again, partialEq)} ${updates.indexOf(alike) >= 0}`);
   const lone = { lane: 2 };
-  console.log(`${has([lone], lone, { eq: (a, b) => a === b })} ${(lone.lane + first.lane) >>> 0}`);
+  console.log(`${has([lone], lone, partialEq)} ${(lone.lane + first.lane) >>> 0}`);
 }
 //# sourceMappingURL=case.js.map

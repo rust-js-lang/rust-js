@@ -74,14 +74,17 @@ export function paired(t, PairFromU) {
 }
 
 function main() {
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   console.log(`[${rest([1, 2, 3]).join(", ")}]`);
   console.log(`[${rest([]).join(", ")}]`);
   const pairs = $iterator(
-    pairFrom_A__B__from(
-      [[1, 2, 3], $iter(Array.from("ab"))],
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
-    ),
+    pairFrom_A__B__from([[1, 2, 3], $iter(Array.from("ab"))], vecIntoIterator, {
+      intoIter: (items) => items,
+      IntoIterIterator: () => ({ next: $next }),
+    }),
     (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
   ).toArray();
   console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
@@ -91,14 +94,7 @@ function main() {
         [4, 5],
         ["x", "y", "z"],
       ],
-      {
-        from: (value) =>
-          pairFrom_A__B__from(
-            value,
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-          ),
-      },
+      { from: (value) => pairFrom_A__B__from(value, vecIntoIterator, vecIntoIterator) },
     ),
     (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
   ).toArray();

@@ -20,17 +20,18 @@ const Product = {
 };
 
 function main() {
+  const clone = { clone: (value) => value };
   const p = { a: $iter([1, 2]) };
-  const current = Product.current(p, { next: $next }, { clone: (value) => value });
-  const value = Product.current(p, { next: $next }, { clone: (value) => value });
+  const current = Product.current(p, { next: $next }, clone);
+  const value = Product.current(p, { next: $next }, clone);
   console.log(
     `${current == null ? "None" : `Some(${current})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  Product.advance(p, { clone: (value) => value });
-  const value$1 = Product.current(p, { next: $next }, { clone: (value) => value });
+  Product.advance(p, clone);
+  const value$1 = Product.current(p, { next: $next }, clone);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  Product.advance(p, { clone: (value) => value });
-  const value$2 = Product.current(p, { next: $next }, { clone: (value) => value });
+  Product.advance(p, clone);
+  const value$2 = Product.current(p, { next: $next }, clone);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${p.aCur == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(p.aCur))})`}`,
   );

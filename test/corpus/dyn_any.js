@@ -41,16 +41,19 @@ function boxed(value, TAny) {
 }
 
 function main() {
+  const u8Any = { typeId: () => "u8" };
+  const stringAny = { typeId: () => "alloc::string::String" };
+  const i32Any = { typeId: () => "i32" };
   const items = [
-    { value: 5, impl: { typeId: () => "i32" } },
-    { value: "s", impl: { typeId: () => "alloc::string::String" } },
+    { value: 5, impl: i32Any },
+    { value: "s", impl: stringAny },
     { value: { x: 1 }, impl: { typeId: () => "lib::Point" } },
     { value: 1.5, impl: { typeId: () => "f64" } },
   ];
   for (const item of items) {
     console.log(`${describe(item)}`);
   }
-  const number = { value: 7, impl: { typeId: () => "u8" } };
+  const number = { value: 7, impl: u8Any };
   const n = number.impl.typeId() === "u8" ? number : undefined;
   if (n != null) {
     n.value = (n.value + 1) & 255;
@@ -68,7 +71,7 @@ function main() {
   } else {
     console.log("not u8");
   }
-  const text = boxed("t", { typeId: () => "alloc::string::String" });
+  const text = boxed("t", stringAny);
   const value$1 =
     text.impl.typeId() === "i32" ? { TAG: "Ok", _0: text.value } : { TAG: "Err", _0: text };
   if (value$1.TAG === "Ok") {
@@ -82,9 +85,7 @@ function main() {
         : undefined;
     console.log(`back ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
-  console.log(
-    `${"i32" === key(3, { typeId: () => "i32" })} ${key(3, { typeId: () => "u8" }) === "i32"}`,
-  );
+  console.log(`${"i32" === key(3, i32Any)} ${key(3, u8Any) === "i32"}`);
   const seen = new Map();
   seen.set("lib::Point", "point");
   seen.set("i64", "i64");

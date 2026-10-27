@@ -35,13 +35,14 @@ function second(items) {
 }
 
 function main() {
+  const asRef = { asRef: (value) => value };
   const words = ["a", "bb", "ccc", "dddd"];
-  const value = firstLong($iter(words), { asRef: (value) => value });
-  const value$1 = firstLong($iter(["x"]), { asRef: (value) => value });
+  const value = firstLong($iter(words), asRef);
+  const value$1 = firstLong($iter(["x"]), asRef);
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$2 = firstLong($iter(["abcd"]), { asRef: (value) => value });
+  const value$2 = firstLong($iter(["abcd"]), asRef);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = second($lazyRange(1, 5));
   const value$4 = second($iter([7]));

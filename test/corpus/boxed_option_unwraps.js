@@ -51,6 +51,9 @@ function unwraps(a, r) {
 }
 
 function main() {
+  const optionOrd = {
+    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+  };
   const a = $some(undefined);
   const value = firstOr(a, $iter([1]));
   console.log(
@@ -73,15 +76,11 @@ function main() {
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const value$2 = most([undefined, 4, 2], {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  });
+  const value$2 = most([undefined, 4, 2], optionOrd);
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = most([undefined], {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  });
+  const value$3 = most([undefined], optionOrd);
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );

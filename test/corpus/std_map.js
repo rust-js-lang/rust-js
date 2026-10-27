@@ -70,6 +70,13 @@ function lastOf(m, IDoubleEndedIterator) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const countdownExactSizeIterator = {
+    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
+  };
+  const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const calls = 0;
   const countdown = [4];
   let calls$1 = calls;
@@ -90,7 +97,7 @@ function main() {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
   console.log(
-    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${mapExactSizeIterator_len(m, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(m))}`,
+    `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${mapExactSizeIterator_len(m, countdownExactSizeIterator)} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(m))}`,
   );
   const c = mapClone_clone(
     m,
@@ -104,10 +111,10 @@ function main() {
   const v = [1, 2, 3, 4, 5];
   let held = iterator_map($iter(v), (x) => Math.imul(x, x) >>> 0, { next: $next });
   console.log(
-    `${mapClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { clone: (value) => value }).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
+    `${mapClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
   );
   console.log(
-    `${mapDoubleEndedIterator_rfold(mapClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { clone: (value) => value }), 0, (acc, x) => (((acc * 100) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
+    `${mapDoubleEndedIterator_rfold(mapClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 100) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
   );
   const value = $sizeHint(held);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
@@ -126,7 +133,7 @@ function main() {
     next_back: countdownDoubleEndedIterator_nextBack,
   });
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${mapExactSizeIterator_len(d.inner, { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) })}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${mapExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
   );
   const value$3 = lastOf(
     iterator_map($iter(v), (x) => (x + 1) >>> 0, { next: $next }),
@@ -137,30 +144,11 @@ function main() {
   const holder = {
     it: iterator_map({ start: 0, end: 3 }, (x) => (x + 100) | 0, { next: $rangeNext }),
   };
-  const again = {
-    ...holder,
-    it: mapClone_clone(
-      holder.it,
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-      { clone: (value) => value },
-    ),
-  };
+  const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone) };
   $next(again.it);
   const cycled = $cycleOf(
-    {
-      ...holder,
-      it: mapClone_clone(
-        holder.it,
-        { clone: (value) => ({ start: value.start, end: value.end }) },
-        { clone: (value) => value },
-      ),
-    }.it,
-    (iterator) =>
-      mapClone_clone(
-        iterator,
-        { clone: (value) => ({ start: value.start, end: value.end }) },
-        { clone: (value) => value },
-      ),
+    { ...holder, it: mapClone_clone(holder.it, rangeClone, clone) }.it,
+    (iterator) => mapClone_clone(iterator, rangeClone, clone),
     $next,
   )
     .take(5)
@@ -203,7 +191,7 @@ function main() {
     $knowing(
       cubes,
       (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-      (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
       undefined,
       undefined,
       (iterator, init, f, broke) =>
@@ -235,7 +223,7 @@ function main() {
   const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next, fold: $foldOf });
   const value$5 = $next(back);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator) })}`,
   );
 
   const by = "map's";

@@ -29,6 +29,7 @@ function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   console.log(
     `${distinct([3, 1, 3, 2], { cmp: $cmp }, Set)} ${distinct(
       ["b", "a", "b"],
@@ -37,13 +38,7 @@ function main() {
     )}`,
   );
   console.log(
-    `[${counts(
-      ["x", "y", "x"],
-      { cmp: $cmp },
-      { clone: (value) => value },
-      { fmt: (value) => $debugStr(value) },
-      Map,
-    )
+    `[${counts(["x", "y", "x"], { cmp: $cmp }, clone, { fmt: (value) => $debugStr(value) }, Map)
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
   );
@@ -55,7 +50,7 @@ function main() {
         [2, "b"],
       ],
       { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-      { clone: (value) => value },
+      clone,
       { fmt: (value) => `(${value[0]}, ${$debugStr(value[1], "'")})` },
       $KeyMap,
     )

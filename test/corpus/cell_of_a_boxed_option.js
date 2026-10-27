@@ -22,8 +22,9 @@ function formatClone_clone(format, IClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const words = { inner: ["a"] };
-  let copy = formatClone_clone(words, { clone: (value) => value });
+  let copy = formatClone_clone(words, clone);
   const old = words.inner;
   words.inner = undefined;
   const old$1 = copy.inner;
@@ -32,7 +33,7 @@ function main() {
     `${old == null ? "None" : `Some([${old.map((item) => $debugStr(item)).join(", ")}])`} ${old$1 == null ? "None" : `Some([${old$1.map((item) => $debugStr(item)).join(", ")}])`}`,
   );
   const nested = { inner: $some(undefined) };
-  copy = formatClone_clone(nested, { clone: (value) => value });
+  copy = formatClone_clone(nested, clone);
   const old$2 = nested.inner;
   nested.inner = undefined;
   const old$3 = copy.inner;

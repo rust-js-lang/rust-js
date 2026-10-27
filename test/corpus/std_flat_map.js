@@ -41,11 +41,15 @@ function pairs(it, IIterator, IFused) {
 
 function main() {
   // Of `Vec`s, from both ends, what's left sized.
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const runs = iterator_flatMap(
     { start: 1, end: 4 },
     (n) => $range(0, n, 4),
     { next: $rangeNext },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     true,
     undefined,
     false,
@@ -59,7 +63,7 @@ function main() {
     runs,
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next_back: $nextBack },
     true,
     false,
@@ -75,7 +79,7 @@ function main() {
     $iter([1, 2, 3]),
     (n) => [n, n],
     { next: $next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     true,
     2,
     false,
@@ -86,23 +90,14 @@ function main() {
     doubled,
     { next: $next },
     { next_back: $nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next_back: $nextBack },
     true,
     false,
   );
   const sizeHint = $sizeHint(doubled);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${flatMapDoubleEndedIterator_rfold(
-      doubled,
-      0,
-      (a, x) => (((a * 10) | 0) + x) | 0,
-      { next: $next },
-      { next_back: $nextBack },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { next_back: $nextBack },
-      false,
-    )}`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${flatMapDoubleEndedIterator_rfold(doubled, 0, (a, x) => (((a * 10) | 0) + x) | 0, { next: $next }, { next_back: $nextBack }, intoIterator, { next_back: $nextBack }, false)}`,
   );
 
   // Of `Option`s, one item at most each.

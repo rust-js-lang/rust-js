@@ -79,50 +79,31 @@ function labelledOrd_cmp(labelled, other, KBorrowStr) {
 }
 
 function main() {
+  const borrow = { borrow: (value) => value };
+  const partialEq = { eq: (a, b) => a === b };
   const words = ["tea", "milk"];
   console.log(
-    `${contains(words, "milk", { borrow: (value) => value }, { eq: (a, b) => a === b })} ${contains(words, "coffee", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
+    `${contains(words, "milk", borrow, partialEq)} ${contains(words, "coffee", borrow, partialEq)}`,
   );
   console.log(
-    `${contains(
-      [1, 2, 3],
-      2,
-      { borrow: (value) => value },
-      { eq: (a, b) => a === b },
-    )} ${contains(["a", "b"], "c", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
+    `${contains([1, 2, 3], 2, borrow, partialEq)} ${contains(["a", "b"], "c", borrow, partialEq)}`,
   );
   const tags = [{ name: "red" }, { name: "blue" }];
   console.log(
-    `${contains(tags, "blue", tagBorrowStr, { eq: (a, b) => a === b })} ${contains(tags, "green", tagBorrowStr, { eq: (a, b) => a === b })}`,
+    `${contains(tags, "blue", tagBorrowStr, partialEq)} ${contains(tags, "green", tagBorrowStr, partialEq)}`,
   );
   const ids = [[[7]], [[9]]];
   console.log(`${contains(ids, [9], hyphenatedBorrowUuid, { eq: $eq })}`);
 
-  console.log(
-    `${total([1, 2, 3], {
-      borrow: (value) => value,
-    })} ${total([4, 5], { borrow: (value) => value })} ${total([6, 7], { borrow: (value) => value })}`,
-  );
+  console.log(`${total([1, 2, 3], borrow)} ${total([4, 5], borrow)} ${total([6, 7], borrow)}`);
 
-  const value = position(
-    words,
-    "milk",
-    qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
-  );
-  const value$1 = position(
-    words,
-    "rum",
-    qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
-  );
+  const value = position(words, "milk", qEquivalentK(partialEq, borrow));
+  const value$1 = position(words, "rum", qEquivalentK(partialEq, borrow));
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$2 = position(
-    [5, 6],
-    6,
-    qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
-  );
-  const value$3 = position(tags, "red", qEquivalentK({ eq: (a, b) => a === b }, tagBorrowStr));
+  const value$2 = position([5, 6], 6, qEquivalentK(partialEq, borrow));
+  const value$3 = position(tags, "red", qEquivalentK(partialEq, tagBorrowStr));
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );

@@ -61,15 +61,16 @@ function describe(d) {
 }
 
 function main() {
+  const display = { fmt: (value) => value };
   const byte = { value: 33, impl: { fmt: String } };
   const boxed = { value: { x: 1, y: 2 }, impl: pointDisplay };
-  const value = describe({ value: "text", impl: { fmt: (value) => value } });
+  const value = describe({ value: "text", impl: display });
   console.log(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}`);
   console.log(`${boxed.impl.fmt(boxed.value)}`);
 
   const all = [
     { value: 1.5, impl: { fmt: $displayF64 } },
-    { value: "s", impl: { fmt: (value) => value } },
+    { value: "s", impl: display },
     { value: { x: 3, y: 4 }, impl: pointDisplay },
   ];
   for (const d of all) {

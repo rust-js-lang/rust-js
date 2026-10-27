@@ -16,6 +16,7 @@ function line(entry) {
 }
 
 function main() {
+  const display = { fmt: (value) => value };
   const rc = { value: { id: 1, label: 5 }, strong: 1, weak: 0 };
   $dynCell(rc.value, { fmt: String });
   const shared = rc;
@@ -43,7 +44,7 @@ function main() {
   console.log(`${tmp} ${again.strong}`);
 
   const rc$1 = { value: { id: 2, label: "two" }, strong: 1, weak: 0 };
-  $dynCell(rc$1.value, { fmt: (value) => value });
+  $dynCell(rc$1.value, display);
   const one = rc$1;
   let tmp$1;
   try {
@@ -63,7 +64,7 @@ function main() {
   console.log(`${tmp$1}`);
 
   const rc$2 = { value: { id: 3, label: "c" }, strong: 1, weak: 0 };
-  $dynCell(rc$2.value, { fmt: (value) => value });
+  $dynCell(rc$2.value, display);
   const sent = rc$2;
 
   try {

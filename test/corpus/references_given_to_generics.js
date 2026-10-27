@@ -71,6 +71,7 @@ function pathLen(p, PAsRefPath) {
   return $byteLen($unwrap(PAsRefPath.asRef(p)));
 }
 function main() {
+  const asRef = { asRef: (value) => value };
   const a = [1, "a"];
   const b = [2, "b"];
   console.log(
@@ -105,9 +106,7 @@ function main() {
   s = w.value;
   console.log(`${s}`);
   const p = "a/b/c";
-  console.log(
-    `${pathLen(p, { asRef: (value) => value })} ${pathLen("x/y", { asRef: (value) => value })}`,
-  );
+  console.log(`${pathLen(p, asRef)} ${pathLen("x/y", asRef)}`);
   const names = ["bob", "al"];
   const refs = names.slice();
   const value$1 = biggest(refs, { cmp: $cmp });
@@ -117,9 +116,7 @@ function main() {
   console.log(
     `[${take2($iterator(r, $rangeInclusiveNext)).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($rangeInclusiveNext(r))}`,
   );
-  console.log(
-    `${shout("ref", { asRef: (value) => value })} ${shout("twice", { asRef: (value) => value })}`,
-  );
+  console.log(`${shout("ref", asRef)} ${shout("twice", asRef)}`);
   const t = ["own"];
   console.log(`${shout(t, textAsRefStr)} ${shout(t, textAsRefStr)}`);
 }

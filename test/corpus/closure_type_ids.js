@@ -11,26 +11,17 @@ function id(_, TAny) {
 }
 
 function main() {
+  const any$1 = { typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f" };
+  const any = { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" };
   const a = (x) => (x + 1) >>> 0;
   const b = (x) => (x + 1) >>> 0;
-  console.log(
-    `${id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(b, { typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f" })}`,
-  );
-  console.log(
-    `${id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" }) === id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
-  );
-  const boxed = {
-    value: a,
-    impl: { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" },
-  };
+  console.log(`${id(a, any) === id(b, any$1)}`);
+  console.log(`${id(a, any) === id(a, any)}`);
+  const boxed = { value: a, impl: any };
   console.log(`${boxed.impl.typeId() === "u32"}`);
-  console.log(
-    `${boxed.impl.typeId() === id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" })}`,
-  );
-  const value = id(a, { typeId: () => "lib::main::{{closure}}#701799bdd7a7760f15d8ebb846d7c863" });
-  const value$1 = id(b, {
-    typeId: () => "lib::main::{{closure}}#dc3a0ffb374b3d1aef838de084cc843f",
-  });
+  console.log(`${boxed.impl.typeId() === id(a, any)}`);
+  const value = id(a, any);
+  const value$1 = id(b, any$1);
   if (value === value$1) {
     $assertFailed("Ne", $typeIdShown(value), $typeIdShown(value$1));
   }

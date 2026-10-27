@@ -95,6 +95,7 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
+  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
   console.log(
     `${$rev(
       $mapEnds(
@@ -116,12 +117,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator) =>
-            fuseExactSizeIterator_len(
-              iterator,
-              { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
-              countDrop_drop,
-            ),
+          (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
           (it, init, f) =>
             $fuseRfold(
               it,
@@ -201,12 +197,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator) =>
-            fuseExactSizeIterator_len(
-              iterator,
-              { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
-              countDrop_drop,
-            ),
+          (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
           (it, init, f) =>
             $fuseRfold(
               it,
@@ -366,12 +357,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator) =>
-          fuseExactSizeIterator_len(
-            iterator,
-            { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
-            countDrop_drop,
-          ),
+        (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
         (it, init, f) =>
           $fuseRfold(
             it,
@@ -547,12 +533,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator) =>
-          fuseExactSizeIterator_len(
-            iterator,
-            { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
-            countDrop_drop,
-          ),
+        (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
         (it, init, f) =>
           $fuseRfold(
             it,

@@ -30,6 +30,7 @@ function held(h, TClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const a = { x: 1, y: 2 };
   const b = { ...a };
   b.x = 10;
@@ -75,12 +76,12 @@ function main() {
   );
 
   const tagged = { n: 1 };
-  copy = duplicate(tagged, { clone: (value) => value });
+  copy = duplicate(tagged, clone);
   copy.n = (copy.n + 1) | 0;
   console.log(`${tagged.n} ${copy.n}`);
 
   const holder = { item: 1 };
-  copy = held(holder, { clone: (value) => value });
+  copy = held(holder, clone);
   copy.item = (copy.item + 1) >>> 0;
   console.log(`${holder.item} ${copy.item}`);
 

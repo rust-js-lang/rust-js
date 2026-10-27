@@ -43,11 +43,13 @@ function stringAsStr_get(string) {
 }
 
 function main() {
+  const optionAny = { typeId: () => "core::option::Option<u16>" };
+  const u8Any = { typeId: () => "u8" };
   console.log(`${same("i32", "i32")} ${same("i32", "i64")} ${relay("u8")}`);
   const items = [
-    { value: 1, impl: { typeId: () => "u8" } },
+    { value: 1, impl: u8Any },
     { value: "a", impl: { typeId: () => "&str" } },
-    { value: 2, impl: { typeId: () => "u8" } },
+    { value: 2, impl: u8Any },
     erased("e", "alloc::string::String"),
   ];
   const value = find(items, "u8");
@@ -71,13 +73,13 @@ function main() {
   } else {
     console.log("not a list");
   }
-  const sent = { value: 3, impl: { typeId: () => "core::option::Option<u16>" } };
+  const sent = { value: 3, impl: optionAny };
   const downcastRef =
     sent.impl.typeId() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
   console.log(
     `${downcastRef == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(downcastRef))})`} ${sent.impl.typeId() === "u16"}`,
   );
-  const none = { impl: { typeId: () => "core::option::Option<u16>" } };
+  const none = { impl: optionAny };
   const value$2 =
     none.impl.typeId() === "core::option::Option<u16>" ? $some(none.value) : undefined;
   console.log(

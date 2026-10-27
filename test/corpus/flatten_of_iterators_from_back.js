@@ -37,6 +37,8 @@ export function entry() {
 }
 
 function main() {
+  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
   const held = $iter([1, 2, 3]);
   console.log(
     `${$foldBack(
@@ -60,20 +62,17 @@ function main() {
         $knowing(
           item,
           (iterator) =>
-            enumerateDoubleEndedIterator_nextBack(
-              iterator,
-              { len: (iterator) => iterator.len() },
-              { next_back: $nextBack },
-            ),
-          (iterator) =>
-            enumerateExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+            enumerateDoubleEndedIterator_nextBack(iterator, iterExactSizeIterator, {
+              next_back: $nextBack,
+            }),
+          (iterator) => enumerateExactSizeIterator_len(iterator, iterExactSizeIterator),
           undefined,
           (iterator, k) =>
             enumerateDoubleEndedIterator_nthBack(
               iterator,
               k,
               { next: $next },
-              { len: (iterator) => iterator.len() },
+              iterExactSizeIterator,
               { next_back: $nextBack },
             ),
           (iterator, init, f, broke) =>
@@ -82,7 +81,7 @@ function main() {
               init,
               f,
               { next: $next },
-              { len: (iterator) => iterator.len() },
+              iterExactSizeIterator,
               { next_back: $nextBack },
               $tryOf(broke),
             ),
@@ -117,7 +116,7 @@ function main() {
   const both = iterator_flatten(
     $iter(inner),
     { next: $next },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     true,
     undefined,
     false,
@@ -125,7 +124,7 @@ function main() {
   const nextBack = flattenDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -135,7 +134,7 @@ function main() {
   const value$2 = flattenDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,

@@ -996,7 +996,9 @@ test("an Iterator impl is a JS iterator, lazy until something wants all of it", 
   expect(js).toContain("$lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50)");
   expect(js).toContain("$iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0)");
   // A generic `next` may box a `Some` that looks like `None`: unboxed as it comes out.
-  expect(js).toContain("      (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),\n      true,\n    )");
+  // Its `Clone` dictionary, written three times, is declared once (ADR 0979).
+  expect(js).toContain("  const clone = { clone: (value) => value };");
+  expect(js).toContain("      (iterator) => repeatIterator_next(iterator, clone),\n      true,\n    )");
 });
 
 // `format_args!` is recognized whole, so its arguments are written in place,

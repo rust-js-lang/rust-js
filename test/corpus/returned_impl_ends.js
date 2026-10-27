@@ -61,6 +61,7 @@ const Bag = {
   },
 };
 function main() {
+  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const b = [[1, 2, 3, 4, 6]];
   console.log(
     `[${$rev(
@@ -96,7 +97,7 @@ function main() {
       $knowing(
         Bag.doubled(b),
         (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-        (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+        (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
         undefined,
         undefined,
         (iterator, init, f, broke) =>
@@ -111,21 +112,19 @@ function main() {
       ),
     )
       .toArray()
-      .join(
-        ", ",
-      )}] ${mapExactSizeIterator_len(Bag.doubled(b), { len: (iterator) => iterator.len() })}`,
+      .join(", ")}] ${mapExactSizeIterator_len(Bag.doubled(b), iterExactSizeIterator)}`,
   );
   const d = Bag.doubled(b);
   mapDoubleEndedIterator_nextBack(d, { next_back: $nextBack });
   console.log(
-    `${mapExactSizeIterator_len(d, { len: (iterator) => iterator.len() })} ${((value) =>
+    `${mapExactSizeIterator_len(d, iterExactSizeIterator)} ${((value) =>
       value == null ? "None" : `Some(${value})`)(
       $next(
         $rev(
           $knowing(
             d,
             (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-            (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+            (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
             undefined,
             undefined,
             (iterator, init, f, broke) =>
@@ -231,7 +230,7 @@ function main() {
     $knowing(
       Bag.doubled(b),
       (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-      (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
       undefined,
       undefined,
       (iterator, init, f, broke) =>

@@ -54,6 +54,12 @@ function bumped(slot, by, TDefault, TAddAssign) {
 }
 
 function main() {
+  const i32Default = { default: () => 0 };
+  const i32AddAssign = {
+    addAssign(cell, b) {
+      cell.value = (cell.value + b) | 0;
+    },
+  };
   let front;
   const slot = { value: front };
   const value = inserted(slot, [1, 2, 3]);
@@ -94,28 +100,10 @@ function main() {
 
   let count;
   const slot$6 = { value: count };
-  const value$7 = bumped(
-    slot$6,
-    2,
-    { default: () => 0 },
-    {
-      addAssign(cell, b) {
-        cell.value = (cell.value + b) | 0;
-      },
-    },
-  );
+  const value$7 = bumped(slot$6, 2, i32Default, i32AddAssign);
   count = slot$6.value;
   const slot$7 = { value: count };
-  const value$8 = bumped(
-    slot$7,
-    3,
-    { default: () => 0 },
-    {
-      addAssign(cell, b) {
-        cell.value = (cell.value + b) | 0;
-      },
-    },
-  );
+  const value$8 = bumped(slot$7, 3, i32Default, i32AddAssign);
   count = slot$7.value;
   console.log(`${value$7} ${value$8}`);
   let nested;

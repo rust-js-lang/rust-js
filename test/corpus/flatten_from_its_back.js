@@ -30,25 +30,23 @@ export function entry() {
 }
 
 function main() {
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
+  const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const v = [[1, 2], [], [3, 4, 5], [6]];
   console.log(
     `[${$rev($flattenEnds($iter(v), (item) => $iter(item)))
       .toArray()
       .join(", ")}]`,
   );
-  const it = iterator_flatten(
-    $iter(v),
-    { next: $next },
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
-    true,
-    undefined,
-    false,
-  );
+  const it = iterator_flatten($iter(v), { next: $next }, intoIterator, true, undefined, false);
   const next = $next(it);
   const nextBack = flattenDoubleEndedIterator_nextBack(
     it,
     { next_back: $nextBack },
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -57,7 +55,7 @@ function main() {
   const value = flattenDoubleEndedIterator_nextBack(
     it,
     { next_back: $nextBack },
-    { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     true,
@@ -77,7 +75,7 @@ function main() {
       return new Array(n$1).fill(n);
     },
     { next: $rangeNext },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    vecIntoIterator,
     true,
     undefined,
     false,
@@ -86,7 +84,7 @@ function main() {
     fm,
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    vecIntoIterator,
     { next_back: $nextBack },
     true,
     false,
@@ -104,7 +102,7 @@ function main() {
             iterator,
             { next: $rangeNext },
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            vecIntoIterator,
             { next_back: $nextBack },
             true,
             false,
@@ -119,7 +117,7 @@ function main() {
             f,
             { next: $rangeNext },
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+            vecIntoIterator,
             { next_back: $nextBack },
             $tryOf(broke),
             true,
@@ -178,10 +176,14 @@ function flakyDoubleEndedIterator_nextBack(flaky) {
 }
 
 function fused() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const f = iterator_flatten(
     { n: 0 },
     { next: flakyIterator_next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     false,
     undefined,
     false,
@@ -189,7 +191,7 @@ function fused() {
   const nextBack = flattenDoubleEndedIterator_nextBack(
     f,
     { next_back: flakyDoubleEndedIterator_nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     false,
@@ -198,7 +200,7 @@ function fused() {
   const value = flattenDoubleEndedIterator_nextBack(
     f,
     { next_back: flakyDoubleEndedIterator_nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     false,
@@ -207,7 +209,7 @@ function fused() {
   const value$1 = flattenDoubleEndedIterator_nextBack(
     f,
     { next_back: flakyDoubleEndedIterator_nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next: $next },
     { next_back: $nextBack },
     false,
@@ -221,7 +223,7 @@ function fused() {
     { n: 0 },
     (v) => v,
     { next: flakyIterator_next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     false,
     undefined,
     false,
@@ -232,7 +234,7 @@ function fused() {
     g,
     { next: flakyIterator_next },
     { next_back: flakyDoubleEndedIterator_nextBack },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    intoIterator,
     { next_back: $nextBack },
     false,
     false,

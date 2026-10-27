@@ -135,47 +135,42 @@ function lexerDebug_fmt(lexer, options) {
 }
 
 function main() {
-  const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
-  console.log(
-    `${withPositionDebug_fmt(
-      words,
-      undefined,
-      peekableDebug(
-        fuseDebug({
-          fmt: (value, options) =>
+  const debug = { fmt: (value, options) => $debugStr(value) };
+  const intoIterDebug = {
+    fmt: (value, options) =>
+      options?.alternate
+        ? $pretty(
+            "IntoIter(",
+            [
+              options?.alternate
+                ? $pretty(
+                    "[",
+                    value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
+                    "]",
+                  )
+                : `[${value.items
+                    .slice(value.at, value.end)
+                    .map((item) => $debugStr(item))
+                    .join(", ")}]`,
+            ],
+            ")",
+          )
+        : `IntoIter(${
             options?.alternate
               ? $pretty(
-                  "IntoIter(",
-                  [
-                    options?.alternate
-                      ? $pretty(
-                          "[",
-                          value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                          "]",
-                        )
-                      : `[${value.items
-                          .slice(value.at, value.end)
-                          .map((item) => $debugStr(item))
-                          .join(", ")}]`,
-                  ],
-                  ")",
+                  "[",
+                  value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
+                  "]",
                 )
-              : `IntoIter(${
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => $debugStr(item))
-                        .join(", ")}]`
-                })`,
-        }),
-        { fmt: (value, options) => $debugStr(value) },
-      ),
-    )}`,
+              : `[${value.items
+                  .slice(value.at, value.end)
+                  .map((item) => $debugStr(item))
+                  .join(", ")}]`
+          })`,
+  };
+  const words = withPosition($iter(["a", "b", "c"]), { next: $next }, true);
+  console.log(
+    `${withPositionDebug_fmt(words, undefined, peekableDebug(fuseDebug(intoIterDebug), debug))}`,
   );
   const sizeHint = $sizeHint(words.peekable);
   const value = withPositionIterator_next(words);
@@ -184,45 +179,7 @@ function main() {
   );
   const arg = $sizeHint(words.peekable);
   console.log(
-    `${withPositionDebug_fmt(
-      words,
-      undefined,
-      peekableDebug(
-        fuseDebug({
-          fmt: (value, options) =>
-            options?.alternate
-              ? $pretty(
-                  "IntoIter(",
-                  [
-                    options?.alternate
-                      ? $pretty(
-                          "[",
-                          value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                          "]",
-                        )
-                      : `[${value.items
-                          .slice(value.at, value.end)
-                          .map((item) => $debugStr(item))
-                          .join(", ")}]`,
-                  ],
-                  ")",
-                )
-              : `IntoIter(${
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => $debugStr(item))
-                        .join(", ")}]`
-                })`,
-        }),
-        { fmt: (value, options) => $debugStr(value) },
-      ),
-    )} (${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`})`,
+    `${withPositionDebug_fmt(words, undefined, peekableDebug(fuseDebug(intoIterDebug), debug))} (${arg[0]}, ${arg[1] == null ? "None" : `Some(${arg[1]})`})`,
   );
   const copy = withPositionClone_clone(
     words,
@@ -236,45 +193,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `${withPositionDebug_fmt(
-      copy,
-      { alternate: true },
-      peekableDebug(
-        fuseDebug({
-          fmt: (value, options) =>
-            options?.alternate
-              ? $pretty(
-                  "IntoIter(",
-                  [
-                    options?.alternate
-                      ? $pretty(
-                          "[",
-                          value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                          "]",
-                        )
-                      : `[${value.items
-                          .slice(value.at, value.end)
-                          .map((item) => $debugStr(item))
-                          .join(", ")}]`,
-                  ],
-                  ")",
-                )
-              : `IntoIter(${
-                  options?.alternate
-                    ? $pretty(
-                        "[",
-                        value.items.slice(value.at, value.end).map((item) => $debugStr(item)),
-                        "]",
-                      )
-                    : `[${value.items
-                        .slice(value.at, value.end)
-                        .map((item) => $debugStr(item))
-                        .join(", ")}]`
-                })`,
-        }),
-        { fmt: (value, options) => $debugStr(value) },
-      ),
-    )}`,
+    `${withPositionDebug_fmt(copy, { alternate: true }, peekableDebug(fuseDebug(intoIterDebug), debug))}`,
   );
   console.log(
     `[${$iterator(copy, withPositionIterator_next)

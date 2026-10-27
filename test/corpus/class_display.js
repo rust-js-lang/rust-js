@@ -30,6 +30,7 @@ function listed(items, TDisplay) {
 }
 
 function main() {
+  const positionDisplay = { fmt: (value, options) => value.toString(options) };
   const positions = [new Position(0, 1), new Position(-1, 3), new Position(12, 7)];
   console.log(
     `${positions[0].toString()} [${positions[2].toString({
@@ -37,9 +38,9 @@ function main() {
       align: "Right",
     })}] [${positions[0].toString({ width: 6, align: "Left" })}]`,
   );
-  console.log(`${listed(positions, { fmt: (value, options) => value.toString(options) })}`);
+  console.log(`${listed(positions, positionDisplay)}`);
   const shown = [
-    { value: positions[1], impl: { fmt: (value, options) => value.toString(options) } },
+    { value: positions[1], impl: positionDisplay },
     { value: 3, impl: { fmt: (value, options) => $formatted(String(value), options, true) } },
   ];
   for (const item of shown) {

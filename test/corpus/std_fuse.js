@@ -137,6 +137,10 @@ function fusedOf(i, IIntoIterator, IIntoIterFused) {
 }
 
 function main() {
+  const steadyIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: steadyIterator_next, sizeHint: steadyIterator_sizeHint }),
+  };
   console.log(
     `${Held.drainedBack(
       {
@@ -152,39 +156,9 @@ function main() {
     )}`,
   );
   console.log(
-    `${Held.drainedBack(
-      fusedOf(
-        [3],
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({
-            next: steadyIterator_next,
-            sizeHint: steadyIterator_sizeHint,
-          }),
-        },
-        true,
-      ),
-      { next_back: steadyDoubleEndedIterator_nextBack },
-      steadyDebug,
-      true,
-    )}`,
+    `${Held.drainedBack(fusedOf([3], steadyIntoIterator, true), { next_back: steadyDoubleEndedIterator_nextBack }, steadyDebug, true)}`,
   );
-  console.log(
-    `${Held.drainedFront(
-      fusedOf(
-        [3],
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({
-            next: steadyIterator_next,
-            sizeHint: steadyIterator_sizeHint,
-          }),
-        },
-        true,
-      ),
-      steadyDebug,
-    )}`,
-  );
+  console.log(`${Held.drainedFront(fusedOf([3], steadyIntoIterator, true), steadyDebug)}`);
   console.log(
     `${Held.drainedBack(
       fusedOf(

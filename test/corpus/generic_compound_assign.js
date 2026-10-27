@@ -66,6 +66,8 @@ function ordered(log, TAddAssign, TDefault) {
 }
 
 function main() {
+  const default$ = { default: () => 0 };
+  const moneyDefault = { default: () => [0n] };
   console.log(
     `${total(
       [1, 2, 250],
@@ -74,8 +76,8 @@ function main() {
           cell.value = (cell.value + b) & 255;
         },
       },
-      { default: () => 0 },
-    )} ${moneyDebug_fmt(total([[5n], [7n]], moneyAddAssign, { default: () => [0n] }, { copy: (value) => [value[0]] }))}`,
+      default$,
+    )} ${moneyDebug_fmt(total([[5n], [7n]], moneyAddAssign, moneyDefault, { copy: (value) => [value[0]] }))}`,
   );
   console.log(
     `${scaled(
@@ -129,9 +131,9 @@ function main() {
         cell.value = (cell.value + b) | 0;
       },
     },
-    { default: () => 0 },
+    default$,
   );
-  ordered(log, moneyAddAssign, { default: () => [0n] });
+  ordered(log, moneyAddAssign, moneyDefault);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   // The crate's own, of a field, where its type is known: its impl's.
   const purse = [[1n]];

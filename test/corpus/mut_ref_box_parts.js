@@ -44,6 +44,8 @@ function pair(o, p) {
 }
 
 function main() {
+  const isizeDebug = { fmt: (value) => String(value) };
+  const isizePartialEq = { eq: (a, b) => a === b };
   let x = 3;
   const o = { value: x };
   number(o);
@@ -54,11 +56,11 @@ function main() {
   s = o$1.value;
   let n;
   const o$2 = { value: n };
-  generic(o$2, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
+  generic(o$2, isizePartialEq, isizeDebug);
   n = o$2.value;
   let tmp;
   const o$3 = { value: tmp };
-  generic(o$3, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
+  generic(o$3, isizePartialEq, isizeDebug);
   tmp = o$3.value;
   let a = 2;
   let b = 7;

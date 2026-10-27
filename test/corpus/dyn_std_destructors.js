@@ -30,7 +30,8 @@ function fail(n) {
   return n > 1 ? { TAG: "Err", _0: { value: [n], impl: dError } } : { TAG: "Ok", _0: n };
 }
 function main() {
-  const a = { value: [1], impl: { typeId: () => "lib::D", $drop: dDrop_drop } };
+  const dAny = { typeId: () => "lib::D", $drop: dDrop_drop };
+  const a = { value: [1], impl: dAny };
   try {
     console.log(`${a.impl.typeId() === "lib::D"}`);
   } finally {
@@ -40,7 +41,7 @@ function main() {
   try {
     console.log(`${shown.impl.fmt(shown.value)}`);
     const items = [
-      { value: [3], impl: { typeId: () => "lib::D", $drop: dDrop_drop } },
+      { value: [3], impl: dAny },
       { value: 5, impl: { typeId: () => "u8" } },
     ];
     console.log(`${items.length}`);

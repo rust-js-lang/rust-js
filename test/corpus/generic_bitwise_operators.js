@@ -32,6 +32,8 @@ function flagsBitOr_bitor(flags, other) {
 }
 
 function main() {
+  const bitXor = { bitxor: (a, b) => a ^ b };
+  const bitAnd = { bitand: (a, b) => a & b };
   console.log(
     `${either(0b0101, 0b0011, { bitor: (a, b) => a | b })} ${either(false, true, { bitor: (a, b) => !!(a | b) })} ${flagsDebug_fmt(either([1], [4], flagsBitOr))}`,
   );
@@ -41,14 +43,9 @@ function main() {
     { bitand: (a, b) => (a & b) >>> 0 },
     { bitxor: (a, b) => (a ^ b) >>> 0 },
   );
-  const value$1 = masked(
-    264913582817280n,
-    281470681743360n,
-    { bitand: (a, b) => a & b },
-    { bitxor: (a, b) => a ^ b },
-  );
+  const value$1 = masked(264913582817280n, 281470681743360n, bitAnd, bitXor);
   console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
-  const value$2 = masked(-6, 3, { bitand: (a, b) => a & b }, { bitxor: (a, b) => a ^ b });
+  const value$2 = masked(-6, 3, bitAnd, bitXor);
   const value$3 = masked(
     true,
     false,

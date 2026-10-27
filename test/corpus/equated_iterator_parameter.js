@@ -16,25 +16,20 @@ function front(outer, slot, f, IItemIntoIterator) {
 }
 
 function main() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const outer = $iter([[1, 2], [3]]);
   let slot;
   const slot$1 = { value: slot };
-  const a = front(outer, slot$1, (inner) => $next(inner), {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  const a = front(outer, slot$1, (inner) => $next(inner), intoIterator);
   slot = slot$1.value;
   const slot$2 = { value: slot };
-  const b = front(outer, slot$2, (inner) => $next(inner), {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  const b = front(outer, slot$2, (inner) => $next(inner), intoIterator);
   slot = slot$2.value;
   const slot$3 = { value: slot };
-  const c = front(outer, slot$3, (inner) => $next(inner), {
-    intoIter: (items) => $iter(items),
-    IntoIterIterator: () => ({ next: $next }),
-  });
+  const c = front(outer, slot$3, (inner) => $next(inner), intoIterator);
   slot = slot$3.value;
   const value = slot ? slot.end - slot.at : undefined;
   console.log(

@@ -101,6 +101,7 @@ function distinct(items, TOrd, TTreeSet) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const owners = new ($ordMap(taskOrd_cmp))();
   owners.set(task(1, 3, "write"), "ana");
   owners.set(task(4, 1, "test"), "bo");
@@ -178,7 +179,7 @@ function main() {
       tally(
         [task(5, 1, "p"), task(6, 1, "q"), task(5, 2, "r")],
         taskOrd,
-        { clone: (value) => value },
+        clone,
         taskDebug,
         $ordMap(taskOrd_cmp),
       ),
@@ -191,13 +192,7 @@ function main() {
   console.log(
     `{${Array.from(
       $sortedEntries(
-        tally(
-          ["b", "a", "b"],
-          { cmp: $cmp },
-          { clone: (value) => value },
-          { fmt: (value) => $debugStr(value) },
-          Map,
-        ),
+        tally(["b", "a", "b"], { cmp: $cmp }, clone, { fmt: (value) => $debugStr(value) }, Map),
         $cmp,
       ),
     )

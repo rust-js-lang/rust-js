@@ -29,6 +29,7 @@ function dup(it, IIterator, IClone, IDebug) {
 }
 
 function main() {
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const value = dup(
     [0],
     { next: countIterator_next },
@@ -36,19 +37,13 @@ function main() {
     countDebug,
   );
   console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
-  const value$1 = dup(
-    $iter([1, 2, 3]),
-    { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])` },
-  );
+  const value$1 = dup($iter([1, 2, 3]), { next: $next }, clone, {
+    fmt: (value) => `IntoIter([${value.items.slice(value.at, value.end).join(", ")}])`,
+  });
   console.log(`([${value$1[0].join(", ")}], [${value$1[1].join(", ")}])`);
-  const value$2 = dup(
-    $iter([4, 5, 6]),
-    { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` },
-  );
+  const value$2 = dup($iter([4, 5, 6]), { next: $next }, clone, {
+    fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])`,
+  });
   console.log(`([${value$2[0].join(", ")}], [${value$2[1].join(", ")}])`);
 }
 //# sourceMappingURL=case.js.map

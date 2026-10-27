@@ -35,8 +35,10 @@ function metersAddMeters_add(meters, other) {
 }
 
 function main() {
+  const f64Add = { add: (a, b) => a + b };
+  const i32Add = { add: (a, b) => (a + b) | 0 };
   console.log(
-    `${twiceAndOnce(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }))} ${$displayF64(twiceAndOnce(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b })))}`,
+    `${twiceAndOnce(1, 2, tRefAddBase(i32Add, i32Add))} ${$displayF64(twiceAndOnce(0.5, 0.25, tRefAddBase(f64Add, f64Add)))}`,
   );
   console.log(
     `${metersDebug_fmt(twiceAndOnce([1], [2], tRefAddBase(metersAdd, metersAddMeters), { copy: (value) => [value[0]] }))}`,

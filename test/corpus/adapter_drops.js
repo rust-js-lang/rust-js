@@ -118,6 +118,10 @@ function louds(base, n) {
 }
 
 function main() {
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const value = $iter(louds(10, 3));
   let tmp;
   try {
@@ -732,8 +736,8 @@ function main() {
     c = chain(
       tmp$8,
       tmp$9,
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      vecIntoIterator,
+      vecIntoIterator,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       $dropEach(loudDrop_drop),
@@ -917,7 +921,7 @@ function main() {
       value$6,
       tmp$13,
       { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      vecIntoIterator,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       (countdown) => {
@@ -1277,13 +1281,7 @@ function main() {
   }
   let t;
   try {
-    t = firsts(
-      tmp$21,
-      2,
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      loudDrop_drop,
-      $dropEach(loudDrop_drop),
-    );
+    t = firsts(tmp$21, 2, vecIntoIterator, loudDrop_drop, $dropEach(loudDrop_drop));
   } catch (error) {
     if (fused$live) {
       fused.return();

@@ -34,12 +34,13 @@ function peeked(p, PPeek) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const w = [undefined];
   try {
     console.log(
       `${peeked(
         w,
-        wrapPeek({ clone: (value) => value }, (loud) => {
+        wrapPeek(clone, (loud) => {
           console.log("dropped");
         }),
       )}`,
@@ -48,6 +49,6 @@ function main() {
     console.log("dropped");
     throw error;
   }
-  console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
+  console.log(`${peeked(["text"], wrapPeek(clone))}`);
 }
 //# sourceMappingURL=case.js.map

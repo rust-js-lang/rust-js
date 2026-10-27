@@ -17,23 +17,25 @@ const Delayed = {
 };
 
 function main() {
+  const u32Borrow = { borrow: (value) => value };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const x = 5;
   const one = { items: $iter([x]) };
   console.log(
-    `${Delayed.total(one, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(one, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(one, { next: $next }, clone, u32Borrow)} ${Delayed.total(one, { next: $next }, clone, u32Borrow)}`,
   );
   const v = [1, 2, 3];
   const many = { items: $iter(v) };
   console.log(
-    `${Delayed.total(many, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(many, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(many, { next: $next }, clone, u32Borrow)} ${Delayed.total(many, { next: $next }, clone, u32Borrow)}`,
   );
   const owned = { items: $iter([4, 6]) };
   console.log(
-    `${Delayed.total(owned, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(owned, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(owned, { next: $next }, clone, u32Borrow)} ${Delayed.total(owned, { next: $next }, clone, u32Borrow)}`,
   );
   const moved = { items: $iter([7, 8]) };
   console.log(
-    `${Delayed.total(moved, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(moved, { next: $next }, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(moved, { next: $next }, clone, u32Borrow)} ${Delayed.total(moved, { next: $next }, clone, u32Borrow)}`,
   );
 
   // Stepped through, then cloned: each goes on from where it was.

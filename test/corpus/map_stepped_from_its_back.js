@@ -67,6 +67,7 @@ function lastSquare(n) {
 }
 
 function main() {
+  const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
   const value = [1, 2];
   const pad = {
     iter: iterator_fuse($iter(value), { next: $next }, true),
@@ -83,7 +84,7 @@ function main() {
       },
       { next: $next },
       { next_back: $nextBack },
-      { len: (iterator) => iterator.len() },
+      intoIterExactSizeIterator,
     ).join(", ")}]`,
   );
   const value$1 = lastSquare(5);
@@ -92,12 +93,9 @@ function main() {
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   console.log(
-    `${Counted.doubledLen(
-      { inner: $iter([1, 2, 3]) },
-      { next: $next },
-      { len: (iterator) => iterator.len() },
-      { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    )} ${Counted.doubledLen(
+    `${Counted.doubledLen({ inner: $iter([1, 2, 3]) }, { next: $next }, intoIterExactSizeIterator, {
+      clone: (value) => $iter(value.items.slice(value.at, value.end)),
+    })} ${Counted.doubledLen(
       { inner: { start: 2, end: 7 } },
       { next: $rangeNext },
       { len: $rangeLen },

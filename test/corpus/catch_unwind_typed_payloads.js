@@ -32,13 +32,15 @@ function describe(payload) {
 }
 
 function main() {
-  console.log(`${describe(thrown(5, { typeId: () => "i32" }))}`);
-  console.log(`${describe(thrown({ n: 3, why: "lost" }, { typeId: () => "lib::Code" }))}`);
+  const codeAny = { typeId: () => "lib::Code" };
+  const i32Any = { typeId: () => "i32" };
+  console.log(`${describe(thrown(5, i32Any))}`);
+  console.log(`${describe(thrown({ n: 3, why: "lost" }, codeAny))}`);
   console.log(`${describe(thrown(1.5, { typeId: () => "f64" }))}`);
   console.log(`${describe(thrown(true, { typeId: () => "bool" }))}`);
 
   // Changed, then resumed: caught again as it is now.
-  const payload = thrown(7, { typeId: () => "i32" });
+  const payload = thrown(7, i32Any);
   const n = payload.impl.typeId() === "i32" ? payload : undefined;
   if (n != null) {
     n.value = (n.value + 1) | 0;
@@ -49,7 +51,7 @@ function main() {
   console.log(`${describe($unwrapErr(again, "resumed"))}`);
 
   // `Box::downcast` takes the value out, or gives the box back.
-  const any = thrown({ n: 9, why: "taken" }, { typeId: () => "lib::Code" });
+  const any = thrown({ n: 9, why: "taken" }, codeAny);
   const downcast =
     any.impl.typeId() === "lib::Code" ? { TAG: "Ok", _0: any.value } : { TAG: "Err", _0: any };
   if (downcast.TAG === "Ok") {
@@ -70,7 +72,7 @@ function main() {
   }
 
   // A box of the program's own, never thrown, is its value's.
-  const own = { value: { n: 1, why: "own" }, impl: { typeId: () => "lib::Code" } };
+  const own = { value: { n: 1, why: "own" }, impl: codeAny };
   console.log(`${describe(own)} ${own.impl.typeId() === "i32"}`);
 }
 //# sourceMappingURL=case.js.map

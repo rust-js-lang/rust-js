@@ -57,70 +57,40 @@ function evensOrTens(evens) {
 }
 
 function main() {
+  const mapDoubleEndedIterator = {
+    next_back: (iterator) =>
+      mapDoubleEndedIterator_nextBack(iterator, {
+        next_back: $rangeNextBack,
+        nthBack: $rangeNthBack,
+      }),
+    rfold: (iterator, init, f) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+    tryRfold: (iterator, init, f, broke) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        $tryOf(broke),
+      ),
+  };
   const evens = $iterator(
     evensOrTens(true),
     (iterator) =>
-      twoDoubleEndedIterator_nextBack(
-        iterator,
-        { next_back: $nextBack },
-        {
-          next_back: (iterator) =>
-            mapDoubleEndedIterator_nextBack(iterator, {
-              next_back: $rangeNextBack,
-              nthBack: $rangeNthBack,
-            }),
-          rfold: (iterator, init, f) =>
-            mapDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            ),
-          tryRfold: (iterator, init, f, broke) =>
-            mapDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-            ),
-        },
-      ),
+      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
     true,
   ).toArray();
   const tens = $iterator(
     evensOrTens(false),
     (iterator) =>
-      twoDoubleEndedIterator_nextBack(
-        iterator,
-        { next_back: $nextBack },
-        {
-          next_back: (iterator) =>
-            mapDoubleEndedIterator_nextBack(iterator, {
-              next_back: $rangeNextBack,
-              nthBack: $rangeNthBack,
-            }),
-          rfold: (iterator, init, f) =>
-            mapDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            ),
-          tryRfold: (iterator, init, f, broke) =>
-            mapDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              { next: $rangeNext },
-              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              $tryOf(broke),
-            ),
-        },
-      ),
+      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
     true,
   ).toArray();
   const both = evensOrTens(true);
@@ -128,30 +98,7 @@ function main() {
   const arg = twoDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },
-    {
-      next_back: (iterator) =>
-        mapDoubleEndedIterator_nextBack(iterator, {
-          next_back: $rangeNextBack,
-          nthBack: $rangeNthBack,
-        }),
-      rfold: (iterator, init, f) =>
-        mapDoubleEndedIterator_rfold(
-          iterator,
-          init,
-          f,
-          { next: $rangeNext },
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-        ),
-      tryRfold: (iterator, init, f, broke) =>
-        mapDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $rangeNext },
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-          $tryOf(broke),
-        ),
-    },
+    mapDoubleEndedIterator,
   );
   console.log(
     `[${evens.join(", ")}] [${tens.join(", ")}] ${next == null ? "None" : `Some(${next})`} ${arg == null ? "None" : `Some(${arg})`}`,

@@ -11,12 +11,13 @@ function listsIterator_next(lists) {}
 const sTr = { a: (h, TClone) => h, b: (h, TClone) => ({ ...h, item: h.item.slice() }) };
 
 function main() {
+  const clone = { clone: (value) => value };
   const n = { item: 1 };
-  let c = sTr.a(n, { clone: (value) => value });
+  let c = sTr.a(n, clone);
   console.log(`${n.item} ${c.item}`);
 
   const h = { item: [1] };
-  c = sTr.b(h, { clone: (value) => value });
+  c = sTr.b(h, clone);
   c.item.push(2);
   console.log(`[${h.item.join(", ")}] [${c.item.join(", ")}]`);
 }

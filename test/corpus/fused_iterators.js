@@ -58,9 +58,10 @@ function pair(i, IIntoIterator, IIntoIterFused) {
 }
 
 function main() {
+  const flipClone = { clone: (value) => [value[0]] };
   const f = iterator_fuse([0], { next: flipIterator_next }, false);
   console.log(`${fuseDebug_fmt(f, undefined, flipDebug)}`);
-  const copy = fuseClone_clone(f, { clone: (value) => [value[0]] });
+  const copy = fuseClone_clone(f, flipClone);
   const next = $next(f);
   const value = $next(f);
   const value$1 = $next(f);
@@ -86,7 +87,7 @@ function main() {
     false,
   );
   console.log(`${pairDebug_fmt(flips, flipDebug)}`);
-  const again = { ...flips, i: fuseClone_clone(flips.i, { clone: (value) => [value[0]] }) };
+  const again = { ...flips, i: fuseClone_clone(flips.i, flipClone) };
   const value$3 = pairIterator_next(flips);
   const value$4 = pairIterator_next(flips);
   console.log(

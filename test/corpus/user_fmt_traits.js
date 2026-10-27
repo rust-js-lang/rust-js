@@ -106,6 +106,10 @@ function circleDisplay_fmt(circle, options) {
 }
 
 function main() {
+  const u8LowerHex = {
+    fmt: (value, options) =>
+      $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true),
+  };
   const id = [48879];
   console.log(
     `${idLowerHex_fmt(id)} ${idLowerHex_fmt(id, { alternate: true })} ${idUpperHex_fmt(id)} ${idOctal_fmt(id)} [${idBinary_fmt(
@@ -119,35 +123,19 @@ function main() {
   console.log(`${shown}`);
   const b = [42];
   console.log(
-    `${bitsLowerHex_fmt(b, undefined, { fmt: (value, options) => $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true) })} ${bitsLowerHex_fmt(b, { alternate: true }, { fmt: (value, options) => $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true) })} ${bitsLowerHex_fmt(
+    `${bitsLowerHex_fmt(b, undefined, u8LowerHex)} ${bitsLowerHex_fmt(b, { alternate: true }, u8LowerHex)} ${bitsLowerHex_fmt(
       b,
       { width: 4, zero: true },
-      {
-        fmt: (value, options) =>
-          $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true),
-      },
+      u8LowerHex,
     )} ${bitsLowerHex_fmt(
       b,
       { alternate: true, width: 6, zero: true },
-      {
-        fmt: (value, options) =>
-          $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true),
-      },
-    )} [${bitsLowerHex_fmt(
-      b,
-      { width: 6, align: "Right" },
-      {
-        fmt: (value, options) =>
-          $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true),
-      },
-    )}] [${bitsLowerHex_fmt(
+      u8LowerHex,
+    )} [${bitsLowerHex_fmt(b, { width: 6, align: "Right" }, u8LowerHex)}] [${bitsLowerHex_fmt(
       b,
       { width: 6, align: "Left" },
-      {
-        fmt: (value, options) =>
-          $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true),
-      },
-    )}] ${bitsLowerHex_fmt(b, { plus: true }, { fmt: (value, options) => $formatted((options?.alternate ? "0x" : "") + value.toString(16), options, true) })}`,
+      u8LowerHex,
+    )}] ${bitsLowerHex_fmt(b, { plus: true }, u8LowerHex)}`,
   );
   console.log(
     `${bitsUpperHex_fmt(b)} ${bitsUpperHex_fmt(b, { alternate: true })} ${bitsOctal_fmt(b)} ${bitsOctal_fmt(b, { alternate: true })} ${bitsLowerHex_fmt([-1], undefined, { fmt: (value, options) => $formatted((options?.alternate ? "0x" : "") + (value & 255).toString(16), options, true) })}`,

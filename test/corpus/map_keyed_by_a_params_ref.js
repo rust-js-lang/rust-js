@@ -50,6 +50,7 @@ function same(a, b, TPartialEq, THash, TSet) {
 }
 
 function main() {
+  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const pairs = [
     [1, "a"],
     [2, "b"],
@@ -73,14 +74,14 @@ function main() {
         }
       },
     },
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
+    tupleOrd,
     $KeyMap,
   );
   console.log(
     `${value == null ? "None" : `Some(((${value[0][0]}, ${$debugStr(value[0][1], "'")}), ${value[1]}))`}`,
   );
   console.log(
-    `[${distinctSorted(pairs, { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) }, $KeySet)
+    `[${distinctSorted(pairs, tupleOrd, $KeySet)
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );

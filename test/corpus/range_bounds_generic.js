@@ -37,6 +37,11 @@ function shown(b) {
 }
 
 function main() {
+  const tupleRangeBounds = { startBound: (range) => range[0], endBound: (range) => range[1] };
+  const rangeInclusiveRangeBounds = {
+    startBound: (range) => ({ TAG: "Included", _0: range.start }),
+    endBound: (range) => ({ TAG: "Included", _0: range.end }),
+  };
   console.log(
     `${start(
       { start: 2, end: 5 },
@@ -50,10 +55,7 @@ function main() {
         startBound: (range) => "Unbounded",
         endBound: (range) => ({ TAG: "Excluded", _0: range.end }),
       },
-    )} ${end({ start: 2, end: 5 }, 9, {
-      startBound: (range) => ({ TAG: "Included", _0: range.start }),
-      endBound: (range) => ({ TAG: "Included", _0: range.end }),
-    })} ${end({ start: 3 }, 9, {
+    )} ${end({ start: 2, end: 5 }, 9, rangeInclusiveRangeBounds)} ${end({ start: 3 }, 9, {
       startBound: (range) => ({ TAG: "Included", _0: range.start }),
       endBound: (range) => "Unbounded",
     })}`,
@@ -62,26 +64,18 @@ function main() {
     `${end(undefined, 9, {
       startBound: (range) => "Unbounded",
       endBound: (range) => "Unbounded",
-    })} ${start(
-      { start: 1, end: 1 },
-      {
-        startBound: (range) => ({ TAG: "Included", _0: range.start }),
-        endBound: (range) => ({ TAG: "Included", _0: range.end }),
-      },
-    )} ${end({ end: 4 }, 9, {
+    })} ${start({ start: 1, end: 1 }, rangeInclusiveRangeBounds)} ${end({ end: 4 }, 9, {
       startBound: (range) => "Unbounded",
       endBound: (range) => ({ TAG: "Included", _0: range.end }),
     })}`,
   );
   console.log(`${shown({ TAG: "Excluded", _0: 7 })}`);
   console.log(
-    `${start([{ TAG: "Excluded", _0: 1 }, "Unbounded"], {
-      startBound: (range) => range[0],
-      endBound: (range) => range[1],
-    })} ${end(["Unbounded", { TAG: "Included", _0: 3 }], 9, {
-      startBound: (range) => range[0],
-      endBound: (range) => range[1],
-    })}`,
+    `${start([{ TAG: "Excluded", _0: 1 }, "Unbounded"], tupleRangeBounds)} ${end(
+      ["Unbounded", { TAG: "Included", _0: 3 }],
+      9,
+      tupleRangeBounds,
+    )}`,
   );
 }
 //# sourceMappingURL=case.js.map

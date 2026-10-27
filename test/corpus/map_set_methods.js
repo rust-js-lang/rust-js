@@ -35,6 +35,8 @@ function sorted(items, TOrd, TClone) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
+  const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
   const scores = new Map();
   $tableRoomFor(scores.size + 8, 12, 4);
   $extendMap(
@@ -60,8 +62,8 @@ function main() {
       Array.from(scores)
         .values()
         .map(([k, v]) => [k, v]),
-      { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-      { clone: (value) => value },
+      tupleOrd,
+      clone,
     )
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
@@ -70,11 +72,7 @@ function main() {
   console.log(`${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`}`);
   const value$1 = $removeEntry(scores, "c");
   console.log(`${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`}`);
-  const drained = sorted(
-    $iter($drainAll(scores)),
-    { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
-    { clone: (value) => value },
-  );
+  const drained = sorted($iter($drainAll(scores)), tupleOrd, clone);
   console.log(
     `[${drained.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] ${scores.size === 0}`,
   );
@@ -83,10 +81,10 @@ function main() {
     [2, "two"],
   ]);
   console.log(
-    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, clone).join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
       { cmp: $cmp },
-      { clone: (value) => value },
+      clone,
     )
       .map((item) => $debugStr(item))
       .join(", ")}]`,
@@ -97,10 +95,10 @@ function main() {
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, clone).join(", ")}] [${sorted($iter($setAlgebra(a, b, "intersection")), { cmp: $cmp }, clone).join(", ")}]`,
   );
   console.log(
-    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
+    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, clone).join(", ")}] [${sorted($iter($setAlgebra(a, b, "symmetric")), { cmp: $cmp }, clone).join(", ")}]`,
   );
   console.log(
     `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
@@ -119,9 +117,7 @@ function main() {
     `${take == null ? "None" : `Some(${take})`} ${replace == null ? "None" : `Some(${replace})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
-  console.log(
-    `[${sorted($iter(Array.from(taken)), { cmp: $cmp }, { clone: (value) => value }).join(", ")}]`,
-  );
+  console.log(`[${sorted($iter(Array.from(taken)), { cmp: $cmp }, clone).join(", ")}]`);
 
   const tree = new Map([
     [5, "e"],

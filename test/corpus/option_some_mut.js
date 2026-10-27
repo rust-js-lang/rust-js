@@ -33,6 +33,7 @@ function setIfConsistent(old, new$, TPartialEq) {
 }
 
 function main() {
+  const partialEq = { eq: (a, b) => a === b };
   let a = 1;
   const o = { value: a };
   write(o, 2);
@@ -47,32 +48,32 @@ function main() {
   write(o$2);
   back = o$2.value;
   const o$3 = { value: a };
-  const r = read(o$3, 2, { eq: (a, b) => a === b });
+  const r = read(o$3, 2, partialEq);
   a = o$3.value;
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${n == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(n))})`} ${back == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(back))})`} ${r}`,
   );
   let year;
   const old = { value: year };
-  const value = setIfConsistent(old, 2024n, { eq: (a, b) => a === b });
+  const value = setIfConsistent(old, 2024n, partialEq);
   year = old.value;
   console.log(`${value.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$1 = { value: year };
-  const value$1 = setIfConsistent(old$1, 2024n, { eq: (a, b) => a === b });
+  const value$1 = setIfConsistent(old$1, 2024n, partialEq);
   year = old$1.value;
   console.log(`${value$1.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$2 = { value: year };
-  const value$2 = setIfConsistent(old$2, 1999n, { eq: (a, b) => a === b });
+  const value$2 = setIfConsistent(old$2, 1999n, partialEq);
   year = old$2.value;
   console.log(`${value$2.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   console.log(`${year == null ? "None" : `Some(${year})`}`);
   let name;
   const old$3 = { value: name };
-  const value$3 = setIfConsistent(old$3, "Ada", { eq: (a, b) => a === b });
+  const value$3 = setIfConsistent(old$3, "Ada", partialEq);
   name = old$3.value;
   console.log(`${value$3.TAG === "Ok" ? "Ok(())" : "Err(())"}`);
   const old$4 = { value: name };
-  const value$4 = setIfConsistent(old$4, "Bo", { eq: (a, b) => a === b });
+  const value$4 = setIfConsistent(old$4, "Bo", partialEq);
   name = old$4.value;
   console.log(
     `${value$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${name == null ? "None" : `Some(${$debugStr(name)})`}`,

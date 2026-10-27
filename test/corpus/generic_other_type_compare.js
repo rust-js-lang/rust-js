@@ -25,16 +25,17 @@ function under(xs, n, TPartialOrdU32, TPartialEqU32) {
   return xs.map((x) => TPartialOrdU32.partialCmp(x, n) < 0 && !TPartialEqU32.eq(x, 0));
 }
 function main() {
+  const u32PartialEq = { eq: (a, b) => a === b };
   const cs = [[300], [150], [0]];
   console.log(
-    `${has(cs, 3, centsPartialEqU32)} ${has(cs, 150, centsPartialEqU32)} ${has([1, 2], 2, { eq: (a, b) => a === b })}`,
+    `${has(cs, 3, centsPartialEqU32)} ${has(cs, 150, centsPartialEqU32)} ${has([1, 2], 2, u32PartialEq)}`,
   );
   console.log(
     `[${under(cs, 2, centsPartialOrdU32, centsPartialEqU32).join(", ")}] [${under(
       [0, 5, 9],
       7,
       { partialCmp: $cmp },
-      { eq: (a, b) => a === b },
+      u32PartialEq,
     ).join(", ")}]`,
   );
   console.log(`${$eq([5], [5])}`);

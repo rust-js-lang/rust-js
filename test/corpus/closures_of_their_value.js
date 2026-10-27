@@ -47,6 +47,7 @@ function picked(o, n) {
 }
 
 function main() {
+  const unitDebug = { fmt: (value) => "()" };
   const log = [];
   const given = [];
   given.push(
@@ -54,29 +55,23 @@ function main() {
       () =>
         // Recorded first.
         record(log, "commented"),
-      { fmt: (value) => "()" },
+      unitDebug,
     ),
   );
-  given.push(later(() => record(log, "value"), { fmt: (value) => "()" }));
+  given.push(later(() => record(log, "value"), unitDebug));
   given.push(
-    later(
-      () => {
-        record(log, "statement");
-      },
-      { fmt: (value) => "()" },
-    ),
+    later(() => {
+      record(log, "statement");
+    }, unitDebug),
   );
   const inner = () => record(log, "inner");
-  given.push(later(inner, { fmt: (value) => "()" }));
-  given.push(later(() => twice(() => record(log, "twice")), { fmt: (value) => "()" }));
+  given.push(later(inner, unitDebug));
+  given.push(later(() => twice(() => record(log, "twice")), unitDebug));
   const pushed = [];
   given.push(
-    later(
-      () => {
-        pushed.push(7);
-      },
-      { fmt: (value) => "()" },
-    ),
+    later(() => {
+      pushed.push(7);
+    }, unitDebug),
   );
   console.log(
     `[${given.map((item) => $debugStr(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}] [${pushed.join(", ")}]`,

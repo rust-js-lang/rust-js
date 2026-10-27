@@ -62,6 +62,7 @@ function shout(p, PDerefMut) {
 }
 
 function main() {
+  const derefMut = { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value };
   console.log(`[${pushOne([[7]], wrapperDerefMut)[0].join(", ")}]`);
   console.log(
     `[${pushOne([8], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell }).join(
@@ -70,15 +71,12 @@ function main() {
   );
   const v = [9];
   const p = { value: v };
-  pushOne(p, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value }).value;
+  pushOne(p, derefMut).value;
   $assign(v, p.value);
   console.log(`[${v.join(", ")}]`);
   const value = grown([1, 2], { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell });
   const p$1 = { value: v };
-  const value$1 = grown(p$1, {
-    Deref: () => ({ deref: (x) => x.value }),
-    derefMut: (cell) => cell.value,
-  });
+  const value$1 = grown(p$1, derefMut);
   $assign(v, p$1.value);
   console.log(`${value} ${value$1}`);
 
@@ -97,7 +95,7 @@ function main() {
     },
   };
   const p$3 = { value: r };
-  bump(p$3, { Deref: () => ({ deref: (x) => x.value }), derefMut: (cell) => cell.value });
+  bump(p$3, derefMut);
   r = p$3.value;
   console.log(`${n}`);
   const cell = { value: 3 };

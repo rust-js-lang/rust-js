@@ -33,6 +33,7 @@ function same(a, b, TPartialEq) {
 }
 
 function main() {
+  const wrappingCopy = { copy: (value) => [value[0]] };
   const a = [200];
   const wrapping = [(a[0] * 2) & 255];
   const b = [(wrapping[0] + 100) & 255];
@@ -49,10 +50,10 @@ function main() {
     `${(wrapping$1[0] << 35) >>> 0} ${wrapping$2[0] >> 2n} ${(wrapping$3[0] << (9 & 7)) & 255}`,
   );
   console.log(
-    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 })}`,
+    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, wrappingCopy)[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 })}`,
   );
   console.log(
-    `${total([[250], [10]], [0], { add: (a, b) => [(a[0] + b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${same([5n], [5n], { eq: $eq })}`,
+    `${total([[250], [10]], [0], { add: (a, b) => [(a[0] + b[0]) & 255] }, wrappingCopy)[0]} ${same([5n], [5n], { eq: $eq })}`,
   );
   const left = [7];
   const right = [9];

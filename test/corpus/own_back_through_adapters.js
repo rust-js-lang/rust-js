@@ -141,6 +141,7 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
+  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
   console.log(
     `${$rev($mapEnds($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), (x) => (x * 2) | 0)).reduce((a, b) => (a + b) | 0, 0)}`,
   );
@@ -659,10 +660,7 @@ function main() {
             },
             false,
           ),
-        (iterator) =>
-          fuseExactSizeIterator_len(iterator, {
-            len: (iterator) => $exactLen(countIterator_sizeHint(iterator)),
-          }),
+        (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
         (it, init, f) =>
           $fuseRfold(
             it,
@@ -734,10 +732,7 @@ function main() {
               },
               false,
             ),
-          (iterator) =>
-            fuseExactSizeIterator_len(iterator, {
-              len: (iterator) => $exactLen(countIterator_sizeHint(iterator)),
-            }),
+          (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
           (it, init, f) =>
             $fuseRfold(
               it,
@@ -853,10 +848,7 @@ function main() {
               },
               false,
             ),
-          (iterator) =>
-            fuseExactSizeIterator_len(iterator, {
-              len: (iterator) => $exactLen(countIterator_sizeHint(iterator)),
-            }),
+          (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator),
           (it, init, f) =>
             $fuseRfold(
               it,

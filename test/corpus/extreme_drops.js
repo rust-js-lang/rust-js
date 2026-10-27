@@ -80,6 +80,7 @@ function countdownIterator_next(countdown) {
 }
 
 function main() {
+  const ord = { cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)) };
   const max = $maxBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
   try {
     console.log(`${max == null ? "None" : `Some(${loudDebug_fmt(max)})`}`);
@@ -149,15 +150,11 @@ function main() {
       loudDrop_drop(value$1);
     }
   }
-  const value$2 = greatest([3, undefined, 1], {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  });
+  const value$2 = greatest([3, undefined, 1], ord);
   console.log(
     `${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
   );
-  const value$3 = greatest([undefined], {
-    cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
-  });
+  const value$3 = greatest([undefined], ord);
   console.log(
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );

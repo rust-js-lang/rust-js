@@ -178,6 +178,7 @@ function testedBefore(queue, clear) {
 }
 
 function main() {
+  const debug = { fmt: (value) => String(value) };
   const queue = [1, 2, 3, 4];
   console.log(`sum: ${sum(queue)}`);
   console.log(`settle: ${settle(queue, 3)}`);
@@ -197,9 +198,7 @@ function main() {
       console.log("touched");
     })}`,
   );
-  check("settle after none", () => settleAfter(after, 5, () => {}), {
-    fmt: (value) => String(value),
-  });
+  check("settle after none", () => settleAfter(after, 5, () => {}), debug);
 
   const cleared = queue;
   check(
@@ -208,20 +207,16 @@ function main() {
       calledBetween(queue, () => {
         cleared.length = 0;
       }),
-    { fmt: (value) => String(value) },
+    debug,
   );
   queue.push(5, 6);
-  check("dropped between", () => droppedBetween(queue, [queue]), { fmt: (value) => String(value) });
+  check("dropped between", () => droppedBetween(queue, [queue]), debug);
   queue.push(7, 8);
   const slots = [[queue]];
   try {
-    check("replaced between", () => replacedBetween(queue, slots, [[]]), {
-      fmt: (value) => String(value),
-    });
+    check("replaced between", () => replacedBetween(queue, slots, [[]]), debug);
     queue.push(9);
-    check("cleared by its guard", () => clearedByItsGuard(queue, 0), {
-      fmt: (value) => String(value),
-    });
+    check("cleared by its guard", () => clearedByItsGuard(queue, 0), debug);
     queue.push(10);
     const cleared = queue;
     check(
@@ -230,7 +225,7 @@ function main() {
         testedBefore(queue, () => {
           cleared.length = 0;
         }),
-      { fmt: (value) => String(value) },
+      debug,
     );
   } finally {
     for (const item of slots) {

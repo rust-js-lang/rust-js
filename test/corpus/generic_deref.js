@@ -27,10 +27,11 @@ const Wrapper = {
 };
 
 function main() {
+  const asRef = { asRef: (value) => value };
   console.log(`${shout("box", { deref: (x) => x })}`);
   console.log(`${shout("string", { deref: (s) => s })}`);
-  console.log(`${length("rc", { deref: (x) => x }, { asRef: (value) => value })}`);
-  console.log(`${length({ name: "mine" }, trackedDeref, { asRef: (value) => value })}`);
+  console.log(`${length("rc", { deref: (x) => x }, asRef)}`);
+  console.log(`${length({ name: "mine" }, trackedDeref, asRef)}`);
   const n = 21;
   console.log(
     `${Wrapper.doubled([n], { deref: (n) => n })} ${Wrapper.doubled([4], { deref: (x) => x })}`,

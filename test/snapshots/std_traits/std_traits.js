@@ -357,22 +357,18 @@ export function iterations() {
 }
 
 export function genericIterations() {
+  const clone = { clone: (value) => value };
   return [
-    $iterator(
-      { times: 3 },
-      (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
-      true,
-    ).reduce((n) => n + 1, 0),
-    $iterator(
-      { times: 2 },
-      (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
-      true,
-    )
+    $iterator({ times: 3 }, (iterator) => repeatIterator_next(iterator, clone), true).reduce(
+      (n) => n + 1,
+      0,
+    ),
+    $iterator({ times: 2 }, (iterator) => repeatIterator_next(iterator, clone), true)
       .filter((o) => o == null)
       .reduce((n) => n + 1, 0),
     $iterator(
       { item: 2, times: 3 },
-      (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
+      (iterator) => repeatIterator_next(iterator, clone),
       true,
     ).toArray(),
     $max(

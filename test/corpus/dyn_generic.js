@@ -50,48 +50,31 @@ function two(c, CCounter) {
 }
 
 function main() {
+  const shape$1 = {
+    area: (object) => object.impl.area(object.value),
+    scale: (object, arg1) => object.value.impl.scale(object.value, arg1),
+    name: (object) => object.impl.name(object.value),
+  };
+  const shape$2 = {
+    area: (object) => object.impl.Shape().area(object.value),
+    scale: (object, arg1) => object.value.impl.Shape().scale(object.value, arg1),
+    name: (object) => object.impl.Shape().name(object.value),
+  };
   const square = [3];
   let shape = { value: square, impl: squareShape };
-  console.log(
-    `${$displayF64(
-      areaOf(shape, {
-        area: (object) => object.impl.area(object.value),
-        scale: (object, arg1) => object.value.impl.scale(object.value, arg1),
-        name: (object) => object.impl.name(object.value),
-      }),
-    )}`,
-  );
+  console.log(`${$displayF64(areaOf(shape, shape$1))}`);
   shape = { value: square, impl: squareShape };
-  grow(
-    { value: shape },
-    {
-      area: (object) => object.impl.area(object.value),
-      scale: (object, arg1) => object.value.impl.scale(object.value, arg1),
-      name: (object) => object.impl.name(object.value),
-    },
-  );
+  grow({ value: shape }, shape$1);
   console.log(`${$displayF64(square[0])}`);
 
   const named = { value: square, impl: squareNamed };
   console.log(
     `${describe(named, {
-      Shape: () => ({
-        area: (object) => object.impl.Shape().area(object.value),
-        scale: (object, arg1) => object.value.impl.Shape().scale(object.value, arg1),
-        name: (object) => object.impl.Shape().name(object.value),
-      }),
+      Shape: () => shape$2,
       label: (object) => object.impl.label(object.value),
     })}`,
   );
-  console.log(
-    `${$displayF64(
-      areaOf(named, {
-        area: (object) => object.impl.Shape().area(object.value),
-        scale: (object, arg1) => object.value.impl.Shape().scale(object.value, arg1),
-        name: (object) => object.impl.Shape().name(object.value),
-      }),
-    )}`,
-  );
+  console.log(`${$displayF64(areaOf(named, shape$2))}`);
 
   const shown = { value: 5, impl: { fmt: String } };
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);

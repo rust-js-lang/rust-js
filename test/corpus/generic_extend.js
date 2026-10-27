@@ -35,52 +35,28 @@ function shout(c, CExtendChar) {
 }
 
 function main() {
+  const vecExtend = {
+    extend(collection, items) {
+      $extend(collection.value, items);
+    },
+  };
+  const bTreeSetExtend = {
+    extend(collection, items) {
+      $extendMap(collection.value, $sortedKeys(items, $cmp), true);
+    },
+  };
   const a = { TAG: "Left", _0: [9] };
-  eitherExtendA_extend(
-    a,
-    [1, 2, 3],
-    {
-      extend(collection, items) {
-        $extend(collection.value, items);
-      },
-    },
-    {
-      extend(collection, items) {
-        $extendMap(collection.value, $sortedKeys(items, $cmp), true);
-      },
-    },
-  );
+  eitherExtendA_extend(a, [1, 2, 3], vecExtend, bTreeSetExtend);
   const b = { TAG: "Right", _0: new Set() };
-  eitherExtendA_extend(
-    b,
-    [5, 4, 5],
-    {
-      extend(collection, items) {
-        $extend(collection.value, items);
-      },
-    },
-    {
-      extend(collection, items) {
-        $extendMap(collection.value, $sortedKeys(items, $cmp), true);
-      },
-    },
-  );
+  eitherExtendA_extend(b, [5, 4, 5], vecExtend, bTreeSetExtend);
   let s = "x";
   const value = [];
   const c = { value };
-  fill(c, 2, {
-    extend(collection, items) {
-      $extend(collection.value, items);
-    },
-  });
+  fill(c, 2, vecExtend);
   $assign(value, c.value);
   const v = [7];
   const c$1 = { value: v };
-  fill(c$1, 3, {
-    extend(collection, items) {
-      $extend(collection.value, items);
-    },
-  });
+  fill(c$1, 3, vecExtend);
   $assign(v, c$1.value);
   s += ["y", "z"].join("");
   const c$2 = { value: s };

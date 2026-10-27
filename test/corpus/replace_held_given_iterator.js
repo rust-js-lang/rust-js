@@ -36,6 +36,7 @@ function restartIterator_next(restart, IIterator, IClone) {
 }
 
 function main() {
+  const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const ranges = {
     iter: { start: 0, end: 2 },
     orig: { start: 5, end: 7 },
@@ -57,21 +58,12 @@ function main() {
     iter: $iter(["a", "b"]),
     orig: $iter(["x"]),
   };
-  restartIterator_next(
-    items,
-    { next: $next },
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-  );
-  Restart.swapEnds(items, { clone: (value) => $iter(value.items.slice(value.at, value.end)) });
+  restartIterator_next(items, { next: $next }, intoIterClone);
+  Restart.swapEnds(items, intoIterClone);
   const rest = $lent(
     $iterator(
       items,
-      (iterator) =>
-        restartIterator_next(
-          iterator,
-          { next: $next },
-          { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-        ),
+      (iterator) => restartIterator_next(iterator, { next: $next }, intoIterClone),
       true,
     ),
   )

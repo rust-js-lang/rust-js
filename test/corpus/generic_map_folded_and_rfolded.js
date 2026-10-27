@@ -65,6 +65,7 @@ const Wrap = {
 };
 
 function main() {
+  const i32Debug = { fmt: (value) => String(value) };
   const forward = wrapIterator_fold(
     { inner: { start: 1, end: 4 } },
     [],
@@ -100,7 +101,7 @@ function main() {
   const next = wrapIterator_next(each, { next: $rangeNext });
   const value = wrapIterator_next(each, { next: $rangeNext });
   console.log(
-    `${nextBack == null ? "None" : `Some(${taggedDebug_fmt(nextBack, { fmt: (value) => String(value) })})`} ${next == null ? "None" : `Some(${taggedDebug_fmt(next, { fmt: (value) => String(value) })})`} ${value == null ? "None" : `Some(${taggedDebug_fmt(value, { fmt: (value) => String(value) })})`}`,
+    `${nextBack == null ? "None" : `Some(${taggedDebug_fmt(nextBack, i32Debug)})`} ${next == null ? "None" : `Some(${taggedDebug_fmt(next, i32Debug)})`} ${value == null ? "None" : `Some(${taggedDebug_fmt(value, i32Debug)})`}`,
   );
   const counted = Wrap.countKept(
     { inner: iterator_take($repeating("b"), 2, { next: $next }) },
