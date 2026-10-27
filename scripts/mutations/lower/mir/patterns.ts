@@ -220,6 +220,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "guard-lets-unseen",
+    breaks: "no `let` is a drop guard's, so its `try` starts at its first statement, a comment after the `let` before it (ADR 0865, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                    && adt.has_dtor(self.tcx)\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's try starts at its let"],
+  },
+  {
     name: "let-taken-apart-unseen",
     breaks: "a `let` an `if let` takes apart, `let prev_types = prev.types.borrow().clone()`, stays a `const` before the test that alone reads it",
     file: "src/lower/mir/patterns.rs",

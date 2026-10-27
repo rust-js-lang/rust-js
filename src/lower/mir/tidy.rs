@@ -64,6 +64,10 @@ pub(super) struct LetNames {
     /// reads as its value written in the statement right after it where
     /// only that reads it (ADR 0866, amended).
     pub(super) ends_borrow: HashSet<String>,
+    /// Where each `let` of a drop guard, a value of a type with a `Drop` of
+    /// its own, is written, and where the block whose end drops it ends:
+    /// the `try` its drop ends starts at the `let` (ADR 0865, amended).
+    pub(super) guards: Vec<(u32, u32)>,
 }
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.

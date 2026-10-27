@@ -753,7 +753,9 @@ below each other in the JS, and one apart is apart, a type with no JS
 between too. An object's fields are apart where the struct literal's are;
 a `let` with no JS of its own, an erased cast's or a guard's whose drop
 is a `finally`, is no code between a blank line and the statement after
-it, the guard's `try`. What the Rust can't tell of, what
+it, the guard's `try`. The `try` starts where the guard's `let` is: a
+comment after the `let` is the `try`'s first line, one before it is
+before the `try`. What the Rust can't tell of, what
 rust-js writes of no code of its own or of one line, a derive's
 functions, is set apart as a person sets it ([ADR
 0865](../../decisions/0865-a-blank-line-is-where-the-rust-has-one.md)).

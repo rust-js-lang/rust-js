@@ -561,3 +561,55 @@ pub fn memo(create: &dyn Fn() -> u32) -> Option<u32> {
   ).toThrow("thrown");
   expect(lib.h()).toBe(0);
 });
+
+// React's applyDerivedStateFromProps: `setIsStrictModeForDevtools(true);
+// try { // Invoke the function an extra time to help detect side-effects.
+// partialState = getDerivedStateFromProps(..); } finally { .. }`. The `try`
+// starts where the guard's `let` is: a comment after the `let` is inside
+// it, one before it, or a blank line, before it (ADR 0865, amended).
+test("a guard's try starts at its let, a comment after the let inside it", async () => {
+  const { js, dir } = compiled(
+    "guard-try-at-let",
+    `use std::cell::Cell;
+
+pub struct Exit<'a>(&'a Cell<bool>);
+
+impl Drop for Exit<'_> {
+    fn drop(&mut self) {
+        self.0.set(false);
+    }
+}
+
+pub fn derive(strict: &Cell<bool>, f: &dyn Fn() -> u32) -> u32 {
+    let mut partial_state = f();
+    strict.set(true);
+    let _exit = Exit(strict);
+    // Invoke the function an extra time to help detect side-effects.
+    partial_state += f();
+    partial_state
+}
+
+pub fn before(strict: &Cell<bool>, f: &dyn Fn() -> u32) -> u32 {
+    strict.set(true);
+    // Set apart, as the guard is.
+    let _exit = Exit(strict);
+    f()
+}
+`,
+  );
+  expect(js).toContain(
+    "  strict.value = true;\n  try {\n    // Invoke the function an extra time to help detect side-effects.\n    partialState = (partialState + f()) >>> 0;\n",
+  );
+  expect(js).toContain("  strict.value = true;\n  // Set apart, as the guard is.\n  try {\n    return f();\n");
+  const lib = await import(join(dir, "lib.js"));
+  const strict = { value: false };
+  const seen: boolean[] = [];
+  const f = () => (seen.push(strict.value), 2);
+  expect([lib.derive(strict, f), strict.value, lib.before(strict, f), strict.value, seen]).toEqual([
+    4,
+    false,
+    2,
+    false,
+    [false, true, true],
+  ]);
+});

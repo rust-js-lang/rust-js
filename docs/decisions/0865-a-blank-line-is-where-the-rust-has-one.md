@@ -7,7 +7,7 @@ lines between top-level statements were rust-js's, and its "part" of an
 object, which had none. Amended: an `if let` chain made of a labeled
 block is where its first `if` is. Amended (2026-10-25): a guard's `let` too, whose
 `try` starts where its first statement does, and what's after the code,
-an `export default`, tells nothing of it. Amended by [0883](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md): before an `if` whose test has comments after its keyword, the blank line is looked for before the `if`. Amended (2026-10-26): what's before a line is before the first JS printed of what's written on it.
+an `export default`, tells nothing of it. Amended by [0883](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md): before an `if` whose test has comments after its keyword, the blank line is looked for before the `if`. Amended (2026-10-26): what's before a line is before the first JS printed of what's written on it. Amended (2026-10-27, the user's decision): a guard's `try` starts where its `let` is, a comment after the `let` in it.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): blank lines, which
 nothing runs.
@@ -195,3 +195,49 @@ had before nothing printed first.
 Held by `test/lowering-comments.test.ts`, "a blank line before an if let
 is before what its test's take() prints first", run, and the mutation
 `printed-first-of-its-span-alone` (`to_oxc.ts`).
+
+## Amended (2026-10-27): a guard's `try` starts where its `let` is
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+The user's decision (k6 of the React port's gaps). React's
+applyDerivedStateFromProps and checkShouldComponentUpdate write the
+comment inside the `try`:
+
+```js
+setIsStrictModeForDevtools(true);
+try {
+  // Invoke the function an extra time to help detect side-effects.
+  partialState = getDerivedStateFromProps(nextProps, prevState);
+} finally {
+  setIsStrictModeForDevtools(false);
+}
+```
+
+Their port writes it after the guard's `let`, `let _exit =
+ExitStrictModeForDevtools; // Invoke ..`, and printed it before the `try`:
+the `try` started where its first statement does (the amendment above),
+so all that's before that statement, past the `let` too, was before it.
+
+**The `try` starts where the guard's `let` is**: what's after the `let`,
+a comment, is in the `try`, before its first statement; what's before
+the `let`, a comment or a blank line, is before the `try`, as before.
+Which `let` is the guard's is THIR's (`LetNames::guards`): a binding of a
+type of the program's with a `Drop` of its own, not std's `Vec` or `Rc`,
+and the end of the block that drops it, which is where the run's drop is
+(`scoped_drops`), written past each statement before the run, so not an
+earlier value's the same block drops. A run whose drop is no guard's, an
+`Rc`'s say, starts where its first statement does, as before.
+
+- A blank line between the guard's `let` and its first statement is the
+  `try` block's first line, which JS doesn't print: the port's own
+  `ReactComponentStackFrame` fallback, which upstream doesn't have, loses
+  one.
+- What changes: React's ReactFiberClassComponent, both places, as
+  upstream; no corpus case, snapshot or guide example.
+
+Held by `test/lowering-drop-guards.test.ts`, "a guard's try starts at its
+let, a comment after the let inside it", run; and the mutations
+`guard-try-at-first`, `guard-try-at-an-earlier-guard` (`mir/tidy/unwinds.ts`,
+the corpus's `vec_destructors`, whose `swapped` is an earlier guard of
+`main`'s block) and `guard-lets-unseen` (`mir/patterns.ts`).

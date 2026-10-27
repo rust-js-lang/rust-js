@@ -14,19 +14,39 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 /// `stmts`, each run of statements a value's drop ends, which a panic in
 /// any of them drops too, one `try { .. } finally { .. }`. The values
 /// made inside it, nested in turn, as `statement_lists` goes on into it.
-/// `result` is the function's return place. Whether it made one.
-pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str) -> bool {
+/// `result` is the function's return place; `guards`, where each drop
+/// guard's `let` is written and where the block it's dropped at the end of
+/// ends. Whether it made one.
+pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)]) -> bool {
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
         if let Some(end) = scope_end(stmts, i, result) {
             let drop = stmts[end].clone();
+            // A guard's `let` past each statement before the run, and what
+            // their blocks hold: the run's, not an earlier value's.
+            let mut written = 0;
+            js::each_list(&stmts[..i], &mut |list| {
+                written = (list.iter().filter_map(written_at)).fold(written, u32::max);
+            });
             let mut body = unwound(stmts.drain(i..end).collect(), &drop);
             // From where its first statement is, as the Rust has nothing of
             // its own there, a guard's `let` printing nothing, to its drop:
             // what's before it, a blank line or a comment, is before the
-            // `try` (ADR 0865, amended).
-            let span = match body.first().and_then(written_at) {
+            // `try` (ADR 0865, amended); or from where that guard's `let`
+            // is, past the statement before, so what's between the `let`
+            // and the first statement, a comment, is in the `try`, as
+            // upstream's `try { // Invoke the function an extra time ..`
+            // (ADR 0865, amended, the user's decision, 2026-10-27).
+            let first = body.first().and_then(written_at);
+            let first = first.map(|lo| {
+                (guards.iter())
+                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)
+                    .map(|&(guard, _)| guard)
+                    .max()
+                    .unwrap_or(lo)
+            });
+            let span = match first {
                 Some(lo) if !drop.span.is_none() && lo < drop.span.lo => js::Span { lo, hi: drop.span.hi },
                 _ => drop.span,
             };

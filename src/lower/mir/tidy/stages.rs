@@ -678,7 +678,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
             pass("drop scopes", |b, h| {
                 let mut scoped = false;
-                js::statement_lists(b, &mut |stmts| scoped |= unwinds::scoped_drops(stmts, h.result));
+                js::statement_lists(b, &mut |stmts| {
+                    scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)
+                });
                 h.again.set(scoped);
             }),
             pass("returns through finally", |b, _| {

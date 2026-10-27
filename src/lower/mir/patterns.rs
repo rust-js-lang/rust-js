@@ -736,6 +736,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut named = Vec::new();
         let mut casts = Vec::new();
         let mut ends_borrow = Vec::new();
+        let mut guards = Vec::new();
         // A `let` of a cast of anything, `let instance: Option<&Instance> =
         // unsafe { js::cast(node.state_node.get()) };`: the program's name
         // for a value of the type it gives, no `let` that ends a borrow.
@@ -758,6 +759,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(true) => casts.push(pattern.span),
                     Some(false) => typed.push(var),
                     None => {}
+                }
+            }
+        }
+        // A drop guard's `let`, of a type of the program's with a `Drop` of
+        // its own, not std's `Vec` or `Rc`, and the end of the block that
+        // drops it, where the `try` its drop ends starts (ADR 0865, amended).
+        for block in thir.blocks.iter() {
+            for &stmt in block.stmts.iter() {
+                if let thir::StmtKind::Let { pattern, .. } = &thir[stmt].kind
+                    && let thir::PatKind::Binding { subpattern: None, .. } = pattern.kind
+                    && let Some(adt) = pattern.ty.ty_adt_def()
+                    && adt.has_dtor(self.tcx)
+                    && !crate::lower::recognition::is_std_crate(self.tcx, adt.did())
+                {
+                    guards.push((self.js_span(pattern.span).lo, self.js_span(block.span).hi));
                 }
             }
         }
@@ -818,6 +834,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             casts: names(&casts),
             taken_apart: names(&taken_apart),
             ends_borrow: names(&ends_borrow),
+            guards,
         }
     }
 

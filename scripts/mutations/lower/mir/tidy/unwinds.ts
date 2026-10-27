@@ -87,6 +87,23 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
   },
   {
+    name: "guard-try-at-first",
+    breaks: "a guard's `try` starts at its first statement, so a comment after the guard's `let` is before the `try`, not in it (ADR 0865, amended)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
+    replace: "                    .filter(|_| false)\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's try starts at its let"],
+  },
+  {
+    name: "guard-try-at-an-earlier-guard",
+    breaks: "a run's `try` starts at an earlier guard's `let` the same block drops, `swapped`'s, and the blank line before the run is lost (ADR 0865, amended)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
+    replace: "                    .filter(|&&(guard, end)| end == drop.span.hi && guard < lo)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    snapshots: true,
+  },
+  {
     name: "guard-try-first-unwritten",
     breaks: "a guard's `try` whose first statement is a temporary's, `result = scope()`, placed nowhere, is where its drop is (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
