@@ -26,6 +26,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Some(receiver);
             }
             IterMethod::Next => (iterator, "next"),
+            // Its item at `i`, by its dictionary's own reader (ADR 0975).
+            IterMethod::GetUnchecked => {
+                let dictionary = self.iterator_evidence(iter_ty, iterator)?;
+                let at = values.get(1)?.clone();
+                return Some(Expr::call(Expr::member(dictionary, "getUnchecked"), vec![receiver, at]));
+            }
             IterMethod::NextBack => self.extension_entry_of(self.recognition().double_ended_iterator()?),
             IterMethod::Len => self.extension_entry_of(self.recognition().exact_size_iterator()?),
             _ => return None,

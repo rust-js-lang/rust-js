@@ -221,8 +221,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
             }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
-            #[allow(unreachable_patterns)]
-            _ => Err(self.unsupported(Span::default(), "this operand, from its MIR")),
+            // Whether a build checks UB, contracts or overflow at run time:
+            // none, as `std_coverage::reachable` reads it, and as a release
+            // build's integers wrap (ADR 0364).
+            Operand::RuntimeChecks(_) => Ok(Value::Expr(Expr::bool(false))),
         }
     }
 

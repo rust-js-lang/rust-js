@@ -150,16 +150,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match slot {
                 Slot::Location => values.extend(location.take()),
                 Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),
-                Slot::Bound(bound) => {
-                    let bound = ty::EarlyBinder::bind(self.tcx, bound)
+                Slot::Bound(declared) => {
+                    let bound = ty::EarlyBinder::bind(self.tcx, declared)
                         .instantiate(self.tcx, args)
                         .skip_normalization();
                     let erased = self.tcx.erase_and_anonymize_regions(bound);
+                    // A type parameter bound by `IntoIterator` given a `&C`
+                    // or a `&mut C`, `zip`'s `U`, held as it is, never in a
+                    // box (ADR 0976).
+                    let as_it_is = matches!(declared.self_ty().kind(), ty::Param(_))
+                        && is_std_def(self.tcx, bound.def_id, StdItem::IntoIterator)
+                        && matches!(bound.self_ty().kind(), ty::Ref(..))
+                        && !self.has_user_impl(bound.def_id, bound.self_ty());
                     match given
                         .iter()
                         .find(|(of, _)| self.tcx.erase_and_anonymize_regions(*of) == erased)
                     {
                         Some((_, dictionary)) => values.push(dictionary.clone()),
+                        None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),
                         None => values.push(self.dictionary(bound, span)?),
                     }
                 }
@@ -412,21 +420,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 generic_args,
             )
         {
-            let fact = self.type_fact_value(spec.of, spec.fact, span)?;
             let (selected, impl_args) = spec.selected;
             // The method's own arguments after its impl's, as the call gives
             // them after its trait's.
             let own = &generic_args[self.tcx.generics_of(id).parent_count..];
             let args = self.tcx.mk_args_from_iter(impl_args.iter().chain(own.iter().copied()));
-            let mut called = Vec::new();
-            for method in [spec.special, selected] {
+            let call_of = |cx: &mut Self, method: DefId| -> R<Expr> {
                 let mut values = values.clone();
-                values.extend(self.evidence_args(method, args, span)?);
-                called.push(Expr::call(self.fn_ref(method), values));
+                values.extend(cx.evidence_args(method, args, span)?);
+                Ok(Expr::call(cx.fn_ref(method), values))
+            };
+            // The most general's, each more specific one's where its facts
+            // all hold, the most specific's tested first (ADR 0975).
+            let mut called = call_of(self, selected)?;
+            for (method, facts) in spec.special.iter().rev() {
+                let mut tested: Option<Expr> = None;
+                for &(of, fact) in facts {
+                    let holds = self.type_fact_value(of, fact, span)?;
+                    tested = Some(match tested {
+                        Some(both) => Expr::bin(Op::And, both, holds),
+                        None => holds,
+                    });
+                }
+                let special = call_of(self, *method)?;
+                called = Expr::cond(tested.expect("a fact picks it"), special, called);
             }
-            let selected_call = called.pop().expect("the selected impl's");
-            let special = called.pop().expect("the specializing impl's");
-            let called = Expr::cond(fact, special, selected_call);
             return Ok(Some(self.fmt_result_value(selected, args, called)));
         }
         // `a == b` of a type equal only to itself is `===`, as of references

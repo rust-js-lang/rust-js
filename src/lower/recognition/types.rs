@@ -708,11 +708,17 @@ pub(crate) enum TypeFact {
     /// Whether it's std's `OneShot`, an iterator of one item at most, whose
     /// `flatten()` std specializes, its `size_hint` bounded (ADR 0899).
     OneShot,
+    /// Whether it's std's `TrustedRandomAccess`, or only
+    /// `TrustedRandomAccessNoCoerce`, or `TrustedLen`: what std's zip of it
+    /// reads by index or folds only up to the shorter (ADR 0975).
+    RandomAccess,
+    RandomAccessNoCoerce,
+    TrustedLen,
 }
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 13] = [
+    pub(crate) const ALL: [TypeFact; 16] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -726,6 +732,9 @@ impl TypeFact {
         TypeFact::Fused,
         TypeFact::ConstSize,
         TypeFact::OneShot,
+        TypeFact::RandomAccess,
+        TypeFact::RandomAccessNoCoerce,
+        TypeFact::TrustedLen,
     ];
 
     /// Its word in the name of a type parameter's, `TSize`.
@@ -749,6 +758,9 @@ impl TypeFact {
             TypeFact::Fused => "Fused",
             TypeFact::ConstSize => "ConstSize",
             TypeFact::OneShot => "OneShot",
+            TypeFact::RandomAccess => "RandomAccess",
+            TypeFact::RandomAccessNoCoerce => "RandomAccessNoCoerce",
+            TypeFact::TrustedLen => "TrustedLen",
         }
     }
 

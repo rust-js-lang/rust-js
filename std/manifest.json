@@ -8,7 +8,7 @@
   "library": {
     "version": 9,
     "name": "rust_js_std",
-    "crate_hash": "1e176b228baa58df2f9ced8167a30d99",
+    "crate_hash": "3919a46dba354053358faa15be376418",
     "items": [
       {
         "key": "608f92abc48d28dac5a4dece6c13d6e7",
@@ -23,6 +23,32 @@
             "index": 0,
             "marks": [
               "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da8b60b8869d93e6b6",
+        "rust_path": "rust_js_std::<I as core::iter::adapters::zip::SpecTrustedRandomAccess>::try_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
             ]
           },
           {
@@ -817,6 +843,32 @@
         ]
       },
       {
+        "key": "608f92abc48d28dac3f7e096702e92e8",
+        "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "copiedIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "copy"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28daa3c16b9a6a126433",
         "rust_path": "rust_js_std::<core::iter::Copied<I> as core::iter::Iterator>::advance_by",
         "module": [
@@ -1263,6 +1315,32 @@
             ],
             "stepped": [
               "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dadc85e2f44c4f638f",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
             ]
           },
           {
@@ -2331,6 +2409,9 @@
             "marks": [
               "drop"
             ],
+            "facts": [
+              "Fused"
+            ],
             "stepped": [
               "608f92abc48d28da5bb321f20939e045",
               "608f92abc48d28daf245e2f3fcaec68a"
@@ -2450,6 +2531,9 @@
             "index": 0,
             "marks": [
               "drop"
+            ],
+            "facts": [
+              "Fused"
             ],
             "stepped": [
               "608f92abc48d28da5bb321f20939e045",
@@ -2584,6 +2668,9 @@
             "index": 0,
             "marks": [
               "drop"
+            ],
+            "facts": [
+              "Fused"
             ]
           },
           {
@@ -2687,6 +2774,9 @@
             "index": 0,
             "marks": [
               "drop"
+            ],
+            "facts": [
+              "Fused"
             ]
           },
           {
@@ -3344,6 +3434,32 @@
             ],
             "stepped": [
               "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da7f06679f21a0c5aa",
+        "rust_path": "rust_js_std::<core::iter::Fuse<I> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "fuseIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
             ]
           },
           {
@@ -4715,6 +4831,44 @@
             ],
             "stepped": [
               "608f92abc48d28da50b3843aa530f08e"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da1a15b7a1ede9fda",
+        "rust_path": "rust_js_std::<core::iter::Map<I, F> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "mapIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
             ]
           },
           {
@@ -6488,6 +6642,32 @@
           },
           {
             "index": 4,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da82bf3e54eec0a502",
+        "rust_path": "rust_js_std::<core::iter::Skip<I> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "skipIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
             "marks": [
               "drop"
             ]
@@ -8459,6 +8639,1203 @@
         ]
       },
       {
+        "key": "608f92abc48d28da6a09b3eefc2db1b3",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "zipDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da82dc8c42c05620ae",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::Iterator>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "zipIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2e1f9dd7bac69b1f",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::Iterator>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "zipIterator_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dab8a60a86018751a4",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "zipIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da2808b2d32743a9ea",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "zipIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dae8d0fcc4054343a2",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "zipIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da5902eee86a39d92b",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::SpecFold>::spec_fold",
+        "module": [
+          "iter"
+        ],
+        "export": "zipSpecFold_specFold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da107633436f8c7550",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3fb23f1bfc237e82",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::fold",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_fold",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da68a337776c813508",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da48043fed3f85bcd2",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::new",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessTrustedRandomAccess_new",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da5a955cd574943fd6",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::new",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_new",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daa041bfe498e4f49a",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::new",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da4ad4ea110f041e32",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessTrustedRandomAccess_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da8413cc195ed3c0b0",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28daf20fd56ad35ffd71",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3c33d4bcc45c29e4",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da922c2bfc0371bcaa",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da5bb321f20939e045",
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dac6d7027b9c0ece50",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28da50b3843aa530f08e",
+              "608f92abc48d28da5bb321f20939e045"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da1399378287eae1ac",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da3f151a868e821ff8",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dacc47c1b9aec44696",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da7d27ed9d81568dfa",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dadc5b0aac9d39b067",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplAB_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28dae6017d54d84602c4",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipImpl<A, B>>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28dae2f2ce1e47777131",
         "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -9350,6 +10727,9 @@
             "marks": [
               "drop"
             ],
+            "facts": [
+              "Fused"
+            ],
             "stepped": [
               "608f92abc48d28daf245e2f3fcaec68a"
             ]
@@ -9819,6 +11199,63 @@
         ]
       },
       {
+        "key": "608f92abc48d28da842d606111d3181a",
+        "rust_path": "rust_js_std::core::iter::Iterator::zip",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_zip",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce",
+              "TrustedLen"
+            ]
+          }
+        ]
+      },
+      {
         "key": "608f92abc48d28da3ea4974d57c2f3db",
         "rust_path": "rust_js_std::core::iter::StepBy::<I>::new",
         "module": [
@@ -9855,6 +11292,81 @@
           },
           {
             "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da45f4d2fd1f53091d",
+        "rust_path": "rust_js_std::core::iter::TrustedRandomAccessNoCoerce::size",
+        "module": [
+          "iter"
+        ],
+        "export": "trustedRandomAccessNoCoerce_size",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "608f92abc48d28da932abfacd86a156d",
+        "rust_path": "rust_js_std::core::iter::Zip::<A, B>::super_nth",
+        "module": [
+          "iter"
+        ],
+        "export": "Zip",
+        "member": "superNth",
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccess",
+              "RandomAccessNoCoerce"
+            ],
+            "stepped": [
+              "608f92abc48d28daf245e2f3fcaec68a"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
             "marks": [
               "drop"
             ]
@@ -10173,17 +11685,22 @@
       "608f92abc48d28da100921a6c7079e11",
       "608f92abc48d28da10ae78768806acd4",
       "608f92abc48d28da15e0a763c639ab82",
+      "608f92abc48d28da29302b6f3fb916fb",
       "608f92abc48d28da2b3a75d574f34954",
       "608f92abc48d28da307f7b0ae1065af9",
       "608f92abc48d28da308ed4aa16f54459",
       "608f92abc48d28da30ff0abc0758142a",
+      "608f92abc48d28da337fa3b240773f94",
+      "608f92abc48d28da3639c0453ba58670",
       "608f92abc48d28da367c3b6a181fb242",
+      "608f92abc48d28da3abff18eb2af83b0",
       "608f92abc48d28da3b0f3c8004801789",
       "608f92abc48d28da3e5edc2e363066bd",
       "608f92abc48d28da43758fc72cefdaa5",
       "608f92abc48d28da496d1a9f623b4574",
       "608f92abc48d28da52f7eabb5e1c8b40",
       "608f92abc48d28da544c1b126646f0ad",
+      "608f92abc48d28da548e9ec384ea238b",
       "608f92abc48d28da58e24fcc247e29aa",
       "608f92abc48d28da59a8f7b541c500a7",
       "608f92abc48d28da59d2a6b15c8439c4",
@@ -10192,6 +11709,7 @@
       "608f92abc48d28da61bea4db352a273c",
       "608f92abc48d28da625b60302a1e6cdf",
       "608f92abc48d28da63e359d1fd6fa07c",
+      "608f92abc48d28da65950d2242221a7a",
       "608f92abc48d28da6ccc1f127504f7e6",
       "608f92abc48d28da705f3215720050d3",
       "608f92abc48d28da70bd5cc01d59342d",
@@ -10209,6 +11727,7 @@
       "608f92abc48d28da8a70f1bcc13556f9",
       "608f92abc48d28da8b6cb71f181dcea3",
       "608f92abc48d28da8c052be0d8cd1126",
+      "608f92abc48d28da8cefa13bf435eea1",
       "608f92abc48d28da8d23a92be325f535",
       "608f92abc48d28da93e94dc63d84f50",
       "608f92abc48d28da988f827baafbc70b",
@@ -10288,6 +11807,7 @@
       "exports": [
         "StepBy",
         "FlattenCompat",
+        "Zip",
         "peekableIterator_next",
         "peekableIterator_nth",
         "peekableIterator_last",
@@ -10300,6 +11820,7 @@
         "peekableClone_clone",
         "peekableDebug_fmt",
         "fuseIterator_next",
+        "fuseIterator___iteratorGetUnchecked",
         "fuseIterator_sizeHint",
         "fuseIterator_fold",
         "fuseIterator_count",
@@ -10341,6 +11862,7 @@
         "revClone_clone",
         "revDebug_fmt",
         "enumerateIterator_next",
+        "enumerateIterator___iteratorGetUnchecked",
         "enumerateIterator_sizeHint",
         "enumerateIterator_nth",
         "enumerateIterator_count",
@@ -10355,6 +11877,7 @@
         "enumerateClone_clone",
         "enumerateDebug_fmt",
         "mapIterator_next",
+        "mapIterator___iteratorGetUnchecked",
         "mapIterator_sizeHint",
         "mapIterator_fold",
         "mapIterator_tryFold",
@@ -10375,6 +11898,7 @@
         "filterClone_clone",
         "filterDebug_fmt",
         "copiedIterator_next",
+        "copiedIterator___iteratorGetUnchecked",
         "copiedIterator_sizeHint",
         "copiedIterator_fold",
         "copiedIterator_tryFold",
@@ -10447,6 +11971,7 @@
         "flatMapDoubleEndedIterator_rfold",
         "flatMapDoubleEndedIterator_tryRfold",
         "skipIterator_next",
+        "skipIterator___iteratorGetUnchecked",
         "skipIterator_sizeHint",
         "skipIterator_nth",
         "skipIterator_count",
@@ -10503,6 +12028,12 @@
         "chainDoubleEndedIterator_tryRfold",
         "chainClone_clone",
         "chainABDebug_fmt",
+        "zipIterator_next",
+        "zipIterator_sizeHint",
+        "zipIterator_nth",
+        "zipIterator_fold",
+        "zipDoubleEndedIterator_nextBack",
+        "zipIterator___iteratorGetUnchecked",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -10522,6 +12053,9 @@
         "iterator_take",
         "iterator_stepBy",
         "iterator_chain",
+        "iterator_zip",
+        "trustedRandomAccessNoCoerce_size",
+        "iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked",
         "fuseFuseImplI_tryRfold",
         "fuseFuseImplIFusedIterator_tryRfold",
         "andThenOrClear",
@@ -10551,7 +12085,26 @@
         "stepByStepByBackImplI_specRfold",
         "stepByStepByBackImplI_specTryRfold",
         "andThenOrClear$1",
+        "zipZipImplAB_next",
+        "zipZipImplABTrustedRandomAccessTrustedRandomAccess_next",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next",
+        "zipZipImplAB_sizeHint",
+        "zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint",
+        "zipZipImplAB_nth",
+        "zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nth",
+        "zipZipImplAB_fold",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fold",
+        "zipZipImplAB_nextBack",
+        "zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked",
+        "zipZipImplAB_new",
+        "zipZipImplABTrustedRandomAccessTrustedRandomAccess_new",
+        "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new",
         "andThenOrClear$2",
+        "zipSpecFold_specFold",
         "tSpecRangeSetupT_setup",
         "peekableClone",
         "peekableDebug",
@@ -10594,7 +12147,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "d1815a7db312c1ce"
+      "hash": "a3ebae15b8a8a008"
     },
     {
       "file": "iter.js.map",

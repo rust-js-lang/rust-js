@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-reader-a-step",
+    breaks: "`$given` counts a dictionary's reader by index as a step not its own, so a held `skip` given to std's `step_by` is stepped one item at a time (ADR 0975)",
+    file: "src/runtime/iterator.js",
+    find: "name === \"getUnchecked\" || ",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_steps_anywhere with"],
+  },
+  {
     name: "given-try-rfold-dropped",
     breaks: "a value given as it is, by a dictionary with a `try_rfold`, steps from its back by `next_back` where that `try_rfold` asks one `nth_back` (ADR 0930)",
     file: "src/runtime/iterator.js",

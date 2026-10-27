@@ -225,6 +225,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Fused => "whether it's a `FusedIterator`",
             TypeFact::ConstSize => "its constant size",
             TypeFact::OneShot => "whether it's a `OneShot`",
+            TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
+            TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
+            TypeFact::TrustedLen => "whether it's a `TrustedLen`",
         };
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
@@ -284,16 +287,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::Fused {
             return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
         }
-        // Of a type only a caller knows, its caller's, which none gave.
-        if matches!(fact, TypeFact::ConstSize | TypeFact::OneShot)
+        // Of a type whose fact is the facts of what it holds, `TrustedLen` of
+        // a `&mut I`, `I`'s, each's (ADR 0975).
+        if let [(held, _), ..] = crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact)[..]
+            && held != of
+        {
+            let mut holds: Option<Expr> = None;
+            for (held, fact) in crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact) {
+                let value = self.type_fact_value(held, fact, span)?;
+                holds = Some(match holds {
+                    Some(both) => Expr::bin(crate::js::Op::And, both, value),
+                    None => value,
+                });
+            }
+            return Ok(holds.expect("one held"));
+        }
+        // Of a type only a caller knows, its caller's, which none gave; but a
+        // trait rustc can say holds of it here, as of any `T` (ADR 0975).
+        let decided = crate::lower::recognition::fact_trait(self.tcx, fact)
+            .and_then(|fact_trait| self.recognition().trait_holds(of, fact_trait))
+            .is_some();
+        if !matches!(fact, TypeFact::Fused)
+            && !decided
+            && (fact == TypeFact::ConstSize || crate::lower::recognition::fact_trait(self.tcx, fact).is_some())
             && (of.has_param() || matches!(of.kind(), ty::Alias(..)))
         {
             return Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
         }
-        // Whether it's a `OneShot`, whose `flatten()` std specializes (ADR
-        // 0899).
-        if fact == TypeFact::OneShot {
-            return Ok(Expr::bool(self.recognition().is_one_shot(of)));
+        // Whether it has the trait the fact is, a `OneShot`, whose `flatten()`
+        // std specializes (ADR 0899), or a `TrustedRandomAccess`, by which
+        // std's zip reads by index (ADR 0975).
+        if let Some(fact_trait) = crate::lower::recognition::fact_trait(self.tcx, fact) {
+            let holds = self.recognition().implements_trait(of, fact_trait);
+            // One std's zip would read by index that rust-js can't read so:
+            // refused, never read as another is.
+            if holds
+                && matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce)
+                && self.index_reader(of, span)?.is_none()
+            {
+                return Err(self.unsupported(span, &format!("reading a `{of}` by its index, as std's zip of it does")));
+            }
+            return Ok(Expr::bool(holds));
         }
         // `N` of an array of `N` items, or a reference to one, else none
         // (ADR 0899).

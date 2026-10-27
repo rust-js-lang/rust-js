@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0061](0061-generic-iterators.md),
 [0160](0160-user-collections.md) and
 [0454](0454-a-mut-given-as-a-type-parameter.md).
+Amended by [0976](0976-an-into-iterator-parameter-is-held-as-it-is.md): a
+`U: IntoIterator` given a reference holds it as it is, never in a box.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same items, and
 what's written through a `&mut` one is written to the collection.

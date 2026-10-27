@@ -759,6 +759,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md)
 - [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)
 - [0974 A `while` that steps its variable last is a `for`](0974-a-while-that-steps-its-variable-last-is-a-for.md)
+- [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
+- [0976 An `IntoIterator` parameter is held as it is, never in a box](0976-an-into-iterator-parameter-is-held-as-it-is.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

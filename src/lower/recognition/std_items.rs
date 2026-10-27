@@ -174,6 +174,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Peekable", Some("Clone"), "clone"),
     ("Peekable", Some("Debug"), "fmt"),
     ("Fuse", Some("Iterator"), "next"),
+    ("Fuse", Some("Iterator"), "__iterator_get_unchecked"),
     ("Fuse", Some("Iterator"), "size_hint"),
     ("Fuse", Some("Iterator"), "fold"),
     ("Fuse", Some("Iterator"), "count"),
@@ -209,6 +210,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Rev", Some("Clone"), "clone"),
     ("Rev", Some("Debug"), "fmt"),
     ("Enumerate", Some("Iterator"), "next"),
+    ("Enumerate", Some("Iterator"), "__iterator_get_unchecked"),
     ("Enumerate", Some("Iterator"), "size_hint"),
     ("Enumerate", Some("Iterator"), "nth"),
     ("Enumerate", Some("Iterator"), "count"),
@@ -223,6 +225,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Enumerate", Some("Clone"), "clone"),
     ("Enumerate", Some("Debug"), "fmt"),
     ("Map", Some("Iterator"), "next"),
+    ("Map", Some("Iterator"), "__iterator_get_unchecked"),
     ("Map", Some("Iterator"), "size_hint"),
     ("Map", Some("Iterator"), "fold"),
     ("Map", Some("Iterator"), "try_fold"),
@@ -243,6 +246,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Filter", Some("Clone"), "clone"),
     ("Filter", Some("Debug"), "fmt"),
     ("Copied", Some("Iterator"), "next"),
+    ("Copied", Some("Iterator"), "__iterator_get_unchecked"),
     ("Copied", Some("Iterator"), "size_hint"),
     ("Copied", Some("Iterator"), "fold"),
     ("Copied", Some("Iterator"), "try_fold"),
@@ -315,6 +319,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("FlatMap", Some("DoubleEndedIterator"), "rfold"),
     ("FlatMap", Some("DoubleEndedIterator"), "try_rfold"),
     ("Skip", Some("Iterator"), "next"),
+    ("Skip", Some("Iterator"), "__iterator_get_unchecked"),
     ("Skip", Some("Iterator"), "size_hint"),
     ("Skip", Some("Iterator"), "nth"),
     ("Skip", Some("Iterator"), "count"),
@@ -330,6 +335,7 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Skip", Some("Clone"), "clone"),
     ("Skip", Some("Debug"), "fmt"),
     ("Take", Some("Iterator"), "next"),
+    ("Take", Some("Iterator"), "__iterator_get_unchecked"),
     ("Take", Some("Iterator"), "size_hint"),
     ("Take", Some("Iterator"), "nth"),
     ("Take", Some("Iterator"), "advance_by"),
@@ -367,6 +373,12 @@ pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
     ("Chain", Some("DoubleEndedIterator"), "try_rfold"),
     ("Chain", Some("Clone"), "clone"),
     ("Chain", Some("Debug"), "fmt"),
+    ("Zip", Some("Iterator"), "next"),
+    ("Zip", Some("Iterator"), "size_hint"),
+    ("Zip", Some("Iterator"), "nth"),
+    ("Zip", Some("Iterator"), "fold"),
+    ("Zip", Some("DoubleEndedIterator"), "next_back"),
+    ("Zip", Some("Iterator"), "__iterator_get_unchecked"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -391,6 +403,25 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "take"),
     ("Iterator", "step_by"),
     ("Iterator", "chain"),
+    ("Iterator", "zip"),
+    // What std's zip by index asks the length of its sides by (ADR 0975).
+    ("TrustedRandomAccessNoCoerce", "size"),
+];
+
+/// The `Iterator` methods a compiled std struct is made a JS iterator with
+/// where it's made (`std_iterator_steps`), and its dictionary's reader by
+/// index (`index_reader`): what it asks of its caller, the facts its impls
+/// are picked by, is what these ask (ADR 0975).
+pub(crate) const STRUCT_STEPS: [&str; 9] = [
+    "next",
+    "size_hint",
+    "nth",
+    "advance_by",
+    "last",
+    "fold",
+    "try_fold",
+    "count",
+    "__iterator_get_unchecked",
 ];
 
 /// Of those, the adapters std's struct is where they're held, by their
@@ -417,6 +448,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Take", "take", true),
     ("StepBy", "step_by", false),
     ("Chain", "chain", false),
+    ("Zip", "zip", true),
 ];
 
 /// Of those, the adapters std's struct is the meaning of alone, on their way
@@ -432,6 +464,7 @@ const MEANING_ONLY: &[&str] = &[
     "MapWhile",
     "Scan",
     "Copied",
+    "Zip",
 ];
 
 thread_local! {
@@ -451,6 +484,12 @@ pub(crate) fn build_std_structs_as_meaning(meaning: bool) {
 /// each but `MEANING_ONLY`'s, which only a build of the meaning compiles.
 fn compiled_for_build(type_name: &str) -> bool {
     !MEANING_ONLY.contains(&type_name) || MEANING.with(std::cell::Cell::get)
+}
+
+/// Whether std's `Zip` is compiled for this build, which reads its sides by
+/// index, their dictionaries' `getUnchecked` (ADR 0975).
+pub(crate) fn zips_by_index_compiled() -> bool {
+    compiled_for_build("Zip")
 }
 
 /// Whether `id`, a std body `@rust-js/std` compiles, isn't this build's: an
@@ -482,7 +521,7 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// Whether `ty` is a `TrustedLen`, whose `Vec::from_iter` sizes it by its
 /// upper bound, as rustc selects it (ADR 0940).
 pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
-    registry::by_path(tcx, "core", &["iter", "TrustedLen"]).is_some_and(|trusted| {
+    super::fact_trait(tcx, TypeFact::TrustedLen).is_some_and(|trusted| {
         let tr = ty::TraitRef::new(tcx, trusted, [ty]);
         tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
     })
@@ -503,7 +542,7 @@ pub(crate) fn zips_by_index<'tcx>(
     b: Ty<'tcx>,
 ) -> bool {
     let [a, b] = [a, b].map(|ty| iterator_type_of(tcx, typing_env, ty));
-    let Some(random_access) = registry::by_path(tcx, "core", &["iter", "TrustedRandomAccess"]) else {
+    let Some(random_access) = super::fact_trait(tcx, TypeFact::RandomAccess) else {
         return false;
     };
     let is_random_access = |ty: Ty<'tcx>| {
@@ -525,8 +564,8 @@ pub(crate) fn iterator_type_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEn
 
 /// `MAY_HAVE_SIDE_EFFECT` of `ty`, a `TrustedRandomAccess`: whether reading
 /// an item of it may run code. Where rustc can't say, it may.
-fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
-    let effect = registry::by_path(tcx, "core", &["iter", "TrustedRandomAccessNoCoerce"]).and_then(|no_coerce| {
+pub(crate) fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    let effect = super::fact_trait(tcx, TypeFact::RandomAccessNoCoerce).and_then(|no_coerce| {
         tcx.associated_items(no_coerce)
             .filter_by_name_unhygienic(Symbol::intern("MAY_HAVE_SIDE_EFFECT"))
             .next()
@@ -622,7 +661,7 @@ thread_local! {
 /// The provided method `method` of std's trait `trait_name` compiled into
 /// `@rust-js/std`, `Iterator::fuse`'s: the one place that finds it.
 pub(crate) fn compiled_provided_method(tcx: TyCtxt<'_>, trait_name: &str, method: &str) -> Option<DefId> {
-    let trait_def = tcx.get_diagnostic_item(Symbol::intern(trait_name))?;
+    let trait_def = std_iter_trait(tcx, trait_name)?;
     (tcx.associated_items(trait_def).in_definition_order())
         .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
         .map(|item| item.def_id)
@@ -661,8 +700,15 @@ pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
         })
 }
 
+/// A std trait a catalog names, by its diagnostic item, `Iterator`, or as
+/// `core::iter` exports one without, `ExactSizeIterator` or
+/// `TrustedRandomAccessNoCoerce`.
+fn std_iter_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
+    tcx.get_diagnostic_item(Symbol::intern(name))
+        .or_else(|| registry::by_path(tcx, "core", &["iter", name]))
+}
+
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
-    let trait_named = |name: &str| tcx.get_diagnostic_item(Symbol::intern(name));
     let mut found = Vec::new();
     for &(type_name, trait_name, method) in COMPILED_STD
         .iter()
@@ -678,15 +724,9 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                 .find(|child| child.ident.as_str() == name)
                 .and_then(|child| child.res.opt_def_id())
         };
-        // Or one `core::iter` exports without a diagnostic item,
-        // `ExactSizeIterator`.
-        let exported = |name: &str| registry::by_path(tcx, "core", &["iter", name]);
         let impls: Vec<DefId> = match trait_name {
             None => tcx.inherent_impls(adt).to_vec(),
-            Some(trait_name) => match trait_named(trait_name)
-                .or_else(|| exported(trait_name))
-                .or_else(|| private_trait(trait_name))
-            {
+            Some(trait_name) => match std_iter_trait(tcx, trait_name).or_else(|| private_trait(trait_name)) {
                 Some(trait_def) => tcx
                     .all_impls(trait_def)
                     .filter(|&imp| matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(of, _) if of.did() == adt))
@@ -756,7 +796,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
                     _ => Vec::new(),
                 },
                 _ => super::fact_specialization(tcx, typing_env, callee, args)
-                    .map(|spec| vec![spec.selected.0, spec.special])
+                    .map(|spec| spec.methods().collect())
                     .unwrap_or_default(),
             };
             for called in called {

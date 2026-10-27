@@ -39,7 +39,7 @@ pub(super) fn type_fact_params<'tcx>(
 ) -> HashMap<DefId, Vec<(u32, TypeFact)>> {
     let iterator = std_item(tcx, StdItem::Iterator);
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
-    let steps = ["next", "size_hint", "nth", "last"].map(|name| trait_method(tcx, iterator, name));
+    let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
     let mut asking = Asking::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
@@ -47,14 +47,20 @@ pub(super) fn type_fact_params<'tcx>(
         // A body read from its MIR alone, a std one's (ADR 0561): what it
         // asks is read from each function it names, and from each struct it
         // makes of a compiled std iterator, `Fuse { iter: self }` of std's
-        // `fuse`, whose `next`, `size_hint`, `nth` and `last` ask what they
-        // ask, `Flatten`'s its items' constant size (ADR 0899).
+        // `fuse`, whose steps (`STRUCT_STEPS`) ask what they ask,
+        // `Flatten`'s its items' constant size (ADR 0899), a `Zip`'s `fold`
+        // whether its sides are `TrustedLen` (ADR 0975).
         if body.thir.exprs.is_empty() {
             let mut named = body_fn_defs(body);
             for held in body_aggregates(tcx, body) {
                 for &step in &steps {
-                    if let Ok(Some(instance)) =
-                        crate::lower::items::resolve_instance_in(tcx, typing_env, step, tcx.mk_args(&[held.into()]))
+                    // `Self` the struct, a step's own parameters, `fold`'s
+                    // `B` and `F`, themselves: they pick no impl.
+                    let args = ty::GenericArgs::for_item(tcx, step, |param, _| match param.index {
+                        0 => held.into(),
+                        _ => tcx.mk_param_from_def(param),
+                    });
+                    if let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, typing_env, step, args)
                         && instance.def_id() != step
                     {
                         named.push((instance.def_id(), instance.args));
@@ -66,10 +72,12 @@ pub(super) fn type_fact_params<'tcx>(
                 // `FuseImpl::next`'s of a `Fuse<I>`: whether `I` is a
                 // `FusedIterator`, its caller's, `IFused` (ADRs 0543, 0561),
                 // or `FlattenCompat`'s whether `U` is a `OneShot` (ADR 0899).
-                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args)
-                    && let Some(index) = slot_of(tcx, foreign, caller, spec.of)
-                {
-                    asking.asked.insert((caller, index, spec.fact));
+                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args) {
+                    for (of, fact) in spec.facts() {
+                        if let Some(index) = slot_of(tcx, foreign, caller, of) {
+                            asking.asked.insert((caller, index, fact));
+                        }
+                    }
                 }
                 asking.of_call(tcx, foreign, given, fns, typing_env, caller, callee, args);
             }
@@ -233,7 +241,7 @@ pub(super) fn type_fact_params<'tcx>(
                 .map(|&(_, index, fact)| (index, fact))
                 .collect();
             for (index, fact) in facts {
-                if let Some(at) = asked_of_caller(tcx, foreign, typing_env, (caller, callee, args), index) {
+                for (at, fact) in asked_of_caller(tcx, foreign, typing_env, (caller, callee, args), (index, fact)) {
                     changed |= asked.insert((caller, at, fact));
                 }
             }
@@ -425,10 +433,10 @@ impl<'tcx> Asking<'tcx> {
             {
                 // The method's own arguments after its impl's, as the call
                 // gives them after its trait's.
-                let (selected, impl_args) = spec.selected;
+                let impl_args = spec.selected.1;
                 let own = &args[tcx.generics_of(callee).parent_count..];
                 let args = tcx.mk_args_from_iter(impl_args.iter().chain(own.iter().copied()));
-                for method in [selected, spec.special] {
+                for method in spec.methods() {
                     self.calls.push((caller, method, args));
                 }
                 return;
@@ -451,7 +459,7 @@ impl<'tcx> Asking<'tcx> {
             }
             for (id, args) in named {
                 for (index, fact) in foreign.type_facts(id) {
-                    if let Some(at) = asked_of_caller(tcx, foreign, typing_env, (caller, id, args), index) {
+                    for (at, fact) in asked_of_caller(tcx, foreign, typing_env, (caller, id, args), (index, fact)) {
                         self.asked.insert((caller, at, fact));
                     }
                 }
@@ -489,17 +497,18 @@ fn carried_by(ty: ty::Ty<'_>) -> Option<DefId> {
     }
 }
 
-/// The slot of its own a caller has what its call of `callee` with `args`
+/// The slots of its own a caller has what its call of `callee` with `args`
 /// asks a fact of, at `index`, a type parameter's or an associated type's
-/// slot (`drop_slot`), `I::Item`'s of a flatten's `ConstSize` (ADR 0899):
-/// none of a type it knows.
+/// slot (`drop_slot`), `I::Item`'s of a flatten's `ConstSize` (ADR 0899),
+/// or each's a type is the facts of, `I`'s `TrustedLen` of a `&mut I` (ADR
+/// 0975): none of a type it knows.
 fn asked_of_caller<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
-    index: u32,
-) -> Option<u32> {
+    (index, fact): (u32, TypeFact),
+) -> Vec<(u32, TypeFact)> {
     let slot = crate::lower::traits::drop_slot(tcx, foreign, callee, index);
     let of = ty::EarlyBinder::bind(tcx, slot)
         .instantiate(tcx, args)
@@ -507,7 +516,9 @@ fn asked_of_caller<'tcx>(
     let of = tcx
         .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(of))
         .unwrap_or(of);
-    slot_of(tcx, foreign, caller, of)
+    (crate::lower::recognition::held_facts(tcx, typing_env, of, fact).into_iter())
+        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of)?, fact)))
+        .collect()
 }
 
 /// The trait method of the crate's `id` is, or implements: `None` of a

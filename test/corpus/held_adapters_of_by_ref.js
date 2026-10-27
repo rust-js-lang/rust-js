@@ -40,7 +40,7 @@ function countIterator_fold(count, init, f) {
   return acc;
 }
 
-function halves(it) {
+function halves(it, IFused) {
   const fused = iterator_fuse(
     iterator_map($lent(Iterator.from(it)), (x) => (x / 2) >>> 0, { next: $next }),
     { next: $next, fold: $foldOf },
@@ -88,9 +88,10 @@ function main() {
       countIterator_fold,
       countIterator_nth,
     ),
+    false,
   );
   console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const value$5 = halves($lazyRange(3, 9));
+  const value$5 = halves($lazyRange(3, 9), true);
   console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

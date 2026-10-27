@@ -470,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.in_impl_terms(generic_args),
             )
         {
-            return Ok(self.is_rust_fn(spec.selected.0) && self.is_rust_fn(spec.special));
+            return Ok(spec.methods().all(|method| self.is_rust_fn(method)));
         }
         // Or it's a std trait's provided method compiled into `@rust-js/std`,
         // `peekable`'s, a function over `Self`: called on a type parameter,

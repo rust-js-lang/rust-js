@@ -756,6 +756,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// compiled, `Fuse`'s `next_back`, and is a `trait_id` here, so a
     /// use site can give what steps it by that (ADR 0561).
     pub(in crate::lower) fn compiled_step(&self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str) -> bool {
+        debug_assert!(
+            trait_id != std_item(self.tcx, StdItem::Iterator)
+                || crate::lower::recognition::STRUCT_STEPS.contains(&method),
+            "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`)"
+        );
         let ty = ty.peel_refs();
         if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
             return false;

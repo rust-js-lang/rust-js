@@ -88,8 +88,10 @@ function $given(value, iterator, boxed = false, back, len) {
   // A JS iterator stepped as it is, its dictionary its own steps, each one
   // that calls the value's, `$next` and `$foldOf` of std's struct (ADR
   // 0912): itself, whose own `last`, `nth`, `fold` and `advanceBy` are std's
-  // for its kind, a chain's sides' (#276).
-  const own = (dictionary, steps) => Object.entries(dictionary).every(([name, step]) => steps[name] === step);
+  // for its kind, a chain's sides' (#276). Its reader by index, which steps
+  // nothing, aside (ADR 0975).
+  const own = (dictionary, steps) =>
+    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || steps[name] === step);
   if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined
     && (back === undefined || own(back, { next_back: $nextBack }))) {
     return value;

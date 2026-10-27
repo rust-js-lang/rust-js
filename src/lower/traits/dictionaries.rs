@@ -387,24 +387,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // box (ADR 0454): a handle on each item of a `&mut`, as `for x in &mut
         // v` makes, or std's own of what it's given.
         if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
-            && let ty::Ref(_, pointee, mutability) = *ty.kind()
+            && matches!(ty.kind(), ty::Ref(..))
             && !self.has_user_impl(tr.def_id, ty)
         {
+            return self.ref_into_iter_dictionary(tr, self.held_in_box(ty), span);
+        }
+        // std's `IntoIterator` of one of the function's own type parameters
+        // it holds as the iterable its caller gave, an `impl IntoIterator`
+        // (ADR 0551), given to std's body compiled, `zip`'s `U`: the JS
+        // iterator of it, as a `for` of it steps, stepped as one (ADR 0976).
+        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)
+            && let ty::Param(param) = *ty.kind()
+            && !crate::lower::iterators::given_as_it_is(self.tcx, self.tcx.typeck_root_def_id(self.item), param)
+        {
+            let items = crate::lower::iterators::given_into_iter(Expr::var("items"));
+            let itself = Expr::arrow(
+                vec!["items".into()],
+                vec![StmtKind::Return(Some(items)).at(js::Span::NONE)],
+            );
             let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
-            // A `&mut`'s, the cell generic code has, a box of an object's.
-            let name = match mutability {
-                Mutability::Mut => "cell",
-                Mutability::Not => self.parameter_name(pointee),
-            };
-            let given = match self.held_in_box(ty) {
-                true => Expr::held(Expr::var(name)),
-                false => Expr::var(name),
-            };
-            let mut body = Vec::new();
-            let items = (self.ref_into_iter(given, ty, span, &mut body)?).ok_or_else(|| self.no_evidence(span, tr))?;
-            body.push(StmtKind::Return(Some(items)).at(js::Span::NONE));
-            let f = Expr::arrow(vec![name.into()], body);
-            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
+            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), itself)];
             props.extend(self.made_steps(tr, span)?);
             return Ok(Expr::object(props));
         }
@@ -806,6 +808,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(steps)
+    }
+
+    /// std's `IntoIterator` of a `&C` or a `&mut C`, `tr`, as generic code
+    /// holds it: in the box a `&mut` to an object is, `boxed`, as a `c: &mut
+    /// C` of an unknown `C` holds it (ADR 0454); or as it is, as a `U:
+    /// IntoIterator` given a `&mut [T]` holds it, std's `zip`'s and
+    /// `chain`'s, which a bound by `IntoIterator` never boxes (ADR 0976).
+    pub(in crate::lower) fn ref_into_iter_dictionary(
+        &mut self,
+        tr: ty::TraitRef<'tcx>,
+        boxed: bool,
+        span: Span,
+    ) -> R<Expr> {
+        let ty = tr.self_ty();
+        let ty::Ref(_, pointee, mutability) = *ty.kind() else {
+            return Err(self.no_evidence(span, tr));
+        };
+        let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
+        // A `&mut`'s, the cell generic code has, a box of an object's.
+        let name = match mutability {
+            Mutability::Mut => "cell",
+            Mutability::Not => self.parameter_name(pointee),
+        };
+        let given = match boxed {
+            true => Expr::held(Expr::var(name)),
+            false => Expr::var(name),
+        };
+        let mut body = Vec::new();
+        let items = (self.ref_into_iter(given, ty, span, &mut body)?).ok_or_else(|| self.no_evidence(span, tr))?;
+        body.push(StmtKind::Return(Some(items)).at(js::Span::NONE));
+        let f = Expr::arrow(vec![name.into()], body);
+        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
+        props.extend(self.made_steps(tr, span)?);
+        Ok(Expr::object(props))
     }
 
     /// A dictionary's facts of its associated types, what generic code asks

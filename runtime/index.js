@@ -618,8 +618,10 @@ export function $given(value, iterator, boxed = false, back, len) {
   // A JS iterator stepped as it is, its dictionary its own steps, each one
   // that calls the value's, `$next` and `$foldOf` of std's struct (ADR
   // 0912): itself, whose own `last`, `nth`, `fold` and `advanceBy` are std's
-  // for its kind, a chain's sides' (#276).
-  const own = (dictionary, steps) => Object.entries(dictionary).every(([name, step]) => steps[name] === step);
+  // for its kind, a chain's sides' (#276). Its reader by index, which steps
+  // nothing, aside (ADR 0975).
+  const own = (dictionary, steps) =>
+    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || steps[name] === step);
   if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined
     && (back === undefined || own(back, { next_back: $nextBack }))) {
     return value;
@@ -11495,6 +11497,19 @@ export function $trustedZip(a, b) {
   );
   zipped.from = [left, b];
   return zipped;
+}
+
+// Std's zip by index of std's compiled `Zip` reads its sides' items as
+// `__iterator_get_unchecked(i)` does (ADR 0975): an array's `$iter`'s,
+// the item `i` past where it is, unstepped.
+export function $getUnchecked(it, i) {
+  return it.items[it.at + i];
+}
+
+// A range's, of numbers std reads by index: its start plus `i`, of a
+// 64-bit one a BigInt's.
+export function $rangeAt(range, i) {
+  return typeof range.start === "bigint" ? range.start + BigInt(i) : range.start + i;
 }
 
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,

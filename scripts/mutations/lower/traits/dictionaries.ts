@@ -262,8 +262,8 @@ export const mutations: Mutation[] = [
     name: "into-iter-std-dictionary-missing",
     breaks: "std's `IntoIterator` of a `&mut Vec`, a `&[T]`, a `&mut Option` or a `&mut BTreeMap` has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
-    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)\n            && let ty::Ref(_, pointee, mutability) = *ty.kind()\n",
-    replace: "        if false\n            && let ty::Ref(_, pointee, mutability) = *ty.kind()\n",
+    find: "        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)\n            && matches!(ty.kind(), ty::Ref(..))\n",
+    replace: "        if false\n            && matches!(ty.kind(), ty::Ref(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
@@ -406,8 +406,8 @@ export const mutations: Mutation[] = [
     name: "ref-into-iter-steps-missing",
     breaks: "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n            props.extend(self.made_steps(tr, span)?);\n            return Ok(Expr::object(props));\n",
-    replace: "            let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n            return Ok(Expr::object(props));\n",
+    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, span)?);\n        Ok(Expr::object(props))\n",
+    replace: "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

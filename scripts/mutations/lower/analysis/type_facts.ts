@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "struct-steps-own-params-unfilled",
+    breaks: "a held struct's `fold`, whose own `B` and `F` its resolution needs, isn't followed: a `Zip`'s `fold` asks its sides' `TrustedLen` of no caller, refused (ADR 0975)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        _ => tcx.mk_param_from_def(param),\n",
+    replace: "                        _ => return tcx.lifetimes.re_erased.into(),\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "map-made-behind-mut-unasked",
     breaks: "a map of a type parameter's keys an entry's `or_default()` makes has no class, its caller never asked, and is refused (#314)",
     file: "src/lower/analysis/type_facts.rs",
@@ -191,8 +199,8 @@ export const mutations: Mutation[] = [
     name: "fused-specialization-fact-not-asked",
     breaks: "a std body calling a std-private trait's method whose impl its parameter's being a `FusedIterator` picks, `FuseImpl::next`'s, doesn't ask `IFused` of it, so no caller gives it",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args)\n",
-    replace: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n",
+    find: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args) {\n",
+    replace: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -223,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "library-fact-of-alias-not-asked",
     breaks: "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",
     file: "src/lower/analysis/type_facts.rs",
-    find: "    slot_of(tcx, foreign, caller, of)\n}\n",
-    replace: "    slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))\n}\n",
+    find: "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of)?, fact)))\n",
+    replace: "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))?, fact)))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_fuse.rs$"],
   },
   {

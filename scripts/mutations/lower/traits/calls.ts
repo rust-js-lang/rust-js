@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-iter-param-boxed",
+    breaks: "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
+    file: "src/lower/traits/calls.rs",
+    find: "                        None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^zip_into_mut_slice with"],
+  },
+  {
     name: "identity-eq-impl-called",
     breaks: "`a == b` of two values of a type equal only to itself calls its `eq`, `fiberPartialEq_eq(a, b)`, not `a === b` as of references to them (ADR 0864, amended)",
     file: "src/lower/traits/calls.rs",
@@ -38,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "const-args-unpassed",
     breaks: "`sum([1, 2, 3])` isn't given its `N`, and the loop runs to `undefined`",
     file: "src/lower/traits/calls.rs",
-    find: "                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),\n                Slot::Bound(bound) => {\n                    let bound = ty::EarlyBinder::bind(self.tcx, bound)\n",
-    replace: "                Slot::Const(_) => {}\n                Slot::Bound(bound) => {\n                    let bound = ty::EarlyBinder::bind(self.tcx, bound)\n",
+    find: "                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),\n                Slot::Bound(declared) => {\n",
+    replace: "                Slot::Const(_) => {}\n                Slot::Bound(declared) => {\n",
     tests: ["test/corpus.test.ts","-t","const_generics"],
   },
   {
@@ -297,8 +305,8 @@ export const mutations: Mutation[] = [
     name: "fused-impl-not-picked",
     breaks: "a std-private trait's call whose impl `I` being a `FusedIterator` picks takes the impl rustc selects for `I: Iterator` alone, so a `FusedIterator`'s `Fuse` drops it as it ends",
     file: "src/lower/traits/calls.rs",
-    find: "            let called = Expr::cond(fact, special, selected_call);\n",
-    replace: "            let called = Expr::cond(fact, selected_call.clone(), selected_call);\n",
+    find: "                called = Expr::cond(tested.expect(\"a fact picks it\"), special, called);\n",
+    replace: "                called = Expr::cond(tested.expect(\"a fact picks it\"), called.clone(), called);\n",
     tests: ["test/std-package.test.ts"],
   },
   {

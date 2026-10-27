@@ -27,12 +27,13 @@ function pair(n) {
   return [n, (n * 10) >>> 0];
 }
 
-function pairs(it, IIterator) {
+function pairs(it, IIterator, IFused) {
   return iterator_flatMap(
     it,
     pair,
     IIterator,
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    IFused,
     2,
     false,
   );
@@ -45,6 +46,7 @@ function main() {
     (n) => $range(0, n, 4),
     { next: $rangeNext },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    true,
     undefined,
     false,
   );
@@ -59,6 +61,7 @@ function main() {
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     { next_back: $nextBack },
+    true,
     false,
   );
   const value$1 = $sizeHint(runs);
@@ -73,6 +76,7 @@ function main() {
     (n) => [n, n],
     { next: $next },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+    true,
     2,
     false,
   );
@@ -84,6 +88,7 @@ function main() {
     { next_back: $nextBack },
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     { next_back: $nextBack },
+    true,
     false,
   );
   const sizeHint = $sizeHint(doubled);
@@ -109,6 +114,7 @@ function main() {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
     },
+    true,
     undefined,
     true,
   );
@@ -134,7 +140,7 @@ function main() {
     console.log("dropped");
 
     // Held in a struct, made by generic code.
-    const held = { pairs: pairs($iter([4, 5]), { next: $next }) };
+    const held = { pairs: pairs($iter([4, 5]), { next: $next }, true) };
     const value$1 = $next(held.pairs);
     const value$2 = $sizeHint(held.pairs);
     console.log(

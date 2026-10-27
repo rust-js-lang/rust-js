@@ -308,6 +308,7 @@ function main() {
         (x) => [x, (x * 10) >>> 0],
         { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
         { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        false,
         2,
         false,
         ownDrop_drop,

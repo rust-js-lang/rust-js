@@ -262,17 +262,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_ok()
     }
 
-    /// Whether `ty` is std's `OneShot`, `UOneShot` (ADR 0899).
-    pub(crate) fn is_one_shot(&self, ty: Ty<'tcx>) -> bool {
-        let Some(one_shot) = one_shot_trait(self.tcx) else {
-            return false;
-        };
-        let tr = (self.tcx).erase_and_anonymize_regions(ty::TraitRef::new(self.tcx, one_shot, [ty]));
-        self.tcx
-            .codegen_select_candidate(self.typing_env.as_query_input(tr))
-            .is_ok()
-    }
-
     /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
     /// `Map<I, F>`, which drops with it, after its source, closed as it is
     /// (ADR 0485): `map`'s, `filter`'s, `skip_while`'s and `inspect`'s.
@@ -794,6 +783,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "min" => IterMethod::Min,
             "last" => IterMethod::Last,
             "nth" => IterMethod::Nth,
+            "__iterator_get_unchecked" => IterMethod::GetUnchecked,
             "advance_by" => IterMethod::AdvanceBy,
             "partition" => IterMethod::Partition,
             "is_sorted" => IterMethod::IsSorted,
@@ -1387,6 +1377,10 @@ pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 /// own (ADRs 0036, 0139, 0364): `iterator_method`'s answer.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum IterMethod {
+    /// `__iterator_get_unchecked(i)`: a `TrustedRandomAccess`'s item at
+    /// `i` past where it is, unstepped, which std's zip by index reads (ADR
+    /// 0975).
+    GetUnchecked,
     /// `is_sorted()`: each item at most the next, by its `PartialOrd`.
     IsSorted,
     /// `cmp` and `partial_cmp` of two iterators, and `lt`, `le`, `gt` and

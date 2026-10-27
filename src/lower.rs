@@ -709,6 +709,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(value) = representation::const_value_js(self.tcx, self.typing_env, def_id, args, span) {
             return Ok(value);
         }
+        // A `TrustedRandomAccess`'s `MAY_HAVE_SIDE_EFFECT`, as rustc
+        // evaluates it; where it can't, of a type only a caller knows, true:
+        // what it lets std's zip leave unread does nothing when read, so
+        // reading it gives the same (ADR 0975).
+        if recognition::is_steps_code_const(self.tcx, def_id) {
+            return Ok(Expr::bool(recognition::steps_code(
+                self.tcx,
+                self.typing_env,
+                args.type_at(0),
+            )));
+        }
         match self.tcx.trait_of_assoc(def_id) {
             Some(trait_id) if args.has_non_region_param() => {
                 let dictionary = self.dictionary(ty::TraitRef::from_assoc(self.tcx, trait_id, args), span)?;

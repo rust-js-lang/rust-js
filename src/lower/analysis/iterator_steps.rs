@@ -205,8 +205,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             // `FuseImpl::next`'s of a `Fuse<I>` (ADR 0561): stepped as either
             // impl's method steps it.
             if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args) {
-                let (selected, impl_args) = spec.selected;
-                for method in [selected, spec.special] {
+                let impl_args = spec.selected.1;
+                for method in spec.methods() {
                     if fns.contains_key(&method) {
                         pass_on(&mut passed, method, impl_args);
                     } else if foreign.item(method).is_some() {
@@ -253,6 +253,10 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     true => vec![tr],
                     false => vec![tr, iterator],
                 },
+                // Another std trait's method that asks its `Self` be an
+                // iterator, `TrustedRandomAccessNoCoerce::size`'s `where Self:
+                // Iterator`, compiled as a function over it (ADR 0975).
+                Some(tr) if is_std_crate(tcx, tr) && asks_self_iterator(tcx, callee, iterator) => vec![iterator],
                 _ => Vec::new(),
             };
             if !by.is_empty()
@@ -571,4 +575,13 @@ fn impl_asks<'tcx>(
             })
             .collect(),
     )
+}
+
+/// Whether `method`, a trait's, bounds its `Self` by `iterator`, `where
+/// Self: Iterator`.
+fn asks_self_iterator(tcx: TyCtxt<'_>, method: DefId, iterator: DefId) -> bool {
+    let self_param = ty::Ty::new_param(tcx, 0, rustc_span::symbol::kw::SelfUpper);
+    (tcx.clauses_of(method).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .any(|bound| bound.self_ty().skip_binder() == self_param && bound.def_id() == iterator)
 }

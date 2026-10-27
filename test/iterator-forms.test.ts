@@ -53,6 +53,12 @@ const few = [
   "copied_structs_apart.rs",
   "heap_pop_of_a_param.rs",
   "escape_iterators.rs",
+  "held_zips.rs",
+  "zip_from_back.rs",
+  "zip_into_mut_slice.rs",
+  "copied_default_own_params.rs",
+  "result_given_as_items.rs",
+  "range_steps_anywhere.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);
@@ -64,8 +70,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 const differs: Record<string, string> = {
   "cloned_chains_and_cycles.rs": "throws: a zip cloned apart clones its part, std's `Chain` here, as its maker made it, `$clone`",
   "evidence_paths.rs": "refused: stepping I, which rust-js found nothing here steps",
-  "result_given_as_items.rs": "throws: std's `Chain` given `&mut held`, a `Result`, as its `U: IntoIterator`, as it is, whose dictionary takes the box generic code has of a `&mut C`",
-  "zip_from_back.rs": "refused: a Zip<std::slice::IterMut<'_, i32>, std::slice::IterMut<'_, i32>> as a DoubleEndedIterator, which rust-js can't step from its back",
 };
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {

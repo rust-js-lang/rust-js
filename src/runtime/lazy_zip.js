@@ -46,6 +46,19 @@ function $trustedZip(a, b) {
   return zipped;
 }
 
+// Std's zip by index of std's compiled `Zip` reads its sides' items as
+// `__iterator_get_unchecked(i)` does (ADR 0975): an array's `$iter`'s,
+// the item `i` past where it is, unstepped.
+function $getUnchecked(it, i) {
+  return it.items[it.at + i];
+}
+
+// A range's, of numbers std reads by index: its start plus `i`, of a
+// 64-bit one a BigInt's.
+function $rangeAt(range, i) {
+  return typeof range.start === "bigint" ? range.start + BigInt(i) : range.start + i;
+}
+
 // `a.zip(b).rev()` of two iterators that know their backs and lengths,
 // `$iter`s: the longer trimmed from its back to the shorter's length, then
 // each's back paired, as Rust's `Zip::next_back` does (ADR 0493).

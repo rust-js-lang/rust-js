@@ -336,6 +336,57 @@ export const FlattenCompat = {
   },
 };
 
+export const Zip = {
+  superNth(
+    zip,
+    n,
+    AIterator,
+    BIterator,
+    ARandomAccess,
+    ARandomAccessNoCoerce,
+    BRandomAccess,
+    BRandomAccessNoCoerce,
+    dropA,
+    dropB,
+    dropAItem,
+    dropBItem,
+  ) {
+    while (true) {
+      const x =
+        ARandomAccess && BRandomAccess
+          ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
+              zip,
+              AIterator,
+              BIterator,
+              dropA,
+              dropB,
+              dropAItem,
+              dropBItem,
+            )
+          : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+            ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next(
+                zip,
+                AIterator,
+                BIterator,
+                dropA,
+                dropB,
+                dropAItem,
+                dropBItem,
+              )
+            : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
+      if (!x) {
+        return;
+      }
+      if (n === 0) {
+        return x;
+      }
+      n = (n - 1) >>> 0;
+      dropAItem?.(x[0]);
+      dropBItem?.(x[1]);
+    }
+  },
+};
+
 const $peekableClone = new WeakMap();
 const $peekableDebug = new WeakMap();
 const $fuseClone = new WeakMap();
@@ -701,6 +752,17 @@ export function fuseIterator_next(fuse, IIterator, IFused, dropI, dropIItem) {
   return IFused
     ? fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem)
     : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
+}
+
+export function fuseIterator___iteratorGetUnchecked(fuse, idx, IIterator, dropI, dropIItem) {
+  const iter = $someValue(fuse.iter);
+  return iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+    iter,
+    idx,
+    IIterator,
+    dropI,
+    dropIItem,
+  );
 }
 
 export function fuseIterator_sizeHint(fuse, IIterator, dropI, dropIItem) {
@@ -1265,6 +1327,24 @@ export function enumerateIterator_next(enumerate, IIterator, dropI, dropIItem) {
   }
 }
 
+export function enumerateIterator___iteratorGetUnchecked(
+  enumerate,
+  idx,
+  IIterator,
+  dropI,
+  dropIItem,
+) {
+  const it = enumerate.iter;
+  const value = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+    it,
+    idx,
+    IIterator,
+    dropI,
+    dropIItem,
+  );
+  return [(enumerate.count$ + idx) >>> 0, value];
+}
+
 export function enumerateIterator_sizeHint(enumerate, IIterator, dropI, dropIItem) {
   return $sizeHint(enumerate.iter, IIterator);
 }
@@ -1492,6 +1572,27 @@ export function mapIterator_next(map, IIterator, dropB, dropI, dropF, dropIItem)
     const args = [x];
     return $some(f(args[0]));
   }
+}
+
+export function mapIterator___iteratorGetUnchecked(
+  map,
+  idx,
+  IIterator,
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
+  const it = map.iter;
+  return map.f(
+    iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+      it,
+      idx,
+      IIterator,
+      dropI,
+      dropIItem,
+    ),
+  );
 }
 
 export function mapIterator_sizeHint(map, IIterator, dropB, dropI, dropF, dropIItem) {
@@ -1872,6 +1973,17 @@ export function copiedIterator_next(copied, IIterator, TCopy, dropI) {
     const v = TCopy ? TCopy.copy(value) : value;
     return $some(TCopy ? TCopy.copy(v) : v);
   }
+}
+
+export function copiedIterator___iteratorGetUnchecked(copied, idx, IIterator, TCopy, dropI) {
+  const it = copied.it;
+  const value = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+    it,
+    idx,
+    IIterator,
+    dropI,
+  );
+  return TCopy ? TCopy.copy(value) : value;
 }
 
 export function copiedIterator_sizeHint(copied, IIterator, TCopy, dropI) {
@@ -3277,6 +3389,7 @@ export function flattenDoubleEndedIterator_tryRfold(
 export function flatMapIterator_next(
   flatMap,
   UIntoIterator,
+  IFused,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3409,6 +3522,7 @@ export function flatMapIterator_tryFold(
   fold,
   UIntoIterator,
   RTry,
+  IFused,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3466,6 +3580,7 @@ export function flatMapDoubleEndedIterator_nextBack(
   IDoubleEndedIterator,
   UIntoIterator,
   UIntoIterDoubleEndedIterator,
+  IFused,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3727,6 +3842,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
   UIntoIterator,
   UIntoIterDoubleEndedIterator,
   RTry,
+  IFused,
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3869,6 +3985,38 @@ export function skipIterator_next(skip, IIterator, dropI, dropIItem) {
   const n = skip.n;
   skip.n = 0;
   return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
+}
+
+export function skipIterator___iteratorGetUnchecked(skip, idx, IIterator, dropI, dropIItem) {
+  if (idx === 0) {
+    const iter = { start: 0, end: skip.n };
+    while (true) {
+      if (!(iter.start < iter.end)) {
+        break;
+      }
+      const old = iter.start;
+      iter.start = (old + 1) >>> 0;
+      const skippedIdx = old;
+      const it = skip.iter;
+      const _x = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+        it,
+        skippedIdx,
+        IIterator,
+        dropI,
+        dropIItem,
+      );
+      dropIItem?.(_x);
+    }
+  }
+  const it = skip.iter;
+  idx = (idx + skip.n) >>> 0;
+  return iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+    it,
+    idx,
+    IIterator,
+    dropI,
+    dropIItem,
+  );
 }
 
 export function skipIterator_sizeHint(skip, IIterator, dropI, dropIItem) {
@@ -5220,6 +5368,268 @@ export function chainABDebug_fmt(chain, options, ADebug, BDebug) {
     : `Chain { a: ${shown}, b: ${shown$1} }`;
 }
 
+export function zipIterator_next(
+  zip,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return ARandomAccess && BRandomAccess
+    ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
+        zip,
+        AIterator,
+        BIterator,
+        dropA,
+        dropB,
+        dropAItem,
+        dropBItem,
+      )
+    : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+      ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next(
+          zip,
+          AIterator,
+          BIterator,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+      : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
+}
+
+export function zipIterator_sizeHint(
+  zip,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return ARandomAccess && BRandomAccess
+    ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint(
+        zip,
+        dropA,
+        dropB,
+        dropAItem,
+        dropBItem,
+      )
+    : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+      ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint(
+          zip,
+          AIterator,
+          BIterator,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+      : zipZipImplAB_sizeHint(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
+}
+
+export function zipIterator_nth(
+  zip,
+  n,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return ARandomAccess && BRandomAccess
+    ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
+        zip,
+        n,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        ARandomAccessNoCoerce,
+        BRandomAccess,
+        BRandomAccessNoCoerce,
+        dropA,
+        dropB,
+        dropAItem,
+        dropBItem,
+      )
+    : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+      ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nth(
+          zip,
+          n,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+      : zipZipImplAB_nth(
+          zip,
+          n,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+}
+
+export function zipIterator_fold(
+  zip,
+  init,
+  f,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  ATrustedLen,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  BTrustedLen,
+  dropA,
+  dropB,
+  dropAcc,
+  dropF,
+  dropAItem,
+  dropBItem,
+) {
+  return ARandomAccessNoCoerce && BRandomAccessNoCoerce
+    ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fold(
+        zip,
+        init,
+        f,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        BRandomAccess,
+        dropA,
+        dropB,
+        dropAcc,
+        dropF,
+        dropAItem,
+        dropBItem,
+      )
+    : zipZipImplAB_fold(
+        zip,
+        init,
+        f,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        ARandomAccessNoCoerce,
+        ATrustedLen,
+        BRandomAccess,
+        BRandomAccessNoCoerce,
+        BTrustedLen,
+        dropA,
+        dropB,
+        dropAcc,
+        dropF,
+        dropAItem,
+        dropBItem,
+      );
+}
+
+export function zipDoubleEndedIterator_nextBack(
+  zip,
+  AIterator,
+  ADoubleEndedIterator,
+  AExactSizeIterator,
+  BIterator,
+  BDoubleEndedIterator,
+  BExactSizeIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return ARandomAccess && BRandomAccess
+    ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
+        zip,
+        AIterator,
+        BIterator,
+        ADoubleEndedIterator,
+        BDoubleEndedIterator,
+        dropA,
+        dropB,
+        dropAItem,
+        dropBItem,
+      )
+    : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+      ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack(
+          zip,
+          ADoubleEndedIterator,
+          AExactSizeIterator,
+          BDoubleEndedIterator,
+          BExactSizeIterator,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+      : zipZipImplAB_nextBack(
+          zip,
+          ADoubleEndedIterator,
+          AExactSizeIterator,
+          BDoubleEndedIterator,
+          BExactSizeIterator,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+}
+
+export function zipIterator___iteratorGetUnchecked(
+  zip,
+  idx,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked(
+    zip,
+    idx,
+    AIterator,
+    BIterator,
+    dropA,
+    dropB,
+    dropAItem,
+    dropBItem,
+  );
+}
+
 export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
@@ -6005,6 +6415,7 @@ export function iterator_flatMap(
   f,
   SelfIterator,
   UIntoIterator,
+  SelfFused,
   UConstSize,
   UIntoIterOneShot,
   dropSelf,
@@ -6132,6 +6543,7 @@ export function iterator_flatMap(
         return flatMapIterator_next(
           iterator,
           UIntoIterator,
+          SelfFused,
           UIntoIterOneShot,
           dropSelf,
           dropU,
@@ -6179,6 +6591,7 @@ export function iterator_flatMap(
           f,
           UIntoIterator,
           $tryOf(broke),
+          SelfFused,
           UIntoIterOneShot,
           dropSelf,
           dropU,
@@ -6475,6 +6888,90 @@ export function iterator_chain(
       },
     },
   );
+}
+
+export function iterator_zip(
+  self,
+  other,
+  SelfIterator,
+  UIntoIterator,
+  SelfRandomAccess,
+  SelfRandomAccessNoCoerce,
+  SelfTrustedLen,
+  UIntoIterRandomAccess,
+  UIntoIterRandomAccessNoCoerce,
+  UIntoIterTrustedLen,
+  dropSelf,
+  dropU,
+  dropSelfItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  const b = UIntoIterator.intoIter(other);
+  return SelfRandomAccess && UIntoIterRandomAccess
+    ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
+        self,
+        b,
+        SelfIterator,
+        UIntoIterator.IntoIterIterator(),
+        SelfRandomAccess,
+        SelfRandomAccessNoCoerce,
+        SelfTrustedLen,
+        UIntoIterRandomAccess,
+        UIntoIterRandomAccessNoCoerce,
+        UIntoIterTrustedLen,
+        dropSelf,
+        dropUIntoIter,
+        dropSelfItem,
+        dropUItem,
+      )
+    : SelfRandomAccessNoCoerce && UIntoIterRandomAccessNoCoerce
+      ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new(
+          self,
+          b,
+          SelfIterator,
+          UIntoIterator.IntoIterIterator(),
+          SelfRandomAccess,
+          SelfRandomAccessNoCoerce,
+          SelfTrustedLen,
+          UIntoIterRandomAccess,
+          UIntoIterRandomAccessNoCoerce,
+          UIntoIterTrustedLen,
+          dropSelf,
+          dropUIntoIter,
+          dropSelfItem,
+          dropUItem,
+        )
+      : zipZipImplAB_new(
+          self,
+          b,
+          SelfIterator,
+          UIntoIterator.IntoIterIterator(),
+          SelfRandomAccess,
+          SelfRandomAccessNoCoerce,
+          SelfTrustedLen,
+          UIntoIterRandomAccess,
+          UIntoIterRandomAccessNoCoerce,
+          UIntoIterTrustedLen,
+          dropSelf,
+          dropUIntoIter,
+          dropSelfItem,
+          dropUItem,
+        );
+}
+
+export function trustedRandomAccessNoCoerce_size(self, SelfIterator, dropSelf, dropSelfItem) {
+  return $sizeHint(self, SelfIterator)[0];
+}
+
+export function iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
+  self,
+  index,
+  IIterator,
+  dropI,
+  dropIItem,
+) {
+  return IIterator.getUnchecked(self, index);
 }
 
 export function fuseFuseImplI_tryRfold(
@@ -7628,6 +8125,787 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   return x;
 }
 
+export function zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem) {
+  const option = AIterator.next(zip.a);
+  if (option != null) {
+    const v = $someValue(option);
+    const _0 = { TAG: "Continue", _0: v }._0;
+    const option$1 = BIterator.next(zip.b);
+    if (option$1 != null) {
+      const v = $someValue(option$1);
+      return [_0, { TAG: "Continue", _0: v }._0];
+    }
+    const result = undefined;
+    dropAItem?.(_0);
+    return result;
+  }
+}
+
+export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
+  zip,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  if (zip.index < zip.len$) {
+    const i = zip.index;
+    zip.index = (zip.index + 1) >>> 0;
+    return [AIterator.getUnchecked(zip.a, i), BIterator.getUnchecked(zip.b, i)];
+  }
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next(
+  zip,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const option = AIterator.next(zip.a);
+  if (option != null) {
+    const v = $someValue(option);
+    const _0 = { TAG: "Continue", _0: v }._0;
+    const option$1 = BIterator.next(zip.b);
+    if (option$1 != null) {
+      const v = $someValue(option$1);
+      return [_0, { TAG: "Continue", _0: v }._0];
+    }
+    const result = undefined;
+    dropAItem?.(_0);
+    return result;
+  }
+}
+
+export function zipZipImplAB_sizeHint(
+  zip,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const [aLower, aUpper] = $sizeHint(zip.a, AIterator);
+  let [bLower, bUpper] = $sizeHint(zip.b, BIterator);
+  if (bLower >= aLower) {
+    bLower = aLower;
+  }
+  if (aUpper == null) {
+    bUpper ??= undefined;
+  } else if (bUpper != null) {
+    const x = aUpper;
+    let y = bUpper;
+    if (y >= x) {
+      y = x;
+    }
+    bUpper = y;
+  } else {
+    bUpper = aUpper;
+  }
+  return [bLower, bUpper];
+}
+
+export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint(
+  zip,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const value = (zip.len$ - zip.index) >>> 0;
+  return [value, value];
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint(
+  zip,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const v1 = trustedRandomAccessNoCoerce_size(zip.a, AIterator, dropA, dropAItem);
+  let size = trustedRandomAccessNoCoerce_size(zip.b, BIterator, dropB, dropBItem);
+  if (size >= v1) {
+    size = v1;
+  }
+  return [size, size];
+}
+
+export function zipZipImplAB_nth(
+  zip,
+  n,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return Zip.superNth(
+    zip,
+    n,
+    AIterator,
+    BIterator,
+    ARandomAccess,
+    ARandomAccessNoCoerce,
+    BRandomAccess,
+    BRandomAccessNoCoerce,
+    dropA,
+    dropB,
+    dropAItem,
+    dropBItem,
+  );
+}
+
+export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
+  zip,
+  n,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  let delta = (zip.len$ - zip.index) >>> 0;
+  if (delta >= n) {
+    delta = n;
+  }
+  const end = (zip.index + delta) >>> 0;
+  while (true) {
+    if (!(zip.index < end)) {
+      return Zip.superNth(
+        zip,
+        (n - delta) >>> 0,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        ARandomAccessNoCoerce,
+        BRandomAccess,
+        BRandomAccessNoCoerce,
+        dropA,
+        dropB,
+        dropAItem,
+        dropBItem,
+      );
+    }
+    const i = zip.index;
+    zip.index = (zip.index + 1) >>> 0;
+    const value = AIterator.getUnchecked(zip.a, i);
+    dropAItem?.(value);
+    const value$1 = BIterator.getUnchecked(zip.b, i);
+    dropBItem?.(value$1);
+  }
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nth(
+  zip,
+  n,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return Zip.superNth(
+    zip,
+    n,
+    AIterator,
+    BIterator,
+    ARandomAccess,
+    ARandomAccessNoCoerce,
+    BRandomAccess,
+    BRandomAccessNoCoerce,
+    dropA,
+    dropB,
+    dropAItem,
+    dropBItem,
+  );
+}
+
+export function zipZipImplAB_fold(
+  zip,
+  init,
+  f,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  ATrustedLen,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  BTrustedLen,
+  dropA,
+  dropB,
+  dropAcc,
+  dropF,
+  dropAItem,
+  dropBItem,
+) {
+  return zipSpecFold_specFold(
+    zip,
+    init,
+    f,
+    AIterator,
+    BIterator,
+    ARandomAccess,
+    ARandomAccessNoCoerce,
+    BRandomAccess,
+    BRandomAccessNoCoerce,
+    dropA,
+    dropB,
+    dropAcc,
+    dropF,
+    dropAItem,
+    dropBItem,
+  );
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fold(
+  zip,
+  init,
+  f,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  BRandomAccess,
+  dropA,
+  dropB,
+  dropAcc,
+  dropF,
+  dropAItem,
+  dropBItem,
+) {
+  const len = (
+    ARandomAccess && BRandomAccess
+      ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint(
+          zip,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+      : zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint(
+          zip,
+          AIterator,
+          BIterator,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        )
+  )[0];
+  const iter = { start: 0, end: len };
+  while (true) {
+    if (!(iter.start < iter.end)) {
+      const result = init;
+      dropF?.(f);
+      zip.return();
+      return result;
+    }
+    const old = iter.start;
+    iter.start = (old + 1) >>> 0;
+    const i = old;
+    const idx = (zip.index + i) >>> 0;
+    init = f(init, [AIterator.getUnchecked(zip.a, idx), BIterator.getUnchecked(zip.b, idx)]);
+  }
+}
+
+export function zipZipImplAB_nextBack(
+  zip,
+  ADoubleEndedIterator,
+  AExactSizeIterator,
+  BDoubleEndedIterator,
+  BExactSizeIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const value = AExactSizeIterator.len(zip.a);
+  const value$1 = BExactSizeIterator.len(zip.b);
+  if (value !== value$1) {
+    if (value > value$1) {
+      const iter = { start: 0, end: (value - value$1) >>> 0 };
+      while (true) {
+        if (!(iter.start < iter.end)) {
+          break;
+        }
+        const old = iter.start;
+        iter.start = (old + 1) >>> 0;
+        const value = ADoubleEndedIterator.next_back(zip.a);
+        if (value != null) {
+          dropAItem?.($someValue(value));
+        }
+      }
+    } else {
+      const iter = { start: 0, end: (value$1 - value) >>> 0 };
+      while (true) {
+        if (!(iter.start < iter.end)) {
+          break;
+        }
+        const old = iter.start;
+        iter.start = (old + 1) >>> 0;
+        const value = BDoubleEndedIterator.next_back(zip.b);
+        if (value != null) {
+          dropBItem?.($someValue(value));
+        }
+      }
+    }
+  }
+  const value$2 = ADoubleEndedIterator.next_back(zip.a);
+  const value$3 = BDoubleEndedIterator.next_back(zip.b);
+  bb17: {
+    if (value$2 == null) {
+      if (value$3 != null) {
+        break bb17;
+      }
+      return;
+    }
+    if (value$3 == null) {
+      break bb17;
+    }
+    return [$someValue(value$2), $someValue(value$3)];
+  }
+  throw new Error("internal error: entered unreachable code");
+}
+
+export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
+  zip,
+  AIterator,
+  BIterator,
+  ADoubleEndedIterator,
+  BDoubleEndedIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  if (zip.index < zip.len$) {
+    const oldLen = zip.len$;
+    zip.len$ = (zip.len$ - 1) >>> 0;
+    const szA = trustedRandomAccessNoCoerce_size(zip.a, AIterator, dropA, dropAItem);
+    const szB = trustedRandomAccessNoCoerce_size(zip.b, BIterator, dropB, dropBItem);
+    if (szA !== szB) {
+      if (oldLen === szA || oldLen === szB) {
+        if (szA > oldLen) {
+          const iter = { start: 0, end: (szA - oldLen) >>> 0 };
+          while (true) {
+            if (!(iter.start < iter.end)) {
+              break;
+            }
+            const old = iter.start;
+            iter.start = (old + 1) >>> 0;
+            const nextBack = ADoubleEndedIterator.next_back(zip.a);
+            if (nextBack != null) {
+              dropAItem?.($someValue(nextBack));
+            }
+          }
+        }
+        if (szB > oldLen) {
+          const iter = { start: 0, end: (szB - oldLen) >>> 0 };
+          while (true) {
+            if (!(iter.start < iter.end)) {
+              break;
+            }
+            const old = iter.start;
+            iter.start = (old + 1) >>> 0;
+            const value = BDoubleEndedIterator.next_back(zip.b);
+            if (value != null) {
+              dropBItem?.($someValue(value));
+            }
+          }
+        }
+      }
+    }
+    const i = zip.len$;
+    return [AIterator.getUnchecked(zip.a, i), BIterator.getUnchecked(zip.b, i)];
+  }
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack(
+  zip,
+  ADoubleEndedIterator,
+  AExactSizeIterator,
+  BDoubleEndedIterator,
+  BExactSizeIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const value = AExactSizeIterator.len(zip.a);
+  const value$1 = BExactSizeIterator.len(zip.b);
+  if (value !== value$1) {
+    if (value > value$1) {
+      const iter = { start: 0, end: (value - value$1) >>> 0 };
+      while (true) {
+        if (!(iter.start < iter.end)) {
+          break;
+        }
+        const old = iter.start;
+        iter.start = (old + 1) >>> 0;
+        const value = ADoubleEndedIterator.next_back(zip.a);
+        if (value != null) {
+          dropAItem?.($someValue(value));
+        }
+      }
+    } else {
+      const iter = { start: 0, end: (value$1 - value) >>> 0 };
+      while (true) {
+        if (!(iter.start < iter.end)) {
+          break;
+        }
+        const old = iter.start;
+        iter.start = (old + 1) >>> 0;
+        const value = BDoubleEndedIterator.next_back(zip.b);
+        if (value != null) {
+          dropBItem?.($someValue(value));
+        }
+      }
+    }
+  }
+  const value$2 = ADoubleEndedIterator.next_back(zip.a);
+  const value$3 = BDoubleEndedIterator.next_back(zip.b);
+  bb17: {
+    if (value$2 == null) {
+      if (value$3 != null) {
+        break bb17;
+      }
+      return;
+    }
+    if (value$3 == null) {
+      break bb17;
+    }
+    return [$someValue(value$2), $someValue(value$3)];
+  }
+  throw new Error("internal error: entered unreachable code");
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked(
+  zip,
+  idx,
+  AIterator,
+  BIterator,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  idx = (zip.index + idx) >>> 0;
+  return [AIterator.getUnchecked(zip.a, idx), BIterator.getUnchecked(zip.b, idx)];
+}
+
+export function zipZipImplAB_new(
+  a,
+  b,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  ATrustedLen,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  BTrustedLen,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return $stdIterator(
+    { a, b, index: 0, len$: 0 },
+    {
+      next(iterator) {
+        return zipIterator_next(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      hint(iterator) {
+        return zipIterator_sizeHint(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      nth(iterator, n) {
+        return zipIterator_nth(
+          iterator,
+          n,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      fold(iterator, init, f) {
+        return zipIterator_fold(
+          iterator,
+          init,
+          f,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          ATrustedLen,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          BTrustedLen,
+          dropA,
+          dropB,
+          undefined,
+          undefined,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      takes: ["fold"],
+      close(iterator) {
+        dropA?.(iterator.a);
+        dropB?.(iterator.b);
+      },
+    },
+  );
+}
+
+export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
+  a,
+  b,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  ATrustedLen,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  BTrustedLen,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  const v1 = trustedRandomAccessNoCoerce_size(a, AIterator, dropA, dropAItem);
+  let len = trustedRandomAccessNoCoerce_size(b, BIterator, dropB, dropBItem);
+  if (len >= v1) {
+    len = v1;
+  }
+  return $stdIterator(
+    { a, b, index: 0, len$: len },
+    {
+      next(iterator) {
+        return zipIterator_next(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      hint(iterator) {
+        return zipIterator_sizeHint(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      nth(iterator, n) {
+        return zipIterator_nth(
+          iterator,
+          n,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      fold(iterator, init, f) {
+        return zipIterator_fold(
+          iterator,
+          init,
+          f,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          ATrustedLen,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          BTrustedLen,
+          dropA,
+          dropB,
+          undefined,
+          undefined,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      takes: ["fold"],
+      close(iterator) {
+        dropA?.(iterator.a);
+        dropB?.(iterator.b);
+      },
+    },
+  );
+}
+
+export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new(
+  a,
+  b,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  ATrustedLen,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  BTrustedLen,
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
+  return $stdIterator(
+    { a, b, index: 0, len$: 0 },
+    {
+      next(iterator) {
+        return zipIterator_next(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      hint(iterator) {
+        return zipIterator_sizeHint(
+          iterator,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      nth(iterator, n) {
+        return zipIterator_nth(
+          iterator,
+          n,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      fold(iterator, init, f) {
+        return zipIterator_fold(
+          iterator,
+          init,
+          f,
+          AIterator,
+          BIterator,
+          ARandomAccess,
+          ARandomAccessNoCoerce,
+          ATrustedLen,
+          BRandomAccess,
+          BRandomAccessNoCoerce,
+          BTrustedLen,
+          dropA,
+          dropB,
+          undefined,
+          undefined,
+          dropAItem,
+          dropBItem,
+        );
+      },
+      takes: ["fold"],
+      close(iterator) {
+        dropA?.(iterator.a);
+        dropB?.(iterator.b);
+      },
+    },
+  );
+}
+
 export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
   let x;
   let option;
@@ -7648,6 +8926,56 @@ export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
   x = undefined;
   dropFnOnce?.(f);
   return x;
+}
+
+export function zipSpecFold_specFold(
+  zip,
+  init,
+  f,
+  AIterator,
+  BIterator,
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAcc,
+  dropF,
+  dropAItem,
+  dropBItem,
+) {
+  while (true) {
+    const x =
+      ARandomAccess && BRandomAccess
+        ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
+            zip,
+            AIterator,
+            BIterator,
+            dropA,
+            dropB,
+            dropAItem,
+            dropBItem,
+          )
+        : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+          ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next(
+              zip,
+              AIterator,
+              BIterator,
+              dropA,
+              dropB,
+              dropAItem,
+              dropBItem,
+            )
+          : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
+    if (!x) {
+      const result = init;
+      dropF?.(f);
+      zip.return();
+      return result;
+    }
+    init = f(init, x);
+  }
 }
 
 export function tSpecRangeSetupT_setup(inner, step, dropT) {
