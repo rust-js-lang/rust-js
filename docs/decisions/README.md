@@ -747,6 +747,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md)
 - [0961 A loop that ends a branch of the body it ends leaves with no label](0961-a-loop-ending-a-branch-leaves-without-a-label.md)
 - [0962 A `RefCell` of an object given to JS is the object, and a boxed one is refused](0962-a-refcell-of-an-object-given-to-js-is-the-object.md)
+- [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

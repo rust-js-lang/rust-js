@@ -591,3 +591,53 @@ const AbortControllerLocal =
     expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct, nor a class TypeScript names")]);
   }
 });
+
+// ADR 0963: React's performance track logs each phase with Chrome's
+// `console.timeStamp(label, start, end, track, trackGroup, color)`, which no
+// WebIDL declares, asked first, `typeof console.timeStamp === "function"`;
+// and measures with `performance.measure(name, { start, end })`, whose
+// times are `DOMHighResTimeStamp`s, doubles: `string | number`'s number of
+// a union is the wider of the members two unions of its name have.
+test("console.timeStamp is Chrome's, and a measure's times are doubles", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-time-stamp");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{PerformanceMeasureOptions, console, performance};
+
+pub fn log_render(name: &str, start_time: f64, end_time: f64, color: &str) {
+    if js::is_function(console::time_stamp) {
+        console::time_stamp(
+            name,
+            Some(&start_time),
+            Some(&end_time),
+            Some("Components \u{269B}"),
+            None,
+            Some(color),
+        );
+    }
+}
+
+pub fn measure(name: &str, start_time: f64, end_time: f64) {
+    let options = PerformanceMeasureOptions {
+        start: Some(start_time.into()),
+        end: Some(end_time.into()),
+        ..Default::default()
+    };
+    performance.measure(name, Some(&options), None);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof console !== "undefined" && typeof console.timeStamp === "function") {\n    console.timeStamp(name, startTime, endTime, "Components \u269B", undefined, color);\n  }');
+  expect(js).toContain("  const options = {\n    start: startTime,\n    end: endTime,\n  };\n  performance.measure(name, options);");
+  const host = console as any;
+  const stamped: unknown[][] = [];
+  const timeStamp = host.timeStamp;
+  host.timeStamp = (...args: unknown[]) => stamped.push(args);
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.logRender("App", 1.5, 2.25, "primary");
+    expect(stamped).toEqual([["App", 1.5, 2.25, "Components \u269B", undefined, "primary"]]);
+  } finally {
+    host.timeStamp = timeStamp;
+  }
+});

@@ -288,6 +288,31 @@ export function renderIn(task, render) {
 }
 ```
 
+A method a host extends past what WebIDL declares is the method, of every
+parameter it takes there, called as one, its presence asked as
+`setTimeout`'s is: Chrome's `console.timeStamp(label, start, end,
+trackName, trackGroup, color)`, which React's performance track logs each
+phase with, is `webapi::console::time_stamp`
+([ADR 0963](../../decisions/0963-a-hosts-extended-method-is-the-method.md)):
+
+```rust
+use webapi::console;
+
+pub fn log_render(name: &str, start: f64, end: f64) {
+    if js::is_function(console::time_stamp) {
+        console::time_stamp(name, Some(&start), Some(&end), Some("Components"), None, Some("primary"));
+    }
+}
+```
+
+```js
+export function logRender(name, start, end) {
+  if (typeof console !== "undefined" && typeof console.timeStamp === "function") {
+    console.timeStamp(name, start, end, "Components", undefined, "primary");
+  }
+}
+```
+
 ### A window's classes
 
 A class's constructor is the global scope's, `error_event::new(..)`, `new

@@ -136,6 +136,32 @@ const EXTRA: Record<string, Fn[]> = {
         "`createTask(label: string): ConsoleTask` (ADR 0811).",
       ],
     },
+    // Chrome's `console.timeStamp(label, start, end, track, trackGroup,
+    // color)`, its DevTools' extensibility API, which no WebIDL declares
+    // and React's performance track logs each phase with, asked first,
+    // `typeof console.timeStamp === 'function'`, as `js::is_function` asks
+    // (ADR 0963). Firefox and Safari take its label alone.
+    {
+      name: "time_stamp",
+      jsName: "console.timeStamp",
+      params: [
+        "label: &str",
+        "start: Option<StrOrNumber<'_>>",
+        "end: Option<StrOrNumber<'_>>",
+        "track_name: Option<&str>",
+        "track_group: Option<&str>",
+        "color: Option<&str>",
+      ],
+      result: "()",
+      doc: [
+        "[Chrome](https://developer.chrome.com/docs/devtools/performance/extension#inject_your_data_with_consoletimestamp):",
+        "`console.timeStamp(label, start, end, trackName, trackGroup, color)`, an entry DevTools'",
+        "performance panel shows on track `track_name` of `track_group`, from `start` to `end`, each a",
+        "time, `performance.now()`'s, or a label an earlier one was given; `color` one of DevTools'",
+        "names, `\"primary\"`, `\"secondary\"`, `\"tertiary\"` and the rest. No WebIDL declares it;",
+        "where the host hasn't it, `js::is_function(console::time_stamp)` is `false` (ADR 0963).",
+      ],
+    },
   ],
 };
 
@@ -752,7 +778,7 @@ function resultUnion(t: IdlType): string | { skip: string } {
   if (!union || union.variants.length !== defined.length || union.variants.some((v) => kindOf(v.type.replace(/'a /g, "")) === "object")) {
     return { skip: "union" };
   }
-  unions.set(union.name, union);
+  named(union);
   return option(union.borrows ? `${union.name}<'static>` : union.name);
 }
 
@@ -763,8 +789,26 @@ function resultUnion(t: IdlType): string | { skip: string } {
 function paramType(t: IdlType): string | undefined {
   const union = isUnion(t) ? unionOf(t) : null;
   if (!union) return alternatives(t)[0];
-  unions.set(union.name, union);
+  named(union);
   return `${union.name}${union.borrows ? "<'_>" : ""}`;
+}
+
+/**
+ * The union of `union`'s name, one enum for every union named so, by its
+ * members, `StrOrNumber`: two whose numbers differ, `(DOMString or unsigned
+ * long)`'s `u32` and `(DOMString or DOMHighResTimeStamp)`'s `f64`, are one
+ * of the wider, `f64`, which each takes, as TypeScript's `number` is either.
+ * One union of the name, as the last read was, was narrower than its other
+ * members: `PerformanceMeasureOptions.start` took no time (ADR 0963).
+ */
+function named(union: Union): void {
+  const known = unions.get(union.name);
+  const wider = (a: string, b: string) => (a === b ? a : "f64");
+  const variants = union.variants.map((v) => {
+    const other = known?.variants.find((k) => k.name === v.name);
+    return other && kindOf(v.type) === "number" ? { ...v, type: wider(v.type, other.type) } : v;
+  });
+  unions.set(union.name, { ...union, variants });
 }
 
 // ── Generating ──────────────────────────────────────────────────────────

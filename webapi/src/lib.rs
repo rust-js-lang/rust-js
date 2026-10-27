@@ -90639,6 +90639,20 @@ pub mod console {
     pub fn create_task() -> Option<&'static dyn Fn(&str) -> &'static ConsoleTask> {
         unreachable!()
     }
+
+    /// [Chrome](https://developer.chrome.com/docs/devtools/performance/extension#inject_your_data_with_consoletimestamp):
+    /// `console.timeStamp(label, start, end, trackName, trackGroup, color)`, an entry DevTools'
+    /// performance panel shows on track `track_name` of `track_group`, from `start` to `end`, each a
+    /// time, `performance.now()`'s, or a label an earlier one was given; `color` one of DevTools'
+    /// names, `"primary"`, `"secondary"`, `"tertiary"` and the rest. No WebIDL declares it;
+    /// where the host hasn't it, `js::is_function(console::time_stamp)` is `false` (ADR 0963).
+    #[cfg_attr(rust_js, rust_js::link_name = "console.timeStamp")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn time_stamp(label: &str, start: Option<&dyn IntoStrOrNumber>, end: Option<&dyn IntoStrOrNumber>, track_name: Option<&str>, track_group: Option<&str>, color: Option<&str>) {
+        unreachable!()
+    }
 }
 
 /// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.
@@ -108314,7 +108328,7 @@ impl<'a> StrOrList<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum StrOrNumber<'a> {
     Str(&'a str),
-    Number(u32),
+    Number(f64),
 }
 
 impl<'a> From<&'a str> for StrOrNumber<'a> {
@@ -108323,8 +108337,8 @@ impl<'a> From<&'a str> for StrOrNumber<'a> {
     }
 }
 
-impl<'a> From<u32> for StrOrNumber<'a> {
-    fn from(value: u32) -> Self {
+impl<'a> From<f64> for StrOrNumber<'a> {
+    fn from(value: f64) -> Self {
         StrOrNumber::Number(value)
     }
 }
@@ -108335,7 +108349,7 @@ impl<'a> From<u32> for StrOrNumber<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | number")]
 pub trait IntoStrOrNumber: sealed::Sealed {}
 impl IntoStrOrNumber for &str {}
-impl IntoStrOrNumber for u32 {}
+impl IntoStrOrNumber for f64 {}
 impl IntoStrOrNumber for StrOrNumber<'_> {}
 /// A rest parameter of `string | number`s takes each member (ADR 0640).
 impl<A: IntoStrOrNumber> Takes<A> for dyn IntoStrOrNumber {}
