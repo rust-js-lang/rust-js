@@ -151,17 +151,10 @@ pub(super) fn returned_logicals(
             // `return`: a function's last value of `||`s.
             None => {
                 let next = next?;
-                // Of one logical the value is a part of too: not an `if`'s
-                // test alone, `if (a || b) { return x; }`.
-                let (_, first) = tests.first()?;
-                let outer = logicals
-                    .iter()
-                    .filter(|l| around(l, *first))
-                    .max_by_key(|l| l.hi - l.lo)?;
-                if !tests.iter().all(|&(_, s)| within(s))
-                    || returns.iter().any(|r| around(r, next))
-                    || !(yes.span.is_none() || around(outer, yes.span))
-                {
+                // An `if`'s test alone, `if (a || b) { return x; }`, folds
+                // to a `?:`, which is refused below, or is made a value
+                // before this pass, `a || b ? x : y`.
+                if !tests.iter().all(|&(_, s)| within(s)) || returns.iter().any(|r| around(r, next)) {
                     return None;
                 }
             }

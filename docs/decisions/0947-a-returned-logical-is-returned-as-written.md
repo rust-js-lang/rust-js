@@ -57,3 +57,15 @@ test's logical, which stays as written. Held by
 `test/lowering-written-branches.test.ts`, "a function's last || of an
 if's value is one return", and mutations `last-or-chain-unfolded` and
 `last-or-chain-of-an-if-test`.
+
+## Amendment: no check of where the value is
+
+The fold checked that the value returned is inside its tests' logical,
+so `if (a || b) { return x; } return y;` stays as written. It never
+decides: of an `x` that isn't `true` or `false`, the fold is a `?:`,
+which it refuses; of one that is, `if a || b { true } else { y }`, an
+earlier pass makes the value, `!a && !b ? y : true`. With a probe that
+panicked where it decided and the fold went on, no corpus case, lowering,
+JSX, snapshot, port, guide, std or crate test reached it, and
+`last-or-chain-of-an-if-test` survived every run. The check and its
+mutation went; `last-or-chain-unfolded` holds the fold.

@@ -57,7 +57,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "react.dev's Console clears its logs"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "react.dev's Console clears its logs|a read a test takes in place is gone where nothing else reads it",
+    ],
   },
   {
     name: "mir-tidy-cond-false-kept",

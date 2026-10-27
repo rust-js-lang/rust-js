@@ -362,14 +362,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
   },
   {
-    name: "last-or-chain-of-an-if-test",
-    breaks: "an `if (a || b) { return x; } return y;` is folded as a logical value, `a ? x : b ? x : y`, not its test kept (ADR 0947, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "                    || !(yes.span.is_none() || around(outer, yes.span))\n",
-    replace: "",
-    tests: ["test/lowering-written-branches.test.ts"],
-  },
-  {
     name: "last-or-chain-of-conditionals",
     breaks: "a chain of `if`s whose folding gives `?:`s is nested `?:`s, `o != null ? (o > 3 ? o : n) : n`, not the `if`s or the `&&` (ADR 0947, amended)",
     file: "src/lower/mir/tidy/logicals.rs",

@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            if js::same_path(a, b) {\n",
     "replace": "            if false && js::same_path(a, b) {\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null"]
+    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null|a filter by truth then a fallback is JS"]
   },
   {
     name: "test-and-else-conditional",
