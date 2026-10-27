@@ -1279,7 +1279,9 @@ pub fn show(props: &Props) {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const returnFiber = node.return;\n  sibling.return = returnFiber;\n");
+  // The `let` that ends the borrow, the place read where it is stored (ADR
+  // 0866, amended).
+  expect(js).toContain("  sibling.return = node.return;\n");
   expect(js).toContain("  const claimed = root.transitionTypes;\n  root.transitionTypes = null;\n  return claimed;\n");
   const lib = await import(join(dir, "lib.js"));
   const parent = lib.fiber("parent", null);
@@ -1289,7 +1291,7 @@ pub fn show(props: &Props) {
   expect([other.return === parent, child.return]).toEqual([true, null]);
   const [some, none] = [lib.root(true), lib.root(false)];
   expect([lib.claim(some), lib.claim(some), lib.claim(none)]).toEqual([["a"], null, null]);
-  expect(js).toContain("  props.shown = banner ?? null;\n");
+  expect(js).toContain("  props.shown = props.banner ?? null;\n");
   const props = lib.props();
   lib.show(props);
   expect(props.shown).toBe(null);

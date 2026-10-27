@@ -3,7 +3,8 @@
 Status: Accepted; amended below: a `let` of a cast is no `let` that ends a
 borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first; and an `if let`'s
-binding of a thread-local's value only its test reads. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+binding of a thread-local's value only its test reads; and a `let` that
+ends a borrow that the statement after it stores. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -251,3 +252,59 @@ by its own name reads the field in place", run in JS, and the mutation
 `tested-read-of-any-let`, `tested-read-past-a-call` and
 `tested-read-body-unread`.
 
+## Amendment: a `let` that ends a borrow, stored by the statement after it (2026-10-27)
+
+The user's decision (r07 of the React port's gaps). React's
+createWorkInProgress copies a fiber's links, `workInProgress.child =
+current.child;`. Its port ends the borrow first, as Rust must:
+`work_in_progress.child.replace(current.child.borrow().clone())` holds
+`current.child`'s borrow across the `replace`, which panics where
+`work_in_progress` is `current`, so rust-js counts the field's borrows
+everywhere. The port writes
+
+```rust
+let child = current.child.borrow().clone();
+work_in_progress.child.replace(child);
+```
+
+which printed `const child = current.child; workInProgress.child =
+child;`: the `let` only holds the value while the borrow ends, which JS
+hasn't.
+
+**A `let` of a `RefCell`'s value cloned, `x.borrow().clone()`
+(`LetNames::ends_borrow`, from THIR), of a place's read that no getter
+may answer, stored whole by the statement right after it, `target = child`
+or a nullable place's `child ?? null`, read nowhere else, where nothing
+JS evaluates before that read does anything (`read_again`), is that place
+read there**: `workInProgress.child = current.child;`, the name the field's
+own or not, `node = node.return;`. Nothing runs between the two reads, so
+the place holds what the `let` read. The pass runs in tidy's `written`
+stage, after `unread made` drops the `const old` of what `replace` gave.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value read.
+
+- **Only a store**, as decided. Measured on the React port: it takes 14
+  `const`s where upstream reads in place (createWorkInProgress's `child`,
+  `sibling` and `_debugHookTypes`, the update queues' `update.next =
+  pending.next`, `sibling.return = node.return` three times,
+  `hydrationParentFiber = fiber.return`, ReactFiberGestureScheduler's
+  `gesturePrev.next = gesture.next`, ..), and none upstream names. The same
+  rule of any read in the next statement also took a test's, `const
+  alternate = parent.alternate; if (alternate === null && ..)`, an
+  object's, `primaryChildFragment.sibling`, and arguments upstream names,
+  `const handlerOnStack = ..; push(.., handlerOnStack, ..)`: names
+  upstream keeps, so a test, an object or an argument keeps its `const`.
+- **Not a `Cell`'s `get()`**, which ends no borrow: `let index =
+  current.index.get();` is the program's name for a value it could have
+  written in place.
+
+What changes: `rc_assigned_through_mut.rs`'s `update.next = pending.next;`
+and `while_exit_continues.rs`'s `sibling.return = node.return;`, and two
+tests' expectations of the same stores; `docs/readability.txt`'s renamed
+`x$1` share falls, 702.2 to 700.8 in 10,000 lines.
+
+Held by the corpus's `refcell_let_read_in_place.rs`, against native Rust:
+a store, a nullable field's, an argument, one past a call that empties
+the cell, one read twice, a `Cell`'s; and the mutations `ended-borrow-kept`,
+`ended-borrow-passed`, `ended-borrow-nulled-kept` (`tidy/moves.ts`) and
+`ended-borrow-of-any-let` (`mir/patterns.ts`).

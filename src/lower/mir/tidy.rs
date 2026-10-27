@@ -59,6 +59,11 @@ pub(super) struct LetNames {
     /// = types`: a `let` that ends a borrow, which reads as its value
     /// written there where only that test reads it (ADR 0866).
     pub(super) taken_apart: HashSet<String>,
+    /// Of those, one of a `RefCell`'s value cloned, `let child =
+    /// current.child.borrow().clone();`: a `let` that ends a borrow, which
+    /// reads as its value written in the statement right after it where
+    /// only that reads it (ADR 0866, amended).
+    pub(super) ends_borrow: HashSet<String>,
 }
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.

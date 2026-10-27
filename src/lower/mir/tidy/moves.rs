@@ -454,13 +454,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
     if !taken_apart.contains(name) && !own_name {
         return None;
     }
-    let mut root = value;
-    while let ExprKind::Member(of, _) = &root.kind {
-        root = of;
-    }
-    let place = matches!(value.kind, ExprKind::Member(..))
-        && matches!(&root.kind, ExprKind::Var(v) if v != name)
-        && !value.has_effects();
+    let place = place_read(value, name);
     let mut tested = 0;
     test.visit_vars(&mut |v| tested += usize::from(v == name));
     if !place || tested == 0 || test.has_effects() {
@@ -482,6 +476,58 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
         _ => return None,
     };
     Some((substituted(test)?, then))
+}
+
+/// `const child = current.child; workInProgress.child = child;`: a `let`
+/// that ends a borrow, `let child = current.child.borrow().clone();`
+/// (`LetNames::ends_borrow`), of a place's read, which no getter may answer,
+/// read once, by the statement right after it, where nothing JS evaluates
+/// before it there does anything (`read_again`): the place read there,
+/// `workInProgress.child = current.child;`, as the program would write it
+/// but for the borrow, which JS doesn't have (ADR 0866, amended, the user's
+/// decision, 2026-10-27). Nothing runs between the two reads, so the place
+/// holds what the `let` read.
+pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && ends_borrow.contains(name)
+            && place_read(value, name)
+            && stored_whole(&stmts[i + 1], name)
+            && read_again(stmts, i)
+        {
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// Whether `stmt` stores `name` whole, `target = name`: where the program
+/// would write the place (ADR 0866, amended). Not an argument's, `push(..,
+/// handlerOnStack, ..)`, a test's, `if (alternate == null && ..)`, nor a
+/// property's object, `alternate?.sibling`, where upstream keeps the name.
+fn stored_whole(stmt: &Stmt, name: &str) -> bool {
+    let StmtKind::Assign(_, value) = &stmt.kind else {
+        return false;
+    };
+    // Or what a nullable place stores of it, `name ?? null` (ADR 0586).
+    let value = match &value.kind {
+        ExprKind::Binary(Op::Coalesce, value, null) if matches!(null.kind, ExprKind::Null) => value,
+        _ => value,
+    };
+    matches!(&value.kind, ExprKind::Var(v) if v == name)
+}
+
+/// Whether `value`, `const name = value`, is a variable's property, or a
+/// chain of them, not `name`'s, which no getter may answer.
+fn place_read(value: &Expr, name: &str) -> bool {
+    let mut root = value;
+    while let ExprKind::Member(of, _) = &root.kind {
+        root = of;
+    }
+    matches!(value.kind, ExprKind::Member(..))
+        && matches!(&root.kind, ExprKind::Var(v) if v != name)
+        && !value.has_effects()
 }
 
 /// `if (fiber != null && fiber._debugTask) { const debugTask =

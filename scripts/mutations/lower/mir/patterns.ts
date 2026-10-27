@@ -211,6 +211,15 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a cast an if let tests"],
   },
   {
+    name: "ended-borrow-of-any-let",
+    breaks: "a `let` of a `Cell`'s value, `let index = current.index.get();`, is taken for one that ends a borrow, its name lost to its place's read",
+    file: "src/lower/mir/patterns.rs",
+    find: "                if initializer.is_some_and(borrow_cloned) {\n",
+    replace: "                if initializer.is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
+    snapshots: true,
+  },
+  {
     name: "let-taken-apart-unseen",
     breaks: "a `let` an `if let` takes apart, `let prev_types = prev.types.borrow().clone()`, stays a `const` before the test that alone reads it",
     file: "src/lower/mir/patterns.rs",

@@ -9,8 +9,7 @@ function set(r, v) {
 }
 
 function link(update, pending) {
-  const next = pending.next;
-  update.next = next;
+  update.next = pending.next;
 }
 
 function main() {

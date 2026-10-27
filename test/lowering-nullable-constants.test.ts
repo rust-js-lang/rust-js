@@ -226,7 +226,7 @@ pub fn current_state() -> Option<&'static Unknown> {
   expect(out).toContain("  fiber.memoizedState = state;\n");
   expect(out).toContain("  fiber.memoizedState = null;\n");
   expect(out).toContain("  workInProgress.debugStack = current.debugStack;\n");
-  expect(out).toContain("  workInProgress.debugHookTypes = debugHookTypes;\n");
+  expect(out).toContain("  workInProgress.debugHookTypes = current.debugHookTypes;\n");
   expect(out).toContain("  fiber.debugHookTypes = null;\n");
   expect(out).not.toContain("?? null;\n");
   const lib = await import(join(dir, "lib.js"));

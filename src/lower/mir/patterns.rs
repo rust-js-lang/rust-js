@@ -696,8 +696,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This))
             .then(|| matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. })))
         };
+        // A `RefCell`'s value cloned, `current.child.borrow().clone()`: the
+        // value read, the borrow ended (ADR 0866, amended).
+        let borrow_cloned = |e: thir::ExprId| {
+            let thir::ExprKind::Call { fun, ref args, .. } = thir[through(e)].kind else {
+                return false;
+            };
+            let [cloned] = args[..] else {
+                return false;
+            };
+            if !fn_def(thir[fun].ty).is_some_and(|(id, _)| self.tcx.is_lang_item(id, LangItem::CloneFn)) {
+                return false;
+            }
+            // Through `&*`, and a `Ref`'s `Deref::deref` of it.
+            let mut e = through(cloned);
+            loop {
+                e = match thir[e].kind {
+                    thir::ExprKind::Borrow { arg, .. } | thir::ExprKind::Deref { arg } => through(arg),
+                    thir::ExprKind::Call { fun, ref args, .. } => {
+                        let Some((id, generic_args)) = fn_def(thir[fun].ty) else {
+                            return false;
+                        };
+                        let borrow = Std::Borrow {
+                            lock: false,
+                            mutable: false,
+                        };
+                        if self.recognition().classify(id, generic_args) == Some(borrow) {
+                            return true;
+                        }
+                        match args[..] {
+                            [arg] if self.tcx.trait_of_assoc(id) == self.tcx.lang_items().deref_trait() => through(arg),
+                            _ => return false,
+                        }
+                    }
+                    _ => return false,
+                };
+            }
+        };
         let mut named = Vec::new();
         let mut casts = Vec::new();
+        let mut ends_borrow = Vec::new();
         // A `let` of a cast of anything, `let instance: Option<&Instance> =
         // unsafe { js::cast(node.state_node.get()) };`: the program's name
         // for a value of the type it gives, no `let` that ends a borrow.
@@ -713,6 +751,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 named.push(pattern.span);
                 lets.push((var, pattern.span));
+                if initializer.is_some_and(borrow_cloned) {
+                    ends_borrow.push(pattern.span);
+                }
                 match initializer.and_then(cast_of) {
                     Some(true) => casts.push(pattern.span),
                     Some(false) => typed.push(var),
@@ -776,6 +817,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: names(&named),
             casts: names(&casts),
             taken_apart: names(&taken_apart),
+            ends_borrow: names(&ends_borrow),
         }
     }
 

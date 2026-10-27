@@ -525,6 +525,12 @@ pub(super) const STAGES: &[Stage] = &[
                 let mentions = mentions(b);
                 js::statement_lists(b, &mut |s| unread_made(s, &mentions))
             }),
+            // A `let` that ends a borrow, of a place's read only the
+            // statement after it reads, nothing run first: read there, once
+            // what `replace` gave, unread, is gone (ADR 0866, amended).
+            pass("ended borrows", |b, h| {
+                js::statement_lists(b, &mut |s| ended_borrows(s, &h.lets.ends_borrow))
+            }),
             pass("while heads", |b, h| {
                 js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
             }),

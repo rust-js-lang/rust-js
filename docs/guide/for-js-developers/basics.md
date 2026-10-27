@@ -2069,7 +2069,12 @@ export function isAdult(p) {
   &*instance.auto_name.borrow() { return auto_name.clone(); }`, is the
   field read in place where the `then` gives it first, `if
   (instance.autoName != null) { return instance.autoName; }`; of another
-  name, `const name = instance.autoName;` (ADR 0866, amended).
+  name, `const name = instance.autoName;` (ADR 0866, amended). And a `let`
+  that ends a borrow that the statement after it stores, `let child =
+  current.child.borrow().clone(); work_in_progress.child.replace(child);`,
+  is the place read there, `workInProgress.child = current.child;`, where
+  nothing runs before it; given as an argument or tested, it keeps its
+  name (ADR 0866, amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,
