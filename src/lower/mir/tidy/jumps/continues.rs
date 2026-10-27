@@ -255,6 +255,11 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(j
                 }
             }
         }
+        // A `switch` that ends it, its `default`, which ends it last: a
+        // case's `break` past it goes on too (ADR 0905, amended).
+        Some(StmtKind::Switch {
+            default: Some(default), ..
+        }) => ends_going_on(default, looped, continues),
         _ => {}
     }
 }

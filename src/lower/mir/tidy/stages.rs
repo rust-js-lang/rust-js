@@ -665,6 +665,15 @@ pub(super) const STAGES: &[Stage] = &[
             pass("breaks past switches", |b, _| {
                 js::statement_lists(b, &mut switches::breaks_past_switches)
             }),
+            // A case's `break` to the `return;` after its `switch`, of an
+            // arm the program wrote a `return` in: that `return;` (ADR
+            // 0905, amended).
+            pass("returns of cases", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    case_rests::returns_of_cases(s, &h.written.switches, h.returns)
+                });
+                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+            }),
             // A block a case ends with: its `break`s the case's (ADR 0790).
             pass("blocks ending cases", |b, h| {
                 js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))

@@ -1437,3 +1437,60 @@ pub fn unwind(tag: u8, value: u32, log: &mut Vec<u32>) -> Option<u32> {
   expect([5, 25, 25, 1].map((tag, i) => lib.unwind(tag, i + 1, log))).toEqual([null, null, null, null]);
   expect(log).toEqual([1, 3]);
 });
+
+// ADR 0905, amended: React's popToNextHostParent, `while
+// (hydrationParentFiber) { switch (hydrationParentFiber.tag) { case
+// HostComponent: ..; return; case HostRoot: ..; return; default: .. } }`.
+// MIR joins the arms' `return`s into one after the `switch`, which printed
+// each case's `break;` and a `return;` after it: each case of an arm the
+// program wrote a `return` in ends with it, as written, and the `default`
+// that goes on, with no `continue`.
+test("a case of an arm that returns ends with its return", async () => {
+  const dir = fixture("switch-arms-returning");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub parent: Option<Rc<Fiber>>,
+}
+
+pub fn pop_to_host(fiber: &Fiber, log: &mut Vec<u8>) {
+    let mut parent = fiber.parent.clone();
+    while let Some(current) = parent {
+        match current.tag {
+            5 | 13 => {
+                log.push(1);
+                return;
+            }
+            3 | 27 => {
+                log.push(2);
+                return;
+            }
+            _ => {
+                parent = current.parent.clone();
+            }
+        }
+    }
+}
+
+pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, parent })
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "      case 27:\n        log.push(2);\n        return;\n      default:\n        parent = parent.parent;\n    }\n  }\n}\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const log: number[] = [];
+  const root = lib.fiber(3, null);
+  const host = lib.fiber(13, lib.fiber(1, root));
+  for (const parent of [null, root, host, lib.fiber(1, lib.fiber(2, null))]) {
+    lib.popToHost(lib.fiber(0, parent), log);
+  }
+  expect(log).toEqual([2, 1]);
+});

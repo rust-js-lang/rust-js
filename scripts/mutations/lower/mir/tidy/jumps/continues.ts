@@ -5,6 +5,14 @@ const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are a
 
 export const mutations: Mutation[] = [
   {
+    name: "default-tail-continue-kept",
+    breaks: "a `switch` that ends a loop's body keeps its `default`'s `continue;`, which goes on anyway (ADR 0905, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        }) => ends_going_on(default, looped, continues),\n",
+    replace: "        }) => {}\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "arm that returns ends with its return"],
+  },
+  {
     name: "tail-continued-label-kept",
     breaks: "a loop's label whose last jump was a `continue` where its body ends stays, named by nothing",
     file: "src/lower/mir/tidy/jumps/continues.rs",

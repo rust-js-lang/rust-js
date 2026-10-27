@@ -378,3 +378,33 @@ the guard's `if` that leaves, then the next arm's body, `case I: if
 Held by the corpus's `switch_guard_does_nothing.rs`, `complete_all`, each
 tag and flag against native Rust; the mutation
 `guard-before-its-constants-unjoined` (`mir/hints.ts`).
+
+## Amendment: a case of an arm that returns ends with its `return` (2026-10-27)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jump: a
+case's `break` went on to the `return;` after the `switch`.
+
+React's popToNextHostParent, `while (hydrationParentFiber) { switch
+(hydrationParentFiber.tag) { case HostComponent: ..; return; case HostRoot:
+..; return; default: hydrationParentFiber = hydrationParentFiber.return; }
+}` (h4 of the port's gaps). Where an `Rc` is dropped on each way out, MIR
+joins the arms' `return`s into one after the `match`: `case 5: ..; break;
+.. default: ..; continue; } return;`.
+
+**A case of an arm the program wrote a `return` in (`Written::switches`,
+`returns`), followed by that `return;`, ends with it** in place of its
+`break` (`case_rests::returns_of_cases`), and the `return;` after the
+`switch` goes once nothing reaches it; then the `continue;` its `default`
+ends a loop's body with, which goes on anyway, goes too
+(`continues::ends_going_on`). Of a local, `while let Some(current) =
+parent`, that's upstream's loop. Of a thread-local the loop reads, the
+copy `const hydrationParentFiber$1 = hydrationParentFiber;` and its test,
+`while (true) { .. if (.. == null) { return; } .. }`, stay: a module's
+variable the loop sets is read in place only where nothing sets it in a
+loop (ADR 0277), which the loop's head would need first.
+
+Held by `test/lowering-switches.test.ts`, "a case of an arm that returns
+ends with its return", run; the mutations
+`case-returns-joined-after-switch`, `case-returns-joined-return-kept`
+(`mir/tidy/case_rests.ts`) and `default-tail-continue-kept`
+(`mir/tidy/jumps/continues.ts`).
